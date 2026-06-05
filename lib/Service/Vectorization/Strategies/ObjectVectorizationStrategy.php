@@ -5,9 +5,12 @@
  *
  * Strategy for vectorizing OpenRegister objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -87,8 +90,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @return \OCA\OpenRegister\Db\ObjectEntity[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fetchEntities(array $options): array
     {
@@ -146,15 +152,25 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @return (int|string)[][] Array with single item containing serialized object
      *
      * @psalm-return list{array{text: string, index: 0}}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractVectorizationItems($entity): array
     {
         // Get object data.
+<<<<<<< HEAD
         $objectData = $entity->jsonSerialize();
         if (is_array($entity) === true) {
             $objectData = $entity;
+=======
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        } else {
+            $objectData = $entity->jsonSerialize();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Get vectorization config.
@@ -203,6 +219,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
@@ -216,6 +233,21 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $objectId = 'unknown';
         if (($objectData['id'] ?? null) !== null) {
             $objectId = $objectData['id'];
+=======
+     */
+    public function prepareVectorMetadata($entity, array $item): array
+    {
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        } else {
+            $objectData = $entity->jsonSerialize();
+        }
+
+        if (($objectData['id'] ?? null) !== null) {
+            $objectId = $objectData['id'];
+        } else {
+            $objectId = 'unknown';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // DEBUG: Log what we're receiving.
@@ -286,8 +318,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $objectData Object data
      *
      * @return array<string> Array of @self keys
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractSelfKeys(array $objectData): array
     {
@@ -310,8 +345,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractFirstStringField(array $objectData): ?string
     {
@@ -344,6 +382,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param mixed $entity ObjectEntity
      *
      * @return string|int Object ID
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
@@ -352,6 +391,15 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $objectData = $entity->jsonSerialize();
         if (is_array($entity) === true) {
             $objectData = $entity;
+=======
+     */
+    public function getEntityIdentifier($entity)
+    {
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        } else {
+            $objectData = $entity->jsonSerialize();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if (($objectData['id'] ?? null) !== null) {
@@ -368,8 +416,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $config Vectorization configuration
      *
      * @return false|string Serialized text
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function serializeObject(array $object, array $config): string|false
     {

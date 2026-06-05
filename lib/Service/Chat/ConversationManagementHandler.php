@@ -6,9 +6,12 @@
  * Handler for conversation lifecycle management.
  * Manages conversation titles, summaries, and history management.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -19,8 +22,11 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -116,8 +122,11 @@ class ConversationManagementHandler
      * @param LoggerInterface           $logger             Logger.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         ConversationMapper $conversationMapper,
@@ -146,8 +155,11 @@ class ConversationManagementHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Title generation requires multiple LLM provider paths
      * @SuppressWarnings(PHPMD.NPathComplexity)       Title generation requires multiple LLM provider paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -230,6 +242,7 @@ class ConversationManagementHandler
             $title = '';
 
             // Generate title based on provider.
+<<<<<<< HEAD
             // OpenAIChat::__construct() type-errors when given OllamaConfig — skip the
             // default-OpenAI instantiation for Ollama; the dedicated Ollama branch below
             // does the right thing.
@@ -237,6 +250,11 @@ class ConversationManagementHandler
                 $chat  = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
             }
+=======
+            // OpenAI chat (default).
+            $chat  = new OpenAIChat($config);
+            $title = $chat->generateText($prompt);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             if ($chatProvider === 'fireworks') {
                 // Use ResponseGenerationHandler's Fireworks method.
@@ -290,8 +308,11 @@ class ConversationManagementHandler
      * @param string $message Message text.
      *
      * @return string Fallback title
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generateFallbackTitle(string $message): string
     {
@@ -322,8 +343,11 @@ class ConversationManagementHandler
      * @param int    $agentId   Agent ID.
      *
      * @return string Unique title with number suffix if needed
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
@@ -396,8 +420,11 @@ class ConversationManagementHandler
      * @param Conversation $conversation Conversation entity.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function checkAndSummarize(Conversation $conversation): void
     {
@@ -487,8 +514,11 @@ class ConversationManagementHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Summary generation requires handling multiple LLM providers
      * @SuppressWarnings(PHPMD.NPathComplexity)      Summary generation requires handling multiple LLM providers
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generateSummary(array $messages): string
     {

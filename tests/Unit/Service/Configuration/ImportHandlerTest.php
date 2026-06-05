@@ -1226,6 +1226,7 @@ class ImportHandlerTest extends TestCase
      */
     public function testImportFromJsonSkipsObjectsMissingRegisterOrSchema(): void
     {
+<<<<<<< HEAD
         $this->markTestSkipped(
             'Production importFromJson() now lazily resolves register / schema by slug '
             .'instead of returning an empty objects list when the slug map misses. The '
@@ -1234,6 +1235,42 @@ class ImportHandlerTest extends TestCase
             .'Tracked as a focused follow-up.'
         );
 
+=======
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'objects' => [
+                    [
+                        '@self' => [
+                            'register' => 'nonexistent-register',
+                            'schema'   => 'nonexistent-schema',
+                            'slug'     => 'my-object',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // objectService->searchObjects must NOT be called because register/schema not in maps.
+        $this->objectService->expects($this->never())->method('searchObjects');
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertSame([], $result['objects']);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testImportFromJsonSkipsObjectsMissingRegisterOrSchema()
 
 
@@ -2361,12 +2398,20 @@ class ImportHandlerTest extends TestCase
         $this->handler->setObjectMapper($objectMapper);
 
         $ref  = new ReflectionClass($this->handler);
+<<<<<<< HEAD
         $prop = $ref->getProperty('routingMapper');
+=======
+        $prop = $ref->getProperty('objectMapperForRouting');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $prop->setAccessible(true);
 
         $this->assertSame($objectMapper, $prop->getValue($this->handler));
 
+<<<<<<< HEAD
     }//end testSetObjectMapper()
+=======
+    }//end testSetMagicMapper()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 
     // =========================================================================
@@ -3671,7 +3716,14 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        // objectEntityMapper.findDirectBlobStorage throws DoesNotExistException → create.
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 999);
         $this->objectEntityMapper->expects($this->once())
@@ -3735,6 +3787,7 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
+<<<<<<< HEAD
         // Set up routingMapper to find existing object — should skip insert.
         $existingObject = new ObjectEntity();
         $this->setEntityId($existingObject, 888);
@@ -3743,6 +3796,13 @@ class ImportHandlerTest extends TestCase
         $unifiedMapper->method('find')
             ->willReturn($existingObject);
         $this->handler->setObjectMapper($unifiedMapper);
+=======
+        // findDirectBlobStorage returns an existing object — should skip insert.
+        $existingObject = new ObjectEntity();
+        $this->setEntityId($existingObject, 888);
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willReturn($existingObject);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->objectEntityMapper->expects($this->never())->method('insert');
 
@@ -3975,11 +4035,16 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
+<<<<<<< HEAD
         // Set up routingMapper to throw MultipleObjectsReturnedException — should skip.
         $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('multiple found'));
         $this->handler->setObjectMapper($unifiedMapper);
+=======
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('multiple found'));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->objectEntityMapper->expects($this->never())->method('insert');
 
@@ -5702,7 +5767,13 @@ class ImportHandlerTest extends TestCase
             ->with($register, $schema);
         $this->handler->setMagicMapper($magicMapper);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 777);
         $this->objectEntityMapper->method('insert')->willReturn($createdObject);
@@ -5766,7 +5837,13 @@ class ImportHandlerTest extends TestCase
             ->willThrowException(new Exception('Table creation failed'));
         $this->handler->setMagicMapper($magicMapper);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 778);
         $this->objectEntityMapper->method('insert')->willReturn($createdObject);
@@ -5826,7 +5903,13 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 779);
         $this->objectEntityMapper->method('insert')->willReturn($createdObject);
@@ -5886,7 +5969,14 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        // UUID from seed object should be used for lookup.
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $capturedEntity = null;
         $createdObject  = new ObjectEntity();
         $this->setEntityId($createdObject, 780);
@@ -5951,7 +6041,12 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->objectEntityMapper->method('insert')
             ->willThrowException(new Exception('Insert failed'));
 
@@ -6007,7 +6102,13 @@ class ImportHandlerTest extends TestCase
         $this->schemaMapper->method('update')->willReturn($schema);
         $this->schemaMapper->method('updateFromArray')->willReturn($schema);
 
+<<<<<<< HEAD
         // No routingMapper set — code skips find and goes straight to insert.
+=======
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $capturedEntity = null;
         $createdObject  = new ObjectEntity();
         $this->setEntityId($createdObject, 781);

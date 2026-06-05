@@ -5,6 +5,7 @@
  *
  * Registry service for deep link registrations from consuming apps.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,12 @@
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -19,11 +26,19 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-25
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -130,8 +145,13 @@ class DeepLinkRegistryService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function register(
         string $appId,
@@ -185,8 +205,13 @@ class DeepLinkRegistryService
      *
      * @return DeepLinkRegistration|null The registration, or null if none exists
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration
     {
@@ -218,8 +243,13 @@ class DeepLinkRegistryService
      *
      * @return string|null The resolved URL, or null to use default
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveUrl(
         int $registerId,
@@ -246,8 +276,13 @@ class DeepLinkRegistryService
      *
      * @return string|null The icon identifier, or null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveIcon(int $registerId, int $schemaId): ?string
     {
@@ -260,7 +295,11 @@ class DeepLinkRegistryService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function ensureIdMaps(): void
     {
@@ -317,7 +356,11 @@ class DeepLinkRegistryService
      *
      * @return bool True if at least one deep link is registered
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hasRegistrations(): bool
     {
@@ -329,7 +372,11 @@ class DeepLinkRegistryService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public static function reset(): void
     {

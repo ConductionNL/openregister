@@ -3,6 +3,7 @@
 /**
  * DeckLink entity for linking Nextcloud Deck cards to OpenRegister objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -15,6 +16,13 @@
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
+=======
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -37,8 +45,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setObjectUuid(string $objectUuid)
  * @method int getRegisterId()
  * @method void setRegisterId(int $registerId)
+<<<<<<< HEAD
  * @method int|null getSchemaId()
  * @method void setSchemaId(?int $schemaId)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method int getBoardId()
  * @method void setBoardId(int $boardId)
  * @method int getStackId()
@@ -47,12 +58,15 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCardId(int $cardId)
  * @method string|null getCardTitle()
  * @method void setCardTitle(?string $cardTitle)
+<<<<<<< HEAD
  * @method DateTime|null getDueDate()
  * @method void setDueDate(?DateTime $dueDate)
  * @method string|null getLabels()
  * @method void setLabels(?string $labels)
  * @method string|null getAssignees()
  * @method void setAssignees(?string $assignees)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method string getLinkedBy()
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
@@ -78,6 +92,7 @@ class DeckLink extends Entity implements JsonSerializable
     protected ?int $registerId = null;
 
     /**
+<<<<<<< HEAD
      * The schema id.
      *
      * @var integer|null
@@ -85,6 +100,8 @@ class DeckLink extends Entity implements JsonSerializable
     protected ?int $schemaId = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * The board id.
      *
      * @var integer|null
@@ -113,6 +130,7 @@ class DeckLink extends Entity implements JsonSerializable
     protected ?string $cardTitle = null;
 
     /**
+<<<<<<< HEAD
      * The card due date.
      *
      * @var DateTime|null
@@ -137,6 +155,8 @@ class DeckLink extends Entity implements JsonSerializable
     protected ?string $assignees = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * The linked by.
      *
      * @var string|null
@@ -157,14 +177,20 @@ class DeckLink extends Entity implements JsonSerializable
     {
         $this->addType(fieldName: 'objectUuid', type: 'string');
         $this->addType(fieldName: 'registerId', type: 'integer');
+<<<<<<< HEAD
         $this->addType(fieldName: 'schemaId', type: 'integer');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'boardId', type: 'integer');
         $this->addType(fieldName: 'stackId', type: 'integer');
         $this->addType(fieldName: 'cardId', type: 'integer');
         $this->addType(fieldName: 'cardTitle', type: 'string');
+<<<<<<< HEAD
         $this->addType(fieldName: 'dueDate', type: 'datetime');
         $this->addType(fieldName: 'labels', type: 'string');
         $this->addType(fieldName: 'assignees', type: 'string');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'linkedBy', type: 'string');
         $this->addType(fieldName: 'linkedAt', type: 'datetime');
     }//end __construct()
@@ -172,6 +198,7 @@ class DeckLink extends Entity implements JsonSerializable
     /**
      * JSON serialization.
      *
+<<<<<<< HEAD
      * Decodes the JSON `labels` / `assignees` columns into arrays so the
      * leaf row is directly consumable by the sidebar tab and picker UX.
      * Always returns arrays for those keys even on malformed JSON.
@@ -197,18 +224,30 @@ class DeckLink extends Entity implements JsonSerializable
             }
         }
 
+=======
+     * @return array
+     */
+    public function jsonSerialize(): array
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return [
             'id'         => $this->id,
             'objectUuid' => $this->objectUuid,
             'registerId' => $this->registerId,
+<<<<<<< HEAD
             'schemaId'   => $this->schemaId,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'boardId'    => $this->boardId,
             'stackId'    => $this->stackId,
             'cardId'     => $this->cardId,
             'cardTitle'  => $this->cardTitle,
+<<<<<<< HEAD
             'dueDate'    => $this->dueDate?->format(DateTime::ATOM),
             'labels'     => $labels,
             'assignees'  => $assignees,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'linkedBy'   => $this->linkedBy,
             'linkedAt'   => $this->linkedAt?->format(DateTime::ATOM),
         ];

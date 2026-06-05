@@ -5,9 +5,12 @@
  *
  * Service class for handling object reversion in the OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -72,6 +75,7 @@ class RevertHandler
     private MagicMapper $objectEntityMapper;
 
     /**
+<<<<<<< HEAD
      * Permission handler for RBAC enforcement
      *
      * @var PermissionHandler
@@ -102,6 +106,8 @@ class RevertHandler
     }//end __construct()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Revert an object to a previous state
      *
      * @param string $register         The register identifier
@@ -119,7 +125,11 @@ class RevertHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-12
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function revert(
         string $register,
@@ -128,10 +138,19 @@ class RevertHandler
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
+<<<<<<< HEAD
         // Get the object with RBAC and multitenancy enforced (tenant-scoped find).
         $context        = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $id,
             includeDeleted: false
+=======
+        // Get the object with context (searches across all magic tables).
+        $context        = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $id,
+            includeDeleted: false,
+            _rbac: false,
+            _multitenancy: false
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
         $object         = $context['object'];
         $registerEntity = $context['register'];
@@ -142,6 +161,7 @@ class RevertHandler
             throw new DoesNotExistException('Object not found in specified register/schema');
         }
 
+<<<<<<< HEAD
         // Enforce RBAC: the caller must have 'update' permission on this object.
         if ($this->permissionHandler->hasPermission(
             schema: $schemaEntity,
@@ -154,6 +174,8 @@ class RevertHandler
             );
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Check if the object is locked.
         if ($object->isLocked() === true) {
             $userId = $this->container->get('userId');

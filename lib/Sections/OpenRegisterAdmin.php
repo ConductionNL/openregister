@@ -5,9 +5,12 @@
  *
  * Provides admin settings section for OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Section
  * @package  OCA\OpenRegister\Sections
  *
@@ -55,7 +58,11 @@ class OpenRegisterAdmin implements IIconSection
      * @param IL10N         $l            Localization service
      * @param IURLGenerator $urlGenerator URL generator service
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(IL10N $l, IURLGenerator $urlGenerator)
     {
@@ -68,7 +75,11 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @return string Icon path
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getIcon(): string
     {
@@ -82,7 +93,11 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @psalm-return 'openregister'
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getID(): string
     {
@@ -94,7 +109,11 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @return string Section name
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string
     {
@@ -108,7 +127,11 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @psalm-return 97
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPriority(): int
     {

@@ -6,6 +6,7 @@
  * Core business logic for archiving and destruction workflows conforming
  * to Dutch archival standards (MDTO, NEN 2082, Archiefwet 1995).
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -20,8 +27,12 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -31,7 +42,10 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use DateInterval;
 use InvalidArgumentException;
+<<<<<<< HEAD
 use RuntimeException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\DestructionList;
 use OCA\OpenRegister\Db\DestructionListMapper;
@@ -46,7 +60,10 @@ use Psr\Log\LoggerInterface;
  * Service for archival and destruction workflow operations.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Required for orchestrating multiple entities
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.LongVariable)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ArchivalService
 {
@@ -91,14 +108,18 @@ class ArchivalService
      * @return ObjectEntity The updated object
      *
      * @throws InvalidArgumentException If retention data is invalid
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
      * @spec openspec/changes/retrofit-2026-05-24-archival-destruction-workflow/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setRetentionMetadata(ObjectEntity $object, array $retention): ObjectEntity
     {
         // Validate archiefnominatie.
+<<<<<<< HEAD
         if (isset($retention['archiefnominatie']) === false) {
             $retention['archiefnominatie'] = 'nog_niet_bepaald';
         }
@@ -124,6 +145,29 @@ class ArchivalService
             );
         }
 
+=======
+        if (isset($retention['archiefnominatie']) === true) {
+            if (in_array($retention['archiefnominatie'], self::VALID_NOMINATIONS, true) === false) {
+                throw new InvalidArgumentException(
+                    "Invalid archiefnominatie '{$retention['archiefnominatie']}'. Must be one of: ".implode(', ', self::VALID_NOMINATIONS)
+                );
+            }
+        } else {
+            $retention['archiefnominatie'] = 'nog_niet_bepaald';
+        }
+
+        // Validate archiefstatus.
+        if (isset($retention['archiefstatus']) === true) {
+            if (in_array($retention['archiefstatus'], self::VALID_STATUSES, true) === false) {
+                throw new InvalidArgumentException(
+                    "Invalid archiefstatus '{$retention['archiefstatus']}'. Must be one of: ".implode(', ', self::VALID_STATUSES)
+                );
+            }
+        } else {
+            $retention['archiefstatus'] = 'nog_te_archiveren';
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Validate archiefactiedatum format if provided.
         if (isset($retention['archiefactiedatum']) === true) {
             $date = DateTime::createFromFormat('Y-m-d', $retention['archiefactiedatum']);
@@ -158,7 +202,11 @@ class ArchivalService
      *
      * @return DateTime The calculated archival action date
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function calculateArchivalDate(
         SelectionList $selectionList,
@@ -189,11 +237,20 @@ class ArchivalService
      *
      * @return ObjectEntity[] Array of objects due for destruction
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
      */
     public function findObjectsDueForDestruction(): array
     {
         $qb = $this->db->getQueryBuilder();
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
+     */
+    public function findObjectsDueForDestruction(): array
+    {
+        $now = (new DateTime())->format('c');
+        $qb  = $this->db->getQueryBuilder();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $qb->select('*')
             ->from('openregister_objects')
@@ -252,7 +309,11 @@ class ArchivalService
      *
      * @return DestructionList|null The generated list, or null if no objects found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateDestructionList(): ?DestructionList
     {
@@ -287,7 +348,11 @@ class ArchivalService
      *
      * @throws InvalidArgumentException If list is not in pending_review status
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function approveDestructionList(DestructionList $list, string $userId): array
     {
@@ -338,10 +403,13 @@ class ArchivalService
      * @param string $destructionListId The destruction list UUID for audit trail
      *
      * @return void
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Reserved for future audit-trail correlation.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function destroyObject(string $objectUuid, string $destructionListId): void
     {
@@ -357,7 +425,11 @@ class ArchivalService
         $result->closeCursor();
 
         if ($row === false) {
+<<<<<<< HEAD
             throw new RuntimeException("Object {$objectUuid} not found");
+=======
+            throw new \RuntimeException("Object {$objectUuid} not found");
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Create an ObjectEntity for audit trail.
@@ -394,7 +466,11 @@ class ArchivalService
      *
      * @throws InvalidArgumentException If list is not in pending_review status
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function rejectFromDestructionList(DestructionList $list, array $objectUuids): DestructionList
     {
@@ -427,8 +503,11 @@ class ArchivalService
      * @param string $uuid The object UUID
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-archival-destruction-workflow/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extendRetentionForObject(string $uuid): void
     {
@@ -455,11 +534,15 @@ class ArchivalService
                 if (count($selectionLists) > 0) {
                     $retentionYears = $selectionLists[0]->getRetentionYears();
 
+<<<<<<< HEAD
                     $rawActieDatum = ($retention['archiefactiedatum'] ?? null);
                     $currentDate   = new DateTime();
                     if ($rawActieDatum !== null) {
                         $currentDate = new DateTime($rawActieDatum);
                     }
+=======
+                    $currentDate = isset($retention['archiefactiedatum']) === true ? new DateTime($retention['archiefactiedatum']) : new DateTime();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
                     $newDate = clone $currentDate;
                     $newDate->add(new DateInterval('P'.$retentionYears.'Y'));

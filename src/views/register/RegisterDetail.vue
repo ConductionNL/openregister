@@ -9,7 +9,11 @@ import formatBytes from '../../services/formatBytes.js'
 		<CnDetailPage
 			:title="register?.title || ''"
 			:loading="dashboardStore.loading"
+<<<<<<< HEAD
 			:loading-label="t('openregister', 'Loading register data...')"
+=======
+			loading-label="Loading register data..."
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			:error="!!dashboardStore.error || (!dashboardStore.loading && !register)"
 			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
 			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
@@ -191,7 +195,11 @@ import formatBytes from '../../services/formatBytes.js'
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Schemas')"
+=======
+						input-label="Schemas"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
@@ -250,12 +258,15 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * Inline JSON-schema describing the register edit form.
 		 *
 		 * @spec exclude UI plumbing — static form-schema for the edit dialog, no observable contract.
 		 * @return {object}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -268,12 +279,15 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Resolve the active register from the dashboard store.
 		 *
 		 * @spec exclude UI plumbing — store lookup; register dashboard contract owned by built-in-dashboards.
 		 * @return {object|undefined}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		register() {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.getRegisterItem?.id
@@ -398,6 +412,7 @@ export default {
 			},
 			deep: true,
 		},
+<<<<<<< HEAD
 		/**
 		 * Lazy-load schema options when the edit dialog opens.
 		 *
@@ -405,6 +420,8 @@ export default {
 		 * @param {boolean} val - dialog visibility
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		showEditDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
@@ -499,12 +516,15 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Load schema select options for the edit dialog.
 		 *
 		 * @spec exclude UI plumbing — store delegation hydrating select options.
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -516,6 +536,7 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Map schema ids/objects to NcSelect option values.
 		 *
@@ -523,6 +544,8 @@ export default {
 		 * @param {Array} schemas - schema ids or objects
 		 * @return {Array} option objects
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -531,6 +554,7 @@ export default {
 					|| { id, label: String(id) }
 			})
 		},
+<<<<<<< HEAD
 		/**
 		 * Persist the register edit form and refresh dashboard data.
 		 *
@@ -538,6 +562,8 @@ export default {
 		 * @param {object} formData - edited register fields
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -550,6 +576,7 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Open the edit-schema modal for a schema row.
 		 *
@@ -557,6 +584,8 @@ export default {
 		 * @param {object} schema - schema row
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')

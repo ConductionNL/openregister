@@ -6,9 +6,12 @@
  * Handles MCP standard resource listing, reading, and URI template
  * operations for the OpenRegister MCP server.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Mcp
  *
@@ -68,8 +71,11 @@ class McpResourcesService
      * and one entry per register+schema pair for objects.
      *
      * @return array{resources: array} MCP resources/list response
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listResources(): array
     {
@@ -127,8 +133,11 @@ class McpResourcesService
      * resource URIs for specific items.
      *
      * @return array{resourceTemplates: array} MCP resources/templates/list response
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listTemplates(): array
     {
@@ -167,8 +176,11 @@ class McpResourcesService
      * @return array{contents: array} MCP resources/read response
      *
      * @throws InvalidArgumentException If URI is invalid or unsupported
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function readResource(string $uri): array
     {

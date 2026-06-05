@@ -3,11 +3,18 @@ status: implemented
 ---
 # Workflow Engine Abstraction
 
+<<<<<<< HEAD
 # Workflow Engine Abstraction
 ## Purpose
 
 @e2e exclude backend workflow engine adapter — covered by PHPUnit
 
+=======
+
+# Workflow Engine Abstraction
+## Purpose
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Provides an engine-agnostic interface for OpenRegister to interact with workflow engines (n8n, Windmill, and future engines), enabling the system to deploy, execute, monitor, and manage workflows without coupling to any specific engine's API. This is the foundation layer that other specs (Schema Hooks, Workflow-in-Import, Workflow Integration) build upon: every hook execution, import-time workflow deployment, and event-driven automation flows through the `WorkflowEngineInterface` and `WorkflowEngineRegistry` defined here. By abstracting engine specifics behind adapters, OpenRegister can support multiple simultaneous engines, allow engine migration without data loss, and extend to new engines via a single interface implementation.
 
 ## Context
@@ -15,7 +22,13 @@ Provides an engine-agnostic interface for OpenRegister to interact with workflow
 OpenRegister needs to trigger external workflow engines for validation, enrichment, notifications, and automation. Currently n8n runs as a Nextcloud ExApp (FastAPI proxy to n8n at :5678) and Windmill exists as a separate ExApp. Rather than coupling to either engine, OpenRegister defines a shared interface (`WorkflowEngineInterface`) with per-engine adapters (`N8nAdapter`, `WindmillAdapter`). The `WorkflowEngineRegistry` service manages engine configurations, resolves the correct adapter for each request, encrypts credentials via `ICrypto`, and supports auto-discovery of installed ExApps via `IAppManager`.
 
 Multiple engines can be active simultaneously. Each individual hook on a schema specifies which engine it uses, so a single schema can have hooks targeting different engines (e.g., hook 1 uses n8n for validation, hook 2 uses Windmill for enrichment).
+<<<<<<< HEAD
 ## Requirements
+=======
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Engine Interface Definition
 Each engine adapter MUST implement the `WorkflowEngineInterface` PHP interface, providing a unified contract for workflow lifecycle management and execution. The interface MUST define methods for deploying, updating, retrieving, deleting, activating, deactivating, and executing workflows, as well as listing workflows, obtaining webhook URLs, and performing health checks. All adapters MUST accept configuration via a `configure(string $baseUrl, array $authConfig)` method that sets the engine connection parameters before any API calls.
 
@@ -514,6 +527,7 @@ Workflows deployed through the import pipeline MUST be tracked via the `Deployed
 - **WHEN** `DeployedWorkflowMapper::findBySchema("organisation")` is called
 - **THEN** all three workflows MUST be returned for export purposes
 
+<<<<<<< HEAD
 ### Requirement: Lifecycle Transition HTTP Surface
 
 The system MUST provide a sugar HTTP entry point over the lifecycle transition
@@ -615,6 +629,8 @@ failure, and return a summary with `synced`, `errors`, `totalSynced`, and
 - **AND** the response MUST report `totalSynced` and `totalErrors`
 - **AND** `success` MUST be true only when `errors` is empty
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Non-Requirements
 - This spec does NOT define how workflows are triggered by object lifecycle events (see Schema Hooks spec)
 - This spec does NOT define the import format for bundling workflows with schemas (see Workflow-in-Import spec)

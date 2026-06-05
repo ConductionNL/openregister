@@ -43,16 +43,22 @@ function openregisterObjectPlugin() {
 		}),
 
 		getters: {
+<<<<<<< HEAD
 			/**
 			 * @spec exclude Derived client-state getter — composes a type slug from the register/schema stores. No backend contract.
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			currentType() {
 				return getCurrentType(getActivePinia())
 			},
 
+<<<<<<< HEAD
 			/**
 			 * @spec exclude Derived client-state getter — proxies the active schema from the schema store. No backend contract.
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			activeSchema() {
 				const pinia = getActivePinia()
 				if (!pinia) return null
@@ -64,8 +70,11 @@ function openregisterObjectPlugin() {
 			/**
 			 * Ensure the current register/schema type is registered in the package store, then fetch collection.
 			 * @param options
+<<<<<<< HEAD
 			 *
 			 * @spec exclude Adapter delegating to the @conduction/nextcloud-vue package object store (fetchCollection); the data-fetch contract is owned by the shared library, not this app.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			 */
 			async refreshObjectList(options = {}) {
 				const pinia = getActivePinia()
@@ -104,6 +113,7 @@ function openregisterObjectPlugin() {
 			setAuditTrailItem(item) {
 				this.auditTrailItem = item || false
 			},
+<<<<<<< HEAD
 
 			// Stub: DashboardSideBar.vue + SearchSideBar.vue call this on
 			// mount + schema change. The implementation that originally
@@ -131,6 +141,8 @@ function openregisterObjectPlugin() {
 			initializeProperties(_schema) {
 				// Intentionally empty.
 			},
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		},
 	}
 }

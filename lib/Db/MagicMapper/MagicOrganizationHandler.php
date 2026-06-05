@@ -21,9 +21,12 @@
  * - Admin users cross-organization access (configurable)
  * - Unauthenticated user organization filtering
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -115,9 +118,13 @@ class MagicOrganizationHandler
                     message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
+<<<<<<< HEAD
             }
 
             if ($saasMode !== true) {
+=======
+            } else {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $this->logger->debug(
                     message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
                     context: ['file' => __FILE__, 'line' => __LINE__]

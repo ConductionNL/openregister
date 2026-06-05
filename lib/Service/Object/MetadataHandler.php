@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -53,7 +61,11 @@ class MetadataHandler
      * @psalm-return   mixed
      * @phpstan-return mixed
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getValueFromPath(array $data, string $path): mixed
     {
@@ -87,7 +99,11 @@ class MetadataHandler
      * @psalm-return   string|null
      * @phpstan-return string|null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateSlugFromValue(string $value): string|null
     {
@@ -123,7 +139,11 @@ class MetadataHandler
      * @psalm-return   string
      * @phpstan-return string
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createSlugHelper(string $text): string
     {

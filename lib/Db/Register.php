@@ -68,8 +68,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setGroups(?array $groups)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
+<<<<<<< HEAD
  * @method string|null getType()
  * @method void setType(?string $type)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method array|null getLanguages()
  * @method void setLanguages(?array $languages)
  * @method array|null getConfiguration()
@@ -253,6 +256,7 @@ class Register extends Entity implements JsonSerializable
     protected ?DateTime $depublished = null;
 
     /**
+<<<<<<< HEAD
      * Register classification, sourced from `x-openregister.type` on import.
      *
      * Free-form short string. Standard values are "mock" (demo/seed data
@@ -265,6 +269,8 @@ class Register extends Entity implements JsonSerializable
     protected ?string $type = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Available languages for this register.
      *
      * JSON array of BCP 47 language codes (e.g., ["nl", "en"]).
@@ -371,7 +377,10 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
+<<<<<<< HEAD
         $this->addType(fieldName: 'type', type: 'string');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'languages', type: 'json');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'mail', type: 'json');
@@ -583,7 +592,10 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'groups'        => $groups,
+<<<<<<< HEAD
             'type'          => $this->type,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'languages'     => $this->languages,
             'configuration' => $this->configuration,
             'published'     => $published,

@@ -111,7 +111,10 @@ use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\TenantKeyService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
@@ -140,7 +143,10 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
+<<<<<<< HEAD
 use OCP\Security\IContentSecurityPolicyManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
@@ -148,6 +154,7 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
+<<<<<<< HEAD
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
@@ -164,6 +171,11 @@ use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+=======
+use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\FilesSidebarListener;
+use OCA\OpenRegister\Listener\HookListener;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
@@ -172,7 +184,10 @@ use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+<<<<<<< HEAD
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -219,6 +234,7 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+<<<<<<< HEAD
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Controller\IntegrationsController;
@@ -268,6 +284,8 @@ use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * Class Application
@@ -282,6 +300,7 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Bootstrap class must reference every
  *   service, mapper, event listener, and middleware registered for the entire app; the
  *   coupling is structural and cannot be reduced without breaking the NC bootstrap contract.
@@ -293,6 +312,11 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)  IBootstrap::boot(IBootContext) signature
  *   is fixed by the NC framework contract; the $context parameter may not be used in
  *   every version of the boot method.
+=======
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class Application extends App implements IBootstrap
 {
@@ -308,7 +332,11 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct()
     {
@@ -322,7 +350,11 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function register(IRegistrationContext $context): void
     {
@@ -339,6 +371,7 @@ class Application extends App implements IBootstrap
         // Register the LanguageMiddleware for Accept-Language header parsing.
         $context->registerMiddleware(LanguageMiddleware::class);
 
+<<<<<<< HEAD
         // Register the default no-op TranslationProvider. Operators replace
         // this binding with a real provider (LibreTranslate / DeepL / etc.)
         // by overriding it in their own app's registration.
@@ -425,6 +458,43 @@ class Application extends App implements IBootstrap
     {
         // Register OrganisationService without SettingsService to break circular dependency.
         $context->registerService(
+=======
+        // Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
+
+        // Register all services in phases to resolve circular dependencies.
+        $this->registerMappersWithCircularDependencies(context: $context);
+        $this->registerCacheAndFileHandlers(context: $context);
+        $this->registerConfigurationServices(context: $context);
+        $this->registerSettingsServices(context: $context);
+        $this->registerSearchBackend(context: $context);
+        $this->registerVectorizationService(context: $context);
+        $this->registerObjectInteractionServices(context: $context);
+        $this->registerEventListeners(context: $context);
+    }//end register()
+
+    /**
+     * Register mappers with circular dependencies.
+     *
+     * These must be registered in the correct order to resolve dependencies:
+     * 1. OrganisationService (breaks circular dependency with SettingsService)
+     * 2. SchemaMapper (depends on OrganisationMapper)
+     * 3. RegisterMapper (depends on SchemaMapper)
+     * 4. MagicMapper and MagicMapper (depend on the above)
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     */
+    private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
+    {
+        // Register OrganisationService without SettingsService to break circular dependency.
+        $context->registerService(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             OrganisationService::class,
             function (ContainerInterface $container) {
                 return new OrganisationService(
@@ -473,8 +543,12 @@ class Application extends App implements IBootstrap
                     organisationMapper: $container->get(OrganisationMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
+<<<<<<< HEAD
                     appConfig: $container->get('OCP\IAppConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface')
+=======
+                    appConfig: $container->get('OCP\IAppConfig')
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 );
             }
         );
@@ -528,6 +602,7 @@ class Application extends App implements IBootstrap
             }
         );
 
+<<<<<<< HEAD
         // EntityRelationMapper is registered explicitly because it constructor-injects
         // `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
         // other event-dispatcher-dependent mapper in this method (SchemaMapper,
@@ -543,10 +618,39 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     logger: $container->get('Psr\Log\LoggerInterface')
+=======
+    }//end registerMappersWithCircularDependencies()
+
+    /**
+     * Register cache and file handling services.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     */
+    private function registerCacheAndFileHandlers(IRegistrationContext $context): void
+    {
+        // CacheHandler uses lazy loading of IndexService to break circular dependency.
+        $context->registerService(
+            CacheHandler::class,
+            function (ContainerInterface $container) {
+                return new CacheHandler(
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    db: $container->get('OCP\IDBConnection')
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 );
             }
         );
 
+<<<<<<< HEAD
     }//end registerMappersWithCircularDependencies()
 
     /**
@@ -607,6 +711,37 @@ class Application extends App implements IBootstrap
     private function registerConfigurationServices(IRegistrationContext $context): void
     {
         $context->registerService(
+=======
+        // FolderManagementHandler without FileService to break circular dependency.
+        $context->registerService(
+            FolderManagementHandler::class,
+            function (ContainerInterface $container) {
+                return new FolderManagementHandler(
+                    rootFolder: $container->get('OCP\Files\IRootFolder'),
+                    objectEntityMapper: $container->get(MagicMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    fileService: null
+                );
+            }
+        );
+    }//end registerCacheAndFileHandlers()
+
+    /**
+     * Register configuration-related services.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     */
+    private function registerConfigurationServices(IRegistrationContext $context): void
+    {
+        $context->registerService(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ConfigurationUploadHandler::class,
             function (ContainerInterface $container) {
                 return new ConfigurationUploadHandler(
@@ -621,11 +756,18 @@ class Application extends App implements IBootstrap
             GitHubHandler::class,
             function (ContainerInterface $container) {
                 return new GitHubHandler(
+<<<<<<< HEAD
                     client: $container->get('OCP\Http\Client\IClientService')->newClient(),
                     appConfig: $container->get('OCP\IAppConfig'),
                     config: $container->get('OCP\IConfig'),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
                     attributionFormatter: $container->get('OCA\OpenRegister\Service\Configuration\AttributionFormatter'),
+=======
+                    clientService: $container->get('OCP\Http\Client\IClientService'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    config: $container->get('OCP\IConfig'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -664,6 +806,7 @@ class Application extends App implements IBootstrap
             $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
             $importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
 
+<<<<<<< HEAD
             // Optional: services used by seed-related-items to attach files /
             // notes / tasks. Wrapped in try/catch so a missing dependency
             // doesn't break import for apps that don't seed related items.
@@ -691,6 +834,8 @@ class Application extends App implements IBootstrap
                 $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return $importHandler;
         };
 
@@ -763,7 +908,11 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function registerSettingsServices(IRegistrationContext $context): void
     {
@@ -809,6 +958,7 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+<<<<<<< HEAD
 
         // Register TenantKeyService for audit-trail HMAC key management.
         $context->registerService(
@@ -825,11 +975,48 @@ class Application extends App implements IBootstrap
 
     /**
      * Register search backend interface with dynamic backend selection.
+=======
+    }//end registerSettingsServices()
+
+    /**
+     * Register search backend interface with dynamic backend selection.
      *
      * @param IRegistrationContext $context The registration context
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     */
+    private function registerSearchBackend(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
+            function (ContainerInterface $container): \OCA\OpenRegister\Service\Index\SearchBackendInterface {
+                $settingsService = $container->get(SettingsService::class);
+                $backendConfig   = $settingsService->getSearchBackendConfig();
+                $activeBackend   = $backendConfig['active'] ?? 'solr';
+
+                switch ($activeBackend) {
+                    case 'elasticsearch':
+                        return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
+
+                    case 'solr':
+                    default:
+                        return $container->get(SolrBackend::class);
+                }
+            }
+        );
+    }//end registerSearchBackend()
+
+    /**
+     * Register vectorization service with strategies.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerSearchBackend(IRegistrationContext $context): void
@@ -855,12 +1042,8 @@ class Application extends App implements IBootstrap
 
     /**
      * Register vectorization service with strategies.
-     *
-     * @param IRegistrationContext $context The registration context
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerVectorizationService(IRegistrationContext $context): void
     {
@@ -872,6 +1055,54 @@ class Application extends App implements IBootstrap
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
 
+                $fileStrategy   = $container->get(FileVectorizationStrategy::class);
+                $objectStrategy = $container->get(ObjectVectorizationStrategy::class);
+                $service->registerStrategy('file', $fileStrategy);
+                $service->registerStrategy('object', $objectStrategy);
+
+                return $service;
+            }
+        );
+    }//end registerVectorizationService()
+
+    /**
+     * Register task and note services for object interactions.
+     *
+     * TaskService wraps CalDAV VTODO operations, NoteService wraps Nextcloud Comments.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+<<<<<<< HEAD
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     */
+    private function registerVectorizationService(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            VectorizationService::class,
+            function (ContainerInterface $container) {
+                $service = new VectorizationService(
+                    vectorService: $container->get(VectorEmbeddings::class),
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     */
+    private function registerObjectInteractionServices(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            TaskService::class,
+            function (ContainerInterface $container) {
+                return new TaskService(
+                    calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
+                    userSession: $container->get('OCP\IUserSession'),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+<<<<<<< HEAD
                 $fileStrategy   = $container->get(FileVectorizationStrategy::class);
                 $objectStrategy = $container->get(ObjectVectorizationStrategy::class);
                 $service->registerStrategy('file', $fileStrategy);
@@ -901,10 +1132,20 @@ class Application extends App implements IBootstrap
                 return new TaskService(
                     calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
                     userSession: $container->get('OCP\IUserSession'),
+=======
+        $context->registerService(
+            NoteService::class,
+            function (ContainerInterface $container) {
+                return new NoteService(
+                    commentsManager: $container->get('OCP\Comments\ICommentsManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    userManager: $container->get('OCP\IUserManager'),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
         );
+<<<<<<< HEAD
 
         $context->registerService(
             NoteService::class,
@@ -1681,6 +1922,10 @@ class Application extends App implements IBootstrap
         );
     }//end registerBuiltinIntegrationProviders()
 
+=======
+    }//end registerObjectInteractionServices()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Register all event listeners for the application.
      *
@@ -1688,7 +1933,11 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
@@ -1713,6 +1962,7 @@ class Application extends App implements IBootstrap
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
+<<<<<<< HEAD
         // Lifecycle annotation listeners — see x-openregister-lifecycle.
         // Order matters: initial state runs on creating; validation runs on updating.
         $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
@@ -1779,6 +2029,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
+=======
+        // HookListener for schema hook execution on lifecycle events.
+        $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectCreatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
 
@@ -1787,6 +2047,7 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
 
+<<<<<<< HEAD
         // Notify_push real-time push listeners (soft-fail when notify_push not installed).
         $context->registerEventListener(ObjectCreatedEvent::class, NotifyPushListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, NotifyPushListener::class);
@@ -1810,6 +2071,15 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
             \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
+=======
+        // FilesSidebarListener injects the sidebar tab script into the Files app.
+        $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
+
+        // MailAppScriptListener injects the mail sidebar when schemas have linkedTypes: ["mail"].
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\MailAppScriptListener::class
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
@@ -1819,6 +2089,7 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
 
         // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
+<<<<<<< HEAD
         $activityListener = \OCA\OpenRegister\Listener\ActivityEventListener::class;
         $context->registerEventListener(ObjectCreatedEvent::class, $activityListener);
         $context->registerEventListener(ObjectUpdatedEvent::class, $activityListener);
@@ -2025,6 +2296,18 @@ class Application extends App implements IBootstrap
 
         return null;
     }//end tryResolveMcpProviderCandidate()
+=======
+        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+    }//end registerEventListeners()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Boot application components
@@ -2033,7 +2316,11 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function boot(IBootContext $context): void
     {
@@ -2045,6 +2332,7 @@ class Application extends App implements IBootstrap
         $dispatcher = $server->get(IEventDispatcher::class);
         $registry   = $server->get(DeepLinkRegistryService::class);
         $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+<<<<<<< HEAD
 
         // Register the built-in IntegrationProvider implementations
         // with the IntegrationRegistry. The 5 wrap existing services
@@ -2203,4 +2491,7 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+=======
+    }//end boot()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

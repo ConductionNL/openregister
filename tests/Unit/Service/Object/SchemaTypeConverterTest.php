@@ -253,6 +253,7 @@ class SchemaTypeConverterTest extends TestCase
         $this->assertSame('hello', $this->converter->convertValue('hello', ''));
         $this->assertSame('5', $this->converter->convertValue(5, ''));
     }//end testEmptySchemaTypeUsesStringFallback()
+<<<<<<< HEAD
 
     /*
         ====================================================================
@@ -272,4 +273,6 @@ class SchemaTypeConverterTest extends TestCase
         $rrule = 'FREQ=WEEKLY;BYDAY=MO;COUNT=10';
         $this->assertSame($rrule, $this->converter->convertValue($rrule, 'recurrence'));
     }//end testRecurrenceTypeReturnsRruleUnchanged()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

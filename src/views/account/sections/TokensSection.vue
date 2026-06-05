@@ -28,6 +28,7 @@
 			</p>
 		</div>
 
+<<<<<<< HEAD
 		<CreateTokenModal
 			v-if="showCreateModal"
 			:token-name="newTokenName"
@@ -42,6 +43,45 @@
 			:token="createdToken"
 			@close="createdToken = null"
 			@copy="copyToken" />
+=======
+		<NcModal v-if="showCreateModal" @close="showCreateModal = false">
+			<div class="tokens-section__modal">
+				<h3>{{ t('openregister', 'Create API Token') }}</h3>
+				<div class="section__field">
+					<label for="token-name">{{ t('openregister', 'Token name') }}</label>
+					<NcTextField id="token-name"
+						v-model="newTokenName"
+						:label="t('openregister', 'Token name')" />
+				</div>
+				<div class="section__field">
+					<label for="token-expires">{{ t('openregister', 'Expires in (e.g., 90d)') }}</label>
+					<NcTextField id="token-expires"
+						v-model="newTokenExpires"
+						:label="t('openregister', 'Expiration')" />
+				</div>
+				<NcButton type="primary"
+					:disabled="!newTokenName"
+					@click="createToken">
+					{{ t('openregister', 'Create') }}
+				</NcButton>
+			</div>
+		</NcModal>
+
+		<NcModal v-if="createdToken" @close="createdToken = null">
+			<div class="tokens-section__modal">
+				<h3>{{ t('openregister', 'Token Created') }}</h3>
+				<p class="tokens-section__warning">
+					{{ t('openregister', 'This token will only be shown once. Copy it now.') }}
+				</p>
+				<div class="tokens-section__token-display">
+					<code>{{ createdToken }}</code>
+					<NcButton @click="copyToken">
+						{{ t('openregister', 'Copy to clipboard') }}
+					</NcButton>
+				</div>
+			</div>
+		</NcModal>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
 			{{ message }}
@@ -54,12 +94,21 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+<<<<<<< HEAD
 import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
 import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
 
 export default {
 	name: 'TokensSection',
 	components: { NcButton, CreateTokenModal, CreatedTokenModal },
+=======
+import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
+import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+
+export default {
+	name: 'TokensSection',
+	components: { NcButton, NcModal, NcTextField },
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	data() {
 		return {
 			tokens: [],
@@ -77,6 +126,7 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * Load the signed-in user's personal API tokens. Errors during initial load
 		 * are swallowed because a new user legitimately has no tokens yet.
@@ -84,6 +134,8 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadTokens() {
 			this.loading = true
 			try {
@@ -95,12 +147,15 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Create a personal API token and surface the one-time secret.
 		 *
 		 * @spec exclude UI plumbing — POST + reveal-modal glue around the account-self-service token list contract.
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async createToken() {
 			try {
 				const payload = { name: this.newTokenName }
@@ -119,6 +174,7 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Revoke a personal API token by id.
 		 *
@@ -126,6 +182,8 @@ export default {
 		 * @param {string|number} id - token identifier
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async revokeToken(id) {
 			try {
 				await axios.delete(generateUrl(`/apps/openregister/api/user/me/tokens/${id}`))
@@ -137,12 +195,15 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Copy the one-time token to the clipboard.
 		 *
 		 * @spec exclude UI plumbing — clipboard write + toast, no observable contract.
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async copyToken() {
 			try {
 				await navigator.clipboard.writeText(this.createdToken)
@@ -153,6 +214,7 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Format a token expiry date for display.
 		 *
@@ -160,6 +222,8 @@ export default {
 		 * @param {string} dateStr - ISO date string
 		 * @return {string} localized date
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleDateString()
@@ -180,4 +244,11 @@ export default {
 .tokens-section__info { display: flex; flex-direction: column; gap: 4px; }
 .tokens-section__preview { font-family: monospace; color: var(--color-text-maxcontrast); }
 .tokens-section__expires { font-size: 0.85em; color: var(--color-text-maxcontrast); }
+<<<<<<< HEAD
+=======
+.tokens-section__modal { padding: 24px; }
+.tokens-section__warning { color: var(--color-warning); font-weight: bold; margin-bottom: 12px; }
+.tokens-section__token-display { display: flex; gap: 8px; align-items: center; }
+.tokens-section__token-display code { background: var(--color-background-dark); padding: 8px; border-radius: 4px; word-break: break-all; flex: 1; }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 </style>

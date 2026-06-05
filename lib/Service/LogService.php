@@ -139,8 +139,11 @@ class LogService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getLogs(string $register, string $schema, string $id, array $config=[]): array
     {
@@ -208,8 +211,11 @@ class LogService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      *
      * @psalm-return int<0, max>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function count(string $register, string $schema, string $id): int
     {
@@ -265,8 +271,11 @@ class LogService
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail entries
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+<<<<<<< HEAD
      *
      * @spec exclude Thin delegation to AuditTrailMapper::findAll with default pagination/sort; no business logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAllLogs(array $config=[]): array
     {
@@ -287,8 +296,11 @@ class LogService
      * @return int Number of audit trail entries
      *
      * @psalm-return int<0, max>
+<<<<<<< HEAD
      *
      * @spec exclude Thin delegation to AuditTrailMapper::findAll + count(); no business logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function countAllLogs(array $filters=[]): int
     {
@@ -327,8 +339,11 @@ class LogService
      * @throws \InvalidArgumentException If unsupported format is specified
      *
      * @psalm-return array{content: bool|string, filename: string, contentType: string}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exportLogs(string $format, array $config=[]): array
     {
@@ -394,8 +409,11 @@ class LogService
      * @throws \Exception If mass deletion fails
      *
      * @psalm-return array{deleted: int<0, max>, failed: int<0, max>, total: int<0, max>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteLogs(array $config=[]): array
     {

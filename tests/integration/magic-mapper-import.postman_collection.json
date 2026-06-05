@@ -1,0 +1,295 @@
+{
+	"info": {
+		"_postman_id": "magic-mapper-import-test",
+		"name": "OpenRegister - Magic Mapper CSV Import Test",
+		"description": "Test script for importing CSV data into magic mapper schemas and verifying storage in dedicated tables.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://nextcloud/index.php/apps/openregister/api",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "1. Import Magic Mapper Configuration",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200 or 201', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});",
+							"",
+							"pm.test('Configuration imported successfully', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('registers');",
+							"    pm.expect(jsonData).to.have.property('schemas');",
+							"    ",
+							"    console.log('Imported registers:', jsonData.registers.length);",
+							"    console.log('Imported schemas:', jsonData.schemas.length);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "file",
+					"file": {
+						"src": "/var/www/html/custom_apps/openregister/tests/integration/softwarecatalogus_register_magic.json"
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/configurations?force=true",
+					"host": ["{{base_url}}"],
+					"path": ["configurations"],
+					"query": [
+						{
+							"key": "force",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Get Voorzieningen Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Register found', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"    pm.expect(jsonData.results.length).to.be.greaterThan(0);",
+							"    ",
+							"    var register = jsonData.results[0];",
+							"    pm.collectionVariables.set('register_id', register.id);",
+							"    ",
+							"    console.log('Register ID:', register.id);",
+							"    console.log('Register slug:', register.slug);",
+							"    ",
+							"    if (register.configuration && register.configuration.schemas) {",
+							"        console.log('Magic mapping enabled for:', Object.keys(register.configuration.schemas));",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/registers?slug=voorzieningen",
+					"host": ["{{base_url}}"],
+					"path": ["registers"],
+					"query": [
+						{
+							"key": "slug",
+							"value": "voorzieningen"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Get Module Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Schema found', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"    pm.expect(jsonData.results.length).to.be.greaterThan(0);",
+							"    ",
+							"    var schema = jsonData.results[0];",
+							"    pm.collectionVariables.set('module_schema_id', schema.id);",
+							"    ",
+							"    console.log('Module Schema ID:', schema.id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/schemas?slug=module",
+					"host": ["{{base_url}}"],
+					"path": ["schemas"],
+					"query": [
+						{
+							"key": "slug",
+							"value": "module"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Import Module CSV",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Import successful', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('successCount');",
+							"    pm.expect(jsonData.successCount).to.be.greaterThan(0);",
+							"    ",
+							"    console.log('Imported:', jsonData.successCount);",
+							"    console.log('Failed:', jsonData.failedCount || 0);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/var/www/html/custom_apps/openregister/tests/integration/magic-mapper-data/module.csv"
+						},
+						{
+							"key": "type",
+							"value": "csv",
+							"type": "text"
+						},
+						{
+							"key": "schema",
+							"value": "{{module_schema_id}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/registers/{{register_id}}/import",
+					"host": ["{{base_url}}"],
+					"path": ["registers", "{{register_id}}", "import"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Verify Objects in Magic Table (DB Query)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// This test will be verified manually via database query"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Module objects created', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"    pm.expect(jsonData.results.length).to.be.greaterThan(0);",
+							"    ",
+							"    console.log('Total module objects:', jsonData.total);",
+							"    console.log('Sample UUID:', jsonData.results[0].uuid);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/objects?register=voorzieningen&schema=module&_limit=5",
+					"host": ["{{base_url}}"],
+					"path": ["objects"],
+					"query": [
+						{
+							"key": "register",
+							"value": "voorzieningen"
+						},
+						{
+							"key": "schema",
+							"value": "module"
+						},
+						{
+							"key": "_limit",
+							"value": "5"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
+

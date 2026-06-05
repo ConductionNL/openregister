@@ -6,7 +6,11 @@
                         http://pmd.sourceforge.net/ruleset_xml_schema.xsd">
 
     <description>
+<<<<<<< HEAD
         This is a custom ruleset for OpenRegister Nextcloud.
+=======
+        OpenRegister Nextcloud Rules
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     </description>
 
     <!-- Exclude database migration files: they are one-time DDL scripts with no business logic,

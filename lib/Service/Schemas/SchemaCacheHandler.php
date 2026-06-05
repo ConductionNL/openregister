@@ -9,9 +9,12 @@
  * computed properties like facetable fields, validation rules, and configuration.
  * It automatically invalidates cache when schemas are updated.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Schemas
  *
@@ -198,8 +201,11 @@ class SchemaCacheHandler
      * @return Schema|null The cached schema object or null if not found
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSchema(int $schemaId): ?Schema
     {
@@ -253,8 +259,11 @@ class SchemaCacheHandler
      * @param int $schemaId The schema ID to remove from cache
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearSchemaCache(int $schemaId): void
     {
@@ -295,8 +304,11 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cacheSchema(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -323,8 +335,11 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cacheSchemaConfiguration(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -346,8 +361,11 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cacheSchemaProperties(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -356,6 +374,7 @@ class SchemaCacheHandler
     }//end cacheSchemaProperties()
 
     /**
+<<<<<<< HEAD
      * Invalidate cache for a specific schema (runtime-schema-api contract)
      *
      * Public, canonical entry point used by the runtime schema CRUD path
@@ -388,6 +407,8 @@ class SchemaCacheHandler
     }//end invalidate()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Invalidate cache for a specific schema
      *
      * **SCHEMA CACHE INVALIDATION**: Called when schemas are created, updated,
@@ -401,8 +422,11 @@ class SchemaCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -465,8 +489,11 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearAllCaches(): void
     {
@@ -506,8 +533,11 @@ class SchemaCacheHandler
      * @return int
      *
      * @psalm-return int<min, max>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cleanExpiredEntries(): int
     {
@@ -543,8 +573,11 @@ class SchemaCacheHandler
      * @return array Cache statistics with total entries, TTL info, memory size, and timing.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCacheStatistics(): array
     {
@@ -638,10 +671,18 @@ class SchemaCacheHandler
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
+<<<<<<< HEAD
         $now     = new DateTime();
         $expires = null;
         if ($ttl > 0) {
             $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+=======
+        $now = new DateTime();
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+        } else {
+            $expires = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.

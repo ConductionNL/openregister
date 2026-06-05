@@ -2288,6 +2288,7 @@ class WebhookServiceTest extends TestCase
 
         $this->assertTrue($result);
     }//end testDeliverWebhookWithMappingTransformation()
+<<<<<<< HEAD
 
 
     // ─── Wave-3 C9: SSRF / TLS / response-body cap tests ────────────────
@@ -2605,4 +2606,6 @@ class WebhookServiceTest extends TestCase
         $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => 'not-an-ip']);
         $this->assertNull($result);
     }//end testBlockedIpv6ReasonNullForInvalidInput()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

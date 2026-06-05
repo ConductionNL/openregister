@@ -78,6 +78,24 @@
 					Allow administrators to bypass all RBAC restrictions
 				</p>
 
+				<!-- Inherit-from-public default -->
+				<NcCheckboxRadioSwitch
+					:checked.sync="rbacOptions.inheritFromPublicDefault"
+					:disabled="saving"
+					type="switch">
+					{{ rbacOptions.inheritFromPublicDefault
+						? 'Authenticated users inherit public group rights (default)'
+						: 'Authenticated users do NOT inherit public group rights (default)' }}
+				</NcCheckboxRadioSwitch>
+				<p class="option-description">
+					Tenant-wide default for the schema-level <code>inheritFromPublic</code> flag.
+					When on (default), authenticated users qualify for any rule that targets the
+					<code>public</code> group across all schemas — unless an individual schema or
+					register opts out via its <code>inheritFromPublic</code> field. When off,
+					authenticated users must qualify via their own group memberships everywhere
+					the flag is not explicitly set. Anonymous users are unaffected either way.
+				</p>
+
 				<h4>Default User Groups</h4>
 				<p class="option-description">
 					Configure which Nextcloud groups different types of users are assigned to by default
@@ -139,7 +157,11 @@
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { mapStores } from 'pinia'
 import { translate as t } from '@nextcloud/l10n'
@@ -167,13 +189,21 @@ export default {
 
 		rbacOptions: {
 			/**
+<<<<<<< HEAD
 			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			 */
 			get() {
 				return this.settingsStore.rbacOptions
 			},
 			/**
+<<<<<<< HEAD
 			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			 */
 			set(value) {
 				this.settingsStore.rbacOptions = value
@@ -181,35 +211,55 @@ export default {
 		},
 
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		groupOptions() {
 			return this.settingsStore.groupOptions
 		},
 
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		userOptions() {
 			return this.settingsStore.userOptions
 		},
 
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		rebasing() {
 			return this.settingsStore.rebasing
@@ -218,14 +268,22 @@ export default {
 
 	methods: {
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRbacSettings(this.rbacOptions)

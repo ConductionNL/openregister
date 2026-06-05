@@ -167,15 +167,21 @@ export default {
 		 * Navigation store computed property for template access.
 		 *
 		 * @return {object} Navigation store instance
+<<<<<<< HEAD
 		 * @spec exclude Computed passthrough exposing navigationStore to the template; UI plumbing.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		navigationStore() {
 			return navigationStore
 		},
 	},
+<<<<<<< HEAD
 	/**
 	 * @spec exclude Vue mounted() hook loading log + webhook data on open; modal init plumbing.
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	mounted() {
 		this.loadLogData()
 		this.loadWebhooks()
@@ -185,7 +191,10 @@ export default {
 		 * Load log data from navigation store transferData.
 		 *
 		 * @return {void}
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		loadLogData() {
 			const transferData = navigationStore.getTransferData()
@@ -204,7 +213,10 @@ export default {
 		 * Load webhooks list for name lookup.
 		 *
 		 * @return {Promise<void>}
+<<<<<<< HEAD
 		 * @spec exclude Loads the webhook list for id-to-name lookup; UI form-loading plumbing.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadWebhooks() {
 			try {
@@ -224,7 +236,10 @@ export default {
 		 *
 		 * @param {number} webhookId - Webhook ID
 		 * @return {string} Webhook name or ID
+<<<<<<< HEAD
 		 * @spec exclude Resolves a webhook id to its display name; UI presentation helper.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		getWebhookName(webhookId) {
 			const webhook = this.webhooksList.find(w => w.id === webhookId)
@@ -236,7 +251,10 @@ export default {
 		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
+<<<<<<< HEAD
 		 * @spec exclude Locale date-string formatter for display; UI presentation helper.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDate(dateString) {
 			if (!dateString) {
@@ -255,7 +273,10 @@ export default {
 		 *
 		 * @param {string} jsonString - JSON string to format
 		 * @return {string} Formatted JSON or original string if invalid
+<<<<<<< HEAD
 		 * @spec exclude Pretty-prints a JSON payload string for display; UI presentation helper.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatJson(jsonString) {
 			if (!jsonString) {
@@ -275,7 +296,10 @@ export default {
 		 *
 		 * @param {boolean} open - Dialog open state
 		 * @return {void}
+<<<<<<< HEAD
 		 * @spec exclude Dialog close-event handler closing the modal on dismiss; UI plumbing.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		handleDialogClose(open) {
 			if (!open) {
@@ -287,7 +311,10 @@ export default {
 		 * Retry failed webhook delivery.
 		 *
 		 * @return {Promise<void>}
+<<<<<<< HEAD
 		 * @spec exclude Retry handler posting to the webhook-log retry endpoint and refreshing the parent; UI orchestration plumbing.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async retryWebhook() {
 			if (!this.logItem || !this.logItem.id) {
@@ -322,7 +349,10 @@ export default {
 		 * Close modal.
 		 *
 		 * @return {void}
+<<<<<<< HEAD
 		 * @spec exclude Modal close handler resetting navigationStore.modal/transferData; UI plumbing.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		closeModal() {
 			navigationStore.setModal(false)

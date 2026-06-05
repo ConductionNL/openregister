@@ -7,9 +7,12 @@
  * Tasks are stored as standard VTODO items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -28,7 +31,10 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+<<<<<<< HEAD
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -91,6 +97,7 @@ class TaskService
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Get all tasks for the current user across all VTODO-supporting calendars.
      *
      * Returns all VTODOs (optionally filtered by status) from the user's calendars.
@@ -256,6 +263,8 @@ class TaskService
     }//end extractAssigneeFromDescription()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get all tasks linked to a specific OpenRegister object.
      *
      * Loads all VTODOs from the user's calendars and filters by
@@ -408,8 +417,11 @@ class TaskService
      * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
      *
      * @throws Exception If the task is not found or update fails
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateTask(string $calendarId, string $taskUri, array $data): ?array
     {
@@ -473,8 +485,11 @@ class TaskService
      * @return void
      *
      * @throws Exception If the task is not found or deletion fails
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteTask(string $calendarId, string $taskUri): void
     {
@@ -509,6 +524,7 @@ class TaskService
         $calendars = $this->calDavBackend->getCalendarsForUser($principal);
 
         foreach ($calendars as $calendar) {
+<<<<<<< HEAD
             $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
             if ($this->calendarSupportsVtodo(components: $components) === true) {
                 return [
@@ -519,6 +535,50 @@ class TaskService
         }//end foreach
 
         throw new NoVtodoCalendarException(userId: $user->getUID());
+=======
+            // Check if this calendar supports VTODO.
+            $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
+            if ($components !== null) {
+                // The value can be a CalendarComponent set or a string.
+                $supportsVtodo = false;
+
+                if (is_object($components) === true && method_exists($components, 'getValue') === true) {
+                    $componentValues = $components->getValue();
+                    foreach ($componentValues as $comp) {
+                        if (strtoupper($comp) === 'VTODO') {
+                            $supportsVtodo = true;
+                            break;
+                        }
+                    }
+                } else if (is_string($components) === true) {
+                    $supportsVtodo = stripos($components, 'VTODO') !== false;
+                } else if (is_iterable($components) === true) {
+                    // If components is an array or other iterable.
+                    foreach ($components as $comp) {
+                        if (is_string($comp) === true) {
+                            $compName = $comp;
+                        } else {
+                            $compName = (string) $comp;
+                        }
+
+                        if (strtoupper($compName) === 'VTODO') {
+                            $supportsVtodo = true;
+                            break;
+                        }
+                    }
+                }//end if
+
+                if ($supportsVtodo === true) {
+                    return [
+                        'id'  => $calendar['id'],
+                        'uri' => $calendar['uri'],
+                    ];
+                }
+            }//end if
+        }//end foreach
+
+        throw new \OCA\OpenRegister\Exception\NoVtodoCalendarException($user->getUID());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end findUserCalendar()
 
     /**

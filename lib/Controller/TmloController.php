@@ -6,9 +6,12 @@
  * Controller for TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden)
  * metadata operations including MDTO XML export and archival status summary.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -60,8 +63,11 @@ class TmloController extends Controller
      * @param RegisterMapper  $registerMapper Register mapper
      * @param SchemaMapper    $schemaMapper   Schema mapper
      * @param LoggerInterface $logger         Logger interface
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -86,8 +92,11 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -132,8 +141,11 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -186,8 +198,11 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -214,7 +229,11 @@ class TmloController extends Controller
             ];
 
             // Query objects for each status.
+<<<<<<< HEAD
             foreach (array_keys($counts) as $status) {
+=======
+            foreach ($counts as $status => $count) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $result          = $this->objectService->findAll(
                     register: $registerEntity,
                     schema: $schemaEntity,

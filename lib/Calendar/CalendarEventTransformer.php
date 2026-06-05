@@ -6,6 +6,7 @@
  * Transforms ObjectEntity data into VEVENT-compatible arrays
  * for the Nextcloud Calendar app.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Calendar
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Calendar
+ * @package  OCA\OpenRegister\Calendar
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -20,7 +27,11 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -28,9 +39,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Calendar;
 
 use DateTime;
+<<<<<<< HEAD
 use DateTimeZone;
 use DateInterval;
 use Exception;
+=======
+use DateInterval;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 
@@ -64,8 +79,13 @@ class CalendarEventTransformer
      *
      * @return array|null The VEVENT array, or null if the object lacks required date data
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function transform(
         ObjectEntity $object,
@@ -97,12 +117,16 @@ class CalendarEventTransformer
         $dtstart = $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
 
         // Build DTEND.
+<<<<<<< HEAD
         $dtend = $this->buildDtend(
             objectData: $objectData,
             calendarConfig: $calendarConfig,
             dtstartValue: $dtstartValue,
             allDay: $allDay
         );
+=======
+        $dtend = $this->buildDtend(objectData: $objectData, calendarConfig: $calendarConfig, dtstartValue: $dtstartValue, allDay: $allDay);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Interpolate title.
         $summary = $this->interpolateTemplate(
@@ -163,8 +187,13 @@ class CalendarEventTransformer
      *
      * @return bool True if events should be all-day
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function determineAllDay(array $calendarConfig, Schema $schema, string $dtstartField): bool
     {
@@ -197,6 +226,7 @@ class CalendarEventTransformer
     /**
      * Format a date value into iCalendar format
      *
+<<<<<<< HEAD
      * Honours timezone information present in the source string per
      * RFC 5545:
      *
@@ -217,11 +247,14 @@ class CalendarEventTransformer
      * downstream `ICalendar::search()` consumers never receive a
      * partially-built VEVENT.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param string $value  The date/datetime string
      * @param bool   $allDay Whether this is an all-day event
      *
      * @return array The formatted [value, params] array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
      */
@@ -324,6 +357,23 @@ class CalendarEventTransformer
     }//end detectSourceTimezone()
 
     /**
+=======
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
+     */
+    public function formatDateValue(string $value, bool $allDay): array
+    {
+        if ($allDay === true) {
+            $date = new DateTime($value);
+            return [$date->format('Ymd'), ['VALUE' => 'DATE']];
+        }
+
+        $date = new DateTime($value);
+        return [$date->format('Ymd\THis\Z'), ['VALUE' => 'DATE-TIME']];
+    }//end formatDateValue()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Build DTEND value from configuration
      *
      * @param array  $objectData     The object data
@@ -333,7 +383,11 @@ class CalendarEventTransformer
      *
      * @return array The formatted [value, params] array for DTEND
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildDtend(
         array $objectData,
@@ -349,6 +403,7 @@ class CalendarEventTransformer
             }
         }
 
+<<<<<<< HEAD
         // Compute default DTEND from DTSTART. We round-trip through the
         // ISO-8601 representation so `formatDateValue()` re-detects the
         // source timezone and emits a TZID-correct value (DTEND must
@@ -360,6 +415,10 @@ class CalendarEventTransformer
             // transformer still returns a usable VEVENT.
             return $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
         }
+=======
+        // Compute default DTEND from DTSTART.
+        $date = new DateTime($dtstartValue);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         if ($allDay === true) {
             $date->add(new DateInterval('P1D'));
@@ -367,12 +426,16 @@ class CalendarEventTransformer
         }
 
         $date->add(new DateInterval('PT1H'));
+<<<<<<< HEAD
 
         // Emit the recomputed instant in ISO-8601 with the original zone
         // information preserved (`c` is `Y-m-d\TH:i:sP`) so that
         // `formatDateValue()` re-detects the same timezone class as the
         // source value.
         return $this->formatDateValue(value: $date->format('c'), allDay: $allDay);
+=======
+        return [$date->format('Ymd\THis\Z'), ['VALUE' => 'DATE-TIME']];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end buildDtend()
 
     /**
@@ -386,6 +449,7 @@ class CalendarEventTransformer
      *
      * @return string The interpolated string
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
      */
@@ -399,6 +463,15 @@ class CalendarEventTransformer
         // `{{title}` greedily and left the trailing `}` behind.
         return preg_replace_callback(
             '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
+=======
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
+     */
+    public function interpolateTemplate(string $template, array $objectData): string
+    {
+        return preg_replace_callback(
+            '/\{([^}]+)\}/',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             function ($matches) use ($objectData) {
                 $key   = $matches[1];
                 $value = $objectData[$key] ?? '';
@@ -410,7 +483,11 @@ class CalendarEventTransformer
                 return (string) $value;
             },
             $template
+<<<<<<< HEAD
         ) ?? $template;
+=======
+        );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end interpolateTemplate()
 
     /**
@@ -420,8 +497,11 @@ class CalendarEventTransformer
      * @param array $calendarConfig The calendar configuration
      *
      * @return string The VEVENT STATUS value (CONFIRMED, CANCELLED, TENTATIVE)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveStatus(array $objectData, array $calendarConfig): string
     {

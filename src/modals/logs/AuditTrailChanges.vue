@@ -109,7 +109,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import {
 	NcButton,
@@ -145,7 +149,11 @@ export default {
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
@@ -166,7 +174,11 @@ export default {
 		 * Get processed changes data
 		 * @return {object} Processed changes
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		changes() {
 			const changed = auditTrailStore.auditTrailItem?.changed
@@ -193,7 +205,11 @@ export default {
 		 * Check if changes are in table format
 		 * @return {boolean} True if table format
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		isTableChanges() {
 			return Object.keys(this.changes).length > 0
@@ -204,7 +220,11 @@ export default {
 		 * Close the dialog
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -215,7 +235,11 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'
@@ -231,7 +255,11 @@ export default {
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
@@ -258,7 +286,11 @@ export default {
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatValue(value) {
 			if (value === null) return 'null'
@@ -281,7 +313,11 @@ export default {
 		 * @param {*} value - Value to check
 		 * @return {boolean} True if object
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		isObject(value) {
 			return value !== null && typeof value === 'object'
@@ -292,7 +328,11 @@ export default {
 		 * @param {object} change - Change object
 		 * @return {string} CSS class for change type
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		getChangeType(change) {
 			if (!Object.prototype.hasOwnProperty.call(change, 'old') && Object.prototype.hasOwnProperty.call(change, 'new')) {
@@ -312,7 +352,11 @@ export default {
 		 * @param {object} change - Change object
 		 * @return {string} Human readable change type
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		getChangeTypeLabel(change) {
 			const type = this.getChangeType(change)
@@ -332,7 +376,11 @@ export default {
 		 * Copy changes data to clipboard
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async copyChanges() {
 			try {
@@ -349,7 +397,11 @@ export default {
 		 * Switch to full details view
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		viewFullDetails() {
 			navigationStore.setDialog('auditTrailDetails')

@@ -3,6 +3,7 @@
 /**
  * OpenRegister Chat Stream Yield Channel
  *
+<<<<<<< HEAD
  * Plain value object that forwards token / tool-call / tool-result /
  * heartbeat events from `ResponseGenerationHandler` to the consuming
  * controller (`ChatStreamController`) during a streaming LLM call.
@@ -17,10 +18,15 @@
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+=======
+ * Pure value object for forwarding streaming LLM events to the SSE controller.
+ * No buffering, formatting, or filtering — those decisions belong to the controller.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -31,6 +37,15 @@
  *
  * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#1
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -40,6 +55,7 @@ namespace OCA\OpenRegister\Service\Chat;
 /**
  * StreamYieldChannel
  *
+<<<<<<< HEAD
  * Request-scoped event forwarder used by the SSE chat stream. Constructed
  * by `ChatStreamController::stream()`, passed through `ChatService::processMessage`
  * into `ResponseGenerationHandler::generateResponse`, and invoked from the
@@ -47,46 +63,83 @@ namespace OCA\OpenRegister\Service\Chat;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
+=======
+ * Request-scoped value object connecting the LLM handler to the SSE controller.
+ * Multiple callbacks per event type are allowed. Late registration after a prior
+ * emit is allowed — late callbacks only see subsequent events (no replay).
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Chat
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class StreamYieldChannel
 {
 
     /**
+<<<<<<< HEAD
      * Registered token callbacks. Each receives the new token delta as a
      * single string argument.
      *
      * @var array<int, callable>
+=======
+     * Token event callbacks.
+     *
+     * @var callable[]
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private array $tokenCallbacks = [];
 
     /**
+<<<<<<< HEAD
      * Registered tool-call callbacks. Each receives the assembled tool-call
      * payload (an associative array with `toolId` + `arguments`) as a single
      * argument.
      *
      * @var array<int, callable>
+=======
+     * Tool-call event callbacks.
+     *
+     * @var callable[]
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private array $toolCallCallbacks = [];
 
     /**
+<<<<<<< HEAD
      * Registered tool-result callbacks. Each receives the tool-result
      * payload (an associative array with `toolId`, `result`, `isError`)
      * as a single argument.
      *
      * @var array<int, callable>
+=======
+     * Tool-result event callbacks.
+     *
+     * @var callable[]
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private array $toolResultCallbacks = [];
 
     /**
+<<<<<<< HEAD
      * Registered heartbeat callbacks. Each receives no arguments — the
      * timestamp is the controller's responsibility to attach when framing
      * the SSE event.
      *
      * @var array<int, callable>
+=======
+     * Heartbeat event callbacks.
+     *
+     * @var callable[]
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private array $heartbeatCallbacks = [];
 
     /**
+<<<<<<< HEAD
      * Register a callback invoked for each token delta emitted by the LLM
      * stream.
      *
@@ -217,5 +270,130 @@ class StreamYieldChannel
         foreach ($this->heartbeatCallbacks as $callback) {
             $callback();
         }
+=======
+     * Register a callback for token events.
+     *
+     * @param callable $fn Receives string $delta.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function onToken(callable $fn): void
+    {
+        $this->tokenCallbacks[] = $fn;
+
+    }//end onToken()
+
+    /**
+     * Register a callback for tool_call events.
+     *
+     * @param callable $fn Receives array{toolId: string, arguments: array}.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function onToolCall(callable $fn): void
+    {
+        $this->toolCallCallbacks[] = $fn;
+
+    }//end onToolCall()
+
+    /**
+     * Register a callback for tool_result events.
+     *
+     * @param callable $fn Receives array{toolId: string, result: mixed, isError: bool}.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function onToolResult(callable $fn): void
+    {
+        $this->toolResultCallbacks[] = $fn;
+
+    }//end onToolResult()
+
+    /**
+     * Register a callback for heartbeat events.
+     *
+     * @param callable $fn Receives no arguments.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function onHeartbeat(callable $fn): void
+    {
+        $this->heartbeatCallbacks[] = $fn;
+
+    }//end onHeartbeat()
+
+    /**
+     * Emit a token event to all registered callbacks.
+     *
+     * @param string $delta Token chunk.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function emitToken(string $delta): void
+    {
+        foreach ($this->tokenCallbacks as $fn) {
+            $fn($delta);
+        }
+
+    }//end emitToken()
+
+    /**
+     * Emit a tool_call event to all registered callbacks.
+     *
+     * @param array $data Tool call data with toolId and arguments.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function emitToolCall(array $data): void
+    {
+        foreach ($this->toolCallCallbacks as $fn) {
+            $fn($data);
+        }
+
+    }//end emitToolCall()
+
+    /**
+     * Emit a tool_result event to all registered callbacks.
+     *
+     * @param array $data Tool result data with toolId, result, and isError.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function emitToolResult(array $data): void
+    {
+        foreach ($this->toolResultCallbacks as $fn) {
+            $fn($data);
+        }
+
+    }//end emitToolResult()
+
+    /**
+     * Emit a heartbeat event to all registered callbacks.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-1.1
+     */
+    public function emitHeartbeat(): void
+    {
+        foreach ($this->heartbeatCallbacks as $fn) {
+            $fn();
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end emitHeartbeat()
 }//end class

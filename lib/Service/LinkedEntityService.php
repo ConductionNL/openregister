@@ -3,6 +3,7 @@
 /**
  * LinkedEntityService
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -19,6 +20,20 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-42
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service;
@@ -53,6 +68,7 @@ class LinkedEntityService
 {
     /**
      * Valid linked entity types and their column names.
+<<<<<<< HEAD
      *
      * @deprecated since pluggable-integration-registry — the registry
      * (`IntegrationRegistry`) is the new source of truth for what
@@ -66,6 +82,8 @@ class LinkedEntityService
      * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private const TYPE_COLUMN_MAP = [
         'mail'     => 'mail',
@@ -112,8 +130,13 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addLink(string $objectUuid, string $type, string $entityId): array
     {
@@ -146,8 +169,13 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function removeLink(string $objectUuid, string $type, string $entityId): array
     {
@@ -185,7 +213,11 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array
     {
@@ -222,7 +254,11 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array
     {
@@ -261,8 +297,13 @@ class LinkedEntityService
      *
      * @return array Array of result objects with entityType, uuid, name, etc.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reverseLookup(string $type, string $entityId): array
     {
@@ -288,13 +329,18 @@ class LinkedEntityService
      *
      * @return array Array of matching results
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-42
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-42
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scanMagicTables(string $type, string $columnName, string $entityId): array
     {
         $results = [];
 
         // Find schemas that declare this linkedType.
+<<<<<<< HEAD
         // WARNING: RBAC and multitenancy are intentionally disabled here, so schema metadata (names,
         // slugs, linkedType declarations) and matched object UUIDs/names are returned cross-tenant to
         // any authenticated user calling GET /api/linked/{type}/{entityId}. There is currently NO
@@ -303,6 +349,9 @@ class LinkedEntityService
         // for multi-tenant SaaS deployments. A per-row access check should be added before this
         // endpoint is used in strict-isolation deployments. See TODO #1273.
         $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+=======
+        $allSchemas = $this->schemaMapper->findAll();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $scanned    = 0;
 
         foreach ($allSchemas as $schema) {
@@ -358,9 +407,13 @@ class LinkedEntityService
      *
      * @return array Array of matching results
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scanEntityTables(string $columnName, string $entityId): array
     {
@@ -441,7 +494,11 @@ class LinkedEntityService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateType(string $type): void
     {

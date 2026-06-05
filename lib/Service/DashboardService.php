@@ -54,8 +54,11 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class DashboardService
 {
@@ -152,8 +155,11 @@ class DashboardService
      * @param int|null $schemaId   The schema ID (optional)
      *
      * @return array Statistics with objects, logs, webhookLogs, and files totals and sizes.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getStats(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -301,8 +307,11 @@ class DashboardService
      * @throws \Exception If there is an error getting the registers with schemas
      *
      * @return array Registers with their schemas and statistics for dashboard display.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -391,8 +400,11 @@ class DashboardService
      * @return int[] Array containing counts of processed and failed objects
      *
      * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function recalculateSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -448,8 +460,11 @@ class DashboardService
      * @return int[] Array containing counts of processed and failed logs
      *
      * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function recalculateLogSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -503,8 +518,11 @@ class DashboardService
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
      * @return array Results with objects, logs, and total processed and failed counts.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function recalculateAllSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -545,8 +563,11 @@ class DashboardService
      *     total: array{processed: mixed, failed: mixed}},
      *     summary: array{total_processed: mixed, total_failed: mixed,
      *     success_rate: float}}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -696,8 +717,11 @@ class DashboardService
      * @return ((int[]|string)[]|(int|string))[][]
      *
      * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAuditTrailActionChartData(
         ?\DateTime $from=null,
@@ -733,8 +757,11 @@ class DashboardService
      * @return (int|mixed|string)[][] Array containing chart data for objects by register
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+<<<<<<< HEAD
      *
      * @spec exclude Thin try/catch delegation to ObjectMapper::getRegisterChartData with degraded-empty fallback; chart shaping owned by the mapper.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectsByRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -761,8 +788,11 @@ class DashboardService
      * @return (int|mixed|string)[][] Array containing chart data for objects by schema
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+<<<<<<< HEAD
      *
      * @spec exclude Thin try/catch delegation to ObjectMapper::getSchemaChartData with degraded-empty fallback; chart shaping owned by the mapper.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectsBySchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -789,9 +819,12 @@ class DashboardService
      * @return (int|string)[][] Array containing chart data for objects by size
      *
      * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
+<<<<<<< HEAD
      *
      * @spec exclude Thin try/catch delegation to ObjectMapper::getSizeDistributionChartData with degraded-empty
      *              fallback; chart shaping owned by the mapper.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectsBySizeChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -819,8 +852,11 @@ class DashboardService
      * @return int[]
      *
      * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
+<<<<<<< HEAD
      *
      * @spec exclude Thin try/catch delegation to AuditTrailMapper::getDetailedStatistics with degraded-empty fallback.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -855,8 +891,11 @@ class DashboardService
      * @return (int|mixed)[][][]
      *
      * @psalm-return array{actions: list<array{count: int, name: mixed}>}
+<<<<<<< HEAD
      *
      * @spec exclude Thin try/catch delegation to AuditTrailMapper::getActionDistribution with degraded-empty fallback.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -888,8 +927,11 @@ class DashboardService
      * @return (int|mixed|string)[][][]
      *
      * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
+<<<<<<< HEAD
      *
      * @spec exclude Thin try/catch delegation to AuditTrailMapper::getMostActiveObjects with degraded-empty fallback.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {

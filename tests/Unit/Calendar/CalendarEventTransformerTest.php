@@ -6,7 +6,11 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Calendar
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -29,10 +33,17 @@ class CalendarEventTransformerTest extends TestCase
     {
         $this->transformer = new CalendarEventTransformer();
 
+<<<<<<< HEAD
         $this->schema = new Schema();
         $this->schema->setId(12);
         $this->schema->setTitle('Zaken');
         $this->schema->setProperties([
+=======
+        $this->schema = $this->createMock(Schema::class);
+        $this->schema->method('getId')->willReturn(12);
+        $this->schema->method('getTitle')->willReturn('Zaken');
+        $this->schema->method('getProperties')->willReturn([
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'startdatum' => ['type' => 'string', 'format' => 'date'],
             'einddatum'  => ['type' => 'string', 'format' => 'date'],
             'naam'       => ['type' => 'string'],
@@ -42,10 +53,17 @@ class CalendarEventTransformerTest extends TestCase
 
     private function createObjectEntity(array $data, string $uuid = 'abc-123', int $register = 5): ObjectEntity
     {
+<<<<<<< HEAD
         $object = new ObjectEntity();
         $object->setObject($data);
         $object->setUuid($uuid);
         $object->setRegister($register);
+=======
+        $object = $this->createMock(ObjectEntity::class);
+        $object->method('getObject')->willReturn($data);
+        $object->method('getUuid')->willReturn($uuid);
+        $object->method('getRegister')->willReturn($register);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return $object;
     }
 
@@ -101,7 +119,11 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
+<<<<<<< HEAD
             'titleTemplate' => '{{naam}} - {{locatie}}',
+=======
+            'titleTemplate' => '{naam} - {locatie}',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -118,7 +140,11 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
+<<<<<<< HEAD
             'titleTemplate' => '{{naam}} - {{missing}}',
+=======
+            'titleTemplate' => '{naam} - {missing}',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -137,8 +163,13 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'             => true,
             'dtstart'             => 'startdatum',
+<<<<<<< HEAD
             'titleTemplate'       => '{{naam}}',
             'descriptionTemplate' => 'Locatie: {{locatie}}',
+=======
+            'titleTemplate'       => '{naam}',
+            'descriptionTemplate' => 'Locatie: {locatie}',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -372,6 +403,7 @@ class CalendarEventTransformerTest extends TestCase
 
         $this->assertSame('20260410', $result['objects'][0]['DTEND'][0]);
     }
+<<<<<<< HEAD
 
     public function testNaiveDateTimeKeepsZSuffix(): void
     {
@@ -545,4 +577,6 @@ class CalendarEventTransformerTest extends TestCase
         $this->assertNotNull($result);
         $this->assertSame('19700101T000000Z', $result['objects'][0]['DTSTART'][0]);
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

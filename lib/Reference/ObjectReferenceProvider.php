@@ -7,6 +7,7 @@
  * to search for and insert rich references to register objects in Mail,
  * Text, Talk, Collectives, and any Nextcloud app supporting the Smart Picker.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,12 @@
  * @package  OCA\OpenRegister\Reference
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Reference
+ * @package  OCA\OpenRegister\Reference
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -45,7 +52,10 @@ use Psr\Log\LoggerInterface;
  * Supports hash-routed UI URLs, API object URLs, and direct object routes.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements ISearchableReferenceProvider
 {
@@ -154,7 +164,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         IURLGenerator $urlGenerator,
@@ -181,7 +195,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Provider ID
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getId(): string
     {
@@ -193,7 +211,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Translated title
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTitle(): string
     {
@@ -205,7 +227,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return int Order value (lower = higher priority)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getOrder(): int
     {
@@ -217,7 +243,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string URL to the app icon
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getIconUrl(): string
     {
@@ -229,7 +259,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string[] List of search provider IDs
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSupportedSearchProviderIds(): array
     {
@@ -250,7 +284,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return bool True if the URL matches an OpenRegister object reference
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function matchReference(string $referenceText): bool
     {
@@ -269,9 +307,14 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveReference(string $referenceText): ?IReference
     {
@@ -310,6 +353,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
             $registerTitle = $this->resolveRegisterName(registerId: $registerId);
 
             // Resolve deep link URL.
+<<<<<<< HEAD
             $selfArray = [];
             if (is_array($selfData) === true) {
                 $selfArray = $selfData;
@@ -317,6 +361,10 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
             $flatData = array_merge(
                 $selfArray,
+=======
+            $flatData = array_merge(
+                is_array($selfData) === true ? $selfData : [],
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
             );
 
@@ -394,7 +442,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Cache prefix based on register/schema/uuid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCachePrefix(string $referenceId): string
     {
@@ -415,9 +467,13 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string|null Cache key (user ID or empty string for anonymous)
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCacheKey(string $referenceId): ?string
     {
@@ -431,7 +487,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return array{registerId: int, schemaId: int, uuid: string}|null Parsed parts or null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function parseReference(string $referenceText): ?array
     {
@@ -446,11 +506,15 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 1: Hash-routed UI URL.
         // /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
+<<<<<<< HEAD
         $hashPattern = sprintf(
             '/^%s(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/(%s)$/i',
             $escapedBase,
             $uuidPattern
         );
+=======
+        $hashPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/('.$uuidPattern.')$/i';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         if (preg_match($hashPattern, $referenceText, $matches) === 1) {
             return [
@@ -462,11 +526,15 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 2: API object URL.
         // /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}.
+<<<<<<< HEAD
         $apiPattern = sprintf(
             '/^%s(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/(%s)$/i',
             $escapedBase,
             $uuidPattern
         );
+=======
+        $apiPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         if (preg_match($apiPattern, $referenceText, $matches) === 1) {
             return [
@@ -478,11 +546,15 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 3: Direct object show route.
         // /apps/openregister/objects/{registerId}/{schemaId}/{uuid}.
+<<<<<<< HEAD
         $directPattern = sprintf(
             '/^%s(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/(%s)$/i',
             $escapedBase,
             $uuidPattern
         );
+=======
+        $directPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         if (preg_match($directPattern, $referenceText, $matches) === 1) {
             return [
@@ -503,7 +575,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string The object title
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractTitle(array $objectData, array $selfData): string
     {
@@ -538,7 +614,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Truncated description (max 200 chars)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractDescription(array $objectData): string
     {
@@ -569,9 +649,13 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return array<int, array{label: string, value: string}> Preview properties
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractPreviewProperties(array $objectData): array
     {
@@ -619,7 +703,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string The schema title or fallback
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveSchemaName(int $schemaId): string
     {
@@ -643,7 +731,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string The register title or fallback
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveRegisterName(int $registerId): string
     {

@@ -809,6 +809,7 @@ export default {
 		toggleRelationList() {
 			this.showRelationList = !this.showRelationList
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Toggles the references-list disclosure; UI presentation plumbing.
 		 */
@@ -818,6 +819,11 @@ export default {
 		/**
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
+=======
+		toggleReferenceList() {
+			this.showReferenceList = !this.showReferenceList
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		formatFileSize(bytes) {
 			if (!bytes) return 'N/A'
 			const sizes = ['Bytes', 'KB', 'MB', 'GB']

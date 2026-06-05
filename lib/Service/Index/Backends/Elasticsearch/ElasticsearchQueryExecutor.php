@@ -5,9 +5,12 @@
  *
  * Manages search queries and execution for Elasticsearch.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Elasticsearch
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -75,8 +78,11 @@ class ElasticsearchQueryExecutor
      * @param array $query Query parameters
      *
      * @return array Search results
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to ElasticsearchHttpClient — builds ES query DSL and POSTs /_search
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function search(array $query): array
     {
@@ -169,8 +175,11 @@ class ElasticsearchQueryExecutor
      * Get document count.
      *
      * @return int Number of documents
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to ElasticsearchHttpClient — GETs /_count
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDocumentCount(): int
     {

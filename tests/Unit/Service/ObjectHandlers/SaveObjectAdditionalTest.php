@@ -236,7 +236,10 @@ class SaveObjectAdditionalTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+<<<<<<< HEAD
             $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             new ArrayLoader([])
         );
 

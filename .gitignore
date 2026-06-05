@@ -42,8 +42,12 @@ phpqa_output.log
 *.xls
 *.xlsx
 
+<<<<<<< HEAD
 # Files with unusual names (trailing space, no extension) that are likely mistakes.
 # Patterns listed here must NOT match legitimate PHP source filenames.
+=======
+# Files with unusual extensions or no extensions that could be mistakes
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 **/PR *
 **/adds *
 **/implements *
@@ -54,6 +58,7 @@ phpqa_output.log
 simple-solr-test.php
 test-solr-connection.php
 
+<<<<<<< HEAD
 # Editor / scratch backups should never be committed (issue #1956 part d)
 *.bak
 *.bak2
@@ -62,6 +67,10 @@ test-solr-connection.php
 
 phpqa/
 
+=======
+phpqa/
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 # Docker AI models (too large for git)
 docker/dolphin/models/
 
@@ -79,8 +88,11 @@ website/docs/features/img_5.png
 sbom.cdx.json
 bom-php.cdx.json
 bom-npm.cdx.json
+<<<<<<< HEAD
 
 # Playwright e2e artefacts (ADR-030 / journeydoc)
 tests/e2e/.auth/
 tests/e2e/playwright-report/
 tests/e2e/test-results/
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

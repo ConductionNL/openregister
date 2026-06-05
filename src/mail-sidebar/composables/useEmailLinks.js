@@ -1,4 +1,5 @@
 /**
+<<<<<<< HEAD
  * Composable for managing email link API state. Powers the three-tab
  * sidebar's Objects + Link data flow (cache, abort, sender-suggestion
  * de-dup against linked uuids).
@@ -6,6 +7,11 @@
  * @package OpenRegister
  *
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+=======
+ * Composable for managing email link API state.
+ *
+ * @package OpenRegister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 import { ref } from 'vue'

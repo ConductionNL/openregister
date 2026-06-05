@@ -9,12 +9,18 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
+<<<<<<< HEAD
 use OCP\IUser;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +35,10 @@ class DeletedControllerTest extends TestCase
     private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+<<<<<<< HEAD
     private PermissionHandler&MockObject $permissionHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -42,7 +51,10 @@ class DeletedControllerTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
+<<<<<<< HEAD
         $this->permissionHandler = $this->createMock(PermissionHandler::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new DeletedController(
             'openregister',
@@ -52,6 +64,7 @@ class DeletedControllerTest extends TestCase
             $this->schemaMapper,
             $this->objectService,
             $this->userSession,
+<<<<<<< HEAD
             $this->groupManager,
             $this->permissionHandler
         );
@@ -68,6 +81,12 @@ class DeletedControllerTest extends TestCase
         $this->groupManager->method('isAdmin')->with($userId)->willReturn(true);
     }
 
+=======
+            $this->groupManager
+        );
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testIndexSuccess(): void
     {
         $this->request->method('getParams')->willReturn([]);
@@ -154,7 +173,10 @@ class DeletedControllerTest extends TestCase
 
     public function testRestoreMultipleNoIds(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], []],
@@ -172,7 +194,10 @@ class DeletedControllerTest extends TestCase
         // so a non-deleted object bypasses the guard and proceeds to delete.
         // This matches the actual controller behavior (unlike restore() which
         // checks both null and []).
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $object = new ObjectEntity();
         $object->setDeleted(null);
         $this->objectMapper->method('find')->willReturn($object);
@@ -184,7 +209,10 @@ class DeletedControllerTest extends TestCase
 
     public function testDestroySuccess(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $object = new ObjectEntity();
         $object->setDeleted(['deleted' => '2024-01-01']);
         $this->objectMapper->method('find')->willReturn($object);
@@ -198,7 +226,10 @@ class DeletedControllerTest extends TestCase
 
     public function testDestroyException(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->objectMapper->method('find')
             ->willThrowException(new \Exception('Error'));
 
@@ -207,6 +238,7 @@ class DeletedControllerTest extends TestCase
         $this->assertEquals(500, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testDestroyAnonymousRejected(): void
     {
         // Wave-3 C4 regression guard: unauthenticated callers must not be
@@ -221,6 +253,10 @@ class DeletedControllerTest extends TestCase
     public function testDestroyMultipleNoIds(): void
     {
         $this->stubAdminUser();
+=======
+    public function testDestroyMultipleNoIds(): void
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], []],
@@ -231,6 +267,7 @@ class DeletedControllerTest extends TestCase
         $this->assertEquals(400, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testDestroyMultipleAnonymousRejected(): void
     {
         // Wave-3 C4 regression guard: unauthenticated callers must not be
@@ -253,6 +290,8 @@ class DeletedControllerTest extends TestCase
         $this->assertEquals(401, $result->getStatus());
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testRestoreSuccess(): void
     {
         $object = new ObjectEntity();
@@ -282,7 +321,10 @@ class DeletedControllerTest extends TestCase
 
     public function testRestoreMultipleSuccess(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);
@@ -307,7 +349,10 @@ class DeletedControllerTest extends TestCase
 
     public function testRestoreMultipleException(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
@@ -323,7 +368,10 @@ class DeletedControllerTest extends TestCase
 
     public function testDestroyMultipleSuccess(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);
@@ -348,7 +396,10 @@ class DeletedControllerTest extends TestCase
 
     public function testDestroyMultipleException(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],

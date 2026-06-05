@@ -1,0 +1,178 @@
+{
+  "change": "file-actions",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1017,
+  "parent_issue": 999,
+  "branch": "feature/999/file-actions",
+  "phases": [
+    {
+      "id": 1,
+      "title": "Database and Infrastructure",
+      "github_issue": 1019,
+      "spec_ref": "openspec/changes/file-actions/tasks.md#phase-1-database-and-infrastructure",
+      "files_likely_affected": [
+        "lib/Migration/Version1Date20260325120000.php",
+        "lib/Db/FileMapper.php",
+        "lib/Service/File/FileVersioningHandler.php",
+        "lib/Service/File/FileLockHandler.php",
+        "lib/Service/File/FileBatchHandler.php",
+        "lib/Service/File/FilePreviewHandler.php",
+        "lib/Service/File/FileAuditHandler.php",
+        "lib/Service/FileService.php"
+      ],
+      "acceptance_criteria": [
+        "New columns exist in oc_openregister_files table",
+        "All 5 new handler classes created with DI",
+        "FileService constructor injects all new handlers"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "File Rename",
+      "github_issue": 1021,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-file-rename",
+      "files_likely_affected": [
+        "lib/Service/File/UpdateFileHandler.php",
+        "lib/Controller/FilesController.php",
+        "appinfo/routes.php",
+        "lib/Event/FileRenamedEvent.php"
+      ],
+      "acceptance_criteria": [
+        "GIVEN object has file WHEN renamed THEN file name changes, ID preserved",
+        "GIVEN duplicate name WHEN rename attempted THEN HTTP 409",
+        "GIVEN invalid chars WHEN rename attempted THEN HTTP 400"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "File Copy and Move",
+      "github_issue": 1022,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-file-copy-between-objects",
+      "files_likely_affected": [
+        "lib/Service/FileService.php",
+        "lib/Controller/FilesController.php",
+        "appinfo/routes.php",
+        "lib/Event/FileCopiedEvent.php",
+        "lib/Event/FileMovedEvent.php"
+      ],
+      "acceptance_criteria": [
+        "Copy creates independent file in target, source unchanged",
+        "Move removes from source, adds to target",
+        "Name conflicts auto-resolve with numeric suffix"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "File Versioning",
+      "github_issue": 1038,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-file-version-listing-and-restore",
+      "files_likely_affected": [
+        "lib/Service/File/FileVersioningHandler.php",
+        "lib/Controller/FilesController.php",
+        "appinfo/routes.php"
+      ],
+      "acceptance_criteria": [
+        "Version listing returns JSON array newest-first",
+        "Version restore replaces file content",
+        "Graceful degradation when files_versions disabled"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "File Locking",
+      "github_issue": 1040,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-file-locking",
+      "files_likely_affected": [
+        "lib/Service/File/FileLockHandler.php",
+        "lib/Controller/FilesController.php",
+        "appinfo/routes.php"
+      ],
+      "acceptance_criteria": [
+        "Lock file returns lock metadata",
+        "Already-locked file returns HTTP 423",
+        "Non-owner unlock returns HTTP 403",
+        "Admin force-unlock succeeds",
+        "Expired locks auto-clear"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Batch Operations",
+      "github_issue": 1043,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-batch-file-operations",
+      "files_likely_affected": [
+        "lib/Service/File/FileBatchHandler.php",
+        "lib/Controller/FilesController.php",
+        "appinfo/routes.php"
+      ],
+      "acceptance_criteria": [
+        "Batch publish/depublish/delete/label operations work",
+        "Partial failure returns HTTP 207",
+        "Batch size > 100 returns HTTP 400"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "File Preview",
+      "github_issue": 1045,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-file-preview-and-thumbnail",
+      "files_likely_affected": [
+        "lib/Service/File/FilePreviewHandler.php",
+        "lib/Controller/FilesController.php",
+        "appinfo/routes.php"
+      ],
+      "acceptance_criteria": [
+        "Preview returns StreamResponse with image content",
+        "Default 256x256 dimensions",
+        "Unsupported type returns HTTP 404"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Metadata Enrichment",
+      "github_issue": 1047,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-file-metadata-enrichment-labels-description-category",
+      "files_likely_affected": [
+        "lib/Service/File/UpdateFileHandler.php",
+        "lib/Controller/FilesController.php",
+        "lib/Service/File/FileFormattingHandler.php",
+        "appinfo/routes.php"
+      ],
+      "acceptance_criteria": [
+        "Labels PUT replaces all labels",
+        "Empty labels clears all",
+        "Description and category stored and returned"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Download Audit Logging",
+      "github_issue": 1048,
+      "spec_ref": "openspec/changes/file-actions/specs/file-actions/spec.md#requirement-download-with-access-logging",
+      "files_likely_affected": [
+        "lib/Service/File/FileAuditHandler.php",
+        "lib/Controller/FilesController.php"
+      ],
+      "acceptance_criteria": [
+        "Download creates audit trail entry",
+        "Anonymous download logged with IP",
+        "Download count in file metadata"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Integration and Testing",
+      "github_issue": 1049,
+      "spec_ref": "openspec/changes/file-actions/tasks.md#phase-10-integration-and-testing",
+      "files_likely_affected": [
+        "appinfo/routes.php",
+        "tests/"
+      ],
+      "acceptance_criteria": [
+        "CORS OPTIONS routes for new public endpoints",
+        "All endpoints respect RBAC",
+        "Error messages use IL10N"
+      ]
+    }
+  ]
+}

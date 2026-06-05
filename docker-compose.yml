@@ -614,7 +614,11 @@ services:
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
       - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
       - ../nldesign:/var/www/html/custom_apps/nldesign
+<<<<<<< HEAD
       - ../launchpad:/var/www/html/custom_apps/launchpad
+=======
+      - ../mydash:/var/www/html/custom_apps/mydash
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
       - ../opentalk:/var/www/html/custom_apps/opentalk
       - ../valtimo:/var/www/html/custom_apps/valtimo
       - ../openzaak:/var/www/html/custom_apps/openzaak
@@ -622,7 +626,10 @@ services:
       - ../docudesk:/var/www/html/custom_apps/docudesk
       - ../procest:/var/www/html/custom_apps/procest
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
+<<<<<<< HEAD
       - ../decidesk:/var/www/html/custom_apps/decidesk
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
     environment:
@@ -652,6 +659,7 @@ services:
       - EXAPP_OPENTALK_URL=http://openregister-exapp-opentalk:23000
       - EXAPP_VALTIMO_URL=http://openregister-exapp-valtimo:23000
 
+<<<<<<< HEAD
   # Redis - shared cache backend.
   # Required by notify_push (cross-process state for connected clients) AND by Nextcloud
   # itself once memcache.distributed is set to \OC\Memcache\Redis (see post-up setup
@@ -704,6 +712,8 @@ services:
       # Bind on all interfaces inside the container
       - PORT=7867
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
   # Note: Do NOT use docker-compose up when using this profile
@@ -1111,6 +1121,7 @@ services:
   # Start with: docker-compose --profile commonground up
   # =============================================================================
 
+<<<<<<< HEAD
   # Greenmail — In-memory SMTP/IMAP/POP3 server for integration tests
   # Start with: docker-compose --profile mail up -d
   # Seed test mailboxes via: bash docker/mail/seed-mail.sh
@@ -1140,6 +1151,8 @@ services:
       timeout: 5s
       retries: 5
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   # Redis - Shared cache and message broker for ExApp services
   # Used by: OpenZaak, OpenKlant, OpenTalk
   exapp-redis:
@@ -1473,6 +1486,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
+<<<<<<< HEAD
 
   # GreenMail — SMTP/IMAP test mail server (use --profile mail)
   greenmail:
@@ -1493,3 +1507,5 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -6,6 +6,7 @@
  * Provides a GraphQL endpoint at /api/graphql and an interactive
  * GraphiQL explorer at /api/graphql/explorer.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -20,11 +27,16 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-46
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-46
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-47
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -86,9 +98,13 @@ class GraphQLController extends Controller
      *
      * @CORS
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-46
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-46
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function execute(): JSONResponse
     {
@@ -146,9 +162,13 @@ class GraphQLController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-47
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function explorer(): Response
     {
@@ -182,9 +202,12 @@ class GraphQLController extends Controller
              * Render the HTML body.
              *
              * @return string The HTML
+<<<<<<< HEAD
              *
              * @spec exclude Framework Response::render() override on an inline anonymous class for the GraphiQL
              *              explorer; the explorer route is owned by retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
              */
             public function render(): string
             {

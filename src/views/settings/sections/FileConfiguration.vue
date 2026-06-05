@@ -284,7 +284,11 @@
 
 		<!-- Object Text Extraction Settings -->
 		<SettingsCard
+<<<<<<< HEAD
 			:title="t('openregister', 'Object Text Extraction')"
+=======
+			title="Object Text Extraction"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			icon="📦"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -293,7 +297,11 @@
 					<label for="object-extraction-mode">Extraction Mode</label>
 					<NcSelect v-model="objectSettings.extractionMode"
 						input-id="object-extraction-mode"
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Object Extraction Mode')"
+=======
+						input-label="Object Extraction Mode"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						:options="extractionModes"
 						@input="saveObjectSettings">
 						<template #option="{ label, description }">
@@ -312,7 +320,11 @@
 
 		<!-- Entity Recognition Settings -->
 		<SettingsCard
+<<<<<<< HEAD
 			:title="t('openregister', 'Entity Recognition')"
+=======
+			title="Entity Recognition"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			icon="🔍"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -335,7 +347,11 @@
 					<label for="entity-recognition-method">Detection Method</label>
 					<NcSelect v-model="fileSettings.entityRecognitionMethod"
 						input-id="entity-recognition-method"
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Entity Recognition Method')"
+=======
+						input-label="Entity Recognition Method"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						:options="entityRecognitionMethods"
 						@input="saveSettings">
 						<template #option="{ label, description, icon }">
@@ -358,7 +374,11 @@
 							<label for="presidio-endpoint">Presidio API Endpoint</label>
 							<NcTextField id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
+<<<<<<< HEAD
 								:placeholder="'http://openregister-presidio-analyzer:3000'"
+=======
+								placeholder="http://openregister-presidio-analyzer:3000"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
@@ -767,8 +787,11 @@ export default {
 
 		/**
 		 * Show Presidio config when presidio or hybrid is selected
+<<<<<<< HEAD
 		 *
 		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		showPresidioConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -777,8 +800,11 @@ export default {
 
 		/**
 		 * Show OpenAnonymiser config when openanonymiser is selected
+<<<<<<< HEAD
 		 *
 		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		showOpenAnonymiserConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -872,8 +898,11 @@ export default {
 
 		/**
 		 * Load object text extraction settings
+<<<<<<< HEAD
 		 *
 		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadObjectSettings() {
 			try {
@@ -927,8 +956,11 @@ export default {
 
 		/**
 		 * Save object text extraction settings
+<<<<<<< HEAD
 		 *
 		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async saveObjectSettings() {
 			try {
@@ -980,8 +1012,11 @@ export default {
 
 		/**
 		 * Test Presidio API connection
+<<<<<<< HEAD
 		 *
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async testPresidioConnection() {
 			try {
@@ -1016,8 +1051,11 @@ export default {
 
 		/**
 		 * Test OpenAnonymiser API connection
+<<<<<<< HEAD
 		 *
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async testOpenAnonymiserConnection() {
 			try {

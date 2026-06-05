@@ -6,9 +6,12 @@
  * Handles API endpoints for destruction list management, legal holds,
  * and archival workflow operations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -20,8 +23,13 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-66
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -70,8 +78,11 @@ class RetentionController extends Controller
      * @param IJobList               $jobList          Background job list
      * @param IUserSession           $userSession      User session
      * @param LoggerInterface        $logger           Logger
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -100,11 +111,15 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated destruction list
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-66
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function approveDestructionList(string $id): JSONResponse
     {
@@ -126,10 +141,14 @@ class RetentionController extends Controller
             }
 
             $user   = $this->userSession->getUser();
+<<<<<<< HEAD
             $userId = 'unknown';
             if ($user !== null) {
                 $userId = $user->getUID();
             }
+=======
+            $userId = $user !== null ? $user->getUID() : 'unknown';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             // Handle partial approval: exclude specified objects.
             $excluded     = $this->request->getParam('excluded', []);
@@ -267,9 +286,13 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated status
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-66
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function rejectDestructionList(string $id): JSONResponse
     {
@@ -296,10 +319,14 @@ class RetentionController extends Controller
             }
 
             $user   = $this->userSession->getUser();
+<<<<<<< HEAD
             $userId = 'unknown';
             if ($user !== null) {
                 $userId = $user->getUID();
             }
+=======
+            $userId = $user !== null ? $user->getUID() : 'unknown';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $listData['status']          = 'rejected';
             $listData['rejectedBy']      = $userId;
@@ -350,7 +377,11 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated object
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function placeLegalHold(): JSONResponse
     {
@@ -404,7 +435,11 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated object
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function releaseLegalHold(string $id): JSONResponse
     {
@@ -451,7 +486,11 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response confirming the bulk operation
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function placeBulkLegalHold(): JSONResponse
     {

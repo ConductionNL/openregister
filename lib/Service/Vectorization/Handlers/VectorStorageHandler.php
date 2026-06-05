@@ -5,9 +5,12 @@
  *
  * Handles storing vector embeddings in database and Solr.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  *
@@ -81,8 +84,11 @@ class VectorStorageHandler
      * @throws \Exception If storage fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function storeVector(
         string $entityType,
@@ -174,8 +180,11 @@ class VectorStorageHandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple storage conditions and error handling
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function storeVectorInDatabase(
         string $entityType,
@@ -289,8 +298,11 @@ class VectorStorageHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple Solr storage conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple storage paths with error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive Solr vector storage with atomic updates
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function storeVectorInSolr(
         string $entityType,
@@ -420,8 +432,11 @@ class VectorStorageHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple collection determination paths
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getSolrCollectionForEntityType(string $entityType): ?string
     {
@@ -472,8 +487,11 @@ class VectorStorageHandler
      * Get the configured Solr vector field name
      *
      * @return string Solr vector field name (default: '_embedding_')
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getSolrVectorField(): string
     {
@@ -503,8 +521,11 @@ class VectorStorageHandler
      * @param string $text Text to sanitize
      *
      * @return string Sanitized text safe for UTF-8 storage
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function sanitizeText(string $text): string
     {

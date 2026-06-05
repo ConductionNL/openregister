@@ -138,8 +138,11 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.LongVariable)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -490,6 +493,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @var float|null The relevance score as a percentage (0-100)
      */
     protected ?float $relevance = null;
+<<<<<<< HEAD
 
     /**
      * RFC 8141 URN identifier for this object.
@@ -647,6 +651,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $this->translationCompleteness = $translationCompleteness;
     }//end setTranslationCompleteness()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Initialize the entity and define field types
@@ -940,6 +946,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             $objectArray['relevance'] = $this->relevance;
         }
 
+<<<<<<< HEAD
         // Add the RFC 8141 URN identifier if computed by the renderer.
         // The renderer populates $this->urn via UrnService::buildForObject;
         // when absent (e.g. raw entity not run through RenderObject) the
@@ -955,6 +962,8 @@ class ObjectEntity extends Entity implements JsonSerializable
             $objectArray['translationCompleteness'] = $this->translationCompleteness;
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
         if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
             $self = $object['@self'];

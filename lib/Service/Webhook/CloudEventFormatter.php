@@ -5,9 +5,12 @@
  *
  * Formatter for creating CloudEvents specification compliant webhook payloads.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Webhook
  *
@@ -19,7 +22,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-84
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -72,8 +79,11 @@ class CloudEventFormatter
      *     id: string, time: string, datacontenttype: 'application/json',
      *     subject: null|string, dataschema: null, data: array,
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -130,8 +140,11 @@ class CloudEventFormatter
      *     data: array{method: mixed|string, path: false|mixed|string,
      *     queryParams: array|mixed, headers: array|mixed, body: array|mixed,...},
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -284,8 +297,11 @@ class CloudEventFormatter
      * @param IRequest $request Request object with getHeader method
      *
      * @return string Content type header value
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-26
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getContentTypeHeader(IRequest $request): string
     {

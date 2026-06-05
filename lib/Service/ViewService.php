@@ -135,8 +135,11 @@ class ViewService
      * @return View[] Array of found views accessible to the user
      *
      * @psalm-return array<View>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function findAll(string $owner): array
     {
@@ -160,8 +163,11 @@ class ViewService
      * @return View The created view entity
      *
      * @throws Exception If view creation fails (database error, validation error, etc.)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(
         string $name,

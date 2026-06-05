@@ -348,11 +348,14 @@ export default {
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Presentation-only formatter; builds the objects stats breakdown descriptor for a stats source.
 		 * @param {object} source - Stats-bearing record
 		 * @return {object|null} Breakdown descriptor or null
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		objectsBreakdown(source) {
 			const stats = source?.stats?.objects
 			if (!stats) return null
@@ -363,11 +366,14 @@ export default {
 			if (stats.locked) breakdown.locked = stats.locked
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
 		 * @param {number} size - Byte size
 		 * @return {object|null} Breakdown descriptor or null
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		sizeBreakdown(size) {
 			if (!size) return null
 			return { size: formatBytes(size) }

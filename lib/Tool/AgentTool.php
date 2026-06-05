@@ -73,7 +73,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return 'Agent Management'
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string
     {
@@ -85,7 +89,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @return string The tool description
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDescription(): string
     {
@@ -103,7 +111,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFunctions(): array
     {
@@ -230,7 +242,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listAgents(int $limit=50, int $offset=0): array
     {
@@ -283,7 +299,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAgent(string $uuid): array
     {
@@ -330,7 +350,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for agent creation
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createAgent(
         string $name,
@@ -400,7 +424,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateAgent(
         string $uuid,
@@ -462,7 +490,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteAgent(string $uuid): array
     {
@@ -508,7 +540,11 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @return array Response
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {

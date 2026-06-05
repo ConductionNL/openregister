@@ -18,6 +18,14 @@
 	},
 	"repositories": [
 		{
+			"name": "vcs-llphant",
+			"type": "path",
+			"url": "vendor/theodo-group/llphant",
+			"options": {
+				"symlink": false
+			}
+		},
+		{
 			"type": "vcs",
 			"url": "https://github.com/theodo-group/LLPhant"
 		},
@@ -43,7 +51,11 @@
 		"psalm:fix": "./vendor/bin/psalm --threads=1 --no-cache --alter || echo 'Psalm not installed, skipping...'",
 		"psalm:output": "./vendor/bin/psalm --threads=1 --no-cache --output-format=json 2>/dev/null | tail -1 > psalm-output.json || echo 'Psalm not installed, skipping...'",
 		"phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
+<<<<<<< HEAD
 		"phpmd": "phpmd lib text phpmd.xml --cache || echo 'PHPMD not installed, skipping...'",
+=======
+		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"phpmetrics": "./vendor/bin/phpmetrics --report-html=phpmetrics lib/",
 		"phpmetrics:json": "./vendor/bin/phpmetrics --report-json=phpmetrics/report.json lib/",
 		"phpmetrics:csv": "./vendor/bin/phpmetrics --report-csv=phpmetrics/report.csv lib/",
@@ -67,7 +79,11 @@
 		"coverage:check": "php scripts/coverage-guard.php coverage/clover.xml",
 		"coverage:update": "php scripts/coverage-guard.php coverage/clover.xml --update-baseline",
 		"quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
+<<<<<<< HEAD
 		"quality:phpmd-score": "phpmd lib/ json phpmd.xml --cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
+=======
+		"quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"quality:psalm-score": "./vendor/bin/psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
 		"quality:phpstan-score": "./vendor/bin/phpstan analyse --memory-limit=1G --error-format=json --no-progress | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = \\$json['totals']['file_errors'] ?? 0; \\$score = 1000 - (\\$errors * 5); echo 'PHPStan Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'PHPStan not available'",
 		"quality:score": [
@@ -94,7 +110,7 @@
 		]
 	},
 	"require": {
-		"php": "^8.3",
+		"php": "^8.1",
 		"adbario/php-dot-notation": "^3.3.0",
 		"ddn/sapp": "dev-feat/cross-line-matching#8952dfe",
 		"bamarni/composer-bin-plugin": "^1.8",
@@ -105,7 +121,6 @@
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
 		"phpoffice/phpword": "^1.2",
-		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"smalot/pdfparser": "^2.9",
@@ -116,10 +131,17 @@
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4 || ^7.0",
 		"theodo-group/llphant": "^0.9.3",
+<<<<<<< HEAD
 		"twig/twig": "^3.27.0",
 		"web-token/jwt-framework": "^3",
 		"webonyx/graphql-php": "^15.0",
 		"zbateson/mail-mime-parser": "^3.0"
+=======
+		"twig/twig": "^3.18",
+		"web-token/jwt-framework": "^3",
+		"webonyx/graphql-php": "^15.0",
+		"zbateson/mail-mime-parser": "^2.4"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	},
 	"require-dev": {
 		"cyclonedx/cyclonedx-php-composer": "^6.2",
@@ -134,6 +156,10 @@
 		"roave/security-advisories": "dev-latest",
 		"sabre/vobject": "^4.5",
 		"squizlabs/php_codesniffer": "^3.9",
+<<<<<<< HEAD
+=======
+		"symfony/http-foundation": "^6.4",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"vimeo/psalm": "^5.26"
 	},
 	"config": {
@@ -141,13 +167,17 @@
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true,
+<<<<<<< HEAD
 			"cyclonedx/cyclonedx-php-composer": true,
 			"cweagans/composer-patches": true
+=======
+			"cyclonedx/cyclonedx-php-composer": true
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {
-			"php": "8.3"
+			"php": "8.1"
 		}
 	},
 	"extra": {

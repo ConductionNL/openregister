@@ -168,6 +168,7 @@ class ContactsControllerTest extends TestCase
     // Email-only match
     // -------------------------------------------------------------------------
 
+<<<<<<< HEAD
     // -------------------------------------------------------------------------
     // Tier-2: destroy by contact uid + create-new endpoint
     // -------------------------------------------------------------------------
@@ -297,6 +298,8 @@ class ContactsControllerTest extends TestCase
         $this->assertSame(201, $response->getStatus());
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testMatchWorksWithEmailOnly(): void
     {
         $this->request->method('getParam')

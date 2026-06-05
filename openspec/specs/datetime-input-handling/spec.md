@@ -5,12 +5,16 @@ status: in-progress
 # Datetime Input Handling
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend datetime normalization — covered by PHPUnit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Defines how OpenRegister converts user-supplied datetime input at every stage of the object lifecycle — write, read, bulk, and search — so that empty, null, and whitespace-only values consistently normalize to `null` rather than being silently interpreted as the current date-time. Establishes a single canonical normalization helper that all code paths delegate to, eliminating the class of bug where PHP's `new DateTime('')` / `new DateTime(null)` silently produces "now" for user-cleared fields.
 
 **OpenSpec changes**
 - `fix-empty-string-date-conversion` (active) — introduces the `DateTimeNormalizer` helper, migrates identified call sites (read, bulk, search, metadata) to delegate to it, and pins the contract with unit + integration tests.
+<<<<<<< HEAD
 ## Requirements
 ### Requirement: Datetime normalization is governed by the active change
 While this capability is in-progress, normative requirements MUST be sourced from the active change `fix-empty-string-date-conversion` under `openspec/changes/`. Implementers MUST treat this canonical spec as a placeholder until the change is archived and its delta is merged here.
@@ -56,3 +60,9 @@ timezone offset (`DateTimeInterface::ATOM`), returning `null` for empty/invalid 
 - **THEN** it MUST return `null`
 - **AND** a debug-level log entry MUST be written
 
+=======
+
+## Requirements
+
+_Requirements for this capability are introduced by the active change above and will be merged here on archive._
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

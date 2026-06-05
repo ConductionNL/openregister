@@ -98,6 +98,12 @@ export const useSettingsStore = defineStore('settings', {
 			defaultNewUserGroup: 'viewer',
 			defaultObjectOwner: '',
 			adminOverride: true,
+			// Tenant-wide default for the schema-level inheritFromPublic flag.
+			// When true (default — pre-change behaviour), authenticated users
+			// qualify for any rule targeting the `public` group on schemas that
+			// don't override this. When false, authenticated users only qualify
+			// via their own group memberships.
+			inheritFromPublicDefault: true,
 		},
 
 		multitenancyOptions: {
@@ -954,7 +960,10 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Test Presidio API connection
 		 * @param {object} connectionData - API endpoint
+<<<<<<< HEAD
 		 * @spec exclude API passthrough to POST /api/settings/files/test-presidio
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async testPresidioConnection(connectionData) {
 			try {
@@ -975,7 +984,10 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Test OpenAnonymiser API connection
 		 * @param {object} connectionData - API endpoint
+<<<<<<< HEAD
 		 * @spec exclude API passthrough to POST /api/settings/files/test-openanonymiser
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async testOpenAnonymiserConnection(connectionData) {
 			try {
@@ -1139,6 +1151,7 @@ export const useSettingsStore = defineStore('settings', {
 
 					let cacheMessage = ''
 					if (newCacheSize > oldCacheSize) {
+<<<<<<< HEAD
 						cacheMessage = t('openregister', 'Cache grew from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
 					} else if (newCacheSize < oldCacheSize) {
 						cacheMessage = t('openregister', 'Cache shrunk from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
@@ -1147,6 +1160,16 @@ export const useSettingsStore = defineStore('settings', {
 					}
 
 					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. {message}', { count: loadedCount, time: executionTime, message: cacheMessage }))
+=======
+						cacheMessage = `Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`
+					} else if (newCacheSize < oldCacheSize) {
+						cacheMessage = `Cache shrunk from ${oldCacheSize} to ${newCacheSize} entries.`
+					} else {
+						cacheMessage = `Cache stayed the same at ${newCacheSize} entries.`
+					}
+
+					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. ${cacheMessage}`)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				} else {
 					showError(t('openregister', 'Failed to warmup names cache: {error}', { error: response.data.error || 'Unknown error' }))
 				}
@@ -1166,7 +1189,10 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load cache warmup interval setting
+<<<<<<< HEAD
 		 * @spec exclude API passthrough to GET /api/settings/cache/warmup-interval
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadWarmupInterval() {
 			this.loadingWarmupInterval = true
@@ -1187,7 +1213,10 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Save cache warmup interval setting
 		 * @param {number} interval - The interval in seconds (0 = disabled)
+<<<<<<< HEAD
 		 * @spec exclude API passthrough to PUT /api/settings/cache/warmup-interval
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async saveWarmupInterval(interval) {
 			this.savingWarmupInterval = true
@@ -1201,13 +1230,21 @@ export const useSettingsStore = defineStore('settings', {
 					this.warmupInterval = response.data.interval
 					showSuccess(response.data.message)
 				} else {
+<<<<<<< HEAD
 					showError(t('openregister', 'Failed to save warmup interval: {error}', { error: response.data.error || 'Unknown error' }))
+=======
+					showError('Failed to save warmup interval: ' + (response.data.error || 'Unknown error'))
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to save warmup interval:', error)
+<<<<<<< HEAD
 				showError(t('openregister', 'Failed to save warmup interval: {error}', { error: error.message }))
+=======
+				showError('Failed to save warmup interval: ' + error.message)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				throw error
 			} finally {
 				this.savingWarmupInterval = false
@@ -1405,7 +1442,10 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear blob objects confirmation dialog
+<<<<<<< HEAD
 		 * @spec exclude store setter (local dialog-visibility toggle)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		showClearBlobObjectsDialog() {
 			this.showClearBlobObjectsConfirmation = true
@@ -1413,7 +1453,10 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear blob objects confirmation dialog
+<<<<<<< HEAD
 		 * @spec exclude store setter (local dialog-visibility toggle)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		hideClearBlobObjectsDialog() {
 			this.showClearBlobObjectsConfirmation = false
@@ -1421,7 +1464,10 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all blob storage objects
+<<<<<<< HEAD
 		 * @spec exclude API passthrough to DELETE /api/objects/clear-blob
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async clearAllBlobObjects() {
 			this.clearingBlobObjects = true
@@ -1430,6 +1476,7 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.delete(generateUrl('/apps/openregister/api/objects/clear-blob'))
 
 				if (response.data.success) {
+<<<<<<< HEAD
 					showSuccess(t('openregister', 'Successfully cleared {count} blob storage objects', { count: response.data.deleted || 0 }))
 					this.hideClearBlobObjectsDialog()
 				} else {
@@ -1438,6 +1485,16 @@ export const useSettingsStore = defineStore('settings', {
 			} catch (error) {
 				console.error('Failed to clear blob objects:', error)
 				showError(t('openregister', 'Failed to clear blob objects: {error}', { error: error.message }))
+=======
+					showSuccess(`Successfully cleared ${response.data.deleted || 0} blob storage objects`)
+					this.hideClearBlobObjectsDialog()
+				} else {
+					showError('Failed to clear blob objects: ' + (response.data.error || 'Unknown error'))
+				}
+			} catch (error) {
+				console.error('Failed to clear blob objects:', error)
+				showError('Failed to clear blob objects: ' + error.message)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			} finally {
 				this.clearingBlobObjects = false
 			}
@@ -1726,7 +1783,10 @@ export const useSettingsStore = defineStore('settings', {
 		 * by setting the cache timestamp to 0 (expired)
 		 * @param {string} type - Type of cache to invalidate: 'apps', 'categories', 'discover', or 'all'
 		 * @return {Promise<object>} The API response
+<<<<<<< HEAD
 		 * @spec exclude API passthrough to DELETE /api/settings/cache/appstore
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async clearAppStoreCache(type = 'all') {
 			this.clearingAppStoreCache = true
@@ -1738,15 +1798,25 @@ export const useSettingsStore = defineStore('settings', {
 
 				if (response.data.success) {
 					const invalidated = response.data.invalidated?.join(', ') || 'cache'
+<<<<<<< HEAD
 					showSuccess(t('openregister', 'App store cache invalidated: {invalidated}', { invalidated }))
 				} else {
 					showError(t('openregister', 'Failed to invalidate app store cache: {error}', { error: response.data.error || 'Unknown error' }))
+=======
+					showSuccess(`App store cache invalidated: ${invalidated}`)
+				} else {
+					showError('Failed to invalidate app store cache: ' + (response.data.error || 'Unknown error'))
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to invalidate app store cache:', error)
+<<<<<<< HEAD
 				showError(t('openregister', 'Failed to invalidate app store cache: {error}', { error: error.message }))
+=======
+				showError('Failed to invalidate app store cache: ' + error.message)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				throw error
 			} finally {
 				this.clearingAppStoreCache = false

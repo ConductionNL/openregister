@@ -1,5 +1,6 @@
 ---
 status: implemented
+<<<<<<< HEAD
 retrofit_extensions:
   - search-trail-analytics-dashboard
 ---
@@ -13,6 +14,20 @@ Provide a comprehensive, backend-agnostic search and filtering system for regist
 
 **Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities, including full-text search, faceted navigation, and multi-criteria filtering across structured data.
 ## Requirements
+=======
+---
+# Zoeken en Filteren
+
+
+# Zoeken en Filteren
+## Purpose
+Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails. The system MUST transparently operate against PostgreSQL (with optional pg_trgm fuzzy matching), Apache Solr, or Elasticsearch as interchangeable backends, while exposing a single unified API surface through `ObjectService.searchObjectsPaginated()` and `SearchBackendInterface`.
+
+**Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities, including full-text search, faceted navigation, and multi-criteria filtering across structured data.
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Full-text search across object properties
 The system MUST support free-text search across all string-typed properties of register objects. The `_search` query parameter MUST trigger a case-insensitive search that matches against every string column in the schema's dynamic table, plus the metadata fields `_name`, `_description`, and `_summary`. Search MUST be performed using SQL `ILIKE` patterns in the database backend and native query parsing in Solr/Elasticsearch.
 
@@ -448,6 +463,7 @@ The system MUST provide configurable performance optimizations including: index 
 - **THEN** it MUST reconstruct the nested structure by splitting underscore-separated keys back into nested arrays
 - **AND** system parameters starting with `_` MUST be preserved as-is
 
+<<<<<<< HEAD
 ### Requirement: Search Trail Analytics and Audit API
 
 The system MUST expose an analytics and audit API over the search-trail log so
@@ -685,6 +701,8 @@ and `createMissingObjectFields` to inspect and mirror the object collection's fi
 - **THEN** the access-controlled `find()` MUST throw before any deletion occurs
 - **AND** an owned-or-public view MUST be deleted via `ViewMapper::delete()`
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Current Implementation Status
 
 **Substantially implemented.** The search and filtering system is mature with comprehensive SQL-based and Solr-based backends.

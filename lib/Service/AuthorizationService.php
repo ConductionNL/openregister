@@ -3,6 +3,7 @@
 /**
  * Authorization Service for validating incoming API requests.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,13 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author  Conduction Development Team <dev@conductio.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @link https://OpenRegister.app
  */
@@ -165,8 +173,11 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is expired or missing iat.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validatePayload(array $payload): void
     {
@@ -208,10 +219,15 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is invalid.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     protected function authorizeJwt(string $authorization): void
+=======
+     */
+    public function authorizeJwt(string $authorization): void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $token = substr(string: $authorization, offset: strlen(string: 'Bearer '));
 
@@ -300,10 +316,15 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If credentials are invalid.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     protected function authorizeBasic(string $header, array $users=[], array $groups=[]): void
+=======
+     */
+    public function authorizeBasic(string $header, array $users=[], array $groups=[]): void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $header = substr(string: $header, offset: strlen(string: 'Basic '));
         $decode = base64_decode(string: $header);
@@ -329,10 +350,15 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is invalid.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     protected function authorizeOAuth(string $header, array $users=[], array $groups=[]): void
+=======
+     */
+    public function authorizeOAuth(string $header, array $users=[], array $groups=[]): void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         if (str_starts_with(haystack: $header, needle: 'Bearer') === false) {
             throw new AuthenticationException(
@@ -361,8 +387,11 @@ class AuthorizationService
      * @throws SecurityException If CSRF-unsafe headers are detected.
      *
      * @psalm-suppress UndefinedClass SecurityException is a private Nextcloud internal class
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function corsAfterController(IRequest $request, Response $response): Response
     {
@@ -393,10 +422,15 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the API key is invalid.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     protected function authorizeApiKey(string $header, array $keys): void
+=======
+     */
+    public function authorizeApiKey(string $header, array $keys): void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         if (array_key_exists(key: $header, array: $keys) === false) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);

@@ -7,9 +7,12 @@
  * based on their next_retry_at timestamp. Uses exponential backoff
  * with increasing intervals between retries.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *
@@ -93,7 +96,11 @@ class WebhookRetryJob extends TimedJob
      * @param WebhookService   $webhookService   Webhook service
      * @param LoggerInterface  $logger           Logger
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         ITimeFactory $time,
@@ -125,7 +132,11 @@ class WebhookRetryJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {

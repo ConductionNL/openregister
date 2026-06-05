@@ -61,6 +61,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class AuditTrailMapper extends QBMapper
@@ -84,6 +85,11 @@ class AuditTrailMapper extends QBMapper
      */
     private ?string $requestImportJobId = null;
 
+=======
+ */
+class AuditTrailMapper extends QBMapper
+{
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Constructor for the AuditTrailMapper
      *
@@ -92,6 +98,7 @@ class AuditTrailMapper extends QBMapper
      * @param IUserSession                      $userSession User session service
      * @param IRequest                          $request     Current request
      * @param LoggerInterface                   $logger      Logger
+<<<<<<< HEAD
      */
     public function __construct(
         IDBConnection $db,
@@ -127,6 +134,18 @@ class AuditTrailMapper extends QBMapper
     {
         return $this->requestImportJobId;
     }//end getRequestImportJobId()
+=======
+     */
+    public function __construct(
+        IDBConnection $db,
+        private readonly \Psr\Container\ContainerInterface $container,
+        private readonly IUserSession $userSession,
+        private readonly IRequest $request,
+        private readonly LoggerInterface $logger
+    ) {
+        parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
+    }//end __construct()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Find audit-trail entries tagged with the given import-job UUID.
@@ -162,6 +181,7 @@ class AuditTrailMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findByImportJobId()
+
 
     /**
      * Finds an audit trail by id
@@ -324,6 +344,12 @@ class AuditTrailMapper extends QBMapper
         return $this->findEntities(query: $qb);
     }//end findAll()
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Creates an audit trail for object changes
      *
@@ -333,10 +359,16 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is standard Symfony UID pattern
      * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+=======
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Audit trail creation requires handling many optional fields
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
@@ -352,12 +384,17 @@ class AuditTrailMapper extends QBMapper
             $objectEntity = $new;
         }
 
+<<<<<<< HEAD
         if ($action === 'delete' || str_starts_with((string) $action, 'referential_integrity.') === true) {
+=======
+        if ($action === 'delete') {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $objectEntity = $old;
         }
 
         // Initialize an array to store changed fields.
         $changed = [];
+<<<<<<< HEAD
         // Treat delete-ish actions (including referential_integrity.*_delete /
         // set_null / set_default / restrict_blocked) as "no new state" — $new
         // is legitimately null here and the per-field diff below would blow up.
@@ -367,6 +404,9 @@ class AuditTrailMapper extends QBMapper
             || str_starts_with($action, 'referential_integrity.') === true
         );
         if ($isDeleteAction === false) {
+=======
+        if ($action !== 'delete' && $action !== 'read') {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $oldArray = [];
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
@@ -425,6 +465,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
+<<<<<<< HEAD
 
         // AVG / GDPR Art 30 trigger contract — resolve the
         // processing-activity reference and tag the audit row. Resolution
@@ -446,6 +487,8 @@ class AuditTrailMapper extends QBMapper
             $auditTrail->setImportJobId($importJobId);
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
         $auditTrail->setSize(max($serializedSize, 14));
@@ -1346,6 +1389,12 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end clearAllLogs()
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Set expiry dates for audit trails based on retention period in milliseconds
      *
@@ -1413,6 +1462,26 @@ class AuditTrailMapper extends QBMapper
             'size'  => 0,
         ];
 
+<<<<<<< HEAD
+=======
+    /**
+     * Get audit trail statistics grouped by schema for multiple schemas in a single query
+     *
+     * Returns per-schema statistics using GROUP BY instead of one query per schema.
+     * This replaces N individual getStatistics() calls with 1 query.
+     *
+     * @param int[] $schemaIds Array of schema IDs to get statistics for
+     *
+     * @return array<int, array{total: int, size: int}> Map of schemaId => statistics array
+     */
+    public function getStatisticsGroupedBySchema(array $schemaIds): array
+    {
+        $emptyStats = [
+            'total' => 0,
+            'size'  => 0,
+        ];
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         if (empty($schemaIds) === true) {
             return [];
         }
@@ -1463,6 +1532,10 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getStatisticsGroupedBySchema()
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Create a custom audit trail entry for archival operations.
      *
@@ -1480,10 +1553,14 @@ class AuditTrailMapper extends QBMapper
         array $context=[]
     ): AuditTrail {
         $user   = $this->userSession->getUser();
+<<<<<<< HEAD
         $userId = 'system';
         if ($user !== null) {
             $userId = $user->getUID();
         }
+=======
+        $userId = $user !== null ? $user->getUID() : 'system';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
@@ -1493,6 +1570,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($context);
         $auditTrail->setUser($userId);
+<<<<<<< HEAD
 
         // SECURITY / AVG: keep `user_name` populated even though the
         // migration (Version1Date20260423100000) relaxed NOT NULL on
@@ -1507,11 +1585,14 @@ class AuditTrailMapper extends QBMapper
 
         $auditTrail->setUserName($userName);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $auditTrail->setCreated(new DateTime());
 
         return $this->insert(entity: $auditTrail);
     }//end createAuditTrailEntry()
 
+<<<<<<< HEAD
     /**
      * Get processing activities from audit trail entries.
      *
@@ -1680,4 +1761,7 @@ class AuditTrailMapper extends QBMapper
             'total'   => (int) ($row['total_count'] ?? 0),
         ];
     }//end findByActor()
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

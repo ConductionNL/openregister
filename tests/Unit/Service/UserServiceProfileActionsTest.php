@@ -12,12 +12,18 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatarManager;
 use OCP\IAvatar;
 use OCP\IConfig;
+<<<<<<< HEAD
 use OCP\IDBConnection;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+<<<<<<< HEAD
 use OCP\L10N\IFactory;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -71,9 +77,13 @@ class UserServiceProfileActionsTest extends TestCase
             $this->eventDispatcher,
             $this->avatarManager,
             $this->auditTrailMapper,
+<<<<<<< HEAD
             $this->secureRandom,
             $this->createMock(IDBConnection::class),
             $this->createMock(IFactory::class)
+=======
+            $this->secureRandom
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 

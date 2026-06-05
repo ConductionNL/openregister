@@ -3,6 +3,7 @@ status: redirect
 ---
 # Built-in Dashboards
 
+<<<<<<< HEAD
 ## Purpose
 
 @e2e exclude redirect stub — no scenarios
@@ -55,3 +56,6 @@ points which MUST surface a wrapped exception to the caller.
 - **THEN** the mapper-produced `{labels, series}` envelope MUST be returned
 - **AND** on an underlying error an empty `{labels: [], series: []}` envelope MUST be returned after logging
 
+=======
+Moved to `openspec/specs/built-in-dashboards/spec.md`. This spec is now owned by the root openspec (cross-app pattern).
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

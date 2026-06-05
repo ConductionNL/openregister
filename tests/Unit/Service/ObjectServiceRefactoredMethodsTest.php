@@ -28,7 +28,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -181,7 +184,10 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
+<<<<<<< HEAD
 			$this->createMock(DateTimeNormalizer::class),
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			$this->createMock(IAppContainer::class)
 		);
 

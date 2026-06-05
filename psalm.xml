@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <psalm
+<<<<<<< HEAD
     errorBaseline="psalm-baseline.xml"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     errorLevel="4"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -8,6 +11,10 @@
     findUnusedBaselineEntry="true"
     findUnusedCode="true"
     findUnusedVariablesAndParams="true"
+<<<<<<< HEAD
+=======
+    errorBaseline="psalm-baseline.xml"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 >
     <projectFiles>
         <directory name="lib" />
@@ -22,6 +29,27 @@
         <UndefinedDocblockClass errorLevel="suppress"/>
         <UndefinedClass>
             <errorLevel type="suppress">
+<<<<<<< HEAD
+=======
+                <referencedClass name="OC"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Types\Type"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
+                <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\MySQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractMySQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\SqlitePlatform"/>
+                <referencedClass name="Doctrine\DBAL\ParameterType"/>
+                <referencedClass name="APCUIterator"/>
+                <referencedClass name="React\Async\PromiseInterface"/>
+                <referencedClass name="Solarium\Client"/>
+                <referencedClass name="Solarium\Core\Client\Adapter\Curl"/>
+                <referencedClass name="Solarium\Exception\HttpException"/>
+                <referencedClass name="Symfony\Component\EventDispatcher\EventDispatcher"/>
+                <referencedClass name="Ramsey\Uuid\Uuid"/>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 <!-- Nextcloud OCP Classes -->
                 <referencedClass name="OCP\AppFramework\App"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootstrap"/>
@@ -40,6 +68,10 @@
                 <referencedClass name="OCP\IGroupManager"/>
                 <referencedClass name="OCP\IUserManager"/>
                 <referencedClass name="OCP\IUserSession"/>
+<<<<<<< HEAD
+=======
+                <referencedClass name="OCP\Search\IFilteringProvider"/>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 <referencedClass name="OCP\IMemcache"/>
                 <referencedClass name="OCP\IRequest"/>
                 <referencedClass name="OCP\EventDispatcher\IEventDispatcher"/>
@@ -58,6 +90,7 @@
                 <referencedClass name="OCP\IURLGenerator"/>
                 <referencedClass name="OCP\Http\Client\IClient"/>
                 <referencedClass name="OCP\Http\Client\IClientService"/>
+<<<<<<< HEAD
                 <referencedClass name="OCP\Notification\IManager"/>
                 <referencedClass name="OCP\Share\IManager"/>
                 <!-- OpenRegister cross-app classes (loaded dynamically) -->
@@ -96,6 +129,22 @@
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
             </errorLevel>
         </UndefinedClass>
+=======
+                <referencedClass name="OCP\SystemTag\ISystemTagManager"/>
+                <referencedClass name="OCP\Notification\IManager"/>
+                <referencedClass name="OCP\Share\IManager"/>
+                <referencedClass name="OC\Files\AppData\Factory"/>
+                <referencedClass name="OC\Security\CSP\ContentSecurityPolicyNonceManager"/>
+                <referencedClass name="OC\Security\CSRF\CsrfTokenManager"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
+                <referencedClass name="OCA\DAV\CalDAV\CalDavBackend"/>
+                <referencedClass name="Sabre\VObject\Reader"/>
+                <referencedClass name="OC\DB\Exceptions\DbalException"/>
+                <referencedClass name="OCA\OpenRegister\Db\Exception"/>
+            </errorLevel>
+        </UndefinedClass>
+        <InaccessibleMethod errorLevel="suppress"/>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         <UndefinedMagicMethod errorLevel="suppress"/>
         <UnusedClass errorLevel="suppress"/>
         <PossiblyUnusedMethod errorLevel="suppress"/>
@@ -108,24 +157,94 @@
         <RedundantCondition errorLevel="suppress"/>
         <RedundantFunctionCall errorLevel="suppress"/>
         <RedundantCast errorLevel="suppress"/>
+<<<<<<< HEAD
+=======
+        <RedundantPropertyInitializationCheck errorLevel="suppress"/>
+        <StringIncrement errorLevel="suppress"/>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         <InvalidDocblock errorLevel="suppress"/>
         <MoreSpecificImplementedParamType errorLevel="suppress"/>
         <MissingDependency errorLevel="suppress"/>
         <UnevaluatedCode errorLevel="suppress"/>
+<<<<<<< HEAD
+=======
+        <!-- Suppress external library/interface method issues -->
+        <UndefinedInterfaceMethod>
+            <errorLevel type="suppress">
+                <!-- Doctrine DBAL methods -->
+                <referencedMethod name="OCP\IDBConnection::getSchemaManager"/>
+                <!-- Nextcloud QueryBuilder methods -->
+                <referencedMethod name="OCP\DB\QueryBuilder\IQueryBuilder::escapeLikeParameter"/>
+                <!-- Nextcloud File methods -->
+                <referencedMethod name="OCP\Files\Node::fopen"/>
+                <referencedMethod name="OCP\Files\Node::getContent"/>
+                <!-- Search backend implementation methods -->
+                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::indexFiles"/>
+                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::getFileIndexStats"/>
+                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::fixMismatchedFields"/>
+            </errorLevel>
+        </UndefinedInterfaceMethod>
+        <!-- Suppress React library function calls -->
+        <UndefinedFunction>
+            <errorLevel type="suppress">
+                <referencedFunction name="React\Async\await"/>
+            </errorLevel>
+        </UndefinedFunction>
+        <!-- Suppress LLPhant dynamic property access -->
+        <UndefinedPropertyAssignment>
+            <errorLevel type="suppress">
+                <referencedProperty name="LLPhant\OpenAIConfig::$temperature"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$organizationId"/>
+            </errorLevel>
+        </UndefinedPropertyAssignment>
+        <UndefinedPropertyFetch>
+            <errorLevel type="suppress">
+                <referencedProperty name="LLPhant\OllamaConfig::$apiKey"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$apiKey"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$model"/>
+                <referencedProperty name="LLPhant\OpenAIConfig::$url"/>
+            </errorLevel>
+        </UndefinedPropertyFetch>
+        <!-- Suppress OrganisationMapper method calls from trait -->
+        <UndefinedMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getActiveOrganisationWithFallback"/>
+                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getDefaultOrganisationFromConfig"/>
+                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getOrganisationHierarchy"/>
+                <!-- Entity base class methods -->
+                <referencedMethod name="OCA\OpenRegister\Db\Register::getId"/>
+                <referencedMethod name="OCA\OpenRegister\Db\Schema::getId"/>
+                <referencedMethod name="OCA\OpenRegister\Db\Schema::getSlug"/>
+                <referencedMethod name="OCA\OpenRegister\Db\ObjectEntity::getRegister"/>
+                <referencedMethod name="OCA\OpenRegister\Db\ObjectEntity::getSchema"/>
+            </errorLevel>
+        </UndefinedMethod>
+        <!-- Suppress dead code warnings for defensive null checks -->
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         <NoValue errorLevel="suppress"/>
         <TypeDoesNotContainNull errorLevel="suppress"/>
         <TypeDoesNotContainType errorLevel="suppress"/>
         <InvalidArrayOffset errorLevel="suppress"/>
         <InvalidCast errorLevel="suppress"/>
         <InvalidArgument errorLevel="suppress"/>
+<<<<<<< HEAD
+=======
+        <InvalidTemplateParam errorLevel="suppress"/>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         <InvalidReturnType errorLevel="suppress"/>
         <InvalidReturnStatement errorLevel="suppress"/>
         <MismatchingDocblockReturnType errorLevel="suppress"/>
         <EmptyArrayAccess errorLevel="suppress"/>
         <ImplementedReturnTypeMismatch errorLevel="suppress"/>
         <InvalidMethodCall errorLevel="suppress"/>
+<<<<<<< HEAD
         <UndefinedInterfaceMethod errorLevel="suppress"/>
         <MissingTemplateParam errorLevel="suppress"/>
+=======
+        <InvalidPropertyAssignmentValue errorLevel="suppress"/>
+        <InvalidThrow errorLevel="suppress"/>
+        <UnsupportedPropertyReferenceUsage errorLevel="suppress"/>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

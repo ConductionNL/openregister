@@ -44,12 +44,15 @@ export default {
 			isError: false,
 		}
 	},
+<<<<<<< HEAD
 	/**
 	 * Lifecycle hook: load the current user's id and avatar capability for display.
 	 *
 	 * @spec exclude UI plumbing — view-mount data fetch for display only
 	 * @return {Promise<void>}
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me'))
@@ -61,6 +64,7 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * Open the native file picker by programmatically clicking the hidden
 		 * file input. Avatar upload itself runs from the input's `change` handler
@@ -79,6 +83,11 @@ export default {
 		 * @spec exclude UI plumbing — delegates to the account avatar API
 		 * @return {Promise<void>}
 		 */
+=======
+		triggerUpload() {
+			this.$refs.fileInput.click()
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async uploadAvatar(event) {
 			const file = event.target.files[0]
 			if (!file) return
@@ -97,12 +106,15 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Remove the user's avatar via the account API.
 		 *
 		 * @spec exclude UI plumbing — delegates to the account avatar API
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async deleteAvatar() {
 			this.message = ''
 			try {

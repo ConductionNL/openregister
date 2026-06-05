@@ -9,9 +9,12 @@
  * Since facets are determined by schema properties, they can be cached and
  * invalidated when schemas change, providing significant performance benefits.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -23,7 +26,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -210,8 +217,11 @@ class FacetCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
     {
@@ -255,7 +265,11 @@ class FacetCacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -322,8 +336,11 @@ class FacetCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearAllCaches(): void
     {
@@ -361,8 +378,11 @@ class FacetCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return int The number of deleted cache entries.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cleanExpiredEntries(): int
     {
@@ -398,8 +418,11 @@ class FacetCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array Statistics with total entries, by type, memory cache size, cache table, query time, timestamp.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCacheStatistics(): array
     {
@@ -500,10 +523,18 @@ class FacetCacheHandler
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
+<<<<<<< HEAD
         $now     = new DateTime();
         $expires = null;
         if ($ttl > 0) {
             $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+=======
+        $now = new DateTime();
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+        } else {
+            $expires = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.

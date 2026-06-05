@@ -12,10 +12,14 @@ use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -28,8 +32,11 @@ class WebhooksControllerTest extends TestCase
     private WebhookLogMapper&MockObject $webhookLogMapper;
     private WebhookService&MockObject $webhookService;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -40,6 +47,7 @@ class WebhooksControllerTest extends TestCase
         $this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
 
@@ -47,6 +55,8 @@ class WebhooksControllerTest extends TestCase
         // create/update/destroy/test/retry endpoints pass the C10 admin gate.
         // Anonymous / non-admin behaviour is verified in dedicated tests below.
         $this->setupAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new WebhooksController(
             'openregister',
@@ -54,6 +64,7 @@ class WebhooksControllerTest extends TestCase
             $this->webhookMapper,
             $this->webhookLogMapper,
             $this->webhookService,
+<<<<<<< HEAD
             $this->logger,
             $this->userSession,
             $this->groupManager
@@ -72,6 +83,12 @@ class WebhooksControllerTest extends TestCase
         $this->groupManager->method('isAdmin')->willReturn(true);
     }
 
+=======
+            $this->logger
+        );
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private function createWebhookEntity(): Webhook
     {
         $webhook = new Webhook();
@@ -1532,6 +1549,7 @@ class WebhooksControllerTest extends TestCase
         $this->assertEquals(400, $data['error_details']['status_code']);
         $this->assertEquals('{"error": "invalid"}', $data['error_details']['response_body']);
     }
+<<<<<<< HEAD
 
     // =========================================================================
     // Wave-3 C10: admin-gate tests on write endpoints
@@ -1686,4 +1704,6 @@ class WebhooksControllerTest extends TestCase
 
         $this->assertEquals(403, $result->getStatus());
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

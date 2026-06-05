@@ -396,6 +396,7 @@ export default {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+<<<<<<< HEAD
 		/**
 		 * Placeholder register-count display for a source.
 		 *
@@ -403,6 +404,8 @@ export default {
 		 * @param {string|number} _sourceId - source id
 		 * @return {string}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getSourceRegisterCount(_sourceId) {
 			// This would need to be implemented based on how registers are linked to sources
 			// For now, return a placeholder

@@ -75,8 +75,11 @@ class RevertController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with reverted object or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function revert(string $register, string $schema, string $id): JSONResponse
     {

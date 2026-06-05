@@ -5,9 +5,12 @@
  *
  * Service for handling security measures including rate limiting and XSS protection.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -44,11 +47,14 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) SecurityService covers a single cohesive
  *   security domain (login rate-limiting, inbound-API brute-force protection, input
  *   sanitization, and response headers). Each method is consumed by external callers
  *   (UserController and RateLimitMiddleware); splitting into sub-services would scatter
  *   the security surface without reducing per-method complexity.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class SecurityService
 {
@@ -77,6 +83,7 @@ class SecurityService
     private const MAX_PROGRESSIVE_DELAY  = 60;
 
     /**
+<<<<<<< HEAD
      * Inbound-API brute-force configuration constants.
      *
      * These are intentionally MORE generous than the interactive-login
@@ -93,6 +100,8 @@ class SecurityService
     private const AUTH_LOCKOUT_DURATION       = 900;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Cache key prefixes for different security features
      */
     private const CACHE_PREFIX_LOGIN_ATTEMPTS    = 'openregister_login_attempts_';
@@ -102,6 +111,7 @@ class SecurityService
     private const CACHE_PREFIX_PROGRESSIVE_DELAY = 'openregister_progressive_delay_';
 
     /**
+<<<<<<< HEAD
      * Cache key prefixes for the inbound-API brute-force path.
      *
      * Kept separate from the interactive-login prefixes so the two paths
@@ -113,6 +123,8 @@ class SecurityService
     private const CACHE_PREFIX_AUTH_LOCKOUT     = 'openregister_auth_lockout_';
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Constructor for SecurityService
      *
      * @param ICacheFactory   $cacheFactory Factory for creating cache instances
@@ -135,8 +147,11 @@ class SecurityService
      * @return array Result with 'allowed' boolean and optional 'delay' or 'lockout_until'
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
@@ -223,8 +238,11 @@ class SecurityService
      * @param string $reason    The reason for login failure
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
@@ -290,8 +308,11 @@ class SecurityService
      * @param string $ipAddress The IP address of the successful attempt
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
@@ -334,8 +355,11 @@ class SecurityService
      * @param string $ipAddress The IP address to unblock
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearIpRateLimits(string $ipAddress): void
     {
@@ -362,8 +386,11 @@ class SecurityService
      * @param string $username The username to unblock
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearUserRateLimits(string $username): void
     {
@@ -382,6 +409,7 @@ class SecurityService
     }//end clearUserRateLimits()
 
     /**
+<<<<<<< HEAD
      * Check whether an inbound-API authentication attempt is allowed.
      *
      * This powers the brute-force protection wired into the inbound auth
@@ -551,6 +579,8 @@ class SecurityService
     }//end buildAuthCompositeKey()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Sanitize input data to prevent XSS and injection attacks
      *
      * @param mixed $input     The input to sanitize
@@ -559,8 +589,11 @@ class SecurityService
      * @return mixed Sanitized input
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
@@ -605,8 +638,11 @@ class SecurityService
      * @param array $credentials The login credentials to validate
      *
      * @return array Validated and sanitized credentials or error information
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateLoginCredentials(array $credentials): array
     {
@@ -656,8 +692,11 @@ class SecurityService
      * @param JSONResponse $response The response to add headers to
      *
      * @return JSONResponse The response with added security headers
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addSecurityHeaders(JSONResponse $response): JSONResponse
     {
@@ -681,8 +720,11 @@ class SecurityService
      * @return string The client IP address
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getClientIpAddress(IRequest $request): string
     {
@@ -745,7 +787,10 @@ class SecurityService
         switch ($event) {
             case 'user_locked_out':
             case 'login_attempt_during_lockout':
+<<<<<<< HEAD
             case 'auth_locked_out':
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $this->logger->warning(
                     message: "[SecurityService] Security event: {$event}",
                     context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)

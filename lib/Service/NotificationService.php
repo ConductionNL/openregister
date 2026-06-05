@@ -89,7 +89,11 @@ class NotificationService
      *
      * @psalm-return int<0, max>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function notifyConfigurationUpdate(Configuration $configuration): int
     {
@@ -180,7 +184,11 @@ class NotificationService
      *
      * @throws \Exception If notification creation or sending fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function sendUpdateNotification(
         string $userId,
@@ -218,7 +226,11 @@ class NotificationService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function markConfigurationUpdated(Configuration $configuration): void
     {

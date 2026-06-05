@@ -12,9 +12,12 @@
  * delegate to this class. Direct use of `new DateTime($value)` on user data
  * is forbidden — see OpenSpec change `fix-empty-string-date-conversion`.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -25,7 +28,11 @@
  *
  * @since 2.0.0 Introduced by fix-empty-string-date-conversion
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-24
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -74,10 +81,13 @@ class DateTimeNormalizer
      * @param mixed $value Value to normalise (string, null, DateTimeInterface, or anything else).
      *
      * @return DateTimeImmutable|null A `DateTimeImmutable` when parseable, otherwise `null`.
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function normalize(mixed $value): ?DateTimeImmutable
     {
@@ -128,6 +138,7 @@ class DateTimeNormalizer
      * @param mixed $value Value to normalise and format.
      *
      * @return string|null `Y-m-d H:i:s`-formatted string, or `null` for empty/invalid input.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-2
      */
@@ -139,6 +150,17 @@ class DateTimeNormalizer
         }
 
         return $datetime->format(self::DATABASE_FORMAT);
+=======
+     */
+    public function formatForDatabase(mixed $value): ?string
+    {
+        $dt = $this->normalize(value: $value);
+        if ($dt === null) {
+            return null;
+        }
+
+        return $dt->format(self::DATABASE_FORMAT);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end formatForDatabase()
 
     /**
@@ -147,6 +169,7 @@ class DateTimeNormalizer
      * @param mixed $value Value to normalise and format.
      *
      * @return string|null ISO 8601 string with offset, or `null` for empty/invalid input.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-2
      */
@@ -158,5 +181,16 @@ class DateTimeNormalizer
         }
 
         return $datetime->format(DateTimeInterface::ATOM);
+=======
+     */
+    public function formatForIso8601(mixed $value): ?string
+    {
+        $dt = $this->normalize(value: $value);
+        if ($dt === null) {
+            return null;
+        }
+
+        return $dt->format(DateTimeInterface::ATOM);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end formatForIso8601()
 }//end class

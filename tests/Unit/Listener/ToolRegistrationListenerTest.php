@@ -6,7 +6,10 @@ namespace Unit\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Tool\AgentTool;
 use OCA\OpenRegister\Tool\ApplicationTool;
 use OCA\OpenRegister\Tool\ObjectsTool;
@@ -15,7 +18,10 @@ use OCA\OpenRegister\Tool\SchemaTool;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+<<<<<<< HEAD
 use Psr\Log\LoggerInterface;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 class ToolRegistrationListenerTest extends TestCase
 {
@@ -25,8 +31,11 @@ class ToolRegistrationListenerTest extends TestCase
     private ObjectsTool&MockObject $objectsTool;
     private ApplicationTool&MockObject $applicationTool;
     private AgentTool&MockObject $agentTool;
+<<<<<<< HEAD
     private McpToolsService&MockObject $mcpToolsService;
     private LoggerInterface&MockObject $logger;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -36,6 +45,7 @@ class ToolRegistrationListenerTest extends TestCase
         $this->objectsTool = $this->createMock(ObjectsTool::class);
         $this->applicationTool = $this->createMock(ApplicationTool::class);
         $this->agentTool = $this->createMock(AgentTool::class);
+<<<<<<< HEAD
         $this->mcpToolsService = $this->createMock(McpToolsService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -47,6 +57,15 @@ class ToolRegistrationListenerTest extends TestCase
             agentTool: $this->agentTool,
             mcpToolsService: $this->mcpToolsService,
             logger: $this->logger,
+=======
+
+        $this->listener = new ToolRegistrationListener(
+            $this->registerTool,
+            $this->schemaTool,
+            $this->objectsTool,
+            $this->applicationTool,
+            $this->agentTool,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 

@@ -18,7 +18,10 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\ObjectService;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
@@ -26,7 +29,10 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
+<<<<<<< HEAD
 use OCP\IGroupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -57,6 +63,7 @@ class RegistersControllerTest extends TestCase
     private GitHubHandler&MockObject $githubService;
     private IAppManager&MockObject $appManager;
     private OasService&MockObject $oasService;
+<<<<<<< HEAD
     private IGroupManager&MockObject $groupManager;
     private \Psr\Container\ContainerInterface&MockObject $container;
 
@@ -66,6 +73,8 @@ class RegistersControllerTest extends TestCase
      * read-visibility guard set this to null to simulate an anonymous caller.
      */
     private ?\OCP\IUser $currentUser = null;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -86,6 +95,7 @@ class RegistersControllerTest extends TestCase
         $this->githubService = $this->createMock(GitHubHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->oasService = $this->createMock(OasService::class);
+<<<<<<< HEAD
         $this->groupManager = $this->createMock(IGroupManager::class);
 
         // Default to an authenticated admin so write tests and authenticated-read
@@ -105,6 +115,8 @@ class RegistersControllerTest extends TestCase
             }
             return null;
         });
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new RegistersController(
             'openregister',
@@ -123,9 +135,13 @@ class RegistersControllerTest extends TestCase
             $this->githubService,
             $this->appManager,
             $this->oasService,
+<<<<<<< HEAD
             $this->container,
             $this->groupManager,
             $this->createMock(RegisterCacheHandler::class)
+=======
+            $this->createMock(\Psr\Container\ContainerInterface::class)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
@@ -161,7 +177,10 @@ class RegistersControllerTest extends TestCase
         $register = $this->createMock(Register::class);
         $register->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
 
+<<<<<<< HEAD
         // Authenticated caller (setUp default) — the read-visibility guard does not apply.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')->willReturn($register);
 
@@ -170,6 +189,7 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(200, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testShowAnonymousUnpublishedRegisterReturns401(): void
     {
         // Anonymous (no user) + unpublished register → 401 (read-visibility guard).
@@ -229,6 +249,8 @@ class RegistersControllerTest extends TestCase
         $this->assertNotContains(2, $ids);
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private function createRealRegister(int $id = 1, string $title = 'Test'): Register
     {
         $register = new Register();
@@ -377,9 +399,14 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturnsEmptyOnSuccess(): void
     {
+<<<<<<< HEAD
         $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+=======
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->destroy(1);
 
@@ -399,9 +426,14 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns409OnValidationException(): void
     {
+<<<<<<< HEAD
         $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+=======
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->registerService->method('delete')
             ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Objects attached'));
 
@@ -412,9 +444,14 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnGenericException(): void
     {
+<<<<<<< HEAD
         $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+=======
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->registerService->method('delete')
             ->willThrowException(new Exception('Delete error'));
 
@@ -862,9 +899,14 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnDatabaseConstraintException(): void
     {
+<<<<<<< HEAD
         $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+=======
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->registerService->method('delete')
             ->willThrowException(new DatabaseConstraintException('Foreign key constraint'));
 
@@ -1244,7 +1286,11 @@ class RegistersControllerTest extends TestCase
         $this->registerService->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->exportService->method('exportToCsv')->willReturn('col1,col2\nval1,val2');
+<<<<<<< HEAD
         $this->currentUser = null;
+=======
+        $this->userSession->method('getUser')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->export(1);
 
@@ -1265,7 +1311,11 @@ class RegistersControllerTest extends TestCase
         ]);
         $this->registerService->method('find')->willReturn($register);
         $this->exportService->method('exportToExcel')->willReturn($spreadsheet);
+<<<<<<< HEAD
         $this->currentUser = null;
+=======
+        $this->userSession->method('getUser')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->export(1);
 
@@ -1300,7 +1350,11 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
+<<<<<<< HEAD
         $this->currentUser = null;
+=======
+        $this->userSession->method('getUser')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->import(1);
 
@@ -1362,7 +1416,11 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
+<<<<<<< HEAD
         $this->currentUser = null;
+=======
+        $this->userSession->method('getUser')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->import(1);
 
@@ -1395,7 +1453,11 @@ class RegistersControllerTest extends TestCase
         $this->importService->expects($this->once())
             ->method('importFromExcel')
             ->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
+<<<<<<< HEAD
         $this->currentUser = null;
+=======
+        $this->userSession->method('getUser')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->import(1);
 
@@ -1870,9 +1932,14 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyCallsDeleteOnService(): void
     {
+<<<<<<< HEAD
         $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+=======
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->registerService->expects($this->once())
             ->method('delete')
             ->with($this->equalTo($register));

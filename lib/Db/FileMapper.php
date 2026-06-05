@@ -79,9 +79,12 @@ use OCP\IURLGenerator;
  * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
  *
  * @template-extends QBMapper<Entity>
+<<<<<<< HEAD
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class FileMapper extends QBMapper
 {
@@ -103,6 +106,7 @@ class FileMapper extends QBMapper
         IDBConnection $db,
         IURLGenerator $urlGenerator
     ) {
+<<<<<<< HEAD
         parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
         $this->urlGenerator = $urlGenerator;
     }//end __construct()
@@ -284,6 +288,12 @@ class FileMapper extends QBMapper
         return $map;
     }//end findByFileIds()
 
+=======
+        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: \OCP\AppFramework\Db\Entity::class);
+        $this->urlGenerator = $urlGenerator;
+    }//end __construct()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Get all files for a given node (parent) and/or file IDs with share information and owner data.
      *
@@ -821,6 +831,7 @@ class FileMapper extends QBMapper
         ];
     }//end depublishFile()
 
+<<<<<<< HEAD
     /**
      * Check whether a file has at least one active public share (share_type=3).
      *
@@ -840,6 +851,8 @@ class FileMapper extends QBMapper
         return $this->getPublicShare(fileId: $fileId) !== null;
     }//end isFilePublished()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Get an existing public share for a file.
      *

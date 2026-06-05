@@ -55,7 +55,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import {
 	NcButton,
@@ -91,7 +95,11 @@ export default {
 		 * Close the dialog and reset state
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -105,7 +113,11 @@ export default {
 		 * Delete the audit trail entry
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async deleteAuditTrail() {
 			this.loading = true
@@ -140,7 +152,11 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'

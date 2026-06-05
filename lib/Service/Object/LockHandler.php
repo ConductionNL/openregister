@@ -6,9 +6,12 @@
  * Handles object locking and unlocking operations.
  * Locks prevent concurrent modifications to objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -20,7 +23,11 @@
  *
  * @link https://www.OpenRegister.nl
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -28,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+<<<<<<< HEAD
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -38,6 +46,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+=======
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\LockedException;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 
 /**
@@ -63,23 +78,31 @@ class LockHandler
      * @param MagicMapper      $magicMapper      Magic mapper for magic table operations
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging actions
      * @param LoggerInterface  $logger           PSR-3 logger
+<<<<<<< HEAD
      * @param IUserSession     $userSession      User session for authorization checks
      * @param IGroupManager    $groupManager     Group manager for admin checks
      * @param SchemaMapper     $schemaMapper     Schema mapper for resolving manage rules
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly SchemaMapper $schemaMapper
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
     /**
      * Find an object and get its register/schema context.
      *
+<<<<<<< HEAD
      * The `$_rbacBypass` flag is reserved for unlock paths that perform their
      * own caller-vs-lock-holder/owner/manage authorization check on top (see
      * `unlock()`); for lock/isLocked/getLockInfo it stays false so the regular
@@ -89,20 +112,33 @@ class LockHandler
      * @param bool   $_rbacBypass When true, skip RBAC + multitenancy in the
      *                            mapper lookup (caller MUST perform its own
      *                            authorization gate).
+=======
+     * @param string $identifier Object ID or UUID
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return array{object: \OCA\OpenRegister\Db\ObjectEntity, register: Register|null, schema: Schema|null}
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC bypass flag follows established API patterns.
      */
     private function findObjectWithContext(string $identifier, bool $_rbacBypass=false): array
+=======
+     */
+    private function findObjectWithContext(string $identifier): array
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $result = $this->magicMapper->findAcrossAllSources(
             identifier: $identifier,
             includeDeleted: false,
+<<<<<<< HEAD
             _rbac: ($_rbacBypass === false),
             _multitenancy: ($_rbacBypass === false)
+=======
+            _rbac: false,
+            _multitenancy: false
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
 
         return [
@@ -113,6 +149,7 @@ class LockHandler
     }//end findObjectWithContext()
 
     /**
+<<<<<<< HEAD
      * Check if the current user has schema-manage permission on the schema
      * owning the given object.
      *
@@ -226,6 +263,8 @@ class LockHandler
     }//end callerMayUnlock()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Lock an object
      *
      * Locks an object to prevent concurrent modifications.
@@ -240,7 +279,11 @@ class LockHandler
      * @throws LockedException If object is already locked.
      * @throws \Exception      If lock operation fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
     {
@@ -323,7 +366,11 @@ class LockHandler
      *
      * @throws \Exception If unlock operation fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-59
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function unlock(string $identifier): bool
     {
@@ -334,6 +381,7 @@ class LockHandler
 
         try {
             // Find the object and its register/schema context.
+<<<<<<< HEAD
             //
             // SECURITY: bypass RBAC + multitenancy on the read so we can
             // resolve cross-tenant lock holders, but perform an explicit
@@ -358,6 +406,11 @@ class LockHandler
                 throw new Exception('User does not have permission to unlock this object');
             }
 
+=======
+            $context      = $this->findObjectWithContext(identifier: $identifier);
+            $objectBefore = $context['object'];
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Use MagicMapper for unlock operation.
             $objectAfter = $this->magicMapper->unlockObjectEntity(
                 entity: $objectBefore,
@@ -398,8 +451,11 @@ class LockHandler
      * @param string $identifier Object ID or UUID
      *
      * @return bool True if locked, false otherwise
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isLocked(string $identifier): bool
     {
@@ -407,6 +463,7 @@ class LockHandler
             $context = $this->findObjectWithContext(identifier: $identifier);
             $object  = $context['object'];
 
+<<<<<<< HEAD
             // Delegate to the canonical ObjectEntity::isLocked() implementation,
             // which understands both the current `{user, process, created, duration, expiration}`
             // schema (see ObjectEntity::lock() at lib/Db/ObjectEntity.php:1042-1066) and the
@@ -414,6 +471,25 @@ class LockHandler
             // 'lockedAt') here would never match what lock() writes, so a stale/expired lock
             // could never be detected via this code path.
             return $object->isLocked();
+=======
+            // Check the locked property on the ObjectEntity.
+            $locked = $object->getLocked();
+
+            if (empty($locked) === true) {
+                return false;
+            }
+
+            // Check if lock has expired.
+            if (isset($locked['expiresAt']) === true) {
+                $expiryDate = new DateTime($locked['expiresAt']);
+                if ($expiryDate < new DateTime()) {
+                    return false;
+                    // Lock expired.
+                }
+            }
+
+            return true;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[LockHandler] Failed to check lock status',
@@ -436,8 +512,11 @@ class LockHandler
      * @param string $identifier Object ID or UUID
      *
      * @return array|null Lock info array or null if not locked.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getLockInfo(string $identifier): array|null
     {
@@ -445,6 +524,7 @@ class LockHandler
             $context = $this->findObjectWithContext(identifier: $identifier);
             $object  = $context['object'];
 
+<<<<<<< HEAD
             // Delegate to ObjectEntity::getLockInfo() which returns the raw lock payload
             // written by lock() — `{user, process, created, duration, expiration}` — or
             // null if no active (non-expired) lock is present. Map to the public, snake_case
@@ -452,15 +532,27 @@ class LockHandler
             $locked = $object->getLockInfo();
 
             if ($locked === null) {
+=======
+            $locked = $object->getLocked();
+
+            if (empty($locked) === true) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 return null;
             }
 
             return [
+<<<<<<< HEAD
                 'locked_at'  => $locked['created'] ?? null,
                 'locked_by'  => $locked['user'] ?? null,
                 'process'    => $locked['process'] ?? null,
                 'expires_at' => $locked['expiration'] ?? null,
                 'duration'   => $locked['duration'] ?? null,
+=======
+                'locked_at'  => $locked['lockedAt'] ?? null,
+                'locked_by'  => $locked['userId'] ?? null,
+                'process'    => $locked['process'] ?? null,
+                'expires_at' => $locked['expiresAt'] ?? null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ];
         } catch (\Exception $e) {
             $this->logger->warning(

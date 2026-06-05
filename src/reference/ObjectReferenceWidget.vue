@@ -70,6 +70,7 @@ export default {
 	},
 
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
 		 */
@@ -103,15 +104,35 @@ export default {
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
 		 */
+=======
+		title() {
+			return this.richObject.title || t('openregister', 'Unknown Object')
+		},
+		objectUrl() {
+			return this.richObject.url || '#'
+		},
+		iconUrl() {
+			return this.richObject.icon_url || ''
+		},
+		schemaTitle() {
+			return this.richObject.schema?.title || t('openregister', 'Unknown Schema')
+		},
+		registerTitle() {
+			return this.richObject.register?.title || t('openregister', 'Unknown Register')
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		properties() {
 			return this.richObject.properties || []
 		},
 		updated() {
 			return this.richObject.updated || ''
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		formattedDate() {
 			if (!this.updated) {
 				return ''

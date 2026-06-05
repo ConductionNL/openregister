@@ -5,6 +5,7 @@
  *
  * Listens to OpenRegister entity events and publishes corresponding activity events.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,12 @@
  * @package  OCA\OpenRegister\Listener
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -19,7 +26,11 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -63,10 +74,14 @@ class ActivityEventListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {

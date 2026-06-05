@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
@@ -50,7 +58,11 @@ class BulkRelationHandler
      * @param MagicMapper           $objectEntityMapper Mapper for object entities.
      * @param LoggerInterface       $logger             Logger for logging operations.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly BulkValidationHandler $bulkValidHandler,
@@ -82,7 +94,11 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex inverse relation handling with multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple code paths for different relation types
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
@@ -200,7 +216,11 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete post-save relation workflow
      * Else branches improve readability for array vs single value handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handlePostSaveInverseRelations(
         array $savedObjects,
@@ -239,9 +259,16 @@ class BulkRelationHandler
                     continue;
                 }
 
+<<<<<<< HEAD
                 $relatedObjectIds = [$objectData[$propertyName]];
                 if (is_array($objectData[$propertyName]) === true) {
                     $relatedObjectIds = $objectData[$propertyName];
+=======
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
 
                 foreach ($relatedObjectIds as $relatedId) {
@@ -290,9 +317,16 @@ class BulkRelationHandler
                     continue;
                 }
 
+<<<<<<< HEAD
                 $relatedObjectIds = [$objectData[$propertyName]];
                 if (is_array($objectData[$propertyName]) === true) {
                     $relatedObjectIds = $objectData[$propertyName];
+=======
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
 
                 foreach ($relatedObjectIds as $relatedId) {
@@ -335,7 +369,11 @@ class BulkRelationHandler
      *
      * Else branch used for early continue when UUID already present
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
     {
@@ -419,7 +457,11 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex relation type detection with multiple conditions
      * Else branches handle schema vs heuristic detection paths
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -434,9 +476,16 @@ class BulkRelationHandler
         }
 
         foreach ($data as $key => $value) {
+<<<<<<< HEAD
             $currentPath = $key;
             if ($prefix !== '') {
                 $currentPath = "$prefix.$key";
+=======
+            if ($prefix !== '') {
+                $currentPath = "$prefix.$key";
+            } else {
+                $currentPath = $key;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             // Check if this property is defined in the schema.

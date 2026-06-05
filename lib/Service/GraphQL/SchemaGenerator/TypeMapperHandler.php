@@ -5,6 +5,7 @@
  *
  * Extracted from SchemaGenerator to reduce class complexity.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -16,11 +17,23 @@
  * @link      https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service\GraphQL\SchemaGenerator
+ * @author   Conduction B.V. <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
 
+<<<<<<< HEAD
 use GraphQL\Type\Definition\EnumType;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -95,6 +108,7 @@ class TypeMapperHandler
     private ?ObjectType $auditTrailType = null;
 
     /**
+<<<<<<< HEAD
      * Shared GroupByInput input type. Backs the optional `groupBy`
      * argument on every auto-generated list query. See the
      * `add-time-bucket-aggregation` change for the spec contract.
@@ -127,6 +141,8 @@ class TypeMapperHandler
     private ?ObjectType $groupBucketType = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Callback to resolve a $ref string to a RegisterSchema.
      *
      * @var callable(string): ?RegisterSchema
@@ -183,7 +199,11 @@ class TypeMapperHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resetCache(): void
     {
@@ -203,7 +223,11 @@ class TypeMapperHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setScalars(array $scalars): void
     {
@@ -218,8 +242,11 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL type
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function mapPropertyToGraphQLType(array $property): Type
@@ -271,8 +298,11 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL input type
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function mapPropertyToInputType(array $property): Type
@@ -319,8 +349,11 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return InputObjectType The filter input type
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFilterInputType(RegisterSchema $schema): InputObjectType
     {
@@ -381,8 +414,11 @@ class TypeMapperHandler
      *
      * @return InputObjectType The create input type
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getCreateInputType(RegisterSchema $schema): InputObjectType
@@ -438,8 +474,11 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return InputObjectType The update input type
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUpdateInputType(RegisterSchema $schema): InputObjectType
     {
@@ -479,8 +518,11 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, Type|array<string,mixed>> The input fields
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildInputFields(RegisterSchema $schema): array
     {
@@ -508,8 +550,11 @@ class TypeMapperHandler
      * @param ObjectType     $objectType The object type for the schema
      *
      * @return ObjectType The connection type
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getConnectionType(RegisterSchema $schema, ObjectType $objectType): ObjectType
     {
@@ -544,10 +589,13 @@ class TypeMapperHandler
                     'totalCount' => Type::nonNull(Type::int()),
                     'facets'     => $this->scalars['JSON'],
                     'facetable'  => Type::listOf(Type::string()),
+<<<<<<< HEAD
                     'groups'     => [
                         'type'        => Type::listOf(Type::nonNull($this->getGroupBucketType())),
                         'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
                     ],
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ],
             ]
         );
@@ -558,6 +606,7 @@ class TypeMapperHandler
     }//end getConnectionType()
 
     /**
+<<<<<<< HEAD
      * Get (or lazily build) the shared GroupBucket object type.
      *
      * @return ObjectType The GroupBucket type.
@@ -706,6 +755,11 @@ class TypeMapperHandler
      * @return ObjectType The PageInfo type
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
+=======
+     * Get the shared PageInfo type.
+     *
+     * @return ObjectType The PageInfo type
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getPageInfoType(): ObjectType
     {
@@ -734,7 +788,11 @@ class TypeMapperHandler
      *
      * @return ObjectType The AuditTrail type
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAuditTrailType(): ObjectType
     {
@@ -770,7 +828,11 @@ class TypeMapperHandler
      *
      * @return array<string, array<string, mixed>> The argument definitions
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getListArgs(RegisterSchema $schema): array
     {
@@ -787,10 +849,13 @@ class TypeMapperHandler
             'first'      => ['type' => Type::int(), 'defaultValue' => 20, 'description' => 'Number of items to return'],
             'offset'     => ['type' => Type::int(), 'description' => 'Offset for pagination'],
             'after'      => ['type' => Type::string(), 'description' => 'Cursor for forward pagination'],
+<<<<<<< HEAD
             'groupBy'    => [
                 'type'        => $this->getGroupByInputType(),
                 'description' => 'Optional ad-hoc aggregation; when supplied, the connection emits a `groups` field.',
             ],
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
     }//end getListArgs()
@@ -799,8 +864,11 @@ class TypeMapperHandler
      * Get the shared sort input type.
      *
      * @return InputObjectType The sort input type
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getSortInputType(): InputObjectType
     {
@@ -830,8 +898,11 @@ class TypeMapperHandler
      * Get the shared self-filter input type for metadata columns.
      *
      * @return InputObjectType The self-filter input type
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getSelfFilterType(): InputObjectType
     {
@@ -863,8 +934,11 @@ class TypeMapperHandler
      *
      * @return array<string, string> Map of property name to auth description
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-6
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getPropertyAuthDescriptions(RegisterSchema $schema): array

@@ -3,9 +3,12 @@
 /**
  * OpenRegister Object and Retention Settings Handler
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -17,7 +20,11 @@
  *
  * @link https://www.OpenRegister.nl
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Settings;
@@ -82,7 +89,11 @@ class ObjectRetentionHandler
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectSettingsOnly(): array
     {
@@ -137,7 +148,11 @@ class ObjectRetentionHandler
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateObjectSettingsOnly(array $objectData): array
     {
@@ -177,7 +192,11 @@ class ObjectRetentionHandler
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
      *     searchTrailsEnabled: bool}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -241,7 +260,11 @@ class ObjectRetentionHandler
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
      *     searchTrailsEnabled: mixed|true}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateRetentionSettingsOnly(array $retentionData): array
     {
@@ -272,7 +295,11 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If archival settings retrieval fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getArchivalSettingsOnly(): array
     {
@@ -309,7 +336,11 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If archival settings update fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateArchivalSettingsOnly(array $archivalData): array
     {
@@ -338,7 +369,11 @@ class ObjectRetentionHandler
      *
      * @return array Default archival configuration
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getArchivalDefaults(): array
     {
@@ -363,8 +398,11 @@ class ObjectRetentionHandler
      * @throws \RuntimeException If version information retrieval fails
      *
      * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getVersionInfoOnly(): array
     {
@@ -384,8 +422,11 @@ class ObjectRetentionHandler
      * @param mixed $value The value to convert to boolean
      *
      * @return bool The boolean representation
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertToBoolean($value): bool
     {

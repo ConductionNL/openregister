@@ -36,6 +36,7 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * Download the signed-in user's data export as a JSON file.
 		 *
@@ -43,6 +44,8 @@ export default {
 		 *   triggers a browser download
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async exportData() {
 			this.loading = true
 			this.message = ''

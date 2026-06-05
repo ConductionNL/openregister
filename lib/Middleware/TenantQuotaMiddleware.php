@@ -7,9 +7,12 @@
  * status checks before controller execution. Uses APCu for high-performance
  * counter management.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware
  *
@@ -19,9 +22,15 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-79
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-78
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -96,8 +105,13 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-79
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function beforeController(string|Controller $controller, string $methodName): void
     {
@@ -164,11 +178,17 @@ class TenantQuotaMiddleware extends Middleware
      * @return Response The unmodified response
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
+=======
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-78
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
@@ -189,6 +209,7 @@ class TenantQuotaMiddleware extends Middleware
         }
 
         // Track bandwidth from response content length.
+<<<<<<< HEAD
         // Estimate from headers or use 0 for non-JSON responses.
         $contentLength = 0;
         if ($response instanceof JSONResponse) {
@@ -199,6 +220,15 @@ class TenantQuotaMiddleware extends Middleware
             }
 
             $contentLength = strlen($content);
+=======
+        if ($response instanceof JSONResponse) {
+            $encoded       = json_encode($response->getData());
+            $content       = ($encoded !== false) ? $encoded : '';
+            $contentLength = strlen($content);
+        } else {
+            // Estimate from headers or use 0.
+            $contentLength = 0;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if ($contentLength > 0) {
@@ -226,8 +256,11 @@ class TenantQuotaMiddleware extends Middleware
      * @return Response|null A JSON error response or null to re-throw
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function afterException(string|Controller $controller, string $methodName, \Exception $exception): ?Response
     {
@@ -268,9 +301,13 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @throws TenantQuotaExceededException If quota is exceeded
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function checkRequestQuota(object $organisation): void
     {

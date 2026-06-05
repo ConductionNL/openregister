@@ -6,9 +6,12 @@
  * Assembles SIP (Submission Information Package) archives conforming to the
  * OAIS reference model (ISO 14721) for e-Depot transfer.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *
@@ -20,8 +23,13 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-35
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -98,7 +106,11 @@ class SipPackageBuilder
      *
      * @throws InvalidArgumentException If no objects are provided.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-35
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize=0): array
     {
@@ -137,8 +149,11 @@ class SipPackageBuilder
      * @param int   $maxSize          Maximum package size in bytes.
      *
      * @return array<int, array> Array of batches.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function splitIntoBatches(array $objectsWithFiles, int $maxSize): array
     {
@@ -178,8 +193,11 @@ class SipPackageBuilder
      * @param int    $totalPackages    Total number of packages.
      *
      * @return string Path to the generated ZIP file.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildSinglePackage(
         string $transferId,
@@ -187,11 +205,15 @@ class SipPackageBuilder
         int $sequenceNumber,
         int $totalPackages
     ): string {
+<<<<<<< HEAD
         $suffix = '';
         if ($totalPackages > 1) {
             $suffix = "-part{$sequenceNumber}";
         }
 
+=======
+        $suffix  = $totalPackages > 1 ? "-part{$sequenceNumber}" : '';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $zipPath = $this->tempManager->getTemporaryFile(".sip{$suffix}.zip");
 
         $zip    = new ZipArchive();
@@ -218,11 +240,15 @@ class SipPackageBuilder
 
             if (empty($files) === false) {
                 foreach ($files as $file) {
+<<<<<<< HEAD
                     $subDir = 'original';
                     if ($file['isRendition'] === true) {
                         $subDir = 'rendition';
                     }
 
+=======
+                    $subDir   = ($file['isRendition'] === true) ? 'rendition' : 'original';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $filePath = "{$objectDir}/content/{$subDir}/{$file['name']}";
 
                     if (file_exists($file['path']) === true) {
@@ -283,8 +309,11 @@ class SipPackageBuilder
      * @param string $content The file content.
      *
      * @return array{path: string, size: int, checksum: string} The manifest entry.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createManifestEntry(string $path, string $content): array
     {
@@ -303,7 +332,11 @@ class SipPackageBuilder
      *
      * @return string The METS XML string.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generateMetsXml(string $transferId, array $objectsWithFiles): string
     {
@@ -350,12 +383,17 @@ class SipPackageBuilder
                 $fileCounter++;
 
                 $isRendition = ($file['isRendition'] === true);
+<<<<<<< HEAD
                 $subDir      = 'original';
                 if ($isRendition === true) {
                     $subDir = 'rendition';
                 }
 
                 $filePath = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
+=======
+                $subDir      = ($isRendition === true) ? 'rendition' : 'original';
+                $filePath    = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
                 $fileElement = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
                 $fileElement->setAttribute('ID', $fileId);
@@ -371,9 +409,13 @@ class SipPackageBuilder
 
                 if ($isRendition === true) {
                     $renditionGrp->appendChild($fileElement);
+<<<<<<< HEAD
                 }
 
                 if ($isRendition === false) {
+=======
+                } else {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $originalGrp->appendChild($fileElement);
                 }
 
@@ -394,7 +436,11 @@ class SipPackageBuilder
      *
      * @return string The PREMIS XML string.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generatePremisXml(string $transferId, array $objectsWithFiles): string
     {
@@ -444,11 +490,15 @@ class SipPackageBuilder
                 $objIdType->textContent = 'filepath';
                 $objId->appendChild($objIdType);
 
+<<<<<<< HEAD
                 $subDir = 'original';
                 if ($file['isRendition'] === true) {
                     $subDir = 'rendition';
                 }
 
+=======
+                $subDir     = ($file['isRendition'] === true) ? 'rendition' : 'original';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $objIdValue = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:objectIdentifierValue');
                 $objIdValue->textContent = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
                 $objId->appendChild($objIdValue);

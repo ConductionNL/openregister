@@ -213,7 +213,10 @@ class SaveObjectCoverageTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+<<<<<<< HEAD
             $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             new ArrayLoader()
         );
 
@@ -1492,6 +1495,7 @@ class SaveObjectCoverageTest extends TestCase
     }
 
     /**
+<<<<<<< HEAD
      * Test setSelfMetadata ignores owner from client @self input.
      *
      * SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self —
@@ -1502,10 +1506,20 @@ class SaveObjectCoverageTest extends TestCase
     public function testSetSelfMetadataWithOwnerIsIgnored(): void
     {
         $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+=======
+     * Test setSelfMetadata sets owner.
+     *
+     * @return void
+     */
+    public function testSetSelfMetadataWithOwner(): void
+    {
+        $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $selfData = ['owner' => 'user123'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
+<<<<<<< HEAD
         // owner must remain null — the client-supplied value is discarded.
         $this->assertNull($entity->getOwner());
     }
@@ -1515,11 +1529,19 @@ class SaveObjectCoverageTest extends TestCase
      *
      * SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
      * has verified membership.  Default mock → hasAccessToOrganisation → false.
+=======
+        $this->assertSame('user123', $entity->getOwner());
+    }
+
+    /**
+     * Test setSelfMetadata sets organisation.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
     public function testSetSelfMetadataWithOrganisation(): void
     {
+<<<<<<< HEAD
         $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = ['organisation' => 'org-uuid'];
 
@@ -1545,6 +1567,9 @@ class SaveObjectCoverageTest extends TestCase
             ->willReturn(true);
 
         $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+=======
+        $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $selfData = ['organisation' => 'org-uuid'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);

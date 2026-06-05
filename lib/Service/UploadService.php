@@ -93,8 +93,11 @@ class UploadService
      *
      * @throws \Exception If file processing fails
      * @throws \GuzzleHttp\Exception\GuzzleException If URL fetching fails
+<<<<<<< HEAD
      *
      * @spec exclude Source-dispatch helper routing to per-source (file/url/json) processors; no business rule of its own.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {

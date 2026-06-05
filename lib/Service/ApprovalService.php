@@ -3,9 +3,12 @@
 /**
  * OpenRegister ApprovalService
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,9 +19,12 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-4
  * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -70,8 +76,11 @@ class ApprovalService
      * @param string        $objectUuid The object's UUID
      *
      * @return array<int, ApprovalStep> Created steps
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function initializeChain(ApprovalChain $chain, string $objectUuid): array
     {
@@ -79,10 +88,14 @@ class ApprovalService
         $createdSteps = [];
 
         foreach ($steps as $index => $stepDef) {
+<<<<<<< HEAD
             $status = 'waiting';
             if ($index === 0) {
                 $status = 'pending';
             }
+=======
+            $status = ($index === 0) ? 'pending' : 'waiting';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $step = $this->stepMapper->createFromArray(
                     [
@@ -112,8 +125,11 @@ class ApprovalService
      * @return array{step: ApprovalStep, nextStep: ApprovalStep|null, statusOnApprove: string}
      *
      * @throws Exception If user is not authorised or step is not pending
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function approveStep(int $stepId, string $userId, string $comment=''): array
     {
@@ -179,8 +195,11 @@ class ApprovalService
      * @return array{step: ApprovalStep, statusOnReject: string}
      *
      * @throws Exception If user is not authorised or step is not pending
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function rejectStep(int $stepId, string $userId, string $comment=''): array
     {
@@ -232,8 +251,11 @@ class ApprovalService
      * @return void
      *
      * @throws Exception If user is not in the required group
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function verifyRole(string $userId, string $role): void
     {
@@ -250,8 +272,11 @@ class ApprovalService
      * @param string        $status The approval status
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function persistApprovalExecution(
         ApprovalChain $chain,

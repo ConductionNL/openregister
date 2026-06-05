@@ -3,6 +3,7 @@ status: redirect
 ---
 # DSO Omgevingsloket Integration
 
+<<<<<<< HEAD
 ## Purpose
 
 @e2e exclude redirect stub owned by Procest — no UI in OR
@@ -17,3 +18,6 @@ Implementers MUST consult the canonical specification owned by Procest instead o
 - **WHEN** a developer needs the requirements for DSO Omgevingsloket integration
 - **THEN** they MUST refer to `procest/openspec/specs/dso-omgevingsloket/spec.md`
 - **AND** they MUST NOT derive normative behavior from this stub
+=======
+Moved to `procest/openspec/specs/dso-omgevingsloket/spec.md`. This spec is now owned by Procest.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

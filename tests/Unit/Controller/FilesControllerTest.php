@@ -212,10 +212,16 @@ class FilesControllerTest extends TestCase
     public function testShowFileNotFoundFallbackViaOwner(): void
     {
         $object = $this->getMockBuilder(ObjectEntity::class)
+<<<<<<< HEAD
             ->addMethods(['getOwner', 'getUuid'])
             ->getMock();
         $object->method('getOwner')->willReturn('testuser');
         $object->method('getUuid')->willReturn('object-uuid-1');
+=======
+            ->addMethods(['getOwner'])
+            ->getMock();
+        $object->method('getOwner')->willReturn('testuser');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->setupObjectServiceMocks($object);
 
         $this->fileService->method('getFile')->willReturn(null);
@@ -232,18 +238,24 @@ class FilesControllerTest extends TestCase
                 return null;
             });
 
+<<<<<<< HEAD
         // The resolved file's parent folder name must match the object UUID
         // so the IDOR guard accepts it as belonging to this object (issue #1956 c).
         $objectFolder = $this->createMock(Folder::class);
         $objectFolder->method('getName')->willReturn('object-uuid-1');
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $file = $this->createMock(File::class);
         $resource = fopen('php://memory', 'r');
         $file->method('fopen')->willReturn($resource);
         $file->method('getMimeType')->willReturn('image/png');
         $file->method('getName')->willReturn('logo.png');
         $file->method('getSize')->willReturn(1024);
+<<<<<<< HEAD
         $file->method('getParent')->willReturn($objectFolder);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $userFolder = $this->createMock(Folder::class);
         $userFolder->method('getById')->willReturn([$file]);
@@ -258,6 +270,7 @@ class FilesControllerTest extends TestCase
         fclose($resource);
     }
 
+<<<<<<< HEAD
     /**
      * Regression guard for issue #1956 part (c) — sibling-object IDOR.
      *
@@ -306,6 +319,14 @@ class FilesControllerTest extends TestCase
             ->getMock();
         $object->method('getOwner')->willReturn(null);
         $object->method('getUuid')->willReturn('sysobj-uuid');
+=======
+    public function testShowFileNotFoundFallbackViaSystemUser(): void
+    {
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getOwner'])
+            ->getMock();
+        $object->method('getOwner')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->setupObjectServiceMocks($object);
 
         $this->fileService->method('getFile')->willReturn(null);
@@ -322,14 +343,20 @@ class FilesControllerTest extends TestCase
                 return null;
             });
 
+<<<<<<< HEAD
         $objectFolder = $this->createMock(Folder::class);
         $objectFolder->method('getName')->willReturn('sysobj-uuid');
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $file = $this->createMock(File::class);
         $resource = fopen('php://memory', 'r');
         $file->method('fopen')->willReturn($resource);
         $file->method('getMimeType')->willReturn('application/pdf');
+<<<<<<< HEAD
         $file->method('getParent')->willReturn($objectFolder);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $file->method('getName')->willReturn('doc.pdf');
         $file->method('getSize')->willReturn(2048);
 
@@ -1649,6 +1676,7 @@ class FilesControllerTest extends TestCase
                 }
                 return null;
             });
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([
             'share' => 'true',
             'tags' => 'a,b',
@@ -1705,6 +1733,12 @@ class FilesControllerTest extends TestCase
             'bool false'   => [false, false],
             'empty string' => ['', false],
         ];
+=======
+        $this->request->method('getParams')->willReturn([]);
+
+        $result = $this->invokePrivateMethod('extractUploadedFiles', []);
+        $this->assertCount(1, $result);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     public function testExtractUploadedFilesMultipart(): void

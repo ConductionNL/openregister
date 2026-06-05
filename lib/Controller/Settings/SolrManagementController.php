@@ -3,9 +3,12 @@
 /**
  * OpenRegister SOLR Management Controller
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -79,8 +82,11 @@ class SolrManagementController extends Controller
      * @return JSONResponse JSON response with SOLR field configuration
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSolrFields(): JSONResponse
     {
@@ -193,8 +199,11 @@ class SolrManagementController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -329,8 +338,11 @@ class SolrManagementController extends Controller
      *     },
      *     array<never, never>
      * >
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fixMismatchedSolrFields(): JSONResponse
     {
@@ -421,8 +433,11 @@ class SolrManagementController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteSolrField(string $fieldName): JSONResponse
     {
@@ -524,6 +539,262 @@ class SolrManagementController extends Controller
     }//end deleteSolrField()
 
     /**
+<<<<<<< HEAD
+=======
+     * List all SOLR collections with statistics
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of collections with metadata
+     *
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: string,
+     *         trace?: string,
+     *         collections?: mixed,
+     *         count?: int<0, max>,
+     *         timestamp?: string
+     *     },
+     *     array<never, never>
+     * >
+     */
+    public function listSolrCollections(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $collections       = $guzzleSolrService->listCollections();
+
+            return new JSONResponse(
+                data: [
+                    'success'     => true,
+                    'collections' => $collections,
+                    'count'       => count($collections),
+                    'timestamp'   => date('c'),
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end listSolrCollections()
+
+    /**
+     * List all SOLR ConfigSets
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of ConfigSets with metadata
+     *
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: string,
+     *         trace?: string,
+     *         configSets?: mixed,
+     *         count?: int<0, max>,
+     *         timestamp?: string
+     *     },
+     *     array<never, never>
+     * >
+     */
+    public function listSolrConfigSets(): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $configSets        = $guzzleSolrService->listConfigSets();
+
+            return new JSONResponse(
+                data: [
+                    'success'    => true,
+                    'configSets' => $configSets,
+                    'count'      => count($configSets),
+                    'timestamp'  => date('c'),
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end listSolrConfigSets()
+
+    /**
+     * Create a new SOLR ConfigSet by copying an existing one
+     *
+     * @param string $name          Name for the new ConfigSet
+     * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
+     *
+     * @return JSONResponse Creation result
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<400, array{success: false, error: string}, array<never, never>>
+     */
+    public function createSolrConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $result            = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 400
+            );
+        }
+    }//end createSolrConfigSet()
+
+    /**
+     * Delete a SOLR ConfigSet
+     *
+     * @param string $name Name of the ConfigSet to delete
+     *
+     * @return JSONResponse Deletion result
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<400, array{success: false, error: string}, array<never, never>>
+     */
+    public function deleteSolrConfigSet(string $name): JSONResponse
+    {
+        try {
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $result            = $guzzleSolrService->deleteConfigSet($name);
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 400
+            );
+        }
+    }//end deleteSolrConfigSet()
+
+    /**
+     * Create a new SOLR collection from a ConfigSet
+     *
+     * @param string $collectionName    Name for the new collection
+     * @param string $configName        ConfigSet to use
+     * @param int    $numShards         Number of shards (default: 1)
+     * @param int    $replicationFactor Number of replicas (default: 1)
+     * @param int    $maxShardsPerNode  Maximum shards per node (default: 1)
+     *
+     * @return JSONResponse Creation result
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     */
+    public function createSolrCollection(
+        string $collectionName,
+        string $configName,
+        int $numShards=1,
+        int $replicationFactor=1,
+        int $maxShardsPerNode=1
+    ): JSONResponse {
+        try {
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $result            = $guzzleSolrService->createCollection(
+                $collectionName,
+                $configName,
+                $numShards,
+                $replicationFactor,
+                $maxShardsPerNode
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end createSolrCollection()
+
+    /**
+     * Copy a SOLR collection
+     *
+     * @param string $sourceCollection Source collection name
+     * @param string $targetCollection Target collection name
+     * @param bool   $copyData         Whether to copy data (default: false)
+     *
+     * @return JSONResponse Copy operation result
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     *
+     * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to enable/disable data copying
+     */
+    public function copySolrCollection(
+        string $sourceCollection,
+        string $targetCollection,
+        bool $copyData=false
+    ): JSONResponse {
+        try {
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $result            = $guzzleSolrService->copyCollection(
+                sourceCollection: $sourceCollection,
+                targetCollection: $targetCollection,
+                copyData: $copyData
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
+                statusCode: 500
+            );
+        }
+    }//end copySolrCollection()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Delete a specific SOLR collection by name
      *
      * @param string $name The name of the collection to delete
@@ -531,8 +802,11 @@ class SolrManagementController extends Controller
      * @return JSONResponse The deletion result
      *
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteSpecificSolrCollection(string $name): JSONResponse
     {
@@ -647,8 +921,11 @@ class SolrManagementController extends Controller
      *     },
      *     array<never, never>
      * >
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateSolrCollectionAssignments(
         ?string $objectCollection=null,

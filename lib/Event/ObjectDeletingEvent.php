@@ -5,9 +5,12 @@
  *
  * This file contains the event class dispatched when an object is being deleted
  * in the OpenRegister application. Supports hook-based rejection via StoppableEventInterface.
+<<<<<<< HEAD
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category Event
  * @package  OCA\OpenRegister\Event
@@ -81,7 +84,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return ObjectEntity The object entity that is being deleted
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObject(): ObjectEntity
     {
@@ -93,7 +100,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return bool True if propagation is stopped
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isPropagationStopped(): bool
     {
@@ -105,7 +116,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function stopPropagation(): void
     {
@@ -119,7 +134,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setErrors(array $errors): void
     {
@@ -131,7 +150,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return array<string, mixed> The error details
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getErrors(): array
     {
@@ -145,7 +168,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setModifiedData(array $data): void
     {
@@ -157,7 +184,11 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return array<string, mixed> The modified data
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getModifiedData(): array
     {

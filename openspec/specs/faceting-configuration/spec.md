@@ -3,15 +3,27 @@ status: in-progress
 ---
 # Faceting Configuration
 
+<<<<<<< HEAD
 # Faceting Configuration
 ## Purpose
 
 @e2e exclude backend facet config parser — covered by PHPUnit
+=======
+
+# Faceting Configuration
+## Purpose
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Provides a comprehensive, backend-agnostic faceting system for OpenRegister that enables per-property facet definition on schema properties, supports multiple facet types (terms, date histogram, range), and delivers configurable facet metadata (title, description, order, aggregation control) through the REST and GraphQL APIs. The system is designed to solve the fundamental conflict between pagination and facet computation by calculating facets on the full filtered dataset independently of pagination, while maintaining backward compatibility with the legacy boolean `facetable` flag and offering intelligent caching at multiple layers (in-memory, APCu/distributed, and database-persistent) to ensure sub-200ms facet response times even on large datasets.
 
 **OpenSpec changes**
 - `fix-date-histogram-mariadb` (active) — adds explicit cross-DB correctness requirements for `date_histogram` facets: MariaDB platform branching, ISO-week alignment, correct week-bucket bounds.
+<<<<<<< HEAD
 ## Requirements
+=======
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Facetable config object support with backward compatibility
 The system MUST accept the `facetable` property on schema properties as either a boolean (`true`/`false`) or a configuration object. When a configuration object is provided, it MUST support the fields `aggregated` (boolean), `title` (string), `description` (string), `order` (integer), `type` (string: `terms`, `date_range`, or `date_histogram`), and `options` (object with type-specific settings). All fields in the configuration object MUST be optional with sensible defaults. The `FacetHandler.normalizeFacetConfig()` method (line ~1119) MUST normalize both formats into a standard internal representation. Boolean `true` MUST be treated as `{ aggregated: true, title: null, description: null, order: null }`.
 
@@ -438,6 +450,7 @@ When facet bucket values contain UUIDs that reference other register objects (e.
 - **THEN** the label MUST be served from the distributed `openregister_facet_labels` cache
 - **AND** `cacheStats.distributed_cache_hits` MUST increment
 
+<<<<<<< HEAD
 ### Requirement: Date histogram facets MUST work on both PostgreSQL and MariaDB
 `MagicFacetHandler` MUST produce correctly bucketed `date_histogram` facet results on both PostgreSQL and MariaDB/MySQL for every supported interval (`day`, `week`, `month`, `quarter`, `year`). The date-key SQL expression MUST be selected based on the database platform detected via `$this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform`, using `TO_CHAR()` with PostgreSQL format patterns on PostgreSQL and `DATE_FORMAT()` (plus `CONCAT(YEAR(), '-Q', QUARTER())` for quarter) on MariaDB/MySQL. Returning an empty `buckets` array on MariaDB when data is present is a defect.
 
@@ -606,6 +619,8 @@ merge stored configuration with live discovery results.
 - **WHEN** `updateSolrFacetConfiguration` runs
 - **THEN** it MUST persist the configuration and return the result
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Current Implementation Status
 - **Fully implemented -- facetable config object support**: `FacetHandler.normalizeFacetConfig()` (line ~1119) handles both boolean and config object formats with `aggregated`, `title`, `description`, `order` fields. Type and options fields supported.
 - **Fully implemented -- facet type auto-detection**: `Schema.determineFacetType()` (line ~1767), `SchemaMapper.determineFacetTypeForProperty()` (line ~1384), and `FacetHandler.determineFacetTypeFromProperty()` (line ~1250) implement consistent type detection for terms, date_histogram, and range types.

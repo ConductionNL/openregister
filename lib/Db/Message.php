@@ -121,6 +121,7 @@ class Message extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
+<<<<<<< HEAD
     /**
      * AI Chat Companion context snapshot
      *
@@ -137,6 +138,8 @@ class Message extends Entity implements JsonSerializable
      */
     protected ?array $context = null;
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Message constructor
      *
@@ -149,6 +152,7 @@ class Message extends Entity implements JsonSerializable
         $this->addType(fieldName: 'role', type: 'string');
         $this->addType(fieldName: 'content', type: 'string');
         $this->addType(fieldName: 'sources', type: 'json');
+<<<<<<< HEAD
         $this->addType(fieldName: 'context', type: 'json');
         $this->addType(fieldName: 'created', type: 'datetime');
     }//end __construct()
@@ -184,6 +188,11 @@ class Message extends Entity implements JsonSerializable
 
     }//end setContext()
 
+=======
+        $this->addType(fieldName: 'created', type: 'datetime');
+    }//end __construct()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Serialize the message to JSON
      *
@@ -208,7 +217,10 @@ class Message extends Entity implements JsonSerializable
             'role'           => $this->role,
             'content'        => $this->content,
             'sources'        => $this->sources,
+<<<<<<< HEAD
             'context'        => $this->getContext(),
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'created'        => $this->created?->format('c'),
         ];
     }//end jsonSerialize()

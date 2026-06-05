@@ -1,4 +1,5 @@
 ---
+<<<<<<< HEAD
 title: Integrations
 sidebar_position: 1
 description: Open Register surfaces every linked thing (meetings, contacts, files, wiki pages, ...) through one pluggable registry. This index links the leaf-by-leaf reference plus the LLM and automation integrations.
@@ -69,6 +70,46 @@ Specific models you can plug in.
 - **[n8n](./n8n.md)** — workflow automation.
 - **[Windmill](./windmill.md)** — developer-focused workflow engine.
 - **[Custom webhooks](./custom-webhooks.md)** — build your own.
+=======
+title: Integrations Overview
+sidebar_position: 1
+description: Overview of all OpenRegister integrations including LLM hosting, models, and entity extraction
+keywords:
+  - Open Register
+  - Integrations
+  - LLM
+  - AI
+  - Entity Extraction
+---
+
+# Integrations Overview
+
+OpenRegister integrates with various external services and models to provide powerful AI capabilities, automation workflows, and advanced text processing. This page provides an overview of all available integrations and how they work together.
+
+## Integration Categories
+
+OpenRegister integrations fall into three main categories:
+
+### 1. LLM Hosting Platforms
+Services that host and run Large Language Models locally:
+- **[Ollama](./ollama.md)** - Simple, native API for running LLMs
+- **[Hugging Face](./huggingface.md)** - TGI/vLLM with OpenAI-compatible API
+
+### 2. LLM Models
+Specific language models that can be used:
+- **[Mistral](./mistral.md)** - High-performance 7B model
+- **[Dolphin](./dolphin.md)** - Document parsing and OCR model
+
+### 3. Entity Extraction Services
+Services for detecting and extracting entities from text:
+- **[Presidio](./presidio.md)** - Microsoft's PII detection service
+
+### 4. Automation Platforms
+Workflow automation and integration platforms:
+- **[n8n](./n8n.md)** - Workflow automation platform
+- **[Windmill](./windmill.md)** - Developer-focused workflow engine
+- **[Custom Webhooks](./custom-webhooks.md)** - Build your own integrations
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ## Integration Architecture
 

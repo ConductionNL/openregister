@@ -61,7 +61,11 @@ class ConfigurationControllerCoverageTest extends TestCase
     }
 
     // =========================================================================
+<<<<<<< HEAD
     // versionStatus — remote version null path
+=======
+    // checkVersion — remote version null path
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     // =========================================================================
 
     public function testCheckVersionRemoteVersionNull(): void
@@ -70,7 +74,11 @@ class ConfigurationControllerCoverageTest extends TestCase
         $this->configurationMapper->method('find')->with(1)->willReturn($config);
         $this->configurationService->method('checkRemoteVersion')->willReturn(null);
 
+<<<<<<< HEAD
         $result = $this->controller->versionStatus(1);
+=======
+        $result = $this->controller->checkVersion(1);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();
@@ -84,7 +92,11 @@ class ConfigurationControllerCoverageTest extends TestCase
         $this->configurationService->method('checkRemoteVersion')
             ->willThrowException(new \Exception('Unknown error'));
 
+<<<<<<< HEAD
         $result = $this->controller->versionStatus(1);
+=======
+        $result = $this->controller->checkVersion(1);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();

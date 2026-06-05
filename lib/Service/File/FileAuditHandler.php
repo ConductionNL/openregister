@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -24,11 +32,17 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+=======
+use OCP\IRequest;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * Handles file download audit logging.
@@ -71,10 +85,13 @@ class FileAuditHandler
      * @param string $objectUuid The UUID of the parent object.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec exclude No-op audit shim: only emits a log line; the AuditTrail insert is commented out, so there is no persisted behavior to specify.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function logDownload(
         int $fileId,
@@ -112,6 +129,7 @@ class FileAuditHandler
     }//end logDownload()
 
     /**
+<<<<<<< HEAD
      * Log a bulk download event (ZIP archive) as a SINGLE audit-trail row.
      *
      * One audit row per ZIP — not one per included file — to match the
@@ -176,16 +194,39 @@ class FileAuditHandler
             $auditTrail->setSize(14);
 
             return $this->auditTrailMapper->insert($auditTrail);
+=======
+     * Log a bulk download event (ZIP archive).
+     *
+     * @param array  $fileIds    Array of file IDs included in the archive.
+     * @param array  $fileNames  Array of file names included in the archive.
+     * @param string $objectUuid The UUID of the parent object.
+     *
+     * @return void
+     */
+    public function logBulkDownload(array $fileIds, array $fileNames, string $objectUuid): void
+    {
+        try {
+            $userId = $this->getCurrentUserId();
+
+            $this->logger->info(
+                message: '[FileAuditHandler] Bulk download logged for '.count($fileIds)." files by {$userId}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[FileAuditHandler] Failed to log bulk download: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
+<<<<<<< HEAD
             return null;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }//end try
     }//end logBulkDownload()
 
     /**
+<<<<<<< HEAD
      * Log a file-action audit trail entry tied to the parent object.
      *
      * Creates an `AuditTrail` row whose `action` field is the namespaced
@@ -262,6 +303,8 @@ class FileAuditHandler
     }//end logFileAction()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get the current user ID.
      *
      * @return string The current user ID or 'anonymous'.
@@ -269,10 +312,14 @@ class FileAuditHandler
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
+<<<<<<< HEAD
         if ($user !== null) {
             return $user->getUID();
         }
 
         return 'anonymous';
+=======
+        return $user !== null ? $user->getUID() : 'anonymous';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end getCurrentUserId()
 }//end class

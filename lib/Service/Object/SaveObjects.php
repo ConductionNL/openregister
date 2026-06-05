@@ -43,9 +43,12 @@
  * - Time complexity: O(N*M*P) → O(N*M)
  * - Processing speed: 2-3x faster for large datasets
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Handler
  * @package   OCA\OpenRegister\Service\ObjectHandlers
  * @author    Conduction Development Team <info@conduction.nl>
@@ -129,7 +132,11 @@ class SaveObjects
      * @param OrganisationService $organisationService Service for organisation operations
      * @param LoggerInterface     $logger              Logger for error and debug logging
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -151,7 +158,11 @@ class SaveObjects
      * @return Schema The loaded schema
      * @throws Exception If schema cannot be found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function loadSchemaWithCache(int|string $schemaId): Schema
     {
@@ -174,7 +185,11 @@ class SaveObjects
      *
      * @return array Comprehensive schema analysis
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getSchemaAnalysisWithCache(Schema $schema): array
     {
@@ -200,7 +215,11 @@ class SaveObjects
      * @return Register The loaded register
      * @throws Exception If register cannot be found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function loadRegisterWithCache(int|string $registerId): Register
     {
@@ -221,7 +240,11 @@ class SaveObjects
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public static function clearSchemaCache(): void
     {
@@ -263,7 +286,11 @@ class SaveObjects
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Orchestrator at threshold after extracting initializeSaveResult
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function saveObjects(
         array $objects,
@@ -292,11 +319,24 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         if (count($objects) > 10000 || ($isMixedSchema === true && count($objects) > 1000)) {
+<<<<<<< HEAD
             $opLabel = 'Starting single-schema bulk save operation';
             $opType  = 'single-schema';
             if ($isMixedSchema === true) {
                 $opLabel = 'Starting mixed-schema bulk save operation';
                 $opType  = 'mixed-schema';
+=======
+            if ($isMixedSchema === true) {
+                $opLabel = 'Starting mixed-schema bulk save operation';
+            } else {
+                $opLabel = 'Starting single-schema bulk save operation';
+            }
+
+            if ($isMixedSchema === true) {
+                $opType = 'mixed-schema';
+            } else {
+                $opType = 'single-schema';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             $this->logger->info(
@@ -354,19 +394,26 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
+<<<<<<< HEAD
             // Forward the caller-supplied register/schema so the bulk-save path
             // does not have to fall back to per-row @self.register/@self.schema
             // — those values are advisory and may carry stale IDs from the
             // source instance when re-importing exported data.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $chunkResult = $this->processObjectsChunk(
                 objects: $objectsChunk,
                 schemaCache: $globalSchemaCache,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 _validation: $_validation,
+<<<<<<< HEAD
                 _events: $_events,
                 register: $register,
                 schema: $schema
+=======
+                _events: $_events
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             );
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
@@ -410,9 +457,16 @@ class SaveObjects
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
+<<<<<<< HEAD
         $efficiency = 0;
         if (count($processedObjects) > 0) {
             $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
+=======
+        if (count($processedObjects) > 0) {
+            $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
+        } else {
+            $efficiency = 0;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $result['performance'] = [
@@ -446,7 +500,11 @@ class SaveObjects
      *
      * @return array The initialized result structure
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function initializeSaveResult(int $totalObjects): array
     {
@@ -475,7 +533,11 @@ class SaveObjects
      *
      * @return int Optimal chunk size
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function calculateOptimalChunkSize(int $totalObjects): int
     {
@@ -523,7 +585,11 @@ class SaveObjects
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-schema grouping + validation requires branching
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
@@ -561,7 +627,11 @@ class SaveObjects
      *
      * @return array [schemaCache, schemaAnalysis] indexed by schema ID
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function groupAndLoadSchemas(array $objects): array
     {
@@ -601,7 +671,11 @@ class SaveObjects
      *
      * @throws Exception If schema is not found in cache
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function prepareMixedSchemaObject(array $object, array $schemaCache): array
     {
@@ -678,7 +752,11 @@ class SaveObjects
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Single-schema optimization path with many edge cases
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function prepareSingleSchemaObjectsOptimized(
         array $objects,
@@ -694,10 +772,18 @@ class SaveObjects
         );
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
+<<<<<<< HEAD
         $currentUser  = $this->userSession->getUser();
         $defaultOwner = null;
         if ($currentUser !== null) {
             $defaultOwner = $currentUser->getUID();
+=======
+        $currentUser = $this->userSession->getUser();
+        if ($currentUser !== null) {
+            $defaultOwner = $currentUser->getUID();
+        } else {
+            $defaultOwner = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
@@ -750,15 +836,26 @@ class SaveObjects
      *
      * @return array [registerId, registerObj, schemaId, schemaObj, schemaCache, schemaAnalysis]
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function loadAndValidateSchemaContext(
         Register|string|int $register,
         Schema|string|int $schema
     ): array {
+<<<<<<< HEAD
         $registerId = $register;
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
+=======
+        if ($register instanceof Register === true) {
+            $registerId = $register->getId();
+        } else {
+            $registerId = $register;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if ($register instanceof Register) {
@@ -769,9 +866,16 @@ class SaveObjects
             $register = $this->loadRegisterWithCache(registerId: $registerId);
         }
 
+<<<<<<< HEAD
         $schemaId = $schema;
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
+=======
+        if ($schema instanceof Schema === true) {
+            $schemaId = $schema->getId();
+        } else {
+            $schemaId = $schema;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if ($schema instanceof Schema) {
@@ -804,7 +908,11 @@ class SaveObjects
      *
      * @return array The prepared selfData array ready for database operations
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function prepareSingleSchemaObject(
         array $object,
@@ -831,6 +939,7 @@ class SaveObjects
             $selfData['id']   = $providedId;
         }
 
+<<<<<<< HEAD
         // SECURITY (wave-11 SB2): owner and organisation MUST NOT be accepted from
         // client-supplied @self data on the bulk path.  The wave-9 fix (#2008) added
         // stripping for the single-object MagicMapper path but the bulk pipeline
@@ -840,6 +949,11 @@ class SaveObjects
         // what the client sent in @self.owner or @self.organisation.
         $selfData['owner']        = $defaultOwner;
         $selfData['organisation'] = $defaultOrganisation;
+=======
+        // PERFORMANCE: Use pre-calculated metadata values.
+        $selfData['owner']        = $selfData['owner'] ?? $defaultOwner;
+        $selfData['organisation'] = $selfData['organisation'] ?? $defaultOrganisation;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Update object's @self data before hydration.
         $object['@self'] = $selfData;
@@ -859,9 +973,16 @@ class SaveObjects
         $selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
 
         // DEBUG: Log actual data structure to understand what we're receiving.
+<<<<<<< HEAD
         $selfKeys = 'none';
         if (isset($object['@self']) === true) {
             $selfKeys = array_keys($object['@self']);
+=======
+        if (isset($object['@self']) === true) {
+            $selfKeys = array_keys($object['@self']);
+        } else {
+            $selfKeys = 'none';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $this->logger->info(
@@ -910,7 +1031,11 @@ class SaveObjects
      *
      * @return array Updated selfData with metadata fields
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyHydratedMetadata(array $selfData, array &$object, ObjectEntity $tempEntity): array
     {
@@ -944,6 +1069,7 @@ class SaveObjects
      * - Memory-efficient processing
      * - Streamlined response format
      *
+<<<<<<< HEAD
      * @param array                    $objects       Array of pre-processed objects ready for database operations
      * @param array                    $schemaCache   Pre-built schema cache for performance optimization
      * @param bool                     $_rbac         Apply RBAC filtering
@@ -952,13 +1078,25 @@ class SaveObjects
      * @param bool                     $_events       Dispatch events
      * @param Register|string|int|null $register      Caller-supplied register context (forwarded to bulk save)
      * @param Schema|string|int|null   $schema        Caller-supplied schema context (forwarded to bulk save)
+=======
+     * @param array $objects       Array of pre-processed objects ready for database operations
+     * @param array $schemaCache   Pre-built schema cache for performance optimization
+     * @param bool  $_rbac         Apply RBAC filtering
+     * @param bool  $_multitenancy Apply multi-tenancy filtering
+     * @param bool  $_validation   Apply schema validation
+     * @param bool  $_events       Dispatch events
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return array Processing result for this chunk with bulk operation statistics
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chunk pipeline: transform → validate → persist → relations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processObjectsChunk(
         array $objects,
@@ -966,9 +1104,13 @@ class SaveObjects
         bool $_rbac,
         bool $_multitenancy,
         bool $_validation,
+<<<<<<< HEAD
         bool $_events,
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null
+=======
+        bool $_events
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ): array {
         $startTime = microtime(true);
 
@@ -998,11 +1140,15 @@ class SaveObjects
         }
 
         // STEP 2: Persist transformed objects to database.
+<<<<<<< HEAD
         $bulkResult = $this->persistChunk(
             transformedObjects: $transformedObjects,
             register: $register,
             schema: $schema
         );
+=======
+        $bulkResult = $this->persistChunk(transformedObjects: $transformedObjects);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // STEP 3: Build and classify results from bulk operation output.
         $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
@@ -1028,7 +1174,11 @@ class SaveObjects
      *
      * @return array Valid transformed objects ready for database operations
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformChunk(array $objects, array $schemaCache, array &$result): array
     {
@@ -1052,6 +1202,7 @@ class SaveObjects
      * All objects go directly to the bulk save operation which handles create vs update
      * automatically using INSERT...ON DUPLICATE KEY UPDATE with database-computed classification.
      *
+<<<<<<< HEAD
      * @param array                    $transformedObjects Valid objects ready for database operations
      * @param Register|string|int|null $register           Caller-supplied register context (forwarded to mapper)
      * @param Schema|string|int|null   $schema             Caller-supplied schema context (forwarded to mapper)
@@ -1065,6 +1216,16 @@ class SaveObjects
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null
     ): mixed {
+=======
+     * @param array $transformedObjects Valid objects ready for database operations
+     *
+     * @return mixed The bulk operation result from the mapper
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     */
+    private function persistChunk(array $transformedObjects): mixed
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->logger->info(
                 "[SaveObjects] Using single-call bulk processing (no pre-lookup needed)",
                 [
@@ -1073,6 +1234,7 @@ class SaveObjects
                 ]
                 );
 
+<<<<<<< HEAD
         // Resolve register/schema to entity instances if the caller passed an ID
         // — the mapper's fallback resolution path goes through @self.* on each
         // row, which is exactly what we're trying to avoid here.
@@ -1107,6 +1269,10 @@ class SaveObjects
             register: $register,
             schema: $schema
         );
+=======
+        // MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
+        return $this->objectEntityMapper->ultraFastBulkSave($transformedObjects, []);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end persistChunk()
 
     /**
@@ -1122,7 +1288,11 @@ class SaveObjects
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildChunkResults(mixed $bulkResult, array $transformedObjects, array &$result): void
     {
@@ -1161,7 +1331,11 @@ class SaveObjects
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function classifyDatabaseComputedResults(array $bulkResult, array &$result): void
     {
@@ -1233,7 +1407,11 @@ class SaveObjects
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function classifyLegacyResults(array $bulkResult, array $transformedObjects, array &$result): void
     {
@@ -1274,7 +1452,11 @@ class SaveObjects
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
@@ -1351,7 +1533,11 @@ class SaveObjects
      *
      * @return bool The boolean value
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function castToBoolean($value): bool
     {
@@ -1383,7 +1569,11 @@ class SaveObjects
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation resolution requires many type checks
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
@@ -1439,7 +1629,11 @@ class SaveObjects
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processInverseRelation(
         mixed $value,
@@ -1488,7 +1682,11 @@ class SaveObjects
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyInverseRelationToTarget(
         string $targetUuid,
@@ -1530,7 +1728,11 @@ class SaveObjects
      *
      * @throws Exception If there's an error during object creation
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
     {
@@ -1557,7 +1759,11 @@ class SaveObjects
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Metadata hydration touches many field types
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -1570,9 +1776,16 @@ class SaveObjects
             // Only extract @self if it exists (mixed schema or other paths).
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
             // or extract @self if it exists (mixed schema or other paths).
+<<<<<<< HEAD
             $selfData = $object;
             if (isset($object['@self']) === true) {
                 $selfData = $object['@self'];
+=======
+            if (isset($object['@self']) === true) {
+                $selfData = $object['@self'];
+            } else {
+                $selfData = $object;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             // Generate or validate object identifiers (uuid, id, register, schema).
@@ -1650,7 +1863,11 @@ class SaveObjects
      *
      * @return array Updated selfData with identifiers set
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generateObjectIdentifiers(array $selfData, array $object): array
     {
@@ -1686,7 +1903,11 @@ class SaveObjects
      *
      * @return array|null Null if valid, error array if invalid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateObjectRequiredFields(array $selfData, array $object, int $index, array $schemaCache): ?array
     {
@@ -1729,16 +1950,28 @@ class SaveObjects
      *
      * @return array Updated selfData with owner and organisation set
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function hydrateObjectMetadataFields(array $selfData): array
     {
         // Set owner to current user if not provided (with null check).
         if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
+<<<<<<< HEAD
             $currentUser       = $this->userSession->getUser();
             $selfData['owner'] = null;
             if ($currentUser !== null) {
                 $selfData['owner'] = $currentUser->getUID();
+=======
+            $currentUser = $this->userSession->getUser();
+            if ($currentUser !== null) {
+                $selfData['owner'] = $currentUser->getUID();
+            } else {
+                $selfData['owner'] = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
         }
 
@@ -1761,7 +1994,11 @@ class SaveObjects
      *
      * @return array The extracted business data
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractBusinessData(array $object): array
     {
@@ -1820,7 +2057,11 @@ class SaveObjects
      *
      * @return array Array of ObjectEntity objects representing saved objects
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $savedObjectIds, array $existingObjects): array
     {
@@ -1901,7 +2142,11 @@ class SaveObjects
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning across nested structures
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -1921,9 +2166,16 @@ class SaveObjects
                 continue;
             }
 
+<<<<<<< HEAD
             $currentPath = $key;
             if ($prefix !== '') {
                 $currentPath = $prefix.'.'.$key;
+=======
+            if ($prefix !== '') {
+                $currentPath = $prefix.'.'.$key;
+            } else {
+                $currentPath = $key;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             $propertyRelations = $this->scanPropertyForRelation(
@@ -1954,7 +2206,11 @@ class SaveObjects
      *
      * @return array Relations found in this property
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scanPropertyForRelation(
         string $key,
@@ -2001,7 +2257,11 @@ class SaveObjects
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array scanning requires type-checking each element
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scanArrayForRelations(
         string $key,
@@ -2063,7 +2323,11 @@ class SaveObjects
      *
      * @return array Relations found (empty array or single-element array)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scanStringForRelation(
         string $key,
@@ -2113,7 +2377,11 @@ class SaveObjects
      *
      * @return bool True if the value should be treated as a reference
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function isReference(string $value): bool
     {

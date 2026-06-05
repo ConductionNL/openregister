@@ -59,7 +59,11 @@ class Notifier implements INotifier
      *
      * @psalm-return 'openregister'
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getID(): string
     {
@@ -85,7 +89,11 @@ class Notifier implements INotifier
      * @return INotification The prepared notification
      * @throws InvalidArgumentException If the notification is not from this app
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
@@ -101,9 +109,13 @@ class Notifier implements INotifier
                 return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
             default:
+<<<<<<< HEAD
                 // Unknown subject. Object-lifecycle subjects
                 // (object_created / object_updated / object_transitioned)
                 // are rendered by AnnotationNotifier, not here.
+=======
+                // Unknown subject.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
     }//end prepare()
@@ -116,7 +128,11 @@ class Notifier implements INotifier
      *
      * @return INotification The prepared notification
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification
     {
@@ -127,13 +143,13 @@ class Notifier implements INotifier
         $newVersion         = $parameters['newVersion'] ?? 'unknown';
 
         $notification->setParsedSubject(
-            $l->t('Configuration update available: %s', [$configurationTitle])
+            $l->t(text: 'Configuration update available: %s', args: [$configurationTitle])
         );
 
         $notification->setParsedMessage(
             $l->t(
-                'A new version (%s) of configuration "%s" is available. Current version: %s',
-                [$newVersion, $configurationTitle, $currentVersion]
+                text: 'A new version (%s) of configuration "%s" is available. Current version: %s',
+                args: [$newVersion, $configurationTitle, $currentVersion]
             )
         );
 
@@ -144,7 +160,7 @@ class Notifier implements INotifier
         // Add action to view the configuration.
         if (($parameters['configurationId'] ?? null) !== null) {
             $action = $notification->createAction();
-            $action->setLabel($l->t('View'))
+            $action->setLabel($l->t(text: 'View'))
                 ->setPrimary(true)
                 ->setLink(
                     link: $this->urlGenerator->linkToRouteAbsolute(

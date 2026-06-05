@@ -68,19 +68,28 @@ class MagicSearchHandlerTest extends TestCase
      *
      * @return string[] Generated SQL condition strings.
      */
+<<<<<<< HEAD
     private function invokeMethod(
         array $query,
         array $properties,
         object $connection,
         bool $isPostgres=true
     ): array {
+=======
+    private function invokeMethod(array $query, array $properties, object $connection): array
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $schema = $this->createMock(Schema::class);
         $schema->method('getProperties')->willReturn($properties);
 
         $method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
         $method->setAccessible(true);
 
+<<<<<<< HEAD
         return $method->invoke($this->handler, $query, $schema, $connection, $isPostgres);
+=======
+        return $method->invoke($this->handler, $query, $schema, $connection);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end invokeMethod()
 
     /**
@@ -105,7 +114,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"publicatiedatum\" >= '2025-12-31T23:59:59Z'", $conditions[0]);
+=======
+        $this->assertSame("publicatiedatum >= '2025-12-31T23:59:59Z'", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testGteProducesGreaterThanOrEqualCondition()
 
     public function testLteProducesLessThanOrEqualCondition(): void
@@ -117,7 +130,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"publicatiedatum\" <= '2027-01-01T00:00:00Z'", $conditions[0]);
+=======
+        $this->assertSame("publicatiedatum <= '2027-01-01T00:00:00Z'", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testLteProducesLessThanOrEqualCondition()
 
     public function testGteAndLteTogetherProduceTwoRangeConditions(): void
@@ -129,8 +146,13 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(2, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"publicatiedatum\" >= '2025-12-31T23:59:59Z'", $conditions[0]);
         $this->assertSame("\"publicatiedatum\" <= '2027-01-01T00:00:00Z'", $conditions[1]);
+=======
+        $this->assertSame("publicatiedatum >= '2025-12-31T23:59:59Z'", $conditions[0]);
+        $this->assertSame("publicatiedatum <= '2027-01-01T00:00:00Z'", $conditions[1]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testGteAndLteTogetherProduceTwoRangeConditions()
 
     // -------------------------------------------------------------------------
@@ -145,7 +167,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"bedrag\" > '100'", $conditions[0]);
+=======
+        $this->assertSame("bedrag > '100'", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testGtProducesStrictGreaterThanCondition()
 
     public function testLtProducesStrictLessThanCondition(): void
@@ -157,7 +183,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"bedrag\" < '500'", $conditions[0]);
+=======
+        $this->assertSame("bedrag < '500'", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testLtProducesStrictLessThanCondition()
 
     // -------------------------------------------------------------------------
@@ -172,7 +202,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"status\" IN ('open', 'pending')", $conditions[0]);
+=======
+        $this->assertSame("status IN ('open', 'pending')", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testInOperatorKeyProducesInClause()
 
     public function testInOperatorKeyWithSingleStringValueProducesInClause(): void
@@ -184,7 +218,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"status\" IN ('open')", $conditions[0]);
+=======
+        $this->assertSame("status IN ('open')", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testInOperatorKeyWithSingleStringValueProducesInClause()
 
     // -------------------------------------------------------------------------
@@ -199,7 +237,11 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"status\" IN ('open', 'closed')", $conditions[0]);
+=======
+        $this->assertSame("status IN ('open', 'closed')", $conditions[0]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testPlainArrayValueStillProducesInClause()
 
     // -------------------------------------------------------------------------
@@ -214,6 +256,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
+<<<<<<< HEAD
         $this->assertSame("\"status\" = 'open'", $conditions[0]);
     }//end testScalarValueProducesEqualityCondition()
 
@@ -293,6 +336,12 @@ class MagicSearchHandlerTest extends TestCase
     }//end testReservedWordArrayPropertyIsQuotedForJsonbContainment()
 
     // -------------------------------------------------------------------------
+=======
+        $this->assertSame("status = 'open'", $conditions[0]);
+    }//end testScalarValueProducesEqualityCondition()
+
+    // -------------------------------------------------------------------------
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     // Unknown property must still produce the 1=0 guard condition
     // -------------------------------------------------------------------------
     public function testUnknownPropertyProducesImpossibleCondition(): void
@@ -306,6 +355,7 @@ class MagicSearchHandlerTest extends TestCase
         $this->assertCount(1, $conditions);
         $this->assertSame('1=0', $conditions[0]);
     }//end testUnknownPropertyProducesImpossibleCondition()
+<<<<<<< HEAD
 
     // -------------------------------------------------------------------------
     // buildSearchConditionSql: reserved-word property names must be quoted so
@@ -390,4 +440,6 @@ class MagicSearchHandlerTest extends TestCase
         // Non-string properties must not appear in the LIKE chain.
         $this->assertStringNotContainsString('"numeric"', $sql);
     }//end testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

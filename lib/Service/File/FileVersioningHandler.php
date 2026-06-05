@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -16,6 +17,13 @@
  * @link      https://github.com/ConductionNL/openregister
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -54,8 +62,11 @@ class FileVersioningHandler
      * @param IAppManager     $appManager  App manager to check if files_versions is enabled.
      * @param IUserSession    $userSession User session for current user context.
      * @param LoggerInterface $logger      Logger for logging operations.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -70,7 +81,11 @@ class FileVersioningHandler
      *
      * @return bool True if files_versions is enabled.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isVersioningEnabled(): bool
     {
@@ -87,9 +102,13 @@ class FileVersioningHandler
      *
      * @return array{versions: array, warning?: string} Version listing.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+=======
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listVersions(File $file): array
     {
@@ -123,6 +142,7 @@ class FileVersioningHandler
                 $versionManager = \OCP\Server::get('OCA\Files_Versions\Versions\IVersionManager');
                 $user           = $this->userSession->getUser();
                 if ($versionManager !== null && $user !== null) {
+<<<<<<< HEAD
                     $fileVersions = $versionManager->getVersionsForFile($user, $file);
                     foreach ($fileVersions as $version) {
                         $label = null;
@@ -130,18 +150,31 @@ class FileVersioningHandler
                             $label = $version->getLabel();
                         }
 
+=======
+                    $storage      = $file->getStorage();
+                    $fileVersions = $versionManager->getVersionsForFile($user, $file);
+                    foreach ($fileVersions as $version) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                         $versions[] = [
                             'versionId'         => 'v-'.$version->getTimestamp(),
                             'timestamp'         => (new DateTime())->setTimestamp($version->getTimestamp())->format('c'),
                             'size'              => $version->getSize(),
                             'author'            => $version->getSourceFileName(),
                             'authorDisplayName' => $version->getSourceFileName(),
+<<<<<<< HEAD
                             'label'             => $label,
+=======
+                            'label'             => method_exists($version, 'getLabel') === true ? $version->getLabel() : null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                             'isCurrent'         => false,
                         ];
                     }
                 }
+<<<<<<< HEAD
             }//end if
+=======
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             return ['versions' => $versions];
         } catch (Exception $e) {
@@ -166,9 +199,13 @@ class FileVersioningHandler
      *
      * @throws Exception If versioning is not enabled or version not found.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+=======
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function restoreVersion(File $file, string $versionId): bool
     {
@@ -216,15 +253,23 @@ class FileVersioningHandler
      *
      * @return string The current user ID or 'system'.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
+<<<<<<< HEAD
         if ($user !== null) {
             return $user->getUID();
         }
 
         return 'system';
+=======
+        return $user !== null ? $user->getUID() : 'system';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end getCurrentUserId()
 }//end class

@@ -72,7 +72,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @param ITimeFactory $time Time factory for parent class
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(ITimeFactory $time)
     {
@@ -90,7 +94,11 @@ class SolrNightlyWarmupJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {
@@ -247,7 +255,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @psalm-suppress UnusedMethod
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float
     {
@@ -271,7 +283,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @psalm-return int<0, max>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function countSuccessfulWarmupQueries(array $operations): int
     {
@@ -295,7 +311,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @psalm-suppress UnusedMethod
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function calculateWarmupEfficiency(array $result): float
     {
@@ -331,7 +351,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @return bool True if SOLR is enabled and available, false otherwise
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function isSolrEnabledAndAvailable(
         IndexService $solrService,
@@ -366,7 +390,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getWarmupConfiguration(
         SettingsService $_settingsService,
@@ -399,7 +427,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @psalm-return array{total: int<0, max>, successful: int<0, max>, efficiency: float}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function summarizeOperations(array $operations): array
     {
@@ -419,7 +451,11 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
     {

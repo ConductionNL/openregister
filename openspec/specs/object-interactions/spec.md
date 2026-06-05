@@ -1,13 +1,20 @@
 ---
+<<<<<<< HEAD
 status: implemented
+=======
+status: in-progress
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ---
 
 # Object Interactions
 
 ## Purpose
 
+<<<<<<< HEAD
 @e2e exclude REST API convenience layer — covered by Newman
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 OpenRegister objects require rich interaction capabilities — notes, tasks, file attachments, tags, and audit trails — that allow users to collaborate on and track the lifecycle of register data. Rather than building custom interaction systems, this spec defines a convenience API layer that wraps Nextcloud's native subsystems (CalDAV for tasks, ICommentsManager for notes, IRootFolder for files, Nextcloud tags) and links them to OpenRegister objects via standardized properties. Any consuming app (Procest, Pipelinq, OpenCatalogi, ZaakAfhandelApp) can use these unified sub-resource endpoints without knowledge of the underlying Nextcloud internals.
 
 **Standards**: RFC 5545 (iCalendar/VTODO), RFC 9253 (iCalendar LINK property), Nextcloud Comments API, Nextcloud Activity API, CloudEvents v1.0
@@ -15,7 +22,14 @@ OpenRegister objects require rich interaction capabilities — notes, tasks, fil
 
 **OpenSpec changes**
 - `fix-object-files-listing-lock-and-limit` (active) — makes the object files listing endpoint resilient to Nextcloud file locks, raises the `_limit` ceiling from 100 to 1000, replaces the `getContent()` ownership probe with `isReadable()`, and adds `locked`/`lock` metadata to each file entry.
+<<<<<<< HEAD
 ## Requirements
+=======
+
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Notes on Objects via ICommentsManager
 
 The system SHALL provide a `NoteService` that wraps Nextcloud's `OCP\Comments\ICommentsManager` for creating, listing, and deleting notes (comments) on OpenRegister objects. Notes MUST be stored using `objectType: "openregister"` and `objectId: {uuid}`. The service MUST resolve actor display names via `OCP\IUserManager` and indicate whether the current user authored each note.
@@ -390,6 +404,7 @@ All interaction endpoints SHALL follow a consistent sub-resource pattern under t
 
 ---
 
+<<<<<<< HEAD
 ### Requirement: User-Wide Task Aggregate Endpoint
 
 The system MUST expose a user-wide task aggregate endpoint that returns every
@@ -496,6 +511,8 @@ Endpoint execution MUST be gated by group-based access control and MUST persist 
 - **THEN** it MUST persist an `EndpointLog` with a generated uuid, the endpoint id, the acting user (when present), the request and response payloads, the status code and message, a creation timestamp, and an expiry one week out
 - **AND** the entry size MUST be computed before insert
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Non-Functional Requirements
 
 - **Performance**: Task listing MUST complete within 2 seconds for objects with up to 50 tasks. Note listing MUST complete within 1 second for objects with up to 200 notes. File listing MUST complete within 1 second.

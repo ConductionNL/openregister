@@ -5,9 +5,12 @@
  *
  * Handles Solr configuration initialization, validation, and management.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Handler
  * @package  OCA\OpenRegister\Service\Index
  *
@@ -64,8 +67,11 @@ class ConfigurationHandler
      *
      * @param SettingsService $settingsService Service for retrieving settings.
      * @param LoggerInterface $logger          Logger for configuration events.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -160,8 +166,11 @@ class ConfigurationHandler
      * Validates that all required configuration parameters are present.
      *
      * @return bool True if Solr is configured, false otherwise.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isSolrConfigured(): bool
     {
@@ -187,8 +196,11 @@ class ConfigurationHandler
      * @param string $baseCollectionName Base collection name.
      *
      * @return string Collection name.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
@@ -203,8 +215,11 @@ class ConfigurationHandler
      * host, port, and path settings.
      *
      * @return string SOLR base URL.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function buildSolrBaseUrl(): string
     {
@@ -271,8 +286,11 @@ class ConfigurationHandler
      * @param string|null $collection Optional collection name.
      *
      * @return string Full endpoint URL.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getEndpointUrl(?string $collection=null): string
     {
@@ -290,8 +308,11 @@ class ConfigurationHandler
      * @return string Status description.
      *
      * @psalm-return '✓ Configured'|'✗ Not configured'
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getConfigStatus(string $key): string
     {
@@ -306,8 +327,11 @@ class ConfigurationHandler
      * Get port configuration status.
      *
      * @return string Port status description.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPortStatus(): string
     {
@@ -324,8 +348,11 @@ class ConfigurationHandler
      * Get core configuration status.
      *
      * @return string Core status description.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCoreStatus(): string
     {

@@ -5,7 +5,10 @@ namespace Unit\Service;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\CalendarEventService;
+<<<<<<< HEAD
 use OCP\IConfig;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -16,6 +19,7 @@ class CalendarEventServiceTest extends TestCase
 {
     private CalDavBackend&MockObject $calDavBackend;
     private IUserSession&MockObject $userSession;
+<<<<<<< HEAD
     private IConfig&MockObject $config;
     private LoggerInterface&MockObject $logger;
     private CalendarEventService $service;
@@ -28,10 +32,16 @@ class CalendarEventServiceTest extends TestCase
      */
     private array $configStore = [];
 
+=======
+    private LoggerInterface&MockObject $logger;
+    private CalendarEventService $service;
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     protected function setUp(): void
     {
         $this->calDavBackend = $this->createMock(CalDavBackend::class);
         $this->userSession = $this->createMock(IUserSession::class);
+<<<<<<< HEAD
         $this->config = $this->createMock(IConfig::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -53,6 +63,13 @@ class CalendarEventServiceTest extends TestCase
             $this->calDavBackend,
             $this->userSession,
             $this->config,
+=======
+        $this->logger = $this->createMock(LoggerInterface::class);
+
+        $this->service = new CalendarEventService(
+            $this->calDavBackend,
+            $this->userSession,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->logger
         );
     }
@@ -195,6 +212,7 @@ class CalendarEventServiceTest extends TestCase
 
         $this->service->unlinkEvent('1', 'nonexistent.ics');
     }
+<<<<<<< HEAD
 
     /**
      * Regression: createEvent() and getEventsForObject() must target
@@ -286,4 +304,6 @@ class CalendarEventServiceTest extends TestCase
         // Pin was rewritten to the surviving calendar.
         $this->assertSame('personal', $this->configStore['admin/openregister/events_calendar_uri']);
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

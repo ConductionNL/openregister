@@ -7,6 +7,10 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -44,6 +48,7 @@ class MagicRbacHandlerTest extends TestCase
     private ConditionMatcher&MockObject $conditionMatcher;
     private ContainerInterface&MockObject $container;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
 
     protected function setUp(): void
     {
@@ -54,6 +59,28 @@ class MagicRbacHandlerTest extends TestCase
         $this->conditionMatcher = $this->createMock(ConditionMatcher::class);
         $this->container        = $this->createMock(ContainerInterface::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
+=======
+    private PermissionHandler&MockObject $permissionHandler;
+
+    protected function setUp(): void
+    {
+        $this->userSession       = $this->createMock(IUserSession::class);
+        $this->groupManager      = $this->createMock(IGroupManager::class);
+        $this->userManager       = $this->createMock(IUserManager::class);
+        $this->appConfig         = $this->createMock(IAppConfig::class);
+        $this->conditionMatcher  = $this->createMock(ConditionMatcher::class);
+        $this->container         = $this->createMock(ContainerInterface::class);
+        $this->logger            = $this->createMock(LoggerInterface::class);
+        $this->permissionHandler = $this->createMock(PermissionHandler::class);
+
+        // MagicRbacHandler delegates the inheritFromPublic cascade to
+        // PermissionHandler via the container. The default of true mirrors
+        // pre-change behaviour for tests that don't care about the flag.
+        $this->permissionHandler->method('resolveInheritFromPublic')->willReturn(true);
+        $this->container->method('get')->willReturnCallback(
+            fn (string $class) => $class === PermissionHandler::class ? $this->permissionHandler : null
+        );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->handler = new MagicRbacHandler(
             $this->userSession,

@@ -22,6 +22,7 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+<<<<<<< HEAD
 /**
  * Resolve the Nextcloud installation root.
  *
@@ -128,3 +129,26 @@ if ($skipNc === false && !defined('OC_CONSOLE')) {
         );
     }
 }
+=======
+// Bootstrap Nextcloud if not already done.
+if (!defined('OC_CONSOLE')) {
+    // Try to include the main Nextcloud bootstrap.
+    if (file_exists(__DIR__ . '/../../../lib/base.php')) {
+        require_once __DIR__ . '/../../../lib/base.php';
+    }
+
+    // Load Test\TestCase and other NC test classes (NC convention).
+    if (file_exists(__DIR__ . '/../../../tests/autoload.php')) {
+        require_once __DIR__ . '/../../../tests/autoload.php';
+    }
+
+    // Load all enabled apps.
+    \OC_App::loadApps();
+    
+    // Load our specific app.
+    \OC_App::loadApp('openregister');
+    
+    // Clear hooks for testing.
+    OC_Hook::clear();
+} 
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

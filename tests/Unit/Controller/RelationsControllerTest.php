@@ -16,8 +16,11 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+<<<<<<< HEAD
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 class RelationsControllerTest extends TestCase
 {
@@ -29,7 +32,10 @@ class RelationsControllerTest extends TestCase
     private CalendarEventService&MockObject $calendarEventService;
     private ContactService&MockObject $contactService;
     private DeckCardService&MockObject $deckCardService;
+<<<<<<< HEAD
     private LoggerInterface&MockObject $logger;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private RelationsController $controller;
 
     protected function setUp(): void
@@ -42,7 +48,10 @@ class RelationsControllerTest extends TestCase
         $this->calendarEventService = $this->createMock(CalendarEventService::class);
         $this->contactService = $this->createMock(ContactService::class);
         $this->deckCardService = $this->createMock(DeckCardService::class);
+<<<<<<< HEAD
         $this->logger = $this->createMock(LoggerInterface::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new RelationsController(
             'openregister',
@@ -53,8 +62,12 @@ class RelationsControllerTest extends TestCase
             $this->emailService,
             $this->calendarEventService,
             $this->contactService,
+<<<<<<< HEAD
             $this->deckCardService,
             $this->logger
+=======
+            $this->deckCardService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
@@ -139,6 +152,7 @@ class RelationsControllerTest extends TestCase
 
         $this->assertSame(404, $response->getStatus());
     }
+<<<<<<< HEAD
 
     /**
      * A per-type failure must be logged via the injected logger AND surfaced
@@ -277,4 +291,6 @@ class RelationsControllerTest extends TestCase
         // explicit map continues to do so. This pins that contract.
         $this->assertSame('deck', $typeById[6]);
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

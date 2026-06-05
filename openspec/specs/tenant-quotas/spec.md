@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 retrofit_extensions:
   - REQ-001
@@ -8,6 +9,11 @@ retrofit_extensions:
 ## Purpose
 
 @e2e exclude backend quota enforcement service — covered by PHPUnit
+=======
+# Tenant Quotas
+
+## Purpose
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Define enforcement of per-organisation resource quotas (storage, bandwidth, API requests) to prevent any single tenant from monopolizing shared resources in a SaaS deployment. The Organisation entity already has `storageQuota`, `bandwidthQuota`, and `requestQuota` fields; this spec defines their enforcement, tracking, and overage handling.
 
 **Source**: SaaS resource management; BIO availability requirements; fair-use policies for shared government platforms.
@@ -86,6 +92,7 @@ APCu-based counters MUST be flushed to the `openregister_tenant_usage` database 
 - **WHEN** the database migration runs
 - **THEN** a table `openregister_tenant_usage` MUST be created with columns: `id` (bigint, primary key), `organisation_uuid` (varchar, indexed), `period` (datetime, indexed), `request_count` (bigint, default 0), `bandwidth_bytes` (bigint, default 0), `storage_bytes` (bigint, default 0), `created` (datetime), `updated` (datetime)
 - **AND** a composite index MUST exist on (`organisation_uuid`, `period`)
+<<<<<<< HEAD
 
 ### REQ-001: The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses
 
@@ -117,3 +124,5 @@ Any other exception type is re-thrown so the upstream pipeline can apply its own
 - **WHEN** `afterException()` runs
 - **THEN** the middleware does NOT match either tenant family
 - **AND** the original exception is re-thrown so upstream middleware can handle it
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -46,12 +46,15 @@ use OCP\IUserSession;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -179,7 +182,10 @@ class SchemaMapper extends QBMapper
      * @param IUserSession             $userSession        User session for current user context
      * @param IGroupManager            $groupManager       Group manager for RBAC checks
      * @param IAppConfig               $appConfig          App configuration for multitenancy settings
+<<<<<<< HEAD
      * @param LoggerInterface          $logger             Structured logger (R07: surfaces unknown annotation keys).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
@@ -236,6 +242,7 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
+<<<<<<< HEAD
         $rbacFlag = '0';
         if ($_rbac === true) {
             $rbacFlag = '1';
@@ -244,6 +251,18 @@ class SchemaMapper extends QBMapper
         $mtFlag = '0';
         if ($_multitenancy === true) {
             $mtFlag = '1';
+=======
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        } else {
+            $rbacFlag = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        } else {
+            $mtFlag = '0';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
@@ -315,6 +334,7 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+<<<<<<< HEAD
         $rbacChar = '0';
         if ($_rbac === true) {
             $rbacChar = '1';
@@ -323,6 +343,18 @@ class SchemaMapper extends QBMapper
         $mtChar = '0';
         if ($_multitenancy === true) {
             $mtChar = '1';
+=======
+        if ($_rbac === true) {
+            $rbacChar = '1';
+        } else {
+            $rbacChar = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtChar = '1';
+        } else {
+            $mtChar = '0';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
@@ -336,6 +368,7 @@ class SchemaMapper extends QBMapper
         return $schema;
     }//end find()
 
+<<<<<<< HEAD
     /**
      * Clear the request-scoped find cache for a specific schema
      *
@@ -360,6 +393,8 @@ class SchemaMapper extends QBMapper
         }
     }//end clearFindCache()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Finds multiple schemas by id
      *
@@ -623,6 +658,7 @@ class SchemaMapper extends QBMapper
         $this->validateConfigurationFields(schema: $schema);
         $this->buildRequiredFieldsArray(schema: $schema);
         $this->autoPopulateConfigurationFields(schema: $schema);
+<<<<<<< HEAD
         $this->validateLifecycleAnnotation(schema: $schema);
         $this->validateAggregationsAnnotation(schema: $schema);
         $this->validateCalculationsAnnotation(schema: $schema);
@@ -857,6 +893,11 @@ class SchemaMapper extends QBMapper
     }//end validateArchivalAnnotation()
 
     /**
+=======
+    }//end cleanObject()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Clean $ref properties to ensure they are strings
      *
      * @param Schema $schema Schema to clean
@@ -1152,7 +1193,11 @@ class SchemaMapper extends QBMapper
                     $property['$ref'] = $property['$ref']->id;
                 } else if (is_int($property['$ref']) === true) {
                 } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
+<<<<<<< HEAD
                     $refValue = json_encode($property['$ref']);
+=======
+                    $refValue = print_r($property['$ref'], true);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $msg      = "Schema property '$key' has a \$ref that is not a string or empty: ".$refValue;
                     throw new Exception($msg);
                 }

@@ -38,9 +38,12 @@ import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+<<<<<<< HEAD
 /**
  * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-1
  */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 export default {
 	name: 'ApprovalChainPanel',
 	components: { NcButton },
@@ -58,9 +61,12 @@ export default {
 		this.fetchChains()
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async fetchChains() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')
@@ -70,9 +76,12 @@ export default {
 				console.error('Failed to fetch chains:', error)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude API passthrough creating chain + refetch; approval-chain contract owned by approval-workflow capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async createChain() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')

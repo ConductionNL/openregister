@@ -7,9 +7,12 @@
  * This listener uses the standard Nextcloud pattern for loading scripts
  * into the Files app context via LoadAdditionalScriptsEvent.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -56,9 +59,13 @@ class FilesSidebarListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {
@@ -68,9 +75,13 @@ class FilesSidebarListener implements IEventListener
             return;
         }
 
+<<<<<<< HEAD
         $jsPath = __DIR__.'/../../js/openregister-filesSidebar.js';
         if (file_exists($jsPath) === true) {
             Util::addScript('openregister', 'openregister-filesSidebar');
         }
+=======
+        Util::addScript('openregister', 'openregister-filesSidebar');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end handle()
 }//end class

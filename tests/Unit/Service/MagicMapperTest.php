@@ -39,7 +39,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -215,6 +218,7 @@ class MagicMapperTest extends TestCase
         $this->mockSchema->setVersion('1.0');
         $this->mockSchema->testConfiguration = [];
 
+<<<<<<< HEAD
         // Build a container mock that returns the DateTimeNormalizer when asked
         // — MagicMapper resolves it lazily from the container to construct
         // MagicBulkHandler, and the typed parameter rejects null.
@@ -238,6 +242,13 @@ class MagicMapperTest extends TestCase
                 return null;
             }
         );
+=======
+        // Reset static construct counter to avoid circular dependency guard.
+        $ref = new \ReflectionClass(MagicMapper::class);
+        $prop = $ref->getProperty('constructCount');
+        $prop->setAccessible(true);
+        $prop->setValue(null, 0);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Create MagicMapper instance with all required dependencies.
         $this->magicMapper = new MagicMapper(
@@ -252,7 +263,11 @@ class MagicMapperTest extends TestCase
             $this->mockAppConfig,
             $this->mockLogger,
             $this->createMock(SettingsService::class),
+<<<<<<< HEAD
             $container
+=======
+            $this->createMock(ContainerInterface::class)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
 
     }//end setUp()
@@ -588,11 +603,18 @@ class MagicMapperTest extends TestCase
     public function testObjectDataPreparationForTable(): void
     {
         $schema = new TestableSchema();
+<<<<<<< HEAD
         $schema->setId(42);
         $schema->testProperties = [
             'name'     => ['type' => 'string'],
             'age'      => ['type' => 'integer'],
             'settings' => ['type' => 'object'],
+=======
+        $schema->testProperties = [
+            'name' => ['type' => 'string'],
+            'age' => ['type' => 'integer'],
+            'settings' => ['type' => 'object']
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         $objectData = [

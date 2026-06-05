@@ -1,0 +1,92 @@
+name: "🐛 Bug Report"
+description: "Iets werkt niet zoals verwacht"
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Beschrijf het probleem zo concreet mogelijk zodat het reproduceerbaar is.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Beschrijving"
+      description: "Wat gaat er mis?"
+      placeholder: "Bij het uploaden van een PDF groter dan 10MB crasht de anonymizer."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "Stappen om te reproduceren"
+      value: |
+        1. Ga naar ...
+        2. Doe ...
+        3. Zie fout ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Verwacht gedrag"
+      placeholder: "Het document wordt anonimiseerd en gedownload."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Werkelijk gedrag"
+      placeholder: "HTTP 500 na ~30 seconden, geen output."
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Omgeving"
+      value: |
+        - Namespace/omgeving: 
+        - Versie/image tag: 
+        - Browser (indien van toepassing): 
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs / Screenshots"
+      description: "Plak relevante logs of voeg screenshots toe"
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Acceptatiecriteria (fix)"
+      value: |
+        - [ ] Bug is niet meer reproduceerbaar
+        - [ ] Regressietest toegevoegd
+        - [ ] Fix getest in acceptatieomgeving
+        - [ ] Geen nieuwe security findings
+        - [ ] Code gereviewd (4-eyes)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity"
+      options:
+        - "🔴 Critical — productie ligt plat"
+        - "🟠 High — grote impact, workaround aanwezig"
+        - "🟡 Medium — beperkte impact"
+        - "🟢 Low — cosmetic / minor"
+    validations:
+      required: true

@@ -3,6 +3,7 @@
 /**
  * CalendarEventsController
  *
+<<<<<<< HEAD
  * REST controller for calendar event operations on OpenRegister objects.
  * Wraps the Tier-2 {@see CalendarLinkService} (additive link-table layer
  * over the existing CalendarEventService / X-OPENREGISTER-* properties)
@@ -10,6 +11,9 @@
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
+=======
+ * REST controller for calendar event relation operations on OpenRegister objects.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
@@ -24,10 +28,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+<<<<<<< HEAD
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+=======
+use Exception;
+use OCA\OpenRegister\Service\CalendarEventService;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -39,20 +48,28 @@ use OCP\IRequest;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+<<<<<<< HEAD
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class CalendarEventsController extends Controller
 {
 
     /**
+<<<<<<< HEAD
      * Calendar event service (legacy X-OR-* CalDAV custom properties).
+=======
+     * Calendar event service.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @var CalendarEventService
      */
     private readonly CalendarEventService $calendarEventService;
 
     /**
+<<<<<<< HEAD
      * Tier-2 calendar link service (additive link-table layer).
      *
      * @var CalendarLinkService
@@ -60,6 +77,8 @@ class CalendarEventsController extends Controller
     private readonly CalendarLinkService $calendarLinkService;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Object service for object validation.
      *
      * @var ObjectService
@@ -71,8 +90,12 @@ class CalendarEventsController extends Controller
      *
      * @param string               $appName              Application name
      * @param IRequest             $request              HTTP request object
+<<<<<<< HEAD
      * @param CalendarEventService $calendarEventService Calendar event service (legacy)
      * @param CalendarLinkService  $calendarLinkService  Calendar link service (Tier-2)
+=======
+     * @param CalendarEventService $calendarEventService Calendar event service
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param ObjectService        $objectService        Object service
      *
      * @return void
@@ -81,20 +104,30 @@ class CalendarEventsController extends Controller
         string $appName,
         IRequest $request,
         CalendarEventService $calendarEventService,
+<<<<<<< HEAD
         CalendarLinkService $calendarLinkService,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ObjectService $objectService
     ) {
         parent::__construct(appName: $appName, request: $request);
 
         $this->calendarEventService = $calendarEventService;
+<<<<<<< HEAD
         $this->calendarLinkService  = $calendarLinkService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->objectService        = $objectService;
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * List all calendar events linked to a specific object.
      *
      * Reads the UNION of link-table rows and the legacy X-OR-* scan.
+=======
+     * List all calendar events for a specific object.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @param string $register The register slug
      * @param string $schema   The schema slug
@@ -104,18 +137,29 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+=======
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
+<<<<<<< HEAD
             $events = $this->calendarLinkService->getLinkedEvents($object->getUuid());
+=======
+            $events = $this->calendarEventService->getEventsForObject($object->getUuid());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             return new JSONResponse(['results' => $events, 'total' => count($events)]);
         } catch (DoesNotExistException $e) {
@@ -128,8 +172,11 @@ class CalendarEventsController extends Controller
     /**
      * Create a new calendar event linked to an object.
      *
+<<<<<<< HEAD
      * Writes BOTH the X-OR-* properties on the VEVENT AND a link-table row.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param string $register The register slug
      * @param string $schema   The schema slug
      * @param string $id       The object ID
@@ -138,13 +185,20 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+=======
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -155,6 +209,7 @@ class CalendarEventsController extends Controller
                 return new JSONResponse(['error' => 'Event summary is required'], 400);
             }
 
+<<<<<<< HEAD
             $data['objectTitle'] = $object->getName() ?? $object->getUuid();
 
             $link = $this->calendarLinkService->createAndLinkEvent(
@@ -165,6 +220,17 @@ class CalendarEventsController extends Controller
             );
 
             return new JSONResponse($link->jsonSerialize(), 201);
+=======
+            $event = $this->calendarEventService->createEvent(
+                (int) $object->getRegister(),
+                (int) $object->getSchema(),
+                $object->getUuid(),
+                $object->getName() ?? $object->getUuid(),
+                $data
+            );
+
+            return new JSONResponse($event, 201);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
@@ -175,32 +241,47 @@ class CalendarEventsController extends Controller
     /**
      * Link an existing calendar event to an object.
      *
+<<<<<<< HEAD
      * Writes ONLY a link-table row (we may not own the VEVENT). Accepts
      * either `{calendarUri, eventUid}` (new Tier-2 shape) or
      * `{calendarId, eventUri}` (legacy shape — translated to the new
      * one against the user's calendar list for backward compatibility).
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param string $register The register slug
      * @param string $schema   The schema slug
      * @param string $id       The object ID
      *
+<<<<<<< HEAD
      * @return JSONResponse JSON response with the linked event row
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+     * @return JSONResponse JSON response with the linked event
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+=======
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
             $data = $this->request->getParams();
 
+<<<<<<< HEAD
             // Prefer the new (calendarUri, eventUid) shape; fall back to the
             // legacy (calendarId, eventUri) shape for backward compatibility.
             $calendarUri = (string) ($data['calendarUri'] ?? '');
@@ -219,6 +300,21 @@ class CalendarEventsController extends Controller
             );
 
             return new JSONResponse($link->jsonSerialize(), 201);
+=======
+            if (empty($data['calendarId']) === true || empty($data['eventUri']) === true) {
+                return new JSONResponse(['error' => 'calendarId and eventUri are required'], 400);
+            }
+
+            $event = $this->calendarEventService->linkEvent(
+                (int) $data['calendarId'],
+                $data['eventUri'],
+                (int) $object->getRegister(),
+                (int) $object->getSchema(),
+                $object->getUuid()
+            );
+
+            return new JSONResponse($event);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
@@ -227,6 +323,7 @@ class CalendarEventsController extends Controller
     }//end link()
 
     /**
+<<<<<<< HEAD
      * Unlink a calendar event from an object (Tier-2 link-only removal).
      *
      * Removes the link-table row; if `taggedWithXor=true`, also strips
@@ -274,6 +371,9 @@ class CalendarEventsController extends Controller
      * calendar but is no longer associated with any OR object). For
      * link-only removal, use the `unlink` endpoint at
      * `/events/{eventUid}/link`.
+=======
+     * Unlink a calendar event from an object.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @param string $register The register slug
      * @param string $schema   The schema slug
@@ -284,17 +384,25 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+=======
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
+<<<<<<< HEAD
             // Find the event in the unioned link list to recover its calendarId.
             $events     = $this->calendarLinkService->getLinkedEvents($object->getUuid());
             $calendarId = null;
@@ -303,6 +411,14 @@ class CalendarEventsController extends Controller
                 if ($existingEvent['id'] === $eventId) {
                     $calendarId = $existingEvent['calendarId'];
                     $eventUid   = $existingEvent['uid'] ?? null;
+=======
+            // Find the event in user's calendars to get calendarId.
+            $events     = $this->calendarEventService->getEventsForObject($object->getUuid());
+            $calendarId = null;
+            foreach ($events as $existingEvent) {
+                if ($existingEvent['id'] === $eventId) {
+                    $calendarId = $existingEvent['calendarId'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     break;
                 }
             }
@@ -311,6 +427,7 @@ class CalendarEventsController extends Controller
                 return new JSONResponse(['error' => 'Event not found'], 404);
             }
 
+<<<<<<< HEAD
             // Strip X-OR-* properties (legacy CalendarEventService behaviour).
             $this->calendarEventService->unlinkEvent(calendarId: (string) $calendarId, eventUri: $eventId);
 
@@ -321,6 +438,9 @@ class CalendarEventsController extends Controller
                     eventUid: (string) $eventUid
                 );
             }
+=======
+            $this->calendarEventService->unlinkEvent($calendarId, $eventId);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -331,6 +451,7 @@ class CalendarEventsController extends Controller
     }//end destroy()
 
     /**
+<<<<<<< HEAD
      * List the user's VEVENT-supporting calendars (picker step 1).
      *
      * @return JSONResponse
@@ -394,6 +515,8 @@ class CalendarEventsController extends Controller
     }//end listCalendarEvents()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Validate that the object exists.
      *
      * @param string $register The register slug
@@ -401,9 +524,12 @@ class CalendarEventsController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+<<<<<<< HEAD
      *
      * @spec exclude Private helper: resolves an object from register/schema/id; REST contract is owned by
      *              retrofit-2026-05-24-calendar-integration/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateObject(
         string $register,

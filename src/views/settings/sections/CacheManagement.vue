@@ -248,7 +248,10 @@
 						<div class="warmup-select">
 							<label for="warmup-interval">Warmup Interval:</label>
 							<NcSelect
+<<<<<<< HEAD
 						input-label="Warmup Interval"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								input-id="warmup-interval"
 								:value="selectedWarmupOption"
 								:options="warmupIntervalOptions"
@@ -465,42 +468,54 @@ export default {
 			return this.getHitRateClass(this.cacheStats.overview?.overallHitRate || 0)
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Whether a cache warmup is in progress, for display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {boolean}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		warmingUpCache() {
 			return this.settingsStore.warmingUpCache
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Whether the warmup interval is being saved, for display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {boolean}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		savingWarmupInterval() {
 			return this.settingsStore.savingWarmupInterval
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Timestamp of the last warmup run, for display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {(string|null)}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		warmupLastRun() {
 			return this.settingsStore.warmupLastRun
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Selectable warmup-interval options for the dropdown.
 		 *
 		 * @spec exclude UI plumbing — static select-option list
 		 * @return {Array<object>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		warmupIntervalOptions() {
 			return [
 				{ label: 'Disabled', value: 0 },
@@ -512,24 +527,30 @@ export default {
 			]
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Currently selected warmup-interval option, for display.
 		 *
 		 * @spec exclude UI plumbing — derived select-value state
 		 * @return {object}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		selectedWarmupOption() {
 			const interval = this.settingsStore.warmupInterval
 			return this.warmupIntervalOptions.find((o) => o.value === interval) || this.warmupIntervalOptions[3]
 		},
 	},
 
+<<<<<<< HEAD
 	/**
 	 * Lifecycle hook: load the warmup interval setting on mount.
 	 *
 	 * @spec exclude UI plumbing — view-mount data fetch for display only
 	 * @return {void}
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	mounted() {
 		this.settingsStore.loadWarmupInterval()
 	},
@@ -645,8 +666,11 @@ export default {
 		 * Handle warmup interval change
 		 *
 		 * @param {object} option Selected option
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — delegates to the settings store
 		 * @return {void}
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		onWarmupIntervalChange(option) {
 			if (option) {
@@ -656,8 +680,11 @@ export default {
 
 		/**
 		 * Trigger manual cache warmup
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — action delegates to the settings store
 		 * @return {void}
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		triggerWarmup() {
 			this.settingsStore.warmupNamesCache()

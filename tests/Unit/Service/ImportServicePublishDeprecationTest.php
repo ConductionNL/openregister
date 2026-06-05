@@ -10,7 +10,11 @@ declare(strict_types=1);
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
+<<<<<<< HEAD
  * @author   Conduction Development Team <info@conduction.nl>
+=======
+ * @author   Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 

@@ -47,6 +47,12 @@ class ChunkProcessingHandlerTest extends TestCase
     private TransformationHandler $transformHandler;
 
     /** @var MagicMapper&MockObject */
+<<<<<<< HEAD
+=======
+    private MagicMapper $objectEntityMapper;
+
+    /** @var MagicMapper&MockObject */
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private MagicMapper $unifiedObjectMapper;
 
     /** @var RegisterMapper&MockObject */
@@ -115,6 +121,10 @@ class ChunkProcessingHandlerTest extends TestCase
         parent::setUp();
 
         $this->transformHandler    = $this->createMock(TransformationHandler::class);
+<<<<<<< HEAD
+=======
+        $this->objectEntityMapper  = $this->createMock(MagicMapper::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper      = $this->createMock(RegisterMapper::class);
         $this->schemaMapper        = $this->createMock(SchemaMapper::class);
@@ -122,6 +132,10 @@ class ChunkProcessingHandlerTest extends TestCase
 
         $this->handler = new ChunkProcessingHandler(
             $this->transformHandler,
+<<<<<<< HEAD
+=======
+            $this->objectEntityMapper,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->unifiedObjectMapper,
             $this->registerMapper,
             $this->schemaMapper,

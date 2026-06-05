@@ -5,6 +5,7 @@
  *
  * Admin settings page for OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -20,6 +21,14 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/add-live-updates/tasks.md#task-10
+=======
+ * @category  Settings
+ * @package   OCA\OpenRegister\Settings
+ * @author    OpenRegister Team <info@conduction.nl>
+ * @copyright 2024 OpenRegister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/OpenRegister/OpenRegister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Settings;
@@ -58,6 +67,7 @@ class OpenRegisterAdmin implements ISettings
     private IConfig $config;
 
     /**
+<<<<<<< HEAD
      * App manager for checking installed apps
      *
      * @var IAppManager $appManager App manager
@@ -134,14 +144,36 @@ class OpenRegisterAdmin implements ISettings
     }//end getPushStatus()
 
     /**
+=======
+     * Constructor
+     *
+     * @param IConfig $config Config service
+     * @param IL10N   $l      Localization helper
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+     */
+    public function __construct(IConfig $config, IL10N $l)
+    {
+        $this->config = $config;
+        $this->l      = $l;
+    }//end __construct()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get the admin settings form
      *
      * @return TemplateResponse Template response
      *
+<<<<<<< HEAD
      * @psalm-return TemplateResponse<200, array<string, mixed>>
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
      * @spec openspec/changes/add-live-updates/tasks.md#task-10
+=======
+     * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getForm()
     {
@@ -170,7 +202,11 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return 'openregister'
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSection()
     {
@@ -189,7 +225,11 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return 11
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPriority()
     {

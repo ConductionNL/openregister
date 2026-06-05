@@ -6,9 +6,12 @@
  * Background job that scans for objects eligible for e-Depot transfer
  * and generates transfer lists for archivist review.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *
@@ -20,7 +23,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -63,7 +70,11 @@ class TransferCheckJob extends TimedJob
      * @param IAppConfig          $appConfig           The app configuration.
      * @param LoggerInterface     $logger              Logger.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         ITimeFactory $time,
@@ -89,9 +100,13 @@ class TransferCheckJob extends TimedJob
      *
      * @return void
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run(mixed $argument): void
     {
@@ -139,7 +154,11 @@ class TransferCheckJob extends TimedJob
      *
      * @return bool True if e-Depot endpoint is configured.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function isEdepotConfigured(): bool
     {
@@ -158,7 +177,11 @@ class TransferCheckJob extends TimedJob
      *
      * @return array<int, \OCA\OpenRegister\Db\ObjectEntity> Eligible objects.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function findEligibleObjects(): array
     {

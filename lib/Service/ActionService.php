@@ -5,9 +5,12 @@
  *
  * Business logic for Action entity management.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -18,8 +21,11 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -27,7 +33,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+<<<<<<< HEAD
 use InvalidArgumentException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\Action;
 use OCA\OpenRegister\Db\ActionMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -84,14 +93,19 @@ class ActionService
      *
      * @return Action The created action
      *
+<<<<<<< HEAD
      * @throws InvalidArgumentException If required fields are missing
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+     * @throws \InvalidArgumentException If required fields are missing
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createAction(array $data): Action
     {
         // Validate required fields.
         if (empty($data['name']) === true) {
+<<<<<<< HEAD
             throw new InvalidArgumentException('Action name is required');
         }
 
@@ -105,6 +119,21 @@ class ActionService
 
         if (empty($data['workflowId']) === true) {
             throw new InvalidArgumentException('Action workflowId is required');
+=======
+            throw new \InvalidArgumentException('Action name is required');
+        }
+
+        if (empty($data['eventType']) === true) {
+            throw new \InvalidArgumentException('Action eventType is required');
+        }
+
+        if (empty($data['engine']) === true) {
+            throw new \InvalidArgumentException('Action engine is required');
+        }
+
+        if (empty($data['workflowId']) === true) {
+            throw new \InvalidArgumentException('Action workflowId is required');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Remove ID to ensure new record.
@@ -150,8 +179,11 @@ class ActionService
      * @param array $data Partial update data
      *
      * @return Action The updated action
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateAction(int $id, array $data): Action
     {
@@ -178,8 +210,11 @@ class ActionService
      * @param int $id Action ID
      *
      * @return Action The deleted action
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteAction(int $id): Action
     {
@@ -210,10 +245,13 @@ class ActionService
      * @param array $samplePayload Sample event payload
      *
      * @return array Test result with match info and payload
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testAction(int $id, array $samplePayload): array
     {
@@ -242,6 +280,7 @@ class ActionService
                 if (is_array($expected) === true) {
                     if (in_array($actual, $expected) === false) {
                         $filterMatch     = false;
+<<<<<<< HEAD
                         $expectedList    = implode(', ', $expected);
                         $filterReasons[] = sprintf(
                             "filter_condition mismatch: %s expected one of [%s], got '%s'",
@@ -249,6 +288,9 @@ class ActionService
                             $expectedList,
                             (string) $actual
                         );
+=======
+                        $filterReasons[] = "filter_condition mismatch: {$key} expected one of [".implode(', ', $expected)."], got '{$actual}'";
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     }
                 } else if ($actual !== $expected) {
                     $filterMatch     = false;
@@ -259,11 +301,14 @@ class ActionService
 
         $matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
 
+<<<<<<< HEAD
         $builtPayload = null;
         if ($matched === true) {
             $builtPayload = $samplePayload;
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return [
             'matched'       => $matched,
             'action'        => $action->jsonSerialize(),
@@ -272,7 +317,11 @@ class ActionService
             'registerMatch' => $registerMatch,
             'filterMatch'   => $filterMatch,
             'filterReasons' => $filterReasons,
+<<<<<<< HEAD
             'builtPayload'  => $builtPayload,
+=======
+            'builtPayload'  => $matched === true ? $samplePayload : null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end testAction()
 
@@ -284,8 +333,11 @@ class ActionService
      * @return array Migration report
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function migrateFromHooks(int $schemaId): array
     {
@@ -365,8 +417,11 @@ class ActionService
      * @param string $status   Execution status (success, failure, abandoned)
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateStatistics(int $actionId, string $status): void
     {
@@ -378,9 +433,13 @@ class ActionService
 
             if ($status === 'success') {
                 $action->setSuccessCount($action->getSuccessCount() + 1);
+<<<<<<< HEAD
             }
 
             if ($status !== 'success') {
+=======
+            } else {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $action->setFailureCount($action->getFailureCount() + 1);
             }
 
@@ -390,7 +449,11 @@ class ActionService
                 message: '[ActionService] Failed to update action statistics',
                 context: ['actionId' => $actionId, 'error' => $e->getMessage()]
             );
+<<<<<<< HEAD
         }//end try
+=======
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end updateStatistics()
 
     /**

@@ -42,7 +42,11 @@
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-50
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-50
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
@@ -72,9 +76,12 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		objectName(obj) {
 			return obj['@self']?.name
 				|| obj._name
@@ -83,9 +90,12 @@ export default {
 				|| obj.naam
 				|| obj.id
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadSchemas() {
 			this.loading = true
 			try {
@@ -121,9 +131,12 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadInitialResults(schema) {
 			const register = this.registerCache[schema.id]
 			if (!register) return
@@ -143,6 +156,7 @@ export default {
 				console.error('[ActionsTab] Initial load failed for', schema.title, err)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
@@ -152,6 +166,11 @@ export default {
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+		showResults(schema) {
+			this.$set(this.visibleResults, schema.id, true)
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		debounceSearch(schema) {
 			if (this.debounceTimers[schema.id]) {
 				clearTimeout(this.debounceTimers[schema.id])
@@ -160,9 +179,12 @@ export default {
 				this.searchObjects(schema)
 			}, 300)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async searchObjects(schema) {
 			const term = this.searchTerms[schema.id] || ''
 			const register = this.registerCache[schema.id]
@@ -194,7 +216,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-50
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-50
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async linkObject(schema, obj) {
 			const objectUuid = obj.id || obj.uuid || obj._uuid

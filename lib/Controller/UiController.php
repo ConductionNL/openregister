@@ -3,9 +3,12 @@
 /**
  * UiController
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  OpenRegister
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction b.v. <info@conduction.nl>
@@ -43,6 +46,7 @@ use OCP\IRequest;
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.TooManyMethods)       Every public method is a one-liner
  *     SPA-mount route stub required by the NC AppFramework router: each history-
  *     mode deep-link path needs its own named action so OC\Route\Router does not
@@ -50,6 +54,9 @@ use OCP\IRequest;
  *     reduce complexity and would scatter the route registration.
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Same reason as TooManyMethods
  *     above: each SPA route requires its own public NC controller action.
+=======
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class UiController extends Controller
 {
@@ -82,8 +89,11 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function makeSpaResponse(): TemplateResponse
     {
@@ -130,9 +140,12 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function registers(): TemplateResponse
     {
@@ -155,9 +168,12 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function registersDetails(): TemplateResponse
     {
@@ -180,9 +196,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function schemas(): TemplateResponse
     {
@@ -205,9 +224,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function schemasDetails(): TemplateResponse
     {
@@ -226,9 +248,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function sources(): TemplateResponse
     {
@@ -247,9 +272,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function organisation(): TemplateResponse
     {
@@ -268,9 +296,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function objects(): TemplateResponse
     {
@@ -278,12 +309,16 @@ class UiController extends Controller
     }//end objects()
 
     /**
+<<<<<<< HEAD
      * Returns the standalone integrations view template.
      *
      * Used by the per-leaf screenshot harness so a single URL of the form
      * `/integrations/{register}/{schema}/{objectId}` lands on a Vue Router
      * route that mounts IntegrationsView.vue — bypassing ObjectDetails and
      * its legacy sub-resource plugin races.
+=======
+     * Returns the tables page template.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @NoAdminRequired
      *
@@ -294,6 +329,7 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
@@ -317,6 +353,8 @@ class UiController extends Controller
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function tables(): TemplateResponse
     {
@@ -335,9 +373,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function chat(): TemplateResponse
     {
@@ -356,9 +397,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function configurations(): TemplateResponse
     {
@@ -377,9 +421,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleted(): TemplateResponse
     {
@@ -398,9 +445,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function auditTrail(): TemplateResponse
     {
@@ -419,9 +469,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchTrail(): TemplateResponse
     {
@@ -440,9 +493,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function webhooks(): TemplateResponse
     {
@@ -461,9 +517,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function webhooksLogs(): TemplateResponse
     {
@@ -482,9 +541,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function entities(): TemplateResponse
     {
@@ -503,9 +565,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function entitiesDetails(): TemplateResponse
     {
@@ -513,6 +578,7 @@ class UiController extends Controller
     }//end entitiesDetails()
 
     /**
+<<<<<<< HEAD
      * Render the AVG / Verwerkingsregister UI.
      *
      * Serves the SPA shell for the AVG management surface (CRUD over
@@ -580,6 +646,8 @@ class UiController extends Controller
     }//end reportView()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Render endpoints UI
      *
      * Serves the Single Page Application template for the endpoints management interface.
@@ -594,9 +662,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function endpoints(): TemplateResponse
     {
@@ -618,14 +689,18 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
      *
      * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
      *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function endpointLogs(): TemplateResponse
     {
         return $this->makeSpaResponse();
     }//end endpointLogs()
+<<<<<<< HEAD
 
     /**
      * Render templates UI
@@ -747,4 +822,6 @@ class UiController extends Controller
     {
         return $this->makeSpaResponse();
     }//end objectDetail()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

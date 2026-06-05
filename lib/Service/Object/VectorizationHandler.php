@@ -6,9 +6,12 @@
  * Handles vectorization operations for objects.
  * Acts as a bridge between ObjectsController and VectorizationService.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -55,7 +58,11 @@ class VectorizationHandler
      * @param MagicMapper          $objectEntityMapper   Object entity mapper
      * @param LoggerInterface      $logger               PSR-3 logger
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly VectorizationService $vectorizationService,
@@ -76,7 +83,11 @@ class VectorizationHandler
      *
      * @throws \Exception If vectorization fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function vectorizeBatch(?array $views=null, int $batchSize=25): array
     {
@@ -141,7 +152,11 @@ class VectorizationHandler
      *
      * @psalm-return array{total_objects: int<0, max>, views: array|null}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStatistics(?array $views=null): array
     {
@@ -198,7 +213,11 @@ class VectorizationHandler
      *
      * @throws \Exception If count fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCount(?array $schemas=null): int
     {

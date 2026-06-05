@@ -101,7 +101,11 @@ class Version1Date20241216094112 extends SimpleMigrationStep
             );
             $table->addColumn(
                 name: 'updated',
+<<<<<<< HEAD
                 typeName: Types::DATETIME,
+=======
+                typeName: Types::DATETIME_MUTABLE,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 options: ['notnull' => true, 'length' => 255]
             );
             $table->addColumn(name: 'file_path', typeName: Types::STRING)->setNotnull(false)->setDefault(null);

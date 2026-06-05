@@ -1,3 +1,11 @@
+<<<<<<< HEAD
+=======
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+import { objectStore, navigationStore } from '../../store/store.js'
+</script>
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 <template>
 	<div class="detailContainer">
 		<div id="app-content">

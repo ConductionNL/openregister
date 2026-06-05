@@ -8,7 +8,11 @@ import axios from '@nextcloud/axios'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
 		name="export-register-dialog"
+<<<<<<< HEAD
 		:title="t('openregister', 'Export Objects')"
+=======
+		title="Export Objects"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="error" type="error">
@@ -16,7 +20,11 @@ import axios from '@nextcloud/axios'
 		</NcNoteCard>
 
 		<div class="formContainer">
+<<<<<<< HEAD
 			<p>{{ t('openregister', 'Export "{schema}" objects from "{register}"', { schema: schemaTitle, register: registerTitle }) }}</p>
+=======
+			<p>Export "{{ schemaTitle }}" objects from "{{ registerTitle }}"</p>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 			<div class="formGroup">
 				<label>{{ t('openregister', 'Export Format:') }}</label>
@@ -93,9 +101,12 @@ export default {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Computed schema title for display; UI presentation helper.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		schemaTitle() {
 			const item = schemaStore.schemaItem
 			return item?.title || 'Unknown'
@@ -111,15 +122,22 @@ export default {
 			this.error = null
 			this.exportFormat = 'excel'
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async exportObjects() {
 			const register = registerStore.registerItem
 			const schema = schemaStore.schemaItem
 
 			if (!register?.id || !schema?.id) {
+<<<<<<< HEAD
 				this.error = t('openregister', 'Register and schema are required')
+=======
+				this.error = 'Register and schema are required'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				return
 			}
 
@@ -159,7 +177,11 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
+<<<<<<< HEAD
 				this.error = error.response?.data?.error || error.message || t('openregister', 'Failed to export objects')
+=======
+				this.error = error.response?.data?.error || error.message || 'Failed to export objects'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			} finally {
 				this.loading = false
 			}

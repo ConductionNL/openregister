@@ -1,15 +1,21 @@
 ---
 status: implemented
+<<<<<<< HEAD
 retrofit_extensions:
   - REQ-001
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ---
 
 # Linked Entity Types
 
 ## Purpose
 
+<<<<<<< HEAD
 @e2e exclude backend schema property type extension — covered by PHPUnit
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities. Provides schema-level `configuration.linkedTypes` declarations, Nc\* property types for typed field-level references, lean `_` metadata columns on both magic and entity tables, a generic API for ad-hoc linking and reverse lookups, read-time enrichment via `_extend`, and sidebar injection based on linkedTypes.
 
 **Standards**: JSON Schema (custom type extensions), Nextcloud Mail/CardDAV/CalDAV/Talk/Deck APIs
@@ -323,6 +329,7 @@ Controllers MUST accept entity reference strings instead of numeric link IDs for
 - **GIVEN** an object with `_deck: ["3/42"]`
 - **WHEN** a DELETE request is sent to `/api/objects/{register}/{schema}/{id}/deck/3%2F42`
 - **THEN** `"3/42"` MUST be removed from `_deck`
+<<<<<<< HEAD
 
 ### REQ-001: The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations
 
@@ -377,3 +384,5 @@ The step is strictly informational — it never throws and never modifies data. 
 - **WHEN** `scan()` iterates the values
 - **THEN** the non-string entries fail the `is_string($type) === false` guard and are skipped
 - **AND** only `"mail"` is evaluated against the registry
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

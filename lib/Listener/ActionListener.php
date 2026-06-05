@@ -5,9 +5,12 @@
  *
  * Listener that delegates event handling to ActionExecutor for matching actions.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -18,8 +21,11 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -52,7 +58,11 @@ class ActionListener implements IEventListener
      * @param ActionExecutor  $actionExecutor Action executor for running actions
      * @param LoggerInterface $logger         Logger
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly ActionMapper $actionMapper,
@@ -68,7 +78,11 @@ class ActionListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {
@@ -141,7 +155,11 @@ class ActionListener implements IEventListener
      *
      * @return string Short class name (e.g., 'ObjectCreatingEvent')
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getEventTypeName(Event $event): string
     {
@@ -161,7 +179,11 @@ class ActionListener implements IEventListener
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractPayload(Event $event): array
     {
@@ -240,7 +262,11 @@ class ActionListener implements IEventListener
      *
      * @return array Filtered actions that match their filter conditions
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyFilterConditions(array $actions, array $payload): array
     {
@@ -280,7 +306,11 @@ class ActionListener implements IEventListener
      *
      * @return mixed The value or null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getNestedValue(array $data, string $key): mixed
     {

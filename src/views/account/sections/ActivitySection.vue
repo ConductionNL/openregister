@@ -2,8 +2,12 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'Activity') }}</h2>
 		<div class="activity-section__filters">
+<<<<<<< HEAD
 			<NcSelect
 						input-label="Type Filter" v-model="typeFilter"
+=======
+			<NcSelect v-model="typeFilter"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				:options="typeOptions"
 				:placeholder="t('openregister', 'Filter by type')"
 				@input="loadActivity" />
@@ -60,27 +64,36 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * Reset paging state and load the first page of the current user's activity feed.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-5
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadActivity() {
 			this.loading = true
 			this.offset = 0
 			this.activities = []
 			await this.fetchActivity()
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude list-view pagination plumbing; advances offset and re-fetches the activity feed
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadMore() {
 			this.offset += this.limit
 			await this.fetchActivity()
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude list-view store fetch plumbing for the user activity feed (activity contract owned by activity-provider)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async fetchActivity() {
 			this.loading = true
 			try {
@@ -98,9 +111,12 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude detail-view timestamp formatting helper for display only
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		formatTime(timestamp) {
 			if (!timestamp) return ''
 			const date = new Date(timestamp)

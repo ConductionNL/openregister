@@ -5,9 +5,12 @@
  *
  * Listener that delegates schema hook execution to HookExecutor.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -19,7 +22,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-71
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -72,8 +79,13 @@ class HookListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-71
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {
@@ -115,7 +127,11 @@ class HookListener implements IEventListener
      *
      * @return ObjectEntity|null The object entity or null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getObjectFromEvent(Event $event): ?ObjectEntity
     {

@@ -105,10 +105,15 @@ class SchemaService
      * @param int $schemaId The ID of the schema to explore
      *
      * @return array Exploration results with discovered properties
+<<<<<<< HEAD
      *
      * @throws \Exception If schema not found or analysis fails
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-1
+=======
+     *
+     * @throws \Exception If schema not found or analysis fails
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exploreSchemaProperties(int $schemaId): array
     {

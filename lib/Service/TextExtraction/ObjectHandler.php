@@ -5,9 +5,12 @@
  *
  * Handles text extraction from OpenRegister objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -16,8 +19,11 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -93,12 +99,18 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @throws Exception When extraction fails.
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object extraction requires multiple field checks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field extraction paths with optional data
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $sourceMeta and $force kept to honour interface contract
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-2
+=======
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force parameter follows interface contract
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object extraction requires multiple field checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths with optional data
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -221,8 +233,11 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @return bool True if extraction is needed.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -252,8 +267,11 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @psalm-return array{id: int, uuid: null|string, schema: null|string,
      *     register: null|string, version: null|string, organization: mixed,
      *     owner: null|string, updated: \DateTime|null}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -277,8 +295,11 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @param int $sourceId Object ID.
      *
      * @return int Unix timestamp.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSourceTimestamp(int $sourceId): int
     {
@@ -314,9 +335,16 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
         foreach ($data as $key => $value) {
             // Build context path.
+<<<<<<< HEAD
             $contextKey = (string) $key;
             if ($prefix !== null && $prefix !== '') {
                 $contextKey = "{$prefix}.{$key}";
+=======
+            if (($prefix !== null && $prefix !== '')) {
+                $contextKey = "{$prefix}.{$key}";
+            } else {
+                $contextKey = (string) $key;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             // Handle different value types.
@@ -325,9 +353,16 @@ class ObjectHandler implements TextExtractionHandlerInterface
             } else if (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_bool($value) === true) {
+<<<<<<< HEAD
                 $boolStr = 'false';
                 if ($value === true) {
                     $boolStr = 'true';
+=======
+                if ($value === true) {
+                    $boolStr = 'true';
+                } else {
+                    $boolStr = 'false';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
 
                 $textParts[] = "{$contextKey}: {$boolStr}";

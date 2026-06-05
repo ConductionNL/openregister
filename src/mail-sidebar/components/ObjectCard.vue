@@ -57,6 +57,7 @@ export default {
 		},
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
@@ -66,15 +67,23 @@ export default {
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+		objectTitle() {
+			return this.object.objectTitle || this.object.objectUuid || ''
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		deepLink() {
 			const registerId = this.object.registerId || ''
 			const schemaId = this.object.schemaId || ''
 			const objectUuid = this.object.objectUuid || ''
 			return `/apps/openregister/registers/${registerId}/${schemaId}/${objectUuid}`
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		cardAriaLabel() {
 			const parts = [this.objectTitle]
 			if (this.object.schemaTitle) {

@@ -258,7 +258,10 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturnsUnlockedObject(): void
     {
+<<<<<<< HEAD
         $this->setupAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('unlockObject')->willReturn(true);
@@ -272,6 +275,7 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame('Object unlocked successfully', $data['message']);
     }
 
+<<<<<<< HEAD
     public function testUnlockAnonymousRejected(): void
     {
         // Wave-3 C14 regression guard: anonymous callers must not be able
@@ -299,6 +303,8 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame(403, $result->getStatus());
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testMergeReturnsMergedObject(): void
     {
         $this->request->method('getParams')->willReturn([
@@ -796,17 +802,27 @@ class ObjectsControllerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($register, 1);
 
+<<<<<<< HEAD
         // Excel upload routes through ImportService::importFromExcel
         // (no schema param required — Excel auto-resolves per sheet).
         $this->request->method('getUploadedFile')->willReturn([
             'name' => 'import.xlsx',
             'tmp_name' => '/tmp/import.xlsx',
+=======
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'import.csv',
+            'tmp_name' => '/tmp/import.csv',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'size' => 1024,
         ]);
         $this->request->method('getParam')->willReturn(null);
 
         $this->registerMapper->method('find')->willReturn($register);
+<<<<<<< HEAD
         $this->importService->expects($this->once())->method('importFromExcel')->willReturn([
+=======
+        $this->objectService->method('importObjects')->willReturn([
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'imported' => 10,
             'failed' => 0,
         ]);
@@ -1160,10 +1176,14 @@ class ObjectsControllerTest extends TestCase
             'size' => 1024,
             'error' => 0,
         ]);
+<<<<<<< HEAD
         // CSV import requires a schema; provide one so the import proceeds.
         $this->request->method('getParam')->willReturnMap([
             ['schema', null, '5'],
         ]);
+=======
+        $this->request->method('getParam')->willReturn(null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = new \OCA\OpenRegister\Db\Register();
         $ref = new \ReflectionClass($register);
@@ -1172,11 +1192,16 @@ class ObjectsControllerTest extends TestCase
         $prop->setValue($register, 1);
         $register->setTitle('Test Register');
 
+<<<<<<< HEAD
         $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
 
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->importService->expects($this->once())->method('importFromCsv')->willReturn([
+=======
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->objectService->method('importObjects')->willReturn([
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'created' => 5,
             'updated' => 2,
             'errors' => 0,
@@ -1529,6 +1554,7 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame(403, $result->getStatus());
     }
 
+<<<<<<< HEAD
     /**
      * Per the `self-folder-access-control` capability: when the save pipeline
      * throws `FolderAccessDeniedException`, the controller MUST return HTTP 403
@@ -1632,6 +1658,8 @@ class ObjectsControllerTest extends TestCase
         $this->assertArrayNotHasKey('folder', $body);
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     // =========================================================================
     // update() — success and error paths
     // =========================================================================
@@ -2401,6 +2429,7 @@ class ObjectsControllerTest extends TestCase
     }
 
     /**
+<<<<<<< HEAD
      * Test create() with no user session — anonymous writes must be rejected.
      *
      * Pre-wave-3-C13 this test asserted 201 (anonymous create succeeded).
@@ -2421,6 +2450,29 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->create('1', '2', $this->objectService);
 
         $this->assertSame(401, $result->getStatus());
+=======
+     * Test create() with no user session (returns isAdmin=false, rbac=true).
+     */
+    public function testCreateWithNoUserSessionReturns201OnSuccess(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Created']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willReturn($objectEntity);
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+
+        $this->assertSame(201, $result->getStatus());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     // =========================================================================
@@ -2644,15 +2696,23 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturns404WhenObjectNotFound(): void
     {
+<<<<<<< HEAD
         $this->setupAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('unlockObject')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
+<<<<<<< HEAD
         $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
 
         $this->assertSame(404, $result->getStatus());
+=======
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     // =========================================================================
@@ -2793,6 +2853,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
+<<<<<<< HEAD
         // CSV upload with explicit schema routes through importFromCsv,
         // forwarding the resolved register + schema.
         $this->importService->expects($this->once())
@@ -2803,6 +2864,11 @@ class ObjectsControllerTest extends TestCase
                 $this->identicalTo($schema)
             )
             ->willReturn(['imported' => 8]);
+=======
+        $this->objectService->method('importObjects')->willReturn([
+            'imported' => 8,
+        ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $user = $this->createMock(\OCP\IUser::class);
         $this->userSession->method('getUser')->willReturn($user);
@@ -5453,12 +5519,18 @@ class ObjectsControllerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($register, 1);
 
+<<<<<<< HEAD
         // Excel upload (no schema needed) so we can assert that the
         // request's boolean params are parsed and forwarded verbatim to
         // ImportService::importFromExcel.
         $this->request->method('getUploadedFile')->willReturn([
             'name' => 'data.xlsx',
             'tmp_name' => '/tmp/data.xlsx',
+=======
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'data.csv',
+            'tmp_name' => '/tmp/data.csv',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'size' => 1024,
         ]);
         $this->request->method('getParam')->willReturnMap([
@@ -5471,6 +5543,7 @@ class ObjectsControllerTest extends TestCase
         ]);
 
         $this->registerMapper->method('find')->willReturn($register);
+<<<<<<< HEAD
         // Signature: (filePath, register, schema, validation, events,
         // _rbac, _multitenancy, publish, currentUser, enrich).
         $this->importService->expects($this->once())
@@ -5486,6 +5559,11 @@ class ObjectsControllerTest extends TestCase
                 $this->isTrue()    // publish
             )
             ->willReturn(['imported' => 3]);
+=======
+        $this->objectService->method('importObjects')->willReturn([
+            'imported' => 3,
+        ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $user = $this->createMock(\OCP\IUser::class);
         $this->userSession->method('getUser')->willReturn($user);
@@ -7115,6 +7193,7 @@ class ObjectsControllerTest extends TestCase
         // registerEntity is null (DI mapper throws), so registers is empty and stripped
         $this->assertArrayHasKey('@self', $data);
     }
+<<<<<<< HEAD
 
     // =========================================================================
     // Wave-3 C13: anonymous-write must not reach the webhook intercept
@@ -7196,4 +7275,6 @@ class ObjectsControllerTest extends TestCase
 
         $this->assertSame(401, $result->getStatus());
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

@@ -9,7 +9,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -31,7 +34,10 @@ class DeletedControllerGapTest extends TestCase
     private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+<<<<<<< HEAD
     private PermissionHandler&MockObject $permissionHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -44,7 +50,10 @@ class DeletedControllerGapTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
+<<<<<<< HEAD
         $this->permissionHandler = $this->createMock(PermissionHandler::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new DeletedController(
             'openregister',
@@ -54,12 +63,17 @@ class DeletedControllerGapTest extends TestCase
             $this->schemaMapper,
             $this->objectService,
             $this->userSession,
+<<<<<<< HEAD
             $this->groupManager,
             $this->permissionHandler
+=======
+            $this->groupManager
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
     /**
+<<<<<<< HEAD
      * Helper: stub the user session as an admin so RBAC gates pass.
      */
     private function stubAdminUser(string $userId = 'admin'): void
@@ -71,6 +85,8 @@ class DeletedControllerGapTest extends TestCase
     }
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Test index with admin user (covers isCurrentUserAdmin=true, multitenancy=false).
      */
     public function testIndexWithAdminUser(): void
@@ -306,7 +322,10 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testRestoreMultipleWithMixedObjects(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Create one deleted and one non-deleted object
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
@@ -351,7 +370,10 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testDestroyMultipleWithMixedObjects(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);
@@ -391,7 +413,10 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testRestoreMultipleInnerException(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);
@@ -423,7 +448,10 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testDestroyMultipleInnerException(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);
@@ -471,7 +499,10 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testRestoreMultipleMessageWithNoNotFound(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);
@@ -501,7 +532,10 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testDestroyMultipleMessageWithNoNotFound(): void
     {
+<<<<<<< HEAD
         $this->stubAdminUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
         $ref = new \ReflectionClass($deletedObject);

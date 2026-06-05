@@ -18,7 +18,11 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+=======
+ * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -38,8 +42,15 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+=======
+use OCA\OpenRegister\Exception\EmlParseException;
+use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Service\TextExtraction\EmlStructure;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -66,6 +77,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries and mapper types for multi-format extraction.
@@ -73,6 +85,12 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @SuppressWarnings(PHPMD.TooManyMethods)           One private extraction method per supported MIME group
  * (PDF/DOCX/XLSX/EML/text/object/file) plus chunking strategies; splitting into sub-services would
  * break the encapsulated extraction workflow.
+=======
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class TextExtractionService
 {
@@ -112,6 +130,16 @@ class TextExtractionService
     private const RECURSIVE_CHARACTER = 'RECURSIVE_CHARACTER';
 
     /**
+<<<<<<< HEAD
+=======
+     * Lazy-loaded EmlParser instance (avoids circular DI dependency).
+     *
+     * @var EmlParser|null
+     */
+    private ?EmlParser $emlParser = null;
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Fixed size splitting strategy
      *
      * @var string
@@ -144,6 +172,7 @@ class TextExtractionService
      * @param EntityRelationMapper     $entityRelationMapper Mapper for entity relations
      * @param SettingsService          $settingsService      Settings service
      * @param RiskLevelService         $riskLevelService     Risk level computation service
+<<<<<<< HEAD
      * @param EmlParser                $emlParser            EML message-parser (used for message/rfc822
      *                                                       inputs and for the public `parseEmlStructured`
      *                                                       surface that DocuDesk's `eml-pdf-assembly`
@@ -151,6 +180,10 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection for all document-type parsers and entity mappers.
      * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
+=======
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -165,8 +198,12 @@ class TextExtractionService
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly SettingsService $settingsService,
+<<<<<<< HEAD
         private readonly RiskLevelService $riskLevelService,
         private readonly EmlParser $emlParser
+=======
+        private readonly RiskLevelService $riskLevelService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
@@ -187,8 +224,11 @@ class TextExtractionService
      * @throws Exception If extraction fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
@@ -330,8 +370,11 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
@@ -917,8 +960,11 @@ class TextExtractionService
      * @throws Exception If file cannot be read
      *
      * Else needed for multi-format extraction branching
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function performTextExtraction(int $fileId, array $ncFile): ?string
     {
@@ -989,8 +1035,12 @@ class TextExtractionService
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet(file: $file);
             } else if ($mimeType === 'message/rfc822') {
+<<<<<<< HEAD
                 // Extract text from EML using EmlParser (parse + flatten).
                 // See `text-extraction-eml` change.
+=======
+                // Extract flat plain-text from EML file.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $extractedText = $this->extractEml(file: $file);
             }//end if
 
@@ -1036,8 +1086,11 @@ class TextExtractionService
      * @return (int|string)[] Statistics about discovery: {discovered, failed, total}
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
@@ -1121,8 +1174,11 @@ class TextExtractionService
      * @return int[] Statistics about the extraction process: {processed, failed, total}
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractPendingFiles(int $limit=100): array
     {
@@ -1202,8 +1258,11 @@ class TextExtractionService
      * @return int[] Statistics about the retry process
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function retryFailedExtractions(int $limit=50): array
     {
@@ -1254,8 +1313,11 @@ class TextExtractionService
      *     totalObjects: int,
      *     totalEntities: int
      * }
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStats(): array
     {
@@ -1456,6 +1518,7 @@ class TextExtractionService
      *
      * @return string|null Extracted text content, or null on empty/failed extraction
      *
+<<<<<<< HEAD
      * @throws Exception If the PhpWord library itself is not installed (deployment error)
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
@@ -1464,6 +1527,16 @@ class TextExtractionService
     private function extractWord(\OCP\Files\File $file): ?string
     {
         // Check if PhpWord library is available (deployment error — still throws).
+=======
+     * @throws Exception If Word parsing fails
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
+     */
+    private function extractWord(\OCP\Files\File $file): ?string
+    {
+        // Check if PhpWord library is available.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
             $this->logger->warning(
                 message: '[TextExtractionService] PhpWord library not available',
@@ -1478,9 +1551,12 @@ class TextExtractionService
             throw new Exception($msg);
         }
 
+<<<<<<< HEAD
         $readerName = $this->resolveWordReader(mimeType: (string) $file->getMimeType(), fileName: (string) $file->getName());
 
         $tempFile = null;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $this->logger->debug(
                 message: '[TextExtractionService] Extracting Word document',
@@ -1489,16 +1565,27 @@ class TextExtractionService
                     'line'   => __LINE__,
                     'fileId' => $file->getId(),
                     'name'   => $file->getName(),
+<<<<<<< HEAD
                     'reader' => $readerName,
                 ]
             );
 
             // Write the content to a temp file for PhpWord to read.
             $content  = $file->getContent();
+=======
+                ]
+            );
+
+            // Get file content.
+            $content = $file->getContent();
+
+            // Create temporary file for PhpWord.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $tempFile = tmpfile();
             $tempPath = stream_get_meta_data($tempFile)['uri'];
             fwrite($tempFile, $content);
 
+<<<<<<< HEAD
             // Load with the reader chosen from the MIME/extension.
             $phpWord = WordIOFactory::load($tempPath, $readerName);
 
@@ -1524,13 +1611,44 @@ class TextExtractionService
             $tempFile = null;
 
             if (trim($text) === '') {
+=======
+            // Load Word document.
+            $phpWord = WordIOFactory::load($tempPath);
+
+            // Extract text from all sections.
+            $text = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText') === true) {
+                        $text .= $element->getText()."\n";
+                    } else if (method_exists($element, 'getElements') === true) {
+                        // Handle nested elements (tables, etc.).
+                        foreach ($element->getElements() as $childElement) {
+                            if (method_exists($childElement, 'getText') === true) {
+                                $text .= $childElement->getText()." ";
+                            }
+                        }
+
+                        $text .= "\n";
+                    }
+                }
+            }
+
+            // Clean up.
+            fclose($tempFile);
+
+            if (trim($text) === '' || trim($text) === null) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $this->logger->warning(
                     message: '[TextExtractionService] Word extraction returned empty text',
                     context: [
                         'file'   => __FILE__,
                         'line'   => __LINE__,
                         'fileId' => $file->getId(),
+<<<<<<< HEAD
                         'reader' => $readerName,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     ]
                 );
                 return null;
@@ -1547,6 +1665,7 @@ class TextExtractionService
             );
 
             return $text;
+<<<<<<< HEAD
         } catch (\Throwable $e) {
             if (is_resource($tempFile) === true) {
                 fclose($tempFile);
@@ -1722,6 +1841,21 @@ class TextExtractionService
 
         return 'Word2007';
     }//end resolveWordReader()
+=======
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[TextExtractionService] Word extraction failed',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'fileId' => $file->getId(),
+                    'error'  => $e->getMessage(),
+                ]
+            );
+            throw new Exception("Word extraction failed: ".$e->getMessage());
+        }//end try
+    }//end extractWord()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Extract text from spreadsheet (XLSX/XLS) using PhpSpreadsheet
@@ -1847,6 +1981,7 @@ class TextExtractionService
             throw new Exception("Spreadsheet extraction failed: ".$e->getMessage());
         }//end try
     }//end extractSpreadsheet()
+<<<<<<< HEAD
 
     /**
      * Extract flat plain-text from an EML (`message/rfc822`) file.
@@ -1907,6 +2042,8 @@ class TextExtractionService
     {
         return $this->emlParser->parse(file: $file);
     }//end parseEmlStructured()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Chunk a document into smaller pieces for processing
@@ -1920,8 +2057,11 @@ class TextExtractionService
      * @return (int|mixed|string)[][] Array of text chunks
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function chunkDocument(string $text, array $options=[]): array
     {
@@ -2055,6 +2195,7 @@ class TextExtractionService
 
             $chunkLength = strlen($chunk);
 
+<<<<<<< HEAD
             $trimmedChunk = trim($chunk);
             if (strlen($trimmedChunk) >= self::MIN_CHUNK_SIZE) {
                 // Align the persisted absolute offset with the trimmed text we
@@ -2092,6 +2233,28 @@ class TextExtractionService
             $chunks,
             function ($chunk) {
                 $trimmed = trim($chunk['text']);
+=======
+            if (strlen(trim($chunk)) >= self::MIN_CHUNK_SIZE) {
+                $chunks[] = [
+                    'text'         => trim($chunk),
+                    'start_offset' => $offset,
+                    'end_offset'   => $offset + $chunkLength,
+                ];
+            }
+
+            $offset += $chunkLength - $chunkOverlap;
+
+            // Prevent infinite loop.
+            if ($offset <= 0) {
+                $offset = $chunkLength;
+            }
+        }//end while
+
+        return array_filter(
+            $chunks,
+            function ($c) {
+                $trimmed = trim($c['text']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 return $trimmed !== '' && $trimmed !== null;
             }
         );
@@ -2198,9 +2361,16 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
+<<<<<<< HEAD
             $testChunk = $currentChunk.$separator.$split;
             if ($currentChunk === '') {
                 $testChunk = $split;
+=======
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            } else {
+                $testChunk = $currentChunk.$separator.$split;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             if (strlen($testChunk) <= $chunkSize) {
@@ -2272,8 +2442,13 @@ class TextExtractionService
 
         return array_filter(
             $chunks,
+<<<<<<< HEAD
             function ($chunk) {
                 $trimmed = trim($chunk['text']);
+=======
+            function ($c) {
+                $trimmed = trim($c['text']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 return $trimmed !== '' && $trimmed !== null;
             }
         );
@@ -2291,7 +2466,10 @@ class TextExtractionService
         $wordTypes = [
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/msword',
+<<<<<<< HEAD
             'application/vnd.oasis.opendocument.text',
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         return in_array($mimeType, $wordTypes, true) === true;
@@ -2315,6 +2493,240 @@ class TextExtractionService
     }//end isSpreadsheet()
 
     /**
+<<<<<<< HEAD
+=======
+     * Extract flat plain-text from an EML (message/rfc822) file.
+     *
+     * Delegates to EmlParser::parse() then EmlParser::flatten().
+     * On EmlParseException the error is logged (with PII-safe message per ADR-005)
+     * and null is returned — matching the existing extraction-failure pattern.
+     *
+     * @param \OCP\Files\File $file Nextcloud file node.
+     *
+     * @return string|null Flat plain-text or null on failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    private function extractEml(\OCP\Files\File $file): ?string
+    {
+        try {
+            $emlParser = $this->getEmlParser();
+            $structure = $emlParser->parse(file: $file);
+
+            return $emlParser->flatten(
+                structure: $structure,
+                depth: 0,
+                fileId: $file->getId(),
+                bytesExtractor: fn(string $bytes, string $mimeType) => $this->extractTextFromContent(
+                    content: $bytes,
+                    mimeType: $mimeType
+                )
+            );
+        } catch (EmlParseException $e) {
+            $sanitised = $this->getEmlParser()->sanitiseExceptionMessage($e->getMessage());
+            $this->logger->error(
+                message: '[TextExtractionService] EML extraction failed',
+                context: [
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
+                    'fileId'         => $file->getId(),
+                    'mimeType'       => 'message/rfc822',
+                    'exceptionClass' => get_class($e),
+                    'detail'         => $sanitised,
+                ]
+            );
+            return null;
+        }//end try
+    }//end extractEml()
+
+    /**
+     * Parse an EML file into a structured EmlStructure value object.
+     *
+     * Throws EmlParseException on irrecoverable parse failure. Callers should
+     * catch EmlParseException and handle their fallback path (e.g. DocuDesk's
+     * eml-pdf-assembly falls back to the flat extractEml text on failure).
+     *
+     * @param \OCP\Files\File $file Nextcloud file node.
+     *
+     * @return EmlStructure Parsed EML structure.
+     *
+     * @throws EmlParseException On irrecoverable parse failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    public function parseEmlStructured(\OCP\Files\File $file): EmlStructure
+    {
+        return $this->getEmlParser()->parse(file: $file);
+    }//end parseEmlStructured()
+
+    /**
+     * Extract plain text from raw content bytes given a MIME type.
+     *
+     * Used by EmlParser to extract text from attachment bytes (PDF, Word, text)
+     * without requiring a Nextcloud File object. Writes bytes to a temp file
+     * and calls the appropriate extractor.
+     *
+     * @param string $content  Raw content bytes.
+     * @param string $mimeType MIME type of the content.
+     *
+     * @return string|null Extracted text, or null if not extractable.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple MIME-type branches required
+     */
+    public function extractTextFromContent(string $content, string $mimeType): ?string
+    {
+        // For text/* types, the bytes are already plain text.
+        if (strpos($mimeType, 'text/') === 0) {
+            return $this->ensureUtf8Content(content: $content);
+        }
+
+        // Write to temp file for parsers that require a file path.
+        $tempFile = tmpfile();
+        if ($tempFile === false) {
+            return null;
+        }
+
+        $tempPath = stream_get_meta_data($tempFile)['uri'];
+        fwrite($tempFile, $content);
+
+        try {
+            if ($mimeType === 'application/pdf') {
+                return $this->extractPdfFromPath(path: $tempPath);
+            }
+
+            if ($this->isWordDocument(mimeType: $mimeType) === true) {
+                return $this->extractWordFromPath(path: $tempPath);
+            }
+        } finally {
+            fclose($tempFile);
+        }
+
+        return null;
+    }//end extractTextFromContent()
+
+    /**
+     * Extract text from a PDF file given its filesystem path.
+     *
+     * @param string $path Filesystem path to the PDF file.
+     *
+     * @return string|null Extracted text, or null on failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) PdfParser instantiation is the standard pattern
+     */
+    private function extractPdfFromPath(string $path): ?string
+    {
+        if (class_exists('Smalot\PdfParser\Parser') === false) {
+            return null;
+        }
+
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf    = $parser->parseFile($path);
+            $text   = $pdf->getText();
+            return $text !== '' ? $text : null;
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[TextExtractionService] PDF attachment extraction failed',
+                context: ['exceptionClass' => get_class($e)]
+            );
+            return null;
+        }
+    }//end extractPdfFromPath()
+
+    /**
+     * Extract text from a Word document given its filesystem path.
+     *
+     * @param string $path Filesystem path to the Word document.
+     *
+     * @return string|null Extracted text, or null on failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
+     */
+    private function extractWordFromPath(string $path): ?string
+    {
+        if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
+            return null;
+        }
+
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+            $text    = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText') === true) {
+                        $text .= $element->getText()."\n";
+                    }
+                }
+            }
+
+            return trim($text) !== '' ? $text : null;
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[TextExtractionService] Word attachment extraction failed',
+                context: ['exceptionClass' => get_class($e)]
+            );
+            return null;
+        }
+    }//end extractWordFromPath()
+
+    /**
+     * Ensure raw bytes are valid UTF-8 for text/* content.
+     *
+     * @param string $content Raw content bytes.
+     *
+     * @return string UTF-8 string.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    private function ensureUtf8Content(string $content): string
+    {
+        if (mb_check_encoding(value: $content, encoding: 'UTF-8') === true) {
+            return $content;
+        }
+
+        $detected = mb_detect_encoding(string: $content, encodings: null, strict: false);
+        if ($detected !== false) {
+            try {
+                return mb_convert_encoding(string: $content, to_encoding: 'UTF-8', from_encoding: $detected);
+            } catch (\Exception $e) {
+                // Best-effort fallback.
+            }
+        }
+
+        return mb_convert_encoding(string: $content, to_encoding: 'UTF-8', from_encoding: 'UTF-8');
+    }//end ensureUtf8Content()
+
+    /**
+     * Get or lazily create the EmlParser instance.
+     *
+     * EmlParser is not injected via DI to avoid a circular dependency:
+     * EmlParser → TextExtractionService (for attachment text extraction).
+     * Instead, we pass a resolver closure that provides $this lazily.
+     *
+     * @return EmlParser
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    private function getEmlParser(): EmlParser
+    {
+        if ($this->emlParser === null) {
+            $this->emlParser = new EmlParser(
+                logger: $this->logger
+            );
+        }
+
+        return $this->emlParser;
+    }//end getEmlParser()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get detection method name based on language
      *
      * @param string|null $language Detected language code

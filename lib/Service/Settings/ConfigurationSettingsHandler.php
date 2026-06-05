@@ -5,9 +5,12 @@
  *
  * This file contains the handler class for managing general configuration settings.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -133,8 +136,11 @@ class ConfigurationSettingsHandler
      * Check if multi-tenancy is enabled
      *
      * @return bool True if multi-tenancy is enabled, false otherwise
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isMultiTenancyEnabled(): bool
     {
@@ -213,8 +219,11 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration defaults and overrides create multiple execution paths
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSettings(): array
     {
@@ -228,6 +237,7 @@ class ConfigurationSettingsHandler
             ];
 
             // RBAC Settings.
+<<<<<<< HEAD
             $rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
             if (empty($rbacConfig) === true) {
                 $data['rbac'] = [
@@ -236,17 +246,47 @@ class ConfigurationSettingsHandler
                     'defaultNewUserGroup' => 'viewer',
                     'defaultObjectOwner'  => '',
                     'adminOverride'       => true,
+=======
+            // The schema/register-level `inheritFromPublic` cascade falls back to the
+            // tenant-wide IAppConfig key `rbac.inherit_from_public_default` (read by
+            // PermissionHandler::resolveInheritFromPublic). Surface it under the same
+            // `rbac` payload object so the frontend treats it as a regular RBAC option.
+            $inheritFromPublicDefault = $this->appConfig->getValueBool(
+                $this->appName,
+                'rbac.inherit_from_public_default',
+                true
+            );
+
+            $rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
+            if (empty($rbacConfig) === true) {
+                $data['rbac'] = [
+                    'enabled'                  => true,
+                    'anonymousGroup'           => 'public',
+                    'defaultNewUserGroup'      => 'viewer',
+                    'defaultObjectOwner'       => '',
+                    'adminOverride'            => true,
+                    'inheritFromPublicDefault' => $inheritFromPublicDefault,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
             if (empty($rbacConfig) === false) {
                 $rbacData     = json_decode($rbacConfig, true);
                 $data['rbac'] = [
+<<<<<<< HEAD
                     'enabled'             => $rbacData['enabled'] ?? true,
                     'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
                     'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
                     'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
                     'adminOverride'       => $rbacData['adminOverride'] ?? true,
+=======
+                    'enabled'                  => $rbacData['enabled'] ?? true,
+                    'anonymousGroup'           => $rbacData['anonymousGroup'] ?? 'public',
+                    'defaultNewUserGroup'      => $rbacData['defaultNewUserGroup'] ?? 'viewer',
+                    'defaultObjectOwner'       => $rbacData['defaultObjectOwner'] ?? '',
+                    'adminOverride'            => $rbacData['adminOverride'] ?? true,
+                    'inheritFromPublicDefault' => $inheritFromPublicDefault,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
@@ -254,22 +294,36 @@ class ConfigurationSettingsHandler
             $multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
             if (empty($multitenancyConfig) === true) {
                 $data['multitenancy'] = [
+<<<<<<< HEAD
                     'enabled'                            => true,
                     'defaultUserTenant'                  => '',
                     'defaultObjectTenant'                => '',
                     'publishedObjectsBypassMultiTenancy' => false,
                     'adminOverride'                      => true,
+=======
+                    'enabled'             => true,
+                    'defaultUserTenant'   => '',
+                    'defaultObjectTenant' => '',
+                    'adminOverride'       => true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
             if (empty($multitenancyConfig) === false) {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
                 $data['multitenancy'] = [
+<<<<<<< HEAD
                     'enabled'                            => $multitenancyData['enabled'] ?? true,
                     'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                     'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
+=======
+                    'enabled'             => $multitenancyData['enabled'] ?? true,
+                    'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
@@ -532,8 +586,11 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration sections are independently optional
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateSettings(array $data): array
     {
@@ -550,18 +607,41 @@ class ConfigurationSettingsHandler
                     'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
                 $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+<<<<<<< HEAD
             }
+=======
+
+                // Persist the inheritFromPublic tenant default to a separate IAppConfig
+                // key that PermissionHandler::resolveInheritFromPublic reads at runtime.
+                // Strict normalization (see normalizeInheritFromPublicDefault) rejects
+                // garbage rather than letting (bool) "false" silently invert the gate.
+                if (array_key_exists(key: 'inheritFromPublicDefault', array: $rbacData) === true) {
+                    $this->appConfig->setValueBool(
+                        app: $this->appName,
+                        key: 'rbac.inherit_from_public_default',
+                        value: $this->normalizeInheritFromPublicDefault(raw: $rbacData['inheritFromPublicDefault'])
+                    );
+                }
+            }//end if
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             // Handle Multitenancy settings - enabled by default.
             if (($data['multitenancy'] ?? null) !== null) {
                 $multitenancyData = $data['multitenancy'];
                 // Always store Multitenancy config with enabled state (default: true).
                 $multitenancyConfig = [
+<<<<<<< HEAD
                     'enabled'                            => $multitenancyData['enabled'] ?? true,
                     'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                     'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
+=======
+                    'enabled'             => $multitenancyData['enabled'] ?? true,
+                    'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
                 $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -632,8 +712,11 @@ class ConfigurationSettingsHandler
      *     auto_publish_objects?: bool,
      *     auto_publish_attachments?: bool
      * }
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updatePublishingOptions(array $options): array
     {
@@ -682,14 +765,18 @@ class ConfigurationSettingsHandler
      *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
      *     availableGroups: array<string, string>,
      *     availableUsers: array<string, string>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRbacSettingsOnly(): array
     {
         try {
             $rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
 
+<<<<<<< HEAD
             $rbacData = [];
             if (empty($rbacConfig) === true) {
                 $rbacData = [
@@ -698,17 +785,46 @@ class ConfigurationSettingsHandler
                     'defaultNewUserGroup' => 'viewer',
                     'defaultObjectOwner'  => '',
                     'adminOverride'       => true,
+=======
+            // Read the tenant-wide inheritFromPublic default from its dedicated
+            // IAppConfig key so PermissionHandler::resolveInheritFromPublic and the
+            // settings UI agree on the source of truth.
+            $inheritFromPublicDefault = $this->appConfig->getValueBool(
+                $this->appName,
+                'rbac.inherit_from_public_default',
+                true
+            );
+
+            $rbacData = [];
+            if (empty($rbacConfig) === true) {
+                $rbacData = [
+                    'enabled'                  => true,
+                    'anonymousGroup'           => 'public',
+                    'defaultNewUserGroup'      => 'viewer',
+                    'defaultObjectOwner'       => '',
+                    'adminOverride'            => true,
+                    'inheritFromPublicDefault' => $inheritFromPublicDefault,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
             if (empty($rbacConfig) === false) {
                 $storedData = json_decode($rbacConfig, true);
                 $rbacData   = [
+<<<<<<< HEAD
                     'enabled'             => $storedData['enabled'] ?? true,
                     'anonymousGroup'      => $storedData['anonymousGroup'] ?? 'public',
                     'defaultNewUserGroup' => $storedData['defaultNewUserGroup'] ?? 'viewer',
                     'defaultObjectOwner'  => $storedData['defaultObjectOwner'] ?? '',
                     'adminOverride'       => $storedData['adminOverride'] ?? true,
+=======
+                    'enabled'                  => $storedData['enabled'] ?? true,
+                    'anonymousGroup'           => $storedData['anonymousGroup'] ?? 'public',
+                    'defaultNewUserGroup'      => $storedData['defaultNewUserGroup'] ?? 'viewer',
+                    'defaultObjectOwner'       => $storedData['defaultObjectOwner'] ?? '',
+                    'adminOverride'            => $storedData['adminOverride'] ?? true,
+                    'inheritFromPublicDefault' => $inheritFromPublicDefault,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
@@ -736,8 +852,11 @@ class ConfigurationSettingsHandler
      *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
      *     availableGroups: array<string, string>,
      *     availableUsers: array<string, string>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateRbacSettingsOnly(array $rbacData): array
     {
@@ -752,14 +871,44 @@ class ConfigurationSettingsHandler
 
             $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
 
+<<<<<<< HEAD
             return [
                 'rbac'            => $rbacConfig,
+=======
+            // Persist the tenant-wide inheritFromPublic default to its dedicated
+            // IAppConfig key. PermissionHandler::resolveInheritFromPublic reads the
+            // same key, so the settings UI and the runtime cascade stay in sync.
+            // Strict normalization: filter_var with FILTER_NULL_ON_FAILURE accepts
+            // true/false/"true"/"false"/"1"/"0"/1/0 and rejects everything else
+            // (including the string "false", which a naive (bool) cast would
+            // silently flip to true).
+            $inheritFromPublicDefault = $this->normalizeInheritFromPublicDefault(
+                raw: ($rbacData['inheritFromPublicDefault'] ?? true)
+            );
+            if (array_key_exists(key: 'inheritFromPublicDefault', array: $rbacData) === true) {
+                $this->appConfig->setValueBool(
+                    app: $this->appName,
+                    key: 'rbac.inherit_from_public_default',
+                    value: $inheritFromPublicDefault
+                );
+            }
+
+            return [
+                'rbac'            => array_merge(
+                    $rbacConfig,
+                    ['inheritFromPublicDefault' => $inheritFromPublicDefault]
+                ),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'availableGroups' => $this->getAvailableGroups(),
                 'availableUsers'  => $this->getAvailableUsers(),
             ];
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update RBAC settings: '.$e->getMessage());
+<<<<<<< HEAD
         }
+=======
+        }//end try
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end updateRbacSettingsOnly()
 
     /**
@@ -773,8 +922,11 @@ class ConfigurationSettingsHandler
      *     default_organisation: mixed|null,
      *     auto_create_default_organisation: mixed|true
      * }}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -818,8 +970,11 @@ class ConfigurationSettingsHandler
      *     default_organisation: mixed|null,
      *     auto_create_default_organisation: mixed|true
      * }}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -843,8 +998,11 @@ class ConfigurationSettingsHandler
      * Get default organisation UUID from settings
      *
      * @return string|null Default organisation UUID or null if not set
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -864,8 +1022,11 @@ class ConfigurationSettingsHandler
      * Get tenant ID from multitenancy settings
      *
      * @return string|null Tenant ID (default user tenant) or null if not set
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTenantId(): ?string
     {
@@ -897,8 +1058,11 @@ class ConfigurationSettingsHandler
      * @param string|null $uuid Default organisation UUID
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
@@ -929,8 +1093,11 @@ class ConfigurationSettingsHandler
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -941,22 +1108,36 @@ class ConfigurationSettingsHandler
             if (empty($multitenancyConfig) === true) {
                 // Default: multitenancy enabled for proper data isolation.
                 $multitenancyData = [
+<<<<<<< HEAD
                     'enabled'                            => true,
                     'defaultUserTenant'                  => '',
                     'defaultObjectTenant'                => '',
                     'publishedObjectsBypassMultiTenancy' => false,
                     'adminOverride'                      => true,
+=======
+                    'enabled'             => true,
+                    'defaultUserTenant'   => '',
+                    'defaultObjectTenant' => '',
+                    'adminOverride'       => true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
             if (empty($multitenancyConfig) === false) {
                 $storedData       = json_decode($multitenancyConfig, true);
                 $multitenancyData = [
+<<<<<<< HEAD
                     'enabled'                            => $storedData['enabled'] ?? true,
                     'defaultUserTenant'                  => $storedData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $storedData['defaultObjectTenant'] ?? '',
                     'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
                     'adminOverride'                      => $storedData['adminOverride'] ?? true,
+=======
+                    'enabled'             => $storedData['enabled'] ?? true,
+                    'defaultUserTenant'   => $storedData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
+                    'adminOverride'       => $storedData['adminOverride'] ?? true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ];
             }
 
@@ -977,19 +1158,29 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If Multitenancy settings update fails
      *
      * @return array Updated multitenancy config with settings and available tenants.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
         try {
             // Default: enabled=true for proper data isolation.
             $multitenancyConfig = [
+<<<<<<< HEAD
                 'enabled'                            => $multitenancyData['enabled'] ?? true,
                 'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
                 'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
+=======
+                'enabled'             => $multitenancyData['enabled'] ?? true,
+                'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ];
 
             $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
@@ -1015,8 +1206,11 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
      *     Nested else branches handle optional vector config backward compatibility
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getLLMSettingsOnly(): array
     {
@@ -1098,8 +1292,11 @@ class ConfigurationSettingsHandler
      * @return array Updated LLM config with providers and their configurations.
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -1161,8 +1358,11 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If File Management settings retrieval fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFileSettingsOnly(): array
     {
@@ -1193,6 +1393,7 @@ class ConfigurationSettingsHandler
                     ],
                     'ocrEnabled'               => false,
                     'maxFileSizeMB'            => 100,
+<<<<<<< HEAD
                     // Text extraction settings (for FileConfiguration component).
                     'extractionScope'          => 'objects',
                     // None, all, folders, objects.
@@ -1200,6 +1401,15 @@ class ConfigurationSettingsHandler
                     // Llphant, dolphin.
                     'extractionMode'           => 'background',
                     // Background, immediate, manual.
+=======
+                // Text extraction settings (for FileConfiguration component).
+                    'extractionScope'          => 'objects',
+                // None, all, folders, objects.
+                    'textExtractor'            => 'llphant',
+                // Llphant, dolphin.
+                    'extractionMode'           => 'background',
+                // Background, immediate, manual.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     'maxFileSize'              => 100,
                     'batchSize'                => 10,
                     'dolphinApiEndpoint'       => '',
@@ -1238,8 +1448,11 @@ class ConfigurationSettingsHandler
      *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -1265,6 +1478,7 @@ class ConfigurationSettingsHandler
                 ],
                 'ocrEnabled'               => $fileData['ocrEnabled'] ?? false,
                 'maxFileSizeMB'            => $fileData['maxFileSizeMB'] ?? 100,
+<<<<<<< HEAD
                 // Text extraction settings (from FileConfiguration component).
                 'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
                 // None, all, folders, objects.
@@ -1272,6 +1486,15 @@ class ConfigurationSettingsHandler
                 // Llphant, dolphin.
                 'extractionMode'           => $fileData['extractionMode'] ?? 'background',
                 // Background, immediate, manual.
+=======
+            // Text extraction settings (from FileConfiguration component).
+                'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
+            // None, all, folders, objects.
+                'textExtractor'            => $fileData['textExtractor'] ?? 'llphant',
+            // Llphant, dolphin.
+                'extractionMode'           => $fileData['extractionMode'] ?? 'background',
+            // Background, immediate, manual.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'maxFileSize'              => $fileData['maxFileSize'] ?? 100,
                 'batchSize'                => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'       => $fileData['dolphinApiEndpoint'] ?? '',
@@ -1298,8 +1521,11 @@ class ConfigurationSettingsHandler
      * @return array n8n configuration.
      *
      * @throws \RuntimeException If n8n settings retrieval fails.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getN8nSettingsOnly(): array
     {
@@ -1334,8 +1560,11 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If n8n settings update fails.
      *
      * @psalm-return array{enabled: false|mixed, url: ''|mixed, apiKey: ''|mixed, project: 'openregister'|mixed}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateN8nSettingsOnly(array $n8nData): array
     {
@@ -1360,8 +1589,11 @@ class ConfigurationSettingsHandler
      * Returns version and build information for the application.
      *
      * @return array Version info with name, version, description, author, licence, timestamp, and date.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getVersionInfoOnly(): array
     {
@@ -1384,4 +1616,39 @@ class ConfigurationSettingsHandler
             ];
         }
     }//end getVersionInfoOnly()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Strict-boolean normalization for the inheritFromPublic tenant default.
+     *
+     * The settings endpoints accept arbitrary JSON via `IRequest::getParams()`.
+     * A naive `(bool)` cast is dangerous on string input — `(bool) "false"`
+     * is `true`, which would silently invert the security-relevant gate
+     * (the operator believes inheritance is off; it is on). We use
+     * `filter_var` with `FILTER_VALIDATE_BOOLEAN | FILTER_NULL_ON_FAILURE`
+     * so the same set the docs claim is accepted (`true`/`false`/`"true"`/
+     * `"false"`/`"1"`/`"0"`/`1`/`0`) is recognised, and anything else
+     * throws — making a misconfiguration loud at the edge instead of a
+     * silent permissive default.
+     *
+     * @param mixed $raw The raw value from the JSON request body.
+     *
+     * @return bool The normalised boolean.
+     *
+     * @throws \InvalidArgumentException When the value cannot be coerced.
+     */
+    private function normalizeInheritFromPublicDefault(mixed $raw): bool
+    {
+        $normalized = filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($normalized === null) {
+            throw new \InvalidArgumentException(
+                'inheritFromPublicDefault must be a boolean or one of "true"/"false"/"1"/"0"/1/0; got '.gettype($raw)
+            );
+        }
+
+        return $normalized;
+
+    }//end normalizeInheritFromPublicDefault()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

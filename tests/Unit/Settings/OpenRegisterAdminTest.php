@@ -1,5 +1,6 @@
 <?php
 
+<<<<<<< HEAD
 /**
  * OpenRegisterAdminTest
  *
@@ -17,20 +18,27 @@
  * @link https://OpenRegister.app
  */
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Settings;
 
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+<<<<<<< HEAD
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
+=======
+use OCP\AppFramework\Http\TemplateResponse;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IConfig;
 use OCP\IL10N;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+<<<<<<< HEAD
 /**
  * Tests for OpenRegisterAdmin settings.
  *
@@ -95,6 +103,21 @@ class OpenRegisterAdminTest extends TestCase
      *
      * @return void
      */
+=======
+class OpenRegisterAdminTest extends TestCase
+{
+    private OpenRegisterAdmin $admin;
+    private IConfig&MockObject $config;
+    private IL10N&MockObject $l10n;
+
+    protected function setUp(): void
+    {
+        $this->config = $this->createMock(IConfig::class);
+        $this->l10n = $this->createMock(IL10N::class);
+        $this->admin = new OpenRegisterAdmin($this->config, $this->l10n);
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetForm(): void
     {
         $this->config->expects($this->once())
@@ -102,14 +125,18 @@ class OpenRegisterAdminTest extends TestCase
             ->with('open_register_setting', true)
             ->willReturn(true);
 
+<<<<<<< HEAD
         // notify_push not installed — pushStatus = 'not_installed'.
         $this->appManager->method('isInstalled')->with('notify_push')->willReturn(false);
         $this->initialState->expects($this->once())->method('provideInitialState');
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $result = $this->admin->getForm();
 
         $this->assertInstanceOf(TemplateResponse::class, $result);
         $this->assertSame('settings/admin', $result->getTemplateName());
+<<<<<<< HEAD
     }//end testGetForm()
 
     /**
@@ -137,12 +164,27 @@ class OpenRegisterAdminTest extends TestCase
      *
      * @return void
      */
+=======
+    }
+
+    public function testGetSection(): void
+    {
+        $this->assertSame('openregister', $this->admin->getSection());
+    }
+
+    public function testGetPriority(): void
+    {
+        $this->assertSame(11, $this->admin->getPriority());
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetFormWithFalseSetting(): void
     {
         $this->config->method('getSystemValue')
             ->with('open_register_setting', true)
             ->willReturn(false);
 
+<<<<<<< HEAD
         $this->appManager->method('isInstalled')->with('notify_push')->willReturn(false);
         $this->initialState->method('provideInitialState');
 
@@ -151,3 +193,10 @@ class OpenRegisterAdminTest extends TestCase
         $this->assertInstanceOf(TemplateResponse::class, $result);
     }//end testGetFormWithFalseSetting()
 }//end class
+=======
+        $result = $this->admin->getForm();
+
+        $this->assertInstanceOf(TemplateResponse::class, $result);
+    }
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

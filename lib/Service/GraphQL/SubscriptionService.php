@@ -6,6 +6,7 @@
  * Manages server-sent event (SSE) subscriptions for GraphQL real-time updates.
  * Bridges OpenRegister's event system to GraphQL subscription delivery.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -17,6 +18,16 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-40
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service\GraphQL
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -77,8 +88,13 @@ class SubscriptionService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function pushEvent(string $action, ObjectEntity $object): void
     {
@@ -134,7 +150,11 @@ class SubscriptionService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) At threshold after extracting filterEventStream + verifyEventRBAC
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getEventsSince(
         ?string $lastEventId=null,
@@ -178,7 +198,11 @@ class SubscriptionService
      *
      * @return array The filtered events
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function filterEventStream(
         array $buffer,
@@ -220,7 +244,11 @@ class SubscriptionService
      *
      * @return bool True if the current user can see this event
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function verifyEventRBAC(array $event): bool
     {
@@ -245,7 +273,11 @@ class SubscriptionService
      *
      * @return string The SSE-formatted message
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatAsSSE(array $event): string
     {

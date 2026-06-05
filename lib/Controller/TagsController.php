@@ -6,9 +6,12 @@
  * Controller for managing tag operations in the OpenRegister app.
  * Provides endpoints for retrieving and managing tags used for categorizing
  * objects and files.
+<<<<<<< HEAD
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -44,7 +47,11 @@ use Exception;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -78,6 +85,7 @@ class TagsController extends Controller
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
+<<<<<<< HEAD
     /**
      * Get all tags available in the system
      *
@@ -106,10 +114,16 @@ class TagsController extends Controller
      * @param string $id       The object ID
      *
      * @return JSONResponse JSON response with the object's tags
+=======
+    /**
+     * Get all tags available in the system
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function index(
@@ -129,6 +143,48 @@ class TagsController extends Controller
 
             $tags = $this->taggingHandler->getObjectTags($object->getUuid());
 
+=======
+     * @return JSONResponse JSON response with all tags
+     *
+     * @psalm-return JSONResponse<200, list<string>, array<never, never>>
+     */
+    public function getAllTags(): JSONResponse
+    {
+        $tags = $this->fileService->getAllTags();
+
+        return new JSONResponse(data: $tags);
+    }//end getAllTags()
+
+    /**
+     * Get tags for a specific object.
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The object ID
+     *
+     * @return JSONResponse JSON response with the object's tags
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function index(
+        string $register,
+        string $schema,
+        string $id
+    ): JSONResponse {
+        try {
+            $this->objectService->setSchema($schema);
+            $this->objectService->setRegister($register);
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            }
+
+            $tags = $this->taggingHandler->getObjectTags($object->getUuid());
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return new JSONResponse(data: $tags);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
@@ -148,8 +204,11 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function add(
         string $register,
@@ -198,8 +257,11 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function remove(
         string $register,

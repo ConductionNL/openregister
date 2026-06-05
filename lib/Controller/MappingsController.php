@@ -6,9 +6,12 @@
  * Controller for managing mapping operations in the OpenRegister app.
  * Provides endpoints for CRUD operations on mappings used for data transformation.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -56,8 +59,11 @@ use Psr\Log\LoggerInterface;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class MappingsController extends Controller
 {
@@ -99,8 +105,11 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with array of mappings
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -155,8 +164,11 @@ class MappingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function show(int|string $id): JSONResponse
     {
@@ -180,8 +192,11 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created mapping
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(): JSONResponse
     {
@@ -232,8 +247,11 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated mapping
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(int $id): JSONResponse
     {
@@ -280,6 +298,7 @@ class MappingsController extends Controller
      *
      * Deletes a mapping based on its ID.
      *
+<<<<<<< HEAD
      * Partially update a mapping by ID.
      *
      * The route `mappings#patch` (`PATCH /api/mappings/{id}`) delegates to
@@ -305,6 +324,8 @@ class MappingsController extends Controller
     /**
      * Delete a mapping by ID.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $id The ID of the mapping to delete
      *
      * @NoAdminRequired
@@ -312,8 +333,11 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Empty JSON response on success
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(int $id): JSONResponse
     {
@@ -342,8 +366,11 @@ class MappingsController extends Controller
      * @return JSONResponse JSON response with test results
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function test(): JSONResponse
     {

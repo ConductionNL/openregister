@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-54
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-54
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { Register } from './register'
 import { TRegister } from './register.types'

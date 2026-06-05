@@ -1,10 +1,13 @@
 OC.L10N.register(
     "openregister",
     {
+<<<<<<< HEAD
     "Object \"%1$s\" created in register \"%2$s\"" : "Object \"%1$s\" aangemaakt in register \"%2$s\"",
     "Object \"%1$s\" updated in register \"%2$s\"" : "Object \"%1$s\" bijgewerkt in register \"%2$s\"",
     "Object \"%1$s\" assigned to you in register \"%2$s\"" : "Object \"%1$s\" aan je toegewezen in register \"%2$s\"",
     "object" : "object",
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     "📄 Object Serialization" : "📄 Objectserialisatie",
     "🔢 Vectorization Settings" : "🔢 Vectorisatie-instellingen",
     "💰 View Selection (Cost Optimization)" : "💰 Weergaveselectie (kostenoptimalisatie)",
@@ -1350,6 +1353,7 @@ OC.L10N.register(
     "Text chunks" : "Tekstfragmenten",
     "Unknown error" : "Onbekende fout",
     "Very high" : "Zeer hoog",
+<<<<<<< HEAD
     "{title} in {register} / {schema}" : "{title} in {register} / {schema}",
     "Push Notifications" : "Pushmeldingen",
     "Real-time push notification status via notify_push" : "Realtime pushmeldingstatus via notify_push",
@@ -1361,6 +1365,9 @@ OC.L10N.register(
     "notify_push configuration guide" : "Configuratiegids notify_push",
     "Realtime push active" : "Realtime push actief",
     "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted." : "Realtime pushmeldingen zijn actief. Verbonden clients ontvangen onmiddellijke updates wanneer objecten worden aangemaakt, bijgewerkt of verwijderd."
+=======
+    "{title} in {register} / {schema}" : "{title} in {register} / {schema}"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 },
 "nplurals=2; plural=(n != 1);"
 );

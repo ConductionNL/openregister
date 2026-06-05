@@ -6,8 +6,11 @@ status: implemented
 
 # Workflow Integration
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend n8n/workflow trigger service — covered by PHPUnit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Integrate BPMN-style workflow automation with register operations via n8n (primary) and other pluggable workflow engines (Windmill, future). Register events (create, update, delete, status change) MUST trigger configurable workflows for process automation, enrichment, validation, escalation, approval chains, and scheduled tasks. The integration MUST support zero-coding workflow configuration for functional administrators and provide full observability into workflow executions via logging, status tracking, and audit trails.
 
 **Tender demand**: 38% of analyzed government tenders require workflow/process automation capabilities.

@@ -2,9 +2,12 @@
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -50,8 +53,11 @@ class ObjectServiceMapperAdapter
      * @param array|null $extend     Relations to expand inline.
      *
      * @return ObjectEntity|null
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: mapper-shaped adapter delegating to ObjectService::find with bound register/schema; no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function find(int|string $identifier, ?array $extend=null): ?ObjectEntity
     {
@@ -82,12 +88,15 @@ class ObjectServiceMapperAdapter
      * @param string|null $search  Full-text search term.
      *
      * @return array
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec exclude Facade plumbing: argument-normalisation + register/schema injection then delegate to
      *              ObjectService::findAll; no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function findAll(
         array $config=[],
@@ -148,8 +157,11 @@ class ObjectServiceMapperAdapter
      * @param array $object Raw object data.
      *
      * @return ObjectEntity
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: delegate to ObjectService::saveObject with bound register/schema; no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createFromArray(array $object): ObjectEntity
     {
@@ -179,12 +191,15 @@ class ObjectServiceMapperAdapter
      * @param bool       $patch    When true, perform a partial update (PATCH).
      *
      * @return ObjectEntity
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $validate kept for interface compatibility.
      *
      * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
      *              contract beyond ObjectService's save path.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateFromArray(
         int|string $id,
@@ -223,8 +238,11 @@ class ObjectServiceMapperAdapter
      * @param ObjectEntity $object The entity to save.
      *
      * @return ObjectEntity
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: delegate to ObjectService::saveObject with bound register/schema; no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(ObjectEntity $object): ObjectEntity
     {
@@ -238,24 +256,31 @@ class ObjectServiceMapperAdapter
     /**
      * Delete an object by criteria array.
      *
+<<<<<<< HEAD
      * The array must contain an 'id' key with the object ID or UUID. The
      * adapter's bound `(register, schema)` is forwarded to
      * `ObjectService::deleteObject()` so the deletion is scoped to the
      * adapter's magic table — a UUID that lives in a different
      * `(register, schema)` magic table raises `DoesNotExistException`
      * instead of being silently deleted (see #1638).
+=======
+     * The array must contain an 'id' key with the object ID or UUID.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @param array $criteria Must contain key 'id' with the object ID or UUID.
      *
      * @return bool
      *
      * @throws ValidationException When no 'id' key is present in $criteria.
+<<<<<<< HEAD
      * @throws \OCP\AppFramework\Db\DoesNotExistException When the adapter is
      *         bound to a specific `(register, schema)` and the UUID is not
      *         present in that magic table.
      *
      * @spec exclude Facade plumbing: id-extraction then delegate to ObjectService::deleteObject (scoped delete
      *              owned by ObjectService); no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function delete(array $criteria): bool
     {
@@ -264,11 +289,15 @@ class ObjectServiceMapperAdapter
             throw new ValidationException(message: 'No id given to delete');
         }
 
+<<<<<<< HEAD
         return $this->objectService->deleteObject(
             uuid: (string) $id,
             register: $this->register,
             schema: $this->schema
         );
+=======
+        return $this->objectService->deleteObject((string) $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end delete()
 
     /**
@@ -278,11 +307,15 @@ class ObjectServiceMapperAdapter
      */
     public function getSchema(): ?int
     {
+<<<<<<< HEAD
         if ($this->schema !== null) {
             return (int) $this->schema;
         }
 
         return null;
+=======
+        return $this->schema !== null ? (int) $this->schema : null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end getSchema()
 
     /**
@@ -292,11 +325,15 @@ class ObjectServiceMapperAdapter
      */
     public function getRegister(): ?int
     {
+<<<<<<< HEAD
         if ($this->register !== null) {
             return (int) $this->register;
         }
 
         return null;
+=======
+        return $this->register !== null ? (int) $this->register : null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end getRegister()
 
     /**
@@ -310,8 +347,11 @@ class ObjectServiceMapperAdapter
      * @param array $requestParams Raw query parameters (e.g. _limit, page, _search).
      *
      * @return array{results: array, total: int, page: int, pages: int}
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: register/schema injection then delegate to ObjectService::searchObjectsPaginated; no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function findAllPaginated(array $requestParams=[]): array
     {

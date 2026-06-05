@@ -108,7 +108,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import {
 	NcButton,
@@ -142,7 +146,11 @@ export default {
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
@@ -163,7 +171,11 @@ export default {
 		 * Get additional fields that aren't in the main display
 		 * @return {Array} Array of key-value pairs
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
@@ -183,7 +195,11 @@ export default {
 		 * Close the dialog
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -194,7 +210,11 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'
@@ -210,7 +230,11 @@ export default {
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
@@ -237,7 +261,11 @@ export default {
 		 * @param {*} data - Data to format
 		 * @return {string} Formatted JSON
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatJson(data) {
 			if (!data) return ''
@@ -264,7 +292,11 @@ export default {
 		 * @param {string} fieldName - Field name to format
 		 * @return {string} Formatted field name
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatFieldName(fieldName) {
 			return fieldName
@@ -278,7 +310,11 @@ export default {
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
@@ -298,7 +334,11 @@ export default {
 		 * Copy full audit trail data to clipboard
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async copyFullData() {
 			try {
@@ -315,7 +355,11 @@ export default {
 		 * Copy changes data to clipboard
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async copyChanges() {
 			try {

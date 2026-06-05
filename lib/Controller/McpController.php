@@ -6,6 +6,7 @@
  * Controller for MCP (Model Context Protocol) discovery endpoints.
  * Provides AI agents with tiered API discovery for OpenRegister.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -20,10 +27,17 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-55
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-56
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -84,8 +98,13 @@ class McpController extends Controller
      *
      * @CORS
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-55
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function discover(): JSONResponse
     {
@@ -113,8 +132,13 @@ class McpController extends Controller
      *
      * @CORS
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-56
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function discoverCapability(string $capability): JSONResponse
     {

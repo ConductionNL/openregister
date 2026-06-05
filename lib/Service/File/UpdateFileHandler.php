@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -64,6 +72,7 @@ class UpdateFileHandler
     /**
      * Constructor for UpdateFileHandler.
      *
+<<<<<<< HEAD
      * @param IRootFolder                          $rootFolder           Root folder for file operations.
      * @param FolderManagementHandler              $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler                $fileValidHandler     File validation handler.
@@ -75,6 +84,16 @@ class UpdateFileHandler
      * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for
      *                                                                   description / category / labels writes.
      *                                                                   Null-safe so legacy fixtures keep working.
+=======
+     * @param IRootFolder             $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler   $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
+     * @param ReadFileHandler         $readFileHandler      Read file handler.
+     * @param ISystemTagManager       $systemTagManager     System tag manager.
+     * @param ISystemTagObjectMapper  $systemTagMapper      System tag object mapper.
+     * @param LoggerInterface         $logger               Logger for logging operations.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -84,12 +103,17 @@ class UpdateFileHandler
         private readonly ReadFileHandler $readFileHandler,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Update OR-side metadata (description / category / labels) for
      * a Nextcloud file. Each parameter is optional — pass only the
      * fields you want to update. Pass `null` to leave the existing
@@ -152,6 +176,8 @@ class UpdateFileHandler
     }//end updateFileMetadata()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Set the FileService instance for cross-handler coordination.
      *
      * @param FileService $fileService The file service instance.
@@ -184,8 +210,11 @@ class UpdateFileHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       File update requires handling many file system scenarios
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateFile(
         string|int $filePath,

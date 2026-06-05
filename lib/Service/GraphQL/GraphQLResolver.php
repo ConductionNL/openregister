@@ -6,6 +6,7 @@
  * Resolves GraphQL queries, mutations, and fields by delegating
  * to OpenRegister services with RBAC enforcement and DataLoader batching.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -20,13 +21,28 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service\GraphQL
+ * @author   Conduction B.V. <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
+<<<<<<< HEAD
 use InvalidArgumentException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,8 +50,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -87,6 +106,7 @@ class GraphQLResolver
     /**
      * Constructor.
      *
+<<<<<<< HEAD
      * @param GetObject                                           $getObject           Object finder
      * @param ObjectService                                       $objectService       Object service
      * @param PermissionHandler                                   $permissionHandler   Permission handler
@@ -98,6 +118,16 @@ class GraphQLResolver
      * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler  Translation handler
      * @param AggregationRunner                                   $aggregationRunner   Ad-hoc aggregation dispatcher.
      * @param TimeseriesRequestValidator                          $timeseriesValidator Validator for `groupBy` arg.
+=======
+     * @param GetObject           $getObject         Object finder
+     * @param ObjectService       $objectService     Object service
+     * @param PermissionHandler   $permissionHandler Permission handler
+     * @param PropertyRbacHandler $propertyRbac      Property RBAC handler
+     * @param RelationHandler     $relationHandler   Relation handler
+     * @param AuditTrailMapper    $auditTrailMapper  Audit trail mapper
+     * @param RegisterMapper      $registerMapper    Register mapper
+     * @param LoggerInterface     $logger            Logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -110,9 +140,12 @@ class GraphQLResolver
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
+<<<<<<< HEAD
         private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
         private readonly AggregationRunner $aggregationRunner,
         private readonly TimeseriesRequestValidator $timeseriesValidator,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
@@ -127,7 +160,11 @@ class GraphQLResolver
      *
      * @throws Error If object not found or access denied
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveSingle(Schema $schema, mixed $root, array $args): ?array
     {
@@ -178,6 +215,7 @@ class GraphQLResolver
      *
      * @return array<string, mixed> The connection result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -185,6 +223,9 @@ class GraphQLResolver
      *   each section (RBAC, search, filter, cursor, page-info, optional
      *   groupBy) is a single responsibility but extracting them adds
      *   indirection without reducing complexity.
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveList(Schema $schema, mixed $root, array $args): array
     {
@@ -265,7 +306,11 @@ class GraphQLResolver
             $endCursor   = $lastEdge['cursor'];
         }
 
+<<<<<<< HEAD
         $connection = [
+=======
+        return [
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'edges'      => $edges,
             'pageInfo'   => [
                 'hasNextPage'     => $hasNextPage,
@@ -276,6 +321,7 @@ class GraphQLResolver
             'totalCount' => $totalCount,
             'facets'     => ($result['facets'] ?? null),
             'facetable'  => ($result['facetable'] ?? null),
+<<<<<<< HEAD
             'groups'     => null,
         ];
 
@@ -368,6 +414,13 @@ class GraphQLResolver
     }//end resolveGroupBy()
 
     /**
+=======
+        ];
+
+    }//end resolveList()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Resolve a create mutation.
      *
      * @param Schema      $schema        The register schema
@@ -378,7 +431,11 @@ class GraphQLResolver
      *
      * @throws Error If access denied or validation fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveCreate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -441,7 +498,11 @@ class GraphQLResolver
      *
      * @throws Error If access denied, not found, or validation fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveUpdate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -516,7 +577,11 @@ class GraphQLResolver
      *
      * @throws Error If access denied or not found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveDelete(Schema $schema, array $args): bool
     {
@@ -546,8 +611,11 @@ class GraphQLResolver
      * @param array  $path         The field path for error reporting
      *
      * @return Deferred A deferred value that resolves after batching
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveRelation(string $uuid, Schema $parentSchema, array $path): Deferred
     {
@@ -575,7 +643,11 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The audit trail entries
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveAuditTrail(string $objectUuid, int $last=10): array
     {
@@ -600,7 +672,11 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The referencing objects
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveUsedBy(string $objectUuid): array
     {
@@ -613,8 +689,11 @@ class GraphQLResolver
      * Flush the DataLoader buffer — batch-load all buffered relation UUIDs.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function flushRelationBuffer(): void
     {
@@ -647,7 +726,11 @@ class GraphQLResolver
      *
      * @throws Error If permission denied
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function checkSchemaPermission(Schema $schema, string $action): void
     {
@@ -677,6 +760,7 @@ class GraphQLResolver
      */
     private function filterProperties(Schema $schema, array $data): array
     {
+<<<<<<< HEAD
         // Apply property-level RBAC first (drops fields the caller can't read).
         $data = $this->propertyRbac->filterReadableProperties($schema, $data);
 
@@ -699,6 +783,10 @@ class GraphQLResolver
             schema: $schema,
             register: $register
         );
+=======
+        return $this->propertyRbac->filterReadableProperties($schema, $data);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end filterProperties()
 
     /**
@@ -788,11 +876,27 @@ class GraphQLResolver
         $data['_register'] = $object->getRegister();
         $data['_schema']   = $object->getSchema();
 
+<<<<<<< HEAD
         $created          = $object->getCreated();
         $data['_created'] = $this->formatDateOrPassthrough(value: $created);
 
         $updated          = $object->getUpdated();
         $data['_updated'] = $this->formatDateOrPassthrough(value: $updated);
+=======
+        $created = $object->getCreated();
+        if ($created instanceof \DateTimeInterface === true) {
+            $data['_created'] = $created->format(\DateTimeInterface::ATOM);
+        } else {
+            $data['_created'] = $created;
+        }
+
+        $updated = $object->getUpdated();
+        if ($updated instanceof \DateTimeInterface === true) {
+            $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
+        } else {
+            $data['_updated'] = $updated;
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $data['_owner'] = $object->getOwner();
 
@@ -801,6 +905,7 @@ class GraphQLResolver
     }//end objectToArray()
 
     /**
+<<<<<<< HEAD
      * Format a DateTimeInterface as ATOM, or pass through unchanged.
      *
      * @param mixed $value The value to format.
@@ -817,13 +922,19 @@ class GraphQLResolver
     }//end formatDateOrPassthrough()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Find the register for a schema.
      *
      * @param Schema $schema The schema
      *
      * @return Register|null The register
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function findRegisterForSchema(Schema $schema): ?Register
     {
@@ -854,8 +965,11 @@ class GraphQLResolver
      * @param int|string $offset The offset position
      *
      * @return string The encoded cursor
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-21
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function encodeCursor(string $uuid, int|string $offset): string
     {
@@ -870,7 +984,11 @@ class GraphQLResolver
      *
      * @return Error[]
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPartialErrors(): array
     {
@@ -883,7 +1001,11 @@ class GraphQLResolver
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reset(): void
     {

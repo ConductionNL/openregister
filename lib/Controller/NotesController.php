@@ -6,9 +6,12 @@
  * REST controller for note operations on OpenRegister objects.
  * Follows the FilesController pattern for sub-resource endpoints.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -17,7 +20,11 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -92,7 +99,11 @@ class NotesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(
         string $register,
@@ -134,7 +145,11 @@ class NotesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(
         string $register,
@@ -182,8 +197,11 @@ class NotesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(
         string $register,
@@ -232,7 +250,11 @@ class NotesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(
         string $register,
@@ -267,8 +289,11 @@ class NotesController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateObject(
         string $register,

@@ -1,6 +1,10 @@
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-90
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-90
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
@@ -41,17 +45,24 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * Normalized search result objects for table display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {Array<object>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		normalizedObjects() {
 			return normalizeObjects(objectStore.searchCollection)
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-90
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-90
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		hasSelectedRegisters() {
 			return objectStore.searchParams.register != null
@@ -59,12 +70,15 @@ export default {
 		hasSelectedSchemas() {
 			return objectStore.searchParams.schema != null
 		},
+<<<<<<< HEAD
 		/**
 		 * Page title derived from the selected register and schema.
 		 *
 		 * @spec exclude UI plumbing — derived header title for display
 		 * @return {string}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		pageTitle() {
 			if (!this.hasSelectedRegisters) return 'No register selected'
 			const reg = registerStore.registerList.find((r) => r.id === objectStore.searchParams.register)
@@ -74,16 +88,20 @@ export default {
 			const schemaTitle = schema ? (schema.label || schema.title) : 'Schema'
 			return `${regTitle} / ${schemaTitle}`
 		},
+<<<<<<< HEAD
 		/**
 		 * Selected object ids for the current page, as strings.
 		 *
 		 * @spec exclude UI plumbing — derived selection view state
 		 * @return {Array<string>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		selectedIdsForPage() {
 			const list = objectStore.selectedObjects
 			return Array.isArray(list) ? list.map(String) : []
 		},
+<<<<<<< HEAD
 		/**
 		 * Object-type slug derived from the selected register and schema.
 		 *
@@ -99,6 +117,11 @@ export default {
 		 * @spec exclude UI plumbing — derived schema view state for display
 		 * @return {object}
 		 */
+=======
+		computedObjectType() {
+			return objectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		normalizedSchema() {
 			const schema = objectStore.searchSchema
 			if (!schema || !schema.properties) return schema
@@ -134,12 +157,15 @@ export default {
 		},
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * Open the new-object dialog for the selected register and schema.
 		 *
 		 * @spec exclude UI plumbing — opens the create-object modal
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleAddObject() {
 			if (!this.hasSelectedRegisters || !this.hasSelectedSchemas) return
 			this.isAddingNewObject = true
@@ -152,6 +178,7 @@ export default {
 			}
 			navigationStore.setModal('viewObject')
 		},
+<<<<<<< HEAD
 		/**
 		 * Re-run the current search.
 		 *
@@ -170,10 +197,16 @@ export default {
 		 * @spec exclude UI plumbing — sort handler delegates to the store
 		 * @return {void}
 		 */
+=======
+		handleRefresh() {
+			objectStore.refetchSearchCollection()
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleSort({ key, order }) {
 			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
 			objectStore.refetchSearchCollection()
 		},
+<<<<<<< HEAD
 		/**
 		 * Apply a page change and re-run the search.
 		 *
@@ -181,10 +214,13 @@ export default {
 		 * @spec exclude UI plumbing — pagination handler delegates to the store
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handlePageChanged(page) {
 			objectStore.updateSearchParams({ page })
 			objectStore.refetchSearchCollection()
 		},
+<<<<<<< HEAD
 		/**
 		 * Apply a page-size change and re-run the search.
 		 *
@@ -192,10 +228,13 @@ export default {
 		 * @spec exclude UI plumbing — pagination handler delegates to the store
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handlePageSizeChanged(limit) {
 			objectStore.updateSearchParams({ page: 1, limit })
 			objectStore.refetchSearchCollection()
 		},
+<<<<<<< HEAD
 		/**
 		 * Track the selected object ids.
 		 *
@@ -213,10 +252,16 @@ export default {
 		 * @spec exclude UI plumbing — opens the view-object modal
 		 * @return {void}
 		 */
+=======
+		handleSelect(ids) {
+			objectStore.setSelectedObjects(ids)
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleRowClick(row) {
 			objectStore.setObjectItem(row)
 			navigationStore.setModal('viewObject')
 		},
+<<<<<<< HEAD
 		/**
 		 * Open the copy-object dialog for a row.
 		 *
@@ -224,10 +269,13 @@ export default {
 		 * @spec exclude UI plumbing — opens the copy-object dialog
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleCopyRow(row) {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('copyObject')
 		},
+<<<<<<< HEAD
 		/**
 		 * Open the delete-object dialog for a row.
 		 *
@@ -235,10 +283,13 @@ export default {
 		 * @spec exclude UI plumbing — opens the delete-object dialog
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleDeleteRow(row) {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('deleteObject')
 		},
+<<<<<<< HEAD
 		/**
 		 * Open the mass-delete dialog for the selected ids.
 		 *
@@ -246,11 +297,14 @@ export default {
 		 * @spec exclude UI plumbing — opens the mass-delete dialog
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleMassDelete(ids) {
 			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
 			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
 			navigationStore.setDialog('massDeleteObject')
 		},
+<<<<<<< HEAD
 		/**
 		 * Open the mass-copy dialog for the selected ids.
 		 *
@@ -258,6 +312,8 @@ export default {
 		 * @spec exclude UI plumbing — opens the mass-copy dialog
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleMassCopy(payload) {
 			const ids = payload?.ids || []
 			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))

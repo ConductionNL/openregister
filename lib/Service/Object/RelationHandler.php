@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -63,7 +71,11 @@ class RelationHandler
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -96,7 +108,11 @@ class RelationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema property handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Inverse filter resolution requires comprehensive handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function applyInversedByFilter(array &$filters, callable $findAllCallback): array|null
     {
@@ -211,7 +227,11 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control optional extraction features
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -243,7 +263,11 @@ class RelationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple execution paths for relationship extraction limits
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Circuit breaker logic requires comprehensive safeguards
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractAllRelationshipIds(array $objects, array $_extend): array
     {
@@ -354,7 +378,11 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch processing with error handling requires multiple conditions
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
@@ -466,7 +494,11 @@ class RelationHandler
      * @psalm-return   list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
@@ -504,7 +536,11 @@ class RelationHandler
      *
      * @psalm-return array{results: array|mixed, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getContracts(string $objectId, array $filters=[]): array
     {
@@ -568,7 +604,11 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUses(
         string $objectId,
@@ -781,7 +821,11 @@ class RelationHandler
      *
      * @return ObjectEntity[] Filtered objects the user has access to.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function filterByRbac(array $objects): array
     {
@@ -860,7 +904,11 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUsedBy(
         string $objectId,

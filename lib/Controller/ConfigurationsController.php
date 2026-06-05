@@ -68,8 +68,11 @@ class ConfigurationsController extends Controller
      * @param ConfigurationService $configurationService The configuration service instance
      * @param UploadService        $uploadService        The upload service instance
      * @param string|null          $userId               The current user ID
+<<<<<<< HEAD
      * @param IUserSession         $userSession          User session for admin checks
      * @param IGroupManager        $groupManager         Group manager for admin checks
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -77,9 +80,13 @@ class ConfigurationsController extends Controller
         private readonly ConfigurationMapper $configurationMapper,
         private readonly ConfigurationService $configurationService,
         private readonly UploadService $uploadService,
+<<<<<<< HEAD
         ?string $userId,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager
+=======
+        ?string $userId
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->userId = $userId;
@@ -110,8 +117,11 @@ class ConfigurationsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -124,11 +134,15 @@ class ConfigurationsController extends Controller
         $searchConditions = [];
         $filters          = $filters;
 
+<<<<<<< HEAD
         // Admins bypass multitenancy so they can see all configurations.
         // Non-admin authenticated users see only their tenant's configurations.
         $multitenancy = ($this->isCurrentUserAdmin() === false);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Return all configurations that match the search conditions.
+        // Disable multitenancy filtering so admins can see all configurations.
         return new JSONResponse(
             data: [
                 'results' => $this->configurationMapper->findAll(
@@ -137,7 +151,11 @@ class ConfigurationsController extends Controller
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams,
+<<<<<<< HEAD
                     _multitenancy: $multitenancy
+=======
+                    _multitenancy: false
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ),
             ]
         );
@@ -157,15 +175,24 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Configuration not found'}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function show(int $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             // Admins bypass multitenancy; non-admins see only their tenant's configurations.
             $multitenancy = ($this->isCurrentUserAdmin() === false);
             return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: $multitenancy));
+=======
+            // Disable multitenancy filtering for show operations.
+            // When retrieving by ID, admins should be able to access configurations regardless of organisation.
+            return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: false));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         }
@@ -187,8 +214,11 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(): JSONResponse
     {
@@ -252,8 +282,11 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(int $id): JSONResponse
     {
@@ -308,8 +341,11 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function patch(int $id): JSONResponse
     {
@@ -330,6 +366,7 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<204, null,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
@@ -348,6 +385,20 @@ class ConfigurationsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
         }
+=======
+     */
+    public function destroy(int $id): JSONResponse
+    {
+        try {
+            // Disable multitenancy filtering for delete operations.
+            // When deleting by ID, admins should be able to delete configurations regardless of organisation.
+            $configuration = $this->configurationMapper->find($id, _multitenancy: false);
+            $this->configurationMapper->delete($configuration);
+            return new JSONResponse(data: null, statusCode: 204);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end destroy()
 
     /**
@@ -367,8 +418,11 @@ class ConfigurationsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
@@ -477,8 +531,13 @@ class ConfigurationsController extends Controller
 
             // Link the imported registers, schemas and objects to the configuration.
             $registerIds = array_map(static fn($r) => $r->getId(), $result['registers']);
+<<<<<<< HEAD
             $schemaIds   = array_map(static fn($schema) => $schema->getId(), $result['schemas']);
             $objectIds   = array_map(static fn($obj) => $obj->getId(), $result['objects']);
+=======
+            $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas']);
+            $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $configuration->setRegisters(array_values(array_unique($registerIds)));
             $configuration->setSchemas(array_values(array_unique($schemaIds)));

@@ -4,9 +4,14 @@
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+=======
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Db;

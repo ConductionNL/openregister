@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -63,6 +71,7 @@ class ReadFileHandler
     /**
      * Constructor for ReadFileHandler.
      *
+<<<<<<< HEAD
      * @param IRootFolder                          $rootFolder           Root folder for file operations.
      * @param FolderManagementHandler              $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler                $fileValidHandler     File validation handler.
@@ -72,6 +81,14 @@ class ReadFileHandler
      * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for
      *                                                                   category-based filtering. Null-safe so legacy
      *                                                                   fixtures keep working.
+=======
+     * @param IRootFolder             $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler   $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
+     * @param MagicMapper             $objectMapper         Object mapper for magic table operations.
+     * @param LoggerInterface         $logger               Logger for logging operations.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -79,8 +96,12 @@ class ReadFileHandler
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly MagicMapper $objectMapper,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
@@ -127,8 +148,11 @@ class ReadFileHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File lookup requires handling ID vs path scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple file resolution paths with fallback logic
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
     {
@@ -212,8 +236,11 @@ class ReadFileHandler
      *
      * @phpstan-param  int $fileId
      * @phpstan-return File|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFileById(int $fileId): ?File
     {
@@ -251,7 +278,10 @@ class ReadFileHandler
      *
      * @param ObjectEntity|string $object          The object or object ID to fetch files for.
      * @param bool|null           $sharedFilesOnly Whether to return only shared files.
+<<<<<<< HEAD
      * @param string|null         $category        Optional FileMapper category to filter on.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return array Array of file nodes.
      *
@@ -261,6 +291,7 @@ class ReadFileHandler
      * @phpstan-return array<int, \OCP\Files\Node>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
      */
@@ -269,6 +300,11 @@ class ReadFileHandler
         ?bool $sharedFilesOnly=false,
         ?string $category=null
     ): array {
+=======
+     */
+    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // If string ID provided, try to find the object entity.
         // Use findAcrossAllSources to search across all magic tables.
         if (is_string($object) === true) {
@@ -280,6 +316,7 @@ class ReadFileHandler
             $object = $result['object'];
         }
 
+<<<<<<< HEAD
         $files = $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
 
         if ($category === null || $this->fileMapper === null) {
@@ -348,4 +385,9 @@ class ReadFileHandler
 
         return $matched;
     }//end filterByCategory()
+=======
+        // Use the new ID-based folder approach.
+        return $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
+    }//end getFiles()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

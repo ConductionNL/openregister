@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -91,8 +99,11 @@ class FileCrudHandler
      * @phpstan-return Node
      *
      * @todo Extract full implementation from FileService::createFolder()
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createFolder(string $_folderPath)
     {
@@ -132,8 +143,11 @@ class FileCrudHandler
      * @todo Extract full implementation from FileService::addFile()
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addFile(
         ObjectEntity|string $_objectEntity,
@@ -176,8 +190,11 @@ class FileCrudHandler
      * @phpstan-return File
      *
      * @todo Extract full implementation from FileService::updateFile()
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateFile(string|int $_filePath, mixed $_content=null, array $_tags=[], ?ObjectEntity $_object=null)
     {
@@ -209,8 +226,11 @@ class FileCrudHandler
      * @phpstan-return bool
      *
      * @todo Extract full implementation from FileService::deleteFile()
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteFile(Node|string|int $_file, ?ObjectEntity $_object=null)
     {
@@ -237,8 +257,11 @@ class FileCrudHandler
      * @phpstan-return File|null
      *
      * @todo Extract full implementation from FileService::getFile()
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFile(ObjectEntity|string|null $_object=null, string|int $_file='')
     {
@@ -264,8 +287,11 @@ class FileCrudHandler
      * @phpstan-return File|null
      *
      * @todo Extract full implementation from FileService::getFileById()
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFileById(int $_fileId)
     {
@@ -293,8 +319,11 @@ class FileCrudHandler
      * @todo Extract full implementation from FileService::getFiles()
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFiles(ObjectEntity|string $_object, ?bool $_sharedFilesOnly=false)
     {
@@ -332,8 +361,11 @@ class FileCrudHandler
      * @todo Extract full implementation from FileService::saveFile()
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
+<<<<<<< HEAD
      *
      * @spec exclude Phase-1B placeholder: throws "pending Phase 2 extraction" unconditionally, no observable behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function saveFile(
         ObjectEntity $_objectEntity,

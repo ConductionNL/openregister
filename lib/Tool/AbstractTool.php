@@ -91,7 +91,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setAgent(?Agent $agent): void
     {
@@ -110,7 +114,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return string|null User ID or null if no user context
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function getUserId(?string $explicitUserId=null): ?string
     {
@@ -140,7 +148,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return bool True if user context is available
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function hasUserContext(?string $explicitUserId=null): bool
     {
@@ -157,7 +169,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return array Query parameters with view filters applied
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function applyViewFilters(array $params): array
     {
@@ -187,7 +203,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function formatSuccess($data, string $message='Success'): array
     {
@@ -208,7 +228,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: false, error: string, details?: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function formatError(string $message, $details=null): array
     {
@@ -240,7 +264,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-suppress PossiblyNullArgument
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function log(string $functionName, array $parameters, string $level='info', string $message=''): void
     {
@@ -307,7 +335,11 @@ abstract class AbstractTool implements ToolInterface
      *
      * @throws \InvalidArgumentException If any required parameter is missing
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function validateParameters(array $parameters, array $required): void
     {
@@ -349,7 +381,11 @@ abstract class AbstractTool implements ToolInterface
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type conversion paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __call(string $name, array $arguments)
     {

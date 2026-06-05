@@ -92,7 +92,11 @@
 			<NcButton
 				type="secondary"
 				@click="clearFilters">
+<<<<<<< HEAD
 				{{ t('openregister', 'Clear filters') }}
+=======
+				{{ t('openregister', 'Clear Filters') }}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			</NcButton>
 		</div>
 	</div>
@@ -112,23 +116,32 @@ export default {
 		Magnify,
 	},
 	props: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude two-way-bound search prop, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		search: {
 			type: String,
 			default: '',
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude two-way-bound entity-type filter prop, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		type: {
 			type: String,
 			default: null,
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude two-way-bound category filter prop, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		category: {
 			type: String,
 			default: null,
@@ -148,6 +161,7 @@ export default {
 		},
 	},
 	watch: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed filter-state binding
 		 */
@@ -163,12 +177,21 @@ export default {
 		/**
 		 * @spec exclude computed filter-state binding
 		 */
+=======
+		search(newVal) {
+			this.localSearch = newVal
+		},
+		type(newVal) {
+			this.selectedType = newVal
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		category(newVal) {
 			this.selectedCategory = newVal
 		},
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * Handle search input with 500ms debounce; emits `update:search` once typing pauses.
 		 *
@@ -176,29 +199,40 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
 				this.$emit('update:search', value)
 			}, 500)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude filter-state writer emitting update:type to parent, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateType(type) {
 			this.selectedType = type
 			this.$emit('update:type', type)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude filter-state writer emitting update:category to parent, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateCategory(category) {
 			this.selectedCategory = category
 			this.$emit('update:category', category)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude filter-reset emitting cleared values to parent, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		clearFilters() {
 			this.localSearch = ''
 			this.selectedType = null

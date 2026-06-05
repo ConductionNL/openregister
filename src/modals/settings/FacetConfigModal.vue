@@ -330,8 +330,13 @@ import { translate as t } from '@nextcloud/l10n'
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
@@ -392,7 +397,11 @@ export default {
 	},
 	computed: {
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		totalFacets() {
 			if (!this.facetsData || !this.facetsData.facets) return 0
@@ -432,7 +441,11 @@ export default {
 		/**
 		 * Load facets from SOLR API
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadFacets() {
 			console.info('🚀 FacetConfigModal: loadFacets called')
@@ -512,7 +525,11 @@ export default {
 		 * Format display type for human-readable labels
 		 * @param {string} displayType - The display type to format
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDisplayType(displayType) {
 			const typeMap = {
@@ -529,7 +546,11 @@ export default {
 		/**
 		 * Save facet configuration
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async saveFacetConfiguration() {
 			console.info('💾 Saving facet configuration...')

@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -16,6 +17,13 @@
  * @link      https://github.com/ConductionNL/openregister
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
@@ -89,8 +97,11 @@ class TransformationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for different object structures and metadata
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
      * Else branches handle different object structures and fallbacks
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -103,9 +114,16 @@ class TransformationHandler
             // Only extract @self if it exists (mixed schema or other paths).
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
             // or extract @self if it exists (mixed schema or other paths).
+<<<<<<< HEAD
             $selfData = $object;
             if (($object['@self'] ?? null) !== null) {
                 $selfData = $object['@self'];
+=======
+            if (($object['@self'] ?? null) !== null) {
+                $selfData = $object['@self'];
+            } else {
+                $selfData = $object;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             // Auto-wire @self metadata with proper UUID validation and generation.
@@ -122,16 +140,30 @@ class TransformationHandler
             // CRITICAL FIX: Use register and schema from object data if available.
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
+<<<<<<< HEAD
                 $selfData['register'] = $object['register'];
                 if (is_object($object['register']) === true) {
                     $selfData['register'] = $object['register']->getId();
+=======
+                if (is_object($object['register']) === true) {
+                    $selfData['register'] = $object['register']->getId();
+                } else {
+                    $selfData['register'] = $object['register'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
+<<<<<<< HEAD
                 $selfData['schema'] = $object['schema'];
                 if (is_object($object['schema']) === true) {
                     $selfData['schema'] = $object['schema']->getId();
+=======
+                if (is_object($object['schema']) === true) {
+                    $selfData['schema'] = $object['schema']->getId();
+                } else {
+                    $selfData['schema'] = $object['schema'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
             }
 
@@ -172,10 +204,18 @@ class TransformationHandler
 
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
+<<<<<<< HEAD
                 $currentUser       = $this->userSession->getUser();
                 $selfData['owner'] = null;
                 if ($currentUser !== null) {
                     $selfData['owner'] = $currentUser->getUID();
+=======
+                $currentUser = $this->userSession->getUser();
+                if ($currentUser !== null) {
+                    $selfData['owner'] = $currentUser->getUID();
+                } else {
+                    $selfData['owner'] = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
             }
 

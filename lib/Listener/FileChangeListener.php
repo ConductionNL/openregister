@@ -5,9 +5,12 @@
  *
  * Listens for file creation and update events to queue asynchronous text extraction.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -74,7 +77,11 @@ class FileChangeListener implements IEventListener
      * @param IJobList              $jobList         Job list for queuing background jobs
      * @param LoggerInterface       $logger          Logger
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly TextExtractionService $textExtractSvc,
@@ -95,7 +102,11 @@ class FileChangeListener implements IEventListener
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) File event handling requires comprehensive case coverage
      * @SuppressWarnings(PHPMD.NPathComplexity)       File event handling requires many conditional checks
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {

@@ -6,9 +6,12 @@
  * Tracks per-organisation resource usage (requests, bandwidth, storage)
  * for quota enforcement and dashboard display.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -124,6 +127,7 @@ class TenantUsage extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+<<<<<<< HEAD
         $period = null;
         if ($this->period instanceof DateTime) {
             $period = $this->period->format('c');
@@ -148,6 +152,17 @@ class TenantUsage extends Entity implements JsonSerializable
             'storageBytes'     => $this->storageBytes,
             'created'          => $created,
             'updated'          => $updated,
+=======
+        return [
+            'id'               => $this->id,
+            'organisationUuid' => $this->organisationUuid,
+            'period'           => $this->period instanceof DateTime ? $this->period->format('c') : null,
+            'requestCount'     => $this->requestCount,
+            'bandwidthBytes'   => $this->bandwidthBytes,
+            'storageBytes'     => $this->storageBytes,
+            'created'          => $this->created instanceof DateTime ? $this->created->format('c') : null,
+            'updated'          => $this->updated instanceof DateTime ? $this->updated->format('c') : null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end jsonSerialize()
 }//end class

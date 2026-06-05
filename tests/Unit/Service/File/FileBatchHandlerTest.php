@@ -44,6 +44,7 @@ class FileBatchHandlerTest extends TestCase
         $this->handler->setFileService($this->fileService);
     }
 
+<<<<<<< HEAD
     private function createObjectEntity(): ObjectEntity&MockObject
     {
         $object = $this->getMockBuilder(ObjectEntity::class)
@@ -51,6 +52,11 @@ class FileBatchHandlerTest extends TestCase
             ->onlyMethods(['jsonSerialize'])
             ->addMethods(['getUuid'])
             ->getMock();
+=======
+    private function createObjectEntity(): ObjectEntity
+    {
+        $object = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $object->method('getUuid')->willReturn('abc-123');
         return $object;
     }

@@ -1,17 +1,30 @@
 ---
+<<<<<<< HEAD
 retrofit_extensions:
   - REQ-005
+=======
+retrofit_extensions: [REQ-005]
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ---
 
 # Tenant Lifecycle
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend Organisation state machine — covered by PHPUnit
 Define the provisioning, suspension, and deprovisioning workflow for tenant organisations in a SaaS multi-tenant OpenRegister deployment. Each tenant maps to an Organisation entity with a lifecycle state machine that governs API access, data retention, and administrative operations.
 
 **Source**: SaaS deployment requirements; BIO/ISO 27001 tenant management; 67% of government tenders require demonstrable tenant isolation with controlled provisioning.
 ## Requirements
+=======
+Define the provisioning, suspension, and deprovisioning workflow for tenant organisations in a SaaS multi-tenant OpenRegister deployment. Each tenant maps to an Organisation entity with a lifecycle state machine that governs API access, data retention, and administrative operations.
+
+**Source**: SaaS deployment requirements; BIO/ISO 27001 tenant management; 67% of government tenders require demonstrable tenant isolation with controlled provisioning.
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Organisation entities MUST have a lifecycle status field with defined state transitions
 The Organisation entity MUST include a `status` field representing the tenant lifecycle state. Valid states are: `provisioning`, `active`, `suspended`, `deprovisioning`, `archived`. State transitions MUST follow the defined state machine and MUST be enforced at the service layer.
 
@@ -114,6 +127,7 @@ The `TenantLifecycleService` MUST expose utility methods for validating OTAP (De
 - **GIVEN** an unknown environment string (e.g. `"staging"`) is passed as source or target
 - **WHEN** `isValidPromotionOrder("staging", "production")` is called
 - **THEN** the method MUST return `false`
+<<<<<<< HEAD
 
 ### Requirement: Organisation and multitenancy configuration API
 The system SHALL expose an admin-gated API for reading and writing organisation settings
@@ -212,3 +226,5 @@ that no longer exists, MUST be cleared and re-resolved.
 - **WHEN** `reconstructOrganisationFromCache()` runs
 - **THEN** the string timestamps MUST be parsed back into `DateTime` instances on the rebuilt entity
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

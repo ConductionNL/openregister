@@ -3,6 +3,7 @@ status: redirect
 ---
 # No-Code App Builder
 
+<<<<<<< HEAD
 ## Purpose
 
 @e2e exclude redirect stub — no scenarios in OR
@@ -58,3 +59,6 @@ links resolve for any authenticated user without a CSRF token.
 - **THEN** it MUST serve the same SPA mount via `makeSpaResponse()` so the harness lands directly on the IntegrationsView Vue route
 - **AND** it MUST NOT depend on ObjectDetails sub-resource plugin loading
 
+=======
+Moved to `openspec/specs/no-code-app-builder/spec.md`. This spec is now owned by the root openspec (cross-app capability).
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

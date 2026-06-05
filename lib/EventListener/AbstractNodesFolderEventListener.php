@@ -48,7 +48,11 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -63,7 +67,11 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {
@@ -94,7 +102,11 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
@@ -110,7 +122,11 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {

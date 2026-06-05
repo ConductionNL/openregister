@@ -7,9 +7,12 @@
  * HTTP request. Nextcloud DI registers services as shared by default, so all
  * service injections within one request receive the same instance.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -21,7 +24,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -66,7 +73,11 @@ class RequestScopedCache
      *
      * @return mixed The cached value, or null if not found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function get(string $namespace, string $key): mixed
     {
@@ -81,8 +92,11 @@ class RequestScopedCache
      * @param mixed  $value     The value to cache
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec exclude Trivial in-memory cache write; no business logic. Class behavior already annotated under annotate-openregister#task-58.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function set(string $namespace, string $key, mixed $value): void
     {
@@ -96,8 +110,11 @@ class RequestScopedCache
      * @param string $key       The cache key
      *
      * @return bool True if the key exists (even if value is null)
+<<<<<<< HEAD
      *
      * @spec exclude Trivial array-key existence check; no business logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function has(string $namespace, string $key): bool
     {
@@ -112,8 +129,11 @@ class RequestScopedCache
      * @param string[] $keys      The cache keys to look up
      *
      * @return array<string, mixed> Map of key => value for found entries only
+<<<<<<< HEAD
      *
      * @spec exclude Trivial fan-out over has()/get(); no business logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getMultiple(string $namespace, array $keys): array
     {
@@ -133,8 +153,11 @@ class RequestScopedCache
      * @param string|null $namespace Namespace to clear, or null to clear everything
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec exclude Trivial cache reset (unset namespace or empty array); no business logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clear(?string $namespace=null): void
     {

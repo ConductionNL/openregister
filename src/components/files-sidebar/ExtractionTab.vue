@@ -27,7 +27,11 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
+<<<<<<< HEAD
 					{{ t('openregister', 'Extract now') }}
+=======
+					{{ t('openregister', 'Extract Now') }}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -130,7 +134,11 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
+<<<<<<< HEAD
 					{{ t('openregister', 'Extract now') }}
+=======
+					{{ t('openregister', 'Extract Now') }}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				</NcButton>
 			</div>
 		</div>
@@ -192,7 +200,10 @@ export default {
 		 * Human-readable extraction status label.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
 		 * @spec exclude computed status-label display helper, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		statusLabel() {
 			const labels = {
@@ -209,7 +220,10 @@ export default {
 		 * Human-readable risk level label.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
 		 * @spec exclude computed risk-label display helper, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		riskLabel() {
 			const labels = {
@@ -226,7 +240,10 @@ export default {
 		 * CSS class for risk level badge.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
 		 * @spec exclude computed risk-badge CSS-class display helper, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		riskBadgeClass() {
 			const classes = {
@@ -243,7 +260,10 @@ export default {
 		 * Formatted extraction date.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
 		 * @spec exclude computed date-format display helper, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formattedDate() {
 			if (!this.status.extractedAt) {
@@ -259,9 +279,12 @@ export default {
 
 	watch: {
 		fileId: {
+<<<<<<< HEAD
 			/**
 			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			handler(newVal) {
 				if (newVal) {
 					this.fetchExtractionStatus()
@@ -276,7 +299,10 @@ export default {
 
 		/**
 		 * Fetch extraction status from the API.
+<<<<<<< HEAD
 		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async fetchExtractionStatus() {
 			this.loading = true
@@ -306,7 +332,10 @@ export default {
 
 		/**
 		 * Trigger text extraction for this file.
+<<<<<<< HEAD
 		 * @spec exclude API passthrough triggering extraction + refresh; extraction contract owned by text-extraction capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async triggerExtraction() {
 			this.extracting = true

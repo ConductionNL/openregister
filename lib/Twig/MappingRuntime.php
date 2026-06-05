@@ -6,9 +6,12 @@
  * Twig runtime extension providing mapping functions and filters
  * for use within Twig mapping templates.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
@@ -58,7 +61,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param MappingService $mappingService The mapping service for executing mappings
      * @param MappingMapper  $mappingMapper  The mapping mapper for finding mappings
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly MappingService $mappingService,
@@ -73,7 +80,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The encoded output.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function b64enc(string $input): string
     {
@@ -87,7 +98,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The decoded output.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function b64dec(string $input): string
     {
@@ -103,7 +118,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @psalm-suppress MixedReturnStatement
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function jsonDecode(string $input): array
     {
@@ -121,7 +140,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return array The mapped output
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
@@ -152,7 +175,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return UuidV4 A new UUID v4 instance
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateUuid(): UuidV4
     {
@@ -170,7 +197,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The translated value, or original if no mapping found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function zgwEnum(string $value, string $fieldName, array $valueMappings=[]): string
     {
@@ -192,7 +223,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The English value, or original if no mapping found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function zgwEnumReverse(string $value, string $fieldName, array $valueMappings=[]): string
     {
@@ -213,7 +248,11 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The extracted UUID
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function zgwExtractUuid(?string $url=null): string
     {

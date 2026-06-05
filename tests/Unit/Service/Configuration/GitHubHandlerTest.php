@@ -15,9 +15,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Configuration\AttributionFormatter;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCP\Http\Client\IClient;
+=======
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCP\Http\Client\IClient;
+use OCP\Http\Client\IClientService;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -55,9 +61,12 @@ class GitHubHandlerTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
+<<<<<<< HEAD
     /** @var AttributionFormatter&MockObject */
     private AttributionFormatter $attributionFormatter;
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,7 +76,13 @@ class GitHubHandlerTest extends TestCase
         $this->config = $this->createMock(IConfig::class);
         $this->cache = $this->createMock(ICache::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
         $this->attributionFormatter = $this->createMock(AttributionFormatter::class);
+=======
+
+        $clientService = $this->createMock(IClientService::class);
+        $clientService->method('newClient')->willReturn($this->client);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $cacheFactory = $this->createMock(ICacheFactory::class);
         $cacheFactory->method('createDistributed')
@@ -75,12 +90,20 @@ class GitHubHandlerTest extends TestCase
             ->willReturn($this->cache);
 
         $this->handler = new GitHubHandler(
+<<<<<<< HEAD
             client: $this->client,
             appConfig: $this->appConfig,
             config: $this->config,
             cacheFactory: $cacheFactory,
             attributionFormatter: $this->attributionFormatter,
             logger: $this->logger,
+=======
+            $clientService,
+            $this->appConfig,
+            $this->config,
+            $cacheFactory,
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 

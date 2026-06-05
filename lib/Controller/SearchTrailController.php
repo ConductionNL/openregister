@@ -20,7 +20,11 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -107,9 +111,12 @@ class SearchTrailController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by
      *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractRequestParameters(): array
     {
@@ -255,9 +262,12 @@ class SearchTrailController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      *
      * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by
      *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -346,14 +356,21 @@ class SearchTrailController extends Controller
     /**
      * Get all search trail logs
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired). Body
      * `requireAdmin()` stays as defence-in-depth — wave-3 C7.
+=======
+     * @NoAdminRequired
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search trail logs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -408,11 +425,19 @@ class SearchTrailController extends Controller
      *
      * @param int $id The search trail ID
      *
+<<<<<<< HEAD
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search trail data
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with search trail data
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function show(int $id): JSONResponse
     {
@@ -443,8 +468,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function statistics(): JSONResponse
     {
@@ -472,8 +500,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with popular search terms
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function popularTerms(): JSONResponse
     {
@@ -525,8 +556,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search activity data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function activity(): JSONResponse
     {
@@ -555,8 +589,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with register schema statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -608,8 +645,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with user agent statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function userAgentStats(): JSONResponse
     {
@@ -710,8 +750,11 @@ class SearchTrailController extends Controller
      *     },
      *     array<never, never>
      * >
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cleanup(): JSONResponse
     {
@@ -744,8 +787,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with export data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function export(): JSONResponse
     {
@@ -848,8 +894,11 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(int $id): JSONResponse
     {
@@ -891,7 +940,11 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroyMultiple(): JSONResponse
     {

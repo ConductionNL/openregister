@@ -1,19 +1,25 @@
 ---
 status: implemented
+<<<<<<< HEAD
 retrofit_extensions:
   - REQ-001
   - REQ-002
   - REQ-003
   - REQ-004
   - REQ-005
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ---
 
 # Mail Sidebar
 
 ## Purpose
 
+<<<<<<< HEAD
 @e2e exclude Nextcloud Mail IMailProvider backend — covered by PHPUnit
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister objects related to the currently viewed email. This enables case handlers to see at a glance which cases, applications, or records are associated with an email -- and to create new associations -- without leaving the Mail app. The integration builds on the `openregister_email_links` table and `EmailService` established by the nextcloud-entity-relations spec.
 
 **Standards**: Nextcloud App Framework (script injection via `OCP\Util::addScript()`), REST API conventions (JSON responses, standard HTTP status codes), WCAG AA accessibility
@@ -448,6 +454,7 @@ The sidebar MUST handle API errors, network failures, and unexpected states grac
 - **WHEN** the sidebar attempts an API call
 - **THEN** the sidebar MUST catch the error and hide itself
 - **AND** no error dialogs or broken UI elements MUST remain in the Mail app
+<<<<<<< HEAD
 
 ---
 
@@ -685,3 +692,5 @@ The Mail app's Vue root destroys its DOM children during route changes. Mounting
 #### Notes
 - **30-second cap**: the retry budget (30 × 1s = 30s) was sized empirically; a slow Mail app boot on a busy server (cold APCu, hot reload) can exceed 30s and miss the mount. Failure mode is silent — the user sees no sidebar and no console error. Flagged as a possible follow-up: bump to 60s or hook into a Mail-side ready event when one exists.
 - **Bootstrap order**: `ensureIntegrationRegistry()` is intentionally invoked at module-load time (before `DOMContentLoaded`) so that `useIntegrationRegistry()` is safe for any sub-component that initialises during `setup()`. This is idempotent — calling it again from another bundle's bootstrap is a no-op.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -17,17 +17,26 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\AuditTrailMapper;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -146,6 +155,7 @@ class ImportService
      */
     private readonly IJobList $jobList;
 
+<<<<<<< HEAD
     /**
      * Translation CSV codec for column projection on import/export.
      *
@@ -163,27 +173,45 @@ class ImportService
      * @param IJobList                                                  $jobList             The background job list
      * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
      * @param AuditTrailMapper                                          $auditTrailMapper    The audit trail mapper
+=======
+    /**
+     * Constructor for the ImportService
+     *
+     * @param SchemaMapper    $schemaMapper  The schema mapper
+     * @param ObjectService   $objectService The object service
+     * @param LoggerInterface $logger        The logger interface
+     * @param IGroupManager   $groupManager  The group manager
+     * @param IJobList        $jobList       The background job list
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         SchemaMapper $schemaMapper,
         ObjectService $objectService,
         LoggerInterface $logger,
         IGroupManager $groupManager,
+<<<<<<< HEAD
         IJobList $jobList,
         \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
         private readonly AuditTrailMapper $auditTrailMapper
+=======
+        IJobList $jobList
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         $this->schemaMapper  = $schemaMapper;
         $this->objectService = $objectService;
         $this->logger        = $logger;
         $this->groupManager  = $groupManager;
         $this->jobList       = $jobList;
+<<<<<<< HEAD
         $this->translationCsvCodec = $translationCsvCodec;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];
     }//end __construct()
 
+<<<<<<< HEAD
     /**
      * Soft-delete every object whose `create` audit row carries the
      * given import-job UUID. Implements the rollback contract added by
@@ -249,6 +277,8 @@ class ImportService
         return $report;
     }//end softDeleteByImportJobId()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Check if the given user is in the admin group
      *
@@ -340,8 +370,13 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromExcel(
         string $filePath,
@@ -357,6 +392,7 @@ class ImportService
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
+<<<<<<< HEAD
 
         // Generate a per-import UUID and stamp it on every audit row
         // produced during this call. ImportService::softDeleteByImportJobId
@@ -397,6 +433,18 @@ class ImportService
                 spreadsheet: $spreadsheet,
                 register: $register,
                 schema: $schema,
+=======
+
+        $reader = new Xlsx();
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($filePath);
+
+        // If we have a register but no schema, process each sheet as a different schema.
+        if ($register !== null && $schema === null) {
+            return $this->processMultiSchemaSpreadsheetAsync(
+                spreadsheet: $spreadsheet,
+                register: $register,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 validation: $validation,
                 events: $events,
                 _rbac: $_rbac,
@@ -405,6 +453,7 @@ class ImportService
                 currentUser: $currentUser,
                 enrich: $enrich
             );
+<<<<<<< HEAD
 
             // Add schema information to the summary (consistent with multi-sheet Excel import).
             if ($schema !== null) {
@@ -470,6 +519,24 @@ class ImportService
 
         // Per-import UUID — see importFromExcel() for the rationale.
         $importJobId = Uuid::v4()->toRfc4122();
+=======
+        }
+
+        // Single schema processing - use batch processing for better performance.
+        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processSpreadsheetBatch(
+            spreadsheet: $spreadsheet,
+            register: $register,
+            schema: $schema,
+            validation: $validation,
+            events: $events,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            publish: $publish,
+            currentUser: $currentUser,
+            enrich: $enrich
+        );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         try {
             $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
@@ -503,6 +570,7 @@ class ImportService
                 'slug'  => $schema->getSlug(),
             ];
 
+<<<<<<< HEAD
             // Schedule SOLR warmup job after successful CSV import.
             $finalResult = [
                 $sheetTitle   => $sheetSummary,
@@ -514,6 +582,91 @@ class ImportService
         } finally {
             $this->auditTrailMapper->setRequestImportJobId(importJobId: null);
         }//end try
+=======
+        // Schedule SOLR warmup job after successful Excel import.
+        $finalResult = [$sheetTitle => $sheetSummary];
+        $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
+
+        // Return in sheet-based format for consistency.
+        return $finalResult;
+    }//end importFromExcel()
+
+    /**
+     * Import data from CSV file.
+     *
+     * @param string        $filePath      The path to the CSV file.
+     * @param Register|null $register      Optional register to associate with imported objects.
+     * @param Schema|null   $schema        Optional schema to associate with imported objects.
+     * @param bool          $validation    Whether to validate objects against schema definitions (default: false).
+     * @param bool          $events        Whether to dispatch object lifecycle events (default: false).
+     * @param bool          $_rbac         Whether to enforce RBAC checks (default: true, unused).
+     * @param bool          $_multitenancy Whether to enable multi-tenancy (default: true, unused).
+     * @param bool          $publish       DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
+     * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
+     * @param bool          $enrich        Whether to enrich objects with metadata (default: true).
+     *
+     * @return array Import results by schema
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+     */
+    public function importFromCsv(
+        string $filePath,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $validation=false,
+        bool $events=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $publish=false,
+        ?IUser $currentUser=null,
+        bool $enrich=true
+    ): array {
+        // Clear caches at the start of each import to prevent stale data issues.
+        $this->clearCaches();
+
+        // CSV can only handle a single schema.
+        if ($schema === null) {
+            throw new InvalidArgumentException('CSV import requires a specific schema');
+        }
+
+        // Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
+        $reader = new Csv();
+        $reader->setReadDataOnly(true);
+        $reader->setDelimiter(',');
+        $reader->setEnclosure('"');
+        $spreadsheet = $reader->load($filePath);
+
+        // Get the sheet title for CSV (usually just 'Worksheet' or similar).
+        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processCsvSheet(
+            sheet: $spreadsheet->getActiveSheet(),
+            register: $register,
+            schema: $schema,
+            validation: $validation,
+            events: $events,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            publish: $publish,
+            currentUser: $currentUser,
+            enrich: $enrich
+        );
+
+        // Add schema information to the summary (consistent with Excel import).
+        $sheetSummary['schema'] = [
+            'id'    => $schema->getId(),
+            'title' => $schema->getTitle(),
+            'slug'  => $schema->getSlug(),
+        ];
+
+        // Schedule SOLR warmup job after successful CSV import.
+        $finalResult = [$sheetTitle => $sheetSummary];
+        $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
+
+        // Return in sheet-based format for consistency.
+        return $finalResult;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end importFromCsv()
 
     /**
@@ -556,8 +709,11 @@ class ImportService
      * }>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
@@ -679,9 +835,12 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Spreadsheet batch processing requires many validation branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple row/column validation paths needed for data integrity
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -777,6 +936,7 @@ class ImportService
                 );
             }
 
+<<<<<<< HEAD
             // @todo add-live-updates/task-6: Wrap with NotifyPushListener::setBatchMode(true) and
             // flushBatch($queue, $permissionHandler) once IQueue and PermissionHandler are injected
             // into ImportService. Pattern:
@@ -830,6 +990,46 @@ class ImportService
                 $summary['deduplication_efficiency'] = $efficiency.'% operations avoided';
             }
 
+=======
+            $saveResult = $this->objectService->saveObjects(
+                objects: $allObjects,
+                register: $register,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                validation: $validation,
+                events: $events,
+                enrich: $enrich
+            );
+
+            // Use the structured return from saveObjects with smart deduplication.
+            // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
+            $summary['created'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['saved'] ?? []
+            );
+            $summary['updated'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['updated'] ?? []
+            );
+
+            // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
+            $summary['unchanged'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['unchanged'] ?? []
+            );
+
+            // Add efficiency metrics from smart deduplication.
+            $createdCount   = count($summary['created']);
+            $updatedCount   = count($summary['updated']);
+            $unchangedCount = count($summary['unchanged']);
+            $totalProcessed = $createdCount + $updatedCount + $unchangedCount;
+            if ($totalProcessed > 0 && $unchangedCount > 0) {
+                $efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
+                $summary['deduplication_efficiency'] = $efficiency.'% operations avoided';
+            }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Handle validation errors if validation was enabled.
             if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
                 foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
@@ -869,9 +1069,12 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  CSV processing requires many conditional branches for data handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       CSV processing requires many conditional row/column handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) CSV processing consolidates related operations for performance
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -976,6 +1179,7 @@ class ImportService
                 );
             }
 
+<<<<<<< HEAD
             // @todo add-live-updates/task-6: Wrap with NotifyPushListener batch mode once
             // IQueue and PermissionHandler are injected into ImportService.
             \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
@@ -1021,6 +1225,46 @@ class ImportService
                 $summary['deduplication_efficiency'] = $efficiency.'% operations avoided';
             }
 
+=======
+            $saveResult = $this->objectService->saveObjects(
+                objects: $allObjects,
+                register: $register,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                validation: $validation,
+                events: $events,
+                enrich: $enrich
+            );
+
+            // Use the structured return from saveObjects with smart deduplication.
+            // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
+            $summary['created'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['saved'] ?? []
+            );
+            $summary['updated'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['updated'] ?? []
+            );
+
+            // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
+            $summary['unchanged'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['unchanged'] ?? []
+            );
+
+            // Add efficiency metrics from smart deduplication.
+            $createdCount   = count($summary['created']);
+            $updatedCount   = count($summary['updated']);
+            $unchangedCount = count($summary['unchanged']);
+            $totalProcessed = $createdCount + $updatedCount + $unchangedCount;
+            if ($totalProcessed > 0 && $unchangedCount > 0) {
+                $efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
+                $summary['deduplication_efficiency'] = $efficiency.'% operations avoided';
+            }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Handle validation errors if validation was enabled.
             if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
                 foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
@@ -1115,6 +1359,7 @@ class ImportService
                 ]
                 );
 
+<<<<<<< HEAD
         // Translatable-property pre-pass (register-i18n Phase 3 wire-in):
         // turn flat `field_lang` columns into the nested `field: {lang: value}`
         // shape the rest of the save pipeline expects. The codec is
@@ -1122,6 +1367,8 @@ class ImportService
         // columns; the rest of this loop sees the un-flattened shape.
         $rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         foreach ($rowData as $key => $value) {
             // Skip empty values early.
             if ($value === null || $value === '') {
@@ -1453,7 +1700,11 @@ class ImportService
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformObjectBySchema(array $objectData, Schema $schema): array
     {
@@ -1797,8 +2048,11 @@ class ImportService
      * @return string Recommended warmup mode
      *
      * @psalm-return 'balanced'|'fast'|'safe'
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRecommendedWarmupMode(int $totalImported): string
     {
@@ -1830,8 +2084,11 @@ class ImportService
      * @psalm-suppress PossiblyUnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Immediate flag controls scheduling timing
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
     {
@@ -1870,6 +2127,7 @@ class ImportService
             maxObjects: $maxObjects
         );
     }//end scheduleSmartSolrWarmup()
+<<<<<<< HEAD
 
     /**
      * Serialize per-row import errors to a UTF-8 CSV blob with BOM.
@@ -1999,4 +2257,6 @@ class ImportService
         return '';
 
     }//end stringifyOriginalValue()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

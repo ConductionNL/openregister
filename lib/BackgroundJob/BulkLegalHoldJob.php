@@ -5,9 +5,12 @@
  *
  * Queued background job that places legal holds on all objects in a schema.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -43,7 +46,11 @@ class BulkLegalHoldJob extends QueuedJob
      *
      * @param ITimeFactory $time Time factory
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-7
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-7
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(ITimeFactory $time)
     {
@@ -59,7 +66,11 @@ class BulkLegalHoldJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-7
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-7
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {
@@ -67,6 +78,10 @@ class BulkLegalHoldJob extends QueuedJob
 
         $schemaId = $argument['schemaId'] ?? null;
         $reason   = $argument['reason'] ?? '';
+<<<<<<< HEAD
+=======
+        $userId   = $argument['userId'] ?? 'system';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         if ($schemaId === null) {
             $logger->error('[BulkLegalHoldJob] No schemaId provided');

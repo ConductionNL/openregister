@@ -101,8 +101,12 @@ class ToolRegistrationEvent extends Event
      *
      * @throws \InvalidArgumentException If validation fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {

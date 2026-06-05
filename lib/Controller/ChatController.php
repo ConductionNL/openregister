@@ -19,11 +19,18 @@
  *
  * @link https://www.OpenRegister.nl
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-2
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-3
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -229,8 +236,11 @@ class ChatController extends Controller
      *     message: string, selectedViews: array, selectedTools: array,
      *     ragSettings: array{includeObjects: bool|mixed, includeFiles: bool|mixed,
      *     numSourcesFiles: int|mixed, numSourcesObjects: int|mixed}}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractMessageRequestParams(): array
     {
@@ -261,6 +271,7 @@ class ChatController extends Controller
             'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
         ];
 
+<<<<<<< HEAD
         // Extract optional CnAiContext snapshot. Frontend sends a plain JSON
         // object describing the user's current scope (selected register,
         // schema, object id, recent search query, etc.). Anything that is
@@ -272,6 +283,8 @@ class ChatController extends Controller
             $context = $contextParam;
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return [
             'conversationUuid' => $conversationUuid,
             'agentUuid'        => $agentUuid,
@@ -279,12 +292,16 @@ class ChatController extends Controller
             'selectedViews'    => $selectedViews,
             'selectedTools'    => $selectedTools,
             'ragSettings'      => $ragSettings,
+<<<<<<< HEAD
             'context'          => $context,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end extractMessageRequestParams()
 
     /**
      * Load an existing conversation by UUID.
+<<<<<<< HEAD
      *
      * @param string $uuid Conversation UUID
      *
@@ -293,9 +310,135 @@ class ChatController extends Controller
      * @throws Exception If conversation not found
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+     *
+     * @param string $uuid Conversation UUID
+     *
+     * @return Conversation The conversation entity
+     *
+     * @throws Exception If conversation not found
      */
     private function loadExistingConversation(string $uuid): Conversation
     {
+        try {
+            return $this->conversationMapper->findByUuid($uuid);
+        } catch (Exception $e) {
+            throw new Exception('The conversation with UUID '.$uuid.' does not exist', 404);
+        }
+    }//end loadExistingConversation()
+
+    /**
+     * Create a new conversation with the specified agent.
+     *
+     * @param string $agentUuid Agent UUID
+     *
+     * @return Conversation The newly created conversation
+     *
+     * @throws Exception If agent not found
+     */
+    private function createNewConversation(string $agentUuid): Conversation
+    {
+        // Get active organisation.
+        $organisation = $this->organisationService->getActiveOrganisation();
+
+        // Look up agent by UUID.
+        try {
+            $agent = $this->agentMapper->findByUuid($agentUuid);
+        } catch (Exception $e) {
+            throw new Exception('The agent with UUID '.$agentUuid.' does not exist', 404);
+        }
+
+        // Generate unique default title.
+        $defaultTitle = $this->chatService->ensureUniqueTitle(
+            baseTitle: 'New Conversation',
+            userId: $this->userId,
+            agentId: $agent->getId()
+        );
+
+        // Create and insert new conversation.
+        $conversation = new Conversation();
+        $conversation->setUserId($this->userId);
+        $conversation->setOrganisation($organisation?->getUuid());
+        $conversation->setAgentId($agent->getId());
+        $conversation->setTitle($defaultTitle);
+        $conversation = $this->conversationMapper->insert($conversation);
+
+        // Log conversation creation.
+        $this->logger->info(
+            message: '[ChatController] New conversation created',
+            context: [
+                'file'    => __FILE__,
+                'line'    => __LINE__,
+                'uuid'    => $conversation->getUuid(),
+                'userId'  => $this->userId,
+                'agentId' => $agent->getId(),
+                'title'   => $defaultTitle,
+            ]
+        );
+
+        return $conversation;
+    }//end createNewConversation()
+
+    /**
+     * Resolve conversation from UUID or create new one with agent.
+     *
+     * @param string $conversationUuid Conversation UUID (empty if creating new)
+     * @param string $agentUuid        Agent UUID (empty if using existing conversation)
+     *
+     * @return Conversation The resolved or created conversation
+     *
+     * @throws Exception If both parameters are empty or if entities not found
+     */
+    private function resolveConversation(string $conversationUuid, string $agentUuid): Conversation
+    {
+        // Load existing conversation by UUID.
+        if (empty($conversationUuid) === false) {
+            return $this->loadExistingConversation(uuid: $conversationUuid);
+        }
+
+        // Create new conversation with specified agent.
+        if (empty($agentUuid) === false) {
+            return $this->createNewConversation(agentUuid: $agentUuid);
+        }
+
+        // Neither parameter provided.
+        throw new Exception('Either conversation or agentUuid is required', 400);
+    }//end resolveConversation()
+
+    /**
+     * Verify that the current user has access to the conversation.
+     *
+     * @param Conversation $conversation The conversation to check
+     *
+     * @return void
+     *
+     * @throws Exception If user does not have access (403)
+     */
+    private function verifyConversationAccess(Conversation $conversation): void
+    {
+        if ($conversation->getUserId() !== $this->userId) {
+            throw new Exception('You do not have access to this conversation', 403);
+        }
+    }//end verifyConversationAccess()
+
+    /**
+     * Returns the template of the main chat page
+     *
+     * Renders the Single Page Application template for the chat interface.
+     * All routing is handled client-side by the SPA.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse Template response for chat SPA
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+     */
+    private function loadExistingConversation(string $uuid): Conversation
+    {
+<<<<<<< HEAD
         try {
             return $this->conversationMapper->findByUuid($uuid);
         } catch (Exception $e) {
@@ -403,6 +546,16 @@ class ChatController extends Controller
         }
     }//end verifyConversationAccess()
 
+=======
+        // Return SPA template response (routing handled client-side).
+        return new TemplateResponse(
+            appName: 'openregister',
+            templateName: 'index',
+            params: []
+        );
+    }//end page()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Send a chat message in a conversation and get AI response
      *
@@ -415,7 +568,11 @@ class ChatController extends Controller
      *
      * @return JSONResponse JSON response with AI response or error
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function sendMessage(): JSONResponse
     {
@@ -462,8 +619,12 @@ class ChatController extends Controller
                 userMessage: $params['message'],
                 selectedViews: $params['selectedViews'],
                 selectedTools: $params['selectedTools'],
+<<<<<<< HEAD
                 ragSettings: $params['ragSettings'],
                 context: $params['context']
+=======
+                ragSettings: $params['ragSettings']
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             );
 
             // Add conversation UUID to result for frontend.
@@ -527,7 +688,11 @@ class ChatController extends Controller
      *     uuid: null|string}>, total?: int, conversationId?: int},
      *     array<never, never>>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getHistory(): JSONResponse
     {
@@ -618,7 +783,11 @@ class ChatController extends Controller
      *     'Missing conversationId', message: string, conversationId?: int},
      *     array<never, never>>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearHistory(): JSONResponse
     {
@@ -707,7 +876,11 @@ class ChatController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
@@ -845,7 +1018,11 @@ class ChatController extends Controller
      *     total_agents?: int, total_conversations?: int, total_messages?: int},
      *     array<never, never>>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getChatStats(): JSONResponse
     {

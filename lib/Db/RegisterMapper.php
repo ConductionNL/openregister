@@ -217,14 +217,26 @@ class RegisterMapper extends QBMapper
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
+<<<<<<< HEAD
         $rbacFlag = '0';
         $mtFlag   = '0';
         if ($_rbac === true) {
             $rbacFlag = '1';
+=======
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        } else {
+            $rbacFlag = '0';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if ($_multitenancy === true) {
             $mtFlag = '1';
+<<<<<<< HEAD
+=======
+        } else {
+            $mtFlag = '0';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
@@ -321,14 +333,26 @@ class RegisterMapper extends QBMapper
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+<<<<<<< HEAD
             $rbacChar = '0';
             $mtChar   = '0';
             if ($_rbac === true) {
                 $rbacChar = '1';
+=======
+            if ($_rbac === true) {
+                $rbacChar = '1';
+            } else {
+                $rbacChar = '0';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             if ($_multitenancy === true) {
                 $mtChar = '1';
+<<<<<<< HEAD
+=======
+            } else {
+                $mtChar = '0';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
@@ -361,6 +385,7 @@ class RegisterMapper extends QBMapper
         }//end try
     }//end find()
 
+<<<<<<< HEAD
     /**
      * Clear the request-scoped find cache for a specific register
      *
@@ -385,6 +410,8 @@ class RegisterMapper extends QBMapper
         }
     }//end clearFindCache()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Finds multiple registers by id
      *
@@ -809,6 +836,7 @@ class RegisterMapper extends QBMapper
         $qb->select('id', 'schemas')
             ->from('openregister_registers');
 
+<<<<<<< HEAD
         $candidates = $qb->executeQuery()->fetchAllAssociative();
         $needle     = (string) $schemaId;
 
@@ -819,11 +847,27 @@ class RegisterMapper extends QBMapper
                     return (int) $row['id'];
                 }
             }
+=======
+        // REGEXP: match number with optional whitespace and newlines.
+        $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
+
+        $qb->select('id')
+            ->from('openregister_registers')
+            ->where('`schemas` REGEXP :pattern')
+            ->setParameter('pattern', $pattern)
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery()->fetchOne();
+
+        if ($result !== false) {
+            return (int) $result;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         return null;
     }//end getFirstRegisterWithSchema()
 
+<<<<<<< HEAD
     /**
      * Decode the persisted `schemas` column into a flat ID list.
      *
@@ -854,6 +898,8 @@ class RegisterMapper extends QBMapper
         return [];
     }//end decodeSchemasField()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Check if a register has a schema with a specific title
      *

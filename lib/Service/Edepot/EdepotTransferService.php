@@ -6,9 +6,12 @@
  * Orchestrates the full e-Depot transfer pipeline: SIP package building,
  * transport, object status tracking, and audit trail logging.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *
@@ -20,9 +23,15 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-38
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -106,9 +115,14 @@ class EdepotTransferService
      *
      * @return array<string,mixed> The updated transfer list with results.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-38
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-38
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function executeTransfer(array $transferList, TransportInterface $transport): array
     {
@@ -187,7 +201,11 @@ class EdepotTransferService
      *
      * @return TransportResult The transport result.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function sendWithRetry(
         TransportInterface $transport,
@@ -238,8 +256,11 @@ class EdepotTransferService
      *         isRendition: bool
      *     }>
      * }> Objects with file metadata.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function gatherObjectsWithFiles(array $objectRefs): array
     {
@@ -286,8 +307,12 @@ class EdepotTransferService
      *     isRendition: bool
      * }> File metadata array.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getObjectFiles(ObjectEntity $object): array
     {
@@ -330,11 +355,14 @@ class EdepotTransferService
      * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
      *
      * @return array<string,mixed> Updated transfer list.
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processResults(
         array $transferList,
@@ -364,6 +392,7 @@ class EdepotTransferService
             }
 
             foreach ($objectsWithFiles as $item) {
+<<<<<<< HEAD
                 $uuid           = $item['object']->getUuid();
                 $ref            = $results[0]->getTransferReference() ?? '';
                 $referenceValue = null;
@@ -383,6 +412,17 @@ class EdepotTransferService
                 ];
             }//end foreach
         }//end if
+=======
+                $uuid = $item['object']->getUuid();
+                $ref  = $results[0]->getTransferReference() ?? '';
+                $mergedObjectResults[$uuid] = [
+                    'accepted'  => $overallSuccess,
+                    'reference' => ($overallSuccess === true) ? $ref : null,
+                    'error'     => ($overallSuccess === true) ? null : ($results[0]->getErrorMessage() ?? 'Transfer failed'),
+                ];
+            }
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Update each object's retention status.
         foreach ($objectsWithFiles as $item) {
@@ -394,6 +434,7 @@ class EdepotTransferService
                 $anySuccess = true;
                 $this->markObjectTransferred(object: $object, reference: ($objResult['reference'] ?? ''), timestamp: $now);
                 $this->logObjectTransferred(object: $object, transferUuid: $transferList['uuid'], reference: ($objResult['reference'] ?? ''));
+<<<<<<< HEAD
                 continue;
             }
 
@@ -410,6 +451,22 @@ class EdepotTransferService
 
         if ($transferList['status'] === TransferListService::STATUS_FAILED) {
             $errorMessages = [];
+=======
+            } else {
+                $allSuccess = false;
+                $this->markObjectTransferFailed(object: $object, error: ($objResult['error'] ?? 'Unknown error'), timestamp: $now);
+            }
+        }
+
+        // Set final transfer list status.
+        if ($allSuccess === true) {
+            $transferList['status'] = TransferListService::STATUS_COMPLETED;
+        } else if ($anySuccess === true) {
+            $transferList['status'] = TransferListService::STATUS_PARTIALLY_FAILED;
+        } else {
+            $transferList['status'] = TransferListService::STATUS_FAILED;
+            $errorMessages          = [];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             foreach ($results as $result) {
                 if ($result->getErrorMessage() !== null) {
                     $errorMessages[] = $result->getErrorMessage();
@@ -439,8 +496,11 @@ class EdepotTransferService
      * @param string       $timestamp The transfer timestamp.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function markObjectTransferred(ObjectEntity $object, string $reference, string $timestamp): void
     {
@@ -471,8 +531,11 @@ class EdepotTransferService
      * @param string       $timestamp The failure timestamp.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function markObjectTransferFailed(ObjectEntity $object, string $error, string $timestamp): void
     {
@@ -507,7 +570,11 @@ class EdepotTransferService
      *
      * @return array<string,mixed> The transport configuration.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTransportConfig(): array
     {
@@ -535,7 +602,11 @@ class EdepotTransferService
      *
      * @return array<string, string> Map of profile ID to display name.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAvailableProfiles(): array
     {
@@ -549,7 +620,11 @@ class EdepotTransferService
      *
      * @return bool True if valid.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isValidProfile(string $profileName): bool
     {
@@ -564,7 +639,11 @@ class EdepotTransferService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function logTransferInitiated(array $transferList, string $transport): void
     {
@@ -589,7 +668,11 @@ class EdepotTransferService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function logObjectTransferred(ObjectEntity $object, string $transferUuid, string $reference): void
     {
@@ -629,7 +712,11 @@ class EdepotTransferService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function logTransferFailed(array $transferList, string $error, string $transport): void
     {
@@ -651,8 +738,11 @@ class EdepotTransferService
      * @param array<string,mixed> $transferList The completed transfer list.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function notifyTransferCompletion(array $transferList): void
     {

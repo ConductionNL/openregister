@@ -6,9 +6,12 @@
  * Service that wraps Nextcloud Mail message lookups and manages email-to-object links.
  * Emails are immutable; this service only creates/removes link references.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -17,10 +20,17 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-46
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-50
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -31,8 +41,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -85,6 +98,7 @@ class EmailService
     private readonly LoggerInterface $logger;
 
     /**
+<<<<<<< HEAD
      * Schema mapper for iterating over schemas with `_mail` linked-type column.
      *
      * @var SchemaMapper
@@ -108,12 +122,24 @@ class EmailService
      * @param LoggerInterface $logger          Logger.
      * @param SchemaMapper    $schemaMapper    Schema mapper.
      * @param MagicMapper     $magicMapper     Magic mapper.
+=======
+     * Constructor.
+     *
+     * @param EmailLinkMapper $emailLinkMapper Email link mapper
+     * @param IAppManager     $appManager      App manager
+     * @param IDBConnection   $db              Database connection
+     * @param IUserSession    $userSession     User session
+     * @param LoggerInterface $logger          Logger
+     *
+     * @return void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         EmailLinkMapper $emailLinkMapper,
         IAppManager $appManager,
         IDBConnection $db,
         IUserSession $userSession,
+<<<<<<< HEAD
         LoggerInterface $logger,
         SchemaMapper $schemaMapper,
         MagicMapper $magicMapper
@@ -125,6 +151,15 @@ class EmailService
         $this->logger       = $logger;
         $this->schemaMapper = $schemaMapper;
         $this->magicMapper  = $magicMapper;
+=======
+        LoggerInterface $logger
+    ) {
+        $this->emailLinkMapper = $emailLinkMapper;
+        $this->appManager      = $appManager;
+        $this->db          = $db;
+        $this->userSession = $userSession;
+        $this->logger      = $logger;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end __construct()
 
     /**
@@ -146,7 +181,11 @@ class EmailService
      *
      * @return array{results: array, total: int} Email links with total count.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getEmailsForObject(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
@@ -175,7 +214,11 @@ class EmailService
      *
      * @throws Exception If the email does not exist or is already linked.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-50
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function linkEmail(
         string $objectUuid,
@@ -226,8 +269,11 @@ class EmailService
      * @return void
      *
      * @throws Exception If the link is not found.
+<<<<<<< HEAD
      *
      * @spec exclude Legacy link-table delete by id; email link infrastructure being removed per linked-entity-types.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function unlinkEmail(int $linkId): void
     {
@@ -246,6 +292,7 @@ class EmailService
      *
      * @return array Array of email links with object UUIDs.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
      */
     public function searchBySender(string $sender): array
@@ -348,13 +395,33 @@ class EmailService
     }//end getMailLinkedSchemas()
 
     /**
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
+     */
+    public function searchBySender(string $sender): array
+    {
+        $links = $this->emailLinkMapper->findBySender($sender);
+
+        return array_map(
+            static function (EmailLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
+        );
+    }//end searchBySender()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Delete all email links for an object (cleanup).
      *
      * @param string $objectUuid The object UUID.
      *
      * @return int Number of deleted links.
+<<<<<<< HEAD
      *
      * @spec exclude Legacy link-table bulk cleanup delegating to EmailLinkMapper; email link infrastructure being removed per linked-entity-types.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteLinksForObject(string $objectUuid): int
     {
@@ -369,7 +436,11 @@ class EmailService
      *
      * @return array|null Message data or null if not found.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-46
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function fetchMailMessage(int $messageId, int $accountId): ?array
     {
@@ -434,8 +505,12 @@ class EmailService
     private function buildMailboxSubquery(\OCP\DB\QueryBuilder\IQueryBuilder $qb, int $accountId): string
     {
         $param = $qb->createNamedParameter($accountId);
+<<<<<<< HEAD
         $sql   = '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param;
         return $sql.' AND mb.id = m.mailbox_id LIMIT 1)';
+=======
+        return '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param.' AND mb.id = m.mailbox_id LIMIT 1)';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     }//end buildMailboxSubquery()
 }//end class

@@ -750,18 +750,24 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleFileSelect(event) {
 			const file = event.target.files[0]
 			if (file) {
 				this.validateAndSetFile(file)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleFileDrop(event) {
 			this.isDragging = false
 			const file = event.dataTransfer.files[0]
@@ -769,9 +775,12 @@ export default {
 				this.validateAndSetFile(file)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		validateAndSetFile(file) {
 			this.fileError = null
 
@@ -789,9 +798,12 @@ export default {
 
 			this.selectedUploadFile = file
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Clears the selected upload file and resets the file input; UI file-picker plumbing.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		clearFileSelection() {
 			this.selectedUploadFile = null
 			this.fileError = null
@@ -799,17 +811,23 @@ export default {
 				this.$refs.fileInput.value = ''
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		formatFileSize(bytes) {
 			if (bytes < 1024) return bytes + ' B'
 			if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
 			return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async importFromFile() {
 			const formData = new FormData()
 			formData.append('file', this.selectedUploadFile)
@@ -832,9 +850,12 @@ export default {
 
 			return response.data
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async handleCheckVersion(configuration) {
 			// Handle check version for already imported configurations
 			try {

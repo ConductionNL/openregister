@@ -6,9 +6,12 @@
  * This file contains the handler class for exporting configurations
  * in OpenAPI format from the OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -20,7 +23,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -191,7 +198,11 @@ class ExportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration export has multiple input type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Export logic requires comprehensive data handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-35
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-35
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exportConfig(
         array|Configuration|Register $input=[],
@@ -416,7 +427,11 @@ class ExportHandler
      *
      * @return array Register data formatted for OpenAPI export without instance-specific properties.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function exportRegister(Register $register): array
     {

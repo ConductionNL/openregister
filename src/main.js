@@ -6,6 +6,7 @@ import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip.js'
 import pinia from './pinia.js'
 import App from './App.vue'
+<<<<<<< HEAD
 import {
 	CnPageRenderer,
 	defaultPageTypes,
@@ -16,12 +17,19 @@ import { Fragment } from 'vue-frag'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import registry from './registry.js'
+=======
+import router from './router/index.js'
+import { registerIcons } from '@conduction/nextcloud-vue'
+import '@conduction/nextcloud-vue/css/index.css'
+import { Fragment } from 'vue-frag'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
+<<<<<<< HEAD
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
@@ -84,11 +92,14 @@ try {
 	console.error('[main] xwiki registry guard failed', e)
 }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 registerIcons({
 	AccountGroupOutline,
 	FileDocumentOutline,
 	Cog,
 	CogOutline,
+<<<<<<< HEAD
 	// Navigation icons (manifest menu items resolve these by name)
 	MessageTextOutline,
 	DatabaseOutline,
@@ -110,6 +121,8 @@ registerIcons({
 	ShieldLockOutline,
 	ChartBoxOutline,
 	Api,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 })
 
 Vue.mixin({ methods: { t, n } })
@@ -120,6 +133,7 @@ Vue.directive('tooltip', Tooltip)
 
 Vue.component('Fragment', Fragment)
 
+<<<<<<< HEAD
 // Shallow-clone CnPageRenderer because the lib's barrel exports are
 // non-extensible (webpack ESM module records). Vue 2's `Vue.extend()` adds an
 // internal `_Ctor` cache to the component definition; mutating a non-extensible
@@ -194,6 +208,8 @@ const router = new VueRouter({
 const registryProp = { ...registry }
 const pageTypesProp = { ...defaultPageTypes }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 new Vue(
 	{
 		pinia,

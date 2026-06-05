@@ -10,7 +10,11 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 				<NcTextField
 					:value.sync="searchStore.search"
 					:show-trailing-button="searchStore.search !== ''"
+<<<<<<< HEAD
 					:label="t('openregister', 'Search')"
+=======
+					label="Search"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					class="searchField"
 					trailing-button-icon="close"
 					@trailing-button-click="endpointStore.refreshEndpointList()">
@@ -21,13 +25,21 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
+<<<<<<< HEAD
 						{{ t('openregister', 'Refresh') }}
+=======
+						Refresh
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					</NcActionButton>
 					<NcActionButton close-after-click @click="endpointStore.setEndpointItem({}); navigationStore.setModal('editEndpoint')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
+<<<<<<< HEAD
 						{{ t('openregister', 'Add endpoint') }}
+=======
+						Add endpoint
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -51,13 +63,21 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 							<template #icon>
 								<Pencil />
 							</template>
+<<<<<<< HEAD
 							{{ t('openregister', 'Edit') }}
+=======
+							Edit
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						</NcActionButton>
 						<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
+<<<<<<< HEAD
 							{{ t('openregister', 'Delete') }}
+=======
+							Delete
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						</NcActionButton>
 					</template>
 				</NcListItem>
@@ -68,10 +88,17 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
+<<<<<<< HEAD
 			:name="t('openregister', 'Loading endpoints')" />
 
 		<div v-if="!endpointStore.endpointList.length" class="emptyListHeader">
 			{{ t('openregister', 'No endpoints defined') }}
+=======
+			name="Loading endpoints" />
+
+		<div v-if="!endpointStore.endpointList.length" class="emptyListHeader">
+			No endpoints defined
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		</div>
 	</NcAppContentList>
 </template>

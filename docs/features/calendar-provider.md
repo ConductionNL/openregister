@@ -33,6 +33,7 @@ The Calendar Provider creates virtual calendars from OpenRegister schema objects
 
 ### Schema Configuration
 
+<<<<<<< HEAD
 Schemas store calendar provider configuration in their `configuration` JSON field under the `calendarProvider` key. The `getCalendarProviderConfig()` method on the Schema entity extracts the block; an empty/false `enabled` value returns `null`, signalling the schema is not surfaced as a calendar.
 
 #### Configuration fields
@@ -96,6 +97,15 @@ When a calendar client (Nextcloud Calendar, CalDAV, etc.) requests events for a 
 ```
 
 These flow through the magic-table search pipeline using the same operator grammar as `x-openregister-aggregations` (`gte`/`lte`/`gt`/`lt`/`in`/`ne`). Older versions used a non-canonical `field>=` array-key shape that the search layer didn't recognise, silently returning empty results — fixed in the same change as the Mustache-template alignment above.
+=======
+Schemas store calendar provider configuration in their `configuration` JSON field. The `getCalendarProviderConfig()` method on the Schema entity extracts and validates this configuration, including:
+
+- `enabled` -- Whether the schema produces a virtual calendar
+- `titleTemplate` -- Template for event titles with `{field}` placeholders
+- `descriptionTemplate` -- Template for event descriptions
+- `startDateField` -- Schema property to use as event start date
+- `endDateField` -- Schema property to use as event end date
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ### Frontend Configuration
 

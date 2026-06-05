@@ -6,9 +6,12 @@
  * This file contains the GitHubHandler class for interacting with the GitHub API
  * to discover, fetch, and manage OpenRegister configurations stored in GitHub repositories.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Configuration
  * @author    Conduction Development Team <info@conduction.nl>
@@ -25,6 +28,10 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use RuntimeException;
 use OCP\Http\Client\IClient;
+<<<<<<< HEAD
+=======
+use OCP\Http\Client\IClientService;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use OCP\IAppConfig;
@@ -95,6 +102,7 @@ class GitHubHandler
     private IConfig $config;
 
     /**
+<<<<<<< HEAD
      * Attribution formatter for server-PAT-fallback issue submissions.
      *
      * @var AttributionFormatter
@@ -126,6 +134,28 @@ class GitHubHandler
         $this->cache     = $cacheFactory->createDistributed('openregister_github_configs');
         $this->attributionFormatter = $attributionFormatter;
         $this->logger = $logger;
+=======
+     * GitHubHandler constructor
+     *
+     * @param IClientService  $clientService HTTP client service
+     * @param IAppConfig      $appConfig     App configuration service for app-level settings
+     * @param IConfig         $config        User configuration service for user-level settings
+     * @param ICacheFactory   $cacheFactory  Cache factory for creating cache instances
+     * @param LoggerInterface $logger        Logger instance
+     */
+    public function __construct(
+        IClientService $clientService,
+        IAppConfig $appConfig,
+        IConfig $config,
+        ICacheFactory $cacheFactory,
+        LoggerInterface $logger
+    ) {
+        $this->client    = $clientService->newClient();
+        $this->appConfig = $appConfig;
+        $this->config    = $config;
+        $this->cache     = $cacheFactory->createDistributed('openregister_github_configs');
+        $this->logger    = $logger;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end __construct()
 
     /**
@@ -133,7 +163,11 @@ class GitHubHandler
      *
      * @return array<string, string> GitHub API headers.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getHeaders(): array
     {
@@ -195,7 +229,11 @@ class GitHubHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Search involves many conditional data extractions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full search implementation requires comprehensive handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -369,7 +407,11 @@ class GitHubHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Error handling requires multiple status code checks
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getGitHubErrorMessage(?int $statusCode, string $rawError): string
     {
@@ -433,7 +475,11 @@ class GitHubHandler
      *
      * @since 0.2.11
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getEnrichedConfigDetails(
         string $owner,
@@ -519,7 +565,11 @@ class GitHubHandler
      *     openregister: mixed|null
      * }|null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
@@ -601,7 +651,11 @@ class GitHubHandler
      *
      * @psalm-return array<array{name: mixed, commit: mixed|null, protected: false|mixed}>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getBranches(string $owner, string $repo): array
     {
@@ -666,7 +720,11 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFileContent(string $owner, string $repo, string $path, string $branch='main'): array
     {
@@ -748,7 +806,11 @@ class GitHubHandler
      *     version: '1.0.0'|mixed}, path: mixed, sha: mixed|null,
      *     url: mixed|null}>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
     {
@@ -839,7 +901,11 @@ class GitHubHandler
      *
      * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
@@ -902,7 +968,11 @@ class GitHubHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Repository fetch has multiple auth and error conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Auth check and error handling create multiple paths
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
@@ -1022,7 +1092,11 @@ class GitHubHandler
      *     url: ''|mixed
      * }
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRepositoryInfo(string $owner, string $repo): array
     {
@@ -1089,7 +1163,11 @@ class GitHubHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Publish involves multiple error and success paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full publish handling requires comprehensive error logic
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function publishConfiguration(
         string $owner,
@@ -1234,7 +1312,11 @@ class GitHubHandler
      * @return string|null File SHA or null if file doesn't exist
      * @throws \Exception If API request fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFileSha(string $owner, string $repo, string $path, string $branch='main'): ?string
     {
@@ -1286,7 +1368,11 @@ class GitHubHandler
      *
      * @return null|string The token or null if not set
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUserToken(string $userId): string|null
     {
@@ -1306,7 +1392,11 @@ class GitHubHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setUserToken(?string $token, string $userId): void
     {
@@ -1325,7 +1415,11 @@ class GitHubHandler
      *
      * @return bool True if token is valid, false otherwise
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateToken(?string $userId=null): bool
     {
@@ -1366,6 +1460,7 @@ class GitHubHandler
             return false;
         }//end try
     }//end validateToken()
+<<<<<<< HEAD
 
     /**
      * List GitHub Issues for a repository, with sensitive fields stripped and pull requests excluded.
@@ -1884,4 +1979,6 @@ class GitHubHandler
             'labels'     => $labels,
         ];
     }//end stripIssueFields()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

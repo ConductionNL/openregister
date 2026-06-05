@@ -538,8 +538,11 @@ export default {
 
 		/**
 		 * Refresh database information (force re-query)
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — delegates to the database refresh API
 		 * @return {Promise<void>}
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async refreshDatabaseInfo() {
 			this.refreshingDatabase = true
@@ -558,7 +561,10 @@ export default {
 		/**
 		 * Format date for display
 		 * @param {string} dateString - ISO date string
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure presentation helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string} Formatted date
 		 */
 		formatDate(dateString) {

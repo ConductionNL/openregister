@@ -6,9 +6,12 @@
  * Recurring background job that periodically processes files for text extraction.
  * This job runs at configurable intervals to handle files when extraction mode is set to 'cron'.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -66,7 +69,11 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @param ITimeFactory $time Time factory for parent class
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(ITimeFactory $time)
     {
@@ -84,7 +91,11 @@ class CronFileTextExtractionJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {
@@ -268,7 +279,11 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @return array<int, array<string, mixed>> List of pending files with metadata.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getPendingFiles(
         FileMapper $fileMapper,

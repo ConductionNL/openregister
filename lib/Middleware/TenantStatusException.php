@@ -5,9 +5,12 @@
  *
  * Thrown when an organisation is in a non-active state that prevents API access.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Exception
  * @package  OCA\OpenRegister\Middleware
  *
@@ -38,7 +41,11 @@ class TenantStatusException extends Exception
      * @param string $status  The organisation status
      * @param int    $code    HTTP status code
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $message,
@@ -53,7 +60,11 @@ class TenantStatusException extends Exception
      *
      * @return string The status
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStatus(): string
     {

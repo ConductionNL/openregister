@@ -44,7 +44,11 @@
 import { NcAppContentDetails } from '@nextcloud/vue'
 import HookList from '../../components/workflow/HookList.vue'
 import HookForm from '../../components/workflow/HookForm.vue'
+<<<<<<< HEAD
 import TestHookDialog from '../../dialogs/TestHookDialog.vue'
+=======
+import TestHookDialog from '../../components/workflow/TestHookDialog.vue'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 import WorkflowExecutionPanel from '../../components/workflow/WorkflowExecutionPanel.vue'
 import ScheduledWorkflowPanel from '../../components/workflow/ScheduledWorkflowPanel.vue'
 import ApprovalChainPanel from '../../components/workflow/ApprovalChainPanel.vue'
@@ -73,6 +77,7 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude tab-view prop passthrough for the schema id (computed)
 		 */
@@ -82,29 +87,43 @@ export default {
 		/**
 		 * @spec exclude tab-view prop passthrough for the schema hooks list (computed)
 		 */
+=======
+		schemaId() {
+			return this.schema?.id || null
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		hooks() {
 			return this.schema?.hooks || []
 		},
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude tab-view hook-form open plumbing for editing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		editHook(index) {
 			this.editingHookIndex = index
 			this.showHookForm = true
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude tab-view hook-list mutation; emits an update:hooks event with the entry removed
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		deleteHook(index) {
 			const hooks = [...this.hooks]
 			hooks.splice(index, 1)
 			this.$emit('update:hooks', hooks)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude tab-view hook-list mutation; emits an update:hooks event with the saved entry
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		saveHook(hookData) {
 			const hooks = [...this.hooks]
 			if (this.editingHookIndex !== null) {
@@ -117,9 +136,12 @@ export default {
 			this.showHookForm = false
 			this.editingHookIndex = null
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude tab-view test-dialog open plumbing for a hook
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		openTestDialog(hook) {
 			this.testHook = hook
 			this.testEngineId = 1

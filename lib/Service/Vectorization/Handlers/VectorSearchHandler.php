@@ -5,9 +5,12 @@
  *
  * Handles semantic and hybrid search operations using vectors.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  *
@@ -19,7 +22,11 @@
  *
  * @link https://www.OpenRegister.nl
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -78,8 +85,11 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-backend search requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex search path handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with multiple backends
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function semanticSearch(
         array $queryEmbedding,
@@ -375,8 +385,11 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Hybrid search combines multiple result sets
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple search path combinations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive hybrid search with result fusion
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hybridSearch(
         array $queryEmbedding,
@@ -705,7 +718,11 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and collection resolution paths
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getCollectionsToSearch(array $filters): array
     {

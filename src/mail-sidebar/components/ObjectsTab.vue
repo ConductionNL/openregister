@@ -1,6 +1,7 @@
 <template>
 	<div class="or-tab-objects">
 		<div v-if="loading" class="or-tab-loading">
+<<<<<<< HEAD
 			<NcLoadingIcon :size="28" />
 			<span>{{ t('openregister', 'Loading linked objects...') }}</span>
 		</div>
@@ -61,10 +62,35 @@
 				</NcButton>
 			</div>
 		</template>
+=======
+			{{ t('openregister', 'Loading linked objects...') }}
+		</div>
+		<div v-else-if="objects.length === 0" class="or-tab-empty">
+			{{ t('openregister', 'No objects linked to this email.') }}
+		</div>
+		<ul v-else class="or-objects-list">
+			<li
+				v-for="obj in objects"
+				:key="obj.uuid"
+				class="or-object-item">
+				<div class="or-object-info">
+					<span class="or-object-name">{{ obj.name || obj.uuid }}</span>
+					<span class="or-object-schema">{{ obj.schema }}</span>
+				</div>
+				<button
+					class="or-object-unlink"
+					:title="t('openregister', 'Unlink')"
+					@click="unlinkObject(obj)">
+					✕
+				</button>
+			</li>
+		</ul>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	</div>
 </template>
 
 <script>
+<<<<<<< HEAD
 /**
  * Objects tab — linked-objects list inside the three-tab sidebar; also acts
  * as the drop target for Mail attachments (drops upload the file to the
@@ -73,10 +99,13 @@
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
  */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
+<<<<<<< HEAD
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
@@ -96,6 +125,11 @@ export default {
 		Close,
 		LinkVariant,
 	},
+=======
+
+export default {
+	name: 'ObjectsTab',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	props: {
 		accountId: { type: Number, default: null },
 		messageId: { type: Number, default: null },
@@ -104,6 +138,7 @@ export default {
 		return {
 			objects: [],
 			loading: false,
+<<<<<<< HEAD
 			uploadingObjectUuid: null,
 		}
 	},
@@ -111,6 +146,11 @@ export default {
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+		}
+	},
+	watch: {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		messageId() {
 			this.loadObjects()
 		},
@@ -120,6 +160,7 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
@@ -133,6 +174,8 @@ export default {
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadObjects() {
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
@@ -152,9 +195,12 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async unlinkObject(obj) {
 			if (!confirm(t('openregister', 'Remove link to {name}?', { name: obj.name || obj.uuid }))) {
 				return
@@ -173,6 +219,7 @@ export default {
 				console.error('[ObjectsTab] Unlink failed:', err)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
 		 */
@@ -250,3 +297,8 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 </style>
+=======
+	},
+}
+</script>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

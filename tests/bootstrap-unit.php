@@ -9,7 +9,11 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -40,6 +44,7 @@ if (is_dir($serverTestsLib)) {
     $loader->register(true);
 }
 
+<<<<<<< HEAD
 // Ensure OpenRegister's ZipStream v3 wins over a co-installed forms app's
 // ZipStream v2 vendor copy. In some dev/CI containers, several apps register
 // PSR4 prefixes for `ZipStream\`; whichever registers first wins for any class
@@ -102,4 +107,6 @@ foreach (spl_autoload_functions() as $autoload) {
     }
 }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 error_log('[UNIT TEST BOOTSTRAP] Full Nextcloud bootstrap complete - \OC::$server available');

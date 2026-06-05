@@ -58,8 +58,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUser(?string $user)
  * @method string|null getUserName()
  * @method void setUserName(?string $userName)
+<<<<<<< HEAD
  * @method string|null getSession()
  * @method void setSession(?string $session)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()
@@ -75,7 +78,10 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.LongVariable)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
@@ -280,6 +286,7 @@ class AuditTrail extends Entity implements JsonSerializable
      * @var string|null SHA-256 hash of the previous audit trail entry
      */
     protected ?string $previousHash = null;
+<<<<<<< HEAD
 
     /**
      * Import-job tag attached to every `create` audit row generated
@@ -292,6 +299,8 @@ class AuditTrail extends Entity implements JsonSerializable
      * @var string|null UUID of the import job that produced this row.
      */
     protected ?string $importJobId = null;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Constructor for the AuditTrail class
@@ -327,7 +336,10 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'expires', type: 'datetime');
         $this->addType(fieldName: 'hash', type: 'string');
         $this->addType(fieldName: 'previousHash', type: 'string');
+<<<<<<< HEAD
         $this->addType(fieldName: 'importJobId', type: 'string');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end __construct()
 
     /**

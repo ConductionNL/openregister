@@ -32,7 +32,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -152,6 +155,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->logger             = $this->createMock(LoggerInterface::class);
         $cacheHandler             = $this->createMock(CacheHandler::class);
         $settingsService          = $this->createMock(SettingsService::class);
+<<<<<<< HEAD
         $dateTimeNormalizer       = $this->createMock(DateTimeNormalizer::class);
         $dateTimeNormalizer->method('normalize')->willReturnCallback(
             function (?string $input): ?\DateTimeImmutable {
@@ -165,6 +169,8 @@ class ObjectServiceDeepTest extends TestCase
                 }
             }
         );
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->container          = $this->createMock(IAppContainer::class);
 
         $this->service = new ObjectService(
@@ -204,7 +210,10 @@ class ObjectServiceDeepTest extends TestCase
             $this->logger,
             $cacheHandler,
             $settingsService,
+<<<<<<< HEAD
             $dateTimeNormalizer,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->container
         );
 
@@ -353,11 +362,15 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
+<<<<<<< HEAD
      * Test setSchema rethrows DoesNotExistException when not found.
      *
      * setSchema() deliberately rethrows the DoesNotExistException so NC's
      * dispatcher converts it to a 404; wrapping it in ValidationException
      * would surface as a 500. See ObjectService::setSchema().
+=======
+     * Test setSchema throws ValidationException when not found
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
@@ -366,7 +379,11 @@ class ObjectServiceDeepTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
+<<<<<<< HEAD
         $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+=======
+        $this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->service->setSchema('nonexistent');
 
     }//end testSetSchemaThrowsOnNotFound()
@@ -875,6 +892,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->fileService->method('createEntityFolder')
             ->willThrowException(new \Exception('Cannot create folder'));
 
+<<<<<<< HEAD
         // Should not call update since exception is caught before update.
         $this->objectEntityMapper->expects($this->never())
             ->method('update');
@@ -885,6 +903,11 @@ class ObjectServiceDeepTest extends TestCase
         // Folder should remain null since creation failed.
         $this->assertNull($entity->getFolder());
 
+=======
+        // Should not throw - silently handles exception.
+        $this->service->ensureObjectFolderExists($entity);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end testEnsureObjectFolderExistsException()
 
 

@@ -186,6 +186,42 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals(422, $result->getStatus());
     }
 
+<<<<<<< HEAD
+=======
+    public function testClearSpecificCollectionSuccess(): void
+    {
+        $this->indexService->method('clearIndex')
+            ->willReturn(['success' => true]);
+
+        $result = $this->controller->clearSpecificCollection('test_collection');
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['success']);
+        $this->assertEquals('test_collection', $result->getData()['collection']);
+    }
+
+    public function testClearSpecificCollectionFailure(): void
+    {
+        $this->indexService->method('clearIndex')
+            ->willReturn(['success' => false, 'message' => 'Not found']);
+
+        $result = $this->controller->clearSpecificCollection('test_collection');
+
+        $this->assertEquals(422, $result->getStatus());
+        $this->assertFalse($result->getData()['success']);
+    }
+
+    public function testClearSpecificCollectionException(): void
+    {
+        $this->indexService->method('clearIndex')
+            ->willThrowException(new \Exception('Failed'));
+
+        $result = $this->controller->clearSpecificCollection('test_collection');
+
+        $this->assertEquals(422, $result->getStatus());
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetWarmupIntervalWithEmptyLastRun(): void
     {
         // When last_run is empty, the response last_run should be null.
@@ -279,6 +315,31 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
     }
 
+<<<<<<< HEAD
+=======
+    public function testClearSpecificCollectionReturnsCollectionName(): void
+    {
+        $this->indexService->method('clearIndex')->willReturn(['success' => true]);
+
+        $result = $this->controller->clearSpecificCollection('my-index');
+
+        $this->assertEquals('my-index', $result->getData()['collection']);
+        $this->assertEquals('Collection cleared successfully', $result->getData()['message']);
+    }
+
+    public function testClearSpecificCollectionFailureContainsMessage(): void
+    {
+        $this->indexService->method('clearIndex')
+            ->willReturn(['success' => false, 'message' => 'Index not found']);
+
+        $result = $this->controller->clearSpecificCollection('bad-index');
+
+        $this->assertEquals(422, $result->getStatus());
+        $this->assertEquals('Index not found', $result->getData()['message']);
+        $this->assertEquals('bad-index', $result->getData()['collection']);
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     // ── clearAppStoreCache() ──
 
     private function buildFileMock(array $json): ISimpleFile&MockObject

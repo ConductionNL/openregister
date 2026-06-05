@@ -182,11 +182,15 @@ class MdtoXmlGeneratorTest extends TestCase
         array $retention = [],
         array $objectData = []
     ): ObjectEntity&MockObject {
+<<<<<<< HEAD
         $object = $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['jsonSerialize', 'getObject'])
             ->addMethods(['getUuid', 'getRetention'])
             ->getMock();
+=======
+        $object = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $object->method('getUuid')->willReturn($uuid);
         $object->method('getRetention')->willReturn($retention);
         $object->method('getObject')->willReturn($objectData);

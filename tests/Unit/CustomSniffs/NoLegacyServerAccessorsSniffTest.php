@@ -38,6 +38,7 @@ if (defined('PHP_CODESNIFFER_CBF') === false) {
 
 /**
  * NoLegacyServerAccessorsSniffTest — covers positive and negative cases.
+<<<<<<< HEAD
  *
  * The whole test body is skipped pending a PHP_CodeSniffer upgrade:
  * squizlabs/php_codesniffer 3.9 references a `T_ANON_CLASS` constant via
@@ -45,10 +46,13 @@ if (defined('PHP_CODESNIFFER_CBF') === false) {
  * autoloader has registered the ruleset — throwing
  * `Error: Undefined constant "PHP_CodeSniffer\Standards\Generic\Sniffs\Functions\T_ANON_CLASS"`
  * on PHP 8.3+. Re-enable once the app is on PHPCS 3.10+.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 final class NoLegacyServerAccessorsSniffTest extends TestCase
 {
     /**
+<<<<<<< HEAD
      * Skip every case until PHPCS is upgraded.
      *
      * @return void
@@ -64,6 +68,8 @@ final class NoLegacyServerAccessorsSniffTest extends TestCase
     }//end setUp()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Run the sniff against a PHP source snippet and return the error messages.
      *
      * @param string $source Full PHP source including the opening tag.

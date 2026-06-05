@@ -34,7 +34,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+<<<<<<< HEAD
 use OCP\IDBConnection;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
@@ -62,8 +65,12 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase
             $this->registerMapper,
             $this->objectMapper,
             $this->auditTrailMapper,
+<<<<<<< HEAD
             $this->logger,
             $this->createMock(IDBConnection::class)
+=======
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 

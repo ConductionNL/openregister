@@ -34,7 +34,11 @@ use Exception;
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -69,7 +73,11 @@ class CustomValidationException extends Exception
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(string $message, array $errors)
     {
@@ -88,7 +96,11 @@ class CustomValidationException extends Exception
      *
      * @return array<string, string|array<string>> The errors array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getErrors(): array
     {

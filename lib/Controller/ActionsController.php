@@ -5,9 +5,12 @@
  *
  * Controller for handling action management operations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -18,8 +21,11 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -34,9 +40,13 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 
 /**
@@ -44,6 +54,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Actions CRUD exposes
  * index/show/create/update/patch/destroy/test/logs/migrateFromHooks — each maps to a distinct REST
  * verb or utility route required by the Actions feature; collapsing routes would break the REST contract.
@@ -52,6 +63,10 @@ use Psr\Log\LoggerInterface;
  * responsibility (persistence, logging, business logic, auth) and cannot be removed without losing functionality.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is spread across 9 thin public action
  * methods; each method is independently simple. PHPMD accumulates per-method scores into the class total.
+=======
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ActionsController extends Controller
 {
@@ -93,8 +108,11 @@ class ActionsController extends Controller
      * @param ActionLogMapper $actionLogMapper Action log mapper
      * @param ActionService   $actionService   Action service
      * @param LoggerInterface $logger          Logger
+<<<<<<< HEAD
      * @param IUserSession    $userSession     Active session for caller identity.
      * @param IGroupManager   $groupManager    Group manager for admin gating.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -102,9 +120,13 @@ class ActionsController extends Controller
         ActionMapper $actionMapper,
         ActionLogMapper $actionLogMapper,
         ActionService $actionService,
+<<<<<<< HEAD
         LoggerInterface $logger,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager
+=======
+        LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->actionMapper    = $actionMapper;
@@ -114,6 +136,7 @@ class ActionsController extends Controller
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Gate Actions mutations to admin group members.
      *
      * SECURITY: Actions persist as workflow hooks that fire on every
@@ -153,6 +176,8 @@ class ActionsController extends Controller
     }//end requireAdmin()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * List all actions with pagination and filtering
      *
      * @return JSONResponse
@@ -161,6 +186,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.NPathComplexity)      index() handles limit/offset/page/search/filters in one
      * pass to avoid a second DB round-trip; extracting each branch into helpers would add indirection
      * without reducing total paths.
@@ -170,6 +196,10 @@ class ActionsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-5
+=======
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -178,6 +208,7 @@ class ActionsController extends Controller
         try {
             $params = $this->request->getParams();
 
+<<<<<<< HEAD
             $limit = null;
             if (isset($params['_limit']) === true) {
                 $limit = (int) $params['_limit'];
@@ -187,6 +218,10 @@ class ActionsController extends Controller
             if (isset($params['_offset']) === true) {
                 $offset = (int) $params['_offset'];
             }
+=======
+            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
+            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             if (isset($params['_page']) === true && $limit !== null) {
                 $offset = ((int) $params['_page'] - 1) * $limit;
@@ -275,8 +310,11 @@ class ActionsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -302,6 +340,7 @@ class ActionsController extends Controller
     /**
      * Create a new action
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired). Body
      * `requireAdmin()` stays as defence-in-depth.
      *
@@ -319,6 +358,18 @@ class ActionsController extends Controller
             return $denial;
         }
 
+=======
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function create(): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $data = $this->request->getParams();
 
@@ -354,13 +405,17 @@ class ActionsController extends Controller
     /**
      * Update an action (full replacement)
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired). Body
      * `requireAdmin()` stays as defence-in-depth.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
+<<<<<<< HEAD
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
@@ -373,6 +428,16 @@ class ActionsController extends Controller
             return $denial;
         }
 
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function update(int $id): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $data = $this->request->getParams();
 
@@ -403,13 +468,17 @@ class ActionsController extends Controller
     /**
      * Partial update an action
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired); update()
      * also runs requireAdmin() as defence-in-depth.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
+<<<<<<< HEAD
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
@@ -419,18 +488,33 @@ class ActionsController extends Controller
     {
         // RequireAdmin() runs inside update() — no need to duplicate here.
         return $this->update(id: $id);
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update(objectId: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end patch()
 
     /**
      * Soft-delete an action
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired). Body
      * `requireAdmin()` stays as defence-in-depth.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
+<<<<<<< HEAD
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
@@ -443,6 +527,16 @@ class ActionsController extends Controller
             return $denial;
         }
 
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function destroy(int $id): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $action = $this->actionService->deleteAction($id);
 
@@ -463,13 +557,17 @@ class ActionsController extends Controller
     /**
      * Test action with dry-run simulation
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired). Body
      * `requireAdmin()` stays as defence-in-depth.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
+<<<<<<< HEAD
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
@@ -482,6 +580,16 @@ class ActionsController extends Controller
             return $denial;
         }
 
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function test(int $id): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $data = $this->request->getParams();
 
@@ -517,8 +625,11 @@ class ActionsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -526,6 +637,7 @@ class ActionsController extends Controller
     {
         try {
             $params = $this->request->getParams();
+<<<<<<< HEAD
             $limit  = 25;
             if (isset($params['_limit']) === true) {
                 $limit = (int) $params['_limit'];
@@ -535,6 +647,10 @@ class ActionsController extends Controller
             if (isset($params['_offset']) === true) {
                 $offset = (int) $params['_offset'];
             }
+=======
+            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : 25;
+            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : 0;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $logs = $this->actionLogMapper->findByActionId(
                 actionId: $id,
@@ -569,13 +685,17 @@ class ActionsController extends Controller
     /**
      * Migrate inline hooks from a schema to Action entities
      *
+<<<<<<< HEAD
      * Admin-only at the framework level (no @NoAdminRequired). Body
      * `requireAdmin()` stays as defence-in-depth.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $schemaId Schema ID
      *
      * @return JSONResponse
      *
+<<<<<<< HEAD
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
@@ -588,6 +708,16 @@ class ActionsController extends Controller
             return $denial;
         }
 
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function migrateFromHooks(int $schemaId): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $report = $this->actionService->migrateFromHooks($schemaId);
 

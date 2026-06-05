@@ -13,8 +13,13 @@
 			:loading="settingsStore.loadingVersionInfo"
 			:is-up-to-date="true"
 			:show-update-button="true"
+<<<<<<< HEAD
 			:title="t('openregister', 'Version Information')"
 			:description="t('openregister', 'Information about the current OpenRegister installation')">
+=======
+			title="Version Information"
+			description="Information about the current OpenRegister installation">
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			<template #actions>
 				<NcButton
 					type="secondary"
@@ -53,9 +58,12 @@
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
 
+<<<<<<< HEAD
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :push-status="pushStatus" />
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		<!-- n8n Workflow Configuration Section -->
 		<N8nConfiguration />
 
@@ -89,7 +97,10 @@ import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+<<<<<<< HEAD
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
@@ -117,7 +128,10 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+<<<<<<< HEAD
 		PushNotificationsConfiguration,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,

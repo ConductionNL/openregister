@@ -52,6 +52,7 @@ class ContactLinkTest extends TestCase
         $this->assertSame('handler', $link->getRole());
         $this->assertSame('contact-123', $link->getContactUid());
     }
+<<<<<<< HEAD
 
     /**
      * Tier-2: jsonSerialize emits the widened payload (phone / org /
@@ -88,4 +89,6 @@ class ContactLinkTest extends TestCase
 
         $this->assertNull($json['metadata']);
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

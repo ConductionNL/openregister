@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+<<<<<<< HEAD
 namespace Unit\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -9,6 +10,20 @@ use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\AppFramework\Http\TemplateResponse;
+=======
+namespace OCA\Mail\Events {
+    if (!class_exists(\OCA\Mail\Events\BeforeMailTemplateRenderedEvent::class, false)) {
+        class BeforeMailTemplateRenderedEvent extends \OCP\EventDispatcher\Event {}
+    }
+}
+
+namespace Unit\Listener {
+
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
+use OCP\App\IAppManager;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\EventDispatcher\Event;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -55,6 +70,10 @@ class MailAppScriptListenerTest extends TestCase
 
     public function testIgnoresWhenNoUserIsLoggedIn(): void
     {
+<<<<<<< HEAD
+=======
+        // Create a mock event class that appears to be from the Mail app
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $event = $this->createMailEvent();
 
         $this->userSession->method('getUser')->willReturn(null);
@@ -105,6 +124,7 @@ class MailAppScriptListenerTest extends TestCase
     }
 
     /**
+<<<<<<< HEAD
      * Create a mock BeforeTemplateRenderedEvent that looks like a Mail app event.
      *
      * The listener checks for BeforeTemplateRenderedEvent and then
@@ -123,3 +143,18 @@ class MailAppScriptListenerTest extends TestCase
         return $event;
     }
 }
+=======
+     * Create an event that looks like it comes from the Mail app.
+     *
+     * Uses a real class in the OCA\Mail namespace so that get_class()
+     * contains 'OCA\Mail\' as the listener checks.
+     *
+     * @return Event
+     */
+    private function createMailEvent(): Event
+    {
+        return new \OCA\Mail\Events\BeforeMailTemplateRenderedEvent();
+    }
+}
+} // end namespace Unit\Listener
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -5,10 +5,17 @@ status: implemented
 ---
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude GDPR verwerkingsregister REST API — covered by Newman
 GDPR Art 30 processing register API for querying processing activities, generating data subject access reports (inzageverzoek), and exporting the verwerkingsregister. Enables compliance auditing for Dutch government organisations.
 ## Requirements
+=======
+GDPR Art 30 processing register API for querying processing activities, generating data subject access reports (inzageverzoek), and exporting the verwerkingsregister. Enables compliance auditing for Dutch government organisations.
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: The system MUST provide a verwerkingsregister (processing register) API
 A dedicated API endpoint MUST return an overview of all processing activities recorded in the audit trail, grouped by processing activity ID.
 
@@ -65,6 +72,7 @@ An API endpoint MUST allow exporting audit trail entries in JSON or CSV format f
 #### Scenario: Export defaults to JSON
 - **WHEN** a GET request is made to `/api/audit-trails/export` without a `format` parameter
 - **THEN** the system MUST default to JSON format
+<<<<<<< HEAD
 
 ### Requirement: The system MUST provide a CRUD REST surface over the dedicated verwerkingsactiviteiten catalog
 
@@ -114,3 +122,5 @@ Beyond the audit-trail-derived read views, the system MUST expose `Verwerkingsac
 - **WHEN** `verantwoording` runs
 - **THEN** every activity MUST report `{totalEvents: 0, byAction: []}` and the report MUST still return HTTP 200
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

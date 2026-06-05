@@ -3,6 +3,7 @@
 /**
  * Consumer Entity for API client authentication.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,13 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author  Conduction Development Team <dev@conductio.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @link https://OpenRegister.app
  */
@@ -46,8 +54,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAuthorizationConfiguration(?array $authorizationConfiguration)
  * @method string|null getUserId()
  * @method void setUserId(?string $userId)
+<<<<<<< HEAD
  *
  * @SuppressWarnings(PHPMD.LongVariable)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class Consumer extends Entity implements JsonSerializable
 {

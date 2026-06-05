@@ -508,11 +508,15 @@ trait MultiTenancyTrait
             // Audit log the admin cross-tenant override.
             if (isset($this->logger) === true) {
                 $hasGetUid = ($user !== null && method_exists($user, 'getUID'));
+<<<<<<< HEAD
                 $userId    = 'unknown';
                 if ($hasGetUid === true) {
                     $userId = $user->getUID();
                 }
 
+=======
+                $userId    = ($hasGetUid === true) ? $user->getUID() : 'unknown';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $this->logger->info(
                     '[MultiTenancyTrait] Admin override: cross-organisation access granted',
                     [
@@ -742,9 +746,14 @@ trait MultiTenancyTrait
      *
      * @return bool True if user has permission, false otherwise
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.NPathComplexity)       RBAC permission checking requires many conditional paths
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+=======
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC permission checking requires many conditional paths
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function hasRbacPermission(string $action, string $entityType): bool
     {
@@ -756,12 +765,15 @@ trait MultiTenancyTrait
         // Get current user.
         $userId = $this->getCurrentUserId();
         if ($userId === null) {
+<<<<<<< HEAD
             // CLI context (occ commands, repair steps, cron jobs, system listeners) —
             // no user session exists. These are trusted system operations.
             if (PHP_SAPI === 'cli') {
                 return true;
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // No user logged in, deny access.
             return false;
         }

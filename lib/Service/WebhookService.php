@@ -5,9 +5,12 @@
  *
  * Service for handling webhook delivery.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -17,11 +20,19 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-86
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-86
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -42,10 +53,14 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\IRequest;
+<<<<<<< HEAD
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+=======
+use Psr\Log\LoggerInterface;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * WebhookService handles webhook delivery and request interception
@@ -140,6 +155,7 @@ class WebhookService
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Maximum response body size accepted from a webhook target, in bytes (1 MB).
      *
      * Larger bodies are truncated before being persisted in the webhook log to
@@ -205,12 +221,33 @@ class WebhookService
                     $this->assertSafeWebhookUri(uri: (string) $uri);
                 },
             ],
+=======
+     * Initialize HTTP client with default configuration
+     *
+     * Creates a GuzzleHttp\Client instance with appropriate defaults for webhook delivery.
+     * Allows self-signed certificates and configures timeouts appropriately.
+     *
+     * @return void
+     */
+    private function initializeHttpClient(): void
+    {
+        // Prepare Guzzle client configuration.
+        // Allow self-signed certificates for webhook endpoints.
+        // Don't throw exceptions for 4xx/5xx responses (we handle them manually).
+        $clientConfig = [
+            'timeout'         => 30,
+            'connect_timeout' => 10,
+            'verify'          => false,
+            'allow_redirects' => true,
+            'http_errors'     => false,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         $this->client = new GuzzleClient($clientConfig);
     }//end initializeHttpClient()
 
     /**
+<<<<<<< HEAD
      * Validate a webhook target URI against the SSRF allowlist.
      *
      * Webhook URLs are user-controlled, so a tenant could point a webhook at
@@ -565,6 +602,8 @@ class WebhookService
     }//end capResponseBody()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Dispatch event to all matching webhooks
      *
      * @param Event  $_event    The event to dispatch (unused but provided by event system)
@@ -575,8 +614,13 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-86
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-86
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
@@ -639,7 +683,11 @@ class WebhookService
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
      * Fallback for connection errors without response
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
@@ -733,6 +781,7 @@ class WebhookService
 
                 try {
                     $responseBody = (string) $response->getBody();
+<<<<<<< HEAD
                     // Cap the body before persisting it in the webhook log so
                     // a hostile endpoint can't bloat log storage. The version
                     // we echo into structured logs is shorter still and is
@@ -743,6 +792,10 @@ class WebhookService
                         body: $responseBody,
                         url: $webhook->getUrl()
                     );
+=======
+                    $webhookLog->setResponseBody($responseBody);
+                    $errorDetails['response_body'] = $responseBody;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
                     // Try to parse JSON response for better error message.
                     $jsonResponse = json_decode($responseBody, true);
@@ -753,7 +806,11 @@ class WebhookService
                     }
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
+<<<<<<< HEAD
                 }//end try
+=======
+                }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }//end if
 
             // Add request details to error message.
@@ -862,8 +919,11 @@ class WebhookService
      * @param string $key   Dot-notated key
      *
      * @return mixed
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-23
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getNestedValue(array $array, string $key)
     {
@@ -897,7 +957,11 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Three payload format strategies
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
@@ -970,7 +1034,11 @@ class WebhookService
      *
      * @return array|null Transformed payload, or null on failure
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyMappingTransformation(
         int $mappingId,
@@ -1038,8 +1106,11 @@ class WebhookService
      * @param string $eventName Fully qualified event class name
      *
      * @return string Short class name (e.g., "ObjectCreatedEvent")
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-24
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getShortEventName(string $eventName): string
     {
@@ -1063,11 +1134,14 @@ class WebhookService
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {
+<<<<<<< HEAD
         // SSRF guard: validate the webhook target before issuing the request.
         // Redirects are re-validated by the on_redirect callback in
         // initializeHttpClient().
         $this->assertSafeWebhookUri(uri: $webhook->getUrl());
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $headers = array_merge(
             [
                 'Content-Type' => 'application/json',
@@ -1088,9 +1162,16 @@ class WebhookService
         ];
 
         // For GET requests, use query parameters; for others, send JSON body.
+<<<<<<< HEAD
         $payloadKey = 'json';
         if (strtoupper($webhook->getMethod()) === 'GET') {
             $payloadKey = 'query';
+=======
+        if (strtoupper($webhook->getMethod()) === 'GET') {
+            $payloadKey = 'query';
+        } else {
+            $payloadKey = 'json';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $options[$payloadKey] = $payload;
@@ -1101,11 +1182,17 @@ class WebhookService
             options: $options
         );
 
+<<<<<<< HEAD
         // Cap the response body so a misbehaving (or hostile) endpoint cannot
         // exhaust log storage by returning multi-MB responses.
         return [
             'status_code' => $response->getStatusCode(),
             'body'        => $this->capResponseBody(body: (string) $response->getBody()),
+=======
+        return [
+            'status_code' => $response->getStatusCode(),
+            'body'        => (string) $response->getBody(),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end sendRequest()
 
@@ -1137,7 +1224,11 @@ class WebhookService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function scheduleRetry(Webhook $webhook, string $eventName, array $_payload, int $attempt): void
     {
@@ -1186,7 +1277,11 @@ class WebhookService
      *
      * @return int Delay in seconds
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function calculateRetryDelay(Webhook $webhook, int $attempt): int
     {
@@ -1226,10 +1321,13 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex request interception logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
      * Fallback when formatter is unavailable
+<<<<<<< HEAD
      *
      * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
      *   (finds before-event webhooks for the event type, formats the request as a CloudEvent, delivers to each,
      *   and continues past per-webhook failures, returning the request data)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {
@@ -1329,7 +1427,11 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook filtering conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter matching paths
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function findWebhooksForInterception(string $eventType): array
     {
@@ -1390,8 +1492,11 @@ class WebhookService
      * @param string $eventType Event type (e.g., 'object.creating')
      *
      * @return string Event class name (e.g., 'OCA\OpenRegister\Event\ObjectCreatingEvent')
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-25
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function eventTypeToEventClass(string $eventType): string
     {

@@ -3,9 +3,12 @@
 /**
  * Mapper for email link entities.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -20,7 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+<<<<<<< HEAD
 use OCP\AppFramework\Db\DoesNotExistException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -33,6 +39,7 @@ use OCP\IDBConnection;
  */
 class EmailLinkMapper extends QBMapper
 {
+<<<<<<< HEAD
 
     /**
      * Cache for tableExists() result. The schema doesn't change at
@@ -42,6 +49,8 @@ class EmailLinkMapper extends QBMapper
      */
     private ?bool $tableExistsCache = null;
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Constructor.
      *
@@ -53,6 +62,7 @@ class EmailLinkMapper extends QBMapper
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Whether the underlying link table is present in this deployment.
      *
      * Migration `Version1Date20260326100001` drops this table on systems
@@ -123,6 +133,8 @@ class EmailLinkMapper extends QBMapper
     }//end find()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Find email links by object UUID.
      *
      * @param string   $objectUuid The object UUID.
@@ -133,11 +145,14 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectUuid(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
+<<<<<<< HEAD
         // Note: tableExists() short-circuits removed — Doctrine's schema
         // cache can lag manual CREATE TABLE statements (e.g. sandboxes
         // that recreated the table outside the migration framework).
         // The query below catches a real "table missing" via the
         // try/catch wrapper at the call site (provider).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -208,12 +223,16 @@ class EmailLinkMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+<<<<<<< HEAD
             ->andWhere(
                 $qb->expr()->eq(
                     'mail_message_id',
                     $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
                 )
             );
+=======
+            ->andWhere($qb->expr()->eq('mail_message_id', $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         try {
             return $this->findEntity(query: $qb);
@@ -223,6 +242,7 @@ class EmailLinkMapper extends QBMapper
     }//end findByObjectAndMessage()
 
     /**
+<<<<<<< HEAD
      * Find a specific email link by the full composite tuple.
      *
      * Mirrors the unique constraint added in
@@ -310,6 +330,8 @@ class EmailLinkMapper extends QBMapper
     }//end deleteByObjectAndId()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Delete all email links for an object UUID.
      *
      * @param string $objectUuid The object UUID.

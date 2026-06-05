@@ -6,9 +6,12 @@
  * This file contains the class for handling endpoint entity related operations
  * in the OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

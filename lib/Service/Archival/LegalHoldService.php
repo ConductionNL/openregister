@@ -6,9 +6,12 @@
  * Manages legal holds (bevriezing) on register objects, preventing destruction
  * regardless of archival dates. Supports WOB/WOO requests and regulatory investigations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *
@@ -20,7 +23,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -114,8 +121,13 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold applied.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function placeHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -157,8 +169,13 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold released.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function releaseHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -210,7 +227,11 @@ class LegalHoldService
      *
      * @return bool True if the object has an active legal hold.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hasActiveHold(ObjectEntity $object): bool
     {
@@ -227,7 +248,11 @@ class LegalHoldService
      *
      * @return bool True if the retention data indicates an active legal hold.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hasActiveHoldFromRetention(array $retention): bool
     {
@@ -245,8 +270,13 @@ class LegalHoldService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void
     {
@@ -280,7 +310,11 @@ class LegalHoldService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getCurrentUserId(): string
     {

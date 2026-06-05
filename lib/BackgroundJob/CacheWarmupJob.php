@@ -7,9 +7,12 @@
  * cold-start delays. Default interval: 1 hour, configurable via admin settings.
  * Set interval to 0 to disable.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -21,7 +24,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-30
+=======
+ * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-30
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -105,8 +112,11 @@ class CacheWarmupJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {

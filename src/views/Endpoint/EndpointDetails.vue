@@ -92,9 +92,12 @@ export default {
 		TrashCanOutline,
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude detail-view action button wiring; delegates to endpointStore.testEndpoint and surfaces a toast (endpoint test contract owned by oas-validation)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		testEndpoint() {
 			endpointStore.testEndpoint(endpointStore.endpointItem)
 				.then((result) => {

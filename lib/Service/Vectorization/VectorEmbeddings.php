@@ -6,9 +6,12 @@
  * Main entry point for all vector embedding operations.
  * Coordinates handlers for generation, storage, search, and statistics.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -87,8 +90,11 @@ class VectorEmbeddings
      * @throws \Exception If embedding generation fails
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -153,8 +159,11 @@ class VectorEmbeddings
      * @psalm-return array<float>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
@@ -232,8 +241,11 @@ class VectorEmbeddings
      * @param string $testText Optional test text to embed
      *
      * @return array
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -309,8 +321,11 @@ class VectorEmbeddings
      * @return array<int, array{embedding: array<float>, model: string, dimensions: int}> Array of embeddings
      *
      * @throws \Exception If batch embedding generation fails
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateBatchEmbeddings(array $texts, ?string $provider=null): array
     {
@@ -407,8 +422,11 @@ class VectorEmbeddings
      * @return int The ID of the inserted vector
      *
      * @throws \Exception If storage fails
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function storeVector(
         string $entityType,
@@ -452,8 +470,11 @@ class VectorEmbeddings
      * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function semanticSearch(
         string $query,
@@ -488,8 +509,11 @@ class VectorEmbeddings
      * @return array
      *
      * @throws \Exception If hybrid search fails
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hybridSearch(
         string $query,
@@ -529,8 +553,11 @@ class VectorEmbeddings
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int,
      *     source?: 'solr'|'solr_error'|'solr_unavailable'}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getVectorStats(): array
     {
@@ -551,8 +578,11 @@ class VectorEmbeddings
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex model comparison logic
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple database queries and conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Thorough model mismatch detection
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -665,8 +695,11 @@ class VectorEmbeddings
      * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearAllEmbeddings(): array
     {
@@ -724,8 +757,11 @@ class VectorEmbeddings
      * Get the configured vector search backend
      *
      * @return string Vector search backend ('php', 'database', or 'solr')
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getVectorSearchBackend(): string
     {
@@ -750,8 +786,11 @@ class VectorEmbeddings
      *               api_key: string|null, base_url: string|null} Configuration
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Provider-specific configuration mapping
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getEmbeddingConfig(?string $provider=null): array
     {

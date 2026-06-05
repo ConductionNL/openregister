@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+=======
+use OCA\OpenRegister\Db\AuditTrailMapper;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCP\IRequest;
 use OCP\IUser;
@@ -17,6 +21,7 @@ use Psr\Log\LoggerInterface;
 
 class FileAuditHandlerTest extends TestCase
 {
+<<<<<<< HEAD
 
     private FileAuditHandler $handler;
 
@@ -26,6 +31,12 @@ class FileAuditHandlerTest extends TestCase
 
     private IRequest&MockObject $request;
 
+=======
+    private FileAuditHandler $handler;
+    private AuditTrailMapper&MockObject $auditTrailMapper;
+    private IUserSession&MockObject $userSession;
+    private IRequest&MockObject $request;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
@@ -43,7 +54,11 @@ class FileAuditHandlerTest extends TestCase
             $this->request,
             $this->logger
         );
+<<<<<<< HEAD
     }//end setUp()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test authenticated download logging.
@@ -57,7 +72,11 @@ class FileAuditHandlerTest extends TestCase
         $this->logger->expects($this->once())->method('info');
 
         $this->handler->logDownload(42, 'rapport.pdf', 245760, 'application/pdf', 'abc-123');
+<<<<<<< HEAD
     }//end testLogDownloadAuthenticated()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test anonymous download logging includes IP and user-agent.
@@ -71,16 +90,24 @@ class FileAuditHandlerTest extends TestCase
         $this->logger->expects($this->once())->method('info');
 
         $this->handler->logDownload(42, 'rapport.pdf', 245760, 'application/pdf', 'abc-123');
+<<<<<<< HEAD
     }//end testLogDownloadAnonymous()
 
     /**
      * Test bulk download logging persists a SINGLE audit row for the ZIP,
      * not one row per file inside the archive.
+=======
+    }
+
+    /**
+     * Test bulk download logging.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testLogBulkDownload(): void
     {
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('admin');
+<<<<<<< HEAD
         $user->method('getDisplayName')->willReturn('Admin User');
         $this->userSession->method('getUser')->willReturn($user);
 
@@ -156,6 +183,18 @@ class FileAuditHandlerTest extends TestCase
         $this->assertSame('Anonymous', $captured->getUser());
         $this->assertStringContainsString('192.168.1.50', $captured->getUserName());
     }//end testLogBulkDownloadAnonymous()
+=======
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->logger->expects($this->once())->method('info');
+
+        $this->handler->logBulkDownload(
+            [42, 43, 44],
+            ['file1.pdf', 'file2.pdf', 'file3.pdf'],
+            'abc-123'
+        );
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test download logging does not throw even if internal error.
@@ -167,6 +206,7 @@ class FileAuditHandlerTest extends TestCase
         // Should not propagate exception.
         $this->handler->logDownload(42, 'test.pdf', 1024, 'application/pdf', 'abc-123');
         $this->assertTrue(true);
+<<<<<<< HEAD
     }//end testLogDownloadDoesNotThrow()
 
     /**
@@ -283,3 +323,7 @@ class FileAuditHandlerTest extends TestCase
         $this->handler->logFileAction($object, 42, 'file.unlocked', ['force' => false]);
     }//end testLogFileActionFallsBackToSystemUser()
 }//end class
+=======
+    }
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

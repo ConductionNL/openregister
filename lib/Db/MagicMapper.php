@@ -20,9 +20,12 @@
  * - Schema property columns mapped from JSON schema to SQL types
  * - Automatic indexing for performance optimization
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -153,7 +156,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.LongVariable)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class MagicMapper extends AbstractObjectMapper
 {
@@ -296,6 +302,16 @@ class MagicMapper extends AbstractObjectMapper
     private ?bool $hasPgTrgm = null;
 
     /**
+<<<<<<< HEAD
+=======
+     * Count of constructor calls.
+     *
+     * @var integer
+     */
+    private static int $constructCount = 0;
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Constructor for MagicMapper service.
      *
      * Initializes the service with required dependencies for database operations,
@@ -330,6 +346,7 @@ class MagicMapper extends AbstractObjectMapper
         private readonly SettingsService $settingsService,
         private readonly ContainerInterface $container
     ) {
+<<<<<<< HEAD
         // Initialize specialized handlers for modular functionality.
         //
         // The circular-construction guard that lived here previously (#1564)
@@ -350,6 +367,24 @@ class MagicMapper extends AbstractObjectMapper
         // If a future change re-introduces either pattern, restoring a
         // static `$constructCount` is the documented escape hatch — see
         // issue #1564 for the original trigger conditions.
+=======
+        self::$constructCount++;
+        file_put_contents(
+            '/tmp/or-debug.log',
+            "MagicMapper::__construct #".self::$constructCount."\n",
+            FILE_APPEND
+        );
+        if (self::$constructCount > 2) {
+            file_put_contents(
+                '/tmp/or-debug.log',
+                "CIRCULAR! Stack:\n".(new Exception())->getTraceAsString()."\n",
+                FILE_APPEND
+            );
+            return;
+        }
+
+        // Initialize specialized handlers for modular functionality.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->initializeHandlers();
     }//end __construct()
 
@@ -1196,9 +1231,16 @@ class MagicMapper extends AbstractObjectMapper
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
+<<<<<<< HEAD
                         $dir = 'ASC';
                         if (strtoupper($direction) === 'DESC') {
                             $dir = 'DESC';
+=======
+                        if (strtoupper($direction) === 'DESC') {
+                            $dir = 'DESC';
+                        } else {
+                            $dir = 'ASC';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                         }
 
                         $orderClauses[] = "_search_score {$dir}";
@@ -1211,6 +1253,7 @@ class MagicMapper extends AbstractObjectMapper
                 // Translate field name to column name.
                 $columnName = $this->sanitizeColumnName(name: $field);
                 if (str_starts_with($field, '@self.') === true) {
+<<<<<<< HEAD
                     // Metadata fields: sanitize the bare name, then validate against
                     // the known METADATA_PREFIX column allowlist before quoting.
                     // Without this allowlist, raw user input was concatenated into
@@ -1228,6 +1271,9 @@ class MagicMapper extends AbstractObjectMapper
                         name: $candidateColumn,
                         isPostgres: $isPostgres
                     );
+=======
+                    $columnName = self::METADATA_PREFIX.substr($field, 6);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 } else if (str_starts_with($field, '_') === false) {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
@@ -1236,11 +1282,20 @@ class MagicMapper extends AbstractObjectMapper
                         name: $this->sanitizeColumnName(name: $field),
                         isPostgres: $isPostgres
                     );
+<<<<<<< HEAD
                 }//end if
 
                 $dir = 'ASC';
                 if (strtoupper($direction) === 'DESC') {
                     $dir = 'DESC';
+=======
+                }
+
+                if (strtoupper($direction) === 'DESC') {
+                    $dir = 'DESC';
+                } else {
+                    $dir = 'ASC';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
 
                 $orderClauses[] = "{$columnName} {$dir}";
@@ -1255,10 +1310,15 @@ class MagicMapper extends AbstractObjectMapper
         }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
+<<<<<<< HEAD
         // Cast + clamp at the boundary so raw user input cannot reach the
         // interpolated SQL string (SQL injection via _limit / _offset).
         $limit     = max(1, min(1000, (int) ($query['_limit'] ?? 100)));
         $offset    = max(0, (int) ($query['_offset'] ?? 0));
+=======
+        $limit     = $query['_limit'] ?? 100;
+        $offset    = $query['_offset'] ?? 0;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $unionSql .= " LIMIT {$limit} OFFSET {$offset}";
 
         // Execute the combined query.
@@ -1305,7 +1365,10 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.UnusedLocalVariable)   `$_` is the conventional ignore name in the metadata-column foreach
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildUnionSelectPart(
         string $tableName,
@@ -1323,6 +1386,7 @@ class MagicMapper extends AbstractObjectMapper
         // Add table prefix.
         $fullTableName = 'oc_'.$tableName;
 
+<<<<<<< HEAD
         // Get metadata column names, checking each exists in this table.
         // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
         // Cast to text for UNION type compatibility (some columns are jsonb, others text).
@@ -1336,6 +1400,13 @@ class MagicMapper extends AbstractObjectMapper
 
             $selectColumns[] = "NULL::text AS {$metaCol}";
         }
+=======
+        // Get metadata column names (common across all tables).
+        $metadataColumns = array_keys($this->getMetadataColumns());
+
+        // Base SELECT with metadata columns.
+        $selectColumns = $metadataColumns;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         /*
          * Every SELECT in the UNION must have identical columns in the same order.
@@ -1356,9 +1427,16 @@ class MagicMapper extends AbstractObjectMapper
                 isPostgres: $isPostgres
             );
             // Absent column: emit a typed NULL placeholder.
+<<<<<<< HEAD
             $colExpr = "NULL AS {$quotedCol}";
             if ($isPostgres === true) {
                 $colExpr = "NULL::text AS {$quotedCol}";
+=======
+            if ($isPostgres === true) {
+                $colExpr = "NULL::text AS {$quotedCol}";
+            } else {
+                $colExpr = "NULL AS {$quotedCol}";
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             $columnInTable = $this->columnExistsInTable(
@@ -1367,9 +1445,16 @@ class MagicMapper extends AbstractObjectMapper
             );
             if ($columnInTable === true) {
                 // Present column: cast to text for cross-schema type compatibility.
+<<<<<<< HEAD
                 $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
                 if ($isPostgres === true) {
                     $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+=======
+                if ($isPostgres === true) {
+                    $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                } else {
+                    $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
 
                 $existingColumns[] = $columnName;
@@ -1414,9 +1499,12 @@ class MagicMapper extends AbstractObjectMapper
                         isPostgres: $isPostgres
                     );
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
+<<<<<<< HEAD
                     // MariaDB/MySQL default: ILIKE and similarity() are unavailable;
                     // use case-sensitive LIKE with a standard CAST instead.
                     $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     if ($isPostgres === true) {
                         // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
                         // fall back to ILIKE when pg_trgm is unavailable.
@@ -1424,6 +1512,13 @@ class MagicMapper extends AbstractObjectMapper
                         if ($hasTrgm === true) {
                             $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
                         }
+<<<<<<< HEAD
+=======
+                    } else {
+                        // MariaDB/MySQL: ILIKE and similarity() are unavailable;
+                        // use case-sensitive LIKE with a standard CAST instead.
+                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     }
 
                     $searchColumns[] = $scoreExpr;
@@ -2355,6 +2450,7 @@ class MagicMapper extends AbstractObjectMapper
                         'comment'  => 'Object reference (UUID)',
                     ];
                 }//end if
+<<<<<<< HEAD
 
                 // For object-typed properties, use an order-preserving JSON column type.
                 // PostgreSQL JSONB hashes keys and loses client-supplied insertion order, which
@@ -2373,6 +2469,8 @@ class MagicMapper extends AbstractObjectMapper
                         'comment'  => 'Order-preserving JSON (object-typed schema property)',
                     ];
                 }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 return [
                     'name'     => $columnName,
                     'type'     => 'json',
@@ -2701,6 +2799,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // Add UNIQUE constraints (required for PostgreSQL ON CONFLICT).
+<<<<<<< HEAD
             // Constraints are named explicitly so MySQL/MariaDB doesn't fall
             // back to using the column name as the constraint/index name,
             // which collides across tables (e.g. every dynamic table getting
@@ -2715,6 +2814,10 @@ class MagicMapper extends AbstractObjectMapper
                 }
 
                 $sql .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';
+=======
+            foreach ($uniqueConstraints as $uniqueCol) {
+                $sql .= ', UNIQUE ('.$uniqueCol.')';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             $sql .= ')';
@@ -2790,6 +2893,7 @@ class MagicMapper extends AbstractObjectMapper
                     return 'JSONB';
                 }
                 return 'JSON';
+<<<<<<< HEAD
             case 'json_ordered':
                 // Order-preserving JSON storage for object-typed schema properties.
                 // PostgreSQL JSONB hashes keys and loses insertion order; the JSON type
@@ -2797,6 +2901,8 @@ class MagicMapper extends AbstractObjectMapper
                 // order (LONGTEXT-backed), so the same type label maps to JSON on both
                 // platforms. See issue #1720.
                 return 'JSON';
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             default:
                 return 'TEXT';
         }//end switch
@@ -3065,6 +3171,7 @@ class MagicMapper extends AbstractObjectMapper
         $data     = $objectData;
         unset($data['@self']);
 
+<<<<<<< HEAD
         // SECURITY (wave-7 CRITICAL C2 — @self allowlist enforcement):
         // Clients must not be able to overwrite server-controlled fields via the @self
         // block. The primary defence for field-level injection lives in
@@ -3105,6 +3212,16 @@ class MagicMapper extends AbstractObjectMapper
         // never accept client-supplied values, even when non-empty.
         $metadata['register'] = $register->getId();
         $metadata['schema']   = $schema->getId();
+=======
+        // Ensure register and schema IDs are set correctly.
+        if (empty($metadata['register']) === true) {
+            $metadata['register'] = $register->getId();
+        }
+
+        if (empty($metadata['schema']) === true) {
+            $metadata['schema'] = $schema->getId();
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Map metadata fields with prefix.
         $metadataFields = [
@@ -3280,9 +3397,16 @@ class MagicMapper extends AbstractObjectMapper
                             $cleanedArray[] = $item;
                         }
 
+<<<<<<< HEAD
                         $value = $cleanedArray;
                         if (empty($cleanedArray) === true) {
                             $value = null;
+=======
+                        if (empty($cleanedArray) === true) {
+                            $value = null;
+                        } else {
+                            $value = $cleanedArray;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                         }
                     }//end if
 
@@ -3302,12 +3426,20 @@ class MagicMapper extends AbstractObjectMapper
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
                     if (is_bool($value) === true) {
+<<<<<<< HEAD
                         $boolInt = 0;
                         if ($value === true) {
                             $boolInt = 1;
                         }
 
                         $value = $boolInt;
+=======
+                        if ($value === true) {
+                            $value = 1;
+                        } else {
+                            $value = 0;
+                        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     }
 
                     // Convert complex types to JSON.
@@ -3765,6 +3897,7 @@ class MagicMapper extends AbstractObjectMapper
 
         $columnsDeRequired = array_merge($columnsDeRequired, $obsoleteDeRequired);
 
+<<<<<<< HEAD
         // 7. Migrate object-typed columns from JSONB to JSON to preserve insertion order.
         // PostgreSQL JSONB normalises key order; for schema properties of `type: object`
         // (which use object-keyed semantics like openconnector mapping rules) clients
@@ -3776,6 +3909,8 @@ class MagicMapper extends AbstractObjectMapper
             isPostgres: $isPostgres
         );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->logger->info(
             message: '[MagicMapper] Successfully updated table structure',
             context: [
@@ -3786,7 +3921,10 @@ class MagicMapper extends AbstractObjectMapper
                 'columnsDeRequired' => $columnsDeRequired,
                 'columnsReRequired' => $columnsReRequired,
                 'columnsDropped'    => $columnsDropped,
+<<<<<<< HEAD
                 'columnsRetyped'    => $columnsRetyped,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ]
         );
 
@@ -3796,11 +3934,15 @@ class MagicMapper extends AbstractObjectMapper
             'columnsDeRequired' => $columnsDeRequired,
             'columnsReRequired' => $columnsReRequired,
             'columnsDropped'    => $columnsDropped,
+<<<<<<< HEAD
             'columnsRetyped'    => $columnsRetyped,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end updateTableStructure()
 
     /**
+<<<<<<< HEAD
      * Identify object-typed columns still backed by PostgreSQL JSONB that need retyping
      * to JSON for key-order preservation (issue #1720).
      *
@@ -3936,6 +4078,8 @@ class MagicMapper extends AbstractObjectMapper
     }//end migrateJsonbToJsonForOrderedColumns()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Quote a column or identifier name for the current database platform.
      *
      * @param string $name       The unquoted identifier name.
@@ -6102,6 +6246,7 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
 
         try {
+<<<<<<< HEAD
             // MySQL default: use JSON_SEARCH to find the ID as a value in the array.
             $sql = "SELECT * FROM {$fullTableName}
                     WHERE _deleted IS NULL
@@ -6117,6 +6262,21 @@ class MagicMapper extends AbstractObjectMapper
                         WHERE (_deleted IS NULL OR _deleted::text = 'null')
                         AND {$columnName} IS NOT NULL
                         AND {$columnName}::jsonb @> to_jsonb(?::text)
+=======
+            if ($isPostgres === true) {
+                // PostgreSQL: use JSONB containment operator.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                        AND {$columnName} IS NOT NULL
+                        AND {$columnName} @> to_jsonb(?::text)
+                        LIMIT 100";
+            } else {
+                // MySQL: use JSON_SEARCH to find the ID as a value in the array.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE _deleted IS NULL
+                        AND {$columnName} IS NOT NULL
+                        AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                         LIMIT 100";
             }
 
@@ -6757,8 +6917,12 @@ class MagicMapper extends AbstractObjectMapper
                 register: $register,
                 schema: $schema,
                 _rbac: $_rbac,
+<<<<<<< HEAD
                 _multitenancy: $_multitenancy,
                 includeDeleted: $includeDeleted
+=======
+                _multitenancy: $_multitenancy
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             );
             $entity->setSource('orm');
             return $entity;

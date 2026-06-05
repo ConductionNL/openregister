@@ -29,7 +29,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\Files\IRootFolder;
@@ -93,9 +96,12 @@ class TextExtractionServiceGapTest extends TestCase
     /** @var MockObject|RiskLevelService */
     private $riskLevelService;
 
+<<<<<<< HEAD
     /** @var MockObject|EmlParser */
     private $emlParser;
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Set up test dependencies
      *
@@ -116,6 +122,7 @@ class TextExtractionServiceGapTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->settingsService      = $this->createMock(SettingsService::class);
         $this->riskLevelService     = $this->createMock(RiskLevelService::class);
+<<<<<<< HEAD
         $this->emlParser            = $this->createMock(EmlParser::class);
 
         $this->service = new TextExtractionService(
@@ -133,6 +140,23 @@ class TextExtractionServiceGapTest extends TestCase
             settingsService: $this->settingsService,
             riskLevelService: $this->riskLevelService,
             emlParser: $this->emlParser,
+=======
+
+        $this->service = new TextExtractionService(
+            $this->fileMapper,
+            $this->chunkMapper,
+            $this->rootFolder,
+            $this->db,
+            $this->logger,
+            $this->objectMapper,
+            $this->schemaMapper,
+            $this->registerMapper,
+            $this->entityHandler,
+            $this->entityMapper,
+            $this->entityRelationMapper,
+            $this->settingsService,
+            $this->riskLevelService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 

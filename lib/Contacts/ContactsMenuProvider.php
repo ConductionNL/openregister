@@ -6,6 +6,7 @@
  * Nextcloud Contacts Menu provider that bridges Contacts/CardDAV
  * with OpenRegister entity data.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Contacts
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Contacts
+ * @package  OCA\OpenRegister\Contacts
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -103,7 +110,11 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         ContactMatchingService $matchingService,
@@ -128,7 +139,11 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function process(IEntry $entry): void
     {
@@ -152,7 +167,11 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function doProcess(IEntry $entry): void
     {
@@ -167,6 +186,7 @@ class ContactsMenuProvider implements IProvider
         }
 
         // Match contact against OpenRegister entities.
+<<<<<<< HEAD
         $organizationString = null;
         if (is_string($organization) === true) {
             $organizationString = $organization;
@@ -176,6 +196,12 @@ class ContactsMenuProvider implements IProvider
             $primaryEmail,
             $fullName,
             $organizationString
+=======
+        $matches = $this->matchingService->matchContact(
+            $primaryEmail,
+            $fullName,
+            is_string($organization) === true ? $organization : null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
 
         if (empty($matches) === true) {
@@ -198,7 +224,11 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
     {
@@ -238,7 +268,11 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function injectEntityActions(
         IEntry $entry,
@@ -272,8 +306,12 @@ class ContactsMenuProvider implements IProvider
                 ).'#/objects/'.urlencode($uuid);
             }
 
+<<<<<<< HEAD
             $resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
             $icon         = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+=======
+            $icon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId) ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $label = $this->l10n->t('View in OpenRegister').' ('.($match['title'] ?? 'Unknown').')';
 

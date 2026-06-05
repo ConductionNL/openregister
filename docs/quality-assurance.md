@@ -2,6 +2,7 @@
 
 This document describes the quality assurance tools and processes used in the OpenRegister application and all Conduction Nextcloud apps.
 
+<<<<<<< HEAD
 ## CI Gate — `composer check:strict`
 
 The authoritative pre-merge gate is:
@@ -30,6 +31,8 @@ Burn-down progress is tracked in issue #25 and spec
 fallback that causes PHPMD to exit 0 even when violations exist. This will be fixed once
 all violations are cleared (see task 5.2 in the burn-down spec).
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Overview
 
 We use two main tools for quality assurance:

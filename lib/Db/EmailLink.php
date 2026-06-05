@@ -3,9 +3,12 @@
 /**
  * EmailLink entity for linking Nextcloud Mail messages to OpenRegister objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -33,8 +36,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setObjectUuid(string $objectUuid)
  * @method int getRegisterId()
  * @method void setRegisterId(int $registerId)
+<<<<<<< HEAD
  * @method int|null getSchemaId()
  * @method void setSchemaId(?int $schemaId)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method int getMailAccountId()
  * @method void setMailAccountId(int $mailAccountId)
  * @method int getMailMessageId()
@@ -45,10 +51,15 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSubject(?string $subject)
  * @method string|null getSender()
  * @method void setSender(?string $sender)
+<<<<<<< HEAD
  * @method DateTime|null getMailDate()
  * @method void setMailDate(?DateTime $mailDate)
  * @method string|null getMetadata()
  * @method void setMetadata(?string $metadata)
+=======
+ * @method DateTime|null getDate()
+ * @method void setMailDate(?DateTime $mailDate)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method string getLinkedBy()
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
@@ -74,6 +85,7 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?int $registerId = null;
 
     /**
+<<<<<<< HEAD
      * The schema id (nullable).
      *
      * @var integer|null
@@ -81,6 +93,8 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?int $schemaId = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * The mail account id.
      *
      * @var integer|null
@@ -123,6 +137,7 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?DateTime $mailDate = null;
 
     /**
+<<<<<<< HEAD
      * Free-form metadata (JSON-encoded string) for future per-row hints.
      *
      * @var string|null
@@ -130,6 +145,8 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?string $metadata = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * The linked by.
      *
      * @var string|null
@@ -150,14 +167,20 @@ class EmailLink extends Entity implements JsonSerializable
     {
         $this->addType(fieldName: 'objectUuid', type: 'string');
         $this->addType(fieldName: 'registerId', type: 'integer');
+<<<<<<< HEAD
         $this->addType(fieldName: 'schemaId', type: 'integer');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'mailAccountId', type: 'integer');
         $this->addType(fieldName: 'mailMessageId', type: 'integer');
         $this->addType(fieldName: 'mailMessageUid', type: 'string');
         $this->addType(fieldName: 'subject', type: 'string');
         $this->addType(fieldName: 'sender', type: 'string');
         $this->addType(fieldName: 'mailDate', type: 'datetime');
+<<<<<<< HEAD
         $this->addType(fieldName: 'metadata', type: 'string');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'linkedBy', type: 'string');
         $this->addType(fieldName: 'linkedAt', type: 'datetime');
     }//end __construct()
@@ -173,14 +196,20 @@ class EmailLink extends Entity implements JsonSerializable
             'id'             => $this->id,
             'objectUuid'     => $this->objectUuid,
             'registerId'     => $this->registerId,
+<<<<<<< HEAD
             'schemaId'       => $this->schemaId,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'mailAccountId'  => $this->mailAccountId,
             'mailMessageId'  => $this->mailMessageId,
             'mailMessageUid' => $this->mailMessageUid,
             'subject'        => $this->subject,
             'sender'         => $this->sender,
             'mailDate'       => $this->mailDate?->format(DateTime::ATOM),
+<<<<<<< HEAD
             'metadata'       => $this->metadata,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'linkedBy'       => $this->linkedBy,
             'linkedAt'       => $this->linkedAt?->format(DateTime::ATOM),
         ];

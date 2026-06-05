@@ -6,8 +6,11 @@ status: implemented
 
 ## Purpose
 
+<<<<<<< HEAD
 @e2e exclude CI infrastructure spec — no UI surface
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 OpenRegister SHALL be fully tested on both PostgreSQL and MariaDB through a cost-efficient 2-line CI matrix that piggybacks the database difference onto the PHP version split, ensuring that database-specific code paths (JSONB vs JSON, GIN indexes vs B-tree, pg_trgm vs LIKE, PostgreSQL containment operators vs JSON_CONTAINS) are exercised in CI rather than only discovered in production. Blob storage (Normal mode) is removed — only MagicMapper (dedicated SQL tables per schema) is supported.
 
 ## Current State
@@ -19,7 +22,13 @@ OpenRegister SHALL be fully tested on both PostgreSQL and MariaDB through a cost
 - All jobs pin to a single Nextcloud version (`stable32`)
 - `MagicSearchHandler` uses PostgreSQL-specific syntax (`::jsonb`, `@>`, `jsonb_typeof`, `jsonb_each_text`, `to_jsonb`) without MariaDB/MySQL fallbacks — these will fail on MariaDB until database-aware branching is added
 - `MagicFacetHandler` has some MariaDB branches but `MagicSearchHandler` and `MagicBulkHandler` have incomplete coverage
+<<<<<<< HEAD
 ## Requirements
+=======
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: 2-Line CI Matrix Covering Both Databases and Nextcloud Versions
 
 The CI SHALL run exactly **2 parallel integration test jobs**, each combining a unique PHP version, Nextcloud version, and database:
@@ -475,6 +484,7 @@ The testing documentation SHALL be updated to reflect:
   - `lib/Db/MagicMapper/MagicFacetHandler.php` -- MagicMapper facets (partial platform branching)
   - `lib/Db/MagicMapper/MagicStatisticsHandler.php` -- statistics (has platform detection)
 
+<<<<<<< HEAD
 ### Requirement: Date-histogram bucket coverage on MariaDB
 
 The `MagicFacetHandlerIntegrationTest` suite MUST run on a MariaDB-enabled dev container with zero modifications and zero failures, and an additional set of MariaDB-specific date-histogram bucket tests MUST pass covering every interval the spec promises (year / month / day / week-ISO / quarter / hour) with explicit ISO 8601 week correctness at year boundaries — the regression that motivated the `'%Y-%u'` → `'%x-%v'` swap in `MariaDbFacetHandler`.
@@ -515,6 +525,8 @@ Every `workflow-operations` Phase 1 migration (`Version1Date2026032*` family) MU
 - **AND** the same SHALL hold for `oc_openregister_scheduled_workflows` /
   `oc_openregister_approval_chains` / `oc_openregister_approval_steps`
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Estimated Scope
 
 | Change | Files Affected |

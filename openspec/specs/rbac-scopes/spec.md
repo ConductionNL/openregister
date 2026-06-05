@@ -8,8 +8,11 @@ status: in-progress
 - `unify-rbac-condition-matching` (active) — collapses `PermissionHandler::evaluateMatchConditions` and `MagicRbacHandler`'s private PHP-side condition matcher onto the shared `ConditionMatcher` service, so schema-level RBAC honours the full operator set (`$eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists`) and dynamic variables (`$organisation/$userId/$now`) that the SQL and property layers already support. Fixes OpenCatalogi `PublicationsController::attachments` throwing on schemas with operator-based `public`-with-match rules.
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend RBAC OAS scope builder — covered by PHPUnit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Validate and extend OpenRegister's existing three-level RBAC system. The core RBAC is already implemented via PermissionHandler (schema-level), MagicRbacHandler (row-level SQL filtering), and PropertyRbacHandler (field-level). This spec documents the existing behavior as requirements and identifies extensions needed for scope management APIs, caching, and audit. Specifically, it maps the existing hierarchical RBAC model (register, schema, object, property) to standard OAuth2 scopes in the generated OpenAPI Specification, and validates that per-operation security requirements are correctly enforced so that API consumers can discover and request the precise group-based permissions they need. The scope system bridges Nextcloud's native group management with standardised OAuth2/OAS security semantics, enabling external API consumers, ZGW-compliant systems, and MCP clients to understand and negotiate access programmatically.
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype; ZGW Autorisaties API compliance.
@@ -24,7 +27,13 @@ This spec primarily documents and validates existing functionality, with targete
 - **Scope caching (fully implemented)**: `MagicRbacHandler.$cachedActiveOrg`, `ConditionMatcher.$cachedActiveOrg`, `OasService.$schemaRbacMap`.
 - **Consumer identity mapping (fully implemented)**: `Consumer` entity with `userId` field, `AuthorizationService` resolving all auth methods to Nextcloud users.
 - **What this spec adds as extensions**: Register-level default authorization cascade, permission matrix UI for administrators, scope migration tooling for group renames, and explicit RBAC policy change audit logging.
+<<<<<<< HEAD
 ## Requirements
+=======
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Scope Model Hierarchy (Register > Schema > Object > Property)
 The RBAC scope model SHALL follow a four-level hierarchy: register-level scopes govern access to an entire register and serve as defaults for schemas without their own authorization, schema-level scopes control CRUD operations per schema (zaaktype/objecttype), object-level scopes apply to individual records via conditional matching, and property-level scopes restrict visibility and mutability of specific fields. Each level MUST be independently configurable via the `authorization` JSON structure. Register-level authorization SHALL cascade to schemas that do not define their own authorization block. Named roles defined at register level SHALL be expandable in authorization blocks at any level.
 
@@ -541,6 +550,7 @@ The frontend MUST be able to determine the current user's effective permissions 
 - **THEN** it MUST find the OAuth2 scopes required for creating objects
 - **AND** it can compare these against the current user's groups to determine if the "Create" button should be shown
 
+<<<<<<< HEAD
 ### Requirement: Effective-Scope Discovery API
 
 The system MUST expose an effective-scope discovery endpoint so clients
@@ -629,6 +639,8 @@ When `PermissionHandler` evaluates an action that is NOT one of the canonical fi
 - **THEN** `getVerdict()` MUST return `true` and `isFromListener()` MUST return `true`
 - **AND** `getSchema()`, `getAction()`, and `getUserId()` MUST mirror the evaluating event's context
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## ZGW Autorisaties Mapping Guide
 
 OpenRegister's existing group-based RBAC maps directly to ZGW autorisaties concepts. No additional code is required -- this is a configuration and documentation concern.

@@ -20,16 +20,25 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Db\MagicMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\ObjectEntity;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -54,6 +63,7 @@ class DeletedController extends Controller
     /**
      * Constructor for the DeletedController
      *
+<<<<<<< HEAD
      * @param string            $appName            The name of the app
      * @param IRequest          $request            The request object
      * @param MagicMapper       $objectEntityMapper The object entity mapper
@@ -63,6 +73,16 @@ class DeletedController extends Controller
      * @param IUserSession      $userSession        The user session
      * @param IGroupManager     $groupManager       The group manager for admin checks
      * @param PermissionHandler $permissionHandler  Handler for per-schema RBAC checks
+=======
+     * @param string         $appName            The name of the app
+     * @param IRequest       $request            The request object
+     * @param MagicMapper    $objectEntityMapper The object entity mapper
+     * @param RegisterMapper $registerMapper     The register mapper
+     * @param SchemaMapper   $schemaMapper       The schema mapper
+     * @param ObjectService  $objectService      The object service
+     * @param IUserSession   $userSession        The user session
+     * @param IGroupManager  $groupManager       The group manager for admin checks
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
@@ -74,8 +94,12 @@ class DeletedController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
+<<<<<<< HEAD
         private readonly IGroupManager $groupManager,
         private readonly PermissionHandler $permissionHandler
+=======
+        private readonly IGroupManager $groupManager
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -92,6 +116,7 @@ class DeletedController extends Controller
             return false;
         }
 
+<<<<<<< HEAD
         return (bool) $this->groupManager->isAdmin($user->getUID());
     }//end isCurrentUserAdmin()
 
@@ -152,6 +177,12 @@ class DeletedController extends Controller
     }//end userMayActOnDeletedObject()
 
     /**
+=======
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Helper method to extract request parameters for deleted objects
      *
      * @return array Request parameters including pagination and filters
@@ -253,7 +284,11 @@ class DeletedController extends Controller
      *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
      *     array<never, never>>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -325,8 +360,11 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function statistics(): JSONResponse
     {
@@ -383,8 +421,11 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with top deleters data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function topDeleters(): JSONResponse
     {
@@ -419,7 +460,11 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with restore result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function restore(string $id): JSONResponse
     {
@@ -462,12 +507,18 @@ class DeletedController extends Controller
     /**
      * Restore multiple deleted objects
      *
+<<<<<<< HEAD
      * Each soft-deleted object is gated through PermissionHandler with the
      * `update` action against the object's resolved schema. Admins bypass.
      * Objects whose schema cannot be resolved or for which the caller lacks
      * `update` permission are skipped (counted as `failed`) so a partial
      * cross-tenant bulk restore cannot succeed silently. This closes the
      * wave-3 C4 finding (no RBAC on `restoreMultiple`).
+=======
+     * TODO: This function is unsafe as it doesn't filter by register/schema.
+     * In the future, add register and schema filtering to mass operations
+     * to prevent cross-register restoring.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @NoAdminRequired
      *
@@ -475,7 +526,11 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple restore result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function restoreMultiple(): JSONResponse
     {
@@ -527,6 +582,7 @@ class DeletedController extends Controller
                         continue;
                     }
 
+<<<<<<< HEAD
                     // Per-object RBAC gate: caller must have `update`
                     // permission on the resolved schema (admins bypass).
                     // Cross-tenant restores are silently dropped (counted
@@ -536,6 +592,8 @@ class DeletedController extends Controller
                         continue;
                     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $object->setDeleted(null);
                     $this->objectEntityMapper->update(entity: $object);
                     $restored++;
@@ -583,7 +641,11 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with deletion result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(string $id): JSONResponse
     {
@@ -606,6 +668,7 @@ class DeletedController extends Controller
                 );
             }
 
+<<<<<<< HEAD
             // Per-object RBAC gate: caller must have `delete` permission on
             // the resolved schema (admins bypass). Cross-tenant destructive
             // deletes are refused with 403 — no silent fail since this is a
@@ -617,6 +680,8 @@ class DeletedController extends Controller
                 );
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Permanently delete the object.
             $this->objectEntityMapper->delete($object);
 
@@ -639,12 +704,18 @@ class DeletedController extends Controller
     /**
      * Permanently delete multiple objects
      *
+<<<<<<< HEAD
      * Each soft-deleted object is gated through PermissionHandler with the
      * `delete` action against the object's resolved schema. Admins bypass.
      * Objects whose schema cannot be resolved or for which the caller lacks
      * `delete` permission are skipped (counted as `failed`) so a partial
      * cross-tenant bulk wipe cannot succeed silently. This closes the
      * wave-3 C4 finding (no RBAC on `destroyMultiple`).
+=======
+     * TODO: This function is unsafe as it doesn't filter by register/schema.
+     * In the future, add register and schema filtering to mass operations
+     * to prevent cross-register deleting.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @NoAdminRequired
      *
@@ -652,7 +723,11 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroyMultiple(): JSONResponse
     {
@@ -704,6 +779,7 @@ class DeletedController extends Controller
                         continue;
                     }
 
+<<<<<<< HEAD
                     // Per-object RBAC gate: caller must have `delete`
                     // permission on the resolved schema (admins bypass).
                     if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
@@ -711,6 +787,8 @@ class DeletedController extends Controller
                         continue;
                     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $this->objectEntityMapper->delete($object);
                     $deleted++;
                 } catch (\Exception $e) {

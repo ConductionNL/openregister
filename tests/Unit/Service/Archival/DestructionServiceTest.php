@@ -49,11 +49,15 @@ class DestructionServiceTest extends TestCase
     {
         parent::setUp();
 
+<<<<<<< HEAD
         $this->objectMapper     = $this->getMockBuilder(MagicMapper::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['update'])
             ->addMethods(['findByUuid'])
             ->getMock();
+=======
+        $this->objectMapper     = $this->createMock(MagicMapper::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->legalHoldService = $this->createMock(LegalHoldService::class);
         $this->deleteObject     = $this->createMock(DeleteObject::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -157,11 +161,15 @@ class DestructionServiceTest extends TestCase
         $this->setupMockUser('archivaris-1');
 
         // Mock finding the excluded object for date extension.
+<<<<<<< HEAD
         $mockObject = $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['jsonSerialize'])
             ->addMethods(['getRetention', 'setRetention'])
             ->getMock();
+=======
+        $mockObject = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $mockObject->method('getRetention')->willReturn([
             'archiefactiedatum' => '2025-01-01',
         ]);
@@ -199,11 +207,15 @@ class DestructionServiceTest extends TestCase
     {
         $this->setupMockUser('archivaris-1');
 
+<<<<<<< HEAD
         $mockObject = $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['jsonSerialize'])
             ->addMethods(['getRetention', 'setRetention'])
             ->getMock();
+=======
+        $mockObject = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $mockObject->method('getRetention')->willReturn(['archiefactiedatum' => '2025-01-01']);
         $mockObject->expects($this->once())->method('setRetention');
         $this->objectMapper->method('findByUuid')->willReturn($mockObject);

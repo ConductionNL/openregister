@@ -164,6 +164,7 @@ class ToolRegistry
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-2
      */
@@ -175,6 +176,13 @@ class ToolRegistry
         // right-hand side accepts both cases. The left-hand side stays
         // lowercase since it maps to a Nextcloud app id.
         if (preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $id) === 0) {
+=======
+     */
+    public function registerTool(string $id, ToolInterface $tool, array $metadata): void
+    {
+        // Validate ID format (should be app_name.tool_name).
+        if (preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id) === 0) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             throw new InvalidArgumentException(
                 "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
             );

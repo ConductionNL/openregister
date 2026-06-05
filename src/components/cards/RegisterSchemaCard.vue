@@ -176,7 +176,11 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ !hasMagicMapping(schema) ? '&#10003; ' : '' }}Use Blob Storage
 									</NcActionButton>
 									<NcActionButton
+<<<<<<< HEAD
 										v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use magic table configuration to sync') : ''"
+=======
+										v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use Magic Table configuration to sync') : ''"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 										:disabled="!hasMagicMapping(schema)"
 										close-after-click
 										@click="syncMagicTable(schema)">
@@ -405,9 +409,12 @@ export default {
 		},
 	},
 	emits: ['refresh'],
+<<<<<<< HEAD
 	/**
 	 * @spec exclude local data state; showEditRegisterDialog toggles the edit dialog, UI plumbing
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	data() {
 		return {
 			itemsExpanded: false,
@@ -418,9 +425,12 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed lookup of managing configuration from store, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		managingConfiguration() {
 			if (!this.item || !this.item.id) return null
 			if (this.type === 'register') {
@@ -433,17 +443,23 @@ export default {
 				config => config.schemas && config.schemas.some(s => s.id === this.item.id),
 			) || null
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed external-management display flag, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		isManagedByExternalConfig() {
 			const config = this.managingConfiguration
 			if (!config) return false
 			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed local-management display flag, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		isManagedByLocalConfig() {
 			const config = this.managingConfiguration
 			if (!config) return false
@@ -452,27 +468,36 @@ export default {
 		hasObjects() {
 			return this.item.stats?.objects?.total > 0
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed delete-disabled display flag from object stats, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		deleteDisabled() {
 			if (this.type === 'register') {
 				return this.item.stats?.total > 0
 			}
 			return this.item.stats?.objects?.total > 0
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed delete-disabled tooltip display helper, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		deleteDisabledTooltip() {
 			if (this.deleteDisabled) {
 				return 'Cannot delete: objects are still attached'
 			}
 			return ''
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed paginated schema/property list for display, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		displayedItems() {
 			if (this.type === 'register') {
 				if (!this.item.schemas || this.item.schemas.length === 0) return []
@@ -485,9 +510,12 @@ export default {
 			if (this.itemsExpanded) return sorted
 			return Object.fromEntries(entries.slice(0, 5))
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed remaining-items count for "view more" display, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		remainingItemsCount() {
 			if (this.type === 'register') {
 				const total = this.item.schemas?.length || 0
@@ -496,9 +524,12 @@ export default {
 			const total = Object.keys(this.item.properties || {}).length
 			return Math.max(0, total - 5)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed inline form-schema definition for edit dialog, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -511,9 +542,12 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed order-sorted property list for display, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		sortedProperties() {
 			const properties = this.item.properties || {}
 			return Object.entries(properties)
@@ -534,9 +568,12 @@ export default {
 		},
 	},
 	watch: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI handler/computed dialog-open trigger
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		showEditRegisterDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
@@ -545,9 +582,12 @@ export default {
 	},
 	methods: {
 		// Common methods
+<<<<<<< HEAD
 		/**
 		 * @spec exclude store/modal-dispatch UI handler opening edit, register/schema contract owned by register/schema capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		openEdit() {
 			if (this.type === 'register') {
 				this.showEditRegisterDialog = true
@@ -556,9 +596,12 @@ export default {
 				navigationStore.setModal('editSchema')
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude store passthrough publishing register/schema with toast, contract owned by register/schema capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async publish() {
 			try {
 				if (this.type === 'register') {
@@ -573,9 +616,12 @@ export default {
 				showError(t('openregister', 'Failed to publish: {error}', { error: error.message }))
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude store passthrough depublishing register/schema with toast, contract owned by register/schema capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async depublish() {
 			try {
 				if (this.type === 'register') {
@@ -590,9 +636,12 @@ export default {
 				showError(t('openregister', 'Failed to depublish: {error}', { error: error.message }))
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude store passthrough loading schema select options, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -604,9 +653,12 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed mapping of schema ids to select options, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -615,9 +667,12 @@ export default {
 					|| { id, label: String(id) }
 			})
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude store passthrough saving register from dialog + refresh emit, contract owned by register capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -630,9 +685,12 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude store/dialog-dispatch UI handler opening delete, contract owned by register/schema capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		openDelete() {
 			if (this.type === 'register') {
 				registerStore.setRegisterItem(this.item)
@@ -649,17 +707,23 @@ export default {
 		},
 
 		// Register-only methods
+<<<<<<< HEAD
 		/**
 		 * @spec exclude router-navigation UI handler to register detail, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		viewRegisterDetails() {
 			registerStore.setRegisterItem({ id: this.item.id })
 			this.$router.push(`/registers/${this.item.id}`)
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude API fetch + browser file-download UI plumbing; OAS contract owned by openapi-generation capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async downloadOas() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
@@ -679,18 +743,24 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude window.open to external Redoc viewer, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		viewOasDoc() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed read of schema property table mapping for icon display, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		hasMagicMapping(schema) {
 			if (!schema || !schema.properties) {
 				return false
@@ -700,9 +770,12 @@ export default {
 			)
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed active-object count from schema stats for display, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getSchemaObjectCount(schema) {
 			if (!schema || !schema.stats || !schema.stats.objects) {
 				return 0
@@ -712,9 +785,12 @@ export default {
 			return total - deleted
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude API passthrough triggering magic-table sync with toast; sync contract owned by magic-table capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async syncMagicTable(schema) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/tables/sync/${this.item.id}/${schema.id}`
@@ -775,9 +851,12 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude API passthrough toggling schema magic/blob config with toast; schema contract owned by schema capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async setSchemaConfiguration(schema, configurationType) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/schemas/${schema.id}`
@@ -844,9 +923,12 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude API passthrough triggering object validation with toast; validation contract owned by oas-validation capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async validateSchemaObjects(schema) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/objects/validate`
@@ -891,9 +973,12 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude confirm-dialog + bulk-delete API passthrough with toast; bulk-delete contract owned by scoped-object-delete-api capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async deleteSchemaObjects(schema, hardDelete = false) {
 			const totalObjects = schema.stats?.objects?.total || 0
 			const activeObjects = this.getSchemaObjectCount(schema)
@@ -982,9 +1067,12 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude confirm-dialog + schema-delete API passthrough with toast; schema contract owned by schema capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async removeSchemaFromRegister(schema) {
 			const objectCount = this.getSchemaObjectCount(schema)
 

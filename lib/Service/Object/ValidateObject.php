@@ -12,9 +12,12 @@
  * - Support for external schema references
  * - Format validation (e.g., BSN numbers)
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -26,7 +29,11 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-63
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-63
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -41,8 +48,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
+<<<<<<< HEAD
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Formats\SemVerFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -94,7 +104,11 @@ class ValidateObject
      * @param IURLGenerator   $urlGenerator URL generator.
      * @param LoggerInterface $logger       Logger for logging operations.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private IAppConfig $config,
@@ -121,7 +135,11 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema reference resolution requires multiple type checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag needed for backward compatibility
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function preprocessSchemaReferences(
         object $schemaObject,
@@ -182,7 +200,11 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex reference resolution with multiple format handlers
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple reference types and nested schema scenarios
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveSchemaProperty(object $propertySchema, array $visited=[]): object
     {
@@ -289,7 +311,11 @@ class ValidateObject
      *
      * @return object The transformed schema object
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformOpenRegisterObjectConfigurations(object $schemaObject): object
     {
@@ -318,7 +344,11 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple OpenRegister configuration scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Various property transformation paths
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
@@ -436,7 +466,11 @@ class ValidateObject
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformObjectPropertyForOpenRegister(object $objectSchema): void
     {
@@ -472,7 +506,11 @@ class ValidateObject
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformToUuidProperty(object $objectSchema): void
     {
@@ -545,7 +583,11 @@ class ValidateObject
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformToNestedObjectProperty(object $objectSchema): void
     {
@@ -599,7 +641,11 @@ class ValidateObject
      *
      * @return string|null The handling value or null if not found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractObjectConfigurationHandling(object $propertySchema): ?string
     {
@@ -652,7 +698,11 @@ class ValidateObject
      *
      * @return string|null The handling value or null if not found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractHandlingFromOneOfItems($oneOf): ?string
     {
@@ -684,7 +734,11 @@ class ValidateObject
      *
      * @return mixed The value or null if not found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getMixedValue($data, string $key)
     {
@@ -718,7 +772,11 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex schema transformation with multiple scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema transformation logic
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
@@ -861,7 +919,11 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
     {
@@ -925,7 +987,11 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function cleanPropertyForValidation($propertySchema, bool $isArrayItems=false)
     {
@@ -1005,7 +1071,11 @@ class ValidateObject
      *
      * @return object The property schema with constraints moved to items level
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function fixMisplacedArrayConstraints(object $propertySchema): object
     {
@@ -1037,9 +1107,16 @@ class ValidateObject
         if (($propertySchema->oneOf ?? null) !== null
             && (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)
         ) {
+<<<<<<< HEAD
             $oneOfArray = $propertySchema->oneOf;
             if (is_object($propertySchema->oneOf) === true) {
                 $oneOfArray = get_object_vars($propertySchema->oneOf);
+=======
+            if (is_object($propertySchema->oneOf) === true) {
+                $oneOfArray = get_object_vars($propertySchema->oneOf);
+            } else {
+                $oneOfArray = $propertySchema->oneOf;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             if (empty($oneOfArray) === false) {
@@ -1071,12 +1148,17 @@ class ValidateObject
      *
      * @return object The transformed property schema with valid JSON Schema types
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformCustomTypeToJsonSchemaType(object $propertySchema): object
     {
         // Map of custom OpenRegister types to their JSON Schema equivalents.
         $customTypeMap = [
+<<<<<<< HEAD
             'file'       => ['integer', 'string', 'null'],
         // File references are stored as integer file IDs, string data URIs, or null.
             'datetime'   => 'string',
@@ -1097,6 +1179,24 @@ class ValidateObject
         // Colour values (hex/rgba/oklch) are stored as literal strings.
             'recurrence' => 'string',
         // RFC 5545 RRULE recurrence patterns are stored as literal strings.
+=======
+            'file'     => ['integer', 'string', 'null'],
+        // File references are stored as integer file IDs, string data URIs, or null.
+            'datetime' => 'string',
+        // Datetime values are stored as ISO 8601 strings.
+            'date'     => 'string',
+        // Date values are stored as strings.
+            'time'     => 'string',
+        // Time values are stored as strings.
+            'uuid'     => 'string',
+        // UUIDs are strings.
+            'url'      => 'string',
+        // URLs are strings.
+            'email'    => 'string',
+        // Emails are strings.
+            'phone'    => 'string',
+        // Phone numbers are strings.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
 
         // Check if type is set and needs transformation.
@@ -1131,7 +1231,11 @@ class ValidateObject
      *
      * @return object The transformed items schema
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function transformArrayItemsForValidation(object $itemsSchema): object
     {
@@ -1222,7 +1326,11 @@ class ValidateObject
      *
      * @return bool True if this is a self-reference
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function isSelfReference(object $propertySchema, string $schemaSlug): bool
     {
@@ -1257,7 +1365,11 @@ class ValidateObject
      *
      * @return Schema|null The found schema or null if not found
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function findSchemaBySlug(string $slug): ?Schema
     {
@@ -1304,8 +1416,13 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation scenarios and schema types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete validation logic requires extensive handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-63
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-63
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateObject(
         array $object,
@@ -1327,10 +1444,13 @@ class ValidateObject
 
         $this->validateUniqueFields(object: $object, schema: $schema);
 
+<<<<<<< HEAD
         // Validate extended field types (color, recurrence) against the original,
         // un-transformed schema so the declared `type`/`format` annotations are intact.
         $this->validateExtendedFieldTypes(object: $object, schemaObject: $schemaObject);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Get the current schema slug for circular reference detection.
         $currentSchemaSlug = '';
         if ($schema instanceof Schema) {
@@ -1484,11 +1604,14 @@ class ValidateObject
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
 
+<<<<<<< HEAD
         // Accept ISO 8601 date-time input (optional seconds/timezone), overriding the
         // opis built-in date-time format whose regex mandates seconds. Storage still
         // normalises to a DATETIME column and reads emit RFC 3339.
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'date-time', resolver: new Iso8601DateTimeFormat());
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);
@@ -1507,7 +1630,11 @@ class ValidateObject
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function registerCustomFormat(Validator $validator, string $type, string $format, object $resolver): void
     {
@@ -1528,7 +1655,11 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uri::fromParts is standard GuzzleHttp\Psr7 pattern
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function resolveSchema(Uri $uri): string
     {
@@ -1579,7 +1710,11 @@ class ValidateObject
      *
      * @return string The reference string without query parameters
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -1601,7 +1736,11 @@ class ValidateObject
      *
      * @return string A meaningful error message.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateErrorMessage(ValidationResult $result): string
     {
@@ -1625,7 +1764,11 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many validation error types require specific formatting
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive error formatting for all validation types
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string
     {
@@ -1789,7 +1932,11 @@ class ValidateObject
      *
      * @return string The type name.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getValueType($value): string
     {
@@ -1831,7 +1978,11 @@ class ValidateObject
      *
      * @return JSONResponse JSON error response with validation errors and 400 status code.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {
@@ -1882,7 +2033,11 @@ class ValidateObject
      * @return void
      * @throws CustomValidationException
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateUniqueFields(array $object, Schema $schema): void
     {
@@ -1940,6 +2095,7 @@ class ValidateObject
             );
         }//end if
     }//end validateUniqueFields()
+<<<<<<< HEAD
 
     /**
      * Validate extended field-type values (`color`, `recurrence`).
@@ -2011,4 +2167,6 @@ class ValidateObject
             }
         }//end foreach
     }//end validateExtendedFieldTypes()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

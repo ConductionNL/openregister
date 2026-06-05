@@ -13,10 +13,14 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\TenantLifecycleService;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -37,8 +41,11 @@ class OrganisationControllerTest extends TestCase
     private OrganisationService&MockObject $organisationService;
     private OrganisationMapper&MockObject $organisationMapper;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -48,8 +55,11 @@ class OrganisationControllerTest extends TestCase
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new OrganisationController(
             'openregister',
@@ -58,13 +68,18 @@ class OrganisationControllerTest extends TestCase
             $this->organisationMapper,
             $this->logger,
             $this->createMock(TenantLifecycleService::class),
+<<<<<<< HEAD
             $this->createMock(TenantUsageMapper::class),
             $this->userSession,
             $this->groupManager
+=======
+            $this->createMock(TenantUsageMapper::class)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
     /**
+<<<<<<< HEAD
      * Helper: stub the user session with a non-admin user (default for self-service tests).
      */
     private function stubAuthedUser(string $userId = 'alice'): IUser
@@ -77,6 +92,8 @@ class OrganisationControllerTest extends TestCase
     }
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Create a real Organisation entity for update tests
      *
      * @return Organisation
@@ -292,8 +309,11 @@ class OrganisationControllerTest extends TestCase
 
     public function testJoinReturnsSuccess(): void
     {
+<<<<<<< HEAD
         // Self-service join (no userId param) — only requires being authenticated.
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->organisationService->method('joinOrganisation')->willReturn(true);
         $this->request->method('getParams')->willReturn([]);
 
@@ -306,12 +326,15 @@ class OrganisationControllerTest extends TestCase
 
     public function testJoinWithUserIdPassesUserIdToService(): void
     {
+<<<<<<< HEAD
         // Cross-user join: caller must be admin OR org-owner. Use admin here.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($user);
         $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn(['userId' => 'target-user']);
         $this->organisationService->expects($this->once())
             ->method('joinOrganisation')
@@ -323,6 +346,7 @@ class OrganisationControllerTest extends TestCase
         $this->assertSame(Http::STATUS_OK, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testJoinWithDifferentUserIdRejectedForNonAdmin(): void
     {
         // Wave-3 C1 regression guard: a non-admin, non-owner caller cannot
@@ -355,6 +379,10 @@ class OrganisationControllerTest extends TestCase
     public function testJoinReturnsBadRequestOnFailure(): void
     {
         $this->stubAuthedUser();
+=======
+    public function testJoinReturnsBadRequestOnFailure(): void
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->organisationService->method('joinOrganisation')->willReturn(false);
         $this->request->method('getParams')->willReturn([]);
 
@@ -367,7 +395,10 @@ class OrganisationControllerTest extends TestCase
 
     public function testJoinReturnsBadRequestOnException(): void
     {
+<<<<<<< HEAD
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn([]);
         $this->organisationService->method('joinOrganisation')
             ->willThrowException(new Exception('Organisation not found'));
@@ -381,6 +412,7 @@ class OrganisationControllerTest extends TestCase
 
     public function testJoinExceptionWithUserId(): void
     {
+<<<<<<< HEAD
         // Cross-user join with admin caller (so the auth gate passes and the
         // service throws as expected).
         $user = $this->createMock(IUser::class);
@@ -388,6 +420,8 @@ class OrganisationControllerTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
         $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn(['userId' => 'some-user']);
         $this->organisationService->method('joinOrganisation')
             ->willThrowException(new Exception('Join failed'));
@@ -405,8 +439,11 @@ class OrganisationControllerTest extends TestCase
 
     public function testLeaveReturnsSuccess(): void
     {
+<<<<<<< HEAD
         // Self-service leave — only requires being authenticated.
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->organisationService->method('leaveOrganisation')->willReturn(true);
         $this->request->method('getParams')->willReturn([]);
 
@@ -419,12 +456,15 @@ class OrganisationControllerTest extends TestCase
 
     public function testLeaveWithUserIdReturnsDifferentMessage(): void
     {
+<<<<<<< HEAD
         // Cross-user leave: caller must be admin OR org-owner. Use admin here.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($user);
         $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->organisationService->method('leaveOrganisation')->willReturn(true);
         $this->request->method('getParams')->willReturn(['userId' => 'user1']);
 
@@ -434,6 +474,7 @@ class OrganisationControllerTest extends TestCase
         $this->assertSame('Successfully removed user from organisation', $data['message']);
     }
 
+<<<<<<< HEAD
     public function testLeaveWithDifferentUserIdRejectedForNonAdmin(): void
     {
         // Wave-3 C1 regression guard: a non-admin, non-owner caller cannot
@@ -466,6 +507,10 @@ class OrganisationControllerTest extends TestCase
     public function testLeaveReturnsBadRequestOnFailure(): void
     {
         $this->stubAuthedUser();
+=======
+    public function testLeaveReturnsBadRequestOnFailure(): void
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->organisationService->method('leaveOrganisation')->willReturn(false);
         $this->request->method('getParams')->willReturn([]);
 
@@ -478,7 +523,10 @@ class OrganisationControllerTest extends TestCase
 
     public function testLeaveReturnsBadRequestOnException(): void
     {
+<<<<<<< HEAD
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn([]);
         $this->organisationService->method('leaveOrganisation')
             ->willThrowException(new Exception('Cannot leave'));
@@ -492,6 +540,7 @@ class OrganisationControllerTest extends TestCase
 
     public function testLeaveExceptionWithUserId(): void
     {
+<<<<<<< HEAD
         // Cross-user leave with admin caller (so the auth gate passes and the
         // service throws as expected).
         $user = $this->createMock(IUser::class);
@@ -499,6 +548,8 @@ class OrganisationControllerTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
         $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn(['userId' => 'user1']);
         $this->organisationService->method('leaveOrganisation')
             ->willThrowException(new Exception('Leave failed'));
@@ -1495,7 +1546,10 @@ class OrganisationControllerTest extends TestCase
 
     public function testJoinWithNullUserIdInParams(): void
     {
+<<<<<<< HEAD
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn(['userId' => null]);
         $this->organisationService->expects($this->once())
             ->method('joinOrganisation')
@@ -1509,7 +1563,10 @@ class OrganisationControllerTest extends TestCase
 
     public function testJoinExceptionWithoutUserIdInParams(): void
     {
+<<<<<<< HEAD
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn([]);
         $this->organisationService->method('joinOrganisation')
             ->willThrowException(new Exception('Org not found'));
@@ -1526,7 +1583,10 @@ class OrganisationControllerTest extends TestCase
 
     public function testLeaveWithNullUserIdReturnsLeftMessage(): void
     {
+<<<<<<< HEAD
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->organisationService->method('leaveOrganisation')->willReturn(true);
         $this->request->method('getParams')->willReturn(['userId' => null]);
 
@@ -1540,7 +1600,10 @@ class OrganisationControllerTest extends TestCase
 
     public function testLeaveExceptionWithNullUserId(): void
     {
+<<<<<<< HEAD
         $this->stubAuthedUser();
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn([]);
         $this->organisationService->method('leaveOrganisation')
             ->willThrowException(new Exception('Cannot leave'));

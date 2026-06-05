@@ -5,9 +5,12 @@
  *
  * Defines the contract for SIP package transport implementations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -40,7 +43,11 @@ interface TransportInterface
      *
      * @return TransportResult The result of the transport operation.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function send(string $sipFilePath, array $config): TransportResult;
 
@@ -51,7 +58,11 @@ interface TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testConnection(array $config): bool;
 
@@ -60,7 +71,11 @@ interface TransportInterface
      *
      * @return string The transport protocol name (e.g., 'sftp', 'rest_api', 'openconnector').
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string;
 }//end interface

@@ -3,9 +3,12 @@
 /**
  * OpenRegister LLM Settings Controller
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -74,8 +77,11 @@ class LlmSettingsController extends Controller
      * @return JSONResponse LLM settings
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getLLMSettings(): JSONResponse
     {
@@ -96,8 +102,11 @@ class LlmSettingsController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateLLMSettings(): JSONResponse
     {
@@ -175,8 +184,11 @@ class LlmSettingsController extends Controller
      *     array{success: bool, error?: string,
      *     message?: 'LLM settings updated successfully', data?: array},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function patchLLMSettings(): JSONResponse
     {
@@ -194,8 +206,11 @@ class LlmSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with embedding test result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testEmbedding(): JSONResponse
     {
@@ -268,8 +283,11 @@ class LlmSettingsController extends Controller
      *     array<never, never>>|JSONResponse<400,
      *     array{success: false, error: string, message: string},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testChat(): JSONResponse
     {
@@ -340,8 +358,11 @@ class LlmSettingsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getOllamaModels(): JSONResponse
     {
@@ -468,8 +489,11 @@ class LlmSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with mismatch check result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function checkEmbeddingModelMismatch(): JSONResponse
     {
@@ -499,8 +523,11 @@ class LlmSettingsController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{success: bool, error?: string, message?: string, deleted?: int},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearAllEmbeddings(): JSONResponse
     {
@@ -522,4 +549,42 @@ class LlmSettingsController extends Controller
             );
         }
     }//end clearAllEmbeddings()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Get vector embedding statistics
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with vector statistics
+     */
+    public function getVectorStats(): JSONResponse
+    {
+        try {
+            // Use VectorizationService.
+            $vectorService = $this->vectorizationService;
+
+            // Get statistics.
+            $stats = $vectorService->getVectorStats();
+
+            return new JSONResponse(
+                data: [
+                    'success'   => true,
+                    'stats'     => $stats,
+                    'timestamp' => date('c'),
+                ]
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end getVectorStats()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

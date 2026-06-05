@@ -222,6 +222,7 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
+<<<<<<< HEAD
             public function canChangeAvatar(): bool
             {
                 return (bool) $this->v['canChangeAvatar'];
@@ -240,6 +241,21 @@ class UserServiceTest extends TestCase
             public function canEditProperty(string $property): bool
             {
                 return (bool) ($this->v['canEditProperty'] ?? true);
+=======
+            public function canChangeAvatar()
+            {
+                return $this->v['canChangeAvatar'];
+            }
+
+            public function canChangePassword()
+            {
+                return $this->v['canChangePassword'];
+            }
+
+            public function canChangeDisplayName()
+            {
+                return $this->v['canChangeDisplayName'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             public function isEnabled()
@@ -1163,22 +1179,34 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
+<<<<<<< HEAD
             public function canChangeAvatar(): bool
+=======
+            public function canChangeAvatar()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangePassword(): bool
+=======
+            public function canChangePassword()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangeDisplayName(): bool
             {
                 return false;
             }
 
             public function canEditProperty(string $property): bool
+=======
+            public function canChangeDisplayName()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             {
                 return false;
             }
@@ -1979,22 +2007,34 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
+<<<<<<< HEAD
             public function canChangeAvatar(): bool
+=======
+            public function canChangeAvatar()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangePassword(): bool
+=======
+            public function canChangePassword()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangeDisplayName(): bool
             {
                 return false;
             }
 
             public function canEditProperty(string $property): bool
+=======
+            public function canChangeDisplayName()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             {
                 return false;
             }

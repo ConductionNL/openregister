@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -56,7 +64,11 @@ class FilePropertyHandler
      * @param LoggerInterface $logger      Logger for logging operations
      * @param FileService     $fileService File service for file operations
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -89,7 +101,11 @@ class FilePropertyHandler
      *
      * @throws Exception If file reading fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processUploadedFiles(array $uploadedFiles, array $data): array
     {
@@ -168,7 +184,11 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
     {
@@ -313,7 +333,11 @@ class FilePropertyHandler
      * @psalm-return   bool
      * @phpstan-return bool
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isFileObject(array $value): bool
     {
@@ -370,18 +394,31 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generateFileName(
         string $propertyName,
         string $extension,
         ?int $index=null
     ): string {
+<<<<<<< HEAD
         $timestamp   = time();
         $random      = bin2hex(random_bytes(4));
         $indexSuffix = '';
         if ($index !== null) {
             $indexSuffix = "_{$index}";
+=======
+        $timestamp = time();
+        $random    = bin2hex(random_bytes(4));
+        if ($index !== null) {
+            $indexSuffix = "_{$index}";
+        } else {
+            $indexSuffix = '';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         return "{$propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";
@@ -408,7 +445,11 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $index kept for API consistency with other methods
      * @psalm-suppress                                UnusedParam $index kept for API consistency and future use
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function prepareAutoTags(
         array $fileConfig,
@@ -464,7 +505,11 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional branches for file property processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file property handling requires many steps
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handleFileProperty(
         ObjectEntity $objectEntity,
@@ -679,7 +724,11 @@ class FilePropertyHandler
      *
      * @throws Exception If file validation fails or file operations fail.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processSingleFileProperty(
         ObjectEntity $objectEntity,
@@ -746,7 +795,11 @@ class FilePropertyHandler
      *
      * @throws Exception If file processing fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processStringFileInput(
         ObjectEntity $objectEntity,
@@ -832,7 +885,11 @@ class FilePropertyHandler
      *
      * @throws Exception If file processing fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processFileObjectInput(
         ObjectEntity $objectEntity,
@@ -911,7 +968,11 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function fetchFileFromUrl(string $url): string
     {
@@ -956,7 +1017,11 @@ class FilePropertyHandler
      * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function parseFileDataFromUrl(string $url, string $content): array
     {
@@ -1002,7 +1067,11 @@ class FilePropertyHandler
      * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function parseFileData(string $fileContent): array
     {
@@ -1077,7 +1146,11 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateFileAgainstConfig(
         array $fileData,
@@ -1141,7 +1214,11 @@ class FilePropertyHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple security checks for executable detection
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function blockExecutableFiles(array $fileData, string $errorPrefix): void
     {
@@ -1218,7 +1295,11 @@ class FilePropertyHandler
      *
      * @throws Exception If executable magic bytes are detected.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function detectExecutableMagicBytes(string $content, string $errorPrefix): void
     {
@@ -1288,7 +1369,11 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getExtensionFromMimeType(string $mimeType): string
     {
@@ -1365,7 +1450,11 @@ class FilePropertyHandler
      *     'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
      * @phpstan-return array<int, string>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getCommonFileExtensions(): array
     {
@@ -1445,7 +1534,11 @@ class FilePropertyHandler
      *     'out', 'o', 'so', 'dylib'}
      * @phpstan-return array<int, string>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getDangerousExecutableExtensions(): array
     {
@@ -1530,7 +1623,11 @@ class FilePropertyHandler
      *     'application/x-python-code', 'application/java-archive'}
      * @phpstan-return array<int, string>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getExecutableMimeTypes(): array
     {

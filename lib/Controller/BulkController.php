@@ -5,9 +5,12 @@
  *
  * Controller for handling bulk operations on objects in the OpenRegister app.
  * Provides endpoints for bulk delete and save operations.
+<<<<<<< HEAD
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -20,8 +23,12 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -38,8 +45,11 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
+<<<<<<< HEAD
 use OCP\IUserSession;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Exception;
 
 /**
@@ -54,6 +64,7 @@ class BulkController extends Controller
     /**
      * Constructor for the BulkController
      *
+<<<<<<< HEAD
      * @param string         $appName        The name of the app
      * @param IRequest       $request        The request object
      * @param ObjectService  $objectService  The object service
@@ -61,22 +72,32 @@ class BulkController extends Controller
      * @param SchemaMapper   $schemaMapper   Mapper for resolving schemas (RBAC gates)
      * @param IUserSession   $userSession    User session for admin/manage checks
      * @param IGroupManager  $groupManager   Group manager for admin/manage checks
+=======
+     * @param string        $appName       The name of the app
+     * @param IRequest      $request       The request object
+     * @param ObjectService $objectService The object service
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
+<<<<<<< HEAD
         private readonly ObjectService $objectService,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager
+=======
+        private readonly ObjectService $objectService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Check if the current user has 'manage' permission on a schema.
      *
      * Default-SECURE mirror of `SchemasController::checkSchemaManagePermission()`:
@@ -94,12 +115,35 @@ class BulkController extends Controller
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function checkSchemaManagePermission(Schema $schema): bool
+=======
+     * Resolve register and schema slugs/IDs to numeric IDs.
+     *
+     * This method handles both slugs and numeric IDs by attempting to set them
+     * in the ObjectService, which will resolve slugs to IDs.
+     *
+     * @param string        $register      The register slug or ID
+     * @param string        $schema        The schema slug or ID
+     * @param ObjectService $objectService The object service
+     *
+     * @return array{register: int, schema: int} Resolved numeric IDs
+     *
+     * @throws RegisterNotFoundException If register not found
+     * @throws SchemaNotFoundException If schema not found
+     *
+     * @psalm-return   array{register: int, schema: int}
+     * @phpstan-return array{register: int, schema: int}
+     */
+    private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return false;
+        try {
+            // Resolve register slug/ID to numeric ID.
+            $objectService->setRegister(register: $register);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
         }
 
+<<<<<<< HEAD
         // Admins always pass.
         if ($this->groupManager->isAdmin($user->getUID()) === true) {
             return true;
@@ -230,6 +274,19 @@ class BulkController extends Controller
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
 
+=======
+        try {
+            // Resolve schema slug/ID to numeric ID.
+            $objectService->setSchema(schema: $schema);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
+        }
+
+        // Get resolved numeric IDs.
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId   = $objectService->getSchema();
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Reset ObjectService with resolved numeric IDs for consistency.
         $objectService->setRegister(register: (string) $resolvedRegisterId)->setSchema(schema: (string) $resolvedSchemaId);
 
@@ -249,8 +306,11 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with bulk delete result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function delete(string $register, string $schema): JSONResponse
     {
@@ -325,8 +385,11 @@ class BulkController extends Controller
      *     message?: 'Bulk save operation completed successfully',
      *     saved_count?: mixed, saved_objects?: array<string, mixed>,
      *     requested_count?: int<0, max>}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function save(string $register, string $schema): JSONResponse
     {
@@ -342,6 +405,7 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
 
+<<<<<<< HEAD
             // AUTHORIZATION (wave-11 WF1 / wave-3 C4 pattern): bulk-writing objects is a
             // potentially high-impact write that any authenticated user could otherwise use
             // to spray validation work or flood the audit trail.  Gate on manage-permission
@@ -369,6 +433,8 @@ class BulkController extends Controller
                 }
             }//end if
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Get request data.
             $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
@@ -381,6 +447,13 @@ class BulkController extends Controller
                 );
             }
 
+<<<<<<< HEAD
+=======
+            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
+            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
+            $isMixedSchema = ($resolved['schema'] === 0);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Determine schema to use (null for mixed-schema, resolved for single-schema).
             $schemaToUse = $resolved['schema'];
             if ($isMixedSchema === true) {
@@ -438,8 +511,11 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schema delete result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteSchema(string $register, string $schema): JSONResponse
     {
@@ -452,6 +528,7 @@ class BulkController extends Controller
                 );
             }
 
+<<<<<<< HEAD
             // Authorization: bulk-deleting every object in a schema is a
             // destructive data-model write. Gate on manage-permission for the
             // target schema (default-SECURE: admin-only when no manage rule
@@ -472,6 +549,8 @@ class BulkController extends Controller
                 );
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Get request data.
             $data       = $this->request->getParams();
             $hardDelete = $data['hardDelete'] ?? false;
@@ -519,8 +598,11 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteSchemaObjects(string $register, string $schema): JSONResponse
     {
@@ -536,6 +618,7 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
 
+<<<<<<< HEAD
             // Authorization: bulk-deleting every object for a register/schema
             // combination is a destructive data-model write. Gate on
             // manage-permission for the target schema (default-SECURE:
@@ -557,6 +640,8 @@ class BulkController extends Controller
                 );
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Get request data.
             $data       = $this->request->getParams();
             $hardDelete = $data['hardDelete'] ?? false;
@@ -600,8 +685,11 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with register delete result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteRegister(string $register): JSONResponse
     {
@@ -614,6 +702,7 @@ class BulkController extends Controller
                 );
             }
 
+<<<<<<< HEAD
             // Authorization: bulk-deleting every object in a register is a
             // destructive data-model write. Gate on manage-permission for the
             // target register (default-SECURE: admin-only when no manage rule
@@ -634,6 +723,8 @@ class BulkController extends Controller
                 );
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Set register context.
             $this->objectService->setRegister($register);
 
@@ -667,7 +758,11 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with validation result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function runSchemaValidation(string $schema): JSONResponse
     {
@@ -691,5 +786,9 @@ class BulkController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
+<<<<<<< HEAD
     }//end runSchemaValidation()
+=======
+    }//end validateSchema()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

@@ -23,7 +23,11 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service;
@@ -116,8 +120,11 @@ class SearchTrailService
      * @throws Exception If search trail creation fails (database error, validation error, etc.)
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+<<<<<<< HEAD
      *
      * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createSearchTrail(
         array $query,
@@ -171,7 +178,11 @@ class SearchTrailService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearExpiredSearchTrails(): array
     {
@@ -219,7 +230,11 @@ class SearchTrailService
      *
      * @psalm-return array{results: array, total: int, page: float|int<1, max>, pages: int, limit: int<1, max>, offset: int}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSearchTrails(array $config=[]): array
     {
@@ -286,8 +301,11 @@ class SearchTrailService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple statistics calculations and aggregations
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional statistics computations
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -367,8 +385,11 @@ class SearchTrailService
      * @param DateTime|null $to    End date filter
      *
      * @return array Popular search terms data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -412,8 +433,11 @@ class SearchTrailService
      * @param DateTime|null $to       End date filter
      *
      * @return array Search activity data with insights
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSearchActivity(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -440,8 +464,11 @@ class SearchTrailService
      * @param DateTime|null $to   End date filter
      *
      * @return array Register/schema statistics data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRegisterSchemaStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -489,8 +516,11 @@ class SearchTrailService
      * @param DateTime|null $to    End date filter
      *
      * @return array User agent statistics data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -536,7 +566,11 @@ class SearchTrailService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_before kept for API compatibility
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cleanupSearchTrails(?DateTime $_before=null): array
     {
@@ -580,7 +614,11 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configuration processing
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processConfig(array $config): array
     {
@@ -892,7 +930,11 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity lookups with exception handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional entity lookups and exception handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function enrichTrailsWithNames(array $trails): array
     {

@@ -42,9 +42,12 @@ use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\ChatService;
@@ -56,7 +59,10 @@ use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RiskLevelService;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\TenantLifecycleService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -68,9 +74,13 @@ use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -175,6 +185,22 @@ class ControllersIntegrationTest2 extends TestCase
     // ─── ChatController ──────────────────────────────────────────────────
 
     /**
+<<<<<<< HEAD
+=======
+     * Test ChatController::page returns TemplateResponse
+     *
+     * @return void
+     */
+    public function testChatControllerPage(): void
+    {
+        $controller = $this->buildChatController();
+        $response   = $controller->page();
+
+        $this->assertSame(200, $response->getStatus());
+    }//end testChatControllerPage()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Test ChatController::sendMessage with empty message
      *
      * @return void
@@ -1408,14 +1434,22 @@ class ControllersIntegrationTest2 extends TestCase
     }//end testBulkControllerDeleteRegisterNonNumeric()
 
     /**
+<<<<<<< HEAD
      * Test BulkController::runSchemaValidation with non-numeric schema
+=======
+     * Test BulkController::validateSchema with non-numeric schema
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
     public function testBulkControllerValidateSchemaNonNumeric(): void
     {
         $controller = $this->buildBulkController();
+<<<<<<< HEAD
         $response   = $controller->runSchemaValidation('not-numeric');
+=======
+        $response   = $controller->validateSchema('not-numeric');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $data       = $response->getData();
 
         $this->assertSame(400, $response->getStatus());
@@ -1747,6 +1781,24 @@ class ControllersIntegrationTest2 extends TestCase
     }//end testLlmSettingsControllerCheckMismatch()
 
     /**
+<<<<<<< HEAD
+=======
+     * Test LlmSettingsController::getVectorStats
+     *
+     * @return void
+     */
+    public function testLlmSettingsControllerGetVectorStats(): void
+    {
+        $controller = $this->buildLlmSettingsController();
+        $response   = $controller->getVectorStats();
+        $data       = $response->getData();
+
+        $this->assertSame(200, $response->getStatus());
+        $this->assertTrue($data['success']);
+    }//end testLlmSettingsControllerGetVectorStats()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Test CacheSettingsController::getCacheStats
      *
      * @return void
@@ -2044,10 +2096,14 @@ class ControllersIntegrationTest2 extends TestCase
             \OC::$server->get(GdprEntityMapper::class),
             \OC::$server->get(EntityRelationMapper::class),
             $this->db,
+<<<<<<< HEAD
             $this->logger,
             \OC::$server->get(\OCP\IUserSession::class),
             \OC::$server->get(\OCP\IGroupManager::class),
             \OC::$server->get(OrganisationService::class)
+=======
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }//end buildGdprEntitiesController()
 
@@ -2080,11 +2136,15 @@ class ControllersIntegrationTest2 extends TestCase
             $this->request,
             \OC::$server->get(OrganisationService::class),
             \OC::$server->get(OrganisationMapper::class),
+<<<<<<< HEAD
             $this->logger,
             \OC::$server->get(TenantLifecycleService::class),
             \OC::$server->get(TenantUsageMapper::class),
             \OC::$server->get(IUserSession::class),
             \OC::$server->get(IGroupManager::class)
+=======
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }//end buildOrganisationController()
 
@@ -2135,11 +2195,15 @@ class ControllersIntegrationTest2 extends TestCase
         return new BulkController(
             'openregister',
             $this->request,
+<<<<<<< HEAD
             \OC::$server->get(ObjectService::class),
             \OC::$server->get(RegisterMapper::class),
             \OC::$server->get(SchemaMapper::class),
             \OC::$server->get(IUserSession::class),
             \OC::$server->get(IGroupManager::class)
+=======
+            \OC::$server->get(ObjectService::class)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }//end buildBulkController()
 

@@ -10,6 +10,7 @@
  * Delegates type mapping to TypeMapperHandler and composition logic to
  * CompositionHandler to keep class complexity manageable.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -21,6 +22,15 @@
  * @link      https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service\GraphQL
+ * @author   Conduction B.V. <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -138,7 +148,11 @@ class SchemaGenerator
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setResolver(GraphQLResolver $resolver): void
     {
@@ -153,7 +167,11 @@ class SchemaGenerator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generate(): Schema
     {
@@ -165,6 +183,7 @@ class SchemaGenerator
         $this->initScalars();
         $this->initHandlers();
 
+<<<<<<< HEAD
         // Load all registers and schemas. Bypass RBAC + multi-tenancy for
         // type generation: the GraphQL schema is system-scoped (per-request,
         // APCu-cached), and per-user authorisation happens at resolve time
@@ -174,11 +193,19 @@ class SchemaGenerator
         // schemas are readable via REST under the same session. Same
         // rationale as PermissionHandler::resolveSchemaSlug (#1454).
         $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+=======
+        // Load all registers and schemas.
+        $registers = $this->registerMapper->findAll();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         foreach ($registers as $register) {
             $this->registersById[$register->getId()] = $register;
         }
 
+<<<<<<< HEAD
         $schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+=======
+        $schemas = $this->schemaMapper->findAll();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         foreach ($schemas as $schema) {
             $this->schemasById[$schema->getId()] = $schema;
         }
@@ -221,8 +248,11 @@ class SchemaGenerator
      * @param array<string, mixed> $mutationFields Mutation fields accumulator
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildSchemaFields(
         RegisterSchema $schema,
@@ -272,7 +302,11 @@ class SchemaGenerator
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildQueryFields(
         RegisterSchema $schema,
@@ -319,8 +353,11 @@ class SchemaGenerator
      * @param array<string, mixed> $mutationFields Mutation fields accumulator
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildMutationFields(
         RegisterSchema $schema,
@@ -370,8 +407,11 @@ class SchemaGenerator
      * Initialize custom scalar types.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function initScalars(): void
     {
@@ -389,8 +429,11 @@ class SchemaGenerator
      * Initialize handler classes with callback dependencies.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function initHandlers(): void
     {
@@ -425,8 +468,11 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return ObjectType The GraphQL object type
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectType(RegisterSchema $schema): ObjectType
     {
@@ -469,8 +515,11 @@ class SchemaGenerator
      *
      * @return array<string, array<string, mixed>> The field configuration
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) JSON Schema composition (allOf/oneOf/anyOf) requires deep branching
      * @SuppressWarnings(PHPMD.NPathComplexity)      Composition + property mapping creates high path count
      */
@@ -518,10 +567,19 @@ class SchemaGenerator
             }
 
             // Annotate authorization requirements in description.
+<<<<<<< HEAD
             if (isset($authInfo[$name]) === true && $description !== null && $description !== '') {
                 $description = $description.'. '.$authInfo[$name];
             } else if (isset($authInfo[$name]) === true) {
                 $description = $authInfo[$name];
+=======
+            if (isset($authInfo[$name]) === true) {
+                if ($description !== null && $description !== '') {
+                    $description = $description.'. '.$authInfo[$name];
+                } else {
+                    $description = $authInfo[$name];
+                }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             $fields[$fieldName] = [
@@ -549,8 +607,11 @@ class SchemaGenerator
      * @param string $ref The reference string (slug, ID, or URI)
      *
      * @return RegisterSchema|null The resolved schema or null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveRef(string $ref): ?RegisterSchema
     {
@@ -577,8 +638,11 @@ class SchemaGenerator
      * @param int|null $schemaId Schema ID for deduplication (optional)
      *
      * @return string The PascalCase type name
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function toTypeName(string $slug, ?int $schemaId=null): string
     {
@@ -616,8 +680,11 @@ class SchemaGenerator
      * @param string $slug The slug to convert
      *
      * @return string A valid GraphQL field name
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function toFieldName(string $slug): string
     {
@@ -649,8 +716,11 @@ class SchemaGenerator
      * @param string $plural The plural form
      *
      * @return string The singular form
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function singularize(string $plural): string
     {
@@ -690,8 +760,11 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return callable The resolver function
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createSingleResolverPlaceholder(RegisterSchema $schema): callable
     {
@@ -712,8 +785,11 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return callable The resolver function
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createListResolverPlaceholder(RegisterSchema $schema): callable
     {
@@ -735,8 +811,11 @@ class SchemaGenerator
      * @param string         $action The mutation action (create, update, delete)
      *
      * @return callable The resolver function
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createMutationResolverPlaceholder(RegisterSchema $schema, string $action): callable
     {
@@ -761,7 +840,11 @@ class SchemaGenerator
      *
      * @return array<int, RegisterSchema>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSchemasById(): array
     {
@@ -774,7 +857,11 @@ class SchemaGenerator
      *
      * @return array<int, Register>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRegistersById(): array
     {

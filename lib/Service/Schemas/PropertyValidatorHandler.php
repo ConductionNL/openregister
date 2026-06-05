@@ -53,10 +53,13 @@ class PropertyValidatorHandler
         'object',
         'null',
         'file',
+<<<<<<< HEAD
         'geo',
         // Extended field types (see extended-field-types spec).
         'color',
         'recurrence',
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         'NcFile',
         'NcMail',
         'NcContact',
@@ -131,8 +134,11 @@ class PropertyValidatorHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateProperty(array $property, string $path=''): bool
     {
@@ -249,8 +255,11 @@ class PropertyValidatorHandler
      * @throws Exception If any property definition is invalid
      *
      * @return true True if all properties are valid
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateProperties(array $properties, string $path=''): bool
     {

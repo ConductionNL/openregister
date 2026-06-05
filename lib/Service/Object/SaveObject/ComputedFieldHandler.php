@@ -7,9 +7,12 @@
  * Supports save-time and read-time evaluation of Twig expressions
  * defined in schema property `computed` attributes.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
@@ -50,9 +53,14 @@ use Twig\Sandbox\SecurityPolicy;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler requires Twig and mapper dependencies
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Handler requires Twig and mapper dependencies
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ComputedFieldHandler
 {
@@ -78,7 +86,11 @@ class ComputedFieldHandler
      * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
      * @param LoggerInterface      $logger               Logger for error and debug messages.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -98,7 +110,11 @@ class ComputedFieldHandler
      *
      * @return Environment The configured Twig environment
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getTwig(): Environment
     {
@@ -106,6 +122,7 @@ class ComputedFieldHandler
             return $this->twig;
         }
 
+<<<<<<< HEAD
         $loader = new ArrayLoader();
         // Autoescape disabled — Twig's default autoescaping injects the
         // `escape` filter into every `{{ var }}` output, but our
@@ -115,6 +132,10 @@ class ComputedFieldHandler
         // Without this flag, every Twig expression silently fails
         // with `Filter "escape" is not allowed`.
         $this->twig = new Environment($loader, ['autoescape' => false]);
+=======
+        $loader     = new ArrayLoader();
+        $this->twig = new Environment($loader);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Add the mapping extension for custom filters and functions.
         $this->twig->addExtension($this->mappingExtension);
@@ -176,7 +197,11 @@ class ComputedFieldHandler
      *
      * @return array The object data with computed field values added/updated.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn='save'): array
     {
@@ -226,7 +251,11 @@ class ComputedFieldHandler
      *
      * @return mixed The computed value, or null on error.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function evaluateExpression(
         string $expression,
@@ -283,7 +312,11 @@ class ComputedFieldHandler
      *
      * @return array The Twig context with data and resolved references.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildTwigContext(array $data, Schema $schema, int $depth=0): array
     {
@@ -312,7 +345,11 @@ class ComputedFieldHandler
      *
      * @return array Resolved reference data indexed by property name.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveReferences(array $data, Schema $schema, int $depth): array
     {
@@ -391,7 +428,11 @@ class ComputedFieldHandler
      *
      * @return mixed The cast result.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function castResult(string $result): mixed
     {
@@ -423,7 +464,11 @@ class ComputedFieldHandler
      *
      * @return bool True if the schema has at least one computed property.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hasComputedProperties(Schema $schema): bool
     {
@@ -446,7 +491,11 @@ class ComputedFieldHandler
      *
      * @return array List of property names that are computed for the given mode.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getComputedPropertyNames(Schema $schema, string $evaluateOn='save'): array
     {
@@ -466,6 +515,7 @@ class ComputedFieldHandler
 
         return $names;
     }//end getComputedPropertyNames()
+<<<<<<< HEAD
 
     /**
      * Detect circular dependencies between computed fields on a schema.
@@ -770,4 +820,6 @@ class ComputedFieldHandler
         return implode('->', $rotated);
 
     }//end canonicaliseCycle()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

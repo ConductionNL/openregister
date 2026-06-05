@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,21 +15,35 @@
  * @copyright 2026 Conduction B.V.
  * @license   https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
+<<<<<<< HEAD
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+=======
+use Exception;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -39,7 +54,10 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+<<<<<<< HEAD
 use Symfony\Component\Uid\Uuid;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * Handles folder management operations for files.
@@ -64,7 +82,10 @@ use Symfony\Component\Uid\Uuid;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Lifecycle + access-control by design.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FolderManagementHandler
@@ -92,7 +113,10 @@ class FolderManagementHandler
      * @param IUserSession     $userSession        User session for user context.
      * @param IGroupManager    $groupManager       Group manager for group operations.
      * @param LoggerInterface  $logger             Logger for logging operations.
+<<<<<<< HEAD
      * @param AuditTrailMapper $auditTrailMapper   Mapper for writing forensic audit-trail entries on folder-access denials.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param FileService|null $fileService        File service facade for cross-handler coordination
      *                                             (injected lazily to avoid circular dependency).
      */
@@ -103,7 +127,10 @@ class FolderManagementHandler
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly LoggerInterface $logger,
+<<<<<<< HEAD
         private readonly AuditTrailMapper $auditTrailMapper,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         private ?FileService $fileService=null
     ) {
     }//end __construct()
@@ -138,8 +165,11 @@ class FolderManagementHandler
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
@@ -152,10 +182,13 @@ class FolderManagementHandler
             }
 
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+<<<<<<< HEAD
         } catch (FolderAccessDeniedException $e) {
             // Access denials must propagate to the controller so it can return HTTP 403
             // with the structured body. Do NOT downgrade to a logged null-return.
             throw $e;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[FolderManagementHandler] Failed to create folder for entity: {message}',
@@ -167,7 +200,11 @@ class FolderManagementHandler
                 ]
             );
             return null;
+<<<<<<< HEAD
         }//end try
+=======
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end createEntityFolder()
 
     /**
@@ -184,8 +221,11 @@ class FolderManagementHandler
      * @phpstan-return Node
      *
      * @psalm-return Node
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createRegisterFolderById(Register $register, ?IUser $currentUser=null): Node
     {
@@ -247,8 +287,11 @@ class FolderManagementHandler
      * @throws NotPermittedException If folder creation is not permitted.
      *
      * @return Folder The created or existing folder for the object.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createObjectFolderById(
         ObjectEntity|string $objectEntity,
@@ -260,6 +303,7 @@ class FolderManagementHandler
             $folderProperty = $objectEntity->getFolder();
         }
 
+<<<<<<< HEAD
         // Three branches per `self-folder-access-control` spec:
         // (a) empty               → fall through to auto-create (unchanged legacy behaviour).
         // (b) non-digit-string     → legacy path-style value, fall through to auto-create.
@@ -284,6 +328,9 @@ class FolderManagementHandler
 
         // Empty / legacy non-numeric → unchanged auto-create flow below. `getExistingFolderFromProperty`
         // returns null for both, so the rest of the method handles them as before.
+=======
+        // Try to get existing folder by ID.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $existingFolder = $this->getExistingFolderFromProperty(folderProperty: $folderProperty);
         if ($existingFolder !== null) {
             $this->logger->info(
@@ -339,8 +386,11 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRegisterFolderById(Register $register): ?Folder
     {
@@ -397,8 +447,11 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -459,8 +512,11 @@ class FolderManagementHandler
      * @psalm-return   int
      * @phpstan-return int
      * @return         int The folder ID.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
@@ -525,8 +581,11 @@ class FolderManagementHandler
      * @phpstan-return Node
      * @return         Node The folder node.
      * @throws         Exception If folder creation fails.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createFolderPath(string $folderPath): Node
     {
@@ -597,8 +656,11 @@ class FolderManagementHandler
      *
      * @psalm-return   Node
      * @phpstan-return Node
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createFolder(string $folderPath): Node
     {
@@ -616,8 +678,11 @@ class FolderManagementHandler
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRegisterFolderName(Register $register): string|null
     {
@@ -641,8 +706,11 @@ class FolderManagementHandler
      *
      * @psalm-return   string
      * @phpstan-return string
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
@@ -671,8 +739,11 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder
      * @phpstan-return Folder
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getOpenRegisterUserFolder(): Folder
     {
@@ -698,8 +769,11 @@ class FolderManagementHandler
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getNodeById(int $nodeId): ?Node
     {
@@ -743,8 +817,11 @@ class FolderManagementHandler
      *
      * @psalm-return   'file'|'folder'|'unknown'
      * @phpstan-return 'file'|'folder'|'unknown'
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getNodeTypeFromFolder(Node $node): string
     {
@@ -847,6 +924,7 @@ class FolderManagementHandler
     }//end getExistingFolderFromProperty()
 
     /**
+<<<<<<< HEAD
      * Resolve a numeric folder ID and verify the acting user can read it.
      *
      * Restrictive lookup that deliberately does NOT use `$this->rootFolder`
@@ -1041,6 +1119,8 @@ class FolderManagementHandler
     }//end logFolderAccessDenied()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Share folder with current user if different from system user.
      *
      * @param Node       $folderNode  The folder to share.

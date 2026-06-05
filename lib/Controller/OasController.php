@@ -59,10 +59,16 @@ class OasController extends Controller
     /**
      * OasController constructor
      *
+<<<<<<< HEAD
      * @param string           $appName      Application name
      * @param IRequest         $request      Request object
      * @param OasService       $oasService   OAS service instance
      * @param ?OasETagComputer $etagComputer Optional ETag computer for If-None-Match short-circuit
+=======
+     * @param string     $appName    Application name
+     * @param IRequest   $request    Request object
+     * @param OasService $oasService OAS service instance
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -85,6 +91,7 @@ class OasController extends Controller
      *
      * @return JSONResponse
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-1
@@ -92,6 +99,19 @@ class OasController extends Controller
     public function generateAll(): JSONResponse
     {
         return $this->generateInternal(registerId: null);
+=======
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
+     */
+    public function generateAll(): JSONResponse
+    {
+        try {
+            // Generate OAS for all registers.
+            $oasData = $this->oasService->createOas();
+            return new JSONResponse(data: $oasData);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end generateAll()
 
     /**
@@ -107,9 +127,13 @@ class OasController extends Controller
      *
      * @PublicPage
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-2
+=======
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generate(string $id): JSONResponse
     {
@@ -134,6 +158,7 @@ class OasController extends Controller
         $emitSummary = $this->boolQueryParam(name: 'validate');
 
         try {
+<<<<<<< HEAD
             $oasData = $this->oasService->createOas($registerId, $strict);
         } catch (OasValidationException $e) {
             // Strict mode rejected the document — return the report so the
@@ -194,4 +219,13 @@ class OasController extends Controller
         $normalized = strtolower((string) $raw);
         return in_array($normalized, ['true', '1', 'yes', 'on'], true);
     }//end boolQueryParam()
+=======
+            // Generate OAS for the specified register.
+            $oasData = $this->oasService->createOas($id);
+            return new JSONResponse(data: $oasData);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
+    }//end generate()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

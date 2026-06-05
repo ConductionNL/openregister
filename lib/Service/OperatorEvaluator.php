@@ -9,9 +9,12 @@
  * Extracted from PropertyRbacHandler / ConditionMatcher to keep class
  * complexity manageable.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -53,10 +56,13 @@ class OperatorEvaluator
      * @param array $operators Operator conditions (e.g. ['$gt' => 5, '$lt' => 10])
      *
      * @return bool True if value matches all operators
+<<<<<<< HEAD
      *
      * @spec openspec/specs/row-field-level-security/spec.md#mongodb-style-operators (evaluates $eq/$ne/$in/$nin/$exists/$gt/$gte/$lt/$lte
      *       for RLS/FLS match conditions, fail-closed on unknown operators with null-handling that mirrors SQL
      *       three-valued logic so list and find verdicts stay aligned)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function valueMatchesOperator(mixed $value, array $operators): bool
     {

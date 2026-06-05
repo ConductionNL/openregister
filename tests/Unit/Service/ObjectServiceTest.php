@@ -31,7 +31,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -123,8 +126,11 @@ class ObjectServiceTest extends TestCase
 	private $organisationService;
 	/** @var MockObject&LoggerInterface */
 	private $logger;
+<<<<<<< HEAD
 	/** @var MockObject&DateTimeNormalizer */
 	private $dateTimeNormalizer;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 	// Real entity instances (magic __call for getters/setters).
 	private Register $register;
@@ -159,6 +165,7 @@ class ObjectServiceTest extends TestCase
 		$this->fileService = $this->createMock(FileService::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
 		$this->dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
 
 		// Default: normalize() echoes the input parsed as DateTime. Tests that need
@@ -176,6 +183,8 @@ class ObjectServiceTest extends TestCase
 				}
 			}
 		);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 		// Create real entity instances (magic getters/setters via __call).
 		$this->register = new Register();
@@ -222,7 +231,10 @@ class ObjectServiceTest extends TestCase
 			$this->logger,
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
+<<<<<<< HEAD
 			$this->dateTimeNormalizer,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			$this->createMock(IAppContainer::class)
 		);
 
@@ -352,11 +364,15 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
+<<<<<<< HEAD
 	 * Test setSchema rethrows DoesNotExistException when schema not found.
 	 *
 	 * setSchema() deliberately rethrows DoesNotExistException so NC's
 	 * dispatcher converts it to a 404; wrapping it in ValidationException
 	 * would surface as a 500. See ObjectService::setSchema().
+=======
+	 * Test setSchema throws ValidationException when schema not found.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	 */
 	public function testSetSchemaThrowsWhenNotFound(): void
 	{
@@ -364,7 +380,11 @@ class ObjectServiceTest extends TestCase
 			->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
+<<<<<<< HEAD
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+=======
+		$this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 		$this->service->setSchema(schema: 'nonexistent-slug');
 	}
@@ -1733,7 +1753,42 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame(20, $result['_limit']);
 	}
 
+<<<<<<< HEAD
 	// ── 39. vectorization methods — disabled ────────────────────────────
+=======
+	// ── 39. exportObjects / importObjects / downloadObjectFiles — disabled ──
+
+	public function testExportObjectsThrowsDisabledException(): void
+	{
+		$register = new Register();
+		$schema = new Schema();
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Export temporarily disabled');
+
+		$this->service->exportObjects($register, $schema);
+	}
+
+	public function testImportObjectsThrowsDisabledException(): void
+	{
+		$register = new Register();
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Import temporarily disabled');
+
+		$this->service->importObjects($register, ['name' => 'test.csv', 'tmp_name' => '/tmp/test']);
+	}
+
+	public function testDownloadObjectFilesThrowsDisabledException(): void
+	{
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('File download temporarily disabled');
+
+		$this->service->downloadObjectFiles('uuid-123');
+	}
+
+	// ── 40. vectorization methods — disabled ────────────────────────────
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 	public function testVectorizeBatchObjectsThrowsDisabledException(): void
 	{
@@ -2712,6 +2767,7 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
+<<<<<<< HEAD
 	 * Test ensureObjectFolder DOES NOT recreate when folder is a numeric string.
 	 *
 	 * The `_folder` column is `varchar(255)` — every populated value is a
@@ -2728,15 +2784,36 @@ class ObjectServiceTest extends TestCase
 		$entity = new ObjectEntity();
 		$entity->setId(1);
 		$entity->setFolder('42');
+=======
+	 * Test ensureObjectFolder recreates folder when folder is a string numeric value.
+	 * Entity getFolder() returns string for numeric values, triggering recreation.
+	 */
+	public function testEnsureObjectFolderRecreatesWhenFolderIsStringNumeric(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+		$entity->setFolder(42);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
+<<<<<<< HEAD
 		$this->fileService->expects($this->never())
 			->method('createObjectFolderWithoutUpdate');
 
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
 		$this->assertNull($result);
+=======
+		// Entity stores 42 as '42' (string), so isString===true triggers recreation.
+		$this->fileService->expects($this->once())
+			->method('createObjectFolderWithoutUpdate')
+			->willReturn(42);
+
+		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
+
+		$this->assertSame(42, $result);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	}
 }

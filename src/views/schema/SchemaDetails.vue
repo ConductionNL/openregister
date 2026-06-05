@@ -79,12 +79,15 @@ import formatBytes from '../../services/formatBytes.js'
 					<CalendarMonth :size="16" />
 					{{ t('openregister', 'Calendar') }}
 				</button>
+<<<<<<< HEAD
 				<button
 					:class="['tabButton', { active: activeTab === 'workflows' }]"
 					@click="activeTab = 'workflows'">
 					<Cog :size="16" />
 					{{ t('openregister', 'Workflows') }}
 				</button>
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			</div>
 
 			<!-- Calendar Provider Tab -->
@@ -92,11 +95,14 @@ import formatBytes from '../../services/formatBytes.js'
 				v-if="activeTab === 'calendar'"
 				:schema="schemaStore.schemaItem" />
 
+<<<<<<< HEAD
 			<!-- Workflows Tab — execution history, scheduled workflows, approval chains -->
 			<SchemaWorkflowTab
 				v-if="activeTab === 'workflows'"
 				:schema="schemaStore.schemaItem" />
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			<!-- Dashboard Tab (original content) -->
 			<div v-show="activeTab === 'dashboard'" class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
@@ -200,9 +206,13 @@ import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
 import ChartBox from 'vue-material-design-icons/ChartBox.vue'
+<<<<<<< HEAD
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
+=======
+import CalendarProviderTab from './CalendarProviderTab.vue'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 export default {
 	name: 'SchemaDetails',
@@ -222,9 +232,13 @@ export default {
 		AlertCircle,
 		CalendarMonth,
 		ChartBox,
+<<<<<<< HEAD
 		Cog,
 		CalendarProviderTab,
 		SchemaWorkflowTab,
+=======
+		CalendarProviderTab,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	},
 	data() {
 		return {

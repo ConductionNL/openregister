@@ -5,9 +5,12 @@
  *
  * REST controller for Deck card relation operations on OpenRegister objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -85,8 +88,11 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -98,7 +104,11 @@ class DeckController extends Controller
         }
 
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+=======
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -124,8 +134,11 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -137,7 +150,11 @@ class DeckController extends Controller
         }
 
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+=======
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -168,6 +185,52 @@ class DeckController extends Controller
     }//end create()
 
     /**
+<<<<<<< HEAD
+=======
+     * Remove a Deck card link from an object.
+     *
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
+     * @param string $deckRef  The deck reference
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function destroy(string $register, string $schema, string $id, string $deckRef): JSONResponse
+    {
+        if ($this->deckCardService->isDeckAvailable() === false) {
+            return new JSONResponse(
+                ['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
+                501
+            );
+        }
+
+        try {
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            if ($object === null) {
+                return new JSONResponse(['error' => 'Object not found'], 404);
+            }
+
+            $this->deckCardService->unlinkCard($object->getUuid(), $deckRef);
+
+            return new JSONResponse(['success' => true]);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (Exception $e) {
+            $code = $e->getCode();
+            if ($code === 404) {
+                return new JSONResponse(['error' => $e->getMessage()], 404);
+            }
+
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }//end try
+    }//end destroy()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Find all objects linked to cards on a board.
      *
      * @param string $boardId The board ID
@@ -176,8 +239,11 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function objects(string $boardId): JSONResponse
     {
@@ -205,8 +271,11 @@ class DeckController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateObject(
         string $register,

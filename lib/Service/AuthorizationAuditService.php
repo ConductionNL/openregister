@@ -6,9 +6,12 @@
  * Logs all changes to authorization configuration on registers and schemas.
  * Provides structured audit entries for compliance and debugging.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -17,8 +20,13 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -70,9 +78,12 @@ class AuthorizationAuditService
      * @param array|null $newAuthorization The new authorization value.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange
      *              (rbac-scopes REQ-002), no distinct behavioral contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function logSchemaAuthorizationChange(
         int $schemaId,
@@ -81,12 +92,17 @@ class AuthorizationAuditService
         ?array $newAuthorization
     ): void {
         $user     = $this->userSession->getUser();
+<<<<<<< HEAD
         $userName = 'System';
         $userId   = 'system';
         if ($user !== null) {
             $userName = $user->getDisplayName();
             $userId   = $user->getUID();
         }
+=======
+        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $userId   = $user !== null ? $user->getUID() : 'system';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->logger->info(
             message: '[AuthorizationAudit] Schema authorization changed',
@@ -115,7 +131,11 @@ class AuthorizationAuditService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function logRegisterAuthorizationChange(
         int $registerId,
@@ -124,6 +144,7 @@ class AuthorizationAuditService
         ?array $newAuthorization
     ): void {
         $user     = $this->userSession->getUser();
+<<<<<<< HEAD
         $userName = 'System';
         $userId   = 'system';
         if ($user !== null) {
@@ -133,12 +154,25 @@ class AuthorizationAuditService
 
         // Count schemas that will inherit this change.
         // This is approximate -- we don't load each schema to check whether it has its own authorization.
+=======
+        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $userId   = $user !== null ? $user->getUID() : 'system';
+
+        // Count schemas that will inherit this change.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $affectedSchemaCount = 0;
         try {
             $register = $this->registerMapper->find($registerId);
             $schemas  = $register->getSchemas();
+<<<<<<< HEAD
             if (is_array($schemas) === true) {
                 $affectedSchemaCount = count($schemas);
+=======
+            foreach ($schemas as $schemaId) {
+                // Count schemas without their own authorization (they cascade).
+                // This is approximate -- we don't load each schema to check.
+                $affectedSchemaCount++;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
         } catch (\Throwable $e) {
             // Could not count affected schemas.
@@ -172,7 +206,11 @@ class AuthorizationAuditService
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function logRoleDefinitionChange(
         int $registerId,
@@ -181,12 +219,17 @@ class AuthorizationAuditService
         ?array $newRoles
     ): void {
         $user     = $this->userSession->getUser();
+<<<<<<< HEAD
         $userName = 'System';
         $userId   = 'system';
         if ($user !== null) {
             $userName = $user->getDisplayName();
             $userId   = $user->getUID();
         }
+=======
+        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $userId   = $user !== null ? $user->getUID() : 'system';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->logger->info(
             message: '[AuthorizationAudit] Role definitions changed',

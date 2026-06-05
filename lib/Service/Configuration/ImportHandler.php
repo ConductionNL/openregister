@@ -6,9 +6,12 @@
  * This file contains the handler class for importing configurations
  * from various sources in the OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -20,6 +23,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-13
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
@@ -27,12 +31,22 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-13
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-86
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
+<<<<<<< HEAD
 use RuntimeException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use stdClass;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -50,6 +64,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -58,6 +73,12 @@ use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IUserSession;
+=======
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WorkflowEngineRegistry;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 use DateTime;
 use Symfony\Component\Yaml\Yaml;
@@ -230,6 +251,7 @@ class ImportHandler
     private ?DeployedWorkflowMapper $deployedWfMapper = null;
 
     /**
+<<<<<<< HEAD
      * Optional task service for seeding related VTODO items.
      *
      * @var TaskService|null
@@ -272,6 +294,21 @@ class ImportHandler
      * @param UploadHandler                                      $uploadHandler        The upload handler.
      * @param ObjectService                                      $objectService        The object service.
      * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
+=======
+     * Constructor for ImportHandler.
+     *
+     * @param SchemaMapper        $schemaMapper        The schema mapper.
+     * @param RegisterMapper      $registerMapper      The register mapper.
+     * @param MagicMapper         $objectEntityMapper  The object entity mapper.
+     * @param ConfigurationMapper $configurationMapper The configuration mapper.
+     * @param MappingMapper       $mappingMapper       The mapping mapper.
+     * @param Client              $client              The HTTP client for URL fetching.
+     * @param IAppConfig          $appConfig           The app config.
+     * @param LoggerInterface     $logger              The logger interface.
+     * @param string              $appDataPath         The app data path.
+     * @param UploadHandler       $uploadHandler       The upload handler.
+     * @param ObjectService       $objectService       The object service.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -284,8 +321,12 @@ class ImportHandler
         LoggerInterface $logger,
         string $appDataPath,
         UploadHandler $uploadHandler,
+<<<<<<< HEAD
         ObjectService $objectService,
         private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator=null
+=======
+        ObjectService $objectService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -310,7 +351,11 @@ class ImportHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setObjectService(ObjectService $objectService): void
     {
@@ -327,7 +372,11 @@ class ImportHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setOpenConnectorConfigurationService(mixed $service): void
     {
@@ -359,6 +408,7 @@ class ImportHandler
     }//end setDeployedWorkflowMapper()
 
     /**
+<<<<<<< HEAD
      * Inject the TaskService used by seed-related-items to create VTODO tasks.
      *
      * @param TaskService|null $taskService Optional task service.
@@ -408,6 +458,8 @@ class ImportHandler
     }//end setUserSession()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Set the MagicMapper dependency for ensuring magic mapper tables exist.
      *
      * This method allows setting the MagicMapper after construction for
@@ -417,7 +469,11 @@ class ImportHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setMagicMapper(MagicMapper $magicMapper): void
     {
@@ -434,7 +490,11 @@ class ImportHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
@@ -451,7 +511,11 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function decode(string $data, ?string $type): ?array
     {
@@ -489,7 +553,11 @@ class ImportHandler
      *
      * @return array The converted array data.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function ensureArrayStructure(mixed $data): array
     {
@@ -520,7 +588,11 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -553,7 +625,11 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -587,7 +663,11 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -623,7 +703,11 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importRegister(
         array $data,
@@ -754,7 +838,11 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-13
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-13
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function importMapping(
         array $data,
@@ -836,7 +924,11 @@ class ImportHandler
      *
      * @throws Exception Always throws with duplicate register information.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
@@ -912,7 +1004,11 @@ class ImportHandler
      *
      * @throws Exception Always throws with duplicate schema information.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
@@ -996,7 +1092,11 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importSchema(
         array $data,
@@ -1006,6 +1106,7 @@ class ImportHandler
         ?string $version=null,
         bool $force=false
     ): Schema {
+<<<<<<< HEAD
         // Pre-validate the schema's shape against a minimal meta-schema
         // before we mutate it. Catches structurally-invalid imports
         // (no `properties` map, wrong type) early, before persistence,
@@ -1029,6 +1130,8 @@ class ImportHandler
             }
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             // Remove id, uuid, and organisation from the data.
             unset($data['id'], $data['uuid'], $data['organisation']);
@@ -1370,7 +1473,11 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromJson(
         array $data,
@@ -1656,6 +1763,7 @@ class ImportHandler
                     $registerData['schemas'] = $schemaIds;
                 }//end if
 
+<<<<<<< HEAD
                 // Propagate parent-level x-openregister.type onto the register
                 // so consuming apps can filter mock/demo data via
                 // `GET /api/registers?filters[type]=mock`. Per-register
@@ -1666,6 +1774,8 @@ class ImportHandler
                     $registerData['type'] = (string) $parentType;
                 }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $register = $this->importRegister(
                     data: $registerData,
                     owner: $owner,
@@ -1794,6 +1904,7 @@ class ImportHandler
                 // This is CRITICAL - passing objects avoids organisation filter in find().
                 $registerObject = $this->registersMap[$rawRegister] ?? null;
                 $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
+<<<<<<< HEAD
 
                 // Fallback for object-only bundles that reference pre-existing
                 // registers/schemas (e.g. the rapportage templates that ship a
@@ -1827,6 +1938,11 @@ class ImportHandler
                 if ($registerObject === null || $schemaObject === null) {
                     $this->logger->warning(
                         message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
+=======
+                if ($registerObject === null || $schemaObject === null) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Skipping object import - register or schema not found in maps',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                         context: [
                             'file'          => __FILE__,
                             'line'          => __LINE__,
@@ -2149,7 +2265,11 @@ class ImportHandler
      *
      * @return array<string, mixed> Updated result array
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-86
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processWorkflowHookWiring(
         array $workflows,
@@ -2277,7 +2397,11 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -2563,6 +2687,7 @@ class ImportHandler
                 );
             }//end if
 
+<<<<<<< HEAD
             // **AUTO-REGISTER CREATION (runtime-schema-api / data-import-export spec)**:
             // When a runtime caller (e.g. OpenBuild's schema editor) imports an OAS
             // marked as `x-openregister.type=application`, the installer-time `repair`
@@ -2577,6 +2702,8 @@ class ImportHandler
                 result: $result
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
@@ -2588,6 +2715,7 @@ class ImportHandler
     }//end importFromApp()
 
     /**
+<<<<<<< HEAD
      * Auto-create or reconcile a Register entity for application-type imports
      *
      * Implements the runtime-schema-api spec contract: when an imported OAS
@@ -2795,6 +2923,8 @@ class ImportHandler
     }//end autoCreateRegisterIfApplication()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Import configuration from a file path.
      *
      * This method reads a JSON configuration file from the filesystem,
@@ -2825,7 +2955,11 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File path resolution has multiple fallback conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Path resolution and JSON parsing have multiple outcomes
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -2909,8 +3043,11 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Configuration creation requires many conditional checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity ID collection and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Configuration tracking involves detailed entity management
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createOrUpdateConfiguration(
         array $data,
@@ -3089,10 +3226,13 @@ class ImportHandler
      * @param array         $result        The result array to append object IDs to.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
      * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
      * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function importSeedData(
         array $configData,
@@ -3112,6 +3252,7 @@ class ImportHandler
             return;
         }
 
+<<<<<<< HEAD
         // Tasks + notes both require a logged-in actor (CalDAV calendar
         // lookup, comment authorship). Capture this once at the top of
         // the import — at occ install time there's no user session, so
@@ -3131,6 +3272,8 @@ class ImportHandler
         $result['relatedNotes'] = ($result['relatedNotes'] ?? 0);
         $result['relatedTasks'] = ($result['relatedTasks'] ?? 0);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Determine target register for seedData objects.
         // SeedData should go into the first register defined in the configuration.
         $targetRegister = null;
@@ -3258,6 +3401,7 @@ class ImportHandler
             }//end if
 
             foreach ($objects as $objectData) {
+<<<<<<< HEAD
                 // Strip + capture _relatedItems before any other processing.
                 // Must happen before the object is persisted so the marker
                 // never reaches the database. Tasks/notes/files are created
@@ -3265,6 +3409,8 @@ class ImportHandler
                 $relatedItems = ($objectData['_relatedItems'] ?? null);
                 unset($objectData['_relatedItems']);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 // Check if object has @self with external configuration reference.
                 // This allows seedData from one app to reference schemas/registers from another app's configuration.
                 $selfData          = $objectData['@self'] ?? null;
@@ -3506,6 +3652,7 @@ class ImportHandler
                             'slug'      => $objectSlug,
                         ]
                     );
+<<<<<<< HEAD
 
                     if (is_array($relatedItems) === true && count($relatedItems) > 0) {
                         $this->processRelatedItems(
@@ -3518,6 +3665,8 @@ class ImportHandler
                             result: $result
                         );
                     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 } catch (Exception $e) {
                     $this->logger->error(
                         message: "[ImportHandler] Failed to import seed for '{$schemaSlug}': ".$e->getMessage(),
@@ -3535,6 +3684,7 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Seed data import complete',
             context: [
+<<<<<<< HEAD
                 'file'          => __FILE__,
                 'line'          => __LINE__,
                 'config_title'  => $configData['info']['title'] ?? 'unknown',
@@ -3542,11 +3692,18 @@ class ImportHandler
                 'related_files' => $result['relatedFiles'] ?? 0,
                 'related_notes' => $result['relatedNotes'] ?? 0,
                 'related_tasks' => $result['relatedTasks'] ?? 0,
+=======
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'config_title' => $configData['info']['title'] ?? 'unknown',
+                'imported'     => count($result['objects']),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ]
         );
     }//end importSeedData()
 
     /**
+<<<<<<< HEAD
      * Create related Nextcloud items (files, notes, tasks) for a freshly
      * seeded object. Each item type is attempted independently so a
      * failure in one doesn't block the others.
@@ -3722,6 +3879,8 @@ class ImportHandler
     }//end processRelatedItems()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Ensure Nextcloud app dependencies are met for seedData import.
      *
      * This method is called ONLY when importing seedData (lazy resolution) to avoid
@@ -3881,6 +4040,7 @@ class ImportHandler
     {
         $this->ensureDependenciesForSeedData(configData: $configData);
     }//end handleNextcloudAppDependencies()
+<<<<<<< HEAD
 
     /**
      * Minimal meta-schema describing the structural shape an OR schema
@@ -3920,4 +4080,6 @@ class ImportHandler
         ];
 
     }//end minimalSchemaShapeMetaSchema()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

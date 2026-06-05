@@ -57,9 +57,12 @@ export default {
 		Cancel,
 		Delete,
 	},
+<<<<<<< HEAD
 	/**
 	 * @spec exclude Vue setup() exposing stores to the template; framework plumbing.
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	setup() {
 		return { configurationStore, navigationStore }
 	},

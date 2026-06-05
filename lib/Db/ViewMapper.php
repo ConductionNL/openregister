@@ -31,7 +31,10 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
+<<<<<<< HEAD
 use OCP\IAppConfig;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -46,7 +49,11 @@ use Symfony\Component\Uid\Uuid;
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -73,6 +80,7 @@ class ViewMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+<<<<<<< HEAD
      * Organisation mapper for multi-tenancy (from trait)
      *
      * Used to get active organisation UUID and apply organisation filters.
@@ -92,6 +100,8 @@ class ViewMapper extends QBMapper
     protected IAppConfig $appConfig;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * User session for current user
      *
      * Used to determine current user context for RBAC filtering.
@@ -124,32 +134,57 @@ class ViewMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
+<<<<<<< HEAD
      * @param IDBConnection      $db                 Database connection
      * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
      * @param IAppConfig         $appConfig          App configuration for multitenancy settings
      * @param IUserSession       $userSession        User session for RBAC
      * @param IGroupManager      $groupManager       Group manager for RBAC
      * @param IEventDispatcher   $eventDispatcher    Event dispatcher for view lifecycle events
+=======
+     * @param IDBConnection    $db              Database connection
+     * @param IUserSession     $userSession     User session for RBAC
+     * @param IGroupManager    $groupManager    Group manager for RBAC
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for view lifecycle events
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
+<<<<<<< HEAD
         OrganisationMapper $organisationMapper,
         IAppConfig $appConfig,
         IUserSession $userSession,
         IGroupManager $groupManager,
+=======
+        // REMOVED: Services should not be in mappers.
+        // OrganisationMapper $organisationMapper.
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        // REMOVED: Handlers should not be in mappers.
+        // CacheHandler $configCacheSvc.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
 
         // Store dependencies for use in mapper methods.
+<<<<<<< HEAD
         $this->organisationMapper = $organisationMapper;
         $this->appConfig          = $appConfig;
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;
         $this->eventDispatcher    = $eventDispatcher;
+=======
+        // REMOVED: Services should not be in mappers.
+        // $this->organisationMapper = $organisationService.
+        $this->userSession  = $userSession;
+        $this->groupManager = $groupManager;
+        // $this->configurationCacheService = $configCacheSvc; // REMOVED
+        $this->eventDispatcher = $eventDispatcher;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end __construct()
 
     /**

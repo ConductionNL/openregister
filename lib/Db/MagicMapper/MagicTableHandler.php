@@ -15,9 +15,12 @@
  * - Discovery of existing register+schema tables
  * - Magic mapping configuration checking
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -48,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * for register+schema dynamic tables, including creation, synchronization,
  * existence checking, and cache management.
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Table lifecycle requires IDBConnection, IAppConfig,
  *   LoggerInterface, MagicMapper, Register, and Schema — each used for a distinct concern (DDL, feature
  *   flags, audit, column building, and schema metadata).
@@ -56,6 +60,11 @@ use Psr\Log\LoggerInterface;
  *   misleading partial-sync helpers.
  * @SuppressWarnings(PHPMD.StaticAccess)           MagicMapper::isTableColumnsVerified / setTableColumnsVerified
  *   are process-scoped static caches with no injectable alternative in the current design.
+=======
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class MagicTableHandler
 {
@@ -116,6 +125,7 @@ class MagicTableHandler
             // Check if table exists using cached method.
             $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
 
+<<<<<<< HEAD
             if ($tableExists === true && $force === false) {
                 return $this->handleExistingTable(
                     register: $register,
@@ -127,6 +137,54 @@ class MagicTableHandler
 
             // Create new table or recreate if forced.
             if ($tableExists === true && $force === true) {
+=======
+            if (($tableExists === true) && ($force === false)) {
+                // Table exists and not forcing update - check if schema changed.
+                if ($this->magicMapper->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
+                    // Fast path: columns already verified in this process, skip information_schema query.
+                    if (MagicMapper::isTableColumnsVerified(cacheKey: $cacheKey) === true) {
+                        return true;
+                    }
+
+                    // Sanity check: verify all schema columns exist in the table.
+                    // The version hash can be stale if it was stored without a full sync.
+                    $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
+                    $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+                    $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
+
+                    if (empty($missingColumns) === true) {
+                        MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
+                        $this->logger->debug(
+                            message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
+                            context: [
+                                'file'      => __FILE__,
+                                'line'      => __LINE__,
+                                'tableName' => $tableName,
+                                'cacheKey'  => $cacheKey,
+                            ]
+                        );
+                        return true;
+                    }
+
+                    $this->logger->warning(
+                        message: '[MagicTableHandler] Schema version unchanged but columns missing, forcing sync',
+                        context: [
+                            'file'           => __FILE__,
+                            'line'           => __LINE__,
+                            'tableName'      => $tableName,
+                            'missingColumns' => array_keys($missingColumns),
+                        ]
+                    );
+                }//end if
+
+                // Schema changed or columns missing, update table.
+                $result = $this->syncTableForRegisterSchema(register: $register, schema: $schema);
+                return $result['success'] ?? true;
+            }//end if
+
+            // Create new table or recreate if forced.
+            if (($tableExists === true) && ($force === true)) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $this->magicMapper->dropTable(tableName: $tableName);
                 $this->magicMapper->invalidateTableCache(cacheKey: $cacheKey);
             }
@@ -154,6 +212,7 @@ class MagicTableHandler
     }//end ensureTableForRegisterSchema()
 
     /**
+<<<<<<< HEAD
      * Handle an existing table: verify columns or sync if schema has changed.
      *
      * Called only when the table exists and force=false. Returns true when the
@@ -223,6 +282,8 @@ class MagicTableHandler
     }//end handleExistingTable()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get table name for a specific register+schema combination
      *
      * @param Register $register The register context
@@ -356,7 +417,11 @@ class MagicTableHandler
      *
      * @throws Exception If table sync fails
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Table sync: create-vs-update branch, then add/make-nullable/skip per column — necessary DDL paths
+=======
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function syncTableForRegisterSchema(Register $register, Schema $schema): array
     {
@@ -647,7 +712,11 @@ class MagicTableHandler
      *
      * @return bool True if MagicMapper should be used for this register+schema
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_register is for future per-register overrides; check uses schema config and global flag only
+=======
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isMagicMappingEnabled(Register $_register, Schema $schema): bool
     {

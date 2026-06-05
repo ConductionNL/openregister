@@ -5,9 +5,12 @@
  *
  * Transmits SIP packages to e-Depot systems via OpenConnector synchronization.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -43,8 +46,11 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @param Client          $httpClient The HTTP client.
      * @param LoggerInterface $logger     Logger.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly Client $httpClient,
@@ -60,7 +66,11 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -131,7 +141,11 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testConnection(array $config): bool
     {
@@ -161,7 +175,11 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @return string The transport name.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string
     {
@@ -177,7 +195,11 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateConfig(array $config): void
     {

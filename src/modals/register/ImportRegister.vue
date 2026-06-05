@@ -330,7 +330,11 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import {
 	NcButton,
@@ -418,7 +422,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
@@ -465,7 +473,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -665,9 +677,12 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude select-change UI handler updating register/schema stores
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async handleRegisterChange(option) {
 			if (!option) {
 				registerStore.setRegisterItem(null)
@@ -694,7 +709,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)

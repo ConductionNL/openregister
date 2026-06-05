@@ -7,9 +7,12 @@
  * Events are stored as standard VEVENT items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -18,7 +21,11 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -28,7 +35,10 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+<<<<<<< HEAD
 use OCP\IConfig;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -48,6 +58,7 @@ class CalendarEventService
 {
 
     /**
+<<<<<<< HEAD
      * NC app id used for IConfig user-value persistence.
      *
      * @var string
@@ -65,6 +76,8 @@ class CalendarEventService
     private const CONFIG_CALENDAR_URI = 'events_calendar_uri';
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * CalDAV backend.
      *
      * @var CalDavBackend
@@ -79,6 +92,7 @@ class CalendarEventService
     private readonly IUserSession $userSession;
 
     /**
+<<<<<<< HEAD
      * Config for user-scoped key/value persistence.
      *
      * @var IConfig
@@ -86,6 +100,8 @@ class CalendarEventService
     private readonly IConfig $config;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Logger.
      *
      * @var LoggerInterface
@@ -97,7 +113,10 @@ class CalendarEventService
      *
      * @param CalDavBackend   $calDavBackend CalDAV backend
      * @param IUserSession    $userSession   User session
+<<<<<<< HEAD
      * @param IConfig         $config        NC config (user-value store)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param LoggerInterface $logger        Logger
      *
      * @return void
@@ -105,12 +124,18 @@ class CalendarEventService
     public function __construct(
         CalDavBackend $calDavBackend,
         IUserSession $userSession,
+<<<<<<< HEAD
         IConfig $config,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         LoggerInterface $logger
     ) {
         $this->calDavBackend = $calDavBackend;
         $this->userSession   = $userSession;
+<<<<<<< HEAD
         $this->config        = $config;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->logger        = $logger;
     }//end __construct()
 
@@ -122,8 +147,11 @@ class CalendarEventService
      * @return array Array of event arrays in JSON-friendly format
      *
      * @throws Exception If no user is logged in or no calendar found
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getEventsForObject(string $objectUuid): array
     {
@@ -150,11 +178,15 @@ class CalendarEventService
             }
 
             try {
+<<<<<<< HEAD
                 $eventArray = $this->veventToArray(
                     calendarData: $calendarData,
                     calendarId: (string) $calendarId,
                     uri: $calendarObject['uri']
                 );
+=======
+                $eventArray = $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
                     $events[] = $eventArray;
                 }
@@ -181,8 +213,11 @@ class CalendarEventService
      * @return array|null The created event in JSON-friendly format
      *
      * @throws Exception If no user or calendar found
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createEvent(
         int $registerId,
@@ -264,8 +299,11 @@ class CalendarEventService
      * @return array|null The updated event
      *
      * @throws Exception If the event is not found
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function linkEvent(
         int $calendarId,
@@ -305,8 +343,11 @@ class CalendarEventService
      * @return void
      *
      * @throws Exception If the event is not found
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function unlinkEvent(string $calendarId, string $eventUri): void
     {
@@ -347,8 +388,11 @@ class CalendarEventService
      * @param string $objectUuid The object UUID.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {
@@ -366,6 +410,7 @@ class CalendarEventService
     }//end unlinkEventsForObject()
 
     /**
+<<<<<<< HEAD
      * Find the calendar OpenRegister should target for the current user.
      *
      * Resolution order:
@@ -385,6 +430,9 @@ class CalendarEventService
      * The pin is stored under `openregister`/`events_calendar_uri` and can
      * be reset by clearing that user-value if a user wants OR to retarget
      * (e.g. via `occ user:setting … --delete`).
+=======
+     * Find the user's first VEVENT-supporting calendar.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return array Calendar data with 'id' and 'uri' keys
      *
@@ -397,6 +445,7 @@ class CalendarEventService
             throw new Exception('No user logged in');
         }
 
+<<<<<<< HEAD
         $userId    = $user->getUID();
         $principal = 'principals/users/'.$userId;
         $calendars = $this->calDavBackend->getCalendarsForUser($principal);
@@ -413,11 +462,41 @@ class CalendarEventService
                 if (($calendar['uri'] ?? null) === $pinnedUri
                     && $this->calendarSupportsVevent(calendar: $calendar) === true
                 ) {
+=======
+        $principal = 'principals/users/'.$user->getUID();
+        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
+
+        foreach ($calendars as $calendar) {
+            $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
+            if ($components !== null) {
+                $supportsVevent = false;
+
+                if (is_object($components) === true && method_exists($components, 'getValue') === true) {
+                    foreach ($components->getValue() as $comp) {
+                        if (strtoupper($comp) === 'VEVENT') {
+                            $supportsVevent = true;
+                            break;
+                        }
+                    }
+                } else if (is_string($components) === true) {
+                    $supportsVevent = stripos($components, 'VEVENT') !== false;
+                } else if (is_iterable($components) === true) {
+                    foreach ($components as $comp) {
+                        if (strtoupper((string) $comp) === 'VEVENT') {
+                            $supportsVevent = true;
+                            break;
+                        }
+                    }
+                }//end if
+
+                if ($supportsVevent === true) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     return [
                         'id'  => $calendar['id'],
                         'uri' => $calendar['uri'],
                     ];
                 }
+<<<<<<< HEAD
             }
 
             // Pin is stale (calendar gone / no longer VEVENT). Fall through
@@ -514,6 +593,15 @@ class CalendarEventService
     }//end calendarSupportsVevent()
 
     /**
+=======
+            }//end if
+        }//end foreach
+
+        throw new Exception('No VEVENT-supporting calendar found for user '.$user->getUID());
+    }//end findUserCalendar()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Parse a VEVENT iCalendar string into a JSON-friendly array.
      *
      * @param string $calendarData The raw iCalendar string
@@ -550,6 +638,7 @@ class CalendarEventService
             }
         }
 
+<<<<<<< HEAD
         $uid = null;
         if (isset($vevent->UID) === true) {
             $uid = (string) $vevent->UID;
@@ -586,6 +675,19 @@ class CalendarEventService
             'description' => $description,
             'attendees'   => $attendees,
             'status'      => $status,
+=======
+        return [
+            'id'          => $uri,
+            'uid'         => isset($vevent->UID) === true ? (string) $vevent->UID : null,
+            'calendarId'  => $calendarId,
+            'summary'     => isset($vevent->SUMMARY) === true ? (string) $vevent->SUMMARY : '',
+            'dtstart'     => $dtstart,
+            'dtend'       => $dtend,
+            'location'    => isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null,
+            'description' => isset($vevent->DESCRIPTION) === true ? (string) $vevent->DESCRIPTION : '',
+            'attendees'   => $attendees,
+            'status'      => isset($vevent->STATUS) === true ? strtolower((string) $vevent->STATUS) : null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'objectUuid'  => $linkData['objectUuid'],
             'registerId'  => $linkData['registerId'],
             'schemaId'    => $linkData['schemaId'],
@@ -599,7 +701,11 @@ class CalendarEventService
      *
      * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractOpenRegisterProperties(mixed $vevent): array
     {

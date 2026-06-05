@@ -5,9 +5,12 @@
  *
  * Service for handling endpoint execution and management.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -105,8 +108,11 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testEndpoint(Endpoint $endpoint, array $testData=[]): array
     {
@@ -175,8 +181,11 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-14
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function executeEndpoint(Endpoint $endpoint, array $request): array
     {
@@ -244,8 +253,11 @@ class EndpointService
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-suppress UnusedParam - False positive: both parameters are used within the method.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-16
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Agent execution has multiple provider and tool conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)       Agent setup involves many validation and config paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Agent execution with tools requires comprehensive logic
@@ -505,8 +517,11 @@ class EndpointService
      *
      * @return bool True if user can execute, false otherwise
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-17
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
      */
     private function canExecuteEndpoint(Endpoint $endpoint): bool
@@ -553,8 +568,11 @@ class EndpointService
      * @param array    $result   Result data
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-18
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function logEndpointCall(Endpoint $endpoint, array $request, array $result): void
     {

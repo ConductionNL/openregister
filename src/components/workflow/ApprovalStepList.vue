@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton } from '@nextcloud/vue'
@@ -23,6 +24,26 @@ import { generateUrl } from '@nextcloud/router'
 				</NcButton>
 				<NcButton type="error" @click="reject(step)">
 					{{ t('openregister', 'Reject') }}
+=======
+<template>
+	<div class="approval-step-list">
+		<h4>Approval Progress</h4>
+		<div v-if="steps.length === 0">
+			<p>No approval steps for this object.</p>
+		</div>
+		<div v-for="step in steps" :key="step.id" class="step-row">
+			<span class="step-order">Step {{ step.stepOrder }}</span>
+			<span class="step-role">{{ step.role }}</span>
+			<span :class="['status-badge', `status-${step.status}`]">{{ step.status }}</span>
+			<span v-if="step.decidedBy" class="decided-by">by {{ step.decidedBy }}</span>
+			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
+				<input v-model="comments[step.id]" type="text" placeholder="Comment...">
+				<NcButton type="success" @click="approve(step)">
+					Approve
+				</NcButton>
+				<NcButton type="error" @click="reject(step)">
+					Reject
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				</NcButton>
 			</div>
 		</div>
@@ -30,9 +51,16 @@ import { generateUrl } from '@nextcloud/router'
 </template>
 
 <script>
+<<<<<<< HEAD
 /**
  * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
  */
+=======
+import { NcButton } from '@nextcloud/vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },
@@ -49,9 +77,12 @@ export default {
 		this.fetchSteps()
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async fetchSteps() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')
@@ -61,6 +92,7 @@ export default {
 				console.error('Failed to fetch steps:', error)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed decide-permission display flag (stub returns true), UI plumbing
 		 */
@@ -70,6 +102,11 @@ export default {
 		/**
 		 * @spec exclude API passthrough approving step + refetch; approval contract owned by approval-workflow capability
 		 */
+=======
+		canDecide() {
+			return true
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async approve(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/approve`)
@@ -79,9 +116,12 @@ export default {
 				console.error('Failed to approve:', error)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude API passthrough rejecting step + refetch; approval contract owned by approval-workflow capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async reject(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/reject`)

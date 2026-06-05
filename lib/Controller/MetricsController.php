@@ -5,9 +5,12 @@
  *
  * Exposes application metrics in Prometheus text exposition format.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -63,8 +66,11 @@ class MetricsController extends Controller
      * @NoCSRFRequired
      *
      * @return TextPlainResponse Prometheus-formatted metrics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-18
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): TextPlainResponse
     {
@@ -133,6 +139,7 @@ class MetricsController extends Controller
         $lines[]     = 'openregister_search_requests_total '.$searchCount;
         $lines[]     = '';
 
+<<<<<<< HEAD
         // CRUD operation counters sourced from the audit-trail ledger.
         // Lifetime counters reset only on audit-trail truncation, so they
         // satisfy Prometheus counter monotonicity for typical operations.
@@ -165,10 +172,13 @@ class MetricsController extends Controller
 
         $lines[] = '';
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return implode("\n", $lines)."\n";
     }//end collectMetrics()
 
     /**
+<<<<<<< HEAD
      * Aggregate audit-trail rows by action.
      *
      * Returns a map keyed by action ('create', 'update', 'delete', 'read',
@@ -253,6 +263,8 @@ class MetricsController extends Controller
     }//end getWebhookCountsByStatus()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Count rows in a database table.
      *
      * @param string $table The table name (without prefix)

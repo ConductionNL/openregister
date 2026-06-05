@@ -3,17 +3,30 @@ status: implemented
 ---
 # GraphQL API
 
+<<<<<<< HEAD
 # GraphQL API
 ## Purpose
 
 @e2e exclude GraphQL backend/schema generation — covered by PHPUnit and Newman
 
+=======
+
+# GraphQL API
+## Purpose
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).
 
 The GraphQL layer MUST reuse existing OpenRegister services -- `PermissionHandler` for schema-level RBAC, `PropertyRbacHandler` for field-level security, `RelationHandler` for nested resolution and DataLoader batching, `AuditTrailMapper` for change logging, `SecurityService` for rate limiting, `MagicMapper` for cross-register queries, and `MultiTenancyTrait` for organisation scoping -- rather than reimplementing any of these concerns. The implementation is built on the `webonyx/graphql-php` library, with the full service stack comprising `GraphQLService` (orchestrator), `SchemaGenerator` (type generation), `GraphQLResolver` (query/mutation resolution), `QueryComplexityAnalyzer` (abuse prevention), `GraphQLErrorFormatter` (structured errors), `SubscriptionService` (SSE event buffer), and `GraphQLSubscriptionListener` (event bridge).
 
 **Source**: Gap identified in cross-platform analysis; Directus, Strapi, and Twenty CRM all provide auto-generated GraphQL APIs. See cross-references: `zoeken-filteren`, `realtime-updates`, `rbac-scopes`.
+<<<<<<< HEAD
 ## Requirements
+=======
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: The GraphQL schema MUST be auto-generated from register schemas
 
 Each register schema MUST automatically produce corresponding GraphQL types, queries, and mutations. `SchemaGenerator.generate()` MUST load all registers via `RegisterMapper.findAll()` and all schemas via `SchemaMapper.findAll()`, then iterate over each schema calling `buildSchemaFields()` to produce query and mutation field definitions. Type generation MUST follow the same JSON Schema property type/format mapping used by `MagicMapper`, ensuring consistency between REST and GraphQL responses. Schema slugs MUST be converted to valid GraphQL names: PascalCase for type names (via `toTypeName()`) and camelCase for field names (via `toFieldName()`), with naive Dutch/English singularization (via `singularize()`) to derive single-object query names from plural schema slugs.
@@ -30,7 +43,11 @@ Each register schema MUST automatically produce corresponding GraphQL types, que
 - **WHEN** `buildQueryFields()` is called
 - **THEN** the following root query fields MUST be generated:
   - `melding(id: ID!): Melding` -- fetch single object via `GraphQLResolver.resolveSingle()`
+<<<<<<< HEAD
   - `meldingen(filter: MeldingenFilter, sort: SortInput, selfFilter: SelfFilter, search: String, fuzzy: Boolean, facets: [String], first: Int, offset: Int, after: String, groupBy: GroupByInput): MeldingenConnection` -- list with pagination via `GraphQLResolver.resolveList()`; the optional `groupBy` argument enables ad-hoc aggregation as defined under the "GraphQL list queries SHALL support an ad-hoc `groupBy` argument" requirement
+=======
+  - `meldingen(filter: MeldingenFilter, sort: SortInput, selfFilter: SelfFilter, search: String, fuzzy: Boolean, facets: [String], first: Int, offset: Int, after: String): MeldingenConnection` -- list with pagination via `GraphQLResolver.resolveList()`
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - **AND** list query arguments MUST be defined by `TypeMapperHandler.getListArgs()` with defaults: `first: 20`, `fuzzy: false`
 
 #### Scenario: Generate mutations for a schema
@@ -193,9 +210,14 @@ Connection types MUST expose facets and facetable field lists matching `FacetHan
 #### Scenario: Facets in connection type structure
 - **GIVEN** any schema `meldingen`
 - **WHEN** `TypeMapperHandler.getConnectionType()` builds the connection type
+<<<<<<< HEAD
 - **THEN** it MUST include fields: `edges: [MeldingenEdge!]!`, `pageInfo: PageInfo!`, `totalCount: Int!`, `facets: JSON`, `facetable: [String]`, `groups: [GroupBucket!]`
 - **AND** each edge type MUST include: `cursor: String!`, `node: Melding!`, `_relevance: Float` (fuzzy search relevance score)
 - **AND** `groups` SHALL be `null` unless the client supplied a `groupBy` argument on the list query
+=======
+- **THEN** it MUST include fields: `edges: [MeldingenEdge!]!`, `pageInfo: PageInfo!`, `totalCount: Int!`, `facets: JSON`, `facetable: [String]`
+- **AND** each edge type MUST include: `cursor: String!`, `node: Melding!`, `_relevance: Float` (fuzzy search relevance score)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ### Requirement: GraphQL MUST support dual pagination modes
 
@@ -607,6 +629,7 @@ The `GraphQLResolver` MUST provide a `reset()` method to clear all per-request s
 - **GIVEN** `GraphQLService.createContext()` is called for each execution
 - **THEN** the context array MUST include references to: `objectService`, `permissionHandler`, `propertyRbac`, `auditTrailMapper`, `registerMapper`, `schemaMapper`, `schemaGenerator`, `operationName`, `request`, and an empty `errors` array
 
+<<<<<<< HEAD
 ### Requirement: GraphQL list queries SHALL support an ad-hoc `groupBy` argument with optional time-bucketing
 
 Every auto-generated list-query field on every schema SHALL accept an optional `groupBy: GroupByInput` argument. When supplied, the returned connection SHALL include a non-null `groups: [GroupBucket!]` field with the bucketed aggregation result. When `groupBy` is absent, `groups` SHALL be `null`.
@@ -722,6 +745,8 @@ type GroupBucket {
 - **WHEN** `encodeCursor()` runs
 - **THEN** it MUST return a base64-encoded JSON string containing `{uuid, offset}`
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Current Implementation Status
 
 - **Fully implemented -- GraphQL service layer**: `GraphQLService` (`lib/Service/GraphQL/GraphQLService.php`) orchestrates query execution with rate limiting, introspection control, complexity analysis, and structured error handling.

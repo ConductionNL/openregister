@@ -5,8 +5,11 @@ status: partial
 # Notificatie Engine
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend notification delivery/rules engine — covered by PHPUnit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Extend OpenRegister's existing CloudEvent-based event system with user-facing notification delivery. This is NOT a standalone engine — it builds on the event-driven-architecture spec's events and the webhook-payload-mapping spec's delivery infrastructure, adding Nextcloud INotificationManager integration, user preferences, and delivery channels. The existing WebhookService already handles outbound webhook delivery with HMAC signing, CloudEvents formatting, and Mapping-based payload transformation. The existing Notifier class already implements INotifier for in-app notifications. The existing WebhookEventListener already listens for 55+ object/register/schema/configuration lifecycle events. This spec extends that foundation with configurable notification rules per schema, template-based message formatting, recipient resolution, batching/digest delivery, user preference management, and VNG Notificaties API compliance for Dutch government interoperability.
 
 **Tender demand**: 51% of analyzed government tenders require notification capabilities.
@@ -20,9 +23,17 @@ This spec is an extension of existing infrastructure, not a greenfield build:
 - **Payload transformation (implemented)**: `MappingService::executeMapping()` with Twig templates already enables format-agnostic payload transformation. VNG Notificaties format is achieved through Mapping configuration, not hardcoded logic.
 - **Multi-tenancy (implemented)**: Webhook entities already support organisation scoping via the `organisation` field and `MultiTenancyTrait`. Notification rules inherit this isolation.
 - **What this spec adds**: NotificationRule entity, NotificationPreference entity, NotificationHistory entity, digest/batching mechanism, user opt-in/opt-out, rate limiting, threshold/deadline/workflow triggers, and read/unread tracking.
+<<<<<<< HEAD
 ## Requirements
 ### Requirement: The system MUST integrate with Nextcloud's INotificationManager for in-app notifications
 All notification delivery to Nextcloud users MUST go through Nextcloud's native `OCP\Notification\IManager` interface. The object-lifecycle subjects declared by `x-openregister-notifications` — at minimum `object_created`, `object_updated`, and an assignment/transition subject (`object_transitioned`) — MUST be rendered by a registered `INotifier`. In OpenRegister this rendering lives in `AnnotationNotifier` (registered via `registerNotifierService`), which owns those subjects plus anything carrying a pre-rendered `_text` parameter; `Notifier` (registered via `appinfo/info.xml`) continues to own `configuration_update_available`. The two notifiers are mutually exclusive by subject so Nextcloud's sequential `Manager::prepare()` never double-renders. Each object subject MUST be internationalised in Dutch (nl) and English (en) via `IFactory::get('openregister', <languageCode>)` and MUST carry a primary action link to the object detail view. Push delivery is achieved by `notify_push` auto-intercepting the same `IManager` notification — the `push` channel is declared, not coded.
+=======
+
+## Requirements
+
+### Requirement: The system MUST integrate with Nextcloud's INotificationManager for in-app notifications
+All notification delivery to Nextcloud users MUST go through Nextcloud's native `OCP\Notification\IManager` interface. The existing `Notifier` class (implementing `INotifier`) MUST be extended to handle all notification subjects beyond `configuration_update_available`, including object lifecycle events, threshold alerts, and workflow-triggered notifications.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 #### Scenario: Deliver object creation notification via INotificationManager
 - GIVEN a notification rule targeting channel `in-app` for schema `meldingen` on event `object.created`
@@ -42,6 +53,7 @@ All notification delivery to Nextcloud users MUST go through Nextcloud's native 
 - THEN the system MUST call `IManager::markProcessed()` for all notifications with object type `register_object` and id matching `melding-5`
 - AND those notifications MUST disappear from the user's notification panel
 
+<<<<<<< HEAD
 #### Scenario: AnnotationNotifier renders object_created with nl i18n and action link
 - GIVEN `AnnotationNotifier` receives an `INotification` with subject `object_created` and `languageCode` = `nl`
 - WHEN `prepare()` is called
@@ -60,6 +72,20 @@ All notification delivery to Nextcloud users MUST go through Nextcloud's native 
 - GIVEN `AnnotationNotifier` receives an `INotification` whose subject it does not own (no `_text` and not a canonical object subject — e.g. `configuration_update_available`)
 - WHEN `prepare()` is called
 - THEN it MUST raise `UnknownNotificationException` so the manager passes the notification on to `Notifier` untouched
+=======
+#### Scenario: Notifier prepares notification with correct i18n
+- GIVEN the Notifier receives an `INotification` with subject `object_updated` and `languageCode` = `nl`
+- WHEN `Notifier::prepare()` is called
+- THEN it MUST use `IFactory::get('openregister', 'nl')` to load Dutch translations
+- AND the parsed subject MUST read `Object "%s" bijgewerkt in register "%s"` with the object title and register name substituted
+- AND the notification icon MUST be set to the OpenRegister app icon via `IURLGenerator::imagePath()`
+
+#### Scenario: Notifier adds action link to object detail view
+- GIVEN a notification for object UUID `abc-123` in register `5` and schema `12`
+- WHEN `Notifier::prepare()` formats the notification
+- THEN it MUST add a primary action with label `Bekijken` and link to the absolute route `openregister.dashboard.page` with fragment `#/registers/5/schemas/12/objects/abc-123`
+- AND the action request type MUST be `GET`
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ### Requirement: The system MUST support configurable notification rules per schema
 Administrators MUST be able to define notification rules that specify which events on which schemas trigger notifications, to which recipients, via which channels, using which message template.
@@ -248,6 +274,7 @@ Failed notification deliveries MUST be retried with configurable backoff strateg
 - AND only the failed webhook delivery MUST be retried
 
 ### Requirement: Users MUST be able to manage their notification preferences
+<<<<<<< HEAD
 Users MUST be able to turn specific schema-declared notifications on or off (and optionally narrow channels) via a personal settings interface, without affecting other users' preferences. Preferences MUST be stored as override-only values in Nextcloud per-user app config under the `openregister` app (NOT in a `NotificationPreference` or `NotificationSubscription` table). When a user has no override for a `(schema, notification-key)` pair, the schema-declared default applies.
 
 #### Scenario: User disables a specific notification
@@ -255,6 +282,16 @@ Users MUST be able to turn specific schema-declared notifications on or off (and
 - AND user `jan` is a member of `behandelaars`
 - WHEN `jan` turns off `(meldingen, object_created)` via `PUT /api/notification-preferences`
 - THEN `jan` MUST NOT receive that notification
+=======
+Users MUST be able to opt in or out of specific notification channels or rules via a personal settings interface, without affecting other users' preferences.
+
+#### Scenario: User disables email notifications for a specific rule
+- GIVEN notification rule 7 sends email and in-app notifications to group `behandelaars`
+- AND user `jan` is a member of `behandelaars`
+- WHEN `jan` disables the `email` channel for rule 7 via `PUT /api/notification-preferences`
+- THEN `jan` MUST NOT receive email notifications for rule 7
+- AND `jan` MUST still receive in-app notifications for rule 7
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - AND other members of `behandelaars` MUST be unaffected
 
 #### Scenario: User opts out of all notifications for a schema
@@ -276,6 +313,7 @@ Users MUST be able to turn specific schema-declared notifications on or off (and
 - THEN `jan` MUST still receive the notification on all channels including email
 - AND the notification MUST be visually marked as critical in the notification panel
 
+<<<<<<< HEAD
 #### Scenario: Retrieve effective user notification preferences
 - GIVEN user `jan` has customised 2 of the notifications his accessible schemas declare
 - WHEN `jan` calls `GET /api/notification-preferences`
@@ -288,6 +326,32 @@ Users MUST be able to turn specific schema-declared notifications on or off (and
 - WHEN `piet` calls `GET /api/notification-preferences`
 - THEN every entry MUST reflect the schema-declared default
 - AND no per-user row or migration MUST be required for the read to succeed
+=======
+#### Scenario: Retrieve user notification preferences
+- GIVEN user `jan` has customized preferences for 3 rules
+- WHEN `jan` calls `GET /api/notification-preferences`
+- THEN the response MUST list all notification rules the user is subscribed to, with per-rule channel settings
+- AND rules where the user has no custom preferences MUST show the default channel configuration
+
+### Requirement: Notifications MUST support per-register and per-schema channel subscriptions
+Administrators MUST be able to configure notification channels at the register or schema level, providing default notification behavior that individual rules can override.
+
+#### Scenario: Register-level default notification channel
+- GIVEN register `zaken` is configured with default notification channels `["in-app"]`
+- WHEN a notification rule is created for schema `meldingen` in register `zaken` without specifying channels
+- THEN the rule MUST inherit the register's default channels (`in-app`)
+
+#### Scenario: Schema-level notification channel override
+- GIVEN register `zaken` has default channels `["in-app"]`
+- AND schema `vergunningen` overrides with channels `["in-app", "email"]`
+- WHEN a notification rule for `vergunningen` inherits defaults
+- THEN it MUST use the schema-level override `["in-app", "email"]`, not the register default
+
+#### Scenario: Rule-level channel takes precedence
+- GIVEN schema `meldingen` has default channels `["in-app"]`
+- AND a notification rule explicitly sets channels `["webhook"]`
+- THEN the rule MUST use only `["webhook"]`, overriding the schema default
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ### Requirement: The system MUST support VNG Notificaties API compliance
 For Dutch government interoperability, the notification engine MUST support publishing notifications in the VNG Notificaties API format, enabling integration with ZGW-compatible systems via the Notificatierouteringscomponent (NRC) pattern.
@@ -399,6 +463,7 @@ All notification messages (subjects, bodies, action labels) MUST be translatable
 ### Requirement: The notification engine MUST support event-driven trigger types beyond CRUD
 Notifications MUST be triggerable by workflow events, threshold alerts, scheduled checks, and external triggers in addition to standard object CRUD events.
 
+<<<<<<< HEAD
 The `updated` trigger MUST additionally accept an optional non-numeric field-change `condition` block, evaluated against the old-versus-new object data the dispatch already supplies for `calculatedChange`. The block names a single `field` and one `operator`:
 
 - `{"field": "status", "operator": "changed"}` — the rule fires only when the field's value differs between the old and new object data (old ≠ new).
@@ -407,6 +472,8 @@ The `updated` trigger MUST additionally accept an optional non-numeric field-cha
 
 The evaluator MUST fail closed: when the old-versus-new object data is unavailable in the dispatch context, a `condition`-bearing `updated` rule MUST NOT fire — consistent with the existing `calculatedChange` behaviour. An `updated` rule that declares NO `condition` MUST continue to fire on every update (back-compatible). The non-numeric field-change condition is evaluated by a string-condition evaluator distinct from the existing numeric `calculatedChange` evaluator; numeric `calculatedChange` semantics are unchanged.
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 #### Scenario: Workflow completion triggers notification
 - GIVEN an n8n workflow `vergunning-beoordeling` completes with output `{"result": "goedgekeurd"}`
 - AND a notification rule listens for event `workflow.completed` with condition `{"workflowName": "vergunning-beoordeling"}`
@@ -435,6 +502,7 @@ The evaluator MUST fail closed: when the old-versus-new object data is unavailab
 - WHEN an external system calls `POST /api/notification-rules/15/trigger` with payload `{"objectUuid": "abc-123", "message": "Externe update ontvangen"}`
 - THEN a notification MUST be sent to the rule's recipients with the provided message
 
+<<<<<<< HEAD
 #### Scenario: updated trigger with `changed` condition fires only when the field value differs
 - GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "changed"}`
 - AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "closed"}`
@@ -472,6 +540,8 @@ The evaluator MUST fail closed: when the old-versus-new object data is unavailab
 - WHEN any update occurs on the object
 - THEN the rule MUST fire on every update, preserving backwards compatibility with existing condition-less rules
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Notification grouping MUST reduce noise for related events
 Multiple notifications about the same object or related objects MUST be grouped to avoid flooding the user's notification panel.
 
@@ -545,6 +615,7 @@ The system MUST enforce rate limits on notification delivery per recipient, per 
 - AND all subsequent notifications in that hour MUST be queued
 - AND an admin alert MUST be generated: `Globale notificatielimiet bereikt`
 
+<<<<<<< HEAD
 ### Requirement: Notification rules MUST be sourced ONLY from the schema annotation, evaluated at dispatch time
 The system MUST treat `configuration['x-openregister-notifications']` on the `Schema` as the single, authoritative source of notification rules. Because the schema is ALWAYS loaded whenever anything happens to an object, the dispatcher MUST evaluate the notification rules directly from the already-loaded schema annotation at dispatch time. The system MUST NOT persist notification rules in any separate rule table, and MUST NOT introduce a `NotificationRule` entity or `oc_openregister_notification_rules` table. (ADR-031: `x-openregister-notifications` is the declarative replacement for app-local notification service code.)
 
@@ -625,6 +696,102 @@ Before delivering the in-app (`nc-notification`) or `push` channel to a given re
 - **WHEN** the dispatcher fans out
 - **THEN** the in-app notification MUST be delivered and the push channel MUST be suppressed for that recipient
 - **AND** if the override specifies on/off only (no channel), both declared channels MUST follow the on/off value
+=======
+## ADDED Requirements (graduated from lifecycle-notifications-amendments)
+
+### Requirement: Schemas MAY declare notifications via `x-openregister-notifications`
+
+A schema MAY include a top-level `x-openregister-notifications`
+block: a map of notification name → spec. Each spec declares
+`trigger` (type + parameters), `filter` (Mongo-style operators
+against the triggering object), `recipients` (one or more
+recipient blocks), `channels` (one or more channel blocks),
+optional `throttle`, optional `audit: bool`. Schema-save
+validation MUST verify every reference and reject malformed
+annotations with HTTP 422.
+
+#### Channel block format (normative)
+
+Every entry in `channels[]` MUST be an object with exactly one
+mandatory field — `kind` — whose value is one of
+`nc-notification`, `email`, `webhook`, `talk`, `activity`. The
+remaining fields are kind-dependent:
+
+| `kind` | Required fields | Optional fields | Notes |
+|---|---|---|---|
+| `nc-notification` | (none) | `subjectKey`, `messageKey`, `iconUrl`, `link`, `priority` (low/normal/high) | i18n keys resolve via the existing `Notifier` template registry. |
+| `email` | (none) | `subjectKey`, `bodyTemplateKey`, `replyTo`, `senderKey` | SMTP config comes from NC; templates are i18n keys. The annotation MUST NOT inline raw email bodies. |
+| `webhook` | `webhookId` (UUID of an existing `Webhook` entity registered by an admin) | `mappingKey` (template override) | The target URL MUST come from the existing Webhook entity registry — non-admin schema authors MUST NOT be able to set arbitrary URLs in the annotation, to prevent SSRF. Schema-save validation MUST reject `url:` directly inline in a channel block with `{ code: "notification-channel-webhook-inline-url-forbidden" }`. |
+| `talk` | `room` (NC Talk conversation id or token) | `messageKey` | Resolves via `OCA\Talk\Manager`. Validation MUST verify the room exists at install time (best effort — re-checks at delivery). |
+| `activity` | (none) | `subjectKey`, `objectType`, `objectName` | Routes through `OCP\Activity\IManager`; the existing `activity-provider` integration consumes it. |
+
+A schema MAY declare more than one channel block per notification
+(e.g. send both email and an `nc-notification`). Validation MUST
+reject unknown keys, missing mandatory fields, or unsupported
+`kind` values with HTTP 422.
+
+#### Scenario: Webhook channel with inline URL is rejected
+- GIVEN a notification declares `channels: [{ kind: "webhook", url: "https://attacker.example.com/x" }]`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "notification-channel-webhook-inline-url-forbidden" }`
+
+#### Scenario: Webhook channel referencing a registered entity is accepted
+- GIVEN an admin has registered a `Webhook` entity with UUID `abc-123` and target URL `https://allowed.example.com/hook`
+- AND a notification declares `channels: [{ kind: "webhook", webhookId: "abc-123" }]`
+- WHEN the schema is saved
+- THEN the save MUST succeed
+- AND delivery MUST POST to the URL stored on the registered Webhook entity, NOT to a URL supplied by the schema author
+
+### Requirement: Throttle window grammar (normative)
+
+A notification's optional `throttle` block MAY declare
+`perRecipient`, `perObject`, and / or `global` windows. Each
+throttle value MUST match the regex
+`^([1-9][0-9]*) per (second|minute|hour|day|week)$`
+(count + literal `per` + unit). Whitespace between tokens is
+exactly one ASCII space. Schema-save validation MUST reject any
+other format with HTTP 422 and
+`{ code: "notification-throttle-invalid-window", value: "<input>", expected: "{N} per {second|minute|hour|day|week}" }`.
+ISO-8601 durations (`PT24H` etc.) are NOT accepted in v1 —
+implementations MAY add ISO-8601 in v2 but MUST keep the v1
+grammar working unchanged.
+
+#### Scenario: Valid throttle window is accepted
+- GIVEN a notification with `throttle: { perRecipient: "1 per day" }`
+- WHEN the schema is saved
+- THEN validation MUST accept it
+
+#### Scenario: ISO-8601 duration is rejected in v1
+- GIVEN a notification with `throttle: { perRecipient: "PT24H" }`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "notification-throttle-invalid-window", value: "PT24H", expected: "{N} per {second|minute|hour|day|week}" }`
+
+### Requirement: Trigger types `created` and `updated` MUST be supported
+
+The trigger registry MUST recognise `created` and `updated`
+trigger types (in addition to `transition`, `scheduled`, and
+`threshold` documented elsewhere).
+
+#### Scenario: `created` trigger fires on object creation; filters see the new state only
+- GIVEN a notification with `trigger: { type: "created" }` and `filter: { taskStatus: "open" }`
+- AND a new action item is created with `taskStatus: "open"`
+- WHEN `ObjectCreatedEvent` fires
+- THEN the installer-mapped listener MUST evaluate the filter against the created object's payload (there is no "before" state)
+- AND `$before.*` placeholder MUST resolve to `null` and validation MUST reject filters that require a non-null `$before`
+- AND the notification MUST dispatch to all resolved recipients
+
+#### Scenario: `updated` trigger MAY filter on a field-diff (`only_if_changed`)
+- GIVEN a notification with `trigger: { type: "updated", only_if_changed: ["assignee"] }`
+- AND an existing action item is updated, changing `assignee` from `alice` to `bob`
+- WHEN `ObjectUpdatedEvent` fires
+- THEN the listener MUST compare the listed fields between before/after state
+- AND fire the notification (because `assignee` changed)
+- WHEN the same item is later updated, changing only `description`
+- THEN the listener MUST NOT fire (no listed field changed)
+- AND when `only_if_changed` is omitted, the trigger fires on every update
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.
@@ -678,4 +845,8 @@ Before delivering the in-app (`nc-notification`) or `push` channel to a given re
 
 **Nextcloud Core Integration**: The notification engine is natively integrated with Nextcloud's `INotifier` interface (registered during app bootstrap via `appinfo/info.xml` service declaration). This means OpenRegister notifications appear in the standard Nextcloud notification bell. The `notify_push` app (if installed) automatically intercepts `INotificationManager::notify()` calls and pushes them to connected clients via WebSocket, giving OpenRegister real-time push notifications without any additional code. Email delivery via Nextcloud's built-in notification-to-email feature is available when users configure email delivery in their Nextcloud notification settings. The Notifier handles i18n through Nextcloud's `IL10N` translation system via `IFactory::get()`. Webhook delivery runs asynchronously via Nextcloud's `QueuedJob` background job system, ensuring notification processing does not block the originating request. The `INotificationManager` handles the full notification lifecycle: create, mark processed, and dismiss.
 
+<<<<<<< HEAD
 **Recommendation**: The in-app notification integration via `INotifier` is the correct and native approach for Nextcloud. Object-lifecycle subjects (`object_created`, `object_updated`, `object_transitioned`) are rendered by `AnnotationNotifier`, which owns those subjects and anything carrying a pre-rendered `_text`; `Notifier` keeps `configuration_update_available` (the two are mutually exclusive by subject). For email notifications, the recommended path is to delegate to n8n workflows via the existing webhook system rather than implementing direct SMTP, which aligns with the project direction. For push notifications, rely on Nextcloud's `notify_push` automatic interception of `INotificationManager::notify()` calls. **No `NotificationRule` or `NotificationPreference`/`NotificationSubscription` tables are introduced**: notification rules live ONLY in the schema annotation `x-openregister-notifications` (evaluated at dispatch from the always-loaded schema), and per-user preferences are override-only Nextcloud user-config values that flip the schema default for a `(schema, notification-key)` pair (absence falls through to the default — zero migration). `NotificationHistory` remains for the audit trail. The existing `WebhookService` and `WebhookEventListener` provide a solid foundation for the webhook channel; the notification engine builds on top of them rather than replacing them.
+=======
+**Recommendation**: The in-app notification integration via `INotifier` is the correct and native approach for Nextcloud. Extend the existing `Notifier::prepare()` to handle additional subjects (`object_created`, `object_updated`, `object_deleted`, `threshold_alert`, `workflow_completed`, `digest`) beyond the current `configuration_update_available`. For email notifications, the recommended path is to delegate to n8n workflows via the existing webhook system rather than implementing direct SMTP, which aligns with the project direction. For push notifications, rely on Nextcloud's `notify_push` automatic interception of `INotificationManager::notify()` calls. New entities needed: `NotificationRule` (configurable rules), `NotificationPreference` (per-user opt-in/out), and optionally `NotificationHistory` (audit trail). The existing `WebhookService` and `WebhookEventListener` provide a solid foundation for the webhook channel; the notification engine should build on top of them rather than replacing them.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -26,13 +26,19 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IAvatarManager;
+<<<<<<< HEAD
 use OCP\IDBConnection;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\IConfig;
 use OCP\IGroupManager;
+<<<<<<< HEAD
 use OCP\L10N\IFactory;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountProperty;
@@ -78,9 +84,13 @@ class UserServiceCoverageTest extends TestCase
             $this->eventDispatcher,
             $this->createMock(IAvatarManager::class),
             $this->createMock(AuditTrailMapper::class),
+<<<<<<< HEAD
             $this->createMock(ISecureRandom::class),
             $this->createMock(IDBConnection::class),
             $this->createMock(IFactory::class)
+=======
+            $this->createMock(ISecureRandom::class)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 

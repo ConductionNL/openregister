@@ -3,6 +3,7 @@
 /**
  * OpenRegister ApprovalController
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -10,17 +11,26 @@
  * @package  OCA\OpenRegister\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -33,7 +43,10 @@ use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Service\ApprovalService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IGroupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -57,7 +70,10 @@ class ApprovalController extends Controller
      * @param ApprovalService     $approvalService Approval service
      * @param IUserSession        $userSession     User session
      * @param LoggerInterface     $logger          Logger
+<<<<<<< HEAD
      * @param IGroupManager       $groupManager    Group manager for admin checks
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -66,13 +82,18 @@ class ApprovalController extends Controller
         private readonly ApprovalStepMapper $stepMapper,
         private readonly ApprovalService $approvalService,
         private readonly IUserSession $userSession,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly IGroupManager $groupManager
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Determine whether the current user is a Nextcloud admin.
      *
      * @return bool True when the active session user belongs to the admin group.
@@ -88,13 +109,18 @@ class ApprovalController extends Controller
     }//end isCurrentUserAdmin()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * List all approval chains.
      *
      * @NoAdminRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -113,8 +139,11 @@ class ApprovalController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function show(int $id): JSONResponse
     {
@@ -131,6 +160,7 @@ class ApprovalController extends Controller
      * Create a new approval chain.
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
      *
@@ -143,6 +173,11 @@ class ApprovalController extends Controller
             return new JSONResponse(['error' => 'Admin privileges required'], 403);
         }
 
+=======
+     */
+    public function create(): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $data = $this->request->getParams();
 
         try {
@@ -160,6 +195,7 @@ class ApprovalController extends Controller
      * @param int $id Chain ID
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
      *
@@ -172,6 +208,11 @@ class ApprovalController extends Controller
             return new JSONResponse(['error' => 'Admin privileges required'], 403);
         }
 
+=======
+     */
+    public function update(int $id): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $data  = $this->request->getParams();
             $chain = $this->chainMapper->updateFromArray($id, $data);
@@ -190,6 +231,7 @@ class ApprovalController extends Controller
      * @param int $id Chain ID
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
      *
@@ -202,6 +244,11 @@ class ApprovalController extends Controller
             return new JSONResponse(['error' => 'Admin privileges required'], 403);
         }
 
+=======
+     */
+    public function destroy(int $id): JSONResponse
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $chain = $this->chainMapper->find($id);
             $this->chainMapper->delete($chain);
@@ -220,8 +267,11 @@ class ApprovalController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function objects(int $id): JSONResponse
     {
@@ -262,9 +312,12 @@ class ApprovalController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-3
      * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function steps(): JSONResponse
     {
@@ -293,7 +346,11 @@ class ApprovalController extends Controller
         $steps = $this->stepMapper->findAllFiltered($filters);
 
         return new JSONResponse(
+<<<<<<< HEAD
             array_map(fn ($step) => $step->jsonSerialize(), $steps)
+=======
+            array_map(fn ($s) => $s->jsonSerialize(), $steps)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }//end steps()
 
@@ -305,8 +362,11 @@ class ApprovalController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function approve(int $id): JSONResponse
     {
@@ -344,8 +404,11 @@ class ApprovalController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reject(int $id): JSONResponse
     {

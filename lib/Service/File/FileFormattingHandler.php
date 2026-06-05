@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -67,6 +75,7 @@ class FileFormattingHandler
     /**
      * Constructor for FileFormattingHandler.
      *
+<<<<<<< HEAD
      * @param TaggingHandler                       $taggingHandler     Tagging handler for tag operations.
      * @param FileSharingHandler                   $fileSharingHandler Sharing handler for share operations.
      * @param IURLGenerator                        $urlGenerator       URL generator for creating URLs.
@@ -77,6 +86,14 @@ class FileFormattingHandler
      *                                                                 description / category / labels / downloadCount
      *                                                                 enrichment. When null (test fixtures, legacy
      *                                                                 callers), enrichment is skipped silently.
+=======
+     * @param TaggingHandler     $taggingHandler     Tagging handler for tag operations.
+     * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
+     * @param IURLGenerator      $urlGenerator       URL generator for creating URLs.
+     * @param ILockManager       $lockManager        Lock manager for reading file lock state.
+     * @param IUserSession       $userSession        Session used to gate lock fields for authenticated callers only.
+     * @param LoggerInterface    $logger             Logger for logging operations.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly TaggingHandler $taggingHandler,
@@ -84,8 +101,12 @@ class FileFormattingHandler
         private readonly IURLGenerator $urlGenerator,
         private readonly ILockManager $lockManager,
         private readonly IUserSession $userSession,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
@@ -117,11 +138,16 @@ class FileFormattingHandler
      *
      * @throws Exception If formatting fails.
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+=======
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Label processing requires many conditional branches
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for label key-value extraction
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatFile(Node $file): array
     {
@@ -162,6 +188,7 @@ class FileFormattingHandler
             }
         }
 
+<<<<<<< HEAD
         // Append OR-side metadata enrichment (description / category /
         // OR-managed labels / downloadCount) when the FileMapper is wired
         // and a row exists for this fileId. Anonymous callers see the
@@ -221,6 +248,8 @@ class FileFormattingHandler
             }//end try
         }//end if
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Process labels that contain ':' to add as separate metadata fields.
         $remainingLabels = [];
         foreach ($metadata['labels'] as $label) {
@@ -291,8 +320,11 @@ class FileFormattingHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File formatting with pagination requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and pagination paths
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {

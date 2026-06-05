@@ -5,9 +5,12 @@
  *
  * Controller for file search operations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -16,7 +19,11 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-87
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-87
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -77,7 +84,11 @@ class FileSearchController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-87
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-87
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function keywordSearch(): JSONResponse
     {
@@ -214,8 +225,11 @@ class FileSearchController extends Controller
      *     total?: int<0, max>, results?: array<int, array<string, mixed>>,
      *     search_type?: 'semantic'},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function semanticSearch(): JSONResponse
     {
@@ -277,8 +291,11 @@ class FileSearchController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with hybrid search results or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hybridSearch(): JSONResponse
     {

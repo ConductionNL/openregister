@@ -4,7 +4,11 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
+<<<<<<< HEAD
 		:loading-message="t('openregister', 'Loading n8n configuration...')">
+=======
+		loading-message="Loading n8n configuration...">
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -195,7 +199,11 @@
 		<!-- Workflow Management -->
 		<SettingsCard
 			v-if="n8nEnabled && connectionStatus && connectionStatus.success && initResult && initResult.success"
+<<<<<<< HEAD
 			:title="t('openregister', 'Workflow Management')"
+=======
+			title="Workflow Management"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			icon="⚙️"
 			:collapsible="true"
 			:default-collapsed="false">
@@ -342,7 +350,10 @@ export default {
 		/**
 		 * Check if configuration has unsaved changes.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — dirty-state predicate comparing local fields to snapshot.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {boolean} True if there are unsaved changes.
 		 */
 		hasChanges() {
@@ -363,7 +374,10 @@ export default {
 		/**
 		 * Load n8n configuration from backend.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async loadConfiguration() {
@@ -400,7 +414,10 @@ export default {
 		/**
 		 * Update n8n URL value.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — local field setter for two-way binding.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} value New URL value.
 		 * @return {void}
 		 */
@@ -411,7 +428,10 @@ export default {
 		/**
 		 * Update n8n API key value.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — local field setter for two-way binding.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} value New API key value.
 		 * @return {void}
 		 */
@@ -422,7 +442,10 @@ export default {
 		/**
 		 * Update n8n project value.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — local field setter for two-way binding.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} value New project value.
 		 * @return {void}
 		 */
@@ -433,7 +456,10 @@ export default {
 		/**
 		 * Handle toggle of n8n integration.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — toggle handler delegating to saveConfiguration.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {boolean} checked New enabled state.
 		 * @return {Promise<void>}
 		 */
@@ -448,7 +474,10 @@ export default {
 		/**
 		 * Save n8n configuration to backend.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — admin-settings save + toast.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async saveConfiguration() {
@@ -483,7 +512,10 @@ export default {
 		/**
 		 * Test n8n connection.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — thin POST + result display.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async testConnection() {
@@ -523,7 +555,10 @@ export default {
 		/**
 		 * Initialize n8n project and user.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — thin POST + result display + workflow refresh.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async initializeN8n() {
@@ -562,7 +597,10 @@ export default {
 		/**
 		 * Load workflows from n8n.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — admin-settings load hydrating local workflow list.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async loadWorkflows() {
@@ -581,7 +619,10 @@ export default {
 		/**
 		 * Open n8n editor in new tab.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — external window.open navigation, no observable contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		openN8nEditor() {

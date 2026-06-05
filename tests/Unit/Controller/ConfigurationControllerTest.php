@@ -14,10 +14,14 @@ use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -33,8 +37,11 @@ class ConfigurationControllerTest extends TestCase
     private GitLabHandler&MockObject $gitlabHandler;
     private IAppManager&MockObject $appManager;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -48,8 +55,11 @@ class ConfigurationControllerTest extends TestCase
         $this->gitlabHandler = $this->createMock(GitLabHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new ConfigurationController(
             'openregister',
@@ -60,6 +70,7 @@ class ConfigurationControllerTest extends TestCase
             $this->githubHandler,
             $this->gitlabHandler,
             $this->appManager,
+<<<<<<< HEAD
             $this->logger,
             $this->userSession,
             $this->groupManager
@@ -72,6 +83,10 @@ class ConfigurationControllerTest extends TestCase
         $defaultUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($defaultUser);
         $this->groupManager->method('isAdmin')->willReturn(true);
+=======
+            $this->logger
+        );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     private function createRealConfiguration(): Configuration
@@ -224,7 +239,11 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationMapper->method('find')
             ->willThrowException(new DoesNotExistException('not found'));
 
+<<<<<<< HEAD
         $result = $this->controller->versionStatus(999);
+=======
+        $result = $this->controller->checkVersion(999);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertEquals(404, $result->getStatus());
     }
@@ -239,7 +258,11 @@ class ConfigurationControllerTest extends TestCase
             'remote' => '1.0.1',
         ]);
 
+<<<<<<< HEAD
         $result = $this->controller->versionStatus(1);
+=======
+        $result = $this->controller->checkVersion(1);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertEquals(200, $result->getStatus());
     }
@@ -419,7 +442,11 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationMapper->method('find')->willReturn($config);
         $this->configurationService->method('checkRemoteVersion')->willReturn(null);
 
+<<<<<<< HEAD
         $result = $this->controller->versionStatus(1);
+=======
+        $result = $this->controller->checkVersion(1);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertEquals(500, $result->getStatus());
     }
@@ -431,7 +458,11 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationService->method('checkRemoteVersion')
             ->willThrowException(new \Exception('Version check failed'));
 
+<<<<<<< HEAD
         $result = $this->controller->versionStatus(1);
+=======
+        $result = $this->controller->checkVersion(1);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertEquals(500, $result->getStatus());
     }

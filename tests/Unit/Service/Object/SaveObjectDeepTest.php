@@ -145,7 +145,10 @@ class SaveObjectDeepTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+<<<<<<< HEAD
             $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $arrayLoader
         );
     }
@@ -1127,6 +1130,7 @@ class SaveObjectDeepTest extends TestCase
         $this->assertTrue(true);
     }
 
+<<<<<<< HEAD
     public function testSetSelfMetadataOwnerIsIgnored(): void
     {
         // SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self input.
@@ -1140,10 +1144,18 @@ class SaveObjectDeepTest extends TestCase
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['owner' => 'injected-owner'], []]);
         // Owner remains null; applyOwnerAttribution() will set it from the session.
         $this->assertNull($entity->getOwner());
+=======
+    public function testSetSelfMetadataOwner(): void
+    {
+        $entity = $this->createObjectEntity(1, 'uuid-1');
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, ['owner' => 'admin'], []]);
+        $this->assertSame('admin', $entity->getOwner());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     public function testSetSelfMetadataOrganisation(): void
     {
+<<<<<<< HEAD
         // SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
         // has verified membership in the requested organisation.  With the default mock
         // setup (userSession→null user, groupManager→null, hasAccessToOrganisation→false)
@@ -1162,6 +1174,8 @@ class SaveObjectDeepTest extends TestCase
             ->with('org-uuid')
             ->willReturn(true);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
         $this->assertSame('org-uuid', $entity->getOrganisation());

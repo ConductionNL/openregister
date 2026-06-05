@@ -3,6 +3,7 @@
 /**
  * Authentication Service for generating outbound tokens.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,13 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author  Conduction Development Team <dev@conductio.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @link https://OpenRegister.app
  */
@@ -91,7 +99,11 @@ class AuthenticationService
      *
      * @param ArrayLoader $loader The Twig array loader
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(ArrayLoader $loader)
     {
@@ -108,7 +120,11 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createClientCredentialConfig(array $configuration): array
     {
@@ -164,7 +180,11 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createPasswordConfig(array $configuration): array
     {
@@ -207,7 +227,11 @@ class AuthenticationService
      * @throws BadRequestException If configuration is incomplete.
      * @throws \GuzzleHttp\Exception\GuzzleException If the token endpoint fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fetchOAuthTokens(array $configuration): string
     {
@@ -251,7 +275,11 @@ class AuthenticationService
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fetchDecosToken(array $configuration): string
     {
@@ -281,7 +309,11 @@ class AuthenticationService
      *
      * @return JWK The JWK key.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getRSJWK(array $configuration): JWK
     {
@@ -306,7 +338,11 @@ class AuthenticationService
      *
      * @return JWK The JWK key.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getHSJWK(array $configuration): JWK
     {
@@ -330,7 +366,11 @@ class AuthenticationService
      * @throws \Twig\Error\SyntaxError  If the template has syntax errors.
      * @throws \Twig\Error\RuntimeError If the template rendering fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getJWTPayload(array $configuration): array
     {
@@ -349,7 +389,11 @@ class AuthenticationService
      *
      * @throws BadRequestException If the algorithm is not supported.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getJWK(array $configuration): JWK
     {
@@ -375,7 +419,11 @@ class AuthenticationService
      *
      * @return string The compact-serialized JWT string.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
     {
@@ -421,7 +469,11 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fetchJWTToken(array $configuration): string
     {

@@ -12,6 +12,7 @@
  * - TMLO field value validation
  * - MDTO-compliant XML export generation
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -19,14 +20,23 @@
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service;
@@ -51,7 +61,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class TmloService
 {
@@ -129,8 +142,11 @@ class TmloService
      * @param RegisterMapper  $registerMapper Register mapper for fetching registers
      * @param SchemaMapper    $schemaMapper   Schema mapper for fetching schemas
      * @param LoggerInterface $logger         Logger interface
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
@@ -145,8 +161,11 @@ class TmloService
      * @param Register $register The register to check
      *
      * @return bool True if TMLO is enabled
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isTmloEnabled(Register $register): bool
     {
@@ -160,8 +179,11 @@ class TmloService
      * @param Schema $schema The schema to get defaults from
      *
      * @return array The TMLO default values
+<<<<<<< HEAD
      *
      * @spec exclude Owned by tmlo-auto-populate spec (schema-defaults precedence is part of the auto-populate contract); not foundation behaviour.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSchemaDefaults(Schema $schema): array
     {
@@ -185,10 +207,13 @@ class TmloService
      * @param Schema       $schema   The schema for default values
      *
      * @return ObjectEntity The object with populated TMLO metadata
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity
     {
@@ -233,8 +258,11 @@ class TmloService
      * @param string $duration ISO-8601 duration (e.g., P7Y, P5Y6M)
      *
      * @return string|null ISO-8601 date string or null if invalid duration
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function calculateArchiefactiedatum(string $duration): ?string
     {
@@ -260,12 +288,15 @@ class TmloService
      * @param array $tmlo The TMLO metadata to validate
      *
      * @return array Array of validation errors (empty if valid)
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateFieldValues(array $tmlo): array
     {
@@ -276,9 +307,13 @@ class TmloService
             && $tmlo['archiefnominatie'] !== null
             && in_array($tmlo['archiefnominatie'], self::VALID_ARCHIEFNOMINATIE, true) === false
         ) {
+<<<<<<< HEAD
             $allowed  = implode(', ', self::VALID_ARCHIEFNOMINATIE);
             $got      = $tmlo['archiefnominatie'];
             $errors[] = "archiefnominatie must be one of: {$allowed}. Got: {$got}";
+=======
+            $errors[] = 'archiefnominatie must be one of: '.implode(', ', self::VALID_ARCHIEFNOMINATIE).'. Got: '.$tmlo['archiefnominatie'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Validate archiefstatus.
@@ -286,9 +321,13 @@ class TmloService
             && $tmlo['archiefstatus'] !== null
             && in_array($tmlo['archiefstatus'], self::VALID_ARCHIEFSTATUS, true) === false
         ) {
+<<<<<<< HEAD
             $allowed  = implode(', ', self::VALID_ARCHIEFSTATUS);
             $got      = $tmlo['archiefstatus'];
             $errors[] = "archiefstatus must be one of: {$allowed}. Got: {$got}";
+=======
+            $errors[] = 'archiefstatus must be one of: '.implode(', ', self::VALID_ARCHIEFSTATUS).'. Got: '.$tmlo['archiefstatus'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Validate bewaarTermijn as ISO-8601 duration.
@@ -296,8 +335,12 @@ class TmloService
             try {
                 new DateInterval($tmlo['bewaarTermijn']);
             } catch (Exception $e) {
+<<<<<<< HEAD
                 $got      = $tmlo['bewaarTermijn'];
                 $errors[] = "bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: {$got}";
+=======
+                $errors[] = 'bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: '.$tmlo['bewaarTermijn'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
         }
 
@@ -305,8 +348,12 @@ class TmloService
         if (isset($tmlo['archiefactiedatum']) === true && $tmlo['archiefactiedatum'] !== null) {
             $date = DateTime::createFromFormat('Y-m-d', $tmlo['archiefactiedatum']);
             if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
+<<<<<<< HEAD
                 $got      = $tmlo['archiefactiedatum'];
                 $errors[] = "archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: {$got}";
+=======
+                $errors[] = 'archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: '.$tmlo['archiefactiedatum'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
         }
 
@@ -325,11 +372,14 @@ class TmloService
      * @param string $oldStatus The current/old archiefstatus
      *
      * @return array Array of validation errors (empty if valid)
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function validateStatusTransition(array $tmlo, string $oldStatus): array
     {
@@ -344,6 +394,7 @@ class TmloService
         // Check if the transition is allowed.
         $allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
         if (in_array($newStatus, $allowedTargets, true) === false) {
+<<<<<<< HEAD
             $allowed = 'none (terminal state)';
             if (empty($allowedTargets) === false) {
                 $allowed = implode(', ', $allowedTargets);
@@ -356,6 +407,10 @@ class TmloService
                 $oldStatus,
                 $allowed
             );
+=======
+            $allowed  = (empty($allowedTargets) === true ? 'none (terminal state)' : implode(', ', $allowedTargets));
+            $errors[] = "Transition from '{$oldStatus}' to '{$newStatus}' is not allowed. Allowed transitions from '{$oldStatus}': {$allowed}";
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return $errors;
         }
 
@@ -398,8 +453,11 @@ class TmloService
      * @return string The MDTO XML string
      *
      * @throws InvalidArgumentException If the object has no TMLO metadata
+<<<<<<< HEAD
      *
      * @spec exclude Owned by tmlo-export spec REQ "MDTO-compliant XML export" (single object); not foundation behaviour.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateMdtoXml(ObjectEntity $object): string
     {
@@ -425,8 +483,11 @@ class TmloService
      * @param ObjectEntity[] $objects Array of objects to export
      *
      * @return string The MDTO XML string with multiple objects
+<<<<<<< HEAD
      *
      * @spec exclude Owned by tmlo-export spec REQ "MDTO-compliant XML export" (batch); not foundation behaviour.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateBatchMdtoXml(array $objects): string
     {
@@ -500,7 +561,11 @@ class TmloService
             $root->appendChild(
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
+<<<<<<< HEAD
                     'mdto:waardering',
+=======
+                    'mdto:waarpinaering',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $this->mapArchiefnominatie(nominatie: $tmlo['archiefnominatie'])
                 )
             );

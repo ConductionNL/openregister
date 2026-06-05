@@ -3,6 +3,7 @@
 /**
  * OpenRegister WindmillAdapter
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -10,6 +11,12 @@
  * @package  OCA\OpenRegister\WorkflowEngine
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category WorkflowEngine
+ * @package  OCA\OpenRegister\WorkflowEngine
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,8 +24,13 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-94
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-94
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -83,7 +95,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function configure(string $baseUrl, array $authConfig=[]): void
     {
@@ -99,7 +115,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return string The workflow ID
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deployWorkflow(array $workflowDefinition): string
     {
@@ -122,7 +142,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return string The workflow ID
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateWorkflow(string $workflowId, array $workflowDefinition): string
     {
@@ -144,7 +168,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return array<string, mixed> The workflow definition
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getWorkflow(string $workflowId): array
     {
@@ -164,7 +192,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteWorkflow(string $workflowId): void
     {
@@ -182,7 +214,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function activateWorkflow(string $workflowId): void
     {
@@ -196,7 +232,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deactivateWorkflow(string $workflowId): void
     {
@@ -213,7 +253,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return WorkflowResult The execution result
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function executeWorkflow(string $workflowId, array $data, int $timeout=30): WorkflowResult
     {
@@ -264,7 +308,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return string The webhook URL
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getWebhookUrl(string $workflowId): string
     {
@@ -276,7 +324,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return array<int, array{id: string, name: string}> List of workflows
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listWorkflows(): array
     {
@@ -313,7 +365,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return bool True if healthy
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function healthCheck(): bool
     {
@@ -342,7 +398,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return array<string, mixed>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildRequestOptions(array $extra=[]): array
     {
@@ -359,7 +419,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return array<string, string>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildAuthHeaders(): array
     {
@@ -379,7 +443,11 @@ class WindmillAdapter implements WorkflowEngineInterface
      *
      * @return WorkflowResult
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-82
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function parseWorkflowResponse(?array $responseData): WorkflowResult
     {

@@ -49,7 +49,11 @@
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
@@ -77,7 +81,11 @@ export default {
 	},
 	methods: {
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async fetchExecutions() {
 			this.loading = true
@@ -95,21 +103,33 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDate(dateStr) {
 			if (!dateStr) return '-'
 			return new Date(dateStr).toLocaleString()
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		prevPage() {
 			this.offset = Math.max(0, this.offset - this.limit)
 			this.fetchExecutions()
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		nextPage() {
 			this.offset += this.limit

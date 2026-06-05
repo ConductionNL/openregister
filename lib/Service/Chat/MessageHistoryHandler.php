@@ -5,9 +5,12 @@
  *
  * Handler for message storage and history management.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -18,8 +21,11 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -82,8 +88,11 @@ class MessageHistoryHandler
      * @param LoggerInterface    $logger             Logger.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         MessageMapper $messageMapper,
@@ -108,8 +117,11 @@ class MessageHistoryHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         LLPhantMessage factory methods are standard LLPhant pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Message role handling requires multiple conditional branches
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function buildMessageHistory(int $conversationId): array
     {
@@ -203,19 +215,28 @@ class MessageHistoryHandler
      * @param string     $role           Message role (user or assistant).
      * @param string     $content        Message content.
      * @param array|null $sources        Optional RAG sources.
+<<<<<<< HEAD
      * @param array|null $context        Optional CnAiContext snapshot the user
      *                                   sent with the message (orchestrator §8).
      *
      * @return Message Stored message entity
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+     *
+     * @return Message Stored message entity
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function storeMessage(
         int $conversationId,
         string $role,
         string $content,
+<<<<<<< HEAD
         ?array $sources=null,
         ?array $context=null
+=======
+        ?array $sources=null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ): Message {
         $message = new Message();
         $message->setUuid(Uuid::v4()->toRfc4122());
@@ -229,6 +250,7 @@ class MessageHistoryHandler
             $message->setMetadata(['sources' => $sources]);
         }
 
+<<<<<<< HEAD
         // Persist the CnAiContext snapshot the frontend sent with the
         // message so future replays + the LLM can ground answers in the
         // user's scope at send-time. Only set when non-empty; null/empty
@@ -238,6 +260,8 @@ class MessageHistoryHandler
             $message->setContext($context);
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->messageMapper->insert($message);
 
         $this->logger->debug(

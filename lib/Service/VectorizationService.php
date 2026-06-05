@@ -125,8 +125,11 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -267,8 +270,11 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch vs serial processing logic
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple embedding and error handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity vectorization with error handling
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
@@ -324,11 +330,19 @@ class VectorizationService
                             $failed++;
                             //
                             // EmbeddingData may contain 'error' key even if not in type definition.
+<<<<<<< HEAD
                             $errorMsg = 'Embedding generation failed';
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                             if (is_array($embeddingData) === true
                                 && array_key_exists('error', $embeddingData) === true
                             ) {
                                 $errorMsg = $embeddingData['error'];
+<<<<<<< HEAD
+=======
+                            } else {
+                                $errorMsg = 'Embedding generation failed';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                             }
 
                             $errors[] = [
@@ -449,8 +463,11 @@ class VectorizationService
      * @throws \Exception If embedding generation fails
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -470,8 +487,11 @@ class VectorizationService
      * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
+<<<<<<< HEAD
      *
      * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function semanticSearch(
         string $query,
@@ -496,8 +516,11 @@ class VectorizationService
      * @return array Hybrid search results with combined scores and source breakdown.
      *
      * @throws \Exception If hybrid search fails.
+<<<<<<< HEAD
      *
      * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hybridSearch(
         string $query,
@@ -521,8 +544,11 @@ class VectorizationService
      * Delegates to VectorEmbeddings.
      *
      * @return array Vector statistics with totals and breakdowns by type and model.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getVectorStats(): array
     {
@@ -544,8 +570,11 @@ class VectorizationService
      *     data?: array{provider: string, model: 'unknown'|mixed,
      *     vectorLength: int<0, max>, sampleValues: array<float>,
      *     testText: string}}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -563,8 +592,11 @@ class VectorizationService
      *     message?: string, current_model?: mixed,
      *     existing_models?: list{0?: mixed,...}, total_vectors?: int,
      *     null_model_count?: int, mismatched_models?: list<mixed>}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -579,8 +611,11 @@ class VectorizationService
      * @return (bool|int|string)[] Deletion results
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearAllEmbeddings(): array
     {

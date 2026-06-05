@@ -6,9 +6,14 @@ retrofit: true
 
 ## Purpose
 
+<<<<<<< HEAD
 @e2e exclude internal object pipeline backend — covered by PHPUnit
 
 Describes the internal pipeline that governs how OpenRegister objects are created, read, updated, and deleted. This capability covers the layered handler pattern used to decompose the save, validate, cache, metadata-hydration, and bulk processing concerns, and is the foundation on which all higher-level capabilities (schema hooks, RBAC, retention, audit trail) attach their side effects.
+=======
+Describes the internal pipeline that governs how OpenRegister objects are created, read, updated, and deleted. This capability covers the layered handler pattern used to decompose the save, validate, cache, metadata-hydration, and bulk processing concerns, and is the foundation on which all higher-level capabilities (schema hooks, RBAC, retention, audit trail) attach their side effects.
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Requirements
 
 ### REQ-001: The system MUST process object mutations through a layered save pipeline
@@ -83,6 +88,7 @@ When handling batches of objects, `SaveObjects` and its sub-handlers (`Preparati
 - **WHEN** an object with `voornaam: "Jan"` and `achternaam: "Janssen"` is saved
 - **THEN** `ComputedFieldHandler` MUST set `volledigeNaam: "Jan Janssen"` after hydration
 
+<<<<<<< HEAD
 ### Requirement: Declared initial lifecycle state applied on create
 
 `LifecycleInitialStateListener::handle()` MUST, on `ObjectCreatingEvent`, force-set the schema's declared initial lifecycle value when the caller did not supply one. The listener reads the `x-openregister-lifecycle` annotation from the object's schema, takes the annotation's `field` and `initial` keys, and writes `initial` into the object payload under `field` ONLY when that field is currently absent, null, or an empty string. A caller-supplied non-empty value MUST be left untouched (its validity is the validator's / update-guard's concern). The listener MUST be a no-op when the event is not an `ObjectCreatingEvent`, when the schema cannot be resolved, when the schema declares no lifecycle annotation, or when the annotation's `field`/`initial` are empty.
@@ -704,6 +710,8 @@ The audit-trail row recorded by the scoped delete MUST capture both the `registe
 - **AND** the call MUST raise `DoesNotExistException` because `abc-123` is not in the bound scope
 - **AND** the `softwarecatalogus` / `application` row MUST remain present and unmodified
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Cross-References
 - **rbac-scopes** — RBAC checks are applied by `PermissionHandler` at the start of every pipeline stage
 - **schema-hooks** — schema hooks fire via event dispatcher after each successful save

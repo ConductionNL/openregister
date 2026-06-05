@@ -204,6 +204,7 @@ class ObjectEntityTest extends TestCase
         $this->assertSame('fallback-uuid', $json['@self']['name']);
     }
 
+<<<<<<< HEAD
     public function testJsonSerializeOrganisationLivesInSelfBlock(): void
     {
         // Production now namespaces organisation under @self so the top-
@@ -213,6 +214,14 @@ class ObjectEntityTest extends TestCase
         $this->entity->setOrganisation('org-uuid');
         $json = $this->entity->jsonSerialize();
         $this->assertSame('org-uuid', $json['@self']['organisation']);
+=======
+    public function testJsonSerializeOrganisationAtTopLevel(): void
+    {
+        $this->entity->setUuid('uuid');
+        $this->entity->setOrganisation('org-uuid');
+        $json = $this->entity->jsonSerialize();
+        $this->assertSame('org-uuid', $json['organisation']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     // --- getObjectArray ---

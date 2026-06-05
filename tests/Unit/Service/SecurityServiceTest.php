@@ -326,6 +326,7 @@ class SecurityServiceTest extends TestCase
         // Private IP in forwarded header is rejected, falls back to remote address.
         $this->assertSame('10.0.0.1', $result);
     }
+<<<<<<< HEAD
 
     // ── getTrustedClientIpAddress (issue #1834 item 3) ──
 
@@ -467,4 +468,6 @@ class SecurityServiceTest extends TestCase
         $this->assertNotEmpty(array_filter($removedKeys, fn($k) => str_contains($k, 'auth_attempts')));
         $this->assertNotEmpty(array_filter($removedKeys, fn($k) => str_contains($k, 'auth_lockout')));
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

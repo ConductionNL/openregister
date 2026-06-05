@@ -6,9 +6,12 @@
  * Service that wraps CardDAV vCard operations for linking contacts to OpenRegister objects.
  * Uses dual storage: X-OPENREGISTER-* vCard properties + openregister_contact_links table.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -37,6 +40,7 @@ use Sabre\VObject\Reader;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Class exposes get/link/unlink/list for
  * contact-to-object bindings and an internal vCard enrichment path; complexity is distributed across
  * multiple private helpers and is not reducible without splitting the dual-storage
@@ -46,6 +50,11 @@ use Sabre\VObject\Reader;
  * integration point for the dual CardDAV+link-table storage strategy.
  * @SuppressWarnings(PHPMD.StaticAccess)             Sabre\VObject\Reader::read() is a static factory; Sabre
  * provides no injectable alternative in the library.
+=======
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ContactService
 {
@@ -101,6 +110,7 @@ class ContactService
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Enrichment TTL for cached vCard fields.
      *
      * `getContactsForObject()` re-reads the vCard (phone/org/avatar)
@@ -141,12 +151,20 @@ class ContactService
      * @return array{results: array, total: int}
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+=======
+     * Get all contact links for an object.
+     *
+     * @param string $objectUuid The object UUID.
+     *
+     * @return array{results: array, total: int}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getContactsForObject(string $objectUuid): array
     {
         $links = $this->contactLinkMapper->findByObjectUuid($objectUuid);
         $total = $this->contactLinkMapper->countByObjectUuid($objectUuid);
 
+<<<<<<< HEAD
         $now = new DateTime();
 
         $results = array_map(
@@ -195,6 +213,11 @@ class ContactService
                 }//end if
 
                 return $row;
+=======
+        $results = array_map(
+            static function (ContactLink $link): array {
+                return $link->jsonSerialize();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             $links
         );
@@ -203,6 +226,7 @@ class ContactService
     }//end getContactsForObject()
 
     /**
+<<<<<<< HEAD
      * Resolve the supplementary vCard fields (`phone`, `org`, `avatarUrl`)
      * for a link row.
      *
@@ -370,11 +394,16 @@ class ContactService
      * relied on the previous "always-insert" semantics still get a
      * persisted entity back.
      *
+=======
+     * Link an existing contact to an object.
+     *
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param string      $objectUuid    The object UUID.
      * @param int         $registerId    The register ID.
      * @param int         $addressbookId The addressbook ID.
      * @param string      $contactUri    The contact URI in the addressbook.
      * @param string|null $role          The role of this contact on the object.
+<<<<<<< HEAD
      * @param int|null    $schemaId      Optional schema id (Tier-2).
      *
      * @return ContactLink The created or updated link.
@@ -392,14 +421,24 @@ class ContactService
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) linkContact() covers card lookup, user auth, vCard
      * hydration, existence check, and insert-or-update in sequence; splitting would scatter the
      * idempotent upsert contract across multiple methods.
+=======
+     *
+     * @return ContactLink The created link.
+     *
+     * @throws Exception If the contact does not exist.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function linkContact(
         string $objectUuid,
         int $registerId,
         int $addressbookId,
         string $contactUri,
+<<<<<<< HEAD
         ?string $role=null,
         ?int $schemaId=null
+=======
+        ?string $role=null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ): ContactLink {
         // Verify the contact exists.
         $card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
@@ -413,6 +452,7 @@ class ContactService
         }
 
         // Parse vCard for cached fields.
+<<<<<<< HEAD
         $vcard      = Reader::read($card['carddata']);
         $contactUid = '';
         if (isset($vcard->UID) === true) {
@@ -425,10 +465,17 @@ class ContactService
         }
 
         $email = null;
+=======
+        $vcard       = Reader::read($card['carddata']);
+        $contactUid  = isset($vcard->UID) === true ? (string) $vcard->UID : '';
+        $displayName = isset($vcard->FN) === true ? (string) $vcard->FN : null;
+        $email       = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         if (isset($vcard->EMAIL) === true) {
             $email = (string) $vcard->EMAIL;
         }
 
+<<<<<<< HEAD
         // Tier-2: extract the widened payload (phone / org / avatar) so
         // the row can serve future list calls without round-tripping
         // CardDAV.
@@ -438,6 +485,8 @@ class ContactService
             contactUid: $contactUid
         );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Add X-OPENREGISTER-* properties to the vCard.
         $vcard->add('X-OPENREGISTER-OBJECT', $objectUuid);
         if ($role !== null) {
@@ -446,6 +495,7 @@ class ContactService
 
         $this->cardDavBackend->updateCard($addressbookId, $contactUri, $vcard->serialize());
 
+<<<<<<< HEAD
         // Upsert: if a row already exists for this (objectUuid, contactUid)
         // pair, refresh its cached fields + role instead of inserting.
         $existing = null;
@@ -476,22 +526,30 @@ class ContactService
             return $this->contactLinkMapper->update($existing);
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Create DB record.
         $link = new ContactLink();
         $link->setObjectUuid($objectUuid);
         $link->setRegisterId($registerId);
+<<<<<<< HEAD
         if ($schemaId !== null) {
             $link->setSchemaId($schemaId);
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $link->setContactUid($contactUid);
         $link->setAddressbookId($addressbookId);
         $link->setContactUri($contactUri);
         $link->setDisplayName($displayName);
         $link->setEmail($email);
+<<<<<<< HEAD
         $link->setPhone($vfields['phone']);
         $link->setOrg($vfields['org']);
         $link->setAvatarUrl($vfields['avatarUrl']);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $link->setRole($role);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
@@ -502,6 +560,7 @@ class ContactService
     /**
      * Create a new contact and link it to an object.
      *
+<<<<<<< HEAD
      * Tier-2: extended to persist `phone` / `org` straight from the
      * caller-supplied payload, and to accept an optional `schemaId`
      * + free-form `org` field. The avatar URL falls back to the
@@ -513,18 +572,30 @@ class ContactService
      * @param array    $data       Contact data: `fullName` or `displayName`, `email`,
      *                             `phone`, `org`, `role`.
      * @param int|null $schemaId   Optional schema id (Tier-2).
+=======
+     * @param string $objectUuid The object UUID.
+     * @param int    $registerId The register ID.
+     * @param array  $data       Contact data: fullName, email, phone, role.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return ContactLink The created link.
      *
      * @throws Exception If no user or addressbook.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createAndLinkContact(
         string $objectUuid,
         int $registerId,
+<<<<<<< HEAD
         array $data,
         ?int $schemaId=null
+=======
+        array $data
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ): ContactLink {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -538,18 +609,22 @@ class ContactService
 
         $uid  = strtoupper(bin2hex(random_bytes(16)));
         $role = $data['role'] ?? null;
+<<<<<<< HEAD
         // Accept both `fullName` (existing) and `displayName` (spec /
         // dialog form field) as the human-readable label.
         $displayName = $data['displayName'] ?? $data['fullName'] ?? 'Unknown';
         $phone       = $data['phone'] ?? null;
         $email       = $data['email'] ?? null;
         $org         = $data['org'] ?? null;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Build vCard.
         $lines   = [];
         $lines[] = 'BEGIN:VCARD';
         $lines[] = 'VERSION:3.0';
         $lines[] = 'UID:'.$uid;
+<<<<<<< HEAD
         $lines[] = 'FN:'.$displayName;
 
         if (empty($email) === false) {
@@ -562,6 +637,16 @@ class ContactService
 
         if (empty($org) === false) {
             $lines[] = 'ORG:'.$org;
+=======
+        $lines[] = 'FN:'.($data['fullName'] ?? 'Unknown');
+
+        if (empty($data['email']) === false) {
+            $lines[] = 'EMAIL;TYPE=INTERNET:'.$data['email'];
+        }
+
+        if (empty($data['phone']) === false) {
+            $lines[] = 'TEL;TYPE=CELL:'.$data['phone'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
@@ -580,6 +665,7 @@ class ContactService
         $link = new ContactLink();
         $link->setObjectUuid($objectUuid);
         $link->setRegisterId($registerId);
+<<<<<<< HEAD
         if ($schemaId !== null) {
             $link->setSchemaId($schemaId);
         }
@@ -593,6 +679,13 @@ class ContactService
         $link->setOrg($org);
         // PHOTO not set yet — fall back to the per-uid Contacts route.
         $link->setAvatarUrl('/index.php/apps/contacts/photo/'.rawurlencode($uid));
+=======
+        $link->setContactUid($uid);
+        $link->setAddressbookId($addressbook['id']);
+        $link->setContactUri($contactUri);
+        $link->setDisplayName($data['fullName'] ?? null);
+        $link->setEmail($data['email'] ?? null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $link->setRole($role);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
@@ -609,8 +702,11 @@ class ContactService
      * @return ContactLink The updated link.
      *
      * @throws Exception If link not found.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateRole(int $linkId, string $role): ContactLink
     {
@@ -642,6 +738,7 @@ class ContactService
     /**
      * Remove a contact link.
      *
+<<<<<<< HEAD
      * Idempotent: tolerates a missing or corrupt vCard so the link row
      * can always be cleaned. If the underlying vCard has been removed
      * from the addressbook (e.g. user deleted the contact via NC
@@ -651,13 +748,19 @@ class ContactService
      * proceeds regardless so orphan rows are recoverable through this
      * path rather than only via direct DB DELETE.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int $linkId The link ID.
      *
      * @return void
      *
+<<<<<<< HEAD
      * @throws Exception If the link row itself isn't found (404).
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+=======
+     * @throws Exception If link not found.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function unlinkContact(int $linkId): void
     {
@@ -667,10 +770,14 @@ class ContactService
             throw new Exception('Contact link not found', 404);
         }
 
+<<<<<<< HEAD
         // Best-effort: remove X-OPENREGISTER-* from the vCard. If the
         // vCard is gone or unreadable, skip the cleanup and proceed with
         // the link-row delete — orphan link rows would otherwise only
         // be cleanable via direct DB DELETE.
+=======
+        // Remove X-OPENREGISTER-* from vCard.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
             if ($card !== false) {
@@ -679,6 +786,7 @@ class ContactService
                 unset($vcard->{'X-OPENREGISTER-ROLE'});
                 $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
             }
+<<<<<<< HEAD
         } catch (\Throwable $e) {
             $this->logger->warning(
                 'Failed to clean vCard properties (link row will still be removed): '.$e->getMessage(),
@@ -688,12 +796,17 @@ class ContactService
                     'contactUri'    => $link->getContactUri(),
                 ]
             );
+=======
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to clean vCard properties: '.$e->getMessage());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $this->contactLinkMapper->delete($link);
     }//end unlinkContact()
 
     /**
+<<<<<<< HEAD
      * Unlink a contact from a specific object by contact uid.
      *
      * Convenience overload of `unlinkContact(int $linkId)` for callers
@@ -728,13 +841,18 @@ class ContactService
     }//end unlinkContactByUid()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Find all objects linked to a contact.
      *
      * @param string $contactUid The contact UID.
      *
      * @return array Array of contact links with object UUIDs and roles.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectsForContact(string $contactUid): array
     {
@@ -754,8 +872,11 @@ class ContactService
      * @param string $objectUuid The object UUID.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteLinksForObject(string $objectUuid): void
     {
@@ -769,11 +890,15 @@ class ContactService
                     // Remove properties matching this object only.
                     unset($vcard->{'X-OPENREGISTER-OBJECT'});
                     unset($vcard->{'X-OPENREGISTER-ROLE'});
+<<<<<<< HEAD
                     $this->cardDavBackend->updateCard(
                         $link->getAddressbookId(),
                         $link->getContactUri(),
                         $vcard->serialize()
                     );
+=======
+                    $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
             } catch (Exception $e) {
                 $this->logger->warning(
@@ -789,8 +914,11 @@ class ContactService
      * Find the user's default addressbook.
      *
      * @return array|null Addressbook data or null.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function findUserAddressbook(): ?array
     {

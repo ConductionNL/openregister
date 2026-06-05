@@ -5,6 +5,7 @@
  *
  * Extracted from SchemaGenerator to reduce class complexity.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://OpenRegister.app
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service\GraphQL\SchemaGenerator
+ * @author   Conduction B.V. <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://OpenRegister.app
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
@@ -94,8 +102,11 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function applyComposition(RegisterSchema $schema, array &$fields): void
     {
@@ -112,8 +123,11 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyAllOf(RegisterSchema $schema, array &$fields): void
     {
@@ -154,8 +168,11 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyOneOf(RegisterSchema $schema, array &$fields): void
     {
@@ -199,8 +216,11 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function applyAnyOf(RegisterSchema $schema, array &$fields): void
     {
@@ -249,8 +269,11 @@ class CompositionHandler
      * @param array<mixed> $refs The composition references
      *
      * @return ObjectType[] The resolved object types
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveCompositionRefs(array $refs): array
     {
@@ -283,8 +306,11 @@ class CompositionHandler
      * @param ObjectType[] $types The object types to intersect
      *
      * @return array<string, array<string, mixed>> Shared field configs
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function extractSharedFields(array $types): array
     {

@@ -6,9 +6,12 @@
  * Manages Solr collections and ConfigSets.
  * Handles creation, deletion, and existence checks for collections.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -80,8 +83,11 @@ class SolrCollectionManager
      * @param string $collectionName Collection name
      *
      * @return bool True if exists
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function collectionExists(string $collectionName): bool
     {
@@ -110,8 +116,11 @@ class SolrCollectionManager
      * Returns tenant-specific collection if it exists, otherwise null.
      *
      * @return string|null Collection name or null
+<<<<<<< HEAD
      *
      * @spec exclude boilerplate accessor — resolves active collection via existence check
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getActiveCollectionName(): ?string
     {
@@ -148,8 +157,11 @@ class SolrCollectionManager
      * @psalm-return array{success: true,
      *     message: 'Collection created successfully', collection: string,
      *     configSet: 'openregister_configset'|mixed}
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to Solr Collections API — CREATE action HTTP call
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -218,8 +230,11 @@ class SolrCollectionManager
      * @return (bool|string)[]
      *
      * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to Solr Collections API — DELETE action HTTP call
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -301,8 +316,11 @@ class SolrCollectionManager
      * List all Solr collections.
      *
      * @return array List of collections
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to Solr Collections API — LIST action HTTP call
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listCollections(): array
     {
@@ -328,8 +346,11 @@ class SolrCollectionManager
      * List all ConfigSets.
      *
      * @return array List of ConfigSets
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to Solr Configs API — LIST action HTTP call
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listConfigSets(): array
     {
@@ -363,8 +384,11 @@ class SolrCollectionManager
      *     message: 'ConfigSet created successfully'|
      *     'Exception during ConfigSet creation'|
      *     'Failed to create ConfigSet'|mixed, exception?: string, name?: string}
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to Solr Configs API — CREATE action HTTP call
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): array
     {
@@ -424,8 +448,11 @@ class SolrCollectionManager
      *     message: 'ConfigSet deleted successfully'|
      *     'Exception during ConfigSet deletion'|
      *     'Failed to delete ConfigSet'|mixed, exception?: string, name?: string}
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to Solr Configs API — DELETE action HTTP call
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteConfigSet(string $name): array
     {

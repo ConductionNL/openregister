@@ -1,20 +1,33 @@
 ---
 status: implemented
 retrofit_extensions:
+<<<<<<< HEAD
   - REQ-009
   - REQ-010
   - REQ-011
+=======
+  - "REQ-009"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ---
 
 # Archival Destruction Workflow
 
 ## Purpose
 
+<<<<<<< HEAD
 @e2e exclude backend workflow/archival — covered by PHPUnit
 
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
 ## Requirements
 
+=======
+Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
+
+## Requirements
+
+
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### REQ-001: DestructionCheckJob and Destruction List Generation
 
 A Nextcloud `TimedJob` MUST scan for objects that have reached their `archiefactiedatum` with `archiefnominatie` set to `vernietigen` and generate destruction lists as register objects for archivist review.
@@ -270,6 +283,7 @@ The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls 
 - **GIVEN** object `zaak-333` has `archiefnominatie: bewaren` and `archiefactiedatum` within the lead window
 - **WHEN** the `DestructionCheckJob` runs
 - **THEN** the notification subject MUST be "Object requires e-Depot transfer" rather than "Object approaching destruction date"
+<<<<<<< HEAD
 
 ### REQ-010: ArchivalService::setRetentionMetadata Validates and Merges Object Retention
 
@@ -362,3 +376,5 @@ field on service failure.
 - **WHEN** `updateArchivalSettings` runs
 - **THEN** it MUST persist them via `SettingsService::updateArchivalSettingsOnly()` and return the result
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -5,9 +5,12 @@
  *
  * This file contains the controller class for handling settings in the OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <info@conduction.nl>
@@ -139,6 +142,18 @@ use Psr\Log\LoggerInterface;
  *   plus SettingsService, VectorizationService, LoggerInterface, and IL10N — all are single-call
  *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
+
+/**
+ * SettingsController class
+ *
+ * Thin controller layer for settings management.
+ *
+ * @psalm-suppress UnusedClass
+ *
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class SettingsController extends Controller
 {
 
@@ -229,8 +244,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with settings data
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -248,8 +266,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated settings
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(): JSONResponse
     {
@@ -268,8 +289,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with loaded settings
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function load(): JSONResponse
     {
@@ -287,8 +311,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated publishing options
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updatePublishingOptions(): JSONResponse
     {
@@ -310,8 +337,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with rebase result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function rebase(): JSONResponse
     {
@@ -332,8 +362,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function stats(): JSONResponse
     {
@@ -354,8 +387,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStatistics(): JSONResponse
     {
@@ -439,8 +475,11 @@ class SettingsController extends Controller
      * @psalm-return JSONResponse<200|400|422,
      *     array{success: bool, message: mixed|string, collection: string,
      *     stats?: array<never, never>|mixed}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reindexSpecificCollection(string $name): JSONResponse
     {
@@ -519,8 +558,11 @@ class SettingsController extends Controller
      * @return JSONResponse Backend configuration
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSearchBackend(): JSONResponse
     {
@@ -540,8 +582,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated backend config
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateSearchBackend(): JSONResponse
     {
@@ -586,8 +631,11 @@ class SettingsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -649,8 +697,14 @@ class SettingsController extends Controller
                 // MariaDB/MySQL do not support native vector operations.
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
+<<<<<<< HEAD
                 $performanceNote   = 'Current: Similarity calculated in PHP (slow).'
                     .' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+=======
+                $phpNote           = 'Current: Similarity calculated in PHP (slow).';
+                $pgNote            = 'Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
+                $performanceNote   = $phpNote.' '.$pgNote;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
@@ -762,8 +816,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with refreshed database info
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function refreshDatabaseInfo(): JSONResponse
     {
@@ -780,8 +837,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with version info
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getVersionInfo(): JSONResponse
     {
@@ -803,9 +863,12 @@ class SettingsController extends Controller
      * @psalm-return JSONResponse<200, array<array-key, mixed>,
      *     array<never, never>>|JSONResponse<422,
      *     array{success: false, error: string}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec exclude Debug/test scaffolding endpoint: indexes sample objects to exercise schema-aware SOLR mapping;
      *              not a product contract (see proposal Notes — routed debug surface).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testSchemaMapping(): JSONResponse
     {
@@ -859,12 +922,15 @@ class SettingsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
      *
      * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
      *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
      *              information-disclosure risk).
      *
      * @NoAdminRequired
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function debugTypeFiltering(): JSONResponse
     {
@@ -1031,8 +1097,11 @@ class SettingsController extends Controller
      *     results?: array<int, array<string, mixed>>, total?: int<0, max>,
      *     limit?: int, filters?: array, timestamp?: string},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
@@ -1047,7 +1116,15 @@ class SettingsController extends Controller
                 );
             }
 
+<<<<<<< HEAD
             $results = $this->vectorizationService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
+=======
+            // Use VectorizationService for semantic search.
+            $vectorService = $this->vectorizationService;
+
+            // Perform semantic search.
+            $results = $vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             return new JSONResponse(
                 data: [
@@ -1084,8 +1161,11 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with hybrid search results
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function hybridSearch(
         string $query,
@@ -1105,14 +1185,27 @@ class SettingsController extends Controller
                 );
             }
 
+<<<<<<< HEAD
             $result = $this->vectorizationService->hybridSearch(
+=======
+            // Use VectorizationService for hybrid search.
+            $vectorService = $this->vectorizationService;
+
+            // Perform hybrid search.
+            $result = $vectorService->hybridSearch(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 query: $query,
                 solrFilters: $solrFilters,
                 limit: $limit,
                 weights: $weights,
                 provider: $provider
             );
+<<<<<<< HEAD
             // Ensure result is an array for the spread operator.
+=======
+
+            // Ensure result is an array for spread operator.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $resultArray = [];
             if (is_array($result) === true) {
                 $resultArray = $result;

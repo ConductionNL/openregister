@@ -184,7 +184,10 @@ export default {
 		/**
 		 * Get current page number
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -194,7 +197,10 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -210,7 +216,10 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -220,7 +229,10 @@ export default {
 		/**
 		 * Load templates from the API
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — list load hydrating local state (stubbed pending API); list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async loadTemplates() {
@@ -258,7 +270,10 @@ export default {
 		/**
 		 * Refresh the templates list
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — delegates to loadTemplates.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		refreshTemplates() {
@@ -268,7 +283,10 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		previousPage() {
@@ -281,7 +299,10 @@ export default {
 		/**
 		 * Go to next page
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		nextPage() {
@@ -294,7 +315,10 @@ export default {
 		/**
 		 * View template details
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — unimplemented navigation stub, no observable contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {object} _template - Template object
 		 * @return {void}
 		 */
@@ -306,7 +330,10 @@ export default {
 		/**
 		 * Format date for display
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

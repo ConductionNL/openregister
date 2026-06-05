@@ -6,9 +6,12 @@
  * Handles bulk indexing business logic (batching, parallel processing, optimization).
  * Does NOT contain backend-specific I/O - delegates to SearchBackendInterface.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -136,8 +139,11 @@ class BulkIndexer
      * @psalm-return array{success: false, message: 'Method not yet extracted to BulkIndexer'}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude TODO stub returning 'not yet extracted' — implemented path is bulkIndexFromDatabase (REQ-3)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bulkIndexObjects(array $_objects, bool $_commit=true): array
     {
@@ -170,8 +176,11 @@ class BulkIndexer
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,

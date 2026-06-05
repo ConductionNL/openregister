@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -21,10 +29,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
+<<<<<<< HEAD
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -37,8 +48,11 @@ use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Psr\Log\LoggerInterface;
+<<<<<<< HEAD
 use Smalot\PdfParser\Parser as PdfParser;
 use ZipArchive;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * Handles document processing operations.
@@ -54,9 +68,12 @@ use ZipArchive;
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+<<<<<<< HEAD
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Orchestrates the Word/PDF/text replacement pipelines plus SAPP + PhpWord integration.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   File / PDF / PhpWord / sanitiser collaborators are required by design.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class DocumentProcessingHandler
 {
@@ -69,6 +86,7 @@ class DocumentProcessingHandler
     private ?FileService $fileService = null;
 
     /**
+<<<<<<< HEAD
      * The most recent sanitisation report produced during anonymisation.
      *
      * Office (DOCX / ODT) anonymisation runs the sanitiser ahead of the
@@ -90,17 +108,29 @@ class DocumentProcessingHandler
      *                                                                        flags during the redaction pass
      *                                                                        (see `entity-relation-grondslagen`).
      * @param OfficeDocumentSanitizer                   $sanitizer            Office document sanitiser (DOCX / ODT).
+=======
+     * Constructor for DocumentProcessingHandler.
+     *
+     * @param IRootFolder     $rootFolder  Root folder for file access.
+     * @param IUserSession    $userSession User session for getting current user.
+     * @param LoggerInterface $logger      Logger for logging operations.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
         private readonly OfficeDocumentSanitizer $sanitizer
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Get the sanitisation report from the most recent anonymisation, if any.
      *
      * @return SanitizationReport|null The report, or null when the last
@@ -114,6 +144,8 @@ class DocumentProcessingHandler
     }//end getLastSanitizationReport()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Set the FileService instance for cross-handler coordination.
      *
      * @param FileService $fileService The file service instance.
@@ -136,9 +168,12 @@ class DocumentProcessingHandler
      * @param Node        $node         The file node to process.
      * @param array       $replacements Array of replacement mappings (search => replace).
      * @param string|null $outputName   Optional name for the output file.
+<<<<<<< HEAD
      * @param bool        $strict       PDF only: when true (entity anonymisation),
      *                                  residual entity text in the output fails
      *                                  closed instead of being logged as partial.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @throws Exception If node is not a file or replacement fails.
      *
@@ -151,6 +186,7 @@ class DocumentProcessingHandler
      * @phpstan-return File
      *
      * @psalm-return File
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed vs lenient validation per the entity-anonymisation contract.
      *
@@ -159,6 +195,12 @@ class DocumentProcessingHandler
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null, bool $strict=false): File
     {
         if (($node instanceof File) === false) {
+=======
+     */
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
+    {
+        if ($node->getType() !== \OCP\Files\FileInfo::TYPE_FILE) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             throw new Exception('Node must be a file');
         }
 
@@ -179,10 +221,13 @@ class DocumentProcessingHandler
             return $this->replaceWordsInWordDocument(node: $node, replacements: $replacements, outputName: $outputName);
         }
 
+<<<<<<< HEAD
         if ($fileExtension === 'pdf') {
             return $this->replaceWordsInPdfDocument(node: $node, replacements: $replacements, outputName: $outputName, strict: $strict);
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return $this->replaceWordsInTextDocument(node: $node, replacements: $replacements, outputName: $outputName);
     }//end replaceWords()
 
@@ -203,6 +248,7 @@ class DocumentProcessingHandler
      * @psalm-param array<int, array{text?: string, entityType?: string, key?: string}> $entities
      *
      * @return File The anonymized document file.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
@@ -243,11 +289,17 @@ class DocumentProcessingHandler
             $entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
         }
 
+=======
+     */
+    public function anonymizeDocument(Node $node, array $entities): File
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         // Build replacements array from entities.
         $replacements = [];
         foreach ($entities as $entity) {
             $originalText = $entity['text'] ?? '';
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';
+<<<<<<< HEAD
 
             if (empty($originalText) === true
                 || in_array($originalText, $skippedValues, true) === true
@@ -291,6 +343,14 @@ class DocumentProcessingHandler
                 return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
             }
         );
+=======
+            $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
+
+            if (empty($originalText) === false) {
+                $replacements[$originalText] = '['.$entityType.': '.$key.']';
+            }
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Generate anonymized file name.
         $fileName      = $node->getName();
@@ -302,6 +362,7 @@ class DocumentProcessingHandler
             $anonymizedFileName .= '.'.$fileExtension;
         }
 
+<<<<<<< HEAD
         // Office (DOCX / ODT) documents carry PII in non-text structures the
         // walker cannot reach (comments, tracked changes, metadata, custom XML,
         // person field codes, hyperlink URLs). Sanitise to a clean derivative
@@ -489,18 +550,30 @@ class DocumentProcessingHandler
     }//end replaceWordsInOfficeContainer()
 
     /**
+=======
+        return $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
+    }//end anonymizeDocument()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Replace words in a Word document.
      *
      * This method uses PHPWord to load a Word document, recursively process all elements
      * (including headers, footers, tables, lists), apply text replacements, and save
      * the result as a new file in the same parent folder.
      *
+<<<<<<< HEAD
      * @param Node        $node                The file node to process.
      * @param array       $replacements        Array of replacement mappings (search => replace).
      * @param string      $outputName          Name for the output file.
      * @param string|null $sanitizedSourcePath Optional pre-sanitised source file path; when
      *                                         provided, the walker reads these cleaned bytes
      *                                         instead of the original node content.
+=======
+     * @param Node   $node         The file node to process.
+     * @param array  $replacements Array of replacement mappings (search => replace).
+     * @param string $outputName   Name for the output file.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return File The new file node with replaced content.
      *
@@ -519,14 +592,23 @@ class DocumentProcessingHandler
     private function replaceWordsInWordDocument(
         Node $node,
         array $replacements,
+<<<<<<< HEAD
         string $outputName,
         ?string $sanitizedSourcePath=null
     ): File {
+=======
+        string $outputName
+    ): File {
+        // Get the file content as a stream and save to a temp file (@var File $fileNode).
+        $fileNode = $node;
+        $stream   = $fileNode->fopen('r');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
         if ($tempFile === false) {
             throw new Exception('Failed to create temporary file');
         }
 
+<<<<<<< HEAD
         if ($sanitizedSourcePath !== null) {
             // Walker reads the sanitised derivative, not the original bytes.
             if (copy($sanitizedSourcePath, $tempFile) === false) {
@@ -560,6 +642,19 @@ class DocumentProcessingHandler
             // would otherwise be a cross-request state bleed.
             $preLoadStyleNames = array_keys(\PhpOffice\PhpWord\Style::getStyles());
 
+=======
+        $tempStream = fopen($tempFile, 'w');
+        if ($tempStream === false) {
+            unlink($tempFile);
+            throw new Exception('Failed to open temporary file for writing');
+        }
+
+        stream_copy_to_stream($stream, $tempStream);
+        fclose($tempStream);
+        fclose($stream);
+
+        try {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Load the document.
             $phpWord = IOFactory::load($tempFile);
 
@@ -618,6 +713,7 @@ class DocumentProcessingHandler
                 }
             }
 
+<<<<<<< HEAD
             // PhpWord roundtrip-safety workaround for the Word2007 Numbering
             // bug. Chain of events upstream:
             // 1. Shared\XMLReader::getAttribute() at line 187 normalises
@@ -674,6 +770,8 @@ class DocumentProcessingHandler
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Save the modified document to a new temp file.
             $outputTempFile = tempnam(sys_get_temp_dir(), 'openregister_word_output_');
             IOFactory::createWriter($phpWord, 'Word2007')->save($outputTempFile);
@@ -728,7 +826,11 @@ class DocumentProcessingHandler
      * and saves the result as a new file in the same parent folder. This works
      * for any text-based file format (.txt, .md, .html, etc.).
      *
+<<<<<<< HEAD
      * @param File   $node         The file node to process.
+=======
+     * @param Node   $node         The file node to process.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param array  $replacements Array of replacement mappings (search => replace).
      * @param string $outputName   Name for the output file.
      *
@@ -742,6 +844,7 @@ class DocumentProcessingHandler
      * @psalm-return   File
      */
     private function replaceWordsInTextDocument(
+<<<<<<< HEAD
         File $node,
         array $replacements,
         string $outputName
@@ -749,6 +852,18 @@ class DocumentProcessingHandler
         // File::getContent() returns the content string and throws on failure
         // (NotPermitted/Locked) — it never returns false, so no false-check.
         $content = $node->getContent();
+=======
+        Node $node,
+        array $replacements,
+        string $outputName
+    ): File {
+        // Get file content (@var File $fileNode).
+        $fileNode = $node;
+        $content  = $fileNode->getContent();
+        if ($content === false) {
+            throw new Exception('Failed to get content from file: '.$node->getPath());
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Apply replacements.
         $modifiedContent = $content;
@@ -777,6 +892,7 @@ class DocumentProcessingHandler
 
         return $newFile;
     }//end replaceWordsInTextDocument()
+<<<<<<< HEAD
 
     /**
      * Replace words in a PDF document via the SAPP byte-level pipeline.
@@ -946,4 +1062,6 @@ class DocumentProcessingHandler
 
         return $newFile;
     }//end replaceWordsInPdfDocument()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

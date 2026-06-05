@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -81,8 +89,11 @@ class FilePreviewHandler
      * @return ISimpleFile The preview image file.
      *
      * @throws Exception If preview cannot be generated.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPreview(File $file, ?int $width=null, ?int $height=null): ISimpleFile
     {
@@ -135,10 +146,14 @@ class FilePreviewHandler
      */
     public function getMimeTypeIconUrl(string $mimeType): string
     {
+<<<<<<< HEAD
         if ($this->previewManager->isMimeSupported($mimeType) === true) {
             return '';
         }
 
         return '/core/img/filetypes/file.svg';
+=======
+        return $this->previewManager->isMimeSupported($mimeType) === true ? '' : '/core/img/filetypes/file.svg';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end getMimeTypeIconUrl()
 }//end class

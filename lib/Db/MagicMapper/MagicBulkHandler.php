@@ -22,9 +22,12 @@
  * - Optimized INSERT...ON DUPLICATE KEY UPDATE queries
  * - Reduced SQL overhead compared to generic table operations
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -133,6 +136,7 @@ class MagicBulkHandler
 
             // Map metadata to prefixed columns with proper fallbacks.
             $uuid = $selfData['uuid'] ?? $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
+<<<<<<< HEAD
             $preparedObject['_uuid']     = $uuid;
             $preparedObject['_register'] = $register->getId();
             $preparedObject['_schema']   = $schema->getId();
@@ -148,6 +152,13 @@ class MagicBulkHandler
             // those keys come from raw client JSON and must not be trusted.
             $preparedObject['_owner']        = $selfData['owner'] ?? null;
             $preparedObject['_organisation'] = $selfData['organisation'] ?? null;
+=======
+            $preparedObject['_uuid']         = $uuid;
+            $preparedObject['_register']     = $register->getId();
+            $preparedObject['_schema']       = $schema->getId();
+            $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
+            $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s).
             $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');

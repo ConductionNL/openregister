@@ -109,6 +109,7 @@ OpenRegister integrates with Nextcloud's `INotificationManager` for user-facing 
 
 | Channel | Description |
 |---------|-------------|
+<<<<<<< HEAD
 | `nc-notification` | Nextcloud notification bell (via `INotificationManager`) |
 | `email` | Via `IMailer` (being replaced by n8n) |
 | `activity` | Activity stream entry per recipient |
@@ -191,6 +192,35 @@ Before delivering the in-app/push channel, the dispatcher resolves `schema-defau
 
 > The earlier per-`(register, schema)` `NotificationSubscription` table + controller are **deprecated**; existing rows are migrated to user-config overrides by a one-shot repair step and the table is scheduled for removal.
 
+=======
+| In-app | Nextcloud notification bell (via `INotificationManager`) |
+| Webhook | Delegates to existing webhook delivery pipeline |
+| Email | Via Nextcloud mail system (being replaced by n8n) |
+
+### Notification Rules
+
+Notification rules are configured per schema:
+
+```json
+{
+  "notifications": [
+    {
+      "trigger": "object.created",
+      "recipient": "$owner",
+      "subject": "Nieuwe melding aangemaakt",
+      "template": "melding-aangemaakt"
+    },
+    {
+      "trigger": "object.status_changed",
+      "condition": { "field": "status", "value": "afgehandeld" },
+      "recipient": "$owner",
+      "subject": "Uw melding is afgehandeld"
+    }
+  ]
+}
+```
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### VNG Notificaties API Compliance
 
 For Dutch government interoperability, webhook payloads can be formatted according to the VNG Notificaties API standard via a Twig mapping configuration. This enables OpenRegister to act as a notificatiecomponent in a ZGW API landscape.

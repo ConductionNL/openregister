@@ -5,12 +5,21 @@ status: implemented
 ---
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend audit trail — covered by PHPUnit
 Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
 
 **Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
 ## Requirements
+=======
+Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
+
+**Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
+
+## ADDED Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Every mutation MUST produce an immutable audit trail entry
 All create, update, and delete operations on register objects MUST generate an audit trail entry that cannot be modified or deleted.
 
@@ -120,6 +129,7 @@ Read operations on schemas marked as containing sensitive data MUST also produce
 - THEN an audit entry MUST be created with action `read`
 - AND the entry MUST NOT include the full object data (only the object UUID)
 
+<<<<<<< HEAD
 ### Requirement: Audit-Trail Access, Export, and Administrative Deletion Surface
 The service MUST expose audit-trail retrieval scoped to a single object with register/schema membership validation that still succeeds when the register or schema has been soft-deleted, MUST count and list entries with the same filters/pagination, MUST export entries in CSV, JSON, XML, and TXT formats, and MUST support single and filtered bulk deletion as an administrative retention operation.
 
@@ -221,6 +231,9 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 - The companion routes `auditTrail#destroy` (DELETE `/api/audit-trails/{id}`) and `auditTrail#destroyMultiple` (DELETE `/api/audit-trails`) DO return HTTP 405 per the existing immutability REQ, which makes the `clear-all` carve-out inconsistent. Flagged as part of the drift in D-1 of the proposal.
 
 ## Current Implementation Status
+=======
+### Current Implementation Status
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash
   - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) with `createAuditTrail()` method recording create/update/delete actions with user context, session, IP address, and changed fields
@@ -239,7 +252,11 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 - **Partial:**
   - The existing AuditTrail records most of the required metadata including hash chaining and immutability guarantees
 
+<<<<<<< HEAD
 ## Standards & References
+=======
+### Standards & References
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - **GDPR Article 30** — Processing records requirement
 - **NEN 2082** — Records management (audit trail requirements)
 - **Archiefwet 1995** — Dutch archival law (long-term retention)

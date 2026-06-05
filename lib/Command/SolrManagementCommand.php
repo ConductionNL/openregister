@@ -65,7 +65,11 @@ class SolrManagementCommand extends Command
      * @param LoggerInterface $logger      Logger for debugging and monitoring
      * @param IndexService    $solrService SOLR service for operations
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -79,7 +83,11 @@ class SolrManagementCommand extends Command
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function configure(): void
     {
@@ -158,7 +166,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -198,7 +210,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleSetup(OutputInterface $output): int
     {
@@ -283,7 +299,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleOptimize(OutputInterface $output, bool $commit): int
     {
@@ -331,7 +351,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleWarm(OutputInterface $output): int
     {
@@ -391,7 +415,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleHealth(OutputInterface $output): int
     {
@@ -475,7 +503,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleSchemaCheck(OutputInterface $output): int
     {
@@ -557,7 +589,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleClear(OutputInterface $output, bool $force): int
     {
@@ -599,7 +635,11 @@ class SolrManagementCommand extends Command
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleStats(OutputInterface $output): int
     {
@@ -675,7 +715,11 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 1
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleInvalidAction(OutputInterface $output, string $action): int
     {

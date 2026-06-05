@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -14,6 +15,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
+=======
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -45,7 +53,11 @@ class PerformanceOptimizationHandler
      * @param OrganisationService $organisationService Organisation service for context.
      * @param LoggerInterface     $logger              Logger for debugging.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly OrganisationService $organisationService,
@@ -64,7 +76,11 @@ class PerformanceOptimizationHandler
      * @psalm-return   string|null
      * @phpstan-return string|null
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -115,7 +131,11 @@ class PerformanceOptimizationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Different timing scenarios generate different recommendations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recommendations require detailed analysis
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {

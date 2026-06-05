@@ -11,10 +11,14 @@ use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -25,8 +29,11 @@ class AuditTrailControllerTest extends TestCase
     private LogService&MockObject $logService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private AuditHashService&MockObject $auditHashService;
+<<<<<<< HEAD
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -36,6 +43,7 @@ class AuditTrailControllerTest extends TestCase
         $this->logService       = $this->createMock(LogService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->auditHashService = $this->createMock(AuditHashService::class);
+<<<<<<< HEAD
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->groupManager     = $this->createMock(IGroupManager::class);
 
@@ -46,15 +54,21 @@ class AuditTrailControllerTest extends TestCase
         $user->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($user);
         $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new AuditTrailController(
             'openregister',
             $this->request,
             $this->logService,
             $this->auditTrailMapper,
+<<<<<<< HEAD
             $this->auditHashService,
             $this->userSession,
             $this->groupManager
+=======
+            $this->auditHashService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
@@ -462,31 +476,64 @@ class AuditTrailControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testDestroyMultipleAlwaysReturns405Immutable(): void
     {
         // Audit trails are immutable: bulk-delete endpoint must return
         // 405 regardless of input. Replaces the legacy success/exception
         // tests that asserted 200/500 — production was changed to enforce
         // immutability per retrofit-annotate-openregister-2026-04-23 task 8.
+=======
+    public function testDestroyMultipleSuccess(): void
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', null, '1,2,3'],
             ]);
 
+<<<<<<< HEAD
         $result = $this->controller->destroyMultiple();
 
         $this->assertEquals(405, $result->getStatus());
         $this->assertArrayHasKey('error', $result->getData());
+=======
+        $this->logService->method('deleteLogs')->willReturn([
+            'deleted' => 3,
+            'failed' => 0,
+        ]);
+
+        $result = $this->controller->destroyMultiple();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     public function testDestroyMultipleException(): void
     {
+<<<<<<< HEAD
         $this->markTestSkipped(
             'Production destroyMultiple() always returns 405 (audit trails '
             .'immutable); no exception path remains. Covered by '
             .'testDestroyMultipleAlwaysReturns405Immutable.'
         );
+=======
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['ids', null, null],
+            ]);
+
+        $this->logService->method('deleteLogs')
+            ->willThrowException(new \Exception('Deletion failed'));
+
+        $result = $this->controller->destroyMultiple();
+
+        $this->assertEquals(500, $result->getStatus());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     public function testClearAllSuccess(): void
@@ -525,13 +572,17 @@ class AuditTrailControllerTest extends TestCase
 
     public function testDestroyMultipleWithArrayIds(): void
     {
+<<<<<<< HEAD
         // Same immutability semantics — array form ids[] also gets 405.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', null, ['1', '2', '3']],
             ]);
 
+<<<<<<< HEAD
         $result = $this->controller->destroyMultiple();
 
         $this->assertEquals(405, $result->getStatus());
@@ -623,5 +674,16 @@ class AuditTrailControllerTest extends TestCase
         $this->logService->expects($this->never())->method('getLog');
 
         $controller->show(42);
+=======
+        $this->logService->method('deleteLogs')->willReturn([
+            'deleted' => 3,
+            'failed'  => 0,
+        ]);
+
+        $result = $this->controller->destroyMultiple();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['success']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 }

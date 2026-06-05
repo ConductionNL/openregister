@@ -32,6 +32,7 @@
       <code><![CDATA[$skippedCount]]></code>
     </UnusedParam>
   </file>
+<<<<<<< HEAD
   <file src="lib/BackgroundJob/ReportRenderJob.php">
     <InvalidNamedArgument>
       <code><![CDATA[_multitenancy]]></code>
@@ -43,6 +44,8 @@
       <code><![CDATA[nodeExists]]></code>
     </UndefinedInterfaceMethod>
   </file>
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/BackgroundJob/TenantDeprovisionJob.php">
     <InvalidNamedArgument>
       <code><![CDATA[filters]]></code>
@@ -63,6 +66,14 @@
       <code><![CDATA[array]]></code>
     </LessSpecificImplementedReturnType>
   </file>
+<<<<<<< HEAD
+=======
+  <file src="lib/Controller/ActionsController.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[objectId]]></code>
+    </InvalidNamedArgument>
+  </file>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Controller/ArchivalController.php">
     <UndefinedMethod>
       <code><![CDATA[findByUuid]]></code>
@@ -72,6 +83,15 @@
       <code><![CDATA[findByUuid]]></code>
     </UndefinedMethod>
   </file>
+<<<<<<< HEAD
+=======
+  <file src="lib/Controller/AuditTrailController.php">
+    <UndefinedMethod>
+      <code><![CDATA[findByIdentifier]]></code>
+      <code><![CDATA[getProcessingActivities]]></code>
+    </UndefinedMethod>
+  </file>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Controller/CalendarEventsController.php">
     <InvalidNamedArgument>
       <code><![CDATA[object]]></code>
@@ -131,6 +151,14 @@
       <code><![CDATA[find]]></code>
     </TooFewArguments>
   </file>
+<<<<<<< HEAD
+=======
+  <file src="lib/Cron/TransferCheckJob.php">
+    <UndefinedClass>
+      <code><![CDATA[ObjectEntityMapper]]></code>
+    </UndefinedClass>
+  </file>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Db/ConsumerMapper.php">
     <ImplicitToStringCast>
       <code><![CDATA[Uuid::v4()]]></code>
@@ -141,6 +169,7 @@
       <code><![CDATA[objectId]]></code>
     </InvalidNamedArgument>
   </file>
+<<<<<<< HEAD
   <file src="lib/Db/NotificationReadStateMapper.php">
     <MissingTemplateParam>
       <code><![CDATA[NotificationReadStateMapper]]></code>
@@ -150,17 +179,32 @@
     <MissingTemplateParam>
       <code><![CDATA[NotificationSubscriptionMapper]]></code>
     </MissingTemplateParam>
+=======
+  <file src="lib/Db/Organisation.php">
+    <UndefinedThisPropertyFetch>
+      <code><![CDATA[$this->calendar]]></code>
+      <code><![CDATA[$this->contacts]]></code>
+      <code><![CDATA[$this->deck]]></code>
+      <code><![CDATA[$this->mail]]></code>
+      <code><![CDATA[$this->notes]]></code>
+      <code><![CDATA[$this->talk]]></code>
+      <code><![CDATA[$this->todos]]></code>
+    </UndefinedThisPropertyFetch>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   </file>
   <file src="lib/Db/SelectionListMapper.php">
     <InvalidNamedArgument>
       <code><![CDATA[objectId]]></code>
     </InvalidNamedArgument>
   </file>
+<<<<<<< HEAD
   <file src="lib/Listener/CalculationOnSaveListener.php">
     <UnusedParam>
       <code><![CDATA[$isUpdate]]></code>
     </UnusedParam>
   </file>
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Migration/Version1Date20260325120000.php">
     <UndefinedConstant>
       <code><![CDATA[Types::DATETIME_MUTABLE]]></code>
@@ -229,11 +273,30 @@
       <code><![CDATA[$title]]></code>
     </UnusedParam>
   </file>
+<<<<<<< HEAD
+=======
+  <file src="lib/Service/Edepot/EdepotTransferService.php">
+    <UndefinedClass>
+      <code><![CDATA[$this->objectMapper]]></code>
+      <code><![CDATA[$this->objectMapper]]></code>
+      <code><![CDATA[$this->objectMapper]]></code>
+      <code><![CDATA[ObjectEntityMapper]]></code>
+    </UndefinedClass>
+  </file>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Service/Edepot/SipPackageBuilder.php">
     <FalsableReturnStatement>
       <code><![CDATA[$zipPath]]></code>
     </FalsableReturnStatement>
   </file>
+<<<<<<< HEAD
+=======
+  <file src="lib/Service/Edepot/TransferListService.php">
+    <UndefinedClass>
+      <code><![CDATA[ObjectEntityMapper]]></code>
+    </UndefinedClass>
+  </file>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Service/Edepot/Transport/SftpTransport.php">
     <UndefinedClass>
       <code><![CDATA[$sftp]]></code>
@@ -248,21 +311,33 @@
       <code><![CDATA[find]]></code>
     </UndefinedMethod>
   </file>
+<<<<<<< HEAD
+=======
+  <file src="lib/Service/FileService.php">
+    <UndefinedMethod>
+      <code><![CDATA[createFile]]></code>
+    </UndefinedMethod>
+  </file>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Service/FileSidebarService.php">
     <UndefinedInterfaceMethod>
       <code><![CDATA[getInner]]></code>
     </UndefinedInterfaceMethod>
   </file>
+<<<<<<< HEAD
   <file src="lib/Service/Notification/NotificationAnnotationValidator.php">
     <InvalidOperand>
       <code><![CDATA[$defaultLocaleBad]]></code>
     </InvalidOperand>
   </file>
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   <file src="lib/Service/Object/SaveObject/ComputedFieldHandler.php">
     <UndefinedInterfaceMethod>
       <code><![CDATA[setTemplate]]></code>
     </UndefinedInterfaceMethod>
   </file>
+<<<<<<< HEAD
   <file src="lib/Service/Object/SaveObjects.php">
     <ImplicitToStringCast>
       <code><![CDATA[$registerId]]></code>
@@ -281,5 +356,12 @@
       <code><![CDATA[$objectId]]></code>
       <code><![CDATA[$relation]]></code>
     </UnusedParam>
+=======
+  <file src="lib/Service/UserService.php">
+    <UndefinedMethod>
+      <code><![CDATA[findByActor]]></code>
+      <code><![CDATA[findByActor]]></code>
+    </UndefinedMethod>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   </file>
 </files>

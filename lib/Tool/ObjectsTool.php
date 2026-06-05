@@ -78,7 +78,11 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return 'objects'
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string
     {
@@ -90,7 +94,11 @@ class ObjectsTool extends AbstractTool
      *
      * @return string The tool description.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDescription(): string
     {
@@ -106,7 +114,11 @@ class ObjectsTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFunctions(): array
     {
@@ -223,7 +235,11 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -260,7 +276,11 @@ class ObjectsTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameters
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchObjects(
         int $limit=20,
@@ -327,7 +347,11 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObject(string $id): array
     {
@@ -365,7 +389,11 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createObject(string $register, string $schema, array $data): array
     {
@@ -409,7 +437,11 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateObject(string $id, array $data): array
     {
@@ -453,7 +485,11 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteObject(string $id): array
     {

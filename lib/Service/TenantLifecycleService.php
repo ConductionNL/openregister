@@ -7,9 +7,12 @@
  * provisioning -> active -> suspended -> deprovisioning -> archived.
  * Also handles reactivation from suspended back to active.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -19,12 +22,21 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -115,6 +127,7 @@ class TenantLifecycleService
      *
      * @throws Exception If the transition is invalid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      */
@@ -138,6 +151,20 @@ class TenantLifecycleService
                 implode(', ', $allowedTransitions)
             );
             throw new Exception($message, Response::HTTP_CONFLICT);
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+     */
+    public function validateTransition(string $currentStatus, string $targetStatus): void
+    {
+        $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
+
+        if (in_array($targetStatus, $allowedTransitions, true) === false) {
+            throw new Exception(
+                "Invalid state transition from '{$currentStatus}' to '{$targetStatus}'. ".'Valid transitions: '.implode(', ', $allowedTransitions),
+                Response::HTTP_CONFLICT
+            );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
     }//end validateTransition()
 
@@ -148,7 +175,11 @@ class TenantLifecycleService
      *
      * @return string[] Valid next states
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getValidTransitions(string $status): array
     {
@@ -165,10 +196,15 @@ class TenantLifecycleService
      *
      * @throws Exception If provisioning fails
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function provision(Organisation $organisation, string $adminUserId): Organisation
     {
@@ -181,6 +217,7 @@ class TenantLifecycleService
 
         $slug = $organisation->getSlug() ?? 'org';
 
+<<<<<<< HEAD
         // Validate that the organisation's target environment is a known OTAP stage.
         $env = $organisation->getEnvironment() ?? self::ENV_PRODUCTION;
         if ($this->isValidEnvironment(environment: $env) === false) {
@@ -199,6 +236,8 @@ class TenantLifecycleService
             );
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             // Create default groups prefixed with org slug.
             $adminGroupId = $slug.'-admin';
@@ -231,7 +270,11 @@ class TenantLifecycleService
 
             // Set default authorization RBAC rules.
             $authorization = $organisation->getAuthorization();
+<<<<<<< HEAD
             foreach ($authorization as &$permissions) {
+=======
+            foreach ($authorization as $entityType => &$permissions) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 if (is_array($permissions) === false) {
                     continue;
                 }
@@ -280,7 +323,11 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function suspend(Organisation $organisation): Organisation
     {
@@ -309,7 +356,11 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reactivate(Organisation $organisation): Organisation
     {
@@ -338,7 +389,11 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deprovision(Organisation $organisation): Organisation
     {
@@ -367,7 +422,11 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function archive(Organisation $organisation): Organisation
     {
@@ -393,8 +452,13 @@ class TenantLifecycleService
      *
      * @return bool Whether the environment is valid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
+=======
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isValidEnvironment(string $environment): bool
     {
@@ -409,8 +473,13 @@ class TenantLifecycleService
      *
      * @return bool Whether the promotion order is valid
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
+=======
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool
     {

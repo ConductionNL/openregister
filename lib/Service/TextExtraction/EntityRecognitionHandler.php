@@ -7,9 +7,12 @@
  * from text chunks for GDPR compliance and data classification.
  * This handler is invoked after chunks are created to detect and store entities.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -129,8 +132,11 @@ class EntityRecognitionHandler
      * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
@@ -215,8 +221,11 @@ class EntityRecognitionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity extraction requires multiple condition checks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple entity detection paths with error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity extraction with logging
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -303,7 +312,11 @@ class EntityRecognitionHandler
                 $entity = $this->findOrCreateEntity(
                     type: $detected['type'],
                     value: $detected['value'],
+<<<<<<< HEAD
                     category: $detected['category'] ?? self::getCategoryForType(type: $detected['type'])
+=======
+                    category: $detected['category'] ?? $this->getCategoryForType(type: $detected['type'])
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 );
 
                 // Create entity relation.
@@ -328,6 +341,7 @@ class EntityRecognitionHandler
                     $relation->setFileId($chunk->getSourceId());
                 } else if ($chunk->getSourceType() === 'object') {
                     $relation->setObjectId($chunk->getSourceId());
+<<<<<<< HEAD
 
                     // Populate disambiguating columns so DSAR /
                     // retention-enforcement composition can resolve the
@@ -338,6 +352,8 @@ class EntityRecognitionHandler
                         relation: $relation,
                         objectId: $chunk->getSourceId()
                     );
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
 
                 $this->entityRelationMapper->insert($relation);
@@ -779,7 +795,11 @@ class EntityRecognitionHandler
             $entities[] = [
                 'type'           => $entityType,
                 'value'          => $value,
+<<<<<<< HEAD
                 'category'       => self::getCategoryForType(type: $entityType),
+=======
+                'category'       => $this->getCategoryForType(type: $entityType),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'position_start' => $start,
                 'position_end'   => $end,
                 'confidence'     => $score,
@@ -949,6 +969,7 @@ class EntityRecognitionHandler
     /**
      * Get category for entity type.
      *
+<<<<<<< HEAD
      * Lifted to `public static` so flows that produce GdprEntity rows
      * outside the detector pipeline (notably the manual-entity endpoint
      * in `ManualEntityService`) can derive the same category mapping
@@ -962,6 +983,13 @@ class EntityRecognitionHandler
      * @return string One of the `CATEGORY_*` constants on this class.
      */
     public static function getCategoryForType(string $type): string
+=======
+     * @param string $type Entity type.
+     *
+     * @return string Category.
+     */
+    private function getCategoryForType(string $type): string
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         return match ($type) {
             self::ENTITY_TYPE_PERSON,
@@ -993,6 +1021,7 @@ class EntityRecognitionHandler
 
         return substr($text, $start, $end - $start);
     }//end extractContext()
+<<<<<<< HEAD
 
     /**
      * Populate the disambiguating object-context columns on a relation.
@@ -1030,4 +1059,6 @@ class EntityRecognitionHandler
         $relation->setObjectUuid((string) $object->getUuid());
 
     }//end populateObjectContextOnRelation()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

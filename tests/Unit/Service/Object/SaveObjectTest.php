@@ -135,7 +135,10 @@ class SaveObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
             $this->logger,
             $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+<<<<<<< HEAD
             $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $arrayLoader
         );
     }
@@ -1719,6 +1722,7 @@ class SaveObjectTest extends TestCase
         $this->assertTrue(true);
     }
 
+<<<<<<< HEAD
     public function testSetSelfMetadataOwnerIsIgnored(): void
     {
         // SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self input.
@@ -1730,10 +1734,21 @@ class SaveObjectTest extends TestCase
 
         // Owner must remain null — client-supplied value is discarded.
         $this->assertNull($entity->getOwner());
+=======
+    public function testSetSelfMetadataSetsOwner(): void
+    {
+        $entity = new ObjectEntity();
+        $selfData = ['owner' => 'admin'];
+
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+        $this->assertSame('admin', $entity->getOwner());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     public function testSetSelfMetadataSetsOrganisation(): void
     {
+<<<<<<< HEAD
         // SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
         // has verified membership in the requested organisation.  With the default mock
         // setup (userSession→null user, groupManager→null, hasAccessToOrganisation→false)
@@ -1757,6 +1772,9 @@ class SaveObjectTest extends TestCase
             ->willReturn(true);
 
         $entity   = new ObjectEntity();
+=======
+        $entity = new ObjectEntity();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $selfData = ['organisation' => 'org-uuid'];
 
         $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);

@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
 	<CnAppRoot
 		app-id="openregister"
 		:manifest="manifest"
@@ -45,13 +46,38 @@
 			<Dialogs />
 		</template>
 	</CnAppRoot>
+=======
+	<NcContent app-name="openregister">
+		<MainMenu />
+		<Views />
+		<SideBars />
+		<CnObjectSidebar
+			v-if="objectSidebarState.active"
+			:title="objectSidebarState.title"
+			:subtitle="objectSidebarState.subtitle"
+			:object-type="objectSidebarState.objectType"
+			:object-id="objectSidebarState.objectId"
+			:register="objectSidebarState.register"
+			:schema="objectSidebarState.schema"
+			:hidden-tabs="objectSidebarState.hiddenTabs"
+			:open="objectSidebarState.open"
+			@update:open="objectSidebarState.open = $event" />
+		<Modals />
+		<Dialogs />
+	</NcContent>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 </template>
 
 <script>
 
 import Vue from 'vue'
+<<<<<<< HEAD
 import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot, CnObjectSidebar } from '@conduction/nextcloud-vue'
+=======
+import { NcContent } from '@nextcloud/vue'
+import { CnObjectSidebar } from '@conduction/nextcloud-vue'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 import MainMenu from './navigation/MainMenu.vue'
 import Modals from './modals/Modals.vue'
 import Dialogs from './dialogs/Dialogs.vue'
@@ -62,23 +88,31 @@ import { initializeAppData } from './services/AppInitializationService.js'
 export default {
 	name: 'App',
 	components: {
+<<<<<<< HEAD
 		CnAppRoot,
+=======
+		NcContent,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		CnObjectSidebar,
 		MainMenu,
 		Modals,
 		Dialogs,
 		SideBars,
 	},
+<<<<<<< HEAD
 	/**
 	 * Expose the shared object-sidebar state to descendant components.
 	 *
 	 * @return {object} The provided injectables.
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	provide() {
 		return {
 			objectSidebarState: this.objectSidebarState,
 		}
 	},
+<<<<<<< HEAD
 	props: {
 		/**
 		 * Bundled manifest — passed from main.js. CnAppRoot reads
@@ -109,6 +143,8 @@ export default {
 			default: null,
 		},
 	},
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	data() {
 		return {
 			objectSidebarState: Vue.observable({
@@ -124,11 +160,14 @@ export default {
 			}),
 		}
 	},
+<<<<<<< HEAD
 	/**
 	 * On mount, kick off application-data hot-loading and dashboard watchers.
 	 *
 	 * @return {void}
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	mounted() {
 		// Initialize hot-loading of essential application data
 		// This loads registers, schemas, organisations, applications, views, agents, sources, and conversations

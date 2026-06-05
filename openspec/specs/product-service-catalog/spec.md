@@ -3,6 +3,7 @@ status: redirect
 ---
 # Product & Service Catalog (PDC)
 
+<<<<<<< HEAD
 ## Purpose
 
 @e2e exclude redirect stub owned by Pipelinq — no UI in OR
@@ -17,3 +18,6 @@ Implementers MUST consult the canonical specification owned by Pipelinq instead 
 - **WHEN** a developer needs the requirements for the product and service catalog
 - **THEN** they MUST refer to `pipelinq/openspec/specs/product-service-catalog/spec.md`
 - **AND** they MUST NOT derive normative behavior from this stub
+=======
+Moved to `pipelinq/openspec/specs/product-service-catalog/spec.md`. This spec is now owned by Pipelinq.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

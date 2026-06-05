@@ -8,7 +8,10 @@ use OCA\OpenRegister\Controller\GdprEntitiesController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\OrganisationService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\DB\IResult;
@@ -17,10 +20,14 @@ use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -33,9 +40,12 @@ class GdprEntitiesControllerTest extends TestCase
     private EntityRelationMapper&MockObject $entityRelationMapper;
     private IDBConnection&MockObject $db;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
     private OrganisationService&MockObject $organisationService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -47,6 +57,7 @@ class GdprEntitiesControllerTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+<<<<<<< HEAD
         // Authenticated admin user: with #1825 fixes the admin path is the
         // unscoped path, so existing assertions about unscoped results hold.
         $user = $this->createMock(IUser::class);
@@ -58,16 +69,22 @@ class GdprEntitiesControllerTest extends TestCase
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->organisationService->method('getUserOrganisations')->willReturn([]);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->controller = new GdprEntitiesController(
             'openregister',
             $this->request,
             $this->entityMapper,
             $this->entityRelationMapper,
             $this->db,
+<<<<<<< HEAD
             $this->logger,
             $this->userSession,
             $this->groupManager,
             $this->organisationService
+=======
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
@@ -934,6 +951,7 @@ class GdprEntitiesControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
     }
+<<<<<<< HEAD
 
     // =========================================================================
     // #1825 cross-tenant authorization regression tests
@@ -1068,4 +1086,6 @@ class GdprEntitiesControllerTest extends TestCase
 
         $this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use OCA\OpenRegister\Service\File\FileLockHandler;
+<<<<<<< HEAD
 use OCP\ICacheFactory;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -16,7 +19,10 @@ use Psr\Log\LoggerInterface;
 class FileLockHandlerTest extends TestCase
 {
     private FileLockHandler $handler;
+<<<<<<< HEAD
     private ICacheFactory&MockObject $cacheFactory;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
     private LoggerInterface&MockObject $logger;
@@ -25,18 +31,24 @@ class FileLockHandlerTest extends TestCase
     {
         parent::setUp();
 
+<<<<<<< HEAD
         // Stub a cache factory that throws on createDistributed so the handler
         // falls through to its per-instance map. The cross-request behaviour
         // is exercised separately under tests/Service/.
         $this->cacheFactory = $this->createMock(ICacheFactory::class);
         $this->cacheFactory->method('createDistributed')
             ->willThrowException(new \RuntimeException('no cache backend in unit-test scope'));
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->userSession  = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger       = $this->createMock(LoggerInterface::class);
 
         $this->handler = new FileLockHandler(
+<<<<<<< HEAD
             $this->cacheFactory,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->userSession,
             $this->groupManager,
             $this->logger
@@ -78,7 +90,11 @@ class FileLockHandlerTest extends TestCase
         $this->handler->lockFile(42);
 
         // Change user to user-2.
+<<<<<<< HEAD
         $handler2 = new FileLockHandler($this->cacheFactory, $this->userSession, $this->groupManager, $this->logger);
+=======
+        $handler2 = new FileLockHandler($this->userSession, $this->groupManager, $this->logger);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // We need a new handler to simulate a different user;
         // but same handler is fine as long as user context changes.
@@ -155,6 +171,7 @@ class FileLockHandlerTest extends TestCase
         $this->assertNotNull($info);
         $this->assertEquals('user-1', $info['lockedBy']);
     }
+<<<<<<< HEAD
 
     /**
      * Test unlocking by a non-owner without force throws exception.
@@ -270,4 +287,6 @@ class FileLockHandlerTest extends TestCase
         $this->expectExceptionMessage('File is locked by owner');
         $this->handler->assertCanModify(55);
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

@@ -693,7 +693,18 @@ export default {
 				window.open(websiteUrl, '_blank')
 			}
 		},
+<<<<<<< HEAD
 		// Notification methods removed - use showSuccess/showError directly from @nextcloud/dialogs
+=======
+		showSuccessMessage(_message) {
+			// Implementation would depend on your notification system
+			// TODO: Integrate with Nextcloud notification system
+		},
+		showErrorMessage(_message) {
+			// Implementation would depend on your notification system
+			// TODO: Integrate with Nextcloud notification system
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	},
 }
 </script>

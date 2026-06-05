@@ -288,6 +288,7 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $roles = null;
 
     /**
+<<<<<<< HEAD
      * Linked mail app data.
      *
      * @var array|null
@@ -337,11 +338,65 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $deck = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * User count for this organisation (computed property, not stored in database)
      *
      * @var integer|null Number of users in this organisation
      */
     public ?int $userCount = null;
+<<<<<<< HEAD
+=======
+
+    /**
+     * Linked mail entity IDs for this organisation.
+     *
+     * @var array|null Linked mail entity IDs
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contact entity IDs for this organisation.
+     *
+     * @var array|null Linked contact entity IDs
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked note entity IDs for this organisation.
+     *
+     * @var array|null Linked note entity IDs
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todo entity IDs for this organisation.
+     *
+     * @var array|null Linked todo entity IDs
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar event entity IDs for this organisation.
+     *
+     * @var array|null Linked calendar entity IDs
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked Talk conversation IDs for this organisation.
+     *
+     * @var array|null Linked Talk entity IDs
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked Deck card IDs for this organisation.
+     *
+     * @var array|null Linked Deck entity IDs
+     */
+    protected ?array $deck = null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Organisation constructor
@@ -758,6 +813,7 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+<<<<<<< HEAD
         $users           = $this->getUserIds();
         $groups          = $this->getGroups();
         $provisionedAt   = null;
@@ -774,6 +830,10 @@ class Organisation extends Entity implements JsonSerializable
         if ($this->deprovisionedAt instanceof DateTime) {
             $deprovisionedAt = $this->deprovisionedAt->format('c');
         }
+=======
+        $users  = $this->getUserIds();
+        $groups = $this->getGroups();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         return [
             'id'              => $this->id,
@@ -809,9 +869,15 @@ class Organisation extends Entity implements JsonSerializable
             'authorization'   => $this->authorization ?? $this->getDefaultAuthorization(),
             'status'          => $this->status ?? 'active',
             'environment'     => $this->environment ?? 'production',
+<<<<<<< HEAD
             'provisionedAt'   => $provisionedAt,
             'suspendedAt'     => $suspendedAt,
             'deprovisionedAt' => $deprovisionedAt,
+=======
+            'provisionedAt'   => $this->provisionedAt instanceof DateTime ? $this->provisionedAt->format('c') : null,
+            'suspendedAt'     => $this->suspendedAt instanceof DateTime ? $this->suspendedAt->format('c') : null,
+            'deprovisionedAt' => $this->deprovisionedAt instanceof DateTime ? $this->deprovisionedAt->format('c') : null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'created'         => $this->getCreatedFormatted(),
             'updated'         => $this->getUpdatedFormatted(),
             '_mail'           => $this->mail,

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 </script>
@@ -14,6 +15,20 @@ import { translate as t } from '@nextcloud/l10n'
 
 		<div v-else-if="registers.length === 0 && !loading" class="empty-state">
 			<p>{{ t('openregister', 'No registers found. Create a register to configure permissions.') }}</p>
+=======
+<template>
+	<SettingsSection
+		name="Permission Matrix"
+		description="View and manage authorization across registers and schemas"
+		:loading="loading"
+		loading-message="Loading permission matrix...">
+		<div v-if="!isAdminUser" class="access-denied">
+			<p>You do not have permission to view the permission matrix. Admin access is required.</p>
+		</div>
+
+		<div v-else-if="registers.length === 0 && !loading" class="empty-state">
+			<p>No registers found. Create a register to configure permissions.</p>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		</div>
 
 		<div v-else class="permission-matrix">
@@ -21,11 +36,19 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="matrix-legend">
 				<span class="legend-item">
 					<span class="legend-dot direct" />
+<<<<<<< HEAD
 					{{ t('openregister', 'Direct permission') }}
 				</span>
 				<span class="legend-item">
 					<span class="legend-dot inherited" />
 					{{ t('openregister', 'Inherited from register') }}
+=======
+					Direct permission
+				</span>
+				<span class="legend-item">
+					<span class="legend-dot inherited" />
+					Inherited from register
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				</span>
 			</div>
 
@@ -35,6 +58,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<thead>
 						<tr>
 							<th class="name-column">
+<<<<<<< HEAD
 								{{ t('openregister', 'Register / Schema') }}
 							</th>
 							<th v-for="action in actions" :key="action" class="action-column">
@@ -42,6 +66,15 @@ import { translate as t } from '@nextcloud/l10n'
 							</th>
 							<th class="action-column">
 								{{ t('openregister', 'Public') }}
+=======
+								Register / Schema
+							</th>
+							<th v-for="action in actions" :key="action" class="action-column">
+								{{ action }}
+							</th>
+							<th class="action-column">
+								Public
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 							</th>
 						</tr>
 					</thead>
@@ -58,7 +91,11 @@ import { translate as t } from '@nextcloud/l10n'
 									</button>
 									<span v-if="register.authorization && Object.keys(register.authorization).length > 0"
 										class="auth-badge">
+<<<<<<< HEAD
 										{{ t('openregister', 'RBAC') }}
+=======
+										RBAC
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 									</span>
 								</td>
 								<td v-for="action in actions"
@@ -87,8 +124,13 @@ import { translate as t } from '@nextcloud/l10n'
 										&#8627; {{ schema.title || schema.name || 'Schema #' + schema.id }}
 										<span v-if="!schema.authorization || Object.keys(schema.authorization).length === 0"
 											class="inherited-badge"
+<<<<<<< HEAD
 											:title="t('openregister', 'Inherits permissions from register')">
 											{{ t('openregister', 'inherited') }}
+=======
+											title="Inherits permissions from register">
+											inherited
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 										</span>
 									</td>
 									<td v-for="action in actions"
@@ -117,24 +159,41 @@ import { translate as t } from '@nextcloud/l10n'
 			<div v-for="register in registersWithBulkActions"
 				:key="'bulk-' + register.id"
 				class="bulk-actions">
+<<<<<<< HEAD
 				<h4>{{ t('openregister', 'Bulk Role Assignment: {title}', { title: register.title || 'Register #' + register.id }) }}</h4>
 				<p class="bulk-description">{{ t('openregister', 'Apply a role to all schemas in this register that do not have explicit authorization overrides.') }}</p>
+=======
+				<h4>Bulk Role Assignment: {{ register.title || 'Register #' + register.id }}</h4>
+				<p class="bulk-description">Apply a role to all schemas in this register that do not have explicit authorization overrides.</p>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				<div class="bulk-controls">
 					<NcSelect
 						v-model="bulkRole[register.id]"
 						:options="getRoleOptions(register)"
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Select role')"
+=======
+						input-label="Select role"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						class="bulk-select" />
 					<NcSelect
 						v-model="bulkGroup[register.id]"
 						:options="getGroupOptions()"
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Select group')"
+=======
+						input-label="Select group"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						class="bulk-select" />
 					<NcButton
 						type="primary"
 						:disabled="!bulkRole[register.id] || !bulkGroup[register.id]"
 						@click="applyBulkRole(register)">
+<<<<<<< HEAD
 						{{ t('openregister', 'Apply') }}
+=======
+						Apply
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					</NcButton>
 				</div>
 			</div>
@@ -179,7 +238,10 @@ export default {
 		 * Returns only the registers that are expanded and have role configuration.
 		 * Used in the bulk actions section to avoid mixing v-for with v-if.
 		 *
+<<<<<<< HEAD
 		 * @spec exclude settings-matrix render-filter helper (computed; auth-system contract)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Array} Filtered list of registers with bulk action support
 		 */
 		registersWithBulkActions() {
@@ -196,9 +258,12 @@ export default {
 	},
 
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix data fetch plumbing; loads registers and schemas (auth-system contract)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadData() {
 			this.loading = true
 			try {
@@ -214,24 +279,33 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix row expand/collapse toggle plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		toggleRegister(registerId) {
 			this.$set(this.expandedRegisters, registerId, !this.expandedRegisters[registerId])
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix lookup helper; resolves a register's schemas for display
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getRegisterSchemas(register) {
 			const schemaIds = register.schemas || []
 			return this.schemas.filter(s => schemaIds.includes(s.id) || schemaIds.includes(String(s.id)))
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix authorization-read helper; extracts group names for an action (auth-system contract)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getRegisterGroups(register, action) {
 			const auth = register.authorization
 			if (!auth || !auth[action]) return []
@@ -242,9 +316,12 @@ export default {
 			}).filter(Boolean)
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix display helper; resolves effective (direct or inherited) groups
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getEffectiveGroups(schema, register, action) {
 			const schemaAuth = schema.authorization
 			if (schemaAuth && Object.keys(schemaAuth).length > 0) {
@@ -259,9 +336,12 @@ export default {
 			return this.getRegisterGroups(register, action)
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix display helper; resolves the effective authorization object
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getEffectiveAuth(schema, register) {
 			const schemaAuth = schema.authorization
 			if (schemaAuth && Object.keys(schemaAuth).length > 0) {
@@ -270,9 +350,12 @@ export default {
 			return register.authorization || {}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix CSS-class helper for direct/inherited permission cells
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getPermissionClass(schema, register, action) {
 			const schemaAuth = schema.authorization
 			if (schemaAuth && Object.keys(schemaAuth).length > 0 && schemaAuth[action]) {
@@ -284,9 +367,12 @@ export default {
 			return 'group-list'
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix tooltip-text display helper
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getEffectiveTooltip(schema, register, action) {
 			const schemaAuth = schema.authorization
 			if (schemaAuth && Object.keys(schemaAuth).length > 0 && schemaAuth[action]) {
@@ -299,26 +385,35 @@ export default {
 			return 'No restrictions (open access)'
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix groups-tooltip display helper
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getGroupsTooltip(groups) {
 			if (groups.length === 0) return 'No restrictions'
 			return groups.join(', ')
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix groups-label truncation display helper
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		formatGroups(groups) {
 			if (groups.length === 0) return '-'
 			if (groups.length <= 2) return groups.join(', ')
 			return groups.slice(0, 2).join(', ') + ' +' + (groups.length - 2)
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix public-access detection display helper
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		isPublicAccess(authorization) {
 			if (!authorization || !authorization.read) return false
 			return authorization.read.some(entry => {
@@ -328,9 +423,12 @@ export default {
 			})
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix toggle wiring; mutates register read-auth and persists via store (auth-system contract)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async togglePublicAccess(register, enabled) {
 			const auth = { ...(register.authorization || {}) }
 			if (enabled) {
@@ -352,9 +450,12 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix toggle wiring; mutates schema read-auth and persists via store (auth-system contract)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async toggleSchemaPublicAccess(schema, register, enabled) {
 			const schemaAuth = schema.authorization && Object.keys(schema.authorization).length > 0
 				? { ...schema.authorization }
@@ -379,17 +480,23 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix select-option helper; maps a register's configured roles
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getRoleOptions(register) {
 			const roles = register.configuration?.roles || []
 			return roles.map(r => ({ label: r.name + ' (' + (r.actions || []).join(', ') + ')', value: r.name }))
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix select-option helper; collects unique groups across registers/schemas
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getGroupOptions() {
 			// Collect all unique groups from all registers and schemas
 			const groups = new Set()
@@ -420,9 +527,12 @@ export default {
 			return Array.from(groups).sort().map(g => ({ label: g, value: g }))
 		},
 
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-matrix bulk-action wiring; applies a role to a register's schemas via store (auth-system contract)
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async applyBulkRole(register) {
 			const roleName = this.bulkRole[register.id]?.value
 			const groupName = this.bulkGroup[register.id]?.value

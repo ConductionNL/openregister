@@ -8,13 +8,20 @@ use PHPUnit\Framework\TestCase;
 
 class MessageTest extends TestCase
 {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private Message $message;
 
     protected function setUp(): void
     {
         $this->message = new Message();
+<<<<<<< HEAD
     }//end setUp()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testConstructorRegistersFieldTypes(): void
     {
@@ -25,9 +32,14 @@ class MessageTest extends TestCase
         $this->assertSame('string', $fieldTypes['role']);
         $this->assertSame('string', $fieldTypes['content']);
         $this->assertSame('json', $fieldTypes['sources']);
+<<<<<<< HEAD
         $this->assertSame('json', $fieldTypes['context']);
         $this->assertSame('datetime', $fieldTypes['created']);
     }//end testConstructorRegistersFieldTypes()
+=======
+        $this->assertSame('datetime', $fieldTypes['created']);
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testConstructorDefaultValues(): void
     {
@@ -37,28 +49,44 @@ class MessageTest extends TestCase
         $this->assertNull($this->message->getContent());
         $this->assertNull($this->message->getSources());
         $this->assertNull($this->message->getCreated());
+<<<<<<< HEAD
 
         // getContext() shadows the magic getter to normalise null -> [].
         $this->assertSame([], $this->message->getContext());
     }//end testConstructorDefaultValues()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testConstants(): void
     {
         $this->assertSame('user', Message::ROLE_USER);
         $this->assertSame('assistant', Message::ROLE_ASSISTANT);
+<<<<<<< HEAD
     }//end testConstants()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetUuid(): void
     {
         $this->message->setUuid('msg-uuid-123');
         $this->assertSame('msg-uuid-123', $this->message->getUuid());
+<<<<<<< HEAD
     }//end testSetAndGetUuid()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetConversationId(): void
     {
         $this->message->setConversationId(42);
         $this->assertSame(42, $this->message->getConversationId());
+<<<<<<< HEAD
     }//end testSetAndGetConversationId()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetRole(): void
     {
@@ -67,13 +95,21 @@ class MessageTest extends TestCase
 
         $this->message->setRole('assistant');
         $this->assertSame('assistant', $this->message->getRole());
+<<<<<<< HEAD
     }//end testSetAndGetRole()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetContent(): void
     {
         $this->message->setContent('Hello, world!');
         $this->assertSame('Hello, world!', $this->message->getContent());
+<<<<<<< HEAD
     }//end testSetAndGetContent()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetSources(): void
     {
@@ -83,31 +119,51 @@ class MessageTest extends TestCase
         ];
         $this->message->setSources($sources);
         $this->assertSame($sources, $this->message->getSources());
+<<<<<<< HEAD
     }//end testSetAndGetSources()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetSourcesNull(): void
     {
         $this->message->setSources([['id' => '1']]);
         $this->message->setSources(null);
         $this->assertNull($this->message->getSources());
+<<<<<<< HEAD
     }//end testSetAndGetSourcesNull()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSetAndGetCreated(): void
     {
         $dt = new DateTime('2024-06-01 12:00:00');
         $this->message->setCreated($dt);
         $this->assertSame($dt, $this->message->getCreated());
+<<<<<<< HEAD
     }//end testSetAndGetCreated()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testJsonSerializeAllFieldsPresent(): void
     {
         $json = $this->message->jsonSerialize();
 
+<<<<<<< HEAD
         $expectedKeys = ['id', 'uuid', 'conversationId', 'role', 'content', 'sources', 'context', 'created'];
         foreach ($expectedKeys as $key) {
             $this->assertArrayHasKey($key, $json);
         }
     }//end testJsonSerializeAllFieldsPresent()
+=======
+        $expectedKeys = ['id', 'uuid', 'conversationId', 'role', 'content', 'sources', 'created'];
+        foreach ($expectedKeys as $key) {
+            $this->assertArrayHasKey($key, $json);
+        }
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testJsonSerializeDefaultValues(): void
     {
@@ -119,6 +175,7 @@ class MessageTest extends TestCase
         $this->assertNull($json['role']);
         $this->assertNull($json['content']);
         $this->assertNull($json['sources']);
+<<<<<<< HEAD
         $this->assertSame([], $json['context']);
         $this->assertNull($json['created']);
     }//end testJsonSerializeDefaultValues()
@@ -173,6 +230,10 @@ class MessageTest extends TestCase
         $json = $this->message->jsonSerialize();
         $this->assertSame($context, $json['context']);
     }//end testJsonSerializeIncludesContext()
+=======
+        $this->assertNull($json['created']);
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testJsonSerializeWithValues(): void
     {
@@ -193,10 +254,15 @@ class MessageTest extends TestCase
         $this->assertSame('assistant', $json['role']);
         $this->assertSame('Test response', $json['content']);
         $this->assertSame($sources, $json['sources']);
+<<<<<<< HEAD
         $this->assertSame([], $json['context']);
         // default when unset
         $this->assertSame($created->format('c'), $json['created']);
     }//end testJsonSerializeWithValues()
+=======
+        $this->assertSame($created->format('c'), $json['created']);
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testJsonSerializeCreatedFormattedAsIso8601(): void
     {
@@ -205,11 +271,20 @@ class MessageTest extends TestCase
         $json = $this->message->jsonSerialize();
 
         $this->assertSame($dt->format('c'), $json['created']);
+<<<<<<< HEAD
     }//end testJsonSerializeCreatedFormattedAsIso8601()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testJsonSerializeCreatedNullWhenNotSet(): void
     {
         $json = $this->message->jsonSerialize();
         $this->assertNull($json['created']);
+<<<<<<< HEAD
     }//end testJsonSerializeCreatedNullWhenNotSet()
 }//end class
+=======
+    }
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

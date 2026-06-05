@@ -3,6 +3,7 @@
 /**
  * Twig runtime for authentication token functions.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,13 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * @category Twig
+ * @package  OCA\OpenRegister\Twig
+ *
+ * @author  Conduction Development Team <dev@conductio.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @link https://OpenRegister.app
  */
@@ -35,7 +43,11 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @param AuthenticationService $authService The authentication service
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly AuthenticationService $authService,
@@ -52,7 +64,11 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function oauthToken(Source $source): string
     {
@@ -72,7 +88,11 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function decosToken(Source $source): string
     {
@@ -90,7 +110,11 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @return string The signed JWT token
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function jwtToken(Source $source): string
     {

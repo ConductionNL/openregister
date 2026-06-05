@@ -5,9 +5,12 @@
  *
  * Controller for managing source operations in the OpenRegister app.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -27,7 +30,10 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
+<<<<<<< HEAD
 use OCP\IGroupManager;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -39,14 +45,18 @@ use OCP\Security\ICrypto;
  * Controller for managing source operations.
  *
  * @psalm-suppress UnusedClass
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class SourcesController extends Controller
 {
     /**
      * Constructor for the SourcesController
      *
+<<<<<<< HEAD
      * @param string        $appName      The name of the app
      * @param IRequest      $request      The request object
      * @param IAppConfig    $config       The app configuration object
@@ -55,6 +65,13 @@ class SourcesController extends Controller
      * @param IUserSession  $userSession  User session for admin checks
      * @param IGroupManager $groupManager Group manager for admin checks
      * @param ICrypto       $crypto       Crypto service for databaseUrl encryption
+=======
+     * @param string       $appName      The name of the app
+     * @param IRequest     $request      The request object
+     * @param IAppConfig   $config       The app configuration object
+     * @param SourceMapper $sourceMapper The source mapper
+     * @param IL10N        $l10n         The localization service
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      */
@@ -63,10 +80,14 @@ class SourcesController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper,
+<<<<<<< HEAD
         private readonly IL10N $l10n,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly ICrypto $crypto
+=======
+        private readonly IL10N $l10n
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -115,8 +136,11 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -146,7 +170,15 @@ class SourcesController extends Controller
         );
         return new JSONResponse(
             data: [
+<<<<<<< HEAD
                 'results' => array_map(fn(Source $src) => $this->serializeSource(source: $src), $sources),
+=======
+                'results' => $this->sourceMapper->findAll(
+                    limit: $limit,
+                    offset: $offset,
+                    filters: $filters
+                ),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ]
         );
     }//end index()
@@ -169,8 +201,12 @@ class SourcesController extends Controller
     {
         try {
             // Try to find the source by ID.
+<<<<<<< HEAD
             $source = $this->sourceMapper->find(id: (int) $id);
             return new JSONResponse(data: $this->serializeSource(source: $source));
+=======
+            return new JSONResponse(data: $this->sourceMapper->find(id: (int) $id));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
@@ -189,8 +225,11 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(): JSONResponse
     {
@@ -219,8 +258,12 @@ class SourcesController extends Controller
         }
 
         // Create a new source from the data.
+<<<<<<< HEAD
         $source = $this->sourceMapper->createFromArray(object: $data);
         return new JSONResponse(data: $this->serializeSource(source: $source));
+=======
+        return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end create()
 
     /**
@@ -237,8 +280,11 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(int $id): JSONResponse
     {
@@ -269,7 +315,11 @@ class SourcesController extends Controller
 
         // Update the source with the provided data.
         $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
+<<<<<<< HEAD
         return new JSONResponse(data: $this->serializeSource(source: $source));
+=======
+        return new JSONResponse(data: $source);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end update()
 
     /**
@@ -284,8 +334,11 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function patch(int $id): JSONResponse
     {
@@ -308,8 +361,11 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(int $id): JSONResponse
     {
@@ -331,9 +387,12 @@ class SourcesController extends Controller
      * @param string               $key    Parameter key
      *
      * @return int|null Integer value or null
+<<<<<<< HEAD
      *
      * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned
      *   by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getIntParam(array $params, string $key): ?int
     {

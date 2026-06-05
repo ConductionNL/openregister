@@ -20,9 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+<<<<<<< HEAD
 use DateTime;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -58,6 +61,7 @@ class EntityRelationMapper extends QBMapper
      *                                           to notify listeners after a decision-metadata write).
      * @param LoggerInterface  $logger           Structured log sink.
      */
+<<<<<<< HEAD
     public function __construct(
         IDBConnection $db,
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -65,10 +69,15 @@ class EntityRelationMapper extends QBMapper
         private readonly IEventDispatcher $eventDispatcher,
         private readonly LoggerInterface $logger,
     ) {
+=======
+    public function __construct(IDBConnection $db)
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Find a single entity relation by its primary id.
      *
      * QBMapper exposes `find()` via a `@method` docblock only; concrete
@@ -83,10 +92,20 @@ class EntityRelationMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException When $id does not resolve.
      */
     public function find(int $id): EntityRelation
+=======
+     * Find entity relations by file ID.
+     *
+     * @param int $fileId The file ID.
+     *
+     * @return EntityRelation[] Array of entity relations.
+     */
+    public function findByFileId(int $fileId): array
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
+<<<<<<< HEAD
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         /*
@@ -292,15 +311,75 @@ class EntityRelationMapper extends QBMapper
         return $map;
 
     }//end findEntityIdsByValueForFile()
+=======
+            ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntities(query: $qb);
+    }//end findByFileId()
+
+    /**
+     * Find entity relations by entity ID.
+     *
+     * @param int $entityId The entity ID.
+     *
+     * @return EntityRelation[] Array of entity relations.
+     */
+    public function findByEntityId(int $entityId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntities(query: $qb);
+    }//end findByEntityId()
+
+    /**
+     * Find entity relations with entity details by file ID.
+     *
+     * Returns entity relations joined with entity data for anonymization.
+     *
+     * @param int $fileId The file ID.
+     *
+     * @return array Array of entity data with type, value, and relation info.
+     */
+    public function findEntitiesForFile(int $fileId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select(
+            'r.id as relation_id',
+            'r.entity_id',
+            'r.position_start',
+            'r.position_end',
+            'r.confidence',
+            'e.type as entity_type',
+            'e.value as entity_value',
+            'e.category'
+        )
+            ->from($this->getTableName(), 'r')
+            ->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
+            ->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+            ->orderBy('r.position_start', 'ASC');
+
+        $result   = $qb->executeQuery();
+        $entities = $result->fetchAll();
+        $result->closeCursor();
+
+        return $entities;
+    }//end findEntitiesForFile()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Mark entity relations as anonymized.
      *
+<<<<<<< HEAD
      * Skip-aware: rows where `skip_anonymization = true` are excluded
      * (those reflect an operator decision NOT to redact the occurrence).
      * Per the `entity-relation-grondslagen` change, skipped rows retain
      * `anonymized = false` after the file's anonymise pass.
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int    $fileId          The file ID.
      * @param string $anonymizedValue The placeholder value used.
      *
@@ -312,6 +391,7 @@ class EntityRelationMapper extends QBMapper
         $qb->update($this->getTableName())
             ->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
             ->set('anonymized_value', $qb->createNamedParameter($anonymizedValue))
+<<<<<<< HEAD
             ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->eq('skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 
@@ -834,4 +914,10 @@ class EntityRelationMapper extends QBMapper
 
         $this->auditTrailMapper->insert($auditTrail);
     }//end emitDecisionMetadataAuditEntry()
+=======
+            ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        return $qb->executeStatement();
+    }//end markAsAnonymized()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

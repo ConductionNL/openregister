@@ -347,8 +347,11 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Toggle to include/exclude objects in export
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input types
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
@@ -453,8 +456,11 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromJson(
         array $data,
@@ -520,8 +526,11 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -563,8 +572,11 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -588,8 +600,11 @@ class ConfigurationService
      * @throws GuzzleException If HTTP request fails
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function checkRemoteVersion(Configuration $configuration): ?string
     {
@@ -704,8 +719,11 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version comparison has multiple null and comparison checks
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -773,8 +791,11 @@ class ConfigurationService
      * @throws GuzzleException If HTTP request fails.
      *
      * @psalm-return JSONResponse<400|500, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -794,8 +815,11 @@ class ConfigurationService
      * @throws GuzzleException If fetching remote configuration fails
      *
      * @return array|JSONResponse Preview data with registers, schemas, objects, endpoints, and metadata.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -811,8 +835,11 @@ class ConfigurationService
      * @param string $appId The app ID to get the version for.
      *
      * @return null|string The configured version or null if not set.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getConfiguredAppVersion(string $appId): string|null
     {
@@ -870,8 +897,11 @@ class ConfigurationService
      * @param string $version The version to store.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setConfiguredAppVersion(string $appId, string $version): void
     {
@@ -922,8 +952,11 @@ class ConfigurationService
      * @throws Exception If search fails
      *
      * @return array Search results with total count, results array, page, and per_page.
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to GitHubHandler::searchConfigurations, no standalone behavioral contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
@@ -946,8 +979,11 @@ class ConfigurationService
      * @throws Exception If search fails
      *
      * @return array Search results with total count, results array, page, and per_page.
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to GitLabHandler::searchConfigurations, no standalone behavioral contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
@@ -999,8 +1035,11 @@ class ConfigurationService
      * @return array Import results
      *
      * @psalm-return array<never, never>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {

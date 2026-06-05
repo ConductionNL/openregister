@@ -6,9 +6,12 @@
  * Service that wraps Nextcloud's ICommentsManager for adding notes to OpenRegister objects.
  * Notes are stored as standard Nextcloud comments with objectType "openregister".
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -107,8 +110,11 @@ class NoteService
      * @param int    $offset     Number of notes to skip (default 0)
      *
      * @return array Array of note arrays in JSON-friendly format
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getNotesForObject(string $objectUuid, int $limit=50, int $offset=0): array
     {
@@ -136,8 +142,11 @@ class NoteService
      * @return array The created note in JSON-friendly format
      *
      * @throws Exception If no user is logged in
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createNote(string $objectUuid, string $message): array
     {
@@ -169,8 +178,11 @@ class NoteService
      * @return array The updated note in JSON-friendly format
      *
      * @throws Exception If the note is not found or user is not the author
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateNote(int $noteId, string $message): array
     {
@@ -203,8 +215,11 @@ class NoteService
      * @return void
      *
      * @throws Exception If the note is not found
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteNote(int $noteId): void
     {
@@ -224,8 +239,11 @@ class NoteService
      * @param string $objectUuid The UUID of the OpenRegister object
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteNotesForObject(string $objectUuid): void
     {

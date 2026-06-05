@@ -5,8 +5,11 @@ status: implemented
 ---
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude cryptographic backend service — covered by PHPUnit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Cryptographic SHA-256 hash chaining on audit trail entries with genesis hash, verification endpoint, and tamper detection reporting. Each entry's hash chains to the previous entry, making any tampering detectable by auditors.
 
 ## Requirements

@@ -4,8 +4,11 @@
  * Supports both hash-based routing (legacy Mail) and path-based routing (Mail 5.x+).
  *
  * @package OpenRegister
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -15,9 +18,13 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
  *
  * Handles both routing modes:
  * - Path-based (Mail 5.x+): /apps/mail/box/priority/thread/6 or /apps/mail/box/2/thread/42
+<<<<<<< HEAD
  * - Path-based (no message): /apps/mail/box/2
  * - Hash-based (legacy): #/accounts/1/folders/INBOX/messages/42
  * - Hash-based folder-only (no message): #/accounts/1/folders/INBOX
+=======
+ * - Hash-based (legacy): #/accounts/1/folders/INBOX/messages/42
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @param {string} url The full URL or hash string.
  * @return {{ accountId: number|null, messageId: number|null, sender: string|null }} Parsed IDs.
@@ -27,6 +34,7 @@ export function parseMailUrl(url) {
 		return { accountId: null, messageId: null, sender: null }
 	}
 
+<<<<<<< HEAD
 	// Path-based routing with thread: /apps/mail/box/{boxId}/thread/{threadId}
 	// boxId may be 'priority', 'starred', or a numeric mailbox ID.
 	const pathThreadMatch = url.match(/\/apps\/mail\/box\/(\w+)\/thread\/(\d+)/)
@@ -37,11 +45,24 @@ export function parseMailUrl(url) {
 		// For priority/starred inboxes, accountId is unknown — fall back to the
 		// default account 1 (most setups have one account). For numeric box IDs
 		// the segment is a mailbox ID, not an account ID; still fall back to 1.
+=======
+	// Path-based routing: /apps/mail/box/{boxId}/thread/{threadId}
+	const pathMatch = url.match(/\/apps\/mail\/box\/([^/]+)\/thread\/(\d+)/)
+	if (pathMatch) {
+		// boxId can be 'priority', 'starred', or a numeric mailbox ID
+		const boxId = pathMatch[1]
+		const threadId = parseInt(pathMatch[2], 10)
+
+		// For priority/starred inboxes, accountId is unknown (uses default account 1)
+		// For numeric box IDs, that IS the mailbox ID (not account ID)
+		// We use 1 as default accountId since most setups have one account
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		const accountId = /^\d+$/.test(boxId) ? 1 : 1
 
 		return { accountId, messageId: threadId, sender: null }
 	}
 
+<<<<<<< HEAD
 	// Path-based routing without thread: /apps/mail/box/{mailboxId}
 	const pathBoxMatch = url.match(/\/apps\/mail\/box\/(\d+)$/)
 	if (pathBoxMatch) {
@@ -54,25 +75,41 @@ export function parseMailUrl(url) {
 		return {
 			accountId: parseInt(hashMessageMatch[1], 10),
 			messageId: parseInt(hashMessageMatch[2], 10),
+=======
+	// Hash-based routing: #/accounts/{accountId}/folders/{folderName}/messages/{messageId}
+	const hashMatch = url.match(/\/accounts\/(\d+)\/folders\/[^/]+\/messages\/(\d+)/)
+	if (hashMatch) {
+		return {
+			accountId: parseInt(hashMatch[1], 10),
+			messageId: parseInt(hashMatch[2], 10),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			sender: null,
 		}
 	}
 
+<<<<<<< HEAD
 	// Hash-based folder-only: #/accounts/{accountId}/folders/...
 	const hashFolderMatch = url.match(/\/accounts\/(\d+)\/folders\//)
 	if (hashFolderMatch) {
 		return { accountId: parseInt(hashFolderMatch[1], 10), messageId: null, sender: null }
 	}
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	return { accountId: null, messageId: null, sender: null }
 }
 
 /**
  * Composable for observing Mail app URL changes.
  *
+<<<<<<< HEAD
  * Uses a combination of hashchange, popstate, and polling to detect SPA
  * navigation in the Mail app (which uses Vue Router with history mode and
  * pushState — neither hashchange nor popstate fires for pushState).
+=======
+ * Uses a combination of hashchange, popstate, and MutationObserver to detect
+ * SPA navigation in the Mail app (which uses Vue Router with history mode).
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @param {object} options Options.
  * @param {number} [options.debounceMs=300] Debounce delay in milliseconds.
@@ -105,9 +142,13 @@ export function useMailObserver(options = {}) {
 		}
 
 		debounceTimer = setTimeout(() => {
+<<<<<<< HEAD
 			// Prefer hash for legacy Mail, fall back to full URL for path routing.
 			const url = window.location.hash || currentUrl
 			const parsed = parseMailUrl(url)
+=======
+			const parsed = parseMailUrl(currentUrl)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 			const changed = parsed.accountId !== accountId.value
 				|| parsed.messageId !== messageId.value
@@ -126,8 +167,12 @@ export function useMailObserver(options = {}) {
 		// Parse initial URL.
 		const currentUrl = window.location.href
 		lastUrl = currentUrl
+<<<<<<< HEAD
 		const url = window.location.hash || currentUrl
 		const parsed = parseMailUrl(url)
+=======
+		const parsed = parseMailUrl(currentUrl)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		accountId.value = parsed.accountId
 		messageId.value = parsed.messageId
 		isMessageView.value = parsed.messageId !== null

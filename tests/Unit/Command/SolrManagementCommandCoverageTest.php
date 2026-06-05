@@ -148,7 +148,11 @@ class SolrManagementCommandCoverageTest extends TestCase
         [$code, $out] = $this->execute(['action' => 'warm']);
 
         $this->assertEquals(Command::FAILURE, $code);
+<<<<<<< HEAD
         $this->assertStringContainsString('1/2', $out);
+=======
+        $this->assertStringContainsString('2/3', $out);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }
 
     public function testWarmExceptionPath(): void

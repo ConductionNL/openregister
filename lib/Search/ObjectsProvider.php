@@ -19,7 +19,11 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -121,7 +125,11 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         IL10N $l10n,
@@ -148,7 +156,11 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return 'openregister_objects'
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getId(): string
     {
@@ -160,7 +172,11 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string Display name for the search provider
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string
     {
@@ -181,7 +197,11 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-suppress   UnusedParam Parameters required by interface but not used
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getOrder(string $route, array $routeParameters): ?int
     {
@@ -198,7 +218,11 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
      * @phpstan-return array<string>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSupportedFilters(): array
     {
@@ -222,7 +246,11 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return   array<never, never>
      * @phpstan-return array<string>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAlternateIds(): array
     {
@@ -237,7 +265,11 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return   list{FilterDefinition, FilterDefinition}
      * @phpstan-return list<\OCP\Search\FilterDefinition>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCustomFilters(): array
     {
@@ -268,7 +300,11 @@ class ObjectsProvider implements IFilteringProvider
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Search requires handling many filters, building queries, and formatting results
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
@@ -455,7 +491,11 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The schema title or the ID as fallback
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveSchemaName(int $schemaId): string
     {
@@ -464,10 +504,14 @@ class ObjectsProvider implements IFilteringProvider
             try {
                 $schema = $this->schemaMapper->find($schemaId);
                 $title  = $schema->getTitle();
+<<<<<<< HEAD
                 $this->nameCache[$key] = (string) $schemaId;
                 if ($title !== null && $title !== '') {
                     $this->nameCache[$key] = $title;
                 }
+=======
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $schemaId);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $schemaId;
             }
@@ -483,7 +527,11 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The register title or the ID as fallback
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveRegisterName(int $registerId): string
     {
@@ -492,10 +540,14 @@ class ObjectsProvider implements IFilteringProvider
             try {
                 $register = $this->registerMapper->find($registerId);
                 $title    = $register->getTitle();
+<<<<<<< HEAD
                 $this->nameCache[$key] = (string) $registerId;
                 if ($title !== null && $title !== '') {
                     $this->nameCache[$key] = $title;
                 }
+=======
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $registerId);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $registerId;
             }
@@ -514,7 +566,11 @@ class ObjectsProvider implements IFilteringProvider
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Description building requires multiple optional field checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Description building has multiple optional data paths
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildDescription(array $object): string
     {

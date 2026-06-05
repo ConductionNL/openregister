@@ -7,9 +7,12 @@
  * Provides endpoints for listing, viewing, and managing detected entities
  * from text extraction and entity recognition.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -26,18 +29,27 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+<<<<<<< HEAD
 use DateTime;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+=======
+use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\EntityRelationMapper;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 
 /**
@@ -56,8 +68,11 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class GdprEntitiesController extends Controller
 {
@@ -70,9 +85,12 @@ class GdprEntitiesController extends Controller
      * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
      * @param IDBConnection        $db                   Database connection
      * @param LoggerInterface      $logger               Logger
+<<<<<<< HEAD
      * @param IUserSession         $userSession          Current user (admin gate)
      * @param IGroupManager        $groupManager         Group manager (admin gate)
      * @param OrganisationService  $organisationService  Org-scoping helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -80,10 +98,14 @@ class GdprEntitiesController extends Controller
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IDBConnection $db,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly OrganisationService $organisationService
+=======
+        private readonly LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -96,12 +118,16 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entities list
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
         try {
+<<<<<<< HEAD
             if ($this->userSession->getUser() === null) {
                 return $this->unauthorized();
             }
@@ -129,6 +155,8 @@ class GdprEntitiesController extends Controller
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $limit    = (int) $this->request->getParam('limit', 50);
             $offset   = (int) $this->request->getParam('offset', 0);
             $search   = $this->request->getParam('search', '');
@@ -156,18 +184,59 @@ class GdprEntitiesController extends Controller
                 ->selectAlias($qb->createFunction('('.$subQb->getSQL().')'), 'relation_count')
                 ->from('openregister_entities', 'e');
 
+<<<<<<< HEAD
             // Tenant scoping for non-admins (#1825).
             $this->applyOrgFilter(qb: $qb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'e.organisation');
             $this->applySearchFilters(qb: $qb, search: $search, type: $type, category: $category);
+=======
+            // Apply filters.
+            if ($search !== '') {
+                $qb->andWhere(
+                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$search.'%'))
+                );
+            }
+
+            if ($type !== '') {
+                $qb->andWhere(
+                    $qb->expr()->eq('e.type', $qb->createNamedParameter($type))
+                );
+            }
+
+            if ($category !== '') {
+                $qb->andWhere(
+                    $qb->expr()->eq('e.category', $qb->createNamedParameter($category))
+                );
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             // Get total count.
             $countQb = $this->db->getQueryBuilder();
             $countQb->select($countQb->func()->count('*', 'total'))
                 ->from('openregister_entities', 'e');
 
+<<<<<<< HEAD
             // Tenant scoping for non-admins (#1825).
             $this->applyOrgFilter(qb: $countQb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'e.organisation');
             $this->applySearchFilters(qb: $countQb, search: $search, type: $type, category: $category);
+=======
+            if ($search !== '') {
+                $countQb->andWhere(
+                    $countQb->expr()->iLike('e.value', $countQb->createNamedParameter('%'.$search.'%'))
+                );
+            }
+
+            if ($type !== '') {
+                $countQb->andWhere(
+                    $countQb->expr()->eq('e.type', $countQb->createNamedParameter($type))
+                );
+            }
+
+            if ($category !== '') {
+                $countQb->andWhere(
+                    $countQb->expr()->eq('e.category', $countQb->createNamedParameter($category))
+                );
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $countResult = $countQb->executeQuery();
             $total       = (int) $countResult->fetchOne();
@@ -236,12 +305,16 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity details
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function show(int $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             if ($this->userSession->getUser() === null) {
                 return $this->unauthorized();
             }
@@ -264,6 +337,10 @@ class GdprEntitiesController extends Controller
                 }
             }
 
+=======
+            $entity = $this->entityMapper->find($id);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Get relations for this entity.
             $relations = $this->entityRelationMapper->findByEntityId($id);
 
@@ -311,12 +388,16 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity types
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTypes(): JSONResponse
     {
         try {
+<<<<<<< HEAD
             if ($this->userSession->getUser() === null) {
                 return $this->unauthorized();
             }
@@ -330,14 +411,19 @@ class GdprEntitiesController extends Controller
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $qb = $this->db->getQueryBuilder();
             $qb->selectDistinct('type')
                 ->from('openregister_entities')
                 ->orderBy('type', 'ASC');
 
+<<<<<<< HEAD
             // Tenant scoping for non-admins (#1825).
             $this->applyOrgFilter(qb: $qb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'organisation');
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $result = $qb->executeQuery();
             $types  = [];
 
@@ -377,12 +463,16 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity categories
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCategories(): JSONResponse
     {
         try {
+<<<<<<< HEAD
             if ($this->userSession->getUser() === null) {
                 return $this->unauthorized();
             }
@@ -396,14 +486,19 @@ class GdprEntitiesController extends Controller
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $qb = $this->db->getQueryBuilder();
             $qb->selectDistinct('category')
                 ->from('openregister_entities')
                 ->orderBy('category', 'ASC');
 
+<<<<<<< HEAD
             // Tenant scoping for non-admins (#1825).
             $this->applyOrgFilter(qb: $qb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'organisation');
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $result     = $qb->executeQuery();
             $categories = [];
 
@@ -443,12 +538,16 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity statistics
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStats(): JSONResponse
     {
         try {
+<<<<<<< HEAD
             if ($this->userSession->getUser() === null) {
                 return $this->unauthorized();
             }
@@ -474,12 +573,17 @@ class GdprEntitiesController extends Controller
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Total entities.
             $totalQb = $this->db->getQueryBuilder();
             $totalQb->select($totalQb->func()->count('*', 'total'))
                 ->from('openregister_entities');
+<<<<<<< HEAD
             $this->applyOrgFilter(qb: $totalQb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'organisation');
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $totalResult = $totalQb->executeQuery();
             $total       = (int) $totalResult->fetchOne();
             $totalResult->closeCursor();
@@ -491,7 +595,10 @@ class GdprEntitiesController extends Controller
                 ->from('openregister_entities')
                 ->groupBy('type')
                 ->orderBy('count', 'DESC');
+<<<<<<< HEAD
             $this->applyOrgFilter(qb: $typeQb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'organisation');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $typeResult = $typeQb->executeQuery();
             $byType     = [];
@@ -509,7 +616,10 @@ class GdprEntitiesController extends Controller
                 ->from('openregister_entities')
                 ->groupBy('category')
                 ->orderBy('count', 'DESC');
+<<<<<<< HEAD
             $this->applyOrgFilter(qb: $catQb, isAdmin: $isAdmin, orgUuids: $orgUuids, column: 'organisation');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $catResult  = $catQb->executeQuery();
             $byCategory = [];
@@ -520,6 +630,7 @@ class GdprEntitiesController extends Controller
 
             $catResult->closeCursor();
 
+<<<<<<< HEAD
             // Total relations. For non-admins, only count relations whose
             // owning entity belongs to an accessible organisation (#1825).
             $relQb = $this->db->getQueryBuilder();
@@ -537,6 +648,12 @@ class GdprEntitiesController extends Controller
                     );
             }
 
+=======
+            // Total relations.
+            $relQb = $this->db->getQueryBuilder();
+            $relQb->select($relQb->func()->count('*', 'total'))
+                ->from('openregister_entity_relations');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $relResult      = $relQb->executeQuery();
             $totalRelations = (int) $relResult->fetchOne();
             $relResult->closeCursor();
@@ -578,12 +695,16 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(int $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $user = $this->userSession->getUser();
             if ($user === null) {
                 return $this->unauthorized();
@@ -628,6 +749,11 @@ class GdprEntitiesController extends Controller
                 ]
             );
 
+=======
+            $entity = $this->entityMapper->find($id);
+            $this->entityMapper->delete($entity);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return new JSONResponse(
                 data: [
                     'success' => true,
@@ -662,6 +788,7 @@ class GdprEntitiesController extends Controller
             );
         }//end try
     }//end destroy()
+<<<<<<< HEAD
 
     /**
      * Apply the non-admin organisation filter to a query builder.
@@ -776,4 +903,6 @@ class GdprEntitiesController extends Controller
             statusCode: Http::STATUS_UNAUTHORIZED
         );
     }//end unauthorized()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

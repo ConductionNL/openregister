@@ -5,9 +5,12 @@
  *
  * Handles text extraction from Nextcloud files.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -16,8 +19,11 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -90,8 +96,11 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -161,8 +170,11 @@ class FileHandler implements TextExtractionHandlerInterface
      * @return bool True if extraction is needed.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -196,8 +208,11 @@ class FileHandler implements TextExtractionHandlerInterface
      *     permissions: int, checksum: string, share_token: null|string,
      *     share_stime: int|null, storage_id: null|string, owner: null|string,
      *     accessUrl: null|string, downloadUrl: null|string, published: null|string}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -215,8 +230,11 @@ class FileHandler implements TextExtractionHandlerInterface
      * @param int $sourceId File ID.
      *
      * @return int Unix timestamp.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSourceTimestamp(int $sourceId): int
     {

@@ -63,14 +63,20 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymizedValue(?string $anonymizedValue)
  * @method array|null getBases()
  * @method void setBases(?array $bases)
+<<<<<<< HEAD
  * @method bool getSkipAnonymization()
  * @method void setSkipAnonymization(bool $skipAnonymization)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+<<<<<<< HEAD
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
@@ -118,6 +124,7 @@ class EntityRelation extends Entity implements JsonSerializable
     protected ?int $emailId = null;
 
     /**
+<<<<<<< HEAD
      * Register identifier (uuid or slug) for object-source relations.
      *
      * Disambiguates the magic-table this relation's `object_id`
@@ -147,6 +154,8 @@ class EntityRelation extends Entity implements JsonSerializable
     protected ?string $objectUuid = null;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Position start.
      *
      * @var integer
@@ -196,6 +205,7 @@ class EntityRelation extends Entity implements JsonSerializable
     protected ?string $anonymizedValue = null;
 
     /**
+<<<<<<< HEAD
      * Legal bases (grondslagen) under which the entity is being redacted.
      *
      * Array of UUID-shaped strings referencing `base` schema objects in a
@@ -204,12 +214,20 @@ class EntityRelation extends Entity implements JsonSerializable
      * does NOT validate that the UUIDs resolve — vocabulary ownership lies
      * with the consumer app. Set via `EntityRelationMapper::updateDecisionMetadata`
      * (and its HTTP surface `PATCH /api/entity-relations/{id}`); audit-traced.
+=======
+     * Legal bases (grondslagen) for the anonymisation decision.
+     *
+     * JSON array of UUID-shaped strings referencing base objects in the consumer
+     * app's register. OpenRegister stores the values verbatim; UUID validation is
+     * the consumer app's responsibility.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @var array|null
      */
     protected ?array $bases = null;
 
     /**
+<<<<<<< HEAD
      * Operator decision: skip this occurrence from the anonymise pass.
      *
      * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
@@ -222,6 +240,8 @@ class EntityRelation extends Entity implements JsonSerializable
     protected bool $skipAnonymization = false;
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Created at timestamp.
      *
      * @var DateTime|null
@@ -239,9 +259,12 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'fileId', type: 'integer');
         $this->addType(fieldName: 'objectId', type: 'integer');
         $this->addType(fieldName: 'emailId', type: 'integer');
+<<<<<<< HEAD
         $this->addType(fieldName: 'registerId', type: 'string');
         $this->addType(fieldName: 'schemaId', type: 'string');
         $this->addType(fieldName: 'objectUuid', type: 'string');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'positionStart', type: 'integer');
         $this->addType(fieldName: 'positionEnd', type: 'integer');
         $this->addType(fieldName: 'confidence', type: 'float');
@@ -250,13 +273,17 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'anonymized', type: 'boolean');
         $this->addType(fieldName: 'anonymizedValue', type: 'string');
         $this->addType(fieldName: 'bases', type: 'json');
+<<<<<<< HEAD
         $this->addType(fieldName: 'skipAnonymization', type: 'boolean');
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'createdAt', type: 'datetime');
     }//end __construct()
 
     /**
      * JSON serialization.
      *
+<<<<<<< HEAD
      * @return array<string, mixed>
      *
      * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
@@ -267,10 +294,22 @@ class EntityRelation extends Entity implements JsonSerializable
      *     context: null|string, anonymized: bool,
      *     anonymizedValue: null|string, bases: array|null,
      *     skipAnonymization: bool, createdAt: null|string}
+=======
+     * @return (array|null|scalar)[]
+     *
+     * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
+     *     role: null|string, fileId: int|null, objectId: int|null,
+     *     emailId: int|null, positionStart: int, positionEnd: int,
+     *     confidence: float, detectionMethod: null|string,
+     *     context: null|string, anonymized: bool,
+     *     anonymizedValue: null|string, bases: array|null,
+     *     createdAt: null|string}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function jsonSerialize(): array
     {
         return [
+<<<<<<< HEAD
             'id'                => $this->id,
             'entityId'          => $this->entityId,
             'chunkId'           => $this->chunkId,
@@ -291,6 +330,24 @@ class EntityRelation extends Entity implements JsonSerializable
             'bases'             => $this->bases,
             'skipAnonymization' => $this->skipAnonymization,
             'createdAt'         => $this->createdAt?->format(DateTime::ATOM),
+=======
+            'id'              => $this->id,
+            'entityId'        => $this->entityId,
+            'chunkId'         => $this->chunkId,
+            'role'            => $this->role,
+            'fileId'          => $this->fileId,
+            'objectId'        => $this->objectId,
+            'emailId'         => $this->emailId,
+            'positionStart'   => $this->positionStart,
+            'positionEnd'     => $this->positionEnd,
+            'confidence'      => $this->confidence,
+            'detectionMethod' => $this->detectionMethod,
+            'context'         => $this->context,
+            'anonymized'      => $this->anonymized,
+            'anonymizedValue' => $this->anonymizedValue,
+            'bases'           => $this->bases,
+            'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end jsonSerialize()
 }//end class

@@ -403,6 +403,7 @@
 			@closing="hideClearSearchTrailsDialog"
 			@confirm="clearAllSearchTrails" />
 
+<<<<<<< HEAD
 		<!-- Clear Blob Objects Confirmation Dialog -->
 		<ClearBlobObjectsDialog
 			v-if="showClearBlobObjectsConfirmation"
@@ -411,6 +412,58 @@
 			:total-blob-objects="stats.totals.totalBlobObjects"
 			@closing="hideClearBlobObjectsDialog"
 			@confirm="clearAllBlobObjects" />
+=======
+				<div class="dialog-actions">
+					<NcButton @click="hideClearSearchTrailsDialog">
+						Cancel
+					</NcButton>
+					<NcButton type="error"
+						:disabled="clearingSearchTrails"
+						@click="clearAllSearchTrails">
+						<template #icon>
+							<NcLoadingIcon v-if="clearingSearchTrails" :size="20" />
+							<Delete v-else :size="20" />
+						</template>
+						{{ clearingSearchTrails ? 'Clearing...' : 'Confirm Clear All' }}
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
+
+		<!-- Clear Blob Objects Confirmation Dialog -->
+		<NcDialog v-if="showClearBlobObjectsConfirmation"
+			:open="showClearBlobObjectsConfirmation"
+			name="Confirm Clear Blob Objects"
+			@closing="hideClearBlobObjectsDialog">
+			<div class="clear-dialog-content">
+				<h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
+				<p>
+					This operation will permanently delete all objects stored in blob storage mode from the database.
+					Magic Mapper objects will NOT be affected.
+				</p>
+				<p><strong>Current blob storage objects: {{ stats.totals.totalBlobObjects }}</strong></p>
+				<p class="warning-text">
+					⚠️ This action cannot be undone!
+				</p>
+				<p><strong>This operation may take some time to complete.</strong></p>
+
+				<div class="dialog-actions">
+					<NcButton @click="hideClearBlobObjectsDialog">
+						Cancel
+					</NcButton>
+					<NcButton type="error"
+						:disabled="clearingBlobObjects"
+						@click="clearAllBlobObjects">
+						<template #icon>
+							<NcLoadingIcon v-if="clearingBlobObjects" :size="20" />
+							<Delete v-else :size="20" />
+						</template>
+						{{ clearingBlobObjects ? 'Clearing...' : 'Confirm Clear All' }}
+					</NcButton>
+				</div>
+			</div>
+		</NcDialog>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	</div>
 </template>
 
@@ -583,22 +636,28 @@ export default {
 			return this.settingsStore.clearingSearchTrails
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Whether blob objects are being cleared, for display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store
 		 * @return {boolean}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		clearingBlobObjects() {
 			return this.settingsStore.clearingBlobObjects
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Whether the clear-audit-trails confirmation is showing, for display.
 		 *
 		 * @spec exclude UI plumbing — derived dialog visibility state
 		 * @return {boolean}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		showClearAuditTrailsConfirmation() {
 			return this.settingsStore.showClearAuditTrailsConfirmation
 		},
@@ -611,6 +670,10 @@ export default {
 		 */
 		showClearSearchTrailsConfirmation() {
 			return this.settingsStore.showClearSearchTrailsConfirmation
+		},
+
+		showClearBlobObjectsConfirmation() {
+			return this.settingsStore.showClearBlobObjectsConfirmation
 		},
 
 		/**
@@ -648,7 +711,10 @@ export default {
 		 * Format bytes to human-readable size.
 		 *
 		 * @param {number} bytes - The size in bytes
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure presentation helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string} Formatted size string (e.g., '1.5 MB')
 		 */
 		formatBytes(bytes) {
@@ -661,12 +727,15 @@ export default {
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Open the mass-validate modal and load supporting data in the background.
 		 *
 		 * @spec exclude UI plumbing — modal open plus background data fetch
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async openMassValidateModal() {
 			// Open modal immediately for better UX
 			this.showMassValidateModal = true
@@ -848,32 +917,41 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Show the clear-blob-objects confirmation dialog.
 		 *
 		 * @spec exclude UI plumbing — dialog visibility toggle via store
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		showClearBlobObjectsDialog() {
 			this.settingsStore.showClearBlobObjectsDialog()
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Hide the clear-blob-objects confirmation dialog.
 		 *
 		 * @spec exclude UI plumbing — dialog visibility toggle via store
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		hideClearBlobObjectsDialog() {
 			this.settingsStore.hideClearBlobObjectsDialog()
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Clear all blob objects and reload stats.
 		 *
 		 * @spec exclude UI plumbing — action delegates to the settings store
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async clearAllBlobObjects() {
 			try {
 				await this.settingsStore.clearAllBlobObjects()
@@ -1043,4 +1121,49 @@ export default {
 		justify-content: center;
 	}
 }
+<<<<<<< HEAD
+=======
+
+.rebase-dialog-content {
+	padding: 20px;
+}
+
+.rebase-dialog-content h3 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+}
+
+.rebase-dialog-content p {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0 0 12px 0;
+}
+
+.dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+	margin-top: 24px;
+}
+
+.clear-dialog-content {
+	padding: 20px;
+}
+
+.clear-dialog-content h3 {
+	color: var(--color-text-light);
+	margin: 0 0 16px 0;
+}
+
+.clear-dialog-content p {
+	color: var(--color-text-light);
+	line-height: 1.5;
+	margin: 0 0 12px 0;
+}
+
+.clear-dialog-content .warning-text {
+	color: var(--color-error);
+	font-weight: 600;
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 </style>

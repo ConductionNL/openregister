@@ -13,7 +13,11 @@ import { dashboardStore, searchTrailStore } from '../../store/store.js'
 			:empty-label="t('openregister', 'No data available')"
 			@layout-change="onLayoutChange">
 			<!-- Header actions -->
+<<<<<<< HEAD
 			<template #actions>
+=======
+			<template #header-actions>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				<NcButton :disabled="refreshing"
 					:aria-label="t('openregister', 'Refresh dashboard')"
 					@click="refreshDashboard">
@@ -185,6 +189,7 @@ import { dashboardStore, searchTrailStore } from '../../store/store.js'
 				</div>
 			</template> -->
 		</CnDashboardPage>
+<<<<<<< HEAD
 
 		<!-- Phase E (ADR-019): mount the integration umbrella as a
 		     dedicated section below the classic grid so every
@@ -195,12 +200,18 @@ import { dashboardStore, searchTrailStore } from '../../store/store.js'
 			</h2>
 			<CnIntegrationWidgetGrid surface="app-dashboard" />
 		</section>
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	</NcAppContent>
 </template>
 
 <script>
 import { NcAppContent, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+<<<<<<< HEAD
 import { CnDashboardPage, CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
+=======
+import { CnDashboardPage } from '@conduction/nextcloud-vue'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 // TODO: CnChartWidget does not exist yet in @conduction/nextcloud-vue. Was this intentionally added?
 // If so, please create CnChartWidget in the nextcloud-vue library before re-enabling this import.
 // import { CnChartWidget } from '@conduction/nextcloud-vue'
@@ -209,11 +220,14 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import TimerOutline from 'vue-material-design-icons/TimerOutline.vue'
 import TagMultiple from 'vue-material-design-icons/TagMultiple.vue'
+<<<<<<< HEAD
 import { ensureIntegrationRegistry } from '../../integrations/bootstrap.js'
 
 // Make sure the integration registry singleton is installed before
 // CnIntegrationWidgetGrid renders the app-dashboard tiles. Idempotent.
 ensureIntegrationRegistry()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 const DEFAULT_LAYOUT = [
 	{ id: 1, widgetId: 'count-searches', gridX: 0, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
@@ -233,7 +247,10 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		CnDashboardPage,
+<<<<<<< HEAD
 		CnIntegrationWidgetGrid,
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		// CnChartWidget, // TODO: commented out — CnChartWidget does not exist yet in @conduction/nextcloud-vue
 		Refresh,
 		Magnify,
@@ -251,22 +268,28 @@ export default {
 		isLoading() {
 			return dashboardStore.loading || searchTrailStore.statisticsLoading
 		},
+<<<<<<< HEAD
 		/**
 		 * Whether the dashboard has any data to display.
 		 *
 		 * @spec exclude UI plumbing — derived view state for empty-content gating
 		 * @return {boolean}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		hasData() {
 			return searchTrailStore.statistics.total > 0
 				|| this.registerData.length > 0
 		},
+<<<<<<< HEAD
 		/**
 		 * Objects-by-register chart rows mapped from store chart data.
 		 *
 		 * @spec exclude UI plumbing — derived chart view state
 		 * @return {Array<object>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		registerData() {
 			const chartData = dashboardStore.chartData.objectsByRegister
 			if (!chartData?.labels || !chartData?.series) return []
@@ -275,12 +298,15 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+<<<<<<< HEAD
 		/**
 		 * Objects-by-schema chart rows mapped from store chart data.
 		 *
 		 * @spec exclude UI plumbing — derived chart view state
 		 * @return {Array<object>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		schemaData() {
 			const chartData = dashboardStore.chartData.objectsBySchema
 			if (!chartData?.labels || !chartData?.series) return []
@@ -289,12 +315,15 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+<<<<<<< HEAD
 		/**
 		 * Widget definitions for the dashboard grid.
 		 *
 		 * @spec exclude UI plumbing — static widget list for display
 		 * @return {Array<object>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		widgetDefs() {
 			return [
 				{ id: 'count-searches', title: t('openregister', 'Total Searches'), type: 'custom' },
@@ -361,12 +390,15 @@ export default {
 				this.setEmptySearchTrailData()
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Reload all dashboard and search-trail data.
 		 *
 		 * @spec exclude UI plumbing — refresh button delegates to store fetches
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async refreshDashboard() {
 			this.refreshing = true
 			try {
@@ -379,6 +411,7 @@ export default {
 				this.refreshing = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * Update the stored dashboard grid layout when the user rearranges widgets.
 		 *
@@ -386,6 +419,8 @@ export default {
 		 * @spec exclude UI plumbing — local layout state update
 		 * @return {void}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		onLayoutChange(newLayout) {
 			this.dashboardLayout = newLayout
 		},
@@ -504,6 +539,7 @@ export default {
 	text-align: center;
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
+<<<<<<< HEAD
 }
 
 /* Phase E — Integrations section */
@@ -517,5 +553,7 @@ export default {
 	font-weight: 600;
 	margin: 0 0 16px;
 	color: var(--color-main-text);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }
 </style>

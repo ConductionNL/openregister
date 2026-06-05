@@ -67,11 +67,14 @@
 </template>
 
 <script>
+<<<<<<< HEAD
 /**
  * Link-object search dialog — drives the three-tab sidebar's Link tab.
  *
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
  */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 import { translate as t } from '@nextcloud/l10n'
 import { searchObjects } from '../api/emailLinks.js'
 
@@ -97,9 +100,12 @@ export default {
 		}
 	},
 	watch: {
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		visible(val) {
 			if (val) {
 				this.$nextTick(() => {
@@ -114,9 +120,12 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		onSearchInput() {
 			if (this.debounceTimer) {
 				clearTimeout(this.debounceTimer)
@@ -128,9 +137,12 @@ export default {
 			}
 			this.debounceTimer = setTimeout(() => this.doSearch(), 300)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async doSearch() {
 			this.searching = true
 			try {
@@ -153,18 +165,24 @@ export default {
 		isAlreadyLinked(result) {
 			return this.linkedObjectUuids.includes(result.uuid)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		selectResult(result) {
 			if (this.isAlreadyLinked(result)) {
 				return
 			}
 			this.selectedResult = result
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		resultAriaLabel(result) {
 			const title = result.title || result.uuid
 			if (this.isAlreadyLinked(result)) {
@@ -172,15 +190,19 @@ export default {
 			}
 			return title
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		confirmLink() {
 			if (this.selectedResult) {
 				this.$emit('link', this.selectedResult)
 				this.close()
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
@@ -190,6 +212,11 @@ export default {
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
+=======
+		close() {
+			this.$emit('close')
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		reset() {
 			this.query = ''
 			this.searchResults = []

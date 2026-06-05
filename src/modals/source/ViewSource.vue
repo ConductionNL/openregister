@@ -159,7 +159,11 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Schemas')"
+=======
+						input-label="Schemas"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
@@ -226,9 +230,12 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — inline schema definition for the edit-register dialog.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -241,9 +248,12 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — filters registers belonging to the current source.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		filterRegisters() {
 			if (!registerStore.registerList || !sourceStore.sourceItem?.id) {
 				return []
@@ -291,6 +301,40 @@ export default {
 			this.editingRegister = register
 			this.showEditRegisterDialog = true
 			this.loadSchemaOptions()
+<<<<<<< HEAD
+=======
+		},
+		async loadSchemaOptions() {
+			this.schemasLoading = true
+			try {
+				await schemaStore.refreshSchemaList()
+				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+			} catch (error) {
+				console.error('Failed to load schemas:', error)
+			} finally {
+				this.schemasLoading = false
+			}
+		},
+		getSchemaSelectValue(schemas) {
+			if (!Array.isArray(schemas)) return []
+			return schemas.map(s => {
+				const id = typeof s === 'object' ? s.id : s
+				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
+					|| { id, label: String(id) }
+			})
+		},
+		async onSaveRegister(formData) {
+			try {
+				await registerStore.saveRegister({
+					...formData,
+					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+				})
+				this.$refs.editRegisterDialog.setResult({ success: true })
+				this.fetchRegisters()
+			} catch (error) {
+				this.$refs.editRegisterDialog.setResult({ error: error.message })
+			}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		},
 		/**
 		 * @spec exclude Modal data-load plumbing — loads schema options for the register dialog.

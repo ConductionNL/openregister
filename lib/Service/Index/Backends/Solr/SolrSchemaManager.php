@@ -6,9 +6,12 @@
  * Manages Solr schema operations.
  * Handles field types, field management, and schema synchronization.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -82,8 +85,11 @@ class SolrSchemaManager
      * @param string $collection Collection name
      *
      * @return array Field types indexed by name
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to SolrHttpClient — GETs /schema/fieldtypes and indexes by name
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFieldTypes(string $collection): array
     {
@@ -131,8 +137,11 @@ class SolrSchemaManager
      * @param array  $fieldType  Field type definition
      *
      * @return bool True if successful
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to SolrHttpClient — POSTs add-field-type command to /schema
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -190,8 +199,11 @@ class SolrSchemaManager
      * @param string $collection Collection name
      *
      * @return array Fields indexed by name
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to SolrHttpClient — GETs /schema/fields and indexes by name
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFields(string $collection): array
     {
@@ -239,8 +251,11 @@ class SolrSchemaManager
      * @param bool  $force       Force update if exists
      *
      * @return string Action taken ('created', 'updated', 'skipped', 'failed')
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
@@ -385,8 +400,11 @@ class SolrSchemaManager
      * @param string $collection Collection name
      *
      * @return array Schema configuration
+<<<<<<< HEAD
      *
      * @spec exclude thin delegation to SolrHttpClient — GETs /schema and returns its body
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSchema(string $collection): array
     {

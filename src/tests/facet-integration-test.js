@@ -4,8 +4,13 @@
  * This file contains examples and manual tests for the facet integration.
  * Use these in the browser console to test facet functionality.
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 // Import object store
@@ -13,7 +18,11 @@ import { objectStore } from '../store/store.js'
 
 // Test 1: Basic Facet Discovery
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 async function testFacetDiscovery() {
 	console.info('Testing facet discovery...')
@@ -37,7 +46,11 @@ async function testFacetDiscovery() {
 
 // Test 2: Basic Facet Retrieval
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 async function testBasicFacets() {
 	console.info('Testing basic facet retrieval...')
@@ -56,7 +69,11 @@ async function testBasicFacets() {
 
 // Test 3: Custom Facet Configuration
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 async function testCustomFacets() {
 	console.info('Testing custom facet configuration...')
@@ -83,7 +100,11 @@ async function testCustomFacets() {
 
 // Test 4: Active Facet Management
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 async function testActiveFacets() {
 	console.info('Testing active facet management...')
@@ -112,7 +133,11 @@ async function testActiveFacets() {
 
 // Test 5: Object List with Facets
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 async function testObjectListWithFacets() {
 	console.info('Testing object list with facets...')
@@ -133,7 +158,11 @@ async function testObjectListWithFacets() {
 
 // Test 6: Object List without Facets
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 async function testObjectListWithoutFacets() {
 	console.info('Testing object list without facets...')

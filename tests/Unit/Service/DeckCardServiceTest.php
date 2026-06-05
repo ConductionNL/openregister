@@ -84,6 +84,7 @@ class DeckCardServiceTest extends TestCase
         $this->assertSame(0, $result['total']);
     }
 
+<<<<<<< HEAD
     /**
      * Phase B-1: rows always carry the widened payload keys (dueDate,
      * labels, assignees) — when Deck isn't resolvable they fall back
@@ -142,6 +143,8 @@ class DeckCardServiceTest extends TestCase
         $this->assertSame($r1, $r2);
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testLinkOrCreateCardThrowsWhenNoUser(): void
     {
         $this->userSession->method('getUser')->willReturn(null);

@@ -9,9 +9,12 @@
  *
  * Extracted from PropertyRbacHandler to keep class complexity manageable.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -21,8 +24,11 @@
  * @link      https://www.OpenRegister.app
  *
  * @since 2.0.0 Extracted from PropertyRbacHandler
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -73,8 +79,11 @@ class ConditionMatcher
      * @param array $match  Match conditions
      *
      * @return bool True if object matches all conditions
+<<<<<<< HEAD
      *
      * @spec openspec/specs/rbac-scopes/spec.md#requirement-conditional-scopes-with-dynamic-variables
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function objectMatchesConditions(array $object, array $match): bool
     {
@@ -96,8 +105,11 @@ class ConditionMatcher
      * @param array $match Match conditions
      *
      * @return array Filtered match conditions
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function filterOrganisationMatchForCreate(array $match): array
     {
@@ -127,8 +139,11 @@ class ConditionMatcher
      * @param mixed  $value    Expected value or operator expression
      *
      * @return bool True if the condition is satisfied
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function singleConditionMatches(array $object, string $property, mixed $value): bool
     {
@@ -285,8 +300,11 @@ class ConditionMatcher
      * Get the current user's active organisation UUID
      *
      * @return string|null The active organisation UUID or null
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getActiveOrganisationUuid(): ?string
     {

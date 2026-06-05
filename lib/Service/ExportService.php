@@ -19,10 +19,17 @@
  *
  * @link https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service;
@@ -56,7 +63,10 @@ use React\EventLoop\Loop;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
@@ -90,10 +100,21 @@ class ExportService
      * @var CacheHandler
      */
     private readonly CacheHandler $cacheHandler;
+<<<<<<< HEAD
+=======
 
     /**
      * Property RBAC handler for property-level authorization checks
      *
+     * @var PropertyRbacHandler
+     */
+    private readonly PropertyRbacHandler $propertyRbacHandler;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+
+    /**
+     * Property RBAC handler for property-level authorization checks
+     *
+<<<<<<< HEAD
      * @var PropertyRbacHandler
      */
     private readonly PropertyRbacHandler $propertyRbacHandler;
@@ -125,21 +146,39 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
+=======
+     * @param RegisterMapper      $registerMapper      The register mapper
+     * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
+     * @param IGroupManager       $groupManager        The group manager
+     * @param ObjectService       $objectService       The object service
+     * @param CacheHandler        $cacheHandler        The cache handler for name resolution
+     * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function __construct(
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService,
         CacheHandler $cacheHandler,
+<<<<<<< HEAD
         PropertyRbacHandler $propertyRbacHandler,
         \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler
+=======
+        PropertyRbacHandler $propertyRbacHandler
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         $this->registerMapper      = $registerMapper;
         $this->groupManager        = $groupManager;
         $this->objectService       = $objectService;
         $this->cacheHandler        = $cacheHandler;
         $this->propertyRbacHandler = $propertyRbacHandler;
+<<<<<<< HEAD
         $this->translationHandler  = $translationHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end __construct()
 
     /**
@@ -178,8 +217,13 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exportToExcel(
         ?Register $register=null,
@@ -233,7 +277,11 @@ class ExportService
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exportToCsv(
         ?Register $register=null,
@@ -258,6 +306,7 @@ class ExportService
         return ob_get_clean();
     }//end exportToCsv()
 
+<<<<<<< HEAD
     /**
      * Build an empty import template spreadsheet for a schema
      *
@@ -330,6 +379,8 @@ class ExportService
         return ob_get_clean();
     }//end buildTemplateCsv()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Populate a worksheet with data
      *
@@ -496,7 +547,11 @@ class ExportService
      *
      * @return array Map of UUID string to human-readable name.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveUuidNameMap(array $objects, array $nameColumns): array
     {
@@ -598,11 +653,17 @@ class ExportService
      *
      * @psalm-return array<array-key>
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
+=======
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Header generation has multiple schema and permission conditions
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
     {
@@ -650,6 +711,7 @@ class ExportService
                     continue;
                 }
 
+<<<<<<< HEAD
                 // Translatable property: emit one column per configured
                 // language so the CSV round-trips through TranslationCsvCodec.
                 // Falls back to ['nl', 'en'] when the register isn't
@@ -664,6 +726,8 @@ class ExportService
                     continue;
                 }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
                 $col++;
@@ -821,6 +885,7 @@ class ExportService
             default:
                 // Get value from object data and convert to string.
                 $objectData = $object->getObject();
+<<<<<<< HEAD
 
                 // Translatable `field_lang` column — extract the
                 // language-keyed slot from the JSONB property
@@ -831,10 +896,14 @@ class ExportService
                 }
 
                 $value = $objectData[$header] ?? null;
+=======
+                $value      = $objectData[$header] ?? null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 return $this->convertValueToString(value: $value);
         }
     }//end getObjectValue()
 
+<<<<<<< HEAD
     /**
      * Resolve the language list to use for translatable column emission.
      *
@@ -893,6 +962,8 @@ class ExportService
         return null;
     }//end extractLanguageSlot()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Convert a value to a string representation
      *
@@ -1022,7 +1093,11 @@ class ExportService
      *
      * @return string|null The resolved name(s) in the same format as input
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function resolveUuidsToNames(mixed $value, array $uuidToNameMap): ?string
     {

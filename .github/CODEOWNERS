@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CODEOWNERS — auto-request reviewers based on path domain.
 # Last-match-wins; broad rules first, specific overrides below.
 # Created 2026-05-03 from the OR-abstraction audit follow-up.
@@ -34,3 +35,8 @@ openspec/               @rubenvdlinde @Rem-Dam
 docs/                   @rubenvdlinde @Rem-Dam
 **/*.md                 @rubenvdlinde @Rem-Dam
 README.md               @rubenvdlinde @Rem-Dam
+=======
+# Coverage baseline — only updated automatically by CI.
+# Manual changes require explicit approval from maintainers.
+.coverage-baseline @ConductionNL/developers
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

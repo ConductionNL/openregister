@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 /* eslint-disable no-console */
 import { defineStore } from 'pinia'
@@ -48,7 +52,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set audit trail list
 		 * @param {Array} auditTrailList - The audit trail list to set
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		setAuditTrailList(auditTrailList) {
 			// Ensure we have a clean array without reactive references
@@ -60,7 +68,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set audit trail item
 		 * @param {object} auditTrailItem - The audit trail item to set
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem
@@ -71,7 +83,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set audit trail pagination
 		 * @param {object} pagination - The pagination object
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		setAuditTrailPagination(pagination) {
 			this.auditTrailPagination = {
@@ -85,7 +101,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set statistics
 		 * @param {object} stats - The statistics object
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		setStatistics(stats) {
 			this.statistics = {
@@ -99,7 +119,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set audit trail filters
 		 * @param {object} filters - The filters to set
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		setAuditTrailFilters(filters) {
 			this.auditTrailFilters = filters
@@ -110,7 +134,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set audit trail search
 		 * @param {string} search - The search term
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		setAuditTrailSearch(search) {
 			this.auditTrailSearch = search
@@ -122,7 +150,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async fetchAuditTrails(options = {}) {
 			this.auditTrailLoading = true
@@ -200,7 +232,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Fetch audit trail statistics
 		 * @return {Promise<object>} The statistics data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async fetchStatistics() {
 			this.statisticsLoading = true
@@ -238,7 +274,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @param {string|number} id - The ID of the audit trail to delete
 		 * @return {Promise<object>} The response data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async deleteAuditTrail(id) {
 			try {
@@ -274,7 +314,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @param {Array} ids - Array of audit trail IDs to delete
 		 * @return {Promise<object>} The response data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async deleteMultipleAuditTrails(ids) {
 			try {
@@ -310,7 +354,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Refresh audit trail list with current filters
 		 * @return {Promise} The refresh promise
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async refreshAuditTrailList() {
 			return this.fetchAuditTrails({
@@ -323,7 +371,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Get audit trail statistics
 		 * @return {Promise<object>} The statistics
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async getStatistics() {
 			try {
@@ -345,7 +397,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Get action distribution data
 		 * @return {Promise<Array>} The action distribution
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async getActionDistribution() {
 			try {
@@ -371,7 +427,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Get top objects by audit trail count
 		 * @return {Promise<Array>} The top objects
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async getTopObjects() {
 			try {
@@ -401,7 +461,11 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		/**
 		 * Clear all audit trail store data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		clearAuditTrailStore() {
 			this.auditTrailList = []

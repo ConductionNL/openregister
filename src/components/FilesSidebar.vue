@@ -146,9 +146,12 @@ export default {
 			type: String,
 			default: null,
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude two-way-bound risk-level filter prop, UI plumbing
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		riskLevel: {
 			type: String,
 			default: null,
@@ -188,9 +191,12 @@ export default {
 		status(newVal) {
 			this.selectedStatus = newVal
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed filter-state binding
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		riskLevel(newVal) {
 			this.selectedRiskLevel = newVal
 		},
@@ -230,7 +236,10 @@ export default {
 		 *
 		 * @param {string|null} level - The risk level to filter by
 		 * @return {void}
+<<<<<<< HEAD
 		 * @spec exclude filter-state writer emitting update:riskLevel, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		updateRiskLevel(level) {
 			this.selectedRiskLevel = level

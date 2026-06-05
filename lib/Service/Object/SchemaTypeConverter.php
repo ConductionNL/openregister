@@ -9,9 +9,12 @@
  *
  * Contract spec: openspec/specs/schema-driven-read-coercion/spec.md
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Object
  * @author    Conduction Development Team <info@conduction.nl>
@@ -19,8 +22,11 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @since 2.x.x  Extracted from MagicSearchHandler::convertValueByType so both
  *               magic-mapper read paths (statistics + search) share one
  *               converter. Fixes the read-side type drift where booleans came
@@ -70,8 +76,11 @@ class SchemaTypeConverter
      * @param string $schemaType The declared JSON-Schema property type.
      *
      * @return mixed The schema-typed PHP value.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function convertValue(mixed $value, string $schemaType): mixed
     {
@@ -85,6 +94,7 @@ class SchemaTypeConverter
             'number'          => $this->convertNumber(value: $value),
             'integer'         => $this->convertInteger(value: $value),
             'boolean'         => $this->convertBoolean(value: $value),
+<<<<<<< HEAD
             // Extended field types `color` and `recurrence` are typed strings:
             // persisted and returned verbatim via the string path. The `recurrence`
             // `_occurrences` enrichment is materialised by the render layer
@@ -92,6 +102,9 @@ class SchemaTypeConverter
             // parent object rather than a transform of the value itself.
             'color', 'recurrence' => $this->convertString(value: $value, schemaType: $schemaType),
             default               => $this->convertString(value: $value, schemaType: $schemaType),
+=======
+            default           => $this->convertString(value: $value, schemaType: $schemaType),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         };
     }//end convertValue()
 
@@ -114,8 +127,11 @@ class SchemaTypeConverter
      * @return mixed Converted value.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertString(mixed $value, string $schemaType): mixed
     {
@@ -159,8 +175,11 @@ class SchemaTypeConverter
      * @param mixed $value The value to convert.
      *
      * @return bool Coerced boolean.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertBoolean(mixed $value): bool
     {
@@ -184,8 +203,11 @@ class SchemaTypeConverter
      * @param mixed $value The value to convert.
      *
      * @return mixed Integer value or original on non-numeric input.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertInteger(mixed $value): mixed
     {
@@ -205,8 +227,11 @@ class SchemaTypeConverter
      * @param mixed $value The value to convert.
      *
      * @return mixed Float value or original on non-numeric input.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertNumber(mixed $value): mixed
     {
@@ -226,8 +251,11 @@ class SchemaTypeConverter
      * @param mixed $value The value to convert.
      *
      * @return mixed Decoded array, original array, or original string.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertArrayOrObject(mixed $value): mixed
     {

@@ -203,7 +203,11 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import {
 	NcAppSidebar,
@@ -284,7 +288,11 @@ export default {
 	},
 	computed: {
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		registerOptions() {
 			return {
@@ -302,7 +310,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
@@ -324,7 +336,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
@@ -337,7 +353,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -350,7 +370,11 @@ export default {
 			}
 		},
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		userOptions() {
 			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
@@ -368,7 +392,11 @@ export default {
 		// React to query param changes as single source of truth (only on /audit-trails)
 		'$route.query': {
 			/**
+<<<<<<< HEAD
 			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			 */
 			handler() {
 				if (this.$route.path !== '/audit-trails') return
@@ -430,7 +458,11 @@ export default {
 		 * Load audit trail data and update filtered count
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadAuditTrailData() {
 			try {
@@ -444,7 +476,11 @@ export default {
 		 * Clear filters (alias for clearAllFilters for template compatibility)
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		clearFilters() {
 			this.clearAllFilters()
@@ -454,7 +490,11 @@ export default {
 		 * @param {string} value - The filter value
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		handleObjectFilterChange(value) {
 			this.objectFilter = value
@@ -464,7 +504,11 @@ export default {
 		 * Apply filters and sync them to the URL query (single source of truth)
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		applyFilters() {
 			this.updateRouteQueryFromState()
@@ -473,7 +517,11 @@ export default {
 		 * Debounced version of applyFilters for text input
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		debouncedApplyFilters() {
 			clearTimeout(this.filterTimeout)
@@ -486,7 +534,11 @@ export default {
 		 * @param {boolean} value - Whether to show only entries with changes
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		updateChangesFilter(value) {
 			this.showOnlyWithChanges = value
@@ -496,7 +548,11 @@ export default {
 		 * Update filtered count from store
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		updateFilteredCount() {
 			this.filteredCount = auditTrailStore.auditTrailList.length
@@ -506,7 +562,11 @@ export default {
 		 * Load statistics
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadStatistics() {
 			try {
@@ -523,7 +583,11 @@ export default {
 		 * Load action distribution for stats
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadActionDistribution() {
 			try {
@@ -541,7 +605,11 @@ export default {
 		 * Load top objects for stats
 		 * @return {Promise<void>}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async loadTopObjects() {
 			try {
@@ -559,7 +627,11 @@ export default {
 		 * @param {object} register - Selected register
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		handleRegisterChange(register) {
 			registerStore.setRegisterItem(register)
@@ -571,7 +643,11 @@ export default {
 		 * @param {object} schema - Selected schema
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		handleSchemaChange(schema) {
 			schemaStore.setSchemaItem(schema)
@@ -581,7 +657,11 @@ export default {
 		 * Build URL query object from current sidebar state
 		 * @return {object}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		buildQueryFromState() {
 			const query = {}
@@ -610,7 +690,11 @@ export default {
 		 * @param {object} b - Second query object to compare
 		 * @return {boolean}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		queriesEqual(a, b) {
 			const ka = Object.keys(a || {}).sort()
@@ -626,7 +710,11 @@ export default {
 		 * Write current state to the router query (only on /audit-trails)
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		updateRouteQueryFromState() {
 			if (this.$route.path !== '/audit-trails') return
@@ -641,7 +729,11 @@ export default {
 		 * Apply URL query params to component/store state and refresh list
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/audit-trails') return
@@ -705,7 +797,11 @@ export default {
 		 * Build filters from state and push to store, then refresh list
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		applyFiltersToStore() {
 			const filters = {}
@@ -740,7 +836,11 @@ export default {
 		 * Clear all filters and sync URL
 		 * @return {void}
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		clearAllFilters() {
 			// Clear component state

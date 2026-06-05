@@ -12,8 +12,12 @@
 			</div>
 			<div class="notifications-section__digest">
 				<label for="email-digest">{{ t('openregister', 'Email digest frequency') }}</label>
+<<<<<<< HEAD
 				<NcSelect
 						input-label="Prefs Email Digest" v-model="prefs.emailDigest"
+=======
+				<NcSelect v-model="prefs.emailDigest"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					:options="digestOptions"
 					input-id="email-digest"
 					@input="save" />
@@ -56,9 +60,12 @@ export default {
 			},
 		}
 	},
+<<<<<<< HEAD
 	/**
 	 * @spec exclude settings-section lifecycle fetch of notification preferences on mount
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me/notifications'))
@@ -71,9 +78,12 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		/**
 		 * @spec exclude settings-section save plumbing; PUTs notification preferences and shows a status message
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async save() {
 			this.message = ''
 			try {

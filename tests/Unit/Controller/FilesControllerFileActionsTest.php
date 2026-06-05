@@ -7,7 +7,10 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
 use OCA\OpenRegister\Db\ObjectEntity;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\File\FileAuditHandler;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
@@ -20,13 +23,17 @@ use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IRequest;
 use OCP\IUserManager;
+<<<<<<< HEAD
 use OCP\IUserSession;
 use OCP\IUser;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class FilesControllerFileActionsTest extends TestCase
 {
+<<<<<<< HEAD
 
     private FilesController $controller;
 
@@ -40,6 +47,14 @@ class FilesControllerFileActionsTest extends TestCase
 
     private IUserManager&MockObject $userManager;
 
+=======
+    private FilesController $controller;
+    private IRequest&MockObject $request;
+    private FileService&MockObject $fileService;
+    private ObjectService&MockObject $objectService;
+    private IRootFolder&MockObject $rootFolder;
+    private IUserManager&MockObject $userManager;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private IEventDispatcher&MockObject $eventDispatcher;
 
     protected function setUp(): void
@@ -53,11 +68,14 @@ class FilesControllerFileActionsTest extends TestCase
         $this->userManager     = $this->createMock(IUserManager::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
+<<<<<<< HEAD
         // The audit handler is invoked from every successful action path;
         // wire a no-op mock so each test does not have to re-stub it.
         $auditHandler = $this->createMock(FileAuditHandler::class);
         $this->fileService->method('getAuditHandler')->willReturn($auditHandler);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->controller = new FilesController(
             'openregister',
             $this->request,
@@ -67,22 +85,36 @@ class FilesControllerFileActionsTest extends TestCase
             $this->userManager,
             $this->eventDispatcher
         );
+<<<<<<< HEAD
     }//end setUp()
 
     private function setupObjectServiceMocks(?ObjectEntity $object=null): void
+=======
+    }
+
+    private function setupObjectServiceMocks(?ObjectEntity $object = null): void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setObject')->willReturnSelf();
         $this->objectService->method('getObject')->willReturn($object);
+<<<<<<< HEAD
     }//end setupObjectServiceMocks()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     private function createObjectMock(): ObjectEntity
     {
         $object = new ObjectEntity();
         $object->setUuid('abc-123');
         return $object;
+<<<<<<< HEAD
     }//end createObjectMock()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test rename returns 200 on success.
@@ -103,7 +135,11 @@ class FilesControllerFileActionsTest extends TestCase
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
+<<<<<<< HEAD
     }//end testRenameSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test rename returns 409 on duplicate name.
@@ -120,7 +156,11 @@ class FilesControllerFileActionsTest extends TestCase
         $response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(409, $response->getStatus());
+<<<<<<< HEAD
     }//end testRenameDuplicate()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test rename returns 400 on invalid characters.
@@ -137,7 +177,11 @@ class FilesControllerFileActionsTest extends TestCase
         $response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(400, $response->getStatus());
+<<<<<<< HEAD
     }//end testRenameInvalidChars()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test lock returns lock metadata.
@@ -148,6 +192,7 @@ class FilesControllerFileActionsTest extends TestCase
         $this->setupObjectServiceMocks($object);
 
         $lockHandler = $this->createMock(FileLockHandler::class);
+<<<<<<< HEAD
         $lockHandler->method('lockFile')->willReturn(
                 [
                     'locked'    => true,
@@ -156,12 +201,24 @@ class FilesControllerFileActionsTest extends TestCase
                     'expiresAt' => '2026-03-25T10:30:00Z',
                 ]
                 );
+=======
+        $lockHandler->method('lockFile')->willReturn([
+            'locked'   => true,
+            'lockedBy' => 'user-1',
+            'lockedAt' => '2026-03-25T10:00:00Z',
+            'expiresAt' => '2026-03-25T10:30:00Z',
+        ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->fileService->method('getLockHandler')->willReturn($lockHandler);
 
         $response = $this->controller->lock('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(200, $response->getStatus());
+<<<<<<< HEAD
     }//end testLockSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test lock returns 423 when already locked.
@@ -179,7 +236,11 @@ class FilesControllerFileActionsTest extends TestCase
         $response = $this->controller->lock('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(423, $response->getStatus());
+<<<<<<< HEAD
     }//end testLockConflict()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test batch returns 200 on all success.
@@ -190,6 +251,7 @@ class FilesControllerFileActionsTest extends TestCase
         $this->setupObjectServiceMocks($object);
 
         $batchHandler = $this->createMock(FileBatchHandler::class);
+<<<<<<< HEAD
         $batchHandler->method('executeBatch')->willReturn(
                 [
                     'results' => [
@@ -207,11 +269,30 @@ class FilesControllerFileActionsTest extends TestCase
                     'fileIds' => [42, 43],
                 ]
                 );
+=======
+        $batchHandler->method('executeBatch')->willReturn([
+            'results' => [
+                ['fileId' => 42, 'success' => true],
+                ['fileId' => 43, 'success' => true],
+            ],
+            'summary' => ['total' => 2, 'succeeded' => 2, 'failed' => 0],
+        ]);
+        $this->fileService->method('getBatchHandler')->willReturn($batchHandler);
+
+        $this->request->method('getParams')->willReturn([
+            'action'  => 'publish',
+            'fileIds' => [42, 43],
+        ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $response = $this->controller->batch('reg', 'sch', 'abc-123');
 
         $this->assertEquals(200, $response->getStatus());
+<<<<<<< HEAD
     }//end testBatchSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test batch returns 207 on partial failure.
@@ -222,6 +303,7 @@ class FilesControllerFileActionsTest extends TestCase
         $this->setupObjectServiceMocks($object);
 
         $batchHandler = $this->createMock(FileBatchHandler::class);
+<<<<<<< HEAD
         $batchHandler->method('executeBatch')->willReturn(
                 [
                     'results' => [
@@ -239,11 +321,30 @@ class FilesControllerFileActionsTest extends TestCase
                     'fileIds' => [42, 43],
                 ]
                 );
+=======
+        $batchHandler->method('executeBatch')->willReturn([
+            'results' => [
+                ['fileId' => 42, 'success' => true],
+                ['fileId' => 43, 'success' => false, 'error' => 'locked'],
+            ],
+            'summary' => ['total' => 2, 'succeeded' => 1, 'failed' => 1],
+        ]);
+        $this->fileService->method('getBatchHandler')->willReturn($batchHandler);
+
+        $this->request->method('getParams')->willReturn([
+            'action'  => 'delete',
+            'fileIds' => [42, 43],
+        ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $response = $this->controller->batch('reg', 'sch', 'abc-123');
 
         $this->assertEquals(207, $response->getStatus());
+<<<<<<< HEAD
     }//end testBatchPartialFailure()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test batch returns 400 on invalid action.
@@ -258,17 +359,28 @@ class FilesControllerFileActionsTest extends TestCase
             ->willThrowException(new Exception('Invalid batch action. Allowed: publish, depublish, delete, label'));
         $this->fileService->method('getBatchHandler')->willReturn($batchHandler);
 
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn(
                 [
                     'action'  => 'archive',
                     'fileIds' => [42],
                 ]
                 );
+=======
+        $this->request->method('getParams')->willReturn([
+            'action'  => 'archive',
+            'fileIds' => [42],
+        ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $response = $this->controller->batch('reg', 'sch', 'abc-123');
 
         $this->assertEquals(400, $response->getStatus());
+<<<<<<< HEAD
     }//end testBatchInvalidAction()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test unlock returns 403 for non-owner.
@@ -288,7 +400,11 @@ class FilesControllerFileActionsTest extends TestCase
         $response = $this->controller->unlock('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(403, $response->getStatus());
+<<<<<<< HEAD
     }//end testUnlockNonOwner()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Test preview returns 404 for unsupported type.
@@ -312,6 +428,7 @@ class FilesControllerFileActionsTest extends TestCase
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(404, $response->getStatus());
+<<<<<<< HEAD
     }//end testPreviewUnsupported()
 
     /**
@@ -667,3 +784,7 @@ class FilesControllerFileActionsTest extends TestCase
         $this->assertEquals($expected, $response->getData());
     }//end testRestoreVersionResponseShape()
 }//end class
+=======
+    }
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -6,6 +6,7 @@
  * Represents a destruction list containing objects that are due for
  * permanent deletion as part of the archival destruction workflow.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -172,6 +179,7 @@ class DestructionList extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+<<<<<<< HEAD
         $approvedAt = null;
         if ($this->approvedAt instanceof DateTime) {
             $approvedAt = $this->approvedAt->format('c');
@@ -187,6 +195,8 @@ class DestructionList extends Entity implements JsonSerializable
             $updated = $this->updated->format('c');
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return [
             'id'           => $this->uuid,
             'uuid'         => $this->uuid,
@@ -195,11 +205,19 @@ class DestructionList extends Entity implements JsonSerializable
             'objects'      => $this->objects ?? [],
             'objectCount'  => count($this->objects ?? []),
             'approvedBy'   => $this->approvedBy,
+<<<<<<< HEAD
             'approvedAt'   => $approvedAt,
             'notes'        => $this->notes,
             'organisation' => $this->organisation,
             'created'      => $created,
             'updated'      => $updated,
+=======
+            'approvedAt'   => $this->approvedAt instanceof DateTime ? $this->approvedAt->format('c') : null,
+            'notes'        => $this->notes,
+            'organisation' => $this->organisation,
+            'created'      => $this->created instanceof DateTime ? $this->created->format('c') : null,
+            'updated'      => $this->updated instanceof DateTime ? $this->updated->format('c') : null,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
     }//end jsonSerialize()
 

@@ -241,6 +241,7 @@ class MagicFacetHandlerTest extends TestCase
             $this->invokeDetermineFacetTypeFromProperty($handler, $property)
         );
     }//end testExplicitFacetableTypeOverrideIsRespected()
+<<<<<<< HEAD
 
     // -------------------------------------------------------------------------
     // getDateBoundsForBucket() — week ISO bounds (regression for the
@@ -294,4 +295,6 @@ class MagicFacetHandlerTest extends TestCase
         $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
         $this->assertNull($this->invokeGetDateBoundsForBucket($handler, 'not-a-date', 'week'));
     }//end testWeekBoundsRejectMalformedKey()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

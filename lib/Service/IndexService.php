@@ -6,9 +6,12 @@
  * Main service for search indexing operations.
  * Acts as a facade coordinating FileHandler, ObjectHandler, and SchemaHandler.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -91,8 +94,11 @@ class IndexService
      * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, collection: 'files'}
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
@@ -107,8 +113,11 @@ class IndexService
      * @param int|null $limit Maximum number of files to process
      *
      * @return array Result with success status and processing stats.
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to FileHandler::processUnindexedChunks (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -162,8 +171,11 @@ class IndexService
      * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags required for flexible API filtering
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchObjects(
         array $query=[],
@@ -185,8 +197,11 @@ class IndexService
      * Delegates to ObjectHandler.
      *
      * @return bool Success status
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function commit(): bool
     {
@@ -204,8 +219,11 @@ class IndexService
      * @return bool Success status
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Commit flag controls transaction behavior
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -223,8 +241,11 @@ class IndexService
      * @return bool Success status
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Commit flag controls transaction behavior
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to SearchBackendInterface::deleteObject (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -245,8 +266,11 @@ class IndexService
      * @param string $similarity Similarity function
      *
      * @return bool Success status
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to SchemaHandler::ensureVectorFieldType (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function ensureVectorFieldType(
         string $collection,
@@ -270,8 +294,11 @@ class IndexService
      * @return array Result with success status, stats, and optional errors.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag controls schema recreation behavior
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to SchemaHandler::mirrorSchemas (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -312,8 +339,11 @@ class IndexService
      * @return (array|true)[] Fields configuration
      *
      * @psalm-return array{success: true, fields: array}
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: wraps SearchBackendInterface::getFields in a success envelope (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFieldsConfiguration(): array
     {
@@ -337,8 +367,11 @@ class IndexService
      * @return array Result with success status and field creation info.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry-run flag enables preview mode
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to SchemaHandler::createMissingFields (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
@@ -361,8 +394,11 @@ class IndexService
      * @return bool Availability status
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force-refresh flag bypasses cache
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isAvailable(bool $forceRefresh=false): bool
     {
@@ -389,8 +425,11 @@ class IndexService
      * @return array Test results
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls test verbosity
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: delegate to SearchBackendInterface::testConnection with error envelope (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testConnection(bool $inclCollTests=true): array
     {
@@ -417,8 +456,11 @@ class IndexService
      * Get search backend statistics.
      *
      * @return array Statistics
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: delegate to SearchBackendInterface::getStats with error envelope (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStats(): array
     {
@@ -453,8 +495,11 @@ class IndexService
      *     document_count?: int, error?: string},
      *     chunks?: array{total_chunks: int, indexed_chunks: int,
      *     unindexed_chunks: int, vectorized_chunks: int}}
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: aggregates backend/file/chunk stats from collaborators (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDashboardStats(): array
     {
@@ -490,8 +535,11 @@ class IndexService
      * Optimize the search backend.
      *
      * @return bool Success status
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function optimize(): bool
     {
@@ -516,8 +564,11 @@ class IndexService
      * @param string|null $collectionName Collection to clear
      *
      * @return array Result
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: delegate to SearchBackendInterface::clearIndex with error envelope (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -545,8 +596,11 @@ class IndexService
      * Get search backend configuration.
      *
      * @return array Configuration
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: delegate to SearchBackendInterface::getConfig with fail-soft empty (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getConfig(): array
     {
@@ -576,8 +630,11 @@ class IndexService
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Reindexing results with statistics.
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to ObjectHandler::reindexAll (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -599,8 +656,11 @@ class IndexService
      * @return array Results with fixed/failed fields.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry-run flag enables preview mode
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to SchemaHandler::fixMismatchedFields (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {
@@ -619,8 +679,11 @@ class IndexService
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
@@ -657,8 +720,11 @@ class IndexService
      * @return array Warmup results with statistics and errors.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls error collection verbosity
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function warmupIndex(
         array $schemas=[],
@@ -709,9 +775,12 @@ class IndexService
      * @return array Search results with pagination info
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls total count inclusion
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: maps IndexService params onto the query array then delegate to
      *              SearchBackendInterface::searchObjectsPaginated (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -761,8 +830,11 @@ class IndexService
      * @param string $collectionName Collection name to check
      *
      * @return bool True if collection exists
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function collectionExists(string $collectionName): bool
     {
@@ -776,8 +848,11 @@ class IndexService
      * @param array  $config Configuration options
      *
      * @return array Creation result
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: thin delegation to SearchBackendInterface::createCollection (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -790,8 +865,11 @@ class IndexService
      * Quick connectivity check without full collection validation.
      *
      * @return array Connection test results
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: convenience wrapper over testConnection(inclCollTests:false) (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testConnectivityOnly(): array
     {
@@ -815,9 +893,12 @@ class IndexService
      * @throws Exception If backend is not Solr
      *
      * @psalm-return array{collection: string, exists: true, tenant: null|string}
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: composes getTenantSpecificCollectionName + collectionExists + createCollection
      *              (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function ensureTenantCollection(?string $tenant=null): array
     {
@@ -842,8 +923,11 @@ class IndexService
      * @param string|null $tenant Tenant identifier (null for default)
      *
      * @return string Collection name
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: derives a collection name string from config + tenant suffix (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTenantSpecificCollectionName(?string $tenant=null): string
     {
@@ -865,8 +949,11 @@ class IndexService
      * @return string Endpoint URL
      *
      * @throws Exception If backend is not Solr
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: reads endpoint from getSolrConfig (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getEndpointUrl(): string
     {
@@ -885,8 +972,11 @@ class IndexService
      * @return string Solr base URL
      *
      * @throws Exception If backend is not Solr
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: string-builds a Solr base URL from getSolrConfig (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function buildSolrBaseUrl(?string $collection=null): string
     {
@@ -912,8 +1002,11 @@ class IndexService
      *
      * @psalm-return array{endpoint: ''|mixed, collection: 'openregister'|mixed, username: ''|mixed,
      *     password: ''|mixed, timeout: 30|mixed}
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: projects getConfig into Solr-specific keys with defaults (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getSolrConfig(): array
     {
@@ -938,8 +1031,11 @@ class IndexService
      * @return object HTTP client instance
      *
      * @throws Exception If backend is not Solr or client not available
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: method_exists guard then delegate to the Solr backend's getHttpClient (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getHttpClient(): object
     {
@@ -958,9 +1054,12 @@ class IndexService
      * backend doesn't support ConfigSets (non-Solr backends).
      *
      * @return array List of available ConfigSets.
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: method_exists guard then delegate to the Solr backend's listConfigSets,
      *              empty for non-Solr (search-index), no standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listConfigSets(): array
     {

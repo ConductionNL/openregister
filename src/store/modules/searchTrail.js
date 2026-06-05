@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 /* eslint-disable no-console */
 import { defineStore } from 'pinia'
@@ -228,7 +232,11 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async fetchSearchTrails(options = {}) {
 			this.searchTrailLoading = true
@@ -486,7 +494,11 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @param {number} days - Number of days to keep
 		 * @return {Promise<object>} The response data
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async cleanupSearchTrails(days = 30) {
 			try {

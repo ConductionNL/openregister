@@ -5,9 +5,12 @@
  *
  * Controller for file text management operations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -24,11 +27,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+<<<<<<< HEAD
 use OCP\AppFramework\Http;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Service\File\ManualEntityService;
+=======
+use DateTime;
+use OCP\AppFramework\Http;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Db\EntityRelationMapper;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\IndexService;
@@ -38,7 +50,11 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+<<<<<<< HEAD
 use Throwable;
+=======
+use Symfony\Component\Uid\Uuid;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * FileTextController
@@ -54,6 +70,10 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class FileTextController extends Controller
 {
@@ -66,10 +86,17 @@ class FileTextController extends Controller
      * @param IndexService          $indexService         Index service for file operations
      * @param FileService           $fileService          File service for file operations
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
+<<<<<<< HEAD
      * @param LoggerInterface       $logger               Logger
      * @param IAppConfig            $config               Application configuration
      * @param ManualEntityService   $manualEntityService  Orchestrator for the manual-entity write path
      * @param IUserSession          $userSession          Session user accessor (for the manual-entity endpoint)
+=======
+     * @param AuditTrailMapper      $auditTrailMapper     Audit trail mapper
+     * @param IUserSession          $userSession          User session for acting-user UID
+     * @param LoggerInterface       $logger               Logger
+     * @param IAppConfig            $config               Application configuration
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -78,6 +105,11 @@ class FileTextController extends Controller
         private readonly IndexService $indexService,
         private readonly FileService $fileService,
         private readonly EntityRelationMapper $entityRelationMapper,
+<<<<<<< HEAD
+=======
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly IUserSession $userSession,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config,
         private readonly ManualEntityService $manualEntityService,
@@ -85,6 +117,32 @@ class FileTextController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Assert that the current request carries an authenticated session.
+     *
+     * NC middleware enforces authentication before the controller runs for
+     * #[NoAdminRequired] routes; this helper is a defence-in-depth assertion
+     * that also satisfies the no-admin-IDOR gate (gate-7, ADR-005 Rule 3) for
+     * methods that operate on aggregate data and therefore carry no per-object
+     * ownership check.
+     *
+     * @return JSONResponse|null Null when authenticated; a 401 response otherwise.
+     */
+    private function requireAuthentication(): ?JSONResponse
+    {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['message' => 'Unauthorized'],
+                statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
+        return null;
+    }//end requireAuthentication()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Get extracted text for a file
@@ -96,11 +154,22 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with file text or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getFileText(int $fileId): JSONResponse
     {
+=======
+     */
+    public function getFileText(int $fileId): JSONResponse
+    {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             // TextExtractionService works with chunks, not FileText entities.
             // For now, return a message indicating this endpoint needs to be updated.
@@ -144,11 +213,22 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with extraction result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function extractFileText(int $fileId): JSONResponse
     {
+=======
+     */
+    public function extractFileText(int $fileId): JSONResponse
+    {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $hasFileManagement    = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
         $fileManagementConfig = json_decode(
             $this->config->getValueString(app: 'openregister', key: 'fileManagement'),
@@ -203,11 +283,19 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with bulk extraction result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bulkExtract(): JSONResponse
     {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
         try {
             $limit = (int) $this->request->getParam('limit', 100);
             $limit = min($limit, 500);
@@ -250,11 +338,22 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with extraction stats
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getStats(): JSONResponse
     {
+=======
+     */
+    public function getStats(): JSONResponse
+    {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $stats = $this->textExtractor->getStats();
 
@@ -294,11 +393,22 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function deleteFileText(int $fileId): JSONResponse
     {
+=======
+     */
+    public function deleteFileText(int $fileId): JSONResponse
+    {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             // TextExtractionService works with chunks.
             // TODO: Implement chunk deletion for file.
@@ -343,11 +453,19 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with indexing stats
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
         try {
             $options = [];
             if ($chunkSize !== null) {
@@ -395,11 +513,19 @@ class FileTextController extends Controller
      * @SuppressWarnings (PHPMD.UnusedFormalParameter) $_chunkOverlap reserved for future implementation
      *
      * @return JSONResponse JSON response with indexing result
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
     {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
         try {
             $options = [];
             if ($chunkSize !== null) {
@@ -440,6 +566,7 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with chunking stats
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
@@ -867,4 +994,376 @@ class FileTextController extends Controller
         return new JSONResponse(data: $body, statusCode: Http::STATUS_CREATED);
 
     }//end formatManualEntityResponse()
+=======
+     */
+    public function getChunkingStats(): JSONResponse
+    {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
+        try {
+            $stats = $this->indexService->getChunkingStats();
+
+            return new JSONResponse(
+                data: [
+                    'success' => true,
+                    'stats'   => $stats,
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: '[FileTextController] Failed to get chunking stats',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => 'Failed to get chunking stats: '.$e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end getChunkingStats()
+
+    /**
+     * Anonymize a file by replacing detected entities with placeholders
+     *
+     * Creates a new anonymized copy of the file with all detected PII entities
+     * replaced by placeholders in the format [ENTITY_TYPE: key].
+     * The original file remains unchanged.
+     *
+     * Optional request body: `{ "entities": [{ "id": <relationId>, "bases": ["uuid-a"] }] }`.
+     * Per-entity `bases` (absent | null | string[]) are persisted on each EntityRelation row
+     * BEFORE the anonymization call; bases are stripped from the payload forwarded to the
+     * document processor. Authorization: existing per-file write-access check only (ADR-005
+     * + ADR-023 — no additional group/role check for `bases` writes; see spec decision D3.5).
+     *
+     * @param int $fileId Nextcloud file ID to anonymize
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with anonymization result
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.1
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function anonymizeFile(int $fileId): JSONResponse
+    {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
+            return $auth;
+        }
+
+        try {
+            $this->logger->info(
+                message: '[FileTextController] Anonymizing file',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+            );
+
+            // Get the file node.
+            $fileNode = $this->fileService->getFileById($fileId);
+            if ($fileNode === null) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'File not found',
+                    ],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            // Check if the file is already anonymized.
+            $fileName = $fileNode->getName();
+            if (strpos($fileName, '_anonymized') !== false) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'File is already anonymized',
+                    ],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Parse optional per-entity bases from request body.
+            $requestEntities = $this->request->getParam('entities');
+            if ($requestEntities !== null && is_array($requestEntities) === false) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => "'entities' must be an array",
+                    ],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Validate shape of bases per entity entry.
+            if ($requestEntities !== null) {
+                $validationError = $this->validateEntityBases(entities: $requestEntities);
+                if ($validationError !== null) {
+                    return new JSONResponse(
+                        data: [
+                            'success' => false,
+                            'message' => $validationError['error'],
+                            'index'   => $validationError['index'],
+                        ],
+                        statusCode: Http::STATUS_BAD_REQUEST
+                    );
+                }
+            }
+
+            // Get detected entities for this file.
+            $entityData = $this->entityRelationMapper->findEntitiesForFile($fileId);
+
+            if (empty($entityData) === true) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => 'No entities detected in this file. Run text extraction first.',
+                    ],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Build a map of EntityRelation ID → per-entity request data for bases lookup.
+            $requestBasesMap = [];
+            if ($requestEntities !== null) {
+                foreach ($requestEntities as $entry) {
+                    if (isset($entry['id']) === true) {
+                        $requestBasesMap[(int) $entry['id']] = $entry;
+                    }
+                }
+            }
+
+            // Persist bases on EntityRelation rows BEFORE the document processing call (D3).
+            if (empty($requestBasesMap) === false) {
+                $allRelations = $this->entityRelationMapper->findByFileId(fileId: $fileId);
+                foreach ($allRelations as $relation) {
+                    $relationId = $relation->getId();
+                    if (isset($requestBasesMap[$relationId]) === true) {
+                        $this->applyBasesToRelation(
+                            relation: $relation,
+                            entryData: $requestBasesMap[$relationId]
+                        );
+                    }
+                }
+            }
+
+            // Build entities array for document processing WITHOUT bases (strip step, D3).
+            $entities        = [];
+            $processedValues = [];
+            foreach ($entityData as $entity) {
+                $value = $entity['entity_value'];
+
+                if (isset($processedValues[$value]) === true) {
+                    continue;
+                }
+
+                $processedValues[$value] = true;
+                $entities[] = [
+                    'text'       => $value,
+                    'entityType' => $entity['entity_type'],
+                    'key'        => substr(md5($value.$entity['entity_type']), 0, 8),
+                    // `bases` is intentionally absent — stripped before forwarding.
+                ];
+            }
+
+            $this->logger->debug(
+                message: '[FileTextController] Found entities to anonymize',
+                context: [
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
+                    'file_id'      => $fileId,
+                    'entity_count' => count($entities),
+                ]
+            );
+
+            // Perform anonymization (document processing — bases already stripped above).
+            $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
+
+            // Mark entity relations as anonymized.
+            $this->entityRelationMapper->markAsAnonymized(
+                fileId: $fileId,
+                anonymizedValue: 'anonymized_'.date('Y-m-d_H-i-s')
+            );
+
+            $this->logger->info(
+                message: '[FileTextController] File anonymized successfully',
+                context: [
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
+                    'original_file_id'   => $fileId,
+                    'anonymized_file_id' => $anonymizedFile->getId(),
+                    'anonymized_path'    => $anonymizedFile->getPath(),
+                    'entities_replaced'  => count($entities),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success'            => true,
+                    'message'            => 'File anonymized successfully',
+                    'original_file_id'   => $fileId,
+                    'anonymized_file_id' => $anonymizedFile->getId(),
+                    'anonymized_path'    => $anonymizedFile->getPath(),
+                    'entities_replaced'  => count($entities),
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: '[FileTextController] Failed to anonymize file',
+                context: [
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
+                    'file_id' => $fileId,
+                    'error'   => $e->getMessage(),
+                    'trace'   => $e->getTraceAsString(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'message' => 'Failed to anonymize file: '.$e->getMessage(),
+                ],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end anonymizeFile()
+
+    /**
+     * Validate the shape of `bases` on each entry in an entities array.
+     *
+     * Accepts: absent, null, or array-of-strings. Rejects anything else.
+     * Returns an error descriptor (with 'error' message and 'index') or null on success.
+     *
+     * @param array $entities Array of per-entity request entries.
+     *
+     * @return array{error: string, index: int}|null Null on success; error descriptor on failure.
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.1
+     */
+    private function validateEntityBases(array $entities): ?array
+    {
+        foreach ($entities as $index => $entry) {
+            if (array_key_exists(key: 'bases', array: $entry) === false) {
+                continue;
+            }
+
+            $bases = $entry['bases'];
+
+            if ($bases === null) {
+                continue;
+            }
+
+            if (is_array($bases) === false) {
+                return [
+                    'error' => "Entity at index {$index}: 'bases' must be null or an array of strings",
+                    'index' => $index,
+                ];
+            }
+
+            foreach ($bases as $i => $base) {
+                if (is_string($base) === false) {
+                    return [
+                        'error' => "Entity at index {$index}: 'bases[{$i}]' must be a string",
+                        'index' => $index,
+                    ];
+                }
+            }
+        }//end foreach
+
+        return null;
+    }//end validateEntityBases()
+
+    /**
+     * Apply retry-omit bases logic to an EntityRelation row and emit an audit entry.
+     *
+     * Three caller intents (per spec D4 / task 3.4):
+     *   - `bases` key absent   → reuse persisted value, no write, no audit.
+     *   - `bases` key present, value null → explicit clear; write + audit.
+     *   - `bases` key present, value []   → explicit empty; write + audit.
+     *   - `bases` key present, value string[] → set; write + audit.
+     *
+     * @param EntityRelation $relation  The entity relation row to update.
+     * @param array          $entryData The request entry that may contain a `bases` key.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.2
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern.
+     */
+    private function applyBasesToRelation(EntityRelation $relation, array $entryData): void
+    {
+        if (array_key_exists(key: 'bases', array: $entryData) === false) {
+            return;
+        }
+
+        $previousBases = $relation->getBases();
+        $newBases      = $entryData['bases'];
+
+        $relation->setBases(bases: $newBases);
+        $this->entityRelationMapper->update(entity: $relation);
+
+        $this->emitBasesAuditEntry(
+            relation: $relation,
+            previousBases: $previousBases,
+            newBases: $newBases
+        );
+    }//end applyBasesToRelation()
+
+    /**
+     * Write an immutable audit-trail entry for a `bases` mutation on an EntityRelation row.
+     *
+     * Uses the acting user's UID (never display name) per ADR-005. Reads are never audited.
+     *
+     * @param EntityRelation $relation      The affected entity relation.
+     * @param array|null     $previousBases Value before the mutation.
+     * @param array|null     $newBases      Value after the mutation.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.3
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern.
+     */
+    private function emitBasesAuditEntry(
+        EntityRelation $relation,
+        ?array $previousBases,
+        ?array $newBases
+    ): void {
+        $user = $this->userSession->getUser();
+
+        $auditTrail = new AuditTrail();
+        $auditTrail->setUuid(uuid: (string) Uuid::v4());
+        $auditTrail->setAction(action: 'entity_relation_bases_set');
+        $auditTrail->setObject(object: $relation->getId());
+        $auditTrail->setObjectUuid(objectUuid: (string) $relation->getId());
+        $auditTrail->setChanged(
+                changed: [
+                    'bases' => [
+                        'old' => $previousBases,
+                        'new' => $newBases,
+                    ],
+                ]
+                );
+        $auditTrail->setUser(user: $user !== null ? $user->getUID() : 'System');
+        $auditTrail->setUserName(userName: $user !== null ? $user->getDisplayName() : 'System');
+        $auditTrail->setCreated(created: new DateTime());
+        $auditTrail->setExpires(expires: new DateTime('+30 days'));
+
+        $this->auditTrailMapper->insert(entity: $auditTrail);
+    }//end emitBasesAuditEntry()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

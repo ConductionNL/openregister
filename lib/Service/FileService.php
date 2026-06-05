@@ -15,20 +15,29 @@
  * - Object-specific file operations
  * - Audit trails and data aggregation
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -325,6 +334,7 @@ class FileService
      */
     private FileAuditHandler $fileAuditHandler;
 
+<<<<<<< HEAD
     /**
      * Per-request memoization for the defense-in-depth folder-access
      * re-validation done by `assertObjectFolderAccessible`.
@@ -344,6 +354,8 @@ class FileService
      */
     private array $folderAccessRevalidationCache = [];
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Root folder name for all OpenRegister files.
      *
@@ -697,9 +709,12 @@ class FileService
             }
 
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+<<<<<<< HEAD
         } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
             // Access denials must propagate to the controller for HTTP 403 with structured body.
             throw $e;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (exception $e) {
             $this->logger->error(
                 message: '[FileService] Failed to create folder for entity: {message}',
@@ -793,9 +808,12 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple filter toggle
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File retrieval requires entity type checking
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
      *   (unified file listing for a Register or ObjectEntity via the stored folder, with optional shared-only filter)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
@@ -861,6 +879,7 @@ class FileService
     }//end getObjectFolder()
 
     /**
+<<<<<<< HEAD
      * Re-validate the access check on an existing object's bound folder.
      *
      * Used by `ObjectService::ensureObjectFolder` to close the
@@ -941,6 +960,8 @@ class FileService
     }//end resetFolderAccessRevalidationCache()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Returns a share link for the given IShare object.
      *
      * @param IShare $share An IShare object we are getting the share link for
@@ -1018,8 +1039,11 @@ class FileService
      *
      * @psalm-return   array{labels: list<string>,...}
      * @phpstan-return array<string, mixed>
+<<<<<<< HEAD
      *
      * @spec exclude File JSON formatting; deferred to the file-actions FileFormattingHandler follow-up pass (see file-actions tasks.md DROP list).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatFile(Node $file): array
     {
@@ -1036,9 +1060,12 @@ class FileService
      * @throws NotFoundException If files are not found.
      *
      * @return array Formatted file data with pagination
+<<<<<<< HEAD
      *
      * @spec exclude File JSON formatting + pagination; deferred to the file-actions FileFormattingHandler
      *   follow-up pass (see file-actions tasks.md DROP list).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -1086,8 +1113,11 @@ class FileService
      *
      * @psalm-return   array<IShare>
      * @phpstan-return array<int, IShare>
+<<<<<<< HEAD
      *
      * @spec exclude File sharing; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function findShares(Node $file, int $shareType=3): array
     {
@@ -1187,8 +1217,11 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Share link creation requires handling multiple scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Share link creation has multiple error paths
+<<<<<<< HEAD
      *
      * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {
@@ -1255,9 +1288,12 @@ class FileService
      * @throws Exception If creating the folder is not permitted
      *
      * @return Node The Node object for the folder (existing or newly created), or null on failure
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
      *   (idempotent get-or-create of a folder at the given path under the OpenRegister root)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createFolder(string $folderPath): Node
     {
@@ -1283,6 +1319,7 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (updates a file's content and tags within an object's folder)
      */
@@ -1296,6 +1333,11 @@ class FileService
             $this->fileLockHandler->assertCanModify($filePath);
         }
 
+=======
+     */
+    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         return $this->updateFileHandler->updateFile(
             filePath: $filePath,
             content: $content,
@@ -1338,8 +1380,11 @@ class FileService
      * @return bool True if successful, false if the file didn't exist.
      *
      * @throws Exception If deleting the file is not permitted or file operations fail.
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (deletes a file resolved by node/path/id, with object-folder context)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
@@ -1361,8 +1406,11 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#object-tagging-via-nextcloud-system-tags (attaches NC system tags to a file by id)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -1414,8 +1462,11 @@ class FileService
      * @psalm-param   array<int, string> $tags
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addFile(
         ObjectEntity | string $objectEntity,
@@ -1459,9 +1510,12 @@ class FileService
      * @psalm-param   array<int, string> $tags
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
      *   (creates/writes a file into an object's folder with optional tags and share toggle)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function saveFile(
         ObjectEntity $objectEntity,
@@ -1528,9 +1582,12 @@ class FileService
      * @phpstan-return array<int, Node>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
      *   (lists an object's files via its stored folder, with optional shared-only filter)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
@@ -1633,8 +1690,11 @@ class FileService
      * @phpstan-return \OCP\AppFramework\Http\StreamResponse
      *
      * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -1741,8 +1801,11 @@ class FileService
      * @psalm-return array{id: int, name: string, path: string,
      *     type: string, mimetype: string, size: float|int,
      *     parent_id: int, parent_path: string}|null
+<<<<<<< HEAD
      *
      * @spec exclude Diagnostic/debug helper for troubleshooting file lookups; not a product behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function debugFindFileById(int $fileId): array|null
     {
@@ -1805,8 +1868,11 @@ class FileService
      *
      * @psalm-return list<array{id: int, mimetype: string, name: string,
      *     path: string, size: float|int, type: string}>
+<<<<<<< HEAD
      *
      * @spec exclude Diagnostic/debug helper for troubleshooting object-file listings; not a product behavior.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function debugListObjectFiles(ObjectEntity $object): array
     {
@@ -1875,9 +1941,12 @@ class FileService
      * @throws NotFoundException If parent folders do not exist
      *
      * @return int The created folder ID
+<<<<<<< HEAD
      *
      * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
      *   (provisions an object's folder and returns its id without writing the id back onto the entity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
@@ -1900,8 +1969,11 @@ class FileService
      * @return File The processed file
      *
      * @throws Exception If replacement fails
+<<<<<<< HEAD
      *
      * @spec exclude One-line delegation to DocumentProcessingHandler::replaceWords; no facade-owned logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
     {
@@ -1924,8 +1996,11 @@ class FileService
      * @throws Exception If anonymization fails.
      *
      * @return Node The anonymized file node.
+<<<<<<< HEAD
      *
      * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function anonymizeDocument(Node $node, array $entities): Node
     {
@@ -1939,8 +2014,11 @@ class FileService
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getVersioningHandler(): FileVersioningHandler
     {
@@ -1997,8 +2075,11 @@ class FileService
      * @return File The renamed file.
      *
      * @throws Exception If the rename fails.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -2052,6 +2133,7 @@ class FileService
      * @return File The new file copy.
      *
      * @throws Exception If the copy fails.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
@@ -2069,6 +2151,11 @@ class FileService
         // a lock would let a second user observe a half-written state.
         $this->fileLockHandler->assertCanModify($fileId);
 
+=======
+     */
+    public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $sourceFile = $this->readFileHandler->getFile(object: $sourceObject, file: $fileId);
         if ($sourceFile === null) {
             throw new Exception("Source file not found");
@@ -2077,6 +2164,7 @@ class FileService
         $content  = $sourceFile->getContent();
         $fileName = $sourceFile->getName();
 
+<<<<<<< HEAD
         // Resolve the target folder up front so we can detect name
         // conflicts before delegating to CreateFileHandler.
         $targetFolder = $this->folderManagementHandler->getObjectFolder(objectEntity: $targetObject);
@@ -2102,6 +2190,17 @@ class FileService
         $targetUuid = $targetObject->getUuid();
         $this->logger->info(
             message: "[FileService] Copied file {$fileId} from object {$sourceUuid} to {$targetUuid} as {$resolvedName}",
+=======
+        // Use CreateFileHandler to create the file in target object folder.
+        $newFile = $this->createFileHandler->createFile(
+            objectEntity: $targetObject,
+            fileName: $fileName,
+            content: $content
+        );
+
+        $this->logger->info(
+            message: "[FileService] Copied file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 
@@ -2109,6 +2208,7 @@ class FileService
     }//end copyFile()
 
     /**
+<<<<<<< HEAD
      * Resolve a non-conflicting file name within a target folder.
      *
      * If `$desiredName` is free, returns it unchanged. Otherwise
@@ -2148,6 +2248,8 @@ class FileService
     }//end resolveCopyTargetName()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Move a file to another object (copy + delete source).
      *
      * @param ObjectEntity $sourceObject The source object entity.
@@ -2157,8 +2259,11 @@ class FileService
      * @return File The moved file.
      *
      * @throws Exception If the move fails.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -2171,10 +2276,15 @@ class FileService
         // Delete source.
         $this->deleteFile(file: $fileId, object: $sourceObject);
 
+<<<<<<< HEAD
         $sourceUuid = $sourceObject->getUuid();
         $targetUuid = $targetObject->getUuid();
         $this->logger->info(
             message: "[FileService] Moved file {$fileId} from object {$sourceUuid} to {$targetUuid}",
+=======
+        $this->logger->info(
+            message: "[FileService] Moved file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 

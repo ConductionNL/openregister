@@ -207,7 +207,11 @@
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -275,7 +279,10 @@ export default {
 		/**
 		 * Get current page number
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -285,7 +292,10 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -297,7 +307,11 @@ export default {
 		 *
 		 * @return {Array} Array of property options
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
@@ -328,7 +342,10 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -338,7 +355,10 @@ export default {
 		/**
 		 * Handle search query update
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — local filter state + reload; webhook contract owned by webhook-payload-mapping.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -351,7 +371,10 @@ export default {
 		/**
 		 * Handle enabled filter update
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — local filter state + reload; webhook contract owned by webhook-payload-mapping.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {boolean|null} enabled - Enabled filter
 		 * @return {void}
 		 */
@@ -364,7 +387,10 @@ export default {
 		/**
 		 * Load webhooks from the API
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — list load + client-side filter/paginate; webhook contract owned by webhook-payload-mapping.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
@@ -408,7 +434,10 @@ export default {
 		/**
 		 * Refresh the webhooks list
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — delegates to loadWebhooks.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		refreshWebhooks() {
@@ -418,7 +447,10 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		previousPage() {
@@ -431,7 +463,10 @@ export default {
 		/**
 		 * Go to next page
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		nextPage() {
@@ -444,7 +479,10 @@ export default {
 		/**
 		 * Test a webhook
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — thin POST + toast + list refresh; delivery contract owned by webhook-payload-mapping.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {number} webhookId - Webhook ID
 		 * @return {Promise<void>}
 		 */
@@ -474,7 +512,10 @@ export default {
 		/**
 		 * View logs for a webhook
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — transfer-data set + router navigation.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {number} webhookId - Webhook ID
 		 * @return {void}
 		 */
@@ -486,7 +527,10 @@ export default {
 		/**
 		 * Toggle webhook enabled status
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — thin PUT + toast + list refresh; webhook contract owned by webhook-payload-mapping.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {object} webhook - Webhook object
 		 * @return {Promise<void>}
 		 */
@@ -507,7 +551,10 @@ export default {
 		/**
 		 * Delete a webhook
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — thin DELETE + toast + list refresh; webhook contract owned by webhook-payload-mapping.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {number} webhookId - Webhook ID
 		 * @return {Promise<void>}
 		 */
@@ -527,7 +574,10 @@ export default {
 		/**
 		 * Open create webhook dialog
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — transfer-data set + modal dispatch.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		openCreateDialog() {
@@ -538,7 +588,10 @@ export default {
 		/**
 		 * Open edit webhook dialog
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — transfer-data set + modal dispatch.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {object} webhook - Webhook object to edit
 		 * @return {void}
 		 */
@@ -550,7 +603,10 @@ export default {
 		/**
 		 * Format success rate
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {object} webhook - Webhook object
 		 * @return {string} Formatted success rate
 		 */
@@ -565,7 +621,10 @@ export default {
 		/**
 		 * Truncate URL for display
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} url - Full URL
 		 * @return {string} Truncated URL
 		 */
@@ -578,7 +637,10 @@ export default {
 		/**
 		 * Format date for display
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

@@ -1,0 +1,202 @@
+{
+  "change": "tmlo-metadata",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1134,
+  "related_issue": 961,
+  "tasks": [
+    {
+      "id": "1.1",
+      "title": "Create database migration for tmlo JSON column",
+      "spec_ref": "specs/tmlo-metadata-schema/spec.md#database-migration-for-tmlo-column",
+      "github_issue": 1135,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN the database migration runs THEN openregister_objects has a tmlo column of type JSON, nullable, default NULL"
+      ],
+      "files_likely_affected": ["lib/Migration/Version1Date20260325000000.php"]
+    },
+    {
+      "id": "1.2",
+      "title": "Add tmlo property to ObjectEntity",
+      "spec_ref": "specs/tmlo-metadata-schema/spec.md#tmlo-metadata-fields-on-objectentity",
+      "github_issue": 1136,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN an object is created in a TMLO-enabled register THEN it has a tmlo field in @self metadata"
+      ],
+      "files_likely_affected": ["lib/Db/ObjectEntity.php"]
+    },
+    {
+      "id": "1.3",
+      "title": "Update ObjectEntity serialization for tmlo",
+      "spec_ref": "specs/tmlo-metadata-schema/spec.md#tmlo-metadata-fields-on-objectentity",
+      "github_issue": 1137,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN an object with TMLO metadata is serialized THEN tmlo field appears in @self"
+      ],
+      "files_likely_affected": ["lib/Db/ObjectEntity.php"]
+    },
+    {
+      "id": "2.1",
+      "title": "Create TmloService with constants and helpers",
+      "spec_ref": "specs/tmlo-auto-populate/spec.md#tmloservice-as-central-tmlo-logic-handler",
+      "github_issue": 1138,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN a controller or service needs TMLO functionality THEN TmloService is available via DI"
+      ],
+      "files_likely_affected": ["lib/Service/TmloService.php"]
+    },
+    {
+      "id": "2.2",
+      "title": "Implement populateDefaults method",
+      "spec_ref": "specs/tmlo-auto-populate/spec.md#auto-populate-tmlo-metadata-on-object-creation",
+      "github_issue": 1139,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN an object is created in a TMLO-enabled register THEN tmlo field is populated with schema defaults",
+        "WHEN bewaarTermijn is set and no archiefactiedatum THEN archiefactiedatum is calculated"
+      ],
+      "files_likely_affected": ["lib/Service/TmloService.php"]
+    },
+    {
+      "id": "2.3",
+      "title": "Implement validateStatusTransition method",
+      "spec_ref": "specs/tmlo-validation/spec.md#tmlo-status-transition-validation",
+      "github_issue": 1140,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN actief->semi_statisch THEN accepted",
+        "WHEN semi_statisch->overgebracht with missing classificatie THEN 422",
+        "WHEN actief->overgebracht directly THEN 422"
+      ],
+      "files_likely_affected": ["lib/Service/TmloService.php"]
+    },
+    {
+      "id": "2.4",
+      "title": "Implement validateFieldValues method",
+      "spec_ref": "specs/tmlo-validation/spec.md#tmlo-field-value-validation",
+      "github_issue": 1141,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN invalid archiefnominatie value THEN 422 with valid values listed",
+        "WHEN valid ISO-8601 duration THEN accepted"
+      ],
+      "files_likely_affected": ["lib/Service/TmloService.php"]
+    },
+    {
+      "id": "3.1",
+      "title": "Hook TmloService into object create pipeline",
+      "spec_ref": "specs/tmlo-auto-populate/spec.md#auto-populate-tmlo-metadata-on-object-creation",
+      "github_issue": 1142,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN object is created in TMLO-enabled register THEN TmloService populates defaults automatically"
+      ],
+      "files_likely_affected": ["lib/Service/Object/SaveObject.php", "lib/Service/ObjectService.php"]
+    },
+    {
+      "id": "3.2",
+      "title": "Hook TmloService validation into object update pipeline",
+      "spec_ref": "specs/tmlo-validation/spec.md#tmlo-status-transition-validation",
+      "github_issue": 1143,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN object tmlo status changes THEN validation rules are enforced"
+      ],
+      "files_likely_affected": ["lib/Service/Object/SaveObject.php", "lib/Service/ObjectService.php"]
+    },
+    {
+      "id": "4.1",
+      "title": "Implement generateMdtoXml for single object",
+      "spec_ref": "specs/tmlo-export/spec.md#mdto-compliant-xml-export",
+      "github_issue": 1144,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN export requested for object with TMLO THEN valid MDTO XML returned",
+        "WHEN export requested for object without TMLO THEN 422 error"
+      ],
+      "files_likely_affected": ["lib/Service/TmloService.php"]
+    },
+    {
+      "id": "4.2",
+      "title": "Implement generateBatchMdtoXml for batch export",
+      "spec_ref": "specs/tmlo-export/spec.md#mdto-compliant-xml-export",
+      "github_issue": 1145,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN batch export requested THEN XML with multiple object elements returned"
+      ],
+      "files_likely_affected": ["lib/Service/TmloService.php"]
+    },
+    {
+      "id": "4.3",
+      "title": "Add MDTO export routes and controller action",
+      "spec_ref": "specs/tmlo-export/spec.md#mdto-compliant-xml-export",
+      "github_issue": 1146,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN GET /api/objects/{r}/{s}/{id}/export/mdto THEN XML response with Content-Type application/xml"
+      ],
+      "files_likely_affected": ["lib/Controller/TmloController.php", "appinfo/routes.php"]
+    },
+    {
+      "id": "5.1",
+      "title": "Add TMLO query filter support",
+      "spec_ref": "specs/tmlo-query-api/spec.md#query-objects-by-archival-status",
+      "github_issue": 1147,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN tmlo.archiefstatus=semi_statisch THEN only matching objects returned",
+        "WHEN tmlo.archiefactiedatum[from] and [to] THEN date range filtered"
+      ],
+      "files_likely_affected": ["lib/Service/ObjectService.php", "lib/Db/MagicMapper.php"]
+    },
+    {
+      "id": "5.2",
+      "title": "Implement archival status summary endpoint",
+      "spec_ref": "specs/tmlo-query-api/spec.md#archival-status-summary-endpoint",
+      "github_issue": 1148,
+      "status": "todo",
+      "acceptance_criteria": [
+        "WHEN GET /tmlo/summary THEN counts per archiefstatus returned",
+        "WHEN register without TMLO THEN 400 error"
+      ],
+      "files_likely_affected": ["lib/Controller/TmloController.php", "appinfo/routes.php"]
+    },
+    {
+      "id": "6.1",
+      "title": "TmloService unit tests",
+      "spec_ref": "specs/tmlo-auto-populate/spec.md,specs/tmlo-validation/spec.md",
+      "github_issue": 1149,
+      "status": "todo",
+      "acceptance_criteria": [
+        "Unit tests for populateDefaults, validateStatusTransition, validateFieldValues"
+      ],
+      "files_likely_affected": ["tests/unit/Service/TmloServiceTest.php"]
+    },
+    {
+      "id": "6.2",
+      "title": "MDTO XML export unit tests",
+      "spec_ref": "specs/tmlo-export/spec.md",
+      "github_issue": 1150,
+      "status": "todo",
+      "acceptance_criteria": [
+        "Unit tests for generateMdtoXml, generateBatchMdtoXml, missing metadata error"
+      ],
+      "files_likely_affected": ["tests/unit/Service/TmloExportTest.php"]
+    },
+    {
+      "id": "6.3",
+      "title": "ObjectEntity tmlo field unit tests",
+      "spec_ref": "specs/tmlo-metadata-schema/spec.md",
+      "github_issue": 1151,
+      "status": "todo",
+      "acceptance_criteria": [
+        "Unit tests for hydration, serialization, getter defaults of tmlo field"
+      ],
+      "files_likely_affected": ["tests/unit/Db/ObjectEntityTmloTest.php"]
+    }
+  ]
+}

@@ -291,6 +291,7 @@ Conduction B.V." \
     "coordinator@test.local"
 
 echo ""
+<<<<<<< HEAD
 echo "--- Email with attachments (for drag-drop demo) ---"
 
 # This email has 3 real attachments (2 PDFs + 1 PNG). Used to demo dragging
@@ -345,6 +346,8 @@ print('  Sent: Bijlagen (3 files) -> behandelaar@test.local')
 PYEOF
 
 echo ""
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 echo "=== Mail seeding complete ==="
 echo ""
 echo "Accounts created (login = email address, password = email address):"

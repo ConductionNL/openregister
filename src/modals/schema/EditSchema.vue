@@ -63,9 +63,12 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed display helper listing other schemas for extension
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		computedAvailableSchemas() {
 			const currentId = schemaStore.schemaItem?.id
 			const currentUuid = schemaStore.schemaItem?.uuid
@@ -84,18 +87,24 @@ export default {
 					reference: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
 				}))
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed display helper listing registers for select
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		computedAvailableRegisters() {
 			return registerStore.registerList.map(register => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed display helper merging inherited schema properties
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		computedInheritedProperties() {
 			const allOf = schemaStore.schemaItem?.allOf || []
 			if (!allOf.length) return {}
@@ -122,9 +131,12 @@ export default {
 		this.fetchAvailableTags()
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude form-state loader for registers and schemas
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadRegistersAndSchemas() {
 			try {
 				if (!registerStore.registerList.length) {
@@ -137,9 +149,12 @@ export default {
 				console.error('Error loading registers and schemas:', error)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude form-state loader for user groups via OCS API
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadUserGroups() {
 			this.loadingGroups = true
 			try {
@@ -167,9 +182,12 @@ export default {
 				this.loadingGroups = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude form-state fallback group defaults
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		setFallbackGroups() {
 			this.userGroups = [
 				{ id: 'users', displayname: 'All Users' },
@@ -178,9 +196,12 @@ export default {
 				{ id: 'viewers', displayname: 'Viewers' },
 			]
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude form-state loader for available tags
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async fetchAvailableTags() {
 			try {
 				const response = await fetch('/index.php/apps/openregister/api/tags')
@@ -195,9 +216,12 @@ export default {
 				this.availableTags = []
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async onConfirm(schemaData) {
 			try {
 				const { response } = await schemaStore.saveSchema(schemaData)
@@ -211,16 +235,22 @@ export default {
 				})
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude modal close UI handler
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		closeModal() {
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude form-state helper seeding an extending schema
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		extendSchema() {
 			const currentItem = schemaStore.schemaItem
 			const newSchema = {
@@ -232,6 +262,7 @@ export default {
 			}
 			schemaStore.setSchemaItem(newSchema)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude dialog-open UI handler for schema analysis
 		 */
@@ -259,6 +290,20 @@ export default {
 		/**
 		 * @spec exclude dialog-open UI handler for schema deletion
 		 */
+=======
+		analyzeProperties() {
+			navigationStore.setDialog('exploreSchema')
+		},
+		validateObjects() {
+			navigationStore.setDialog('validateSchema')
+		},
+		deleteObjects() {
+			navigationStore.setDialog('deleteSchemaObjects')
+		},
+		publishObjects() {
+			navigationStore.setDialog('publishSchemaObjects')
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		deleteSchema() {
 			navigationStore.setDialog('deleteSchema')
 		},

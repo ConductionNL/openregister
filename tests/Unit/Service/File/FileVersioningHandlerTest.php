@@ -107,6 +107,7 @@ class FileVersioningHandlerTest extends TestCase
         $this->appManager->method('isEnabledForUser')->willReturn(false);
         $this->assertFalse($this->handler->isVersioningEnabled());
     }
+<<<<<<< HEAD
 
     /**
      * Test restoreVersion rejects malformed version IDs.
@@ -126,4 +127,6 @@ class FileVersioningHandlerTest extends TestCase
         // Anything that doesn't yield a positive integer after stripping 'v-'.
         $this->handler->restoreVersion($file, 'not-a-version');
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

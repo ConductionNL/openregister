@@ -42,7 +42,10 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'HTTP Method') }}</label>
 							<NcSelect
+<<<<<<< HEAD
 						input-label="Selected Method"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								v-model="selectedMethod"
 								:options="httpMethodOptions"
 								label="label"
@@ -86,7 +89,10 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event') }}</label>
 							<NcSelect
+<<<<<<< HEAD
 						input-label="Selected Event"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								v-model="selectedEvent"
 								:options="eventOptions"
 								label="label"
@@ -118,7 +124,10 @@
 						<div v-if="selectedEvent" class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event Property for Payload') }}</label>
 							<NcSelect
+<<<<<<< HEAD
 						input-label="Selected Event Property"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								v-model="selectedEventProperty"
 								:options="eventPropertyOptions"
 								label="label"
@@ -173,7 +182,10 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Retry Policy') }}</label>
 							<NcSelect
+<<<<<<< HEAD
 						input-label="Selected Retry Policy"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								v-model="selectedRetryPolicy"
 								:options="retryPolicyOptions"
 								label="label"
@@ -195,7 +207,11 @@
 
 						<NcTextField
 							:label="t('openregister', 'Max Retries')"
+<<<<<<< HEAD
 							placeholder="3"
+=======
+							:placeholder="t('openregister', '3')"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 							:value="webhookItem?.maxRetries?.toString() || '3'"
 							type="number"
 							min="0"
@@ -208,7 +224,11 @@
 
 						<NcTextField
 							:label="t('openregister', 'Timeout (seconds)')"
+<<<<<<< HEAD
 							placeholder="30"
+=======
+							:placeholder="t('openregister', '30')"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 							:value="webhookItem?.timeout?.toString() || '30'"
 							type="number"
 							min="1"
@@ -244,7 +264,11 @@
 							<label class="dialog-label">{{ t('openregister', 'Headers') }}</label>
 							<NcTextArea
 								:value="headersText"
+<<<<<<< HEAD
 								:placeholder="headersPlaceholder"
+=======
+								:placeholder="t('openregister', 'X-Custom-Header: value\nAuthorization: Bearer token')"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								rows="4"
 								@update:value="updateHeaders" />
 							<p class="field-hint">
@@ -256,7 +280,11 @@
 							<label class="dialog-label">{{ t('openregister', 'Filters') }}</label>
 							<NcTextArea
 								:value="filtersText"
+<<<<<<< HEAD
 								:placeholder="filtersPlaceholder"
+=======
+								:placeholder="t('openregister', 'objectType: object\naction: created')"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 								rows="4"
 								@update:value="updateFilters" />
 							<p class="field-hint">
@@ -370,18 +398,24 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI accessor — exposes the navigation store to the template.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		navigationStore() {
 			return navigationStore
 		},
 		isValid() {
 			return Boolean(this.webhookItem?.name?.trim() && this.webhookItem?.url?.trim())
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — builds event-property select options for the selected event.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		eventPropertyOptions() {
 			if (!this.selectedEvent) {
 				return []
@@ -398,9 +432,12 @@ export default {
 				label: prop,
 			}))
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — serializes headers object to editable text.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		headersText() {
 			if (!this.webhookItem?.headers || typeof this.webhookItem.headers !== 'object') {
 				return ''
@@ -409,6 +446,7 @@ export default {
 				.map(([key, value]) => `${key}: ${value}`)
 				.join('\n')
 		},
+<<<<<<< HEAD
 		// Placeholder strings are defined in script (not in the template attribute
 		// expression) because a literal `\n` inside a Vue template expression is
 		// compiled into an actual newline character inside a single-quoted JS
@@ -429,6 +467,8 @@ export default {
 		/**
 		 * @spec exclude UI display helper — serializes filters object to editable text.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		filtersText() {
 			if (!this.webhookItem?.filters || typeof this.webhookItem.filters !== 'object') {
 				return ''
@@ -451,17 +491,23 @@ export default {
 			}
 		},
 	},
+<<<<<<< HEAD
 	/**
 	 * @spec exclude Vue lifecycle hook — loads events and initializes the webhook form.
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	async created() {
 		await this.loadAvailableEvents()
 		this.initializeWebhook()
 	},
 	methods: {
+<<<<<<< HEAD
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		initializeWebhook() {
 			// Get webhook item from navigation store transferData or initialize new one.
 			const transferData = navigationStore.getTransferData()
@@ -495,27 +541,36 @@ export default {
 				this.selectedEventProperty = null
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the webhook name.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateName(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.name = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the webhook URL.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateUrl(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.url = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the HTTP method.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateMethod(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -523,18 +578,24 @@ export default {
 			this.webhookItem.method = value ? value.value : 'POST'
 			this.selectedMethod = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the enabled flag.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateEnabled(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.enabled = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateEvent(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -554,9 +615,12 @@ export default {
 				this.selectedEvent = null
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateEventProperty(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -567,9 +631,12 @@ export default {
 			this.webhookItem.configuration.eventProperty = value ? value.value : null
 			this.selectedEventProperty = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateSendCloudEvent(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -580,9 +647,12 @@ export default {
 			this.configuration.sendCloudEvent = value
 			this.webhookItem.configuration.sendCloudEvent = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateWaitForResponse(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -593,9 +663,12 @@ export default {
 			this.configuration.waitForResponse = value
 			this.webhookItem.configuration.waitForResponse = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the retry policy.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateRetryPolicy(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -603,36 +676,48 @@ export default {
 			this.webhookItem.retryPolicy = value ? value.value : 'exponential'
 			this.selectedRetryPolicy = value
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the max-retries count.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateMaxRetries(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.maxRetries = parseInt(value) || 3
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the request timeout.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateTimeout(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.timeout = parseInt(value) || 30
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the webhook secret.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateSecret(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.secret = value || null
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — parses header text into a headers object.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateHeaders(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -648,9 +733,12 @@ export default {
 			}
 			this.webhookItem.headers = headers
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — parses filter text into a filters object.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateFilters(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -672,9 +760,12 @@ export default {
 			}
 			this.webhookItem.filters = filters
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Modal data-load plumbing — fetches subscribable webhook events.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async loadAvailableEvents() {
 			this.loadingEvents = true
 			try {
@@ -699,17 +790,23 @@ export default {
 				this.loadingEvents = false
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		searchEvents(_query) {
 			// Filter events based on search query.
 			// The NcSelect component handles filtering internally.
 			// Empty query is handled by the component itself.
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Modal hydration plumbing — maps stored webhook values onto select inputs.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		loadExistingSelections() {
 			const item = this.webhookItem
 			if (item) {
@@ -745,6 +842,7 @@ export default {
 				}
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
 		 */
@@ -754,6 +852,11 @@ export default {
 		/**
 		 * @spec exclude Modal close plumbing — resets the webhook form and closes the modal.
 		 */
+=======
+		handleDialogClose() {
+			this.closeModal()
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
@@ -770,9 +873,12 @@ export default {
 				responseMapping: {},
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Modal save plumbing — assembles the payload and persists the webhook.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async saveWebhook() {
 			this.loading = true
 			this.error = null

@@ -354,9 +354,12 @@ export default {
 	},
 	watch: {
 		filesComputed: {
+<<<<<<< HEAD
 			/**
 			 * @spec exclude Watcher auto-triggering upload when files are queued; UI reactivity plumbing.
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()

@@ -5,9 +5,12 @@
  *
  * Transmits SIP packages to e-Depot systems via SFTP.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -19,15 +22,22 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
+<<<<<<< HEAD
 use phpseclib3\Crypt\PublicKeyLoader;
 use phpseclib3\Net\SFTP;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -59,8 +69,13 @@ class SftpTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -133,7 +148,11 @@ class SftpTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testConnection(array $config): bool
     {
@@ -164,7 +183,11 @@ class SftpTransport implements TransportInterface
      *
      * @return string The transport name.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getName(): string
     {
@@ -180,7 +203,11 @@ class SftpTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateConfig(array $config): void
     {
@@ -207,6 +234,7 @@ class SftpTransport implements TransportInterface
      *
      * @psalm-suppress UndefinedClass
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
@@ -224,6 +252,21 @@ class SftpTransport implements TransportInterface
         }
 
         if (empty($config['keyPath']) === true) {
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     */
+    private function createSftpConnection(array $config): \phpseclib3\Net\SFTP
+    {
+        $port = (int) ($config['port'] ?? 22);
+        $sftp = new \phpseclib3\Net\SFTP($config['host'], $port);
+
+        if (empty($config['keyPath']) === false) {
+            $key    = \phpseclib3\Crypt\PublicKeyLoader::load(
+                file_get_contents($config['keyPath'])
+            );
+            $logged = $sftp->login($config['username'], $key);
+        } else {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $logged = $sftp->login($config['username'], ($config['password'] ?? ''));
         }
 

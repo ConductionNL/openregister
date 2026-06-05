@@ -7,9 +7,12 @@
  * updates, and profile management. It centralizes user operations and provides
  * a clean interface for controllers and other services.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -26,11 +29,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+<<<<<<< HEAD
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use RuntimeException;
+=======
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatarManager;
 use OCP\IDBConnection;
@@ -59,9 +67,12 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class UserService
 {
@@ -176,8 +187,11 @@ class UserService
      * @return array The comprehensive user data array
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function buildUserDataArray(IUser $user): array
     {
@@ -304,8 +318,11 @@ class UserService
      * @param array $data The data array containing updates
      *
      * @return array Result of the update operation including organization changes
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
@@ -327,9 +344,16 @@ class UserService
                 $data['activeOrganisation']
             );
             $result['organisation_updated'] = $organisationResult;
+<<<<<<< HEAD
             $result['organisation_message'] = 'Failed to update active organization';
             if ($organisationResult === true) {
                 $result['organisation_message'] = 'Active organization updated successfully';
+=======
+            if ($organisationResult === true) {
+                $result['organisation_message'] = 'Active organization updated successfully';
+            } else {
+                $result['organisation_message'] = 'Failed to update active organization';
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             // Remove the organization field from data to prevent it from being processed as a user property.
@@ -424,8 +448,11 @@ class UserService
      * @param IUser $user The user object
      *
      * @return array Array containing name fields
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getCustomNameFields(IUser $user): array
     {
@@ -460,8 +487,11 @@ class UserService
      * @param array $nameFields Array containing name field values
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setCustomNameFields(IUser $user, array $nameFields): void
     {
@@ -922,16 +952,25 @@ class UserService
      *
      * @return array Result array with success status
      *
+<<<<<<< HEAD
      * @throws InvalidArgumentException If inputs are invalid
      * @throws RuntimeException         If password change fails
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \InvalidArgumentException If inputs are invalid
+     * @throws \RuntimeException         If password change fails
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function changePassword(IUser $user, string $currentPassword, string $newPassword): array
     {
         // Check backend capability.
         if (method_exists($user, 'canChangePassword') === true && $user->canChangePassword() === false) {
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'Password changes are not supported by your authentication backend',
                 409
             );
@@ -940,13 +979,21 @@ class UserService
         // Verify current password.
         $verifiedUser = $this->userManager->checkPassword($user->getUID(), $currentPassword);
         if ($verifiedUser === false) {
+<<<<<<< HEAD
             throw new RuntimeException('Current password is incorrect', 403);
+=======
+            throw new \RuntimeException('Current password is incorrect', 403);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         // Set new password.
         $result = $user->setPassword($newPassword);
         if ($result === false) {
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'New password does not meet the password policy requirements',
                 400
             );
@@ -970,15 +1017,23 @@ class UserService
      *
      * @return array Result array with success status and avatar URL
      *
+<<<<<<< HEAD
      * @throws RuntimeException If upload fails
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If upload fails
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array
     {
         // Check backend capability.
         if (method_exists($user, 'canChangeAvatar') === true && $user->canChangeAvatar() === false) {
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'Avatar changes are not supported by your authentication backend',
                 409
             );
@@ -986,7 +1041,11 @@ class UserService
 
         // Validate file type.
         if (in_array($mimeType, self::ALLOWED_AVATAR_TYPES, true) === false) {
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'Unsupported image format. Allowed: JPEG, PNG, GIF, WebP',
                 400
             );
@@ -994,7 +1053,11 @@ class UserService
 
         // Validate file size.
         if ($size > self::MAX_AVATAR_SIZE) {
+<<<<<<< HEAD
             throw new RuntimeException('Avatar image must be smaller than 5 MB', 400);
+=======
+            throw new \RuntimeException('Avatar image must be smaller than 5 MB', 400);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $userId = $user->getUID();
@@ -1016,15 +1079,23 @@ class UserService
      *
      * @return array Result array with success status
      *
+<<<<<<< HEAD
      * @throws RuntimeException If deletion fails
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If deletion fails
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteAvatar(IUser $user): array
     {
         // Check backend capability.
         if (method_exists($user, 'canChangeAvatar') === true && $user->canChangeAvatar() === false) {
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'Avatar changes are not supported by your authentication backend',
                 409
             );
@@ -1049,9 +1120,13 @@ class UserService
      *
      * @return array The export data structure
      *
+<<<<<<< HEAD
      * @throws RuntimeException If rate limited
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If rate limited
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function exportPersonalData(IUser $user): array
     {
@@ -1063,7 +1138,11 @@ class UserService
 
         if ($timeSinceExport < self::EXPORT_RATE_LIMIT) {
             $retryAfter = self::EXPORT_RATE_LIMIT - $timeSinceExport;
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 json_encode(
                         [
                             'error'       => 'Data export is limited to once per hour',
@@ -1106,8 +1185,11 @@ class UserService
      * @param IUser $user The user to get preferences for
      *
      * @return array The notification preferences
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getNotificationPreferences(IUser $user): array
     {
@@ -1123,9 +1205,16 @@ class UserService
             }
 
             // Convert string booleans.
+<<<<<<< HEAD
             $prefs[$key] = $stored;
             if ($defaultValue === true || $defaultValue === false) {
                 $prefs[$key] = ($stored === 'true' || $stored === '1');
+=======
+            if ($defaultValue === true || $defaultValue === false) {
+                $prefs[$key] = ($stored === 'true' || $stored === '1');
+            } else {
+                $prefs[$key] = $stored;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
         }
 
@@ -1142,9 +1231,13 @@ class UserService
      *
      * @return array The complete updated preferences
      *
+<<<<<<< HEAD
      * @throws InvalidArgumentException If invalid preference values
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \InvalidArgumentException If invalid preference values
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function setNotificationPreferences(IUser $user, array $prefs): array
     {
@@ -1153,7 +1246,11 @@ class UserService
         // Validate emailDigest if provided.
         if (isset($prefs['emailDigest']) === true) {
             if (in_array($prefs['emailDigest'], self::VALID_DIGEST_FREQUENCIES, true) === false) {
+<<<<<<< HEAD
                 throw new InvalidArgumentException(
+=======
+                throw new \InvalidArgumentException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     'Invalid emailDigest value. Allowed: none, daily, weekly'
                 );
             }
@@ -1165,6 +1262,7 @@ class UserService
                 continue;
             }
 
+<<<<<<< HEAD
             $storeValue = (string) $value;
             if ($value === true) {
                 $storeValue = 'true';
@@ -1174,6 +1272,9 @@ class UserService
                 $storeValue = 'false';
             }
 
+=======
+            $storeValue = is_bool($value) === true ? ($value === true ? 'true' : 'false') : (string) $value;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->config->setUserValue($userId, self::APP_NAME, 'notification_'.$key, $storeValue);
         }
 
@@ -1194,8 +1295,11 @@ class UserService
      * @param string|null $to     Optional end date (Y-m-d)
      *
      * @return array Activity results with total count
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getUserActivity(
         IUser $user,
@@ -1247,9 +1351,13 @@ class UserService
      *
      * @return array The created token data (full value shown only once)
      *
+<<<<<<< HEAD
      * @throws RuntimeException If maximum tokens reached
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If maximum tokens reached
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createApiToken(IUser $user, string $name, ?string $expiresIn=null): array
     {
@@ -1257,7 +1365,11 @@ class UserService
         $tokens = $this->getStoredTokens(userId: $userId);
 
         if (count($tokens) >= self::MAX_TOKENS) {
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'Maximum number of API tokens ('.self::MAX_TOKENS.') reached. Revoke an existing token first.',
                 400
             );
@@ -1268,6 +1380,7 @@ class UserService
         $tokenId    = $this->secureRandom->generate(16);
 
         // Calculate expiration.
+<<<<<<< HEAD
         // SECURITY: a non-matching `expiresIn` (e.g. "5x", "abc") used to
         // fall through to `$expires = null` → non-expiring token. That is
         // a perpetual API key minted from malformed input. Reject the
@@ -1280,6 +1393,11 @@ class UserService
                     'Invalid expiresIn value "'.$expiresIn.'" — expected a number followed by d (days), h (hours), or m (minutes), e.g. "90d".'
                 );
             }
+=======
+        $expires = null;
+        if ($expiresIn !== null && $expiresIn !== '') {
+            $expires = $this->parseExpiration(expiresIn: $expiresIn);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $now       = date('c');
@@ -1311,8 +1429,11 @@ class UserService
      * @param IUser $user The user to list tokens for
      *
      * @return array Array of token objects with masked values
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listApiTokens(IUser $user): array
     {
@@ -1343,9 +1464,13 @@ class UserService
      *
      * @return array Result array
      *
+<<<<<<< HEAD
      * @throws RuntimeException If token not found
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If token not found
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function revokeApiToken(IUser $user, string $tokenId): array
     {
@@ -1353,7 +1478,11 @@ class UserService
         $tokens = $this->getStoredTokens(userId: $userId);
 
         if (isset($tokens[$tokenId]) === false) {
+<<<<<<< HEAD
             throw new RuntimeException('Token not found', 404);
+=======
+            throw new \RuntimeException('Token not found', 404);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         unset($tokens[$tokenId]);
@@ -1375,9 +1504,13 @@ class UserService
      *
      * @return array Result array with status
      *
+<<<<<<< HEAD
      * @throws RuntimeException If duplicate request exists
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If duplicate request exists
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function requestDeactivation(IUser $user, string $reason=''): array
     {
@@ -1387,7 +1520,11 @@ class UserService
         $existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
         if ($existing !== '') {
             $existingData = json_decode($existing, true);
+<<<<<<< HEAD
             throw new RuntimeException(
+=======
+            throw new \RuntimeException(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 json_encode(
                         [
                             'error'       => 'A deactivation request is already pending',
@@ -1421,8 +1558,11 @@ class UserService
      * @param IUser $user The user to check status for
      *
      * @return array Status information
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getDeactivationStatus(IUser $user): array
     {
@@ -1450,9 +1590,13 @@ class UserService
      *
      * @return array Result array
      *
+<<<<<<< HEAD
      * @throws RuntimeException If no pending request
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+=======
+     * @throws \RuntimeException If no pending request
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function cancelDeactivation(IUser $user): array
     {
@@ -1460,7 +1604,11 @@ class UserService
         $existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
 
         if ($existing === '') {
+<<<<<<< HEAD
             throw new RuntimeException('No pending deactivation request', 404);
+=======
+            throw new \RuntimeException('No pending deactivation request', 404);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         $this->config->deleteUserValue($userId, self::APP_NAME, 'deactivation_request');
@@ -1526,7 +1674,11 @@ class UserService
         ];
 
         $interval = $intervalMap[$unit] ?? 'days';
+<<<<<<< HEAD
         $date     = new DateTime();
+=======
+        $date     = new \DateTime();
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $date->modify('+'.$value.' '.$interval);
 
         return $date->format('c');

@@ -227,11 +227,15 @@ class TransferListServiceTest extends TestCase
      */
     private function createObjectEntity(string $uuid, ?int $schema = null, ?int $register = null): ObjectEntity&MockObject
     {
+<<<<<<< HEAD
         $object = $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['jsonSerialize'])
             ->addMethods(['getUuid', 'getSchema', 'getRegister'])
             ->getMock();
+=======
+        $object = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $object->method('getUuid')->willReturn($uuid);
         $object->method('getSchema')->willReturn($schema);
         $object->method('getRegister')->willReturn($register);

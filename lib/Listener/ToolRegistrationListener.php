@@ -90,10 +90,15 @@ class ToolRegistrationListener implements IEventListener
      * @param ObjectsTool     $objectsTool     Objects tool.
      * @param ApplicationTool $applicationTool Application tool.
      * @param AgentTool       $agentTool       Agent tool.
+<<<<<<< HEAD
      * @param McpToolsService $mcpToolsService MCP tools service used to register MCP-sourced tools.
      * @param LoggerInterface $logger          PSR logger.
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+=======
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         RegisterTool $registerTool,
@@ -118,7 +123,11 @@ class ToolRegistrationListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handle(Event $event): void
     {
@@ -126,6 +135,7 @@ class ToolRegistrationListener implements IEventListener
             return;
         }
 
+<<<<<<< HEAD
         $this->registerBuiltinTools(event: $event);
         $this->bridgeMcpProviderTools(event: $event);
     }//end handle()
@@ -146,6 +156,16 @@ class ToolRegistrationListener implements IEventListener
                 'name'        => $this->registerTool->getName(),
                 'description' => $this->registerTool->getDescription(),
                 'icon'        => 'icon-category-office',
+=======
+        // Register built-in OpenRegister tools.
+        // Using tool's getName() and getDescription() to avoid duplication.
+        $event->registerTool(
+            id: 'openregister.register',
+            tool: $this->registerTool,
+            metadata: [
+                'name'        => $this->registerTool->getName(),
+                'description' => $this->registerTool->getDescription(),
+                'icon'        => 'icon-category-office',
                 'app'         => 'openregister',
             ]
         );
@@ -157,11 +177,33 @@ class ToolRegistrationListener implements IEventListener
                 'name'        => $this->schemaTool->getName(),
                 'description' => $this->schemaTool->getDescription(),
                 'icon'        => 'icon-category-customization',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'app'         => 'openregister',
             ]
         );
 
         $event->registerTool(
+<<<<<<< HEAD
+            id: 'openregister.schema',
+            tool: $this->schemaTool,
+            metadata: [
+                'name'        => $this->schemaTool->getName(),
+                'description' => $this->schemaTool->getDescription(),
+                'icon'        => 'icon-category-customization',
+=======
+            id: 'openregister.objects',
+            tool: $this->objectsTool,
+            metadata: [
+                'name'        => $this->objectsTool->getName(),
+                'description' => $this->objectsTool->getDescription(),
+                'icon'        => 'icon-category-organization',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+                'app'         => 'openregister',
+            ]
+        );
+
+        $event->registerTool(
+<<<<<<< HEAD
             id: 'openregister.objects',
             tool: $this->objectsTool,
             metadata: [
@@ -173,6 +215,8 @@ class ToolRegistrationListener implements IEventListener
         );
 
         $event->registerTool(
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             id: 'openregister.application',
             tool: $this->applicationTool,
             metadata: [
@@ -193,6 +237,7 @@ class ToolRegistrationListener implements IEventListener
                 'app'         => 'openregister',
             ]
         );
+<<<<<<< HEAD
     }//end registerBuiltinTools()
 
     /**
@@ -266,4 +311,7 @@ class ToolRegistrationListener implements IEventListener
             );
         }//end foreach
     }//end bridgeProviderDescriptors()
+=======
+    }//end handle()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

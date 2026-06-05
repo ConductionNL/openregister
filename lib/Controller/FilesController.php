@@ -5,9 +5,12 @@
  *
  * Controller for file operations in the OpenRegister application.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -16,8 +19,12 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -45,7 +52,10 @@ use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\IUserManager;
+<<<<<<< HEAD
 use OCP\IUserSession;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * FilesController handles file operations for objects in registers
@@ -66,9 +76,14 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Nextcloud controller DI requires many dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
@@ -99,6 +114,7 @@ class FilesController extends Controller
      * Initializes controller with required dependencies for file operations.
      * Calls parent constructor to set up base controller functionality.
      *
+<<<<<<< HEAD
      * @param string                                               $appName          Application name
      * @param IRequest                                             $request          HTTP request object
      * @param FileService                                          $fileService      File service for file operations
@@ -109,6 +125,15 @@ class FilesController extends Controller
      * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       OR-side metadata mapper. Null-safe.
      * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
      * @param IUserSession|null                                    $userSession      Session for auth gating.
+=======
+     * @param string           $appName         Application name
+     * @param IRequest         $request         HTTP request object
+     * @param FileService      $fileService     File service for file operations
+     * @param ObjectService    $objectService   Object service for object validation
+     * @param IRootFolder      $rootFolder      Root folder for file access
+     * @param IUserManager     $userManager     User manager for user lookups
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      *
@@ -121,10 +146,14 @@ class FilesController extends Controller
         ObjectService $objectService,
         private readonly IRootFolder $rootFolder,
         private readonly IUserManager $userManager,
+<<<<<<< HEAD
         private readonly IEventDispatcher $eventDispatcher,
         private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null,
         private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler=null,
         private readonly ?IUserSession $userSession=null
+=======
+        private readonly IEventDispatcher $eventDispatcher
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -135,6 +164,7 @@ class FilesController extends Controller
     }//end __construct()
 
     /**
+<<<<<<< HEAD
      * Check whether the current request comes from an unauthenticated (anonymous) caller.
      *
      * Extracted to prevent gate-9 from incorrectly flagging PublicPage methods that
@@ -193,6 +223,8 @@ class FilesController extends Controller
     }//end recordDownloadEvent()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get all files associated with a specific object
      *
      * @param string $register The register slug or identifier
@@ -207,7 +239,11 @@ class FilesController extends Controller
      *
      * @PublicPage
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(
         string $register,
@@ -222,6 +258,7 @@ class FilesController extends Controller
         unset($routeParams);
 
         try {
+<<<<<<< HEAD
             // SECURITY (H6): anonymous callers see only published (shared) files.
             $isAnonymous = $this->isAnonymousRequest();
 
@@ -231,6 +268,14 @@ class FilesController extends Controller
             // Format the files with pagination using request parameters.
             $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
 
+=======
+            // Get the raw files from the file service.
+            $files = $this->fileService->getFiles(object: $id);
+
+            // Format the files with pagination using request parameters.
+            $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return new JSONResponse(data: $formattedFiles);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
@@ -262,8 +307,11 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function show(
         string $register,
@@ -284,6 +332,7 @@ class FilesController extends Controller
             // Fall back to direct file ID lookup via known user contexts
             // when the normal path fails (e.g. anonymous/public access to files
             // uploaded by a different user whose folder is not accessible).
+<<<<<<< HEAD
             //
             // Security guard (issue #1956 part c): the fallback resolves files
             // anywhere in the owner/admin user folders, so it can pick up sibling
@@ -297,6 +346,11 @@ class FilesController extends Controller
                 if ($fallback !== null && $this->fileBelongsToObject(file: $fallback, object: $object) === true) {
                     $file = $fallback;
                 }
+=======
+            if ($file === null) {
+                $owner = $object->getOwner();
+                $file  = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             }
 
             if ($file === null) {
@@ -306,6 +360,7 @@ class FilesController extends Controller
                 );
             }
 
+<<<<<<< HEAD
             // SECURITY (H5): gate anonymous callers on the file being published.
             // Mirrors the same guard in downloadById() and preview().
             $isAnonymous = $this->isAnonymousRequest();
@@ -318,15 +373,20 @@ class FilesController extends Controller
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Stream the file inline so browsers display images/logos directly.
             $response = new StreamResponse($file->fopen('r'));
             $response->addHeader('Content-Type', $file->getMimeType());
             $response->addHeader('Content-Disposition', 'inline; filename="'.$file->getName().'"');
             $response->addHeader('Content-Length', (string) $file->getSize());
 
+<<<<<<< HEAD
             // Record download (counter + audit). Best-effort.
             $this->recordDownloadEvent(fileId: (int) $file->getId(), object: $object);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return $response;
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
@@ -371,6 +431,7 @@ class FilesController extends Controller
 
         return null;
     }//end getFileViaKnownUsers()
+<<<<<<< HEAD
 
     /**
      * Verify that a file is actually attached to a specific object.
@@ -408,6 +469,8 @@ class FilesController extends Controller
 
         return false;
     }//end fileBelongsToObject()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     /**
      * Add a new file to an object
@@ -424,7 +487,11 @@ class FilesController extends Controller
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(
         string $register,
@@ -505,8 +572,11 @@ class FilesController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function save(
         string $register,
@@ -603,8 +673,11 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createMultipart(
         string $register,
@@ -691,12 +764,20 @@ class FilesController extends Controller
             $uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);
         }
 
+<<<<<<< HEAD
         // Check for single file upload via the 'file' field. Run it through
         // the same normalizer as 'files[]' so 'share' and 'tags' are populated.
         $uploadedFile = $this->request->getUploadedFile('file');
 
         if (empty($uploadedFile) === false) {
             $uploadedFiles[] = $this->normalizeSingleFile(files: $uploadedFile, data: $data);
+=======
+        // Check for single file upload.
+        $uploadedFile = $this->request->getUploadedFile('file');
+
+        if (empty($uploadedFile) === false) {
+            $uploadedFiles[] = $uploadedFile;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if (empty($uploadedFiles) === true) {
@@ -759,7 +840,11 @@ class FilesController extends Controller
             'tmp_name' => $files['tmp_name'] ?? '',
             'error'    => $files['error'] ?? UPLOAD_ERR_NO_FILE,
             'size'     => $files['size'] ?? 0,
+<<<<<<< HEAD
             'share'    => $this->parseBool(value: $data['share'] ?? false),
+=======
+            'share'    => $data['share'] === 'true',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'tags'     => $tags,
         ];
     }//end normalizeSingleFile()
@@ -828,7 +913,11 @@ class FilesController extends Controller
                 'tmp_name' => $tmpNameArray[$i] ?? '',
                 'error'    => $errorArray[$i] ?? $errorScalar ?? UPLOAD_ERR_NO_FILE,
                 'size'     => $sizeArray[$i] ?? $sizeScalar ?? 0,
+<<<<<<< HEAD
                 'share'    => $this->parseBool(value: $data['share'] ?? false),
+=======
+                'share'    => $data['share'] === 'true',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 'tags'     => $tags,
             ];
         }//end for
@@ -920,8 +1009,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(
         string $register,
@@ -977,7 +1069,11 @@ class FilesController extends Controller
      *     array{error?: string, success?: bool},
      *     array<never, never>>
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function delete(
         string $register,
@@ -1008,6 +1104,115 @@ class FilesController extends Controller
         }
     }//end delete()
 
+<<<<<<< HEAD
+=======
+    /**
+     * Publish a file associated with an object
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to retrieve files for
+     * @param int    $fileId   ID of the file to publish
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: mixed|string, labels?: list<string>,...},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     */
+    public function publish(
+        string $register,
+        string $schema,
+        string $id,
+        int $fileId
+    ): JSONResponse {
+        // Set the schema and register to the object service (forces a check if the are valid).
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
+            $result = $this->fileService->publishFile(
+                object: $object,
+                file: $fileId
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+        }//end try
+    }//end publish()
+
+    /**
+     * Depublish a file associated with an object
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to retrieve files for
+     * @param int    $fileId   ID of the file to depublish
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404,
+     *     array{error?: mixed|string, labels?: list<string>,...},
+     *     array<never, never>>
+     */
+    public function depublish(
+        string $register,
+        string $schema,
+        string $id,
+        int $fileId
+    ): JSONResponse {
+        // Set the schema and register to the object service (forces a check if the are valid).
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
+            $result = $this->fileService->unpublishFile(
+                object: $object,
+                filePath: $fileId
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+        }//end try
+    }//end depublish()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Download a file by its ID (authenticated endpoint)
      *
@@ -1032,6 +1237,7 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<404|500, array{error: string},
      *     array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200,
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
@@ -1103,6 +1309,28 @@ class FilesController extends Controller
         }
     }//end resolveParentObjectForFile()
 
+=======
+     */
+    public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
+    {
+        try {
+            // Get the file using the file service.
+            $file = $this->fileService->getFileById($fileId);
+
+            if ($file === null) {
+                return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
+            }
+
+            // Stream the file content back to the client.
+            return $this->fileService->streamFile($file);
+        } catch (NotFoundException $e) {
+            return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
+    }//end downloadById()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Get a human-readable error message for PHP file upload errors
      *
@@ -1204,8 +1432,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1224,6 +1455,7 @@ class FilesController extends Controller
 
             $file = $this->fileService->renameFile(object: $object, fileId: $fileId, newName: $newName);
 
+<<<<<<< HEAD
             // Audit trail entry (best-effort -- handler swallows failures).
             $this->fileService->getAuditHandler()->logFileAction(
                 object: $object,
@@ -1232,6 +1464,8 @@ class FilesController extends Controller
                 data: ["oldName" => $data["oldName"] ?? "", "newName" => $newName]
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Dispatch event.
             $this->eventDispatcher->dispatchTyped(
                 new FileRenamedEvent(
@@ -1267,8 +1501,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1306,6 +1543,7 @@ class FilesController extends Controller
                 targetObject: $targetObject
             );
 
+<<<<<<< HEAD
             // Dual audit trail: source object (file copied OUT) and target object (file copied IN).
             $auditHandler = $this->fileService->getAuditHandler();
             $auditHandler->logFileAction(
@@ -1328,6 +1566,8 @@ class FilesController extends Controller
                 ]
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->eventDispatcher->dispatchTyped(
                 new FileCopiedEvent(
                     objectUuid: $sourceObject->getUuid(),
@@ -1338,11 +1578,15 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
         } catch (Exception $e) {
+<<<<<<< HEAD
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'not found') === true) {
                 $statusCode = 404;
             }
 
+=======
+            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end copy()
@@ -1359,8 +1603,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function move(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1397,6 +1644,7 @@ class FilesController extends Controller
                 targetObject: $targetObject
             );
 
+<<<<<<< HEAD
             // Dual audit trail: source object (file moved OUT) and target object (file moved IN).
             $auditHandler = $this->fileService->getAuditHandler();
             $auditHandler->logFileAction(
@@ -1419,6 +1667,8 @@ class FilesController extends Controller
                 ]
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->eventDispatcher->dispatchTyped(
                 new FileMovedEvent(
                     objectUuid: $sourceObject->getUuid(),
@@ -1451,8 +1701,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1492,8 +1745,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function restoreVersion(
         string $register,
@@ -1519,6 +1775,7 @@ class FilesController extends Controller
 
             $this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
 
+<<<<<<< HEAD
             // Audit trail entry (best-effort -- handler swallows failures).
             $this->fileService->getAuditHandler()->logFileAction(
                 object: $object,
@@ -1527,6 +1784,8 @@ class FilesController extends Controller
                 data: ["versionId" => $versionId]
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->eventDispatcher->dispatchTyped(
                 new FileVersionRestoredEvent(
                     objectUuid: $object->getUuid(),
@@ -1537,11 +1796,15 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
         } catch (Exception $e) {
+<<<<<<< HEAD
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'not found') === true) {
                 $statusCode = 404;
             }
 
+=======
+            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end restoreVersion()
@@ -1558,8 +1821,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1575,6 +1841,7 @@ class FilesController extends Controller
 
             $result = $this->fileService->getLockHandler()->lockFile($fileId);
 
+<<<<<<< HEAD
             // Audit trail entry (best-effort -- handler swallows failures).
             $this->fileService->getAuditHandler()->logFileAction(
                 object: $object,
@@ -1583,6 +1850,8 @@ class FilesController extends Controller
                 data: $result
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->eventDispatcher->dispatchTyped(
                 new FileLockedEvent(
                     objectUuid: $object->getUuid(),
@@ -1593,11 +1862,15 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
+<<<<<<< HEAD
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'locked') === true) {
                 $statusCode = 423;
             }
 
+=======
+            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end lock()
@@ -1614,8 +1887,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1634,6 +1910,7 @@ class FilesController extends Controller
 
             $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
 
+<<<<<<< HEAD
             // Audit trail entry: distinguish force-unlock from regular unlock.
             $unlockAction = 'file.unlocked';
             if ($force === true) {
@@ -1647,6 +1924,8 @@ class FilesController extends Controller
                 data: ["force" => $force]
             );
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->eventDispatcher->dispatchTyped(
                 new FileUnlockedEvent(
                     objectUuid: $object->getUuid(),
@@ -1678,8 +1957,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function batch(string $register, string $schema, string $id): JSONResponse
     {
@@ -1706,10 +1988,14 @@ class FilesController extends Controller
             );
 
             // Return 207 if there were partial failures.
+<<<<<<< HEAD
             $statusCode = 200;
             if ($result["summary"]["failed"] > 0) {
                 $statusCode = 207;
             }
+=======
+            $statusCode = $result["summary"]["failed"] > 0 ? 207 : 200;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (Exception $e) {
@@ -1730,6 +2016,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
      */
@@ -1756,6 +2043,15 @@ class FilesController extends Controller
                 }
             }
 
+=======
+     */
+    public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1799,8 +2095,11 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1845,8 +2144,11 @@ class FilesController extends Controller
      * @return TemplateResponse
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function page(): TemplateResponse
     {

@@ -2262,6 +2262,7 @@ class SettingsControllerTest extends TestCase
             {
                 return $this->rows;
             }
+<<<<<<< HEAD
 
             /**
              * Fetch the next row as an associative array (Doctrine DBAL).
@@ -2325,6 +2326,8 @@ class SettingsControllerTest extends TestCase
             {
                 return new \ArrayIterator($this->rows);
             }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         };
     }
 

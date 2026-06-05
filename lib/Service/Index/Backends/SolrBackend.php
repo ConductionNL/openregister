@@ -6,9 +6,12 @@
  * Solr backend implementation for OpenRegister search operations.
  * Coordinates specialized Solr service classes to provide SearchBackendInterface.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -152,8 +155,11 @@ class SolrBackend implements SearchBackendInterface
      *     collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude facade — checks isConfigured and active collection presence
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testConnection(bool $inclCollTests=true): array
     {
@@ -187,8 +193,11 @@ class SolrBackend implements SearchBackendInterface
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::indexObject
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -209,8 +218,11 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::bulkIndexObjects
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -229,8 +241,11 @@ class SolrBackend implements SearchBackendInterface
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::deleteObject
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -252,8 +267,11 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::deleteByQuery
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -275,8 +293,11 @@ class SolrBackend implements SearchBackendInterface
      * @return array Search results with pagination info.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrQueryExecutor::searchPaginated
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -306,8 +327,11 @@ class SolrBackend implements SearchBackendInterface
      * Commit changes.
      *
      * @return bool True if successful
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::commit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function commit(): bool
     {
@@ -318,8 +342,11 @@ class SolrBackend implements SearchBackendInterface
      * Optimize the index.
      *
      * @return bool True if successful
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::optimize
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function optimize(): bool
     {
@@ -334,8 +361,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|string)[] Results
      *
      * @psalm-return array{success: bool, message: string, collection?: string}
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::clearIndex
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -360,8 +390,11 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: true, message: 'Simplified warmup - collection exists', collection_exists: bool}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
      *
      * @spec exclude simplified stub — returns collection-exists flag; full warmup deferred
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function warmupIndex(
         array $schemas=[],
@@ -406,8 +439,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|int|mixed|null|string)[] Statistics
      *
      * @psalm-return array{available: bool, collection: null|string, error?: string, documents?: 0|mixed, status?: 'OK'}
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrQueryExecutor::getStats
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStats(): array
     {
@@ -421,8 +457,11 @@ class SolrBackend implements SearchBackendInterface
      * @param array  $config Configuration
      *
      * @return array Results with success status and collection info.
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrCollectionManager::createCollection
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -440,8 +479,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|string)[] Results
      *
      * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrCollectionManager::deleteCollection
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -454,8 +496,11 @@ class SolrBackend implements SearchBackendInterface
      * @param string $collectionName Collection name
      *
      * @return bool True if exists
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrCollectionManager::collectionExists
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function collectionExists(string $collectionName): bool
     {
@@ -466,8 +511,11 @@ class SolrBackend implements SearchBackendInterface
      * List all collections.
      *
      * @return array Collection names
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrCollectionManager::listCollections
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function listCollections(): array
     {
@@ -480,8 +528,11 @@ class SolrBackend implements SearchBackendInterface
      * @param array $documents Documents to index
      *
      * @return bool True if successful
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrDocumentIndexer::indexDocuments
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(array $documents): bool
     {
@@ -489,6 +540,7 @@ class SolrBackend implements SearchBackendInterface
     }//end index()
 
     /**
+<<<<<<< HEAD
      * Run an aggregation against this Solr backend.
      *
      * The translator already exists at
@@ -509,13 +561,18 @@ class SolrBackend implements SearchBackendInterface
     }//end aggregate()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Perform generic search.
      *
      * @param array $params Search parameters
      *
      * @return array Search results
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrQueryExecutor::search
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function search(array $params): array
     {
@@ -541,8 +598,11 @@ class SolrBackend implements SearchBackendInterface
      * @param array  $fieldType  Field type definition
      *
      * @return bool True if successful
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrSchemaManager::addFieldType
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -571,8 +631,11 @@ class SolrBackend implements SearchBackendInterface
      * @param bool  $force       Force update
      *
      * @return string Action taken
+<<<<<<< HEAD
      *
      * @spec exclude facade delegation to SolrSchemaManager::addOrUpdateField
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
@@ -595,8 +658,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, message: 'Index cleared (simplified reindex)', indexed: 0}
+<<<<<<< HEAD
      *
      * @spec exclude simplified stub — clears index only; full reindex deferred to IndexService
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -655,8 +721,11 @@ class SolrBackend implements SearchBackendInterface
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results.
+<<<<<<< HEAD
      *
      * @spec exclude stub — returns empty result shape; file indexing handled by FileHandler (REQ-8)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
@@ -680,8 +749,11 @@ class SolrBackend implements SearchBackendInterface
      * @param bool  $dryRun           Whether to preview changes only.
      *
      * @return array Results of the fix operation.
+<<<<<<< HEAD
      *
      * @spec exclude stub — returns empty array; mismatch fixing handled by SchemaHandler (REQ-7)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {

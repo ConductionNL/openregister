@@ -5,10 +5,17 @@ status: implemented
 # Retention Management
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend MDTO retention lifecycle — covered by PHPUnit
 Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.
 ## Requirements
+=======
+Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.
+
+## Requirements
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ### Requirement: Objects MUST carry MDTO-compliant archival metadata in the retention field
 Each object MUST carry archival metadata fields conforming to the MDTO standard within the existing `ObjectEntity.retention` JSON field. These fields enable retention lifecycle management per the Archiefwet 1995.
 
@@ -278,6 +285,7 @@ When an object is destroyed via an approved destruction list, the system MUST ev
 - **WHEN** the DestructionExecutionJob processes the parent
 - **THEN** destruction of the parent MUST be halted
 - **AND** the archivist MUST be notified about the blocked destruction
+<<<<<<< HEAD
 
 ### Requirement: Retention configuration and rebase administration API
 The system SHALL expose an admin-gated API for reading and writing retention settings and
@@ -476,3 +484,5 @@ A separate `TimedJob` (`RealtimeEventRetentionJob`, 24-hour interval) MUST bound
 - **WHEN** `getRetentionSettingsOnly()` decodes the blob
 - **THEN** both flags MUST be returned as PHP boolean `true` (via `convertToBoolean()`), not as the raw string/int — so downstream callers can rely on strict `=== true` checks
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

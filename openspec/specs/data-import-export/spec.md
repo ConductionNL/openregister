@@ -22,8 +22,15 @@ This spec primarily validates and extends an already-functional import/export sy
 - **RBAC on export (fully implemented)**: `PropertyRbacHandler::canReadProperty()` controls column visibility, admin check gates `@self.*` columns.
 - **SOLR warmup (fully implemented)**: `ImportService::scheduleSmartSolrWarmup()` via `IJobList` after import.
 - **What this spec adds**: JSON/XML/ODS/JSONL format support, interactive column mapping UI, progress tracking with polling endpoint, downloadable error report CSV, import template generation, column selection for exports, streaming for 10k+ rows, scheduled/recurring imports, i18n for headers, and import rollback on critical failure.
+<<<<<<< HEAD
 ## Requirements
 ### Requirement: The system MUST support import from CSV, Excel, JSON, and XML formats @e2e exclude REST API import — covered by Newman
+=======
+
+## Requirements
+
+### Requirement: The system MUST support import from CSV, Excel, JSON, and XML formats
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `ImportService` SHALL detect the file type from the extension and delegate to the appropriate reader. CSV import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Csv`, Excel import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Xlsx`, JSON import SHALL parse the file as a JSON array of objects, and XML import SHALL parse each child element of the root as an object record.
 
@@ -62,7 +69,11 @@ Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `Impor
 - **THEN** the system MUST return HTTP 400 with message "Unsupported file type: pdf"
 - **AND** no objects SHALL be created
 
+<<<<<<< HEAD
 ### Requirement: The system MUST support bulk import via API @e2e exclude REST API bulk import — covered by Newman
+=======
+### Requirement: The system MUST support bulk import via API
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 The bulk import API MUST accept an array of objects in a single request body for programmatic import without file upload. This endpoint SHALL leverage `SaveObjects` and `ChunkProcessingHandler` for high-performance batch processing with configurable chunk sizes.
 
@@ -87,7 +98,11 @@ The bulk import API MUST accept an array of objects in a single request body for
 - **AND** processing time MUST be measurably lower than with events enabled
 - **AND** a SOLR warmup job SHALL be scheduled via `IJobList` after import completes
 
+<<<<<<< HEAD
 ### Requirement: Import MUST validate data against schema definitions before insertion @e2e exclude backend validation pipeline — covered by PHPUnit
+=======
+### Requirement: Import MUST validate data against schema definitions before insertion
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Each row or object MUST be validated against the target schema's property definitions, including required fields, type constraints, enum values, format validators, and custom validation rules. Validation SHALL use the same `ValidateObject` infrastructure as single-object saves.
 
@@ -113,7 +128,11 @@ Each row or object MUST be validated against the target schema's property defini
 - **THEN** the system SHALL verify that a `medewerkers` object with that UUID exists
 - **AND** if the referenced object does not exist, the row MUST be reported as an error with message "Referenced object not found: 550e8400-e29b-41d4-a716-446655440000"
 
+<<<<<<< HEAD
 ### Requirement: Import MUST provide detailed error reporting with downloadable error files @e2e exclude REST API error reporting — covered by Newman
+=======
+### Requirement: Import MUST provide detailed error reporting with downloadable error files
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 When an import completes with errors, the system MUST provide a detailed error report. The error report MUST be available as a downloadable CSV file containing the original row data plus error descriptions.
 
@@ -136,7 +155,11 @@ When an import completes with errors, the system MUST provide a detailed error r
 - **THEN** the `errors` array MUST be empty
 - **AND** the response MUST NOT include an `errorReportUrl`
 
+<<<<<<< HEAD
 ### Requirement: Import MUST support duplicate detection and upsert (idempotent import) @e2e exclude backend deduplication logic — covered by PHPUnit
+=======
+### Requirement: Import MUST support duplicate detection and upsert (idempotent import)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 The system MUST detect existing objects based on configurable matching fields (UUID, external ID, or unique schema properties) and offer upsert behavior: update existing objects and create new ones. This makes imports idempotent -- running the same import twice SHALL NOT create duplicate records.
 
@@ -173,18 +196,24 @@ The system MUST detect existing objects based on configurable matching fields (U
 For imports exceeding 100 rows, the system MUST provide progress tracking. The UI MUST display a progress indicator showing the current position and percentage. The import MUST run asynchronously without blocking the HTTP request.
 
 #### Scenario: Progress tracking for large CSV import
+<<<<<<< HEAD
 
 @e2e exclude REST API polling endpoint — covered by Newman
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - **GIVEN** a CSV file with 5000 rows
 - **WHEN** the import starts
 - **THEN** the API response MUST include an `importJobId` for polling progress
 - **AND** polling `GET /api/objects/{register}/import/{jobId}/status` MUST return: `{"status": "processing", "processed": 1500, "total": 5000, "percentage": 30, "errors": 2}`
 
 #### Scenario: Import completion notification
+<<<<<<< HEAD
 
 @e2e exclude backend notification/job dispatch — covered by PHPUnit
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - **GIVEN** an asynchronous import of 10,000 rows completes
 - **WHEN** the last chunk is processed
 - **THEN** the system MUST send a Nextcloud notification via `INotifier` to the importing user
@@ -198,7 +227,11 @@ For imports exceeding 100 rows, the system MUST provide progress tracking. The U
 - **AND** the progress MUST update every 2 seconds via polling
 - **AND** the user MUST be able to navigate away without cancelling the import
 
+<<<<<<< HEAD
 ### Requirement: The system MUST support structured export to CSV, Excel (XLSX), JSON, XML, and ODS formats @e2e exclude REST API export — covered by Newman
+=======
+### Requirement: The system MUST support structured export to CSV, Excel (XLSX), JSON, XML, and ODS formats
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Export MUST generate files in the requested format reflecting the current view state (filters, sort order). The `ExportService` SHALL handle CSV and Excel via `PhpSpreadsheet`, JSON via native `json_encode`, XML via `DOMDocument`, and ODS via `PhpSpreadsheet\Writer\Ods`.
 
@@ -238,7 +271,11 @@ Export MUST generate files in the requested format reflecting the current view s
 - **AND** each sheet title MUST be the schema slug
 - **AND** CSV format MUST be rejected with "Cannot export multiple schemas to CSV format" (per existing implementation)
 
+<<<<<<< HEAD
 ### Requirement: Export MUST support filtering and column selection @e2e exclude REST API export filtering — covered by Newman
+=======
+### Requirement: Export MUST support filtering and column selection
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Export operations MUST respect the same filters, sort orders, and search queries available in the list view. Users MUST be able to select which columns to include in the export.
 
@@ -261,7 +298,11 @@ Export operations MUST respect the same filters, sort orders, and search queries
 - **THEN** only the specified columns (plus the mandatory `id` column) SHALL appear in the export
 - **AND** companion `_propertyName` columns for relation properties among the selected columns SHALL be included
 
+<<<<<<< HEAD
 ### Requirement: Export MUST resolve relations to human-readable names @e2e exclude backend relation resolver — covered by PHPUnit
+=======
+### Requirement: Export MUST resolve relations to human-readable names
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 When exporting objects with relation properties (UUID references to other objects), the export MUST include companion columns with resolved human-readable names. The resolution SHALL use the two-pass bulk approach in `ExportService::resolveUuidNameMap()` for performance.
 
@@ -285,7 +326,11 @@ When exporting objects with relation properties (UUID references to other object
 - **THEN** the pre-seeding step SHALL populate the name map from already-loaded objects (avoiding DB lookups for self-references)
 - **AND** only UUIDs not in the pre-seeded map SHALL be resolved via `CacheHandler::getMultipleObjectNames()`
 
+<<<<<<< HEAD
 ### Requirement: Export MUST support streaming for large datasets @e2e exclude backend streaming export — covered by PHPUnit
+=======
+### Requirement: Export MUST support streaming for large datasets
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 For datasets exceeding 10,000 objects, the export MUST use streaming output to avoid memory exhaustion. The system SHALL NOT build the complete file in memory before sending the response.
 
@@ -309,7 +354,11 @@ For datasets exceeding 10,000 objects, the export MUST use streaming output to a
 - **AND** each line MUST be a complete, parseable JSON object
 - **AND** the Content-Type MUST be `application/x-ndjson`
 
+<<<<<<< HEAD
 ### Requirement: Import MUST support field mapping and value transformation @e2e exclude backend field mapping — covered by PHPUnit
+=======
+### Requirement: Import MUST support field mapping and value transformation
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Users MUST be able to map source file columns to target schema properties and define value transformations. This SHALL support renaming columns, setting default values for unmapped properties, and applying simple value conversions.
 
@@ -339,7 +388,11 @@ Users MUST be able to map source file columns to target schema properties and de
 - **THEN** the `@self.*` columns SHALL be used to set object metadata (owner, organisation, created, etc.)
 - **AND** for non-admin users, `@self.*` columns MUST be silently ignored
 
+<<<<<<< HEAD
 ### Requirement: Import MUST support rollback on critical failure @e2e exclude backend import rollback — covered by PHPUnit
+=======
+### Requirement: Import MUST support rollback on critical failure
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 When a critical (non-validation) error occurs during import -- such as database connection loss, disk full, or schema deletion -- the system MUST roll back all objects created in the current import batch to maintain data consistency.
 
@@ -364,7 +417,11 @@ When a critical (non-validation) error occurs during import -- such as database 
 - **THEN** the system SHALL reduce the chunk size (down to `ImportService::MINIMAL_CHUNK_SIZE` of 2)
 - **AND** the import MUST continue with reduced chunk size rather than crashing
 
+<<<<<<< HEAD
 ### Requirement: Import templates MUST be downloadable per schema @e2e exclude REST API template endpoint — covered by Newman
+=======
+### Requirement: Import templates MUST be downloadable per schema
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Users MUST be able to download a template file pre-configured for a specific schema, containing headers matching schema properties, example data, and documentation of required fields and valid values.
 
@@ -387,7 +444,11 @@ Users MUST be able to download a template file pre-configured for a specific sch
 - **THEN** the `interne_notitie` column MUST still be included in the template (it is importable even if hidden on collection views)
 - **AND** properties with `visible: false` MUST be excluded from the template
 
+<<<<<<< HEAD
 ### Requirement: Import and export MUST respect RBAC permissions @e2e exclude backend RBAC enforcement — covered by PHPUnit
+=======
+### Requirement: Import and export MUST respect RBAC permissions
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Users MUST only be able to import into and export from registers and schemas they have appropriate permissions for. Property-level RBAC SHALL control which columns appear in exports and which columns are accepted during import. The existing `PropertyRbacHandler` and `MagicRbacHandler` SHALL be the single source of truth.
 
@@ -415,7 +476,11 @@ Users MUST only be able to import into and export from registers and schemas the
 - **THEN** `@self.*` metadata columns (created, updated, deleted, locked, owner, organisation, etc.) MUST be included (per `ExportService::getHeaders()` admin check)
 - **AND** non-admin users MUST NOT see these columns
 
+<<<<<<< HEAD
 ### Requirement: The system MUST support i18n for export headers and templates @e2e exclude backend i18n for exports — covered by PHPUnit
+=======
+### Requirement: The system MUST support i18n for export headers and templates
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Export header labels and import template documentation MUST support internationalization. At minimum, Dutch (nl) and English (en) MUST be supported.
 
@@ -437,7 +502,11 @@ Export header labels and import template documentation MUST support internationa
 - **WHEN** the export generates the spreadsheet
 - **THEN** the template documentation MUST use English labels: "Field name", "Type", "Required", "Description", "Allowed values"
 
+<<<<<<< HEAD
 ### Requirement: Configuration import/export MUST support full register portability @e2e exclude backend configuration import/export — covered by PHPUnit
+=======
+### Requirement: Configuration import/export MUST support full register portability
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 The `Configuration/ExportHandler` and `Configuration/ImportHandler` SHALL support exporting and importing complete register configurations (schemas, objects, mappings, workflows) as OpenAPI 3.0.0 + `x-openregister` extension files. This enables register portability between OpenRegister instances.
 
@@ -467,7 +536,11 @@ The `Configuration/ExportHandler` and `Configuration/ImportHandler` SHALL suppor
 - **THEN** each mapping SHALL appear in `components.mappings` keyed by its slug
 - **AND** instance-specific properties (id, uuid, organisation, created, updated) MUST be removed
 
+<<<<<<< HEAD
 ### Requirement: The system MUST support scheduled and automated imports @e2e exclude backend scheduled import service — covered by PHPUnit
+=======
+### Requirement: The system MUST support scheduled and automated imports
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Administrators MUST be able to configure recurring imports from files stored in Nextcloud Files or external URLs. Scheduled imports SHALL use Nextcloud's `QueuedJob` infrastructure.
 
@@ -490,6 +563,7 @@ Administrators MUST be able to configure recurring imports from files stored in 
 - **THEN** the summary MUST show all objects as `unchanged`
 - **AND** no database writes SHALL occur for unchanged objects (deduplication optimization)
 
+<<<<<<< HEAD
 ### Requirement: Configuration imports MUST be tracked in a per-app Configuration entity for idempotent re-import @e2e exclude backend configuration tracking — covered by PHPUnit
 
 `ImportHandler::createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration` MUST find-or-create a single `Configuration` entity per `$appId` (looked up via `ConfigurationMapper::findByApp($appId)`, taking the first match) so repeated imports of the same app reconcile into one tracking record rather than accumulating duplicates.
@@ -719,6 +793,8 @@ last-imported version per app in appconfig.
 - **THEN** the result MUST report `hasUpdate: false`
 - **AND** the message MUST indicate the remote version is unknown and prompt checking it first
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization

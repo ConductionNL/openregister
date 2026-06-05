@@ -5,9 +5,12 @@
  *
  * Value object representing the result of a SIP transport operation.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -70,10 +73,13 @@ class TransportResult
      * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
      * @param string|null                                                                      $errorMessage      Error message.
      * @param string|null                                                                      $transferReference Transfer reference.
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
      * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         bool $success=false,
@@ -92,7 +98,11 @@ class TransportResult
      *
      * @return bool True if successful.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isSuccess(): bool
     {
@@ -104,7 +114,11 @@ class TransportResult
      *
      * @return bool True if partially successful.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function isPartialSuccess(): bool
     {
@@ -117,10 +131,16 @@ class TransportResult
         foreach ($this->objectResults as $result) {
             if ($result['accepted'] === true) {
                 $accepted++;
+<<<<<<< HEAD
                 continue;
             }
 
             $rejected++;
+=======
+            } else {
+                $rejected++;
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         return ($accepted > 0 && $rejected > 0);
@@ -131,7 +151,11 @@ class TransportResult
      *
      * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getObjectResults(): array
     {
@@ -143,7 +167,11 @@ class TransportResult
      *
      * @return string|null The error message.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getErrorMessage(): ?string
     {
@@ -154,8 +182,11 @@ class TransportResult
      * Get the transfer reference.
      *
      * @return string|null The e-Depot transfer reference.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getTransferReference(): ?string
     {
@@ -167,7 +198,11 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of accepted objects.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getAcceptedUuids(): array
     {
@@ -186,7 +221,11 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of rejected objects.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRejectedUuids(): array
     {
@@ -205,7 +244,11 @@ class TransportResult
      *
      * @return array<string,mixed> Serialized result.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function toArray(): array
     {

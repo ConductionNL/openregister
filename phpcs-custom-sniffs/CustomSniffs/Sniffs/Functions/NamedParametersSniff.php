@@ -247,7 +247,11 @@ class NamedParametersSniff implements Sniff
 
 
     /**
+<<<<<<< HEAD
      * Get the app namespace prefix (e.g., "OCA\LaunchPad") from the file's namespace declaration.
+=======
+     * Get the app namespace prefix (e.g., "OCA\MyDash") from the file's namespace declaration.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @param File $phpcsFile The file being scanned.
      *

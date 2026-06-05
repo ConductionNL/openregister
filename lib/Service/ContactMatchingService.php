@@ -6,6 +6,7 @@
  * Shared service for matching contact metadata (email, name, organization)
  * to OpenRegister entities with APCu caching.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -38,8 +45,11 @@ use Psr\Log\LoggerInterface;
  * and organization (tertiary, 0.5) with APCu cache (TTL 60s).
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.LongVariable)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ContactMatchingService
 {
@@ -187,8 +197,11 @@ class ContactMatchingService
      * @param string $email The email address to match
      *
      * @return array The match results with confidence 1.0
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function matchByEmail(string $email): array
     {
@@ -196,6 +209,7 @@ class ContactMatchingService
             return [];
         }
 
+<<<<<<< HEAD
         // Fast path: skip if no schema declares linkedTypes:["contact"].
         // Without this, the ContactsMenuProvider's call to matchByEmail on
         // every contacts-menu render does a full-text search across every
@@ -205,6 +219,8 @@ class ContactMatchingService
             return [];
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $email    = strtolower(trim($email));
         $cacheKey = 'or_contact_match_email_'.hash('sha256', $email);
 
@@ -251,8 +267,11 @@ class ContactMatchingService
      * @param string|null $name The display name to match
      *
      * @return array The match results
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function matchByName(?string $name): array
     {
@@ -260,10 +279,13 @@ class ContactMatchingService
             return [];
         }
 
+<<<<<<< HEAD
         if ($this->hasContactLinkedSchemas() === false) {
             return [];
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $name     = trim($name);
         $cacheKey = 'or_contact_match_name_'.hash('sha256', strtolower($name));
 
@@ -315,8 +337,11 @@ class ContactMatchingService
      * @param string|null $organization The organization name to match
      *
      * @return array The match results with confidence 0.5
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function matchByOrganization(?string $organization): array
     {
@@ -324,10 +349,13 @@ class ContactMatchingService
             return [];
         }
 
+<<<<<<< HEAD
         if ($this->hasContactLinkedSchemas() === false) {
             return [];
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $organization = trim($organization);
         $cacheKey     = 'or_contact_match_org_'.hash('sha256', strtolower($organization));
 
@@ -376,11 +404,14 @@ class ContactMatchingService
      * @param string|null $organization The organization name (optional)
      *
      * @return array Combined, deduplicated match results sorted by confidence
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function matchContact(
         string $email,
@@ -452,8 +483,11 @@ class ContactMatchingService
      * @param array $matches The match results from matchContact()
      *
      * @return array Associative array of schema title => count
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRelatedObjectCounts(array $matches): array
     {
@@ -476,8 +510,11 @@ class ContactMatchingService
      * @param string $email The email address to invalidate
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function invalidateCache(string $email): void
     {
@@ -500,8 +537,11 @@ class ContactMatchingService
      * @param array $object The object data array
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function invalidateCacheForObject(array $object): void
     {
@@ -530,6 +570,7 @@ class ContactMatchingService
     }//end invalidateCacheForObject()
 
     /**
+<<<<<<< HEAD
      * Per-request cache for the contact-linked-schemas check.
      *
      * @var boolean|null
@@ -580,6 +621,18 @@ class ContactMatchingService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+=======
+     * Search objects and filter by property patterns.
+     *
+     * @param string     $searchTerm       The term to search for
+     * @param array      $propertyPatterns Property name patterns to match
+     * @param string     $matchType        The match type label
+     * @param float      $confidence       The confidence score
+     * @param bool       $exactMatch       Whether to require exact value match
+     * @param array|null $schemaFilter     Optional schema name patterns to restrict results
+     *
+     * @return array The filtered match results
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function searchAndFilter(
         string $searchTerm,
@@ -682,11 +735,15 @@ class ContactMatchingService
                 continue;
             }
 
+<<<<<<< HEAD
             $matchedParts = $this->countMatchingNameParts(
                 result: $result,
                 nameParts: $nameParts,
                 propertyPatterns: $propertyPatterns
             );
+=======
+            $matchedParts = $this->countMatchingNameParts(result: $result, nameParts: $nameParts, propertyPatterns: $propertyPatterns);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $totalParts   = count($nameParts);
 
             if ($matchedParts === 0) {
@@ -694,6 +751,7 @@ class ContactMatchingService
             }
 
             // Full match = 0.7, partial = 0.4.
+<<<<<<< HEAD
             $confidence = 0.4;
             if ($matchedParts === $totalParts) {
                 $confidence = 0.7;
@@ -701,6 +759,12 @@ class ContactMatchingService
 
             $matches[] = $this->formatMatch(result: $result, matchType: 'name', confidence: $confidence);
         }//end foreach
+=======
+            $confidence = ($matchedParts === $totalParts) ? 0.7 : 0.4;
+
+            $matches[] = $this->formatMatch(result: $result, matchType: 'name', confidence: $confidence);
+        }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         return $matches;
     }//end searchAndFilterByName()
@@ -714,8 +778,11 @@ class ContactMatchingService
      * @param bool   $exactMatch       Whether to require exact match
      *
      * @return bool True if a matching property is found
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function hasMatchingProperty(
         array $result,
@@ -734,6 +801,7 @@ class ContactMatchingService
                     continue;
                 }
 
+<<<<<<< HEAD
                 if ($exactMatch === true && strtolower($value) === strtolower($searchTerm)) {
                     return true;
                 }
@@ -742,6 +810,18 @@ class ContactMatchingService
                     && (stripos($value, $searchTerm) !== false || stripos($searchTerm, $value) !== false)
                 ) {
                     return true;
+=======
+                if ($exactMatch === true) {
+                    if (strtolower($value) === strtolower($searchTerm)) {
+                        return true;
+                    }
+                } else {
+                    if (stripos($value, $searchTerm) !== false
+                        || stripos($searchTerm, $value) !== false
+                    ) {
+                        return true;
+                    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
             }
         }//end foreach

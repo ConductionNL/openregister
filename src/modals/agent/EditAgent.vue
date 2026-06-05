@@ -692,9 +692,12 @@ export default {
 		updateUser(selectedUser) {
 			this.agentItem.user = selectedUser ? selectedUser.id : ''
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI event handler — toggles a tool when its card is clicked.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleCardClick(toolId, _event) {
 			// Card click handler - toggle the tool
 			const currentState = this.isToolChecked(toolId)

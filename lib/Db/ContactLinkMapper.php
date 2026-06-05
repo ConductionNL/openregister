@@ -3,9 +3,12 @@
 /**
  * Mapper for contact link entities.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -113,6 +116,7 @@ class ContactLinkMapper extends QBMapper
 
         return $qb->executeStatement();
     }//end deleteByObjectUuid()
+<<<<<<< HEAD
 
     /**
      * Find the single link for an (objectUuid, contactUid) pair.
@@ -143,4 +147,6 @@ class ContactLinkMapper extends QBMapper
             return null;
         }
     }//end findByObjectAndContact()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

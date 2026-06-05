@@ -51,7 +51,10 @@ class TextExtractionServiceTest extends TestCase
     private IRootFolder&MockObject $rootFolder;
     private IDBConnection&MockObject $db;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
     private \OCA\OpenRegister\Service\TextExtraction\EmlParser&MockObject $emlParser;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     protected function setUp(): void
     {
@@ -68,7 +71,10 @@ class TextExtractionServiceTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->riskLevelService = $this->createMock(RiskLevelService::class);
+<<<<<<< HEAD
         $this->emlParser = $this->createMock(\OCA\OpenRegister\Service\TextExtraction\EmlParser::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->service = new TextExtractionService(
             $this->fileMapper,
@@ -83,8 +89,12 @@ class TextExtractionServiceTest extends TestCase
             $this->gdprEntityMapper,
             $this->entityRelationMapper,
             $this->settingsService,
+<<<<<<< HEAD
             $this->riskLevelService,
             $this->emlParser
+=======
+            $this->riskLevelService
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
@@ -3724,6 +3734,7 @@ class TextExtractionServiceTest extends TestCase
 
         $this->assertTrue(true); // no exception
     }
+<<<<<<< HEAD
 
     // ────────────────────────────────────────────────────────
     // EML delegation — parseEmlStructured + extractEml
@@ -3788,4 +3799,6 @@ class TextExtractionServiceTest extends TestCase
 
         $this->assertNull($this->invokePrivate('extractEml', [$file]));
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

@@ -6,9 +6,12 @@
  * Controller for managing register operations in the OpenRegister app.
  * Provides endpoints for CRUD operations, import/export, GitHub publishing,
  * and OpenAPI specification generation.
+<<<<<<< HEAD
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -79,6 +82,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @suppressWarnings(PHPMD.ExcessiveClassLength)     NC REST controller must expose all CRUD + subresource
  *   endpoints (registers, schemas, objects, statistics) in one class per NC AppFramework routing;
  *   splitting into multiple controllers would require additional routing registration.
@@ -92,6 +96,13 @@ use Symfony\Component\Uid\Uuid;
  *   that is a single atomic write; extracting sub-steps would create misleading partial-update helpers.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+=======
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class RegistersController extends Controller
 {
@@ -183,7 +194,10 @@ class RegistersController extends Controller
      * @param OasService           $oasService           OAS service for OpenAPI generation
      * @param ContainerInterface   $container            Container for lazy loading services
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
+<<<<<<< HEAD
      * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return void
      *
@@ -207,8 +221,12 @@ class RegistersController extends Controller
         IAppManager $appManager,
         OasService $oasService,
         private readonly ContainerInterface $container,
+<<<<<<< HEAD
         private readonly IGroupManager $groupManager,
         private readonly RegisterCacheHandler $registerCacheHandler
+=======
+        private readonly IGroupManager $groupManager
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         $this->logger->debug(
             message: '[RegistersController] Constructor started.',
@@ -247,14 +265,20 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @PublicPage
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @return JSONResponse The JSON response containing the list of registers
      *
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(): JSONResponse
     {
@@ -291,7 +315,11 @@ class RegistersController extends Controller
         // Extract filters.
         $filters = $params['filters'] ?? [];
 
+<<<<<<< HEAD
         $registers = $this->registerService->findAll(
+=======
+        $registers    = $this->registerService->findAll(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             limit: $limit,
             offset: $offset,
             filters: $filters,
@@ -299,6 +327,7 @@ class RegistersController extends Controller
             searchParams: [],
             _multitenancy: false
         );
+<<<<<<< HEAD
 
         // Read-visibility guard: this endpoint is @PublicPage so it stays
         // reachable when OpenRegister is restricted to a user group. Anonymous
@@ -317,6 +346,8 @@ class RegistersController extends Controller
             );
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
@@ -435,6 +466,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
+<<<<<<< HEAD
         $register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
 
         // Read-visibility guard (@PublicPage): an anonymous caller may only view
@@ -449,6 +481,9 @@ class RegistersController extends Controller
             return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
         }
 
+=======
+        $register    = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {
@@ -476,10 +511,15 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with created register or error
      *
      * @psalm-return JSONResponse<201, Register,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<403|409|500, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(): JSONResponse
     {
@@ -510,6 +550,7 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
+<<<<<<< HEAD
             $register = $this->registerService->createFromArray($data);
 
             // **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
@@ -518,6 +559,9 @@ class RegistersController extends Controller
             $this->registerCacheHandler->invalidate(registerId: $register->getId());
 
             return new JSONResponse(data: $register, statusCode: 201);
+=======
+            return new JSONResponse(data: $this->registerService->createFromArray($data), statusCode: 201);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -553,19 +597,28 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.StaticAccess)         Uses \OCA\OpenRegister\Exception\ValidationException
      *   as a static reference; no injectable factory exists in NC AppFramework for exception types.
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) The update action must validate each editable
      *   field individually (authorization, schemas, config) — extracting branches into separate
      *   methods would scatter what is a single transactional write operation.
+=======
+     * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return JSONResponse JSON response with updated register or error
      *
      * @psalm-return JSONResponse<200, Register,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<403|404|409, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function update(int $id): JSONResponse
     {
@@ -585,6 +638,7 @@ class RegistersController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+<<<<<<< HEAD
         // Authorization: modifying a register's definition requires manage
         // permission (manage-group membership, or administrator when no manage
         // rules are configured). This gates ALL updates, not just authorization
@@ -616,6 +670,33 @@ class RegistersController extends Controller
             // worker observes the new register state (e.g. an added schema in schemas[]).
             $this->registerCacheHandler->invalidate(registerId: $updatedRegister->getId());
 
+=======
+        // Check manage permission if authorization or roles configuration is being modified.
+        $oldRegisterAuth  = null;
+        $oldRegisterRoles = null;
+        if (isset($data['authorization']) === true || isset($data['configuration']['roles']) === true) {
+            try {
+                $existingRegister = $this->registerMapper->find($id);
+                $oldRegisterAuth  = $existingRegister->getAuthorization();
+                $oldConfig        = $existingRegister->getConfiguration();
+                $oldRegisterRoles = $oldConfig['roles'] ?? null;
+                $manageAllowed    = $this->checkRegisterManagePermission(register: $existingRegister);
+                if ($manageAllowed === false) {
+                    return new JSONResponse(
+                        data: ['error' => 'User does not have permission to manage authorization for this register'],
+                        statusCode: 403
+                    );
+                }
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+            }
+        }
+
+        try {
+            // Update the register with the provided data.
+            $updatedRegister = $this->registerService->updateFromArray(id: $id, data: $data);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Log authorization and role changes.
             try {
                 $auditService = $this->container->get(AuthorizationAuditService::class);
@@ -623,19 +704,33 @@ class RegistersController extends Controller
                 if (isset($data['authorization']) === true) {
                     $auditService->logRegisterAuthorizationChange(
                         $id,
+<<<<<<< HEAD
                         $updatedRegister->getTitle() ?? '',
                         $oldRegisterAuth,
                         $updatedRegister->getAuthorization()
+=======
+                        $updatedRegister['title'] ?? '',
+                        $oldRegisterAuth,
+                        $updatedRegister['authorization'] ?? null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     );
                 }
 
                 if (isset($data['configuration']['roles']) === true) {
+<<<<<<< HEAD
                     $configuration = $updatedRegister->getConfiguration();
                     $auditService->logRoleDefinitionChange(
                         $id,
                         $updatedRegister->getTitle() ?? '',
                         $oldRegisterRoles,
                         $configuration['roles'] ?? null
+=======
+                    $auditService->logRoleDefinitionChange(
+                        $id,
+                        $updatedRegister['title'] ?? '',
+                        $oldRegisterRoles,
+                        $updatedRegister['configuration']['roles'] ?? null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     );
                 }
             } catch (\Throwable $e) {
@@ -678,10 +773,15 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with patched register or error
      *
      * @psalm-return JSONResponse<200, Register,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<403|404|409, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function patch(int $id): JSONResponse
     {
@@ -705,16 +805,22 @@ class RegistersController extends Controller
      *
      * @return JSONResponse JSON response on success or error
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<200|403|404|409|500, array{error?: string, objectCount?: int},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+=======
+     * @psalm-return JSONResponse<int, array{error?: string},
+     *     array<never, never>>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(int $id): JSONResponse
     {
         $force = $this->parseForceParam();
 
         try {
+<<<<<<< HEAD
             // Find the register first (validates existence + access).
             $register = $this->registerService->find($id);
 
@@ -744,6 +850,12 @@ class RegistersController extends Controller
             // find cache for the deleted register.
             $this->registerCacheHandler->invalidate(registerId: $register->getId());
 
+=======
+            // Find the register by ID and delete it.
+            $register = $this->registerService->find($id);
+            $this->registerService->delete($register);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Return an empty response.
             return new JSONResponse(data: []);
         } catch (DoesNotExistException $e) {
@@ -755,6 +867,7 @@ class RegistersController extends Controller
         } catch (Exception $e) {
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+<<<<<<< HEAD
         }//end try
     }//end destroy()
 
@@ -832,6 +945,11 @@ class RegistersController extends Controller
         return null;
     }//end handleObjectCountGuard()
 
+=======
+        }
+    }//end destroy()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Get schemas associated with a register
      *
@@ -844,8 +962,11 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schemas or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -888,8 +1009,11 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with objects
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -992,6 +1116,7 @@ class RegistersController extends Controller
         }//end try
     }//end export()
 
+<<<<<<< HEAD
     /**
      * Download an empty import template for a schema
      *
@@ -1065,6 +1190,8 @@ class RegistersController extends Controller
         }//end try
     }//end importTemplate()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Publish register OAS specification to GitHub
      *
@@ -1081,8 +1208,11 @@ class RegistersController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -1261,8 +1391,11 @@ class RegistersController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function import(int|string $id, bool $force=false): JSONResponse
     {
@@ -1273,6 +1406,7 @@ class RegistersController extends Controller
                 return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
             }
 
+<<<<<<< HEAD
             // Authorization: importing into a register can create schemas/
             // registers/objects and calls `registerService->updateFromArray`
             // (a configurable data-model write). Gate on manage-permission for
@@ -1292,6 +1426,8 @@ class RegistersController extends Controller
                 );
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Dynamically determine import type if not provided.
             $type = $this->request->getParam('type');
             if ($type === null || $type === '') {
@@ -1457,6 +1593,7 @@ class RegistersController extends Controller
                     break;
             }//end switch
 
+<<<<<<< HEAD
             // Attach a downloadable per-row error CSV when the summary
             // surfaces row-level failures. Base64 keeps the artefact in the
             // existing JSON envelope so the frontend can offer a download
@@ -1472,11 +1609,20 @@ class RegistersController extends Controller
             }
 
             return new JSONResponse(data: $responseData);
+=======
+            return new JSONResponse(
+                data: [
+                    'message' => 'Import successful',
+                    'summary' => $summary,
+                ]
+            );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
     }//end import()
 
+<<<<<<< HEAD
     /**
      * Roll back an import by soft-deleting every object whose `create`
      * audit row carries the given `importJobId`. Implements the
@@ -1547,6 +1693,8 @@ class RegistersController extends Controller
         }
     }//end rollbackImport()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Get statistics for a specific register
      *
@@ -1605,8 +1753,11 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function stats(int $id): JSONResponse
     {
@@ -1668,6 +1819,7 @@ class RegistersController extends Controller
         return $default;
     }//end parseBooleanParam()
 
+<<<<<<< HEAD
     /**
      * Whether the current request has no resolved Nextcloud user (anonymous).
      *
@@ -1683,33 +1835,192 @@ class RegistersController extends Controller
 
     }//end isAnonymousRequest()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Whether an entity is currently published.
      *
+<<<<<<< HEAD
      * A resource is published when its `published` timestamp is set and it has
      * not since been depublished. Both values come from persisted entity state.
+=======
+     * This method publishes a register by setting its publication date
+     * to now or a specified date.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @param \DateTime|null $published   The published timestamp, or null.
      * @param \DateTime|null $depublished The depublished timestamp, or null.
      *
+<<<<<<< HEAD
      * @return bool True if the entity is published and not depublished.
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The JSON response containing the published register
+     *
+     * @psalm-return JSONResponse<
+     *     200|400|404,
+     *     array{
+     *         error?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         slug?: null|string,
+     *         title?: null|string,
+     *         version?: null|string,
+     *         description?: null|string,
+     *         schemas?: array<int|string>,
+     *         source?: null|string,
+     *         tablePrefix?: null|string,
+     *         folder?: null|string,
+     *         updated?: null|string,
+     *         created?: null|string,
+     *         owner?: null|string,
+     *         application?: null|string,
+     *         organisation?: null|string,
+     *         authorization?: array|null,
+     *         groups?: array<string, list<string>>,
+     *         configuration?: array|null,
+     *         quota?: array{
+     *             storage: null,
+     *             bandwidth: null,
+     *             requests: null,
+     *             users: null,
+     *             groups: null
+     *         },
+     *         usage?: array{
+     *             storage: 0,
+     *             bandwidth: 0,
+     *             requests: 0,
+     *             users: 0,
+     *             groups: int<0, max>
+     *         },
+     *         deleted?: null|string,
+     *         published?: null|string,
+     *         depublished?: null|string
+     *     },
+     *     array<never, never>
+     * >
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
     {
+<<<<<<< HEAD
         return $published !== null && $depublished === null;
 
     }//end isPublishedEntity()
 
+=======
+        try {
+            // Get the publication date from request if provided, otherwise use now.
+            $date = new DateTime();
+            if ($this->request->getParam('date') !== null) {
+                $date = new DateTime($this->request->getParam('date'));
+            }
+
+            // Get the register.
+            $register = $this->registerMapper->find($id);
+
+            // Set published date and clear depublished date if set.
+            $register->setPublished($date);
+            $register->setDepublished(null);
+
+            // Update the register.
+            $updatedRegister = $this->registerMapper->update($register);
+
+            $this->logger->info(
+                message: '[RegistersController] Register published',
+                context: [
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
+                    'register_id'    => $id,
+                    'published_date' => $date->format('Y-m-d H:i:s'),
+                ]
+            );
+
+            return new JSONResponse($updatedRegister->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[RegistersController] Failed to publish register',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'register_id' => $id,
+                    'error'       => $e->getMessage(),
+                ]
+            );
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }//end try
+    }//end publish()
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * Check whether the currently authenticated user is a Nextcloud administrator.
      *
      * Used to gate register creation, where there is no existing entity whose
      * manage-authorization block could be consulted.
      *
+<<<<<<< HEAD
      * @return bool True if a user is signed in and belongs to the admin group.
+=======
+     * @param int $id The ID of the register to depublish
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse The JSON response containing the depublished register
+     *
+     * @psalm-return JSONResponse<
+     *     200|400|404,
+     *     array{
+     *         error?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         slug?: null|string,
+     *         title?: null|string,
+     *         version?: null|string,
+     *         description?: null|string,
+     *         schemas?: array<int|string>,
+     *         source?: null|string,
+     *         tablePrefix?: null|string,
+     *         folder?: null|string,
+     *         updated?: null|string,
+     *         created?: null|string,
+     *         owner?: null|string,
+     *         application?: null|string,
+     *         organisation?: null|string,
+     *         authorization?: array|null,
+     *         groups?: array<string, list<string>>,
+     *         configuration?: array|null,
+     *         quota?: array{
+     *             storage: null,
+     *             bandwidth: null,
+     *             requests: null,
+     *             users: null,
+     *             groups: null
+     *         },
+     *         usage?: array{
+     *             storage: 0,
+     *             bandwidth: 0,
+     *             requests: 0,
+     *             users: 0,
+     *             groups: int<0, max>
+     *         },
+     *         deleted?: null|string,
+     *         published?: null|string,
+     *         depublished?: null|string
+     *     },
+     *     array<never, never>
+     * >
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function isCurrentUserAdmin(): bool
     {
+<<<<<<< HEAD
         $user = $this->userSession->getUser();
         if ($user === null) {
             return false;
@@ -1786,6 +2097,90 @@ class RegistersController extends Controller
             return false;
         }
 
+=======
+        try {
+            // Get the depublication date from request if provided, otherwise use now.
+            $date = new DateTime();
+            if ($this->request->getParam('date') !== null) {
+                $date = new DateTime($this->request->getParam('date'));
+            }
+
+            // Get the register.
+            $register = $this->registerMapper->find($id);
+
+            // Set depublished date.
+            $register->setDepublished($date);
+
+            // Update the register.
+            $updatedRegister = $this->registerMapper->update($register);
+
+            $this->logger->info(
+                message: '[RegistersController] Register depublished',
+                context: [
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
+                    'register_id'      => $id,
+                    'depublished_date' => $date->format('Y-m-d H:i:s'),
+                ]
+            );
+
+            return new JSONResponse($updatedRegister->jsonSerialize());
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Register not found'], 404);
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[RegistersController] Failed to depublish register',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'register_id' => $id,
+                    'error'       => $e->getMessage(),
+                ]
+            );
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }//end try
+    }//end depublish()
+
+    /**
+     * Check if the current user has 'manage' permission on a register.
+     *
+     * Uses the register's own authorization block to check for the 'manage' action.
+     * Admin users always pass this check.
+     *
+     * @param Register $register The register to check manage permission for.
+     *
+     * @return bool True if user has manage permission.
+     */
+    private function checkRegisterManagePermission(Register $register): bool
+    {
+        $authorization = $register->getAuthorization();
+
+        // If no authorization configured, only admins can manage (default secure).
+        // Check if manage action is defined.
+        if (empty($authorization) === true || isset($authorization['manage']) === false) {
+            // Fall back: only admin users can manage if no manage rules are defined.
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            try {
+                $groupManager = $this->container->get(\OCP\IGroupManager::class);
+                $userGroups   = $groupManager->getUserGroupIds($user);
+                return in_array('admin', $userGroups, true);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+
+        // Use PermissionHandler logic via a schema-like check.
+        // Create a minimal check using the register's authorization directly.
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $userGroups = $this->groupManager->getUserGroupIds($user);
 

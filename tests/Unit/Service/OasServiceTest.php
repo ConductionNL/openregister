@@ -2875,6 +2875,7 @@ class OasServiceTest extends TestCase
         $this->assertArrayHasKey('components', $result);
         $this->assertSame('3.1.0', $result['openapi']);
     }
+<<<<<<< HEAD
 
     // ========================================================================
     // applyRbacToOperation: per-operation `security` block emission
@@ -2979,4 +2980,6 @@ class OasServiceTest extends TestCase
         // security freshly added.
         $this->assertArrayHasKey('security', $operation);
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

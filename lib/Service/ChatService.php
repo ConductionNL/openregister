@@ -5,9 +5,12 @@
  *
  * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
  * This is a thin facade that orchestrates specialized handlers.
+<<<<<<< HEAD
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -20,8 +23,12 @@
  *
  * @link https://www.OpenRegister.nl
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service;
@@ -38,8 +45,13 @@ use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+=======
+use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 
 /**
@@ -62,12 +74,16 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)  testChat() declares ($provider, $config, $_testMessage)
  * matching the public contract expected by callers and the backup implementation; the simplified stub
  * body doesn't use all three but changing the signature would break callers.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies
  * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
  * separate concern extracted per SOLID, and removing any would lose a capability.
+=======
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ChatService
 {
@@ -189,6 +205,7 @@ class ChatService
      * @param array                   $selectedViews  View filters for multitenancy (optional).
      * @param array                   $selectedTools  Tool UUIDs to use (optional).
      * @param array                   $ragSettings    RAG configuration overrides (optional).
+<<<<<<< HEAD
      * @param array                   $context        CnAiContext snapshot the frontend sent
      *                                                (orchestrator §8). Persisted on the
      *                                                user-authored Message row when non-empty.
@@ -206,12 +223,28 @@ class ChatService
      * @psalm-return array{message: string, messageId: string, sources: list<array>,
      *     timings: array{context: string, history: string, llm: string,
      *     total: string}}
+=======
+     * @param StreamYieldChannel|null $channel        Streaming channel; null = blocking response.
+     *
+     * @return array
+     *
+     * @throws \Exception If processing fails
+     *
+     * @psalm-return array{message: string, sources: list<array>,
+     *     timings: array{context: string, history: string, llm: string, total: string},
+     *     messageId: int|null, messageUuid: string|null}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chat processing involves multiple handler coordination steps
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+=======
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-3
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function processMessage(
         int $conversationId,
@@ -220,7 +253,10 @@ class ChatService
         array $selectedViews=[],
         array $selectedTools=[],
         array $ragSettings=[],
+<<<<<<< HEAD
         array $context=[],
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ?StreamYieldChannel $channel=null
     ): array {
         $this->logger->info(
@@ -247,6 +283,7 @@ class ChatService
                 $agent = $this->agentMapper->find($conversation->getAgentId());
             }
 
+<<<<<<< HEAD
             // Capture the CnAiContext snapshot under its own name before
             // the retrieveContext() call below reuses `$context` for the
             // RAG context object. Without this rename the snapshot would
@@ -260,13 +297,24 @@ class ChatService
                 content: $userMessage,
                 sources: null,
                 context: $cnAiContext
+=======
+            // Store user message.
+            $this->historyHandler->storeMessage(
+                conversationId: $conversationId,
+                role: Message::ROLE_USER,
+                content: $userMessage
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             );
 
             // Check if conversation needs summarization.
             $this->conversationHandler->checkAndSummarize($conversation);
 
+<<<<<<< HEAD
             // Retrieve RAG context. Note: `$context` is now the RAG
             // context shape `{text, sources}`, distinct from `$cnAiContext`.
+=======
+            // Retrieve RAG context.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $contextStartTime = microtime(true);
             $context          = $this->contextHandler->retrieveContext(
                 query: $userMessage,
@@ -281,10 +329,14 @@ class ChatService
             $messageHistory   = $this->historyHandler->buildMessageHistory($conversationId);
             $historyTime      = microtime(true) - $historyStartTime;
 
+<<<<<<< HEAD
             // Generate LLM response. Forward the CnAiContext snapshot so
             // the system prompt can include "the user is currently in
             // {app}" — without it the model would default to generic
             // platform-wide phrasing and pick the wrong tool family.
+=======
+            // Generate LLM response (streaming when channel provided).
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $llmStartTime = microtime(true);
             $aiResponse   = $this->responseHandler->generateResponse(
                 userMessage: $userMessage,
@@ -292,6 +344,7 @@ class ChatService
                 messageHistory: $messageHistory,
                 agent: $agent,
                 selectedTools: $selectedTools,
+<<<<<<< HEAD
                 channel: $channel,
                 cnAiContext: $cnAiContext
             );
@@ -302,6 +355,14 @@ class ChatService
             // needs it to populate the SSE `final` event's messageId field; the widget
             // uses it as the Vue render key for the assistant bubble).
             $assistantStored = $this->historyHandler->storeMessage(
+=======
+                channel: $channel
+            );
+            $llmTime      = microtime(true) - $llmStartTime;
+
+            // Store AI response with sources.
+            $storedMessage = $this->historyHandler->storeMessage(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 conversationId: $conversationId,
                 role: Message::ROLE_ASSISTANT,
                 content: $aiResponse,
@@ -333,17 +394,28 @@ class ChatService
             $totalTime = $contextTime + $historyTime + $llmTime;
 
             return [
+<<<<<<< HEAD
                 'message'   => $aiResponse,
                 // Surface the persisted assistant message id for SSE consumers
                 // (ChatStreamController + the nc-vue widget render key).
                 'messageId' => (string) ($assistantStored->getId() ?? ''),
                 'sources'   => $context['sources'],
                 'timings'   => [
+=======
+                'message'     => $aiResponse,
+                'sources'     => $context['sources'],
+                'timings'     => [
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     'context' => round($contextTime, 2).'s',
                     'history' => round($historyTime, 3).'s',
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
+<<<<<<< HEAD
+=======
+                'messageId'   => $storedMessage->getId(),
+                'messageUuid' => $storedMessage->getUuid(),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ];
         } catch (Exception $e) {
             $this->logger->error(
@@ -384,8 +456,11 @@ class ChatService
      * @param int    $agentId   Agent ID.
      *
      * @return string Unique title
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
@@ -407,9 +482,12 @@ class ChatService
      * @param string $_testMessage Optional test message to send.
      *
      * @return array Test result with success status, message, and optional error.
+<<<<<<< HEAD
      *
      * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through
      *       ResponseGenerationHandler (chat-ai). No standalone contract.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function testChat(
         string $provider,

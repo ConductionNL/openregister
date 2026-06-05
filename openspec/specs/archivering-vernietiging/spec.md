@@ -5,8 +5,11 @@ status: draft
 # archivering-vernietiging Specification
 
 ## Purpose
+<<<<<<< HEAD
 
 @e2e exclude backend archival/MDTO — covered by PHPUnit
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 Implement archiving and destruction lifecycle management for register objects, conforming to MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie), NEN 2082 records management, and e-Depot export standards. Objects MUST support retention schedules, automated destruction workflows, and transfer to digital archival systems.
 
 **Tender demand**: 77% of analyzed government tenders require archiving and destruction capabilities.
@@ -156,6 +159,7 @@ The system MUST support generating a NEN 2082 compliance report showing which re
 - `SchemaService` — schema property definitions for archival metadata fields.
 - `ExportHandler` — foundation for e-Depot SIP package generation (needs MDTO XML extension).
 - `FileService` — retrieval of associated documents for inclusion in SIP packages.
+<<<<<<< HEAD
 ## Requirements
 ### Requirement: Archival metadata on objects via retention field
 Objects MUST store archival metadata in the existing `retention` JSON field with MDTO-conformant keys.
@@ -698,3 +702,5 @@ The system MUST support generating a compliance report showing which requirement
   - Last destruction certificate date
   - Compliance score percentage
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -24,7 +24,11 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use Doctrine\DBAL\Types\Type;
+<<<<<<< HEAD
 use OCP\DB\Types;
+=======
+use Doctrine\DBAL\Types\Types;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;

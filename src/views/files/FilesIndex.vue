@@ -281,7 +281,10 @@ export default {
 		/**
 		 * Toggle sort field and direction
 		 *
+<<<<<<< HEAD
 		 * @spec exclude list-view sort-toggle plumbing; resets offset and reloads
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} field - The field to sort by
 		 * @return {void}
 		 */
@@ -325,7 +328,10 @@ export default {
 		/**
 		 * Handle risk level filter update
 		 *
+<<<<<<< HEAD
 		 * @spec exclude list-view filter-input handler; resets offset and reloads
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string|null} level - Risk level filter
 		 * @return {void}
 		 */
@@ -502,7 +508,10 @@ export default {
 		/**
 		 * Format risk level for display
 		 *
+<<<<<<< HEAD
 		 * @spec exclude list-view risk-level formatting display helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {string} level - Risk level
 		 * @return {string} Formatted risk level
 		 */

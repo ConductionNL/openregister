@@ -6,6 +6,7 @@
  * Event dispatched during OpenRegister boot to allow consuming apps
  * to register their deep link URL patterns.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -13,6 +14,12 @@
  * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Event
+ * @package  OCA\OpenRegister\Event
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -54,8 +61,11 @@ class DeepLinkRegistrationEvent extends Event
      * Get the deep link registry service to register URL patterns.
      *
      * @return DeepLinkRegistryService The registry service
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getRegistry(): DeepLinkRegistryService
     {
@@ -73,7 +83,11 @@ class DeepLinkRegistrationEvent extends Event
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function register(
         string $appId,

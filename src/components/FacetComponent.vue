@@ -328,9 +328,15 @@
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 import { NcCheckboxRadioSwitch, NcLoadingIcon, NcButton, NcSelect, NcDateTimePickerNative } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
@@ -359,7 +365,11 @@ export default {
 		 * Get object fields that support terms faceting (excluding id)
 		 * These will be shown as dropdowns
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		termsFacetableFields() {
 			const fields = {}
@@ -375,7 +385,11 @@ export default {
 		 * Get object fields that don't support terms faceting (excluding id field)
 		 * These will be shown as checkboxes
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		nonTermsObjectFieldFacets() {
 			const fields = {}
@@ -438,7 +452,10 @@ export default {
 		/**
 		 * Get object fields that use date_range faceting from current facet results
 		 * @return {object} Date range facet entries keyed by field name
+<<<<<<< HEAD
 		 * @spec exclude computed filter of current store facets, search contract owned by search capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		dateRangeObjectFields() {
 			const fields = {}
@@ -452,7 +469,10 @@ export default {
 		/**
 		 * Get object fields that use date_histogram faceting from current facet results
 		 * @return {object} Date histogram facet entries keyed by field name
+<<<<<<< HEAD
 		 * @spec exclude computed filter of current store facets, search contract owned by search capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		dateHistogramObjectFields() {
 			const fields = {}
@@ -463,9 +483,12 @@ export default {
 			})
 			return fields
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude computed filter of store metadata facets for dropdown UI, search contract owned by search capability
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		termsMetadataFields() {
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
@@ -738,7 +761,10 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bucketValue - The bucket key/value
 		 * @return {boolean} True if selected
+<<<<<<< HEAD
 		 * @spec exclude computed read of selected date-range bucket from store filters, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		isDateRangeSelected(fieldName, bucketValue) {
 			const filterKey = `${fieldName}._dateRange`
@@ -748,7 +774,10 @@ export default {
 		 * Select a predefined date range bucket
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} bucket - The bucket with from/to/value/label
+<<<<<<< HEAD
 		 * @spec exclude store filter writer for date-range preset + list refresh, search contract owned by search capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async selectDateRangeBucket(fieldName, bucket) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -779,7 +808,10 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - 'from' or 'to'
 		 * @return {string|null} Date value
+<<<<<<< HEAD
 		 * @spec exclude computed read of object date-range bound from store filters, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		getObjectDateRangeValue(fieldName, bound) {
 			const operator = bound === 'from' ? '>=' : '<='
@@ -794,7 +826,10 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - 'from' or 'to'
 		 * @param {string} value - Date value
+<<<<<<< HEAD
 		 * @spec exclude store filter writer for object date-range + list refresh, search contract owned by search capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async updateObjectDateRange(fieldName, bound, value) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -816,7 +851,10 @@ export default {
 		 * Check if an object date field has an active custom date range
 		 * @param {string} fieldName - Name of the field
 		 * @return {boolean} True if has active date range
+<<<<<<< HEAD
 		 * @spec exclude computed read of object date-range presence from store filters, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		hasObjectDateRange(fieldName) {
 			return Boolean(
@@ -827,7 +865,10 @@ export default {
 		/**
 		 * Clear date range for an object date field
 		 * @param {string} fieldName - Name of the field
+<<<<<<< HEAD
 		 * @spec exclude store filter writer clearing object date-range + list refresh, search contract owned by search capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async clearObjectDateRange(fieldName) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -842,7 +883,10 @@ export default {
 		 * Get dropdown options for a date histogram facet
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of options with value, label, count, from, to
+<<<<<<< HEAD
 		 * @spec exclude computed option builder from store histogram buckets, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		getDateHistogramOptions(fieldName) {
 			const facet = this.objectStore.currentFacets?.[fieldName]
@@ -862,7 +906,10 @@ export default {
 		 * Get currently selected date histogram values
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of selected options
+<<<<<<< HEAD
 		 * @spec exclude computed read of selected histogram buckets from store filters, UI plumbing
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		getSelectedDateHistogramValues(fieldName) {
 			// Check for active range filters on this field
@@ -886,7 +933,10 @@ export default {
 		 * Update date histogram selection (using from/to for query params)
 		 * @param {string} fieldName - Name of the field
 		 * @param {Array} selectedOptions - Array of selected options with from/to
+<<<<<<< HEAD
 		 * @spec exclude store filter writer for histogram selection + list refresh, search contract owned by search capability
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async updateDateHistogramSelection(fieldName, selectedOptions) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -949,7 +999,11 @@ export default {
 		 * @param {object} dateRange - Date range object with min and max dates
 		 * @return {string} Formatted date range string
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+=======
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		formatDateRange(dateRange) {
 			if (!dateRange || !dateRange.min || !dateRange.max) {

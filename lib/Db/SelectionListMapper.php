@@ -5,6 +5,7 @@
  *
  * Handles database operations for selection list entries.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -12,6 +13,12 @@
  * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -24,7 +31,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+<<<<<<< HEAD
 use DateTime;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -149,8 +159,13 @@ class SelectionListMapper extends QBMapper
             $entity->setUuid(Uuid::v4()->toRfc4122());
         }
 
+<<<<<<< HEAD
         $entity->setCreated(new DateTime());
         $entity->setUpdated(new DateTime());
+=======
+        $entity->setCreated(new \DateTime());
+        $entity->setUpdated(new \DateTime());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         return $this->insert(entity: $entity);
     }//end createEntry()
@@ -164,7 +179,11 @@ class SelectionListMapper extends QBMapper
      */
     public function updateEntry(SelectionList $entity): SelectionList
     {
+<<<<<<< HEAD
         $entity->setUpdated(new DateTime());
+=======
+        $entity->setUpdated(new \DateTime());
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         return $this->update(objectId: $entity);
     }//end updateEntry()

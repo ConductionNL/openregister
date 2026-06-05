@@ -67,7 +67,10 @@ It is the shared data backbone for apps like [OpenCatalogi](https://github.com/C
 
 ### Integrations
 
+<<<<<<< HEAD
 - **Pluggable integration registry** — Object surfaces (sidebar tabs, dashboard widgets, detail pages, reference properties) are driven by a registry of `IntegrationProvider`s. Five built-ins ship out of the box (Files, Notes, Tags, Tasks, Audit Trail); apps add their own — including OpenConnector-backed external integrations like xWiki — without touching OpenRegister core. See [docs/Integrations/pluggable-integration-registry.md](docs/Integrations/pluggable-integration-registry.md) for the "how to add an integration" walkthrough.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 - **SOLR Integration** — Optional Apache Solr for advanced search scenarios
 - **Source Synchronization** — Keep registers in sync with external data sources
 - **Schema Import** — Import schemas from Schema.org, OpenAPI, and GGM standards
@@ -92,6 +95,7 @@ graph TD
 
 ### Data Model
 
+<<<<<<< HEAD
 | Entity | Description |
 |--------|-------------|
 | Register | Collection of schemas with shared configuration and access rules |
@@ -100,6 +104,16 @@ graph TD
 | AuditTrail | Immutable change log entry for an object |
 | ObjectRelation | Typed link between two objects (within or across registers) |
 | File | Attachment with text extraction, chunking, and vector embeddings |
+=======
+| Entity         | Description                                                      |
+| -------------- | ---------------------------------------------------------------- |
+| Register       | Collection of schemas with shared configuration and access rules |
+| Schema         | JSON Schema definition that validates and types objects          |
+| Object         | Data record validated against a schema, stored in a register     |
+| AuditTrail     | Immutable change log entry for an object                         |
+| ObjectRelation | Typed link between two objects (within or across registers)      |
+| File           | Attachment with text extraction, chunking, and vector embeddings |
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ### Directory Structure
 
@@ -123,12 +137,21 @@ openregister/
 
 ## Requirements
 
+<<<<<<< HEAD
 | Dependency | Version |
 |-----------|---------|
 | Nextcloud | 28 – 33 |
 | PHP | 8.1+ |
 | PostgreSQL | 12+ (recommended, with pgvector and pg_trgm) |
 | MySQL | 8.0+ (alternative, no vector search) |
+=======
+| Dependency | Version                                      |
+| ---------- | -------------------------------------------- |
+| Nextcloud  | 28 – 33                                      |
+| PHP        | 8.1+                                         |
+| PostgreSQL | 12+ (recommended, with pgvector and pg_trgm) |
+| MySQL      | 8.0+ (alternative, no vector search)         |
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ## Installation
 
@@ -171,6 +194,7 @@ npm run build      # Production build
 ### Code quality
 
 ```bash
+<<<<<<< HEAD
 # Authoritative gate (same as CI) — must pass before pushing
 composer check:strict   # phpcs + phpmd + phpstan + psalm + all tests
 
@@ -198,11 +222,37 @@ npm run stylelint       # CSS linting
 | AI | Ollama, OpenAI, Fireworks AI, Azure OpenAI |
 | UX | @conduction/nextcloud-vue |
 | Quality | PHPCS, PHPMD, phpmetrics, Psalm, ESLint, Stylelint |
+=======
+# PHP
+composer phpcs          # Check coding standards
+composer cs:fix         # Auto-fix issues
+composer phpmd          # Mess detection
+composer phpmetrics     # HTML metrics report
+
+# Frontend
+npm run lint            # ESLint
+npm run stylelint       # CSS linting
+```
+
+## Tech Stack
+
+| Layer    | Technology                                         |
+| -------- | -------------------------------------------------- |
+| Frontend | Vue 2.7, Pinia, @nextcloud/vue                     |
+| Build    | Webpack 5, @nextcloud/webpack-vue-config           |
+| Backend  | PHP 8.1+, Nextcloud App Framework                  |
+| Database | PostgreSQL 16 with pgvector + pg_trgm              |
+| Search   | Magic tables (SQL), Solr (optional)                |
+| AI       | Ollama, OpenAI, Fireworks AI, Azure OpenAI         |
+| UX       | @conduction/nextcloud-vue                          |
+| Quality  | PHPCS, PHPMD, phpmetrics, Psalm, ESLint, Stylelint |
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ## Documentation
 
 Full documentation is available at **[openregisters.app](https://openregisters.app)**
 
+<<<<<<< HEAD
 | Page | Description |
 |------|-------------|
 | [Installation](https://openregisters.app/docs/installation) | Complete installation and configuration guide |
@@ -210,6 +260,15 @@ Full documentation is available at **[openregisters.app](https://openregisters.a
 | [Developer Guide](website/docs/development/) | Development setup, Docker profiles, PostgreSQL search |
 | [API Reference](website/docs/api/) | REST API endpoints and bulk operations |
 | [Testing](tests/integration/README.md) | Integration test suite (Newman/Postman) |
+=======
+| Page                                                        | Description                                                     |
+| ----------------------------------------------------------- | --------------------------------------------------------------- |
+| [Installation](https://openregisters.app/docs/installation) | Complete installation and configuration guide                   |
+| [Features](website/docs/Features/)                          | Feature documentation (objects, schemas, registers, search, AI) |
+| [Developer Guide](website/docs/development/)                | Development setup, Docker profiles, PostgreSQL search           |
+| [API Reference](website/docs/api/)                          | REST API endpoints and bulk operations                          |
+| [Testing](tests/integration/README.md)                      | Integration test suite (Newman/Postman)                         |
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 ## Standards & Compliance
 

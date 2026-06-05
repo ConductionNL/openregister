@@ -822,6 +822,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase
         );
         $this->assertIsArray($results);
     }
+<<<<<<< HEAD
 
     // =========================================================================
     // Fail-closed SQL match evaluation on null-resolved dynamic variables (#1953).
@@ -938,4 +939,6 @@ class MagicRbacHandlerIntegrationTest extends TestCase
             'A fully-resolvable static match rule MUST still return its matching rows (no new denials)'
         );
     }
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }

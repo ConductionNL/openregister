@@ -6,9 +6,12 @@
  * Handler for bulk validation operations and schema analysis.
  * Optimizes validation for bulk object operations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObjects
  *
@@ -53,7 +56,11 @@ class BulkValidationHandler
      *
      * @param LoggerInterface $logger Logger interface for logging operations.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -75,7 +82,11 @@ class BulkValidationHandler
      *
      * @return array Schema analysis with metadataFields, inverseProperties, validationRequired, etc.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
@@ -158,7 +169,11 @@ class BulkValidationHandler
      *
      * @return bool The boolean value.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function castToBoolean($value): bool
     {
@@ -190,7 +205,11 @@ class BulkValidationHandler
      *
      * @psalm-return list{array, string}
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function handlePreValidationCascading(array $object, ?string $uuid): array
     {

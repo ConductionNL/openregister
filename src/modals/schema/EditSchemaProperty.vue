@@ -302,17 +302,26 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
 				:checked.sync="facetableEnabled">
+<<<<<<< HEAD
 				{{ t('openregister', 'Facetable') }}
+=======
+				Facetable
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			</NcCheckboxRadioSwitch>
 
 			<!-- Faceting configuration (shown when facetable is enabled) -->
 			<div v-if="facetableEnabled" class="facetConfigContainer">
 				<div class="facetConfigTitle">
+<<<<<<< HEAD
 					{{ t('openregister', 'Faceting Configuration:') }}
+=======
+					Faceting Configuration:
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				</div>
 				<NcCheckboxRadioSwitch
 					:disabled="loading"
 					:checked.sync="facetConfig.aggregated">
+<<<<<<< HEAD
 					{{ t('openregister', 'Aggregated across schemas') }}
 				</NcCheckboxRadioSwitch>
 				<div v-if="!facetConfig.aggregated" class="helper-text">
@@ -332,12 +341,37 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 					:value.sync="facetConfig.order" />
 				<div class="helper-text">
 					{{ t('openregister', 'Lower numbers appear first in the filter sidebar. Leave empty for automatic ordering.') }}
+=======
+					Aggregated across schemas
+				</NcCheckboxRadioSwitch>
+				<div v-if="!facetConfig.aggregated" class="helper-text">
+					When disabled, this facet will only show values from this schema and will include a schema filter when selected.
+				</div>
+				<NcTextField :disabled="loading"
+					label="Facet Title"
+					:value.sync="facetConfig.title"
+					placeholder="Custom display title for this facet" />
+				<NcTextField :disabled="loading"
+					label="Facet Description"
+					:value.sync="facetConfig.description"
+					placeholder="Description shown as tooltip" />
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Facet Order"
+					:value.sync="facetConfig.order" />
+				<div class="helper-text">
+					Lower numbers appear first in the filter sidebar. Leave empty for automatic ordering.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				</div>
 
 				<!-- Date faceting options (shown for date/datetime properties) -->
 				<div v-if="isDateProperty" class="facetDateConfig">
 					<div class="facetConfigTitle">
+<<<<<<< HEAD
 						{{ t('openregister', 'Date Faceting:') }}
+=======
+						Date Faceting:
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					</div>
 					<NcSelect
 						:disabled="loading"
@@ -345,7 +379,11 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						:options="facetTypeOptions"
 						label="label"
 						track-by="value"
+<<<<<<< HEAD
 						:input-label="t('openregister', 'Facet Type')"
+=======
+						:input-label="'Facet Type'"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						:clearable="false"
 						@input="updateFacetType" />
 
@@ -357,6 +395,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 							:options="facetIntervalOptions"
 							label="label"
 							track-by="value"
+<<<<<<< HEAD
 							:input-label="t('openregister', 'Interval')"
 							:clearable="false"
 							@input="(opt) => facetInterval = opt.value" />
@@ -364,6 +403,15 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 							:label="t('openregister', 'Display Format')"
 							:value.sync="facetFormat"
 							:placeholder="t('openregister', 'Auto (e.g. Y for year, F Y for month)')" />
+=======
+							:input-label="'Interval'"
+							:clearable="false"
+							@input="(opt) => facetInterval = opt.value" />
+						<NcTextField :disabled="loading"
+							label="Display Format"
+							:value.sync="facetFormat"
+							placeholder="Auto (e.g. Y for year, F Y for month)" />
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					</div>
 
 					<!-- Date range options -->
@@ -371,18 +419,27 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						<NcCheckboxRadioSwitch
 							:disabled="loading"
 							:checked.sync="facetUseDefaultRanges">
+<<<<<<< HEAD
 							{{ t('openregister', 'Use default ranges (Last 7/30/90 days, Last year, Older)') }}
+=======
+							Use default ranges (Last 7/30/90 days, Last year, Older)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 						</NcCheckboxRadioSwitch>
 
 						<!-- Custom range editor -->
 						<div v-if="!facetUseDefaultRanges" class="customRangeEditor">
 							<div class="facetConfigTitle">
+<<<<<<< HEAD
 								{{ t('openregister', 'Custom Ranges:') }}
+=======
+								Custom Ranges:
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 							</div>
 							<div v-for="(range, index) in facetCustomRanges"
 								:key="index"
 								class="customRangeRow">
 								<NcTextField :disabled="loading"
+<<<<<<< HEAD
 									:label="t('openregister', 'Label')"
 									:value.sync="range.label" />
 								<NcTextField :disabled="loading"
@@ -390,6 +447,15 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 									:value.sync="range.from" />
 								<NcTextField :disabled="loading"
 									:label="t('openregister', 'To (e.g. -1 year or 2025-12-31)')"
+=======
+									label="Label"
+									:value.sync="range.label" />
+								<NcTextField :disabled="loading"
+									label="From (e.g. -7 days or 2025-01-01)"
+									:value.sync="range.from" />
+								<NcTextField :disabled="loading"
+									label="To (e.g. -1 year or 2025-12-31)"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 									:value.sync="range.to" />
 								<NcButton :disabled="loading"
 									type="tertiary-no-background"
@@ -405,7 +471,11 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 								<template #icon>
 									<Plus :size="20" />
 								</template>
+<<<<<<< HEAD
 								{{ t('openregister', 'Add range') }}
+=======
+								Add range
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 							</NcButton>
 						</div>
 					</div>
@@ -731,16 +801,22 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI state helper — reports whether the property is a date/date-time type.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		isDateProperty() {
 			return this.properties.type === 'string'
 				&& (this.properties.format === 'date' || this.properties.format === 'date-time')
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — static facet-type select options.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		facetTypeOptions() {
 			return [
 				{ value: 'date_histogram', label: 'Date Histogram (group by interval)' },
@@ -748,6 +824,7 @@ export default {
 				{ value: 'terms', label: 'Terms (exact values)' },
 			]
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — resolves the selected facet-type option.
 		 */
@@ -757,6 +834,11 @@ export default {
 		/**
 		 * @spec exclude UI display helper — static facet-interval select options.
 		 */
+=======
+		facetTypeOption() {
+			return this.facetTypeOptions.find(opt => opt.value === this.facetType) || this.facetTypeOptions[0]
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		facetIntervalOptions() {
 			return [
 				{ value: 'day', label: 'Day' },
@@ -766,6 +848,7 @@ export default {
 				{ value: 'year', label: 'Year' },
 			]
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI display helper — resolves the selected facet-interval option.
 		 */
@@ -775,6 +858,11 @@ export default {
 		/**
 		 * @spec exclude UI display helper — static object-handling select configuration.
 		 */
+=======
+		facetIntervalOption() {
+			return this.facetIntervalOptions.find(opt => opt.value === this.facetInterval) || this.facetIntervalOptions[2]
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		objectConfiguration() {
 			return {
 				handling: {
@@ -920,6 +1008,7 @@ export default {
 			// Remove the entry at the specified index
 			this.properties.oneOf.splice(index, 1)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude Form-field binding — sets the active facet type.
 		 */
@@ -941,6 +1030,17 @@ export default {
 		/**
 		 * @spec exclude Modal hydration plumbing — loads existing property values into the form.
 		 */
+=======
+		updateFacetType(option) {
+			this.facetType = option.value
+		},
+		addCustomRange() {
+			this.facetCustomRanges.push({ label: '', from: '', to: '' })
+		},
+		removeCustomRange(index) {
+			this.facetCustomRanges.splice(index, 1)
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]

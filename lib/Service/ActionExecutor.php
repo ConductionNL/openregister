@@ -5,9 +5,12 @@
  *
  * Orchestrates action execution for lifecycle events.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -18,12 +21,15 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -41,8 +47,11 @@ use OCA\OpenRegister\WorkflowEngine\WorkflowResult;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use Psr\Log\LoggerInterface;
+<<<<<<< HEAD
 use DateTime;
 use Symfony\Component\Uid\Uuid;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * ActionExecutor orchestrates action execution for events
@@ -84,8 +93,11 @@ class ActionExecutor
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function executeActions(array $actions, Event $event, array $payload, string $eventType): void
     {
@@ -116,8 +128,11 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function executeSingleAction(Action $action, Event $event, array $payload, string $eventType): void
     {
@@ -137,9 +152,13 @@ class ActionExecutor
             }
 
             // Execute workflow.
+<<<<<<< HEAD
             $isAsync = ($action->getMode() === 'async');
 
             if ($isAsync === true) {
+=======
+            if ($action->getMode() === 'async') {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 // Fire-and-forget: execute but don't process response for event modification.
                 try {
                     $result   = $engine->execute(
@@ -147,29 +166,47 @@ class ActionExecutor
                         $cloudEventPayload,
                         $action->getTimeout()
                     );
+<<<<<<< HEAD
                     $response = (array) $result;
                     if ($result instanceof WorkflowResult) {
                         $response = $result->toArray();
                     }
+=======
+                    $response = $result instanceof WorkflowResult ? $result->toArray() : (array) $result;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 } catch (Exception $e) {
                     $status = 'failure';
                     $error  = $e->getMessage();
                     $this->handleFailure(action: $action, payload: $cloudEventPayload, error: $error);
                 }
+<<<<<<< HEAD
             }
 
             if ($isAsync === false) {
                 // Sync mode: execute and process response.
                 $result   = $engine->execute(
+=======
+            } else {
+                // Sync mode: execute and process response.
+                $result = $engine->execute(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $action->getWorkflowId(),
                     $cloudEventPayload,
                     $action->getTimeout()
                 );
+<<<<<<< HEAD
                 $response = (array) $result;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
                 if ($result instanceof WorkflowResult) {
                     $response = $result->toArray();
                     $this->processWorkflowResult(result: $result, action: $action, event: $event);
+<<<<<<< HEAD
+=======
+                } else {
+                    $response = (array) $result;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 }
             }//end if
         } catch (Exception $e) {
@@ -214,8 +251,11 @@ class ActionExecutor
      * @param string $eventType Event type string
      *
      * @return array The CloudEvent-formatted payload
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function buildCloudEventPayload(Action $action, array $payload, string $eventType): array
     {
@@ -223,8 +263,13 @@ class ActionExecutor
             'specversion'     => '1.0',
             'type'            => 'nl.openregister.action.'.$eventType,
             'source'          => '/openregister/actions/'.$action->getUuid(),
+<<<<<<< HEAD
             'id'              => Uuid::v4()->toRfc4122(),
             'time'            => (new DateTime())->format('c'),
+=======
+            'id'              => \Symfony\Component\Uid\Uuid::v4()->toRfc4122(),
+            'time'            => (new \DateTime())->format('c'),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             'datacontenttype' => 'application/json',
             'data'            => $payload,
             'action'          => [
@@ -246,8 +291,11 @@ class ActionExecutor
      * @param Event          $event  The original event
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function processWorkflowResult(WorkflowResult $result, Action $action, Event $event): void
     {
@@ -280,8 +328,11 @@ class ActionExecutor
      * @param string $error   The error message
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function handleFailure(Action $action, array $payload, string $error): void
     {
@@ -321,8 +372,11 @@ class ActionExecutor
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Log entries require many fields
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function createLogEntry(
         Action $action,
@@ -339,6 +393,7 @@ class ActionExecutor
             $log->setActionUuid($action->getUuid());
             $log->setEventType($eventType);
             $log->setObjectUuid($payload['data']['object']['uuid'] ?? $payload['objectUuid'] ?? null);
+<<<<<<< HEAD
             $schemaId = null;
             if (isset($payload['data']['schema']) === true) {
                 $schemaId = (int) $payload['data']['schema'];
@@ -351,17 +406,25 @@ class ActionExecutor
 
             $log->setSchemaId($schemaId);
             $log->setRegisterId($registerId);
+=======
+            $log->setSchemaId(isset($payload['data']['schema']) === true ? (int) $payload['data']['schema'] : null);
+            $log->setRegisterId(isset($payload['data']['register']) === true ? (int) $payload['data']['register'] : null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $log->setEngine($action->getEngine());
             $log->setWorkflowId($action->getWorkflowId());
             $log->setStatus($status);
             $log->setDurationMs($durationMs);
             $log->setRequestPayload(json_encode($payload));
+<<<<<<< HEAD
             $responsePayload = null;
             if ($response !== null) {
                 $responsePayload = json_encode($response);
             }
 
             $log->setResponsePayload($responsePayload);
+=======
+            $log->setResponsePayload($response !== null ? json_encode($response) : null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $log->setErrorMessage($error);
 
             $this->actionLogMapper->insert(entity: $log);

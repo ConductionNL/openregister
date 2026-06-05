@@ -5,9 +5,12 @@
  *
  * Strategy for vectorizing file chunks.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -18,8 +21,11 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
@@ -90,8 +96,11 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @return \OCA\OpenRegister\Db\Chunk[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function fetchEntities(array $options): array
     {
@@ -154,8 +163,11 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
      *
      * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function extractVectorizationItems($entity): array
     {
@@ -190,8 +202,11 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *         end_offset: mixed
      *     }
      * }
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function prepareVectorMetadata($entity, array $item): array
     {

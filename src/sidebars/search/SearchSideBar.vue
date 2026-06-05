@@ -8,8 +8,13 @@
 			:open="navigationStore.sidebarState.search"
 			:active-filters="objectStore.searchParams.filters"
 			:facet-data="objectStore.searchFacets"
+<<<<<<< HEAD
 			:search-tab-label="t('openregister', 'Search')"
 			:search-placeholder="t('openregister', 'Type to search...')"
+=======
+			search-tab-label="Search"
+			search-placeholder="Type to search..."
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			@update:open="(e) => navigationStore.setSidebarState('search', e)"
 			@search="onSearchInput"
 			@filter-change="onFilterChange"
@@ -324,7 +329,11 @@
 
 						<div v-else-if="filteredViews.length === 0" class="noViews">
 							<NcNoteCard type="info">
+<<<<<<< HEAD
 								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. create one in the search tab!') }}
+=======
+								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 							</NcNoteCard>
 						</div>
 
@@ -499,6 +508,7 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
 		/**
 		 * Search string for CnIndexSidebar; synced to store and used for fetch.
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
@@ -512,6 +522,12 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for registers
 		 */
+=======
+		/** Search string for CnIndexSidebar; synced to store and used for fetch. */
+		searchValueForSidebar() {
+			return objectStore.searchParams.search || ''
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -817,7 +833,10 @@ export default {
 		t,
 		/**
 		 * CnIndexSidebar @search: update store, keep searchTerms in sync for URL, and refetch.
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param value
 		 */
 		onSearchInput(value) {
@@ -828,7 +847,10 @@ export default {
 		},
 		/**
 		 * CnIndexSidebar @filter-change: update store filters, keep facetFilters in sync, and refetch.
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param root0
 		 * @param root0.key
 		 * @param root0.values
@@ -841,17 +863,24 @@ export default {
 		},
 		/**
 		 * CnIndexSidebar @columns-change: persist visible columns.
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param columns
 		 */
 		onColumnsChange(columns) {
 			objectStore.setSearchVisibleColumns(columns)
 		},
+<<<<<<< HEAD
 		/**
 		 * Build URL query params from current sidebar state.
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {object} Query object
 		 */
+=======
+		// Build query params from current sidebar state
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		buildQueryFromState() {
 			const query = {}
 			if (this.selectedRegisters.length > 0) {
@@ -1009,12 +1038,16 @@ export default {
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
+<<<<<<< HEAD
 		/**
 		 * Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets
 		 * register/schema context for dialogs and discoverFacets.
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {void}
 		 */
+=======
+		/** Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets register/schema context for dialogs and discoverFacets. */
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		syncSearchParamsAndRefetch() {
 			const registerId = this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
 			const schemaId = this.selectedSchemas.length > 0 ? this.selectedSchemas[0] : null
@@ -1142,7 +1175,10 @@ export default {
 		/**
 		 * Merge inherited properties from allOf parent schemas into the given schema's own properties.
 		 * Own properties take precedence over inherited ones.
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @param {object} schema - Schema object with optional allOf and properties
 		 * @return {object} Merged properties object
 		 */
@@ -1161,11 +1197,15 @@ export default {
 			return { ...inherited, ...(schema?.properties || {}) }
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets.
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {Promise<void>}
 		 */
+=======
+		/** Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets. */
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async discoverFacets() {
 			if (!objectStore.searchParams.register || !objectStore.searchParams.schema) return
 			try {
@@ -1186,6 +1226,7 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Toggle an individual facet on/off, clearing its filter when disabled.
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
@@ -1193,6 +1234,9 @@ export default {
 		 * @param {object} _fieldInfo - Unused field metadata
 		 * @return {void}
 		 */
+=======
+		// Toggle individual facet on/off
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		toggleFacet(fieldName, _fieldInfo) {
 			// When toggling facet, clear any existing data for that field
 			if (this.enabledFacets[fieldName]) {
@@ -1242,11 +1286,15 @@ export default {
 			return { _facets: config }
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared.
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {void}
 		 */
+=======
+		/** Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared. */
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		resetFacets() {
 			this.enabledFacets = {}
 			this.facetFilters = {}
@@ -1769,11 +1817,15 @@ export default {
 			this.applyFacetFilters()
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Sync facet filters into search params (used before refetch when custom facet UI changes).
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
 		 * @return {void}
 		 */
+=======
+		/** Sync facet filters into search params (used before refetch when custom facet UI changes). */
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		applyFiltersToObjectStore() {
 			const activeFilters = {}
 			Object.entries(this.facetFilters).forEach(([field, values]) => {

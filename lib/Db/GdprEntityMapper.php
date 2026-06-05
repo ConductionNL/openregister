@@ -54,10 +54,15 @@ class GdprEntityMapper extends QBMapper
      *                                     continue to work; the warning is silently
      *                                     dropped in that case.
      */
+<<<<<<< HEAD
     public function __construct(
         IDBConnection $db,
         private readonly ?LoggerInterface $logger=null
     ) {
+=======
+    public function __construct(IDBConnection $db)
+    {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         parent::__construct(db: $db, tableName: 'openregister_entities', entityClass: GdprEntity::class);
     }//end __construct()
 
@@ -84,6 +89,7 @@ class GdprEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple entities found.
      */
     public function find(int $id): GdprEntity
+<<<<<<< HEAD
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -114,10 +120,13 @@ class GdprEntityMapper extends QBMapper
      * @return GdprEntity|null The matching entity, or null when no row matches.
      */
     public function findOneByValueAndType(string $value, string $type): ?GdprEntity
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
+<<<<<<< HEAD
             ->where(
                 $qb->expr()->andX(
                     $qb->expr()->eq('value', $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)),
@@ -157,4 +166,10 @@ class GdprEntityMapper extends QBMapper
         return $matches[0];
 
     }//end findOneByValueAndType()
+=======
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntity(query: $qb);
+    }//end find()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

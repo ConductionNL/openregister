@@ -2092,6 +2092,7 @@ export default {
 			this.showDeleteCollectionDialog = false
 		},
 
+<<<<<<< HEAD
 		/**
 		 * Refresh stats after a collection is deleted.
 		 *
@@ -2099,6 +2100,8 @@ export default {
 		 * @param {*} _result - deletion result (unused)
 		 * @return {Promise<void>}
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async handleCollectionDeleted(_result) {
 			// Close the modal
 			this.closeDeleteCollectionModal()

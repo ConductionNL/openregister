@@ -42,11 +42,15 @@ class LegalHoldServiceTest extends TestCase
     {
         parent::setUp();
 
+<<<<<<< HEAD
         $this->objectMapper     = $this->getMockBuilder(MagicMapper::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['update'])
             ->addMethods(['findByUuid'])
             ->getMock();
+=======
+        $this->objectMapper     = $this->createMock(MagicMapper::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->jobList          = $this->createMock(IJobList::class);
@@ -76,11 +80,15 @@ class LegalHoldServiceTest extends TestCase
      */
     private function createMockObject(array $retention = []): ObjectEntity&MockObject
     {
+<<<<<<< HEAD
         $object = $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['jsonSerialize'])
             ->addMethods(['getRetention', 'setRetention', 'getUuid'])
             ->getMock();
+=======
+        $object = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $object->method('getRetention')->willReturn($retention);
         $object->method('getUuid')->willReturn('test-uuid-123');
         return $object;

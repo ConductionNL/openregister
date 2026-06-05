@@ -11,9 +11,12 @@
  * Utilizes aggressive caching for sub-10ms response times to enable
  * seamless frontend rendering of object names instead of UUIDs.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -108,8 +111,11 @@ class NamesController extends Controller
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object names or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -250,8 +256,11 @@ class NamesController extends Controller
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object names or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -355,8 +364,11 @@ class NamesController extends Controller
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object name or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -452,8 +464,11 @@ class NamesController extends Controller
      *     performance_metrics?: array{name_cache_enabled: true,
      *     distributed_cache_available: true, warmup_available: true}},
      *     array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -500,8 +515,11 @@ class NamesController extends Controller
      * for improved performance after system maintenance.
      *
      * @return JSONResponse JSON response with warmup result or error
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

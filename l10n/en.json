@@ -1345,6 +1345,7 @@
         "Text chunks": "Text chunks",
         "Unknown error": "Unknown error",
         "Very high": "Very high",
+<<<<<<< HEAD
         "{title} in {register} / {schema}": "{title} in {register} / {schema}",
         "Push Notifications": "Push Notifications",
         "Real-time push notification status via notify_push": "Real-time push notification status via notify_push",
@@ -2142,3 +2143,8 @@
         ]
     }
 }
+=======
+        "{title} in {register} / {schema}": "{title} in {register} / {schema}"
+    }
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

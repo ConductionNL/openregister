@@ -1,4 +1,5 @@
 // @ts-check
+<<<<<<< HEAD
 
 /**
  * OpenRegister documentation site.
@@ -30,6 +31,27 @@ const config = createConfig({
   /* The brand preset's default i18n block (nl/en/de/fr) is replaced
      wholesale here. OpenRegister docs ship with NL + EN translation
      surfaces; keep both. */
+=======
+// Note: type annotations allow type checking and IDEs autocompletion
+
+/** @type {import('@docusaurus/types').Config} */
+const config = {
+  title: 'Open Register',
+  tagline: 'Flexible object management for Nextcloud',
+  url: 'https://openregisters.app',
+  baseUrl: '/',
+  
+  // GitHub pages deployment config
+  organizationName: 'conductionnl',
+  projectName: 'openregister',
+  trailingSlash: false,
+
+  onBrokenLinks: 'warn',
+  onBrokenMarkdownLinks: 'warn',
+
+  // Even if you don't use internalization, you can use this field to set useful
+  // metadata like html lang
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
   i18n: {
     defaultLocale: 'en',
     locales: ['en', 'nl'],
@@ -39,6 +61,7 @@ const config = createConfig({
     },
   },
 
+<<<<<<< HEAD
   /* The openregister docs source lives at the repo root of `docs/`
      rather than under a `docs/` subfolder, so we override the preset's
      default `presets:` block to point `docs.path` at './' and disable
@@ -83,28 +106,58 @@ const config = createConfig({
           ],
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/ConductionNL/openregister/tree/main/docs/',
+=======
+  presets: [
+    [
+      'classic',
+      /** @type {import('@docusaurus/preset-classic').Options} */
+      ({
+        docs: {
+          path: './',
+          exclude: ['**/node_modules/**'],
+          sidebarPath: require.resolve('./sidebars.js'),
+          editUrl:
+            'https://github.com/conductionnl/openregister/tree/main/docs/',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         },
         blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
+<<<<<<< HEAD
       },
+=======
+      }),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ],
     [
       'redocusaurus',
       {
+<<<<<<< HEAD
         specs: [
           {
+=======
+        // Plugin Options for loading OpenAPI files
+        specs: [
+          // Pass it a path to a local OpenAPI YAML file
+          {
+            // Redocusaurus will automatically bundle your spec into a single file during the build
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             id: 'open-register',
             spec: 'static/oas/open-register.json',
             route: '/api',
           },
           {
+<<<<<<< HEAD
+=======
+            // Redocusaurus will automatically bundle your spec into a single file during the build
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             id: 'client-registers',
             spec: 'static/oas/clientRegisters.json',
             route: '/api/clientRegister',
           },
         ],
+<<<<<<< HEAD
         theme: {
           primaryColor: '#1890ff',
         },
@@ -175,3 +228,85 @@ config.markdown = {
 };
 
 module.exports = config;
+=======
+        // Theme Options for modifying how redoc renders them
+        theme: {
+          // Change with your site colors
+          primaryColor: '#1890ff',
+        },
+      },
+    ]
+  ],
+
+  themeConfig:
+    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
+    ({
+      navbar: {
+        title: 'Open Register',
+        logo: {
+          alt: 'Open Register Logo',
+          src: 'img/logo.svg',
+        },
+        items: [
+          {
+            type: 'docSidebar',
+            sidebarId: 'tutorialSidebar',
+            position: 'left',
+            label: 'Documentation',
+          },
+          {
+            href: '/api',
+            label: 'API Documentation',
+            position: 'right',
+          },
+          {
+            href: 'https://github.com/conductionnl/openregister',
+            label: 'GitHub',
+            position: 'right',
+          },
+          {
+            type: 'localeDropdown',
+            position: 'right',
+          },
+        ],
+      },
+      footer: {
+        style: 'dark',
+        links: [
+          {
+            title: 'Docs',
+            items: [
+              {
+                label: 'Documentation',
+                to: '/docs/intro',
+              },
+            ],
+          },
+          {
+            title: 'Community',
+            items: [
+              {
+                label: 'GitHub',
+                href: 'https://github.com/conductionnl/openregister',
+              },
+            ],
+          },
+        ],
+        copyright: `Copyright © ${new Date().getFullYear()} for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a>`,
+      },
+      prism: {
+        theme: require('prism-react-renderer/themes/github'),
+        darkTheme: require('prism-react-renderer/themes/dracula'),
+      },
+      mermaid: {
+        theme: { light: 'default', dark: 'dark' },
+      },
+    }),
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
+};
+
+module.exports = config;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

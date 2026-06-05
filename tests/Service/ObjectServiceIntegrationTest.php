@@ -6,7 +6,11 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -1619,6 +1623,54 @@ class ObjectServiceIntegrationTest extends TestCase
         $this->service->getVectorizationCount();
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Test exportObjects throws disabled exception
+     *
+     * @return void
+     */
+    public function testExportObjectsThrowsDisabled(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Export temporarily disabled');
+
+        $this->service->exportObjects(
+            $this->testRegister,
+            $this->testSchema
+        );
+    }
+
+    /**
+     * Test importObjects throws disabled exception
+     *
+     * @return void
+     */
+    public function testImportObjectsThrowsDisabled(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Import temporarily disabled');
+
+        $this->service->importObjects(
+            $this->testRegister,
+            ['tmp_name' => '/tmp/test', 'name' => 'test.csv']
+        );
+    }
+
+    /**
+     * Test downloadObjectFiles throws disabled exception
+     *
+     * @return void
+     */
+    public function testDownloadObjectFilesThrowsDisabled(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('File download temporarily disabled');
+
+        $this->service->downloadObjectFiles('some-object-id');
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     // =========================================================================
     // CRUD convenience method tests
     // =========================================================================

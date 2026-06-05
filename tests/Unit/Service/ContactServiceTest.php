@@ -26,7 +26,11 @@ class ContactServiceTest extends TestCase
     {
         $this->contactLinkMapper = $this->getMockBuilder(ContactLinkMapper::class)
             ->disableOriginalConstructor()
+<<<<<<< HEAD
             ->onlyMethods(['findByObjectUuid', 'findByContactUid', 'findByObjectAndContact', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'update', 'delete'])
+=======
+            ->onlyMethods(['findByObjectUuid', 'findByContactUid', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'delete'])
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ->addMethods(['find'])
             ->getMock();
         $this->cardDavBackend = $this->createMock(CardDavBackend::class);
@@ -75,6 +79,7 @@ class ContactServiceTest extends TestCase
         $this->assertSame([], $result['results']);
     }
 
+<<<<<<< HEAD
     /**
      * Phase B-1: full vCard with TEL / ORG / PHOTO produces all three
      * widened fields plus the original ContactLink fields.
@@ -216,6 +221,8 @@ class ContactServiceTest extends TestCase
         $this->assertNull($row['avatarUrl']);
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testLinkContactThrowsWhenContactNotFound(): void
     {
         $this->setupUser();
@@ -236,11 +243,14 @@ class ContactServiceTest extends TestCase
         $this->cardDavBackend->method('getCard')->willReturn(['carddata' => $vcardData]);
         $this->cardDavBackend->expects($this->once())->method('updateCard');
 
+<<<<<<< HEAD
         // Tier-2: linkContact now consults findByObjectAndContact for
         // idempotent upsert. Returning null means "no prior row" and
         // the service falls through to the insert path.
         $this->contactLinkMapper->method('findByObjectAndContact')->willReturn(null);
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->contactLinkMapper->expects($this->once())
             ->method('insert')
             ->willReturnCallback(function (ContactLink $link): ContactLink {
@@ -254,6 +264,7 @@ class ContactServiceTest extends TestCase
         $this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
     }
 
+<<<<<<< HEAD
     /**
      * Tier-2: when a row already exists for the (objectUuid, contactUid)
      * pair, linkContact updates it in-place instead of inserting.
@@ -292,6 +303,8 @@ class ContactServiceTest extends TestCase
         $this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testUnlinkContactNotFound(): void
     {
         $this->contactLinkMapper->method('find')
@@ -303,6 +316,7 @@ class ContactServiceTest extends TestCase
         $this->service->unlinkContact(999);
     }
 
+<<<<<<< HEAD
     /**
      * Idempotency: unlinkContact must drop the link row even when the
      * underlying vCard has been removed (CardDavBackend::getCard returns
@@ -409,6 +423,8 @@ class ContactServiceTest extends TestCase
         $this->service->unlinkContactByUid('abc-123', 'missing-uid');
     }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetObjectsForContactReturnsLinks(): void
     {
         $link = new ContactLink();

@@ -6,7 +6,11 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Calendar
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <info@conduction.nl>
+=======
+ * @author    Conduction Development Team <dev@conductio.nl>
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -37,15 +41,25 @@ class RegisterCalendarTest extends TestCase
 
     protected function setUp(): void
     {
+<<<<<<< HEAD
         $this->schema = new Schema();
         $this->schema->setId(42);
         $this->schema->setTitle('Test Schema');
 
+=======
+        $this->schema         = $this->createMock(Schema::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->magicMapper    = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->transformer    = $this->createMock(CalendarEventTransformer::class);
         $this->logger         = $this->createMock(LoggerInterface::class);
 
+<<<<<<< HEAD
+=======
+        $this->schema->method('getId')->willReturn(42);
+        $this->schema->method('getTitle')->willReturn('Test Schema');
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
@@ -143,6 +157,7 @@ class RegisterCalendarTest extends TestCase
 
     public function testSearchReturnsTransformedEvents(): void
     {
+<<<<<<< HEAD
         $register = new Register();
         $register->setId(1);
         $register->setSchemas([42]);
@@ -150,6 +165,15 @@ class RegisterCalendarTest extends TestCase
         $this->registerMapper->method('findAll')->willReturn([$register]);
 
         $object = new ObjectEntity();
+=======
+        $register = $this->createMock(Register::class);
+        $register->method('getId')->willReturn(1);
+        $register->method('getSchemas')->willReturn([42]);
+
+        $this->registerMapper->method('findAll')->willReturn([$register]);
+
+        $object = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->magicMapper->method('findAllInRegisterSchemaTable')
             ->willReturn([$object]);
 
@@ -173,11 +197,19 @@ class RegisterCalendarTest extends TestCase
 
     public function testSearchSkipsNullTransformResults(): void
     {
+<<<<<<< HEAD
         $register = new Register();
         $register->setSchemas([42]);
         $this->registerMapper->method('findAll')->willReturn([$register]);
 
         $object = new ObjectEntity();
+=======
+        $register = $this->createMock(Register::class);
+        $register->method('getSchemas')->willReturn([42]);
+        $this->registerMapper->method('findAll')->willReturn([$register]);
+
+        $object = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->magicMapper->method('findAllInRegisterSchemaTable')
             ->willReturn([$object]);
 
@@ -191,12 +223,21 @@ class RegisterCalendarTest extends TestCase
 
     public function testSearchFiltersEventsByPattern(): void
     {
+<<<<<<< HEAD
         $register = new Register();
         $register->setSchemas([42]);
         $this->registerMapper->method('findAll')->willReturn([$register]);
 
         $object1 = new ObjectEntity();
         $object2 = new ObjectEntity();
+=======
+        $register = $this->createMock(Register::class);
+        $register->method('getSchemas')->willReturn([42]);
+        $this->registerMapper->method('findAll')->willReturn([$register]);
+
+        $object1 = $this->createMock(ObjectEntity::class);
+        $object2 = $this->createMock(ObjectEntity::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->magicMapper->method('findAllInRegisterSchemaTable')
             ->willReturn([$object1, $object2]);
@@ -223,8 +264,13 @@ class RegisterCalendarTest extends TestCase
 
     public function testSearchReturnsEmptyWhenNoRegistersContainSchema(): void
     {
+<<<<<<< HEAD
         $register = new Register();
         $register->setSchemas([99]);  // Different schema ID
+=======
+        $register = $this->createMock(Register::class);
+        $register->method('getSchemas')->willReturn([99]);  // Different schema ID
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->registerMapper->method('findAll')->willReturn([$register]);
 
         $result = $this->calendar->search('');

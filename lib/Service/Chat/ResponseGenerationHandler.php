@@ -6,6 +6,7 @@
  * Handler for generating LLM responses using configured providers.
  * Supports OpenAI, Fireworks AI, and Ollama with function calling.
  *
+<<<<<<< HEAD
  * Streaming-mode outcome (orchestrator §1 + streaming follow-up §2):
  * dual-mode. When the caller passes a `StreamYieldChannel` AND the
  * configured provider's chat instance exposes `generateStreamOfText`,
@@ -19,6 +20,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -29,8 +32,11 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -39,15 +45,22 @@ use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+<<<<<<< HEAD
 use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
+=======
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\OllamaChat;
 use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
+<<<<<<< HEAD
 use LLPhant\Exception\MissingFeatureException;
 use ReflectionClass;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 /**
  * ResponseGenerationHandler
@@ -63,12 +76,15 @@ use ReflectionClass;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   This class is a multi-provider LLM router that
  *   must reference OpenAI, Ollama, and Fireworks config/chat classes plus the streaming
  *   infrastructure (StreamYieldChannel, StreamingToolInstanceWrapper, MissingFeatureException).
  *   Splitting into one class per provider would be the clean long-term solution; for now all
  *   13 imported types are genuinely load-bearing and cannot be consolidated without an
  *   architectural refactor tracked as a separate ADR task.
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class ResponseGenerationHandler
 {
@@ -102,8 +118,11 @@ class ResponseGenerationHandler
      * @param LoggerInterface       $logger          Logger.
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         SettingsService $settingsService,
@@ -125,6 +144,7 @@ class ResponseGenerationHandler
      * - Context injection
      * - API communication
      *
+<<<<<<< HEAD
      * When `$channel` is non-null AND the active provider's chat instance
      * exposes `generateStreamOfText` we invoke the streaming surface and
      * forward each token chunk through `$channel->emitToken()`. On
@@ -132,11 +152,14 @@ class ResponseGenerationHandler
      * blocking call so providers that advertise streaming but fail at
      * runtime degrade gracefully (contract's non-streaming-provider clause).
      *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param string                  $userMessage    User's message text.
      * @param array                   $context        RAG context with 'text' and 'sources' keys.
      * @param array                   $messageHistory Array of LLPhantMessage objects.
      * @param Agent|null              $agent          Agent configuration (optional).
      * @param array                   $selectedTools  Tools selected for this request (optional).
+<<<<<<< HEAD
      * @param StreamYieldChannel|null $channel        Streaming channel; when supplied the handler
      *                                                attempts the LLPhant streaming surface and
      *                                                forwards token / tool-call / tool-result
@@ -145,20 +168,31 @@ class ResponseGenerationHandler
      *                                                for `POST /api/chat/send`).
      * @param array                   $cnAiContext    Optional Conduction AI context overrides
      *                                                (provider/model hints, defaults to empty array).
+=======
+     * @param StreamYieldChannel|null $channel        Streaming channel; null = blocking fallback.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @return string Generated response text
      *
      * @throws \Exception If LLM provider is not configured or API call fails
      *
+<<<<<<< HEAD
      * @psalm-param  array{text: string, sources: list<array>} $context
      * @psalm-return string
+=======
+     * @psalm-param array{text: string, sources: list<array>} $context
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @SuppressWarnings(PHPMD.StaticAccess)          LLPhantMessage factory methods are standard LLPhant pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-2
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function generateResponse(
         string $userMessage,
@@ -166,8 +200,12 @@ class ResponseGenerationHandler
         array $messageHistory,
         ?Agent $agent,
         array $selectedTools=[],
+<<<<<<< HEAD
         ?StreamYieldChannel $channel=null,
         array $cnAiContext=[]
+=======
+        ?StreamYieldChannel $channel=null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ): string {
         $startTime = microtime(true);
 
@@ -322,6 +360,7 @@ class ResponseGenerationHandler
             $defaultPrompt = "You are a helpful AI assistant that helps users find and understand their data.";
             $systemPrompt  = $agent?->getPrompt() ?? $defaultPrompt;
 
+<<<<<<< HEAD
             // Inject the CnAiContext snapshot the widget sends with each
             // message. Without this the LLM has no idea which app the user
             // is in — so on /apps/openbuild/ it would call decidesk tools
@@ -341,6 +380,8 @@ class ResponseGenerationHandler
                 }
             }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             if (empty($context['text']) === false) {
                 $systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
                 $systemPrompt .= "CONTEXT:\n".$context['text']."\n\n";
@@ -360,6 +401,7 @@ class ResponseGenerationHandler
                 $functions = $this->toolHandler->convertToolsToFunctions($tools);
             }
 
+<<<<<<< HEAD
             // Initialize $response (and $llmTime) BEFORE entering any
             // provider branch. The Ollama branch skips the OpenAIChat
             // initialisation block; without this default-empty seed the
@@ -368,10 +410,14 @@ class ResponseGenerationHandler
             // not to assign — an easy regression vector when a new
             // provider is added. The Fireworks/Ollama branches below
             // overwrite this unconditionally for their own provider.
+=======
+            // Initialize response and llmTime before conditional assignment.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $response     = '';
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);
 
+<<<<<<< HEAD
             // Skip the OpenAIChat instantiation for Ollama — Ollama uses OllamaConfig + OllamaChat
             // (instantiated in the dedicated branch below). OpenAIChat::__construct() type-errors when
             // given OllamaConfig.
@@ -405,6 +451,12 @@ class ResponseGenerationHandler
             if ($chatProvider === 'fireworks') {
                 /*
                  * For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
+=======
+            if ($chatProvider === 'fireworks') {
+                /*
+                 * For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
+                 * Streaming is not supported for Fireworks — non-streaming fallback applies.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                  *
                  * @psalm-suppress UndefinedPropertyFetch LLPhant config has dynamic properties
                  */
@@ -416,6 +468,7 @@ class ResponseGenerationHandler
                     messageHistory: $messageHistory,
                     functions: $functions
                 );
+<<<<<<< HEAD
                 $llmTime  = microtime(true) - $llmStartTime;
             } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat with LLPhant's built-in tool support.
@@ -424,13 +477,49 @@ class ResponseGenerationHandler
                 // Add functions if available - Ollama supports tools via LLPhant!
                 if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
+=======
+            } else if ($chatProvider === 'ollama') {
+                // Use native Ollama chat with LLPhant's built-in tool support.
+                $chat = $this->createOllamaChat(config: $config);
+
+                // Add functions if available — Ollama supports tools via LLPhant.
+                if (empty($functions) === false) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
                         functions: $functions,
                         tools: $tools
                     );
+<<<<<<< HEAD
                     $functionInfoObjects = $this->wrapToolsForStreaming(
                         functionInfoObjects: $functionInfoObjects,
                         channel: $channel
+                    );
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
+                    $chat->setTools($functionInfoObjects);
+                }
+
+                $response = $this->invokeChat(
+                    chat: $chat,
+                    messageHistory: $messageHistory,
+<<<<<<< HEAD
+                    channel: $channel,
+                    provider: $chatProvider
+                );
+                $llmTime  = microtime(true) - $llmStartTime;
+            }//end if
+
+=======
+                    channel: $channel
+                );
+            } else {
+                // OpenAI (and OpenAI-compatible) path.
+                $chat = $this->createOpenAIChat(config: $config);
+
+                if (empty($functions) === false) {
+                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
+                        functions: $functions,
+                        tools: $tools
                     );
                     $chat->setTools($functionInfoObjects);
                 }
@@ -438,12 +527,13 @@ class ResponseGenerationHandler
                 $response = $this->invokeChat(
                     chat: $chat,
                     messageHistory: $messageHistory,
-                    channel: $channel,
-                    provider: $chatProvider
+                    channel: $channel
                 );
-                $llmTime  = microtime(true) - $llmStartTime;
             }//end if
 
+            $llmTime = microtime(true) - $llmStartTime;
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $totalTime = microtime(true) - $startTime;
 
             $this->logger->info(
@@ -479,6 +569,7 @@ class ResponseGenerationHandler
     }//end generateResponse()
 
     /**
+<<<<<<< HEAD
      * Invoke the active LLPhant chat instance, preferring streaming when a
      * channel was supplied AND the provider exposes `generateStreamOfText`.
      *
@@ -667,6 +758,122 @@ class ResponseGenerationHandler
         }
 
         return $assembled;
+=======
+     * Create an OpenAIChat instance. Protected for test-subclass override.
+     *
+     * @param OpenAIConfig $config LLPhant OpenAI config.
+     *
+     * @return OpenAIChat OpenAI chat instance.
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-2.6
+     */
+    protected function createOpenAIChat(OpenAIConfig $config): OpenAIChat
+    {
+        return new OpenAIChat($config);
+
+    }//end createOpenAIChat()
+
+    /**
+     * Create an OllamaChat instance. Protected for test-subclass override.
+     *
+     * @param OllamaConfig $config LLPhant Ollama config.
+     *
+     * @return OllamaChat Ollama chat instance.
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-2.6
+     */
+    protected function createOllamaChat(OllamaConfig $config): OllamaChat
+    {
+        return new OllamaChat($config);
+
+    }//end createOllamaChat()
+
+    /**
+     * Invoke the chat instance, using streaming when the channel is provided.
+     *
+     * Attempts `generateChatStream()` on the chat object when `$channel !== null`.
+     * On `\LLPhant\Exception\MissingFeatureException` it degrades to blocking
+     * `generateChat()` and logs an info-level message — zero behaviour change for
+     * callers that do not pass a channel.
+     *
+     * @param object                  $chat           LLPhant chat instance (OpenAIChat|OllamaChat).
+     * @param array                   $messageHistory Array of LLPhantMessage objects.
+     * @param StreamYieldChannel|null $channel        Streaming channel; null = blocking fallback.
+     *
+     * @return string Full generated response text
+     *
+     * @throws \Exception If the underlying chat call fails.
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-2.2
+     */
+    private function invokeChat(
+        object $chat,
+        array $messageHistory,
+        ?StreamYieldChannel $channel=null
+    ): string {
+        // Non-streaming fallback: no channel or provider lacks streaming surface.
+        if ($channel === null || method_exists($chat, 'generateChatStream') === false) {
+            // Non-streaming fallback — preserves POST /api/chat/send contract.
+            return $chat->generateChat($messageHistory);
+        }
+
+        try {
+            return $this->streamChat(
+                chat: $chat,
+                messageHistory: $messageHistory,
+                channel: $channel
+            );
+        } catch (\LLPhant\Exception\MissingFeatureException $e) {
+            $this->logger->info(
+                message: '[ResponseGenerationHandler] Streaming not supported, degrading to blocking call',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            // Non-streaming fallback — preserves POST /api/chat/send contract.
+            return $chat->generateChat($messageHistory);
+        }
+
+    }//end invokeChat()
+
+    /**
+     * Read the PSR-7 stream from `generateChatStream()` and forward each chunk.
+     *
+     * Accumulates the full response and returns it so the controller can include
+     * it verbatim in the `final` SSE event. Each non-empty chunk is forwarded to
+     * `$channel->emitToken()`.
+     *
+     * @param object             $chat           LLPhant chat instance.
+     * @param array              $messageHistory Array of LLPhantMessage objects.
+     * @param StreamYieldChannel $channel        Streaming channel.
+     *
+     * @return string Full generated response text
+     *
+     * @throws \Exception If the stream read fails.
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-2.2
+     */
+    private function streamChat(
+        object $chat,
+        array $messageHistory,
+        StreamYieldChannel $channel
+    ): string {
+        $stream       = $chat->generateChatStream($messageHistory);
+        $fullResponse = '';
+
+        while ($stream->eof() === false) {
+            $chunk = $stream->read(4096);
+            if ($chunk !== '' && $chunk !== false) {
+                $channel->emitToken($chunk);
+                $fullResponse .= $chunk;
+            }
+        }
+
+        return $fullResponse;
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     }//end streamChat()
 
     /**
@@ -688,8 +895,11 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function callFireworksChatAPIWithHistory(
         string $apiKey,

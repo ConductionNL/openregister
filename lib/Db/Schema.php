@@ -67,8 +67,11 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setSource(?string $source)
  * @method bool getHardValidation()
  * @method void setHardValidation(bool $hardValidation)
+<<<<<<< HEAD
  * @method bool getAppendOnly()
  * @method void setAppendOnly(bool $appendOnly)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
@@ -759,6 +762,7 @@ class Schema extends Entity implements JsonSerializable
         $validActions = ['create', 'read', 'update', 'delete'];
 
         foreach ($authorization as $action => $rules) {
+<<<<<<< HEAD
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
@@ -777,6 +781,39 @@ class Schema extends Entity implements JsonSerializable
             foreach ($rules as $rule) {
                 $this->validateAuthorizationRule(rule: $rule, action: $action, context: $context);
             }
+=======
+            // The optional `inheritFromPublic` flag is a sibling of the CRUD actions and
+            // controls whether authenticated users qualify for `public` rules on this
+            // schema/register. See PermissionHandler::resolveInheritFromPublic.
+            if ($action === 'inheritFromPublic') {
+                if ($rules !== null && is_bool($rules) === false) {
+                    throw new InvalidArgumentException(
+                        "Authorization '{$action}' in {$context} must be a boolean or null"
+                    );
+                }
+
+                continue;
+            }
+
+            // Validate action is a valid CRUD operation.
+            if (in_array($action, $validActions) === false) {
+                $validList = implode(', ', $validActions);
+                $msg       = "Invalid authorization action '{$action}' in {$context}. Must be one of: {$validList}";
+                throw new InvalidArgumentException($msg);
+            }
+
+            // Validate rules is an array.
+            if (is_array($rules) === false) {
+                throw new InvalidArgumentException(
+                    "Authorization rules for action '{$action}' in {$context} must be an array"
+                );
+            }
+
+            // Validate each rule is either a string (simple) or a valid conditional object.
+            foreach ($rules as $rule) {
+                $this->validateAuthorizationRule(rule: $rule, action: $action, context: $context);
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }//end foreach
     }//end validateAuthorizationRules()
 
@@ -1168,6 +1205,7 @@ class Schema extends Entity implements JsonSerializable
             $object['hardValidation'] = true;
         }
 
+<<<<<<< HEAD
         // Fold top-level `x-openregister-*` annotation blocks (e.g. the
         // OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
         // declaration) into the `configuration` array BEFORE the per-key
@@ -1196,6 +1234,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         foreach ($object as $key => $value) {
+=======
+        foreach ($object as $key => $value) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             // Special handling for 'required' field - must always be an array, never NULL.
             if ($key === 'required') {
                 if ($value === null || $value === []) {
@@ -1289,7 +1330,11 @@ class Schema extends Entity implements JsonSerializable
      *     slug: null|string, title: null|string, description: null|string,
      *     version: null|string, summary: null|string, icon: null|string,
      *     required: array, properties: array, archive: array|null,
+<<<<<<< HEAD
      *     source: null|string, hardValidation: bool, immutable: bool, appendOnly: bool,
+=======
+     *     source: null|string, hardValidation: bool, immutable: bool,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *     searchable: bool, updated: null|string, created: null|string,
      *     maxDepth: int, owner: null|string, application: null|string,
      *     organisation: null|string,
@@ -1645,14 +1690,21 @@ class Schema extends Entity implements JsonSerializable
      * @throws \InvalidArgumentException If validation fails
      *
      * @return array Validated configuration
+<<<<<<< HEAD
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateConfigurationArray(array $configuration): array
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
+<<<<<<< HEAD
         $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
+=======
+        $boolFields      = ['allowFiles'];
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
@@ -1684,6 +1736,7 @@ class Schema extends Entity implements JsonSerializable
                 $validatedConfig[$key] = $value;
                 continue;
             }
+<<<<<<< HEAD
 
             if (in_array($key, $passThrough, true) === true) {
                 $validatedConfig[$key] = $value;
@@ -1716,12 +1769,19 @@ class Schema extends Entity implements JsonSerializable
                 // the cleanest path that still surfaces a signal.
                 $this->droppedKeys[] = (string) $key;
             }//end if
+=======
+
+            if (in_array($key, $passThrough, true) === true) {
+                $validatedConfig[$key] = $value;
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
 
     /**
+<<<<<<< HEAD
      * Dropped `x-openregister-*` annotation keys collected during the most
      * recent `validateConfigurationArray()` pass (R07). SchemaMapper reads
      * this after `setConfiguration()` and emits a logger->warning()
@@ -1750,6 +1810,8 @@ class Schema extends Entity implements JsonSerializable
     }//end consumeDroppedAnnotationKeys()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Validate calendar provider configuration
      *
      * When calendarProvider.enabled is true, dtstart and titleTemplate are required.
@@ -1848,6 +1910,7 @@ class Schema extends Entity implements JsonSerializable
     }//end validateAllowedTagsValue()
 
     /**
+<<<<<<< HEAD
      * Declared `x-openregister-*` annotation keys.
      *
      * Keys outside this set are dropped at save time so a typo
@@ -1886,6 +1949,9 @@ class Schema extends Entity implements JsonSerializable
      * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry::listIds()
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-8
+=======
+     * Valid linked type values for Nextcloud entity integration
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private const VALID_LINKED_TYPES = [
         'files',
@@ -1899,6 +1965,7 @@ class Schema extends Entity implements JsonSerializable
     ];
 
     /**
+<<<<<<< HEAD
      * Validate the linkedTypes configuration value.
      *
      * Registry-driven validation per AD-5 of pluggable-integration-registry:
@@ -1921,6 +1988,15 @@ class Schema extends Entity implements JsonSerializable
      * @return void
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
+=======
+     * Validate the linkedTypes configuration value
+     *
+     * @param mixed $value The linkedTypes value to validate
+     *
+     * @throws InvalidArgumentException If validation fails
+     *
+     * @return void
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -1932,13 +2008,17 @@ class Schema extends Entity implements JsonSerializable
             throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
         }
 
+<<<<<<< HEAD
         $registryIds = $this->resolveIntegrationRegistryIds();
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         foreach ($value as $type) {
             if (is_string($type) === false) {
                 throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
             }
 
+<<<<<<< HEAD
             $valid = in_array($type, self::VALID_LINKED_TYPES, true)
                 || in_array($type, $registryIds, true);
 
@@ -1947,12 +2027,18 @@ class Schema extends Entity implements JsonSerializable
                 sort($combined);
                 throw new InvalidArgumentException(
                     "Invalid linked type '$type'. Valid values: ".implode(', ', $combined)
+=======
+            if (in_array($type, self::VALID_LINKED_TYPES, true) === false) {
+                throw new InvalidArgumentException(
+                    "Invalid linked type '$type'. Valid values: ".implode(', ', self::VALID_LINKED_TYPES)
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 );
             }
         }
     }//end validateLinkedTypesValue()
 
     /**
+<<<<<<< HEAD
      * Resolve the current set of registered integration ids.
      *
      * Schema is a Nextcloud Entity, not a service — DI doesn't
@@ -1984,6 +2070,8 @@ class Schema extends Entity implements JsonSerializable
     }//end resolveIntegrationRegistryIds()
 
     /**
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Get the linked types from the schema configuration
      *
      * Returns the array of Nextcloud entity types this schema can link to.
@@ -2025,6 +2113,7 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated(attribute: 'searchable');
     }//end setSearchable()
 
+<<<<<<< HEAD
     /**
      * Check whether objects of this schema are append-only.
      *
@@ -2038,6 +2127,8 @@ class Schema extends Entity implements JsonSerializable
         return $this->appendOnly;
     }//end isAppendOnly()
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /**
      * String representation of the schema
      *

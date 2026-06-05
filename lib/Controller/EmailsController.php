@@ -5,9 +5,12 @@
  *
  * REST controller for email relation operations on OpenRegister objects.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -16,8 +19,13 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -108,8 +116,11 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function index(
         string $register,
@@ -130,6 +141,7 @@ class EmailsController extends Controller
             }
 
             $params = $this->request->getParams();
+<<<<<<< HEAD
             $limit  = null;
             if (isset($params['limit']) === true) {
                 $limit = (int) $params['limit'];
@@ -139,6 +151,10 @@ class EmailsController extends Controller
             if (isset($params['offset']) === true) {
                 $offset = (int) $params['offset'];
             }
+=======
+            $limit  = isset($params['limit']) === true ? (int) $params['limit'] : null;
+            $offset = isset($params['offset']) === true ? (int) $params['offset'] : null;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
             $result = $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
 
@@ -161,8 +177,11 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function create(
         string $register,
@@ -227,8 +246,11 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function destroy(
         string $register,
@@ -272,7 +294,11 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function search(): JSONResponse
     {
@@ -328,7 +354,11 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function bySender(): JSONResponse
     {

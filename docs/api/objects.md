@@ -606,7 +606,10 @@ When creating or updating objects, you can explicitly set certain @self metadata
 - **`organisation`**: Organization UUID  
 - **`published`**: Publication timestamp
 - **`depublished`**: Depublication timestamp
+<<<<<<< HEAD
 - **`folder`**: Numeric Nextcloud folder ID to bind the object to (see access-control contract below)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
 Example:
 ```json
@@ -622,6 +625,7 @@ Example:
 
 For detailed information about @self metadata handling, see [Self Metadata Handling](../development/self-metadata-handling.md).
 
+<<<<<<< HEAD
 ### `@self.folder` access-control contract
 
 The `@self.folder` metadata field binds an object to an existing Nextcloud folder
@@ -681,6 +685,8 @@ tracked separately as a follow-up.
 - Architectural context: ADR-007 (Security and Auth), ADR-008 (Backend Layering)
 - Downstream consumer benefiting from this hardening: DocuDesk's `add-dossier-schema` change.
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 ## Security
 
 - **RBAC**: Respects role-based access control

@@ -5,9 +5,12 @@
  *
  * Controller for handling webhook management operations.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -19,10 +22,17 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-87
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-39
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-87
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-39
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -40,9 +50,13 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+=======
+use OCP\IRequest;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,9 +74,12 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 class WebhooksController extends Controller
 {
@@ -96,6 +113,7 @@ class WebhooksController extends Controller
     private LoggerInterface $logger;
 
     /**
+<<<<<<< HEAD
      * User session for authorization gating on webhook write endpoints.
      *
      * @var IUserSession|null
@@ -120,6 +138,16 @@ class WebhooksController extends Controller
      * @param LoggerInterface    $logger           Logger
      * @param IUserSession|null  $userSession      User session (for write-endpoint admin gate)
      * @param IGroupManager|null $groupManager     Group manager (for admin check)
+=======
+     * Constructor
+     *
+     * @param string           $appName          Application name
+     * @param IRequest         $request          HTTP request
+     * @param WebhookMapper    $webhookMapper    Webhook mapper
+     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
+     * @param WebhookService   $webhookService   Webhook service
+     * @param LoggerInterface  $logger           Logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         string $appName,
@@ -127,15 +155,20 @@ class WebhooksController extends Controller
         WebhookMapper $webhookMapper,
         WebhookLogMapper $webhookLogMapper,
         WebhookService $webhookService,
+<<<<<<< HEAD
         LoggerInterface $logger,
         ?IUserSession $userSession=null,
         ?IGroupManager $groupManager=null
+=======
+        LoggerInterface $logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->webhookMapper    = $webhookMapper;
         $this->webhookLogMapper = $webhookLogMapper;
         $this->webhookService   = $webhookService;
         $this->logger           = $logger;
+<<<<<<< HEAD
         $this->userSession      = $userSession;
         $this->groupManager     = $groupManager;
     }//end __construct()
@@ -182,6 +215,11 @@ class WebhooksController extends Controller
     }//end forbiddenResponse()
 
     /**
+=======
+    }//end __construct()
+
+    /**
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * List all webhooks
      *
      * Returns a JSON response containing an array of all webhooks in the system.
@@ -206,7 +244,11 @@ class WebhooksController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -315,8 +357,11 @@ class WebhooksController extends Controller
      *     array{error: 'Failed to retrieve webhook'|'Webhook not found'},
      *     array<never, never>
      * >
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -362,18 +407,25 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
+<<<<<<< HEAD
         // Webhooks let the holder direct outbound HTTP from the server,
         // so write access is admin-only (wave-3 C10).
         if ($this->isCurrentUserAdmin() === false) {
             return $this->forbiddenResponse();
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $data = $this->request->getParams();
 
@@ -449,17 +501,24 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
+<<<<<<< HEAD
         // Webhook reconfiguration is admin-only (wave-3 C10).
         if ($this->isCurrentUserAdmin() === false) {
             return $this->forbiddenResponse();
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $data = $this->request->getParams();
 
@@ -528,17 +587,24 @@ class WebhooksController extends Controller
      *     array<never, never>
      * >
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
+<<<<<<< HEAD
         // Webhook deletion is admin-only (wave-3 C10).
         if ($this->isCurrentUserAdmin() === false) {
             return $this->forbiddenResponse();
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $webhook = $this->webhookMapper->find($id);
             $this->webhookMapper->delete($webhook);
@@ -592,12 +658,17 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-87
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-87
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
+<<<<<<< HEAD
         // The /test endpoint actually fires an outbound HTTP request to the
         // configured URL, so it triggers the same SSRF surface as a normal
         // delivery. Gate it identically to the other write endpoints
@@ -606,6 +677,8 @@ class WebhooksController extends Controller
             return $this->forbiddenResponse();
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             $webhook = $this->webhookMapper->find($id);
 
@@ -719,7 +792,11 @@ class WebhooksController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-39
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-39
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1064,8 +1141,11 @@ class WebhooksController extends Controller
      *     },
      *     array<never, never>
      * >
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1129,8 +1209,11 @@ class WebhooksController extends Controller
      *     array{error?: 'Failed to retrieve webhook log statistics'|
      *     'Webhook not found', total?: int, successful?: int, failed?: int,
      *     pendingRetries?: int<0, max>}, array<never, never>>
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1185,8 +1268,11 @@ class WebhooksController extends Controller
      * @NoCSRFRequired
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1304,18 +1390,25 @@ class WebhooksController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function retry(int $logId): JSONResponse
     {
+<<<<<<< HEAD
         // The retry() endpoint re-fires an outbound webhook delivery, so it
         // shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10).
         if ($this->isCurrentUserAdmin() === false) {
             return $this->forbiddenResponse();
         }
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         try {
             // Get the log entry.
             $log = $this->webhookLogMapper->find($logId);

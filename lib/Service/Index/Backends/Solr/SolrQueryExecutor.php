@@ -6,9 +6,12 @@
  * Handles query execution and search operations for Solr.
  * Manages query building, execution, and result parsing.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -65,8 +68,11 @@ class SolrQueryExecutor
      * @param LoggerInterface       $logger            Logger
      *
      * @return void
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(
         SolrHttpClient $httpClient,
@@ -84,8 +90,11 @@ class SolrQueryExecutor
      * @param array $params Query parameters
      *
      * @return array Search results
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function search(array $params): array
     {
@@ -155,8 +164,11 @@ class SolrQueryExecutor
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Paginated search requires handling multiple filter conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function searchPaginated(
         array $query=[],
@@ -199,8 +211,11 @@ class SolrQueryExecutor
      * @psalm-return array{q: '*:*'|mixed, start: int, rows: int, sort?: string, fl?: mixed|string}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple parameter types
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function buildSolrQuery(array $query): array
     {
@@ -232,9 +247,12 @@ class SolrQueryExecutor
      * @param array|string $order Sort specification
      *
      * @return string Solr sort string
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function translateSortField(array|string $order): string
     {
@@ -262,9 +280,12 @@ class SolrQueryExecutor
      * @param array $query      Original query
      *
      * @return array Paginated format with results and pagination info.
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function convertToPaginatedFormat(array $solrResult, array $query): array
     {
@@ -300,9 +321,12 @@ class SolrQueryExecutor
      * @param string $fields Fields to return
      *
      * @return array Inspection results
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function inspectIndex(
         string $query='*:*',
@@ -330,8 +354,11 @@ class SolrQueryExecutor
      * @return (bool|int|mixed|null|string)[] Statistics
      *
      * @psalm-return array{available: bool, collection: null|string, error?: string, documents?: 0|mixed, status?: 'OK'}
+<<<<<<< HEAD
      *
      * @spec exclude thin stats wrapper — runs a rows=0 search and reports numFound
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function getStats(): array
     {

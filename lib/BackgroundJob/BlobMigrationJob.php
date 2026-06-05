@@ -7,9 +7,12 @@
  * (oc_openregister_objects) to schema-specific magic tables. Runs every 5 minutes
  * and processes up to 100 objects per execution, grouped by register+schema pair.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -71,7 +74,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @param ITimeFactory $time Time factory for parent class
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function __construct(ITimeFactory $time)
     {
@@ -94,7 +101,11 @@ class BlobMigrationJob extends TimedJob
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {
@@ -281,7 +292,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @return bool True if the table exists
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function blobTableExists(IDBConnection $db): bool
     {
@@ -313,7 +328,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @return array<int, array<string, mixed>> Raw rows from the blob table
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function fetchBlobObjects(IDBConnection $db): array
     {
@@ -336,7 +355,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @return int Number of remaining rows
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function countBlobRows(IDBConnection $db): int
     {
@@ -361,7 +384,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @return array<string, array<int, array<string, mixed>>> Grouped rows keyed by "registerId_schemaId"
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function groupByRegisterSchema(array $objects, LoggerInterface $logger): array
     {
@@ -401,7 +428,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @return array<string, mixed> Object array for saving to magic table
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function blobRowToObjectArray(array $row): array
     {
@@ -458,7 +489,11 @@ class BlobMigrationJob extends TimedJob
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+=======
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-9
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function deleteBlobRows(IDBConnection $db, array $rows): void
     {

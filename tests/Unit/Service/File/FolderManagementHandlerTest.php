@@ -15,7 +15,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\AuditTrailMapper;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -64,9 +67,12 @@ class FolderManagementHandlerTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
+<<<<<<< HEAD
     /** @var AuditTrailMapper&MockObject */
     private AuditTrailMapper $auditTrailMapper;
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     /** @var IUser&MockObject */
     private IUser $mockUser;
 
@@ -83,7 +89,10 @@ class FolderManagementHandlerTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         // Common mock: user session returns a user
         $this->mockUser = $this->createMock(IUser::class);
@@ -102,8 +111,12 @@ class FolderManagementHandlerTest extends TestCase
             $this->registerMapper,
             $this->userSession,
             $this->groupManager,
+<<<<<<< HEAD
             $this->logger,
             $this->auditTrailMapper
+=======
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
     }
 
@@ -262,8 +275,12 @@ class FolderManagementHandlerTest extends TestCase
             $this->registerMapper,
             $userSession,
             $this->groupManager,
+<<<<<<< HEAD
             $this->logger,
             $this->auditTrailMapper
+=======
+            $this->logger
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         );
 
         $this->expectException(Exception::class);

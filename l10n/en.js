@@ -1346,6 +1346,7 @@ OC.L10N.register(
     "Text chunks" : "Text chunks",
     "Unknown error" : "Unknown error",
     "Very high" : "Very high",
+<<<<<<< HEAD
     "{title} in {register} / {schema}" : "{title} in {register} / {schema}",
     "Push Notifications" : "Push Notifications",
     "Real-time push notification status via notify_push" : "Real-time push notification status via notify_push",
@@ -1357,6 +1358,9 @@ OC.L10N.register(
     "notify_push configuration guide" : "notify_push configuration guide",
     "Realtime push active" : "Realtime push active",
     "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted." : "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted."
+=======
+    "{title} in {register} / {schema}" : "{title} in {register} / {schema}"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 },
 "nplurals=2; plural=(n != 1);"
 );

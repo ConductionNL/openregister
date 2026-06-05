@@ -16,6 +16,7 @@
 		"test-coverage": "jest --silent --coverage",
 		"stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
 		"validate-oas": "spectral lint oas-*.json --fail-severity error",
+<<<<<<< HEAD
 		"download-oas": "scripts/download-oas.sh",
 		"test:e2e": "playwright test",
 		"test:e2e:docs": "playwright test --project docs-capture",
@@ -25,6 +26,9 @@
 		"check:manifest": "node tests/validate-manifest.js",
 		"check:register": "node tests/validate-register.js",
 		"check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register"
+=======
+		"download-oas": "scripts/download-oas.sh"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	},
 	"browserslist": [
 		"extends @nextcloud/browserslist-config"
@@ -41,18 +45,32 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-json": "^6.0.1",
+<<<<<<< HEAD
 		"@conduction/nextcloud-vue": "^1.0.0-beta.103",
 		"@fortawesome/fontawesome-svg-core": "^6.5.2",
 		"@fortawesome/free-solid-svg-icons": "^6.5.2",
 		"@nextcloud/axios": "~2.5.1",
+=======
+        "@conduction/nextcloud-vue": "1.0.0-beta.3",
+		"@fortawesome/fontawesome-svg-core": "^6.5.2",
+		"@fortawesome/free-solid-svg-icons": "^6.5.2",
+		"@nextcloud/axios": "^2.5.0",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"@nextcloud/dialogs": "^6.1.1",
 		"@nextcloud/initial-state": "^2.2.0",
 		"@nextcloud/l10n": "^3.2.0",
 		"@nextcloud/router": "^3.0.0",
+<<<<<<< HEAD
 		"@nextcloud/vue": "^8.39.0",
 		"@vueuse/core": "^10.7.2",
 		"apexcharts": "^4.0.0",
 		"axios": "^1.7.3",
+=======
+		"@nextcloud/vue": "^8.16.0",
+		"@vueuse/core": "^10.7.2",
+		"apexcharts": "^4.0.0",
+		"axios": "^1.16.0",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"bootstrap": "^5.3.2",
 		"bootstrap-vue": "^2.23.1",
 		"css-loader": "^6.8.1",
@@ -67,7 +85,11 @@
 		"vue-apexcharts": "^1.7.0",
 		"vue-codemirror6": "^1.1.5",
 		"vue-draggable-plus": "^0.2.6",
+<<<<<<< HEAD
 		"vue-frag": "^1.4.3",
+=======
+        "vue-frag": "^1.4.3",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"vue-loader": "^15.11.1",
 		"vue-loading-overlay": "^6.0.3",
 		"vue-material-design-icons": "^5.2.0",
@@ -76,7 +98,10 @@
 	},
 	"devDependencies": {
 		"@babel/core": "^7.23.9",
+<<<<<<< HEAD
 		"@babel/eslint-parser": "^7.28.6",
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"@babel/plugin-transform-typescript": "^7.26.8",
 		"@babel/preset-env": "^7.23.9",
 		"@babel/preset-typescript": "^7.26.0",
@@ -87,6 +112,7 @@
 		"@eslint/js": "^9.39.1",
 		"@nextcloud/browserslist-config": "^2.3.0",
 		"@nextcloud/eslint-config": "^8.4.1",
+<<<<<<< HEAD
 		"@nextcloud/eslint-plugin": "^2.2.1",
 		"@nextcloud/stylelint-config": "^2.4.0",
 		"@nextcloud/webpack-vue-config": "^5.5.0",
@@ -96,17 +122,30 @@
 		"@types/jest": "^29.5.12",
 		"@types/node": "^20.17.23",
 		"@vue/eslint-config-typescript": "^13.0.0",
+=======
+		"@nextcloud/stylelint-config": "^2.4.0",
+		"@nextcloud/webpack-vue-config": "^5.5.0",
+		"@pinia/testing": "^0.1.3",
+		"@stoplight/spectral-cli": "^6.15.0",
+		"@types/jest": "^29.5.12",
+		"@types/node": "^20.17.23",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"@vue/test-utils": "^2.4.4",
 		"@vue/vue2-jest": "^29.2.6",
 		"babel-jest": "^29.7.0",
 		"babel-loader": "^9.1.3",
 		"eslint": "^8.56.0",
+<<<<<<< HEAD
 		"eslint-config-standard": "^17.1.0",
 		"eslint-import-resolver-alias": "^1.1.2",
 		"eslint-import-resolver-exports": "^1.0.0-beta.5",
 		"eslint-import-resolver-typescript": "^3.10.1",
 		"eslint-plugin-import": "^2.29.1",
 		"eslint-plugin-jsdoc": "^46.10.1",
+=======
+		"eslint-import-resolver-alias": "^1.1.2",
+		"eslint-plugin-import": "^2.29.1",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"eslint-plugin-n": "^16.6.2",
 		"eslint-plugin-promise": "^6.1.1",
 		"eslint-plugin-vue": "^9.21.1",
@@ -115,10 +154,14 @@
 		"jest-environment-jsdom": "^29.7.0",
 		"jest-transform-stub": "^2.0.0",
 		"postcss": "^8.4.31",
+<<<<<<< HEAD
 		"postcss-html": "^1.8.1",
 		"stylelint": "^15.11.0",
 		"stylelint-config-recommended-scss": "^13.1.0",
 		"stylelint-config-recommended-vue": "^1.6.1",
+=======
+		"stylelint": "^15.11.0",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"stylelint-webpack-plugin": "^4.1.1",
 		"ts-jest": "^29.1.2",
 		"ts-loader": "^9.5.1",
@@ -127,8 +170,12 @@
 	},
 	"overrides": {
 		"vue": "^2.7.16",
+<<<<<<< HEAD
 		"@nextcloud/vue": "^8.39.0",
 		"@nextcloud/axios": "~2.5.1",
+=======
+		"@nextcloud/vue": "^8.16.0",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		"stylelint": "^15.11.0",
 		"eslint": "^8.56.0",
 		"postcss": "^8.4.31",
@@ -144,9 +191,15 @@
 		"dompurify": ">=3.4.0",
 		"follow-redirects": ">=1.16.0",
 		"lodash": ">=4.18.1",
+<<<<<<< HEAD
 		"@conduction/nextcloud-vue": {
 			"@vueuse/core": "^14.0.0"
 		}
+=======
+		"flatted": ">=3.4.2",
+		"fast-xml-parser": ">=5.6.1",
+		"js-yaml": ">=4.1.1"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	},
 	"resolutions": {
 		"postcss": "^8.4.31",

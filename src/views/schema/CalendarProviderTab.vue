@@ -47,7 +47,10 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-dtstart">{{ t('openregister', 'Start Date Field') }} *</label>
 				<NcSelect
+<<<<<<< HEAD
 						input-label="Local Config Dtstart"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					id="cal-dtstart"
 					v-model="localConfig.dtstart"
 					:options="datePropertyOptions"
@@ -58,7 +61,10 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-dtend">{{ t('openregister', 'End Date Field') }}</label>
 				<NcSelect
+<<<<<<< HEAD
 						input-label="Local Config Dtend"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					id="cal-dtend"
 					v-model="localConfig.dtend"
 					:options="datePropertyOptions"
@@ -95,7 +101,10 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-location">{{ t('openregister', 'Location Field') }}</label>
 				<NcSelect
+<<<<<<< HEAD
 						input-label="Local Config Location Field"
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 					id="cal-location"
 					v-model="localConfig.locationField"
 					:options="stringPropertyOptions"
@@ -183,7 +192,10 @@ export default {
 	computed: {
 		/**
 		 * Property names available for placeholders
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived select-option list
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string[]}
 		 */
 		propertyNames() {
@@ -194,7 +206,10 @@ export default {
 		},
 		/**
 		 * Date/datetime properties for dtstart/dtend selectors
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived select-option list
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string[]}
 		 */
 		datePropertyOptions() {
@@ -211,7 +226,10 @@ export default {
 		},
 		/**
 		 * String properties for location selector
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived select-option list
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string[]}
 		 */
 		stringPropertyOptions() {
@@ -224,7 +242,10 @@ export default {
 		},
 		/**
 		 * Validation: dtstart and titleTemplate required when enabled
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived form-validity flag for display
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {boolean}
 		 */
 		isValid() {
@@ -236,6 +257,7 @@ export default {
 	},
 	watch: {
 		schema: {
+<<<<<<< HEAD
 			/**
 			 * Reload the calendar config when the schema prop changes.
 			 *
@@ -243,6 +265,8 @@ export default {
 			 * @spec exclude UI plumbing — prop watch handler
 			 * @return {void}
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			handler(newSchema) {
 				if (newSchema) {
 					this.loadConfig(newSchema)
@@ -255,7 +279,10 @@ export default {
 		/**
 		 * Load calendar provider config from schema configuration
 		 * @param {object} schema The schema object
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-4
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		loadConfig(schema) {
 			const config = schema?.configuration?.calendarProvider || {}
@@ -273,8 +300,11 @@ export default {
 		},
 		/**
 		 * Save the calendar provider configuration via schema update
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — save action delegates to the schema store
 		 * @return {Promise<void>}
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		async save() {
 			this.saving = true

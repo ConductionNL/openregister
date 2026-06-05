@@ -447,7 +447,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															:taggable="true"
 															:multiple="true"
 															:disabled="labelsLoading"
+<<<<<<< HEAD
 															:input-label="t('openregister', 'Labels')" />
+=======
+															input-label="Labels" />
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 														<div class="fileLabelsEditActions">
 															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
 																<template #icon>
@@ -616,11 +620,14 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+<<<<<<< HEAD
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 import { stringToDate, dateToString } from '../../services/dateUtils.js'
 export default {
 	name: 'ViewObject',
@@ -860,6 +867,36 @@ export default {
 				if (parentSchema?.properties) {
 					Object.assign(inherited, parentSchema.properties)
 				}
+<<<<<<< HEAD
+=======
+			}
+			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
+		},
+		selectedPublishedCount() {
+			return this.selectedAttachments.filter((a) => {
+				const found = objectStore.files.results
+					?.find(item => item.id === a)
+				if (!found) return false
+
+				return !!found.published
+			}).length
+		},
+		selectedUnpublishedCount() {
+			return this.selectedAttachments.filter((a) => {
+				const found = objectStore.files.results
+					?.find(item => item.id === a)
+				if (!found) return false
+				return found.published === null
+			}).length
+		},
+		allPublishedSelected() {
+			const published = objectStore.files.results
+				?.filter(item => !!item.published)
+				.map(item => item.id) || []
+
+			if (!published.length) {
+				return false
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			}
 			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
 		},
@@ -1075,9 +1112,12 @@ export default {
 		},
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
+<<<<<<< HEAD
 			/**
 			 * @spec exclude watcher re-resolving schema and re-initializing data
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			async handler(newSchema) {
 				console.info('Schema changed in ViewObject:', newSchema)
 
@@ -1135,9 +1175,12 @@ export default {
 			},
 		},
 		formData: {
+<<<<<<< HEAD
 			/**
 			 * @spec exclude watcher syncing JSON editor from form
 			 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			handler(_newValue) {
 				if (!this.isInternalUpdate) {
 					this.updateJsonFromForm()
@@ -1146,9 +1189,12 @@ export default {
 			deep: true,
 		},
 	},
+<<<<<<< HEAD
 	/**
 	 * @spec exclude Vue lifecycle hook initializing modal data
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	async mounted() {
 		// Debug: Log current state when modal opens
 		console.info('ViewObject mounted:', {
@@ -1188,8 +1234,11 @@ export default {
 		/**
 		 * Returns { type, objectId } needed for all file store operations.
 		 * Handles both string IDs and embedded register/schema objects.
+<<<<<<< HEAD
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 */
 		_getFileParams() {
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1203,9 +1252,12 @@ export default {
 			}
 			return { type, objectId }
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude modal step transition handler for register/schema selection
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		confirmRegisterSchemaSelection() {
 			// Set the selected register and schema in the store
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
@@ -1676,6 +1728,7 @@ export default {
 			const { type, objectId } = this._getFileParams()
 			const fileIds = [...this.selectedAttachments]
 
+<<<<<<< HEAD
 			if (typeof objectStore.batchFiles === 'function') {
 				await objectStore.batchFiles(type, objectId, action, fileIds)
 				return
@@ -1684,6 +1737,49 @@ export default {
 			// Legacy fallback: loop the per-file action.
 			for (const fileId of fileIds) {
 				await perFileFallback(type, objectId, fileId)
+=======
+			try {
+				this.publishLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
+
+				const selectedFiles = objectStore.files.results.filter(file =>
+					this.selectedAttachments.includes(file.id),
+				)
+
+				for (const file of selectedFiles) {
+					await objectStore.publishFile(type, objectId, file.id)
+				}
+
+				this.selectedAttachments = []
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Error publishing files:', error)
+			} finally {
+				this.publishLoading = []
+			}
+		},
+		async depublishSelectedFiles() {
+			if (this.selectedAttachments.length === 0) return
+
+			try {
+				this.depublishLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
+
+				const selectedFiles = objectStore.files.results.filter(file =>
+					this.selectedAttachments.includes(file.id),
+				)
+
+				for (const file of selectedFiles) {
+					await objectStore.unpublishFile(type, objectId, file.id)
+				}
+
+				this.selectedAttachments = []
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Error depublishing files:', error)
+			} finally {
+				this.depublishLoading = []
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 			}
 		},
 		/**
@@ -1694,10 +1790,23 @@ export default {
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
+<<<<<<< HEAD
 				await this._runBatchAction(
 					'delete',
 					(type, objectId, fileId) => objectStore.deleteFile(type, objectId, fileId),
 				)
+=======
+				const { type, objectId } = this._getFileParams()
+
+				const selectedFiles = objectStore.files.results?.filter(item =>
+					this.selectedAttachments.includes(item.id),
+				) || []
+
+				for (const file of selectedFiles) {
+					await objectStore.deleteFile(type, objectId, file.id)
+				}
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1706,9 +1815,36 @@ export default {
 				this.fileIdsLoading = []
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
 		 */
+=======
+		async publishFile(file) {
+			try {
+				this.publishLoading.push(file.id)
+				const { type, objectId } = this._getFileParams()
+				await objectStore.publishFile(type, objectId, file.id)
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Failed to publish file:', error)
+			} finally {
+				this.publishLoading = this.publishLoading.filter(id => id !== file.id)
+			}
+		},
+		async depublishFile(file) {
+			try {
+				this.depublishLoading.push(file.id)
+				const { type, objectId } = this._getFileParams()
+				await objectStore.unpublishFile(type, objectId, file.id)
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Failed to depublish file:', error)
+			} finally {
+				this.depublishLoading = this.depublishLoading.filter(id => id !== file.id)
+			}
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async deleteFile(file) {
 			try {
 				this.fileIdsLoading.push(file.id)
@@ -1721,14 +1857,49 @@ export default {
 				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
 			}
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude form-state handler entering file-label edit mode
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		async editFileLabels(file) {
 			this.editingLabelsFileId = file.id
 			this.editingLabels = [...(file.labels || [])]
 			const tags = await objectStore.fetchTags()
 			this.availableLabels = Array.isArray(tags) ? tags : objectStore.getTags || []
+<<<<<<< HEAD
+=======
+		},
+		cancelFileLabels() {
+			this.editingLabelsFileId = null
+			this.editingLabels = []
+		},
+		async saveFileLabels(file) {
+			const { type, objectId } = this._getFileParams()
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+
+			this.labelsLoading = true
+			try {
+				const url = `/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectId}/files/${file.id}`
+				const response = await fetch(url, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ tags: this.editingLabels }),
+				})
+				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				await objectStore.fetchFiles(type, objectId)
+				this.cancelFileLabels()
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Failed to save file labels:', error)
+			} finally {
+				this.labelsLoading = false
+			}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		},
 		/**
 		 * @spec exclude form-state handler cancelling file-label edit
@@ -1924,9 +2095,12 @@ export default {
 			}
 			return String(value)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude table-row click UI handler for inline edit
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		handleRowClick(key, event) {
 			// Don't select if clicking on an input or button
 			if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('.value-input-container')) {
@@ -2132,6 +2306,7 @@ export default {
 
 			return null
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude display helper delegating to dateUtils.stringToDate
 		 */
@@ -2141,6 +2316,11 @@ export default {
 		/**
 		 * @spec exclude display helper mapping schema type to input type
 		 */
+=======
+		stringToDate(value, format) {
+			return stringToDate(value, format)
+		},
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		getPropertyInputType(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (!schemaProperty) return 'text'

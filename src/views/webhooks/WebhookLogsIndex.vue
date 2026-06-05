@@ -207,7 +207,10 @@ export default {
 		/**
 		 * Get current page number
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived pagination view state
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -217,7 +220,10 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived pagination view state
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -227,7 +233,10 @@ export default {
 		/**
 		 * Webhook options for filter dropdown
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — derived select-option list
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Array} Webhook options
 		 */
 		webhookOptions() {
@@ -242,12 +251,15 @@ export default {
 			)
 		},
 	},
+<<<<<<< HEAD
 	/**
 	 * Lifecycle hook: load webhooks and logs and subscribe to retry events.
 	 *
 	 * @spec exclude UI plumbing — view-mount data fetch and event wiring
 	 * @return {void}
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	mounted() {
 		// Get webhook ID from transfer data if available.
 		const transferData = navigationStore.getTransferData()
@@ -260,12 +272,15 @@ export default {
 		// Listen for retry events to refresh logs.
 		window.addEventListener('webhook-log-retried', this.loadLogs)
 	},
+<<<<<<< HEAD
 	/**
 	 * Lifecycle hook: remove the retry event listener before teardown.
 	 *
 	 * @spec exclude UI plumbing — event-listener teardown
 	 * @return {void}
 	 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	beforeDestroy() {
 		// Clean up event listener.
 		window.removeEventListener('webhook-log-retried', this.loadLogs)
@@ -274,7 +289,10 @@ export default {
 		/**
 		 * Load webhooks list
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — fetches the webhook list for display
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
@@ -291,7 +309,10 @@ export default {
 		/**
 		 * Load logs list
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — fetches webhook logs for display
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {Promise<void>}
 		 */
 		async loadLogs() {
@@ -322,7 +343,10 @@ export default {
 		 * Handle webhook filter change
 		 *
 		 * @param {number|null} webhookId - Selected webhook ID
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — filter handler reloads logs
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		handleWebhookFilterChange(webhookId) {
@@ -334,7 +358,10 @@ export default {
 		/**
 		 * Refresh logs
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — refresh button reloads logs
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		refreshLogs() {
@@ -344,7 +371,10 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination handler reloads logs
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		previousPage() {
@@ -357,7 +387,10 @@ export default {
 		/**
 		 * Go to next page
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pagination handler reloads logs
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		nextPage() {
@@ -371,7 +404,10 @@ export default {
 		 * Get webhook name by ID
 		 *
 		 * @param {number} webhookId - Webhook ID
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — display lookup helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string} Webhook name
 		 */
 		getWebhookName(webhookId) {
@@ -383,7 +419,10 @@ export default {
 		 * Truncate event class name
 		 *
 		 * @param {string} eventClass - Event class name
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure presentation helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string} Truncated event class
 		 */
 		truncateEventClass(eventClass) {
@@ -397,7 +436,10 @@ export default {
 		 *
 		 * @param {string} text - Text to truncate
 		 * @param {number} maxLength - Maximum length
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure presentation helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string} Truncated text
 		 */
 		truncateText(text, maxLength) {
@@ -410,7 +452,10 @@ export default {
 		 * Format date for display
 		 *
 		 * @param {string} date - Date string
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — pure presentation helper
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {string} Formatted date
 		 */
 		formatDate(date) {
@@ -422,7 +467,10 @@ export default {
 		 * View log details
 		 *
 		 * @param {object} log - Log entry
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — opens the log-details modal
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		viewLogDetails(log) {
@@ -434,7 +482,10 @@ export default {
 		/**
 		 * Go back to webhooks list
 		 *
+<<<<<<< HEAD
 		 * @spec exclude UI plumbing — router navigation
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		 * @return {void}
 		 */
 		goBack() {

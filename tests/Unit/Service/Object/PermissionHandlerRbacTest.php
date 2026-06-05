@@ -13,6 +13,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
+<<<<<<< HEAD
+=======
+use OCP\IAppConfig;
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -27,6 +31,7 @@ use Psr\Log\LoggerInterface;
  */
 class PermissionHandlerRbacTest extends TestCase
 {
+<<<<<<< HEAD
     private PermissionHandler $handler;
     private IUserSession&MockObject $userSession;
     private IUserManager&MockObject $userManager;
@@ -36,10 +41,34 @@ class PermissionHandlerRbacTest extends TestCase
     private ConditionMatcher&MockObject $conditionMatcher;
     private LoggerInterface&MockObject $logger;
     private ContainerInterface&MockObject $container;
+=======
+
+    private PermissionHandler $handler;
+
+    private IUserSession&MockObject $userSession;
+
+    private IUserManager&MockObject $userManager;
+
+    private IGroupManager&MockObject $groupManager;
+
+    private SchemaMapper&MockObject $schemaMapper;
+
+    private MagicMapper&MockObject $objectEntityMapper;
+
+    private ConditionMatcher&MockObject $conditionMatcher;
+
+    private IAppConfig&MockObject $appConfig;
+
+    private LoggerInterface&MockObject $logger;
+
+    private ContainerInterface&MockObject $container;
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private RegisterMapper&MockObject $registerMapper;
 
     protected function setUp(): void
     {
+<<<<<<< HEAD
         $this->userSession = $this->createMock(IUserSession::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
@@ -50,6 +79,23 @@ class PermissionHandlerRbacTest extends TestCase
         $this->container = $this->createMock(ContainerInterface::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
 
+=======
+        $this->userSession        = $this->createMock(IUserSession::class);
+        $this->userManager        = $this->createMock(IUserManager::class);
+        $this->groupManager       = $this->createMock(IGroupManager::class);
+        $this->schemaMapper       = $this->createMock(SchemaMapper::class);
+        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
+        $this->conditionMatcher   = $this->createMock(ConditionMatcher::class);
+        $this->appConfig          = $this->createMock(IAppConfig::class);
+        $this->logger         = $this->createMock(LoggerInterface::class);
+        $this->container      = $this->createMock(ContainerInterface::class);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+
+        // Default: tenant default for inheritFromPublic is `true`, preserving
+        // pre-change behaviour for tests that don't opt out explicitly.
+        $this->appConfig->method('getValueBool')->willReturn(true);
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->handler = new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -57,10 +103,18 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $this->conditionMatcher,
+<<<<<<< HEAD
             $this->logger,
             $this->container
         );
     }
+=======
+            $this->appConfig,
+            $this->logger,
+            $this->container
+        );
+    }//end setUp()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     private function mockUser(string $uid, array $groups): IUser&MockObject
     {
@@ -71,29 +125,46 @@ class PermissionHandlerRbacTest extends TestCase
         $this->userManager->method('get')->willReturn($user);
         $this->groupManager->method('getUserGroupIds')->willReturn($groups);
         return $user;
+<<<<<<< HEAD
     }
+=======
+    }//end mockUser()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     private function createSchema(int $id, ?array $authorization): Schema
     {
         $schema = new Schema();
         $schema->setId($id);
         $schema->setAuthorization($authorization);
+<<<<<<< HEAD
         $schema->setTitle('Test Schema ' . $id);
         return $schema;
     }
 
     private function createRegister(int $id, ?array $authorization, ?array $configuration = null): Register
+=======
+        $schema->setTitle('Test Schema '.$id);
+        return $schema;
+    }//end createSchema()
+
+    private function createRegister(int $id, ?array $authorization, ?array $configuration=null): Register
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $register = new Register();
         $register->setId($id);
         $register->setAuthorization($authorization);
         $register->setConfiguration($configuration ?? []);
         return $register;
+<<<<<<< HEAD
     }
+=======
+    }//end createRegister()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     private function setupRegisterForSchema(int $schemaId, Register $register): void
     {
         $this->container->method('get')
+<<<<<<< HEAD
             ->willReturnCallback(function (string $class) use ($register) {
                 if ($class === RegisterMapper::class) {
                     return $this->registerMapper;
@@ -103,19 +174,41 @@ class PermissionHandlerRbacTest extends TestCase
                 }
                 throw new \RuntimeException('Unknown class: ' . $class);
             });
+=======
+            ->willReturnCallback(
+                    function (string $class) use ($register) {
+                        if ($class === RegisterMapper::class) {
+                            return $this->registerMapper;
+                        }
+
+                        if ($class === 'OCA\OpenRegister\Service\OrganisationService') {
+                            throw new \RuntimeException('Not available');
+                        }
+
+                        throw new \RuntimeException('Unknown class: '.$class);
+                    }
+                    );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->registerMapper->method('getFirstRegisterWithSchema')
             ->willReturn($register->getId());
         $this->registerMapper->method('find')
             ->willReturn($register);
+<<<<<<< HEAD
     }
 
     // === Register Cascade Tests ===
 
+=======
+    }//end setupRegisterForSchema()
+
+    // === Register Cascade Tests ===
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testSchemaAuthorizationOverridesRegister(): void
     {
         $this->mockUser('user1', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => ['behandelaars'],
             'create' => ['admin'],
@@ -125,6 +218,23 @@ class PermissionHandlerRbacTest extends TestCase
             'read' => ['public'],
             'create' => ['public'],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read'   => ['behandelaars'],
+                    'create' => ['admin'],
+                ]
+                );
+
+        $register = $this->createRegister(
+                10,
+                [
+                    'read'   => ['public'],
+                    'create' => ['public'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->setupRegisterForSchema(1, $register);
 
@@ -134,7 +244,11 @@ class PermissionHandlerRbacTest extends TestCase
 
         // Schema says only admin can create, not behandelaars.
         $this->assertFalse($this->handler->hasPermission($schema, 'create'));
+<<<<<<< HEAD
     }
+=======
+    }//end testSchemaAuthorizationOverridesRegister()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testRegisterFallbackWhenSchemaHasNoAuth(): void
     {
@@ -143,10 +257,20 @@ class PermissionHandlerRbacTest extends TestCase
         // Schema has NO authorization.
         $schema = $this->createSchema(1, null);
 
+<<<<<<< HEAD
         $register = $this->createRegister(10, [
             'read' => ['medewerkers'],
             'create' => ['admin'],
         ]);
+=======
+        $register = $this->createRegister(
+                10,
+                [
+                    'read'   => ['medewerkers'],
+                    'create' => ['admin'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->setupRegisterForSchema(1, $register);
 
@@ -155,13 +279,21 @@ class PermissionHandlerRbacTest extends TestCase
 
         // Register says only admin can create.
         $this->assertFalse($this->handler->hasPermission($schema, 'create'));
+<<<<<<< HEAD
     }
+=======
+    }//end testRegisterFallbackWhenSchemaHasNoAuth()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testNeitherSchemaNorRegisterHasAuth(): void
     {
         $this->mockUser('user1', ['somegroup']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, null);
+=======
+        $schema   = $this->createSchema(1, null);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $register = $this->createRegister(10, null);
 
         $this->setupRegisterForSchema(1, $register);
@@ -169,14 +301,21 @@ class PermissionHandlerRbacTest extends TestCase
         // No authorization anywhere = everyone has permission.
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
+<<<<<<< HEAD
     }
 
     // === Role Expansion Tests ===
 
+=======
+    }//end testNeitherSchemaNorRegisterHasAuth()
+
+    // === Role Expansion Tests ===
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testRoleExpansionViewerRole(): void
     {
         $this->mockUser('user1', ['public']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'roles' => [
                 'viewer' => ['public'],
@@ -190,18 +329,45 @@ class PermissionHandlerRbacTest extends TestCase
                 ['name' => 'editor', 'description' => 'Edit access', 'actions' => ['read', 'create', 'update']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'roles' => [
+                        'viewer' => ['public'],
+                        'editor' => ['behandelaars'],
+                    ],
+                ]
+                );
+
+        $register = $this->createRegister(
+                10,
+                null,
+                [
+                    'roles' => [
+                        ['name' => 'viewer', 'description' => 'Read only', 'actions' => ['read']],
+                        ['name' => 'editor', 'description' => 'Edit access', 'actions' => ['read', 'create', 'update']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->setupRegisterForSchema(1, $register);
 
         // Public group has viewer role => read only.
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
         $this->assertFalse($this->handler->hasPermission($schema, 'create'));
+<<<<<<< HEAD
     }
+=======
+    }//end testRoleExpansionViewerRole()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testRoleExpansionEditorRole(): void
     {
         $this->mockUser('user1', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'roles' => [
                 'viewer' => ['public'],
@@ -215,6 +381,28 @@ class PermissionHandlerRbacTest extends TestCase
                 ['name' => 'editor', 'description' => 'Edit access', 'actions' => ['read', 'create', 'update']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'roles' => [
+                        'viewer' => ['public'],
+                        'editor' => ['behandelaars'],
+                    ],
+                ]
+                );
+
+        $register = $this->createRegister(
+                10,
+                null,
+                [
+                    'roles' => [
+                        ['name' => 'viewer', 'description' => 'Read only', 'actions' => ['read']],
+                        ['name' => 'editor', 'description' => 'Edit access', 'actions' => ['read', 'create', 'update']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->setupRegisterForSchema(1, $register);
 
@@ -224,12 +412,17 @@ class PermissionHandlerRbacTest extends TestCase
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
         $this->assertTrue($this->handler->hasPermission($schema, 'update'));
         $this->assertTrue($this->handler->hasPermission($schema, 'delete'));
+<<<<<<< HEAD
     }
+=======
+    }//end testRoleExpansionEditorRole()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testMixedRoleAndDirectAuth(): void
     {
         $this->mockUser('user1', ['extra-groep']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'roles' => [
                 'viewer' => ['public'],
@@ -242,17 +435,43 @@ class PermissionHandlerRbacTest extends TestCase
                 ['name' => 'viewer', 'description' => 'Read only', 'actions' => ['read']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'roles' => [
+                        'viewer' => ['public'],
+                    ],
+                    'read'  => ['extra-groep'],
+                ]
+                );
+
+        $register = $this->createRegister(
+                10,
+                null,
+                [
+                    'roles' => [
+                        ['name' => 'viewer', 'description' => 'Read only', 'actions' => ['read']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->setupRegisterForSchema(1, $register);
 
         // extra-groep has direct read permission.
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
+<<<<<<< HEAD
     }
+=======
+    }//end testMixedRoleAndDirectAuth()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testUnknownRoleNameIsIgnored(): void
     {
         $this->mockUser('user1', ['public']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'roles' => [
                 'archiver' => ['public'],
@@ -264,6 +483,26 @@ class PermissionHandlerRbacTest extends TestCase
                 ['name' => 'viewer', 'description' => 'Read only', 'actions' => ['read']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'roles' => [
+                        'archiver' => ['public'],
+                    ],
+                ]
+                );
+
+        $register = $this->createRegister(
+                10,
+                null,
+                [
+                    'roles' => [
+                        ['name' => 'viewer', 'description' => 'Read only', 'actions' => ['read']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->setupRegisterForSchema(1, $register);
 
@@ -275,34 +514,64 @@ class PermissionHandlerRbacTest extends TestCase
         // because the effective authorization ends up empty after role expansion.
         $result = $this->handler->resolveAuthorization($schema);
         $this->assertEmpty($result);
+<<<<<<< HEAD
     }
 
     // === Manage Action Tests ===
 
+=======
+    }//end testUnknownRoleNameIsIgnored()
+
+    // === Manage Action Tests ===
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testManageActionEvaluated(): void
     {
         $this->mockUser('user1', ['register-beheerders']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'manage' => ['register-beheerders'],
             'read' => ['public'],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'manage' => ['register-beheerders'],
+                    'read'   => ['public'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
         // User in register-beheerders should have manage permission.
         $this->assertTrue($this->handler->hasPermission($schema, 'manage'));
+<<<<<<< HEAD
     }
+=======
+    }//end testManageActionEvaluated()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testManageActionDenied(): void
     {
         $this->mockUser('user1', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'manage' => ['register-beheerders'],
             'read' => ['behandelaars'],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'manage' => ['register-beheerders'],
+                    'read'   => ['behandelaars'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -311,22 +580,39 @@ class PermissionHandlerRbacTest extends TestCase
         $this->assertFalse($this->handler->hasPermission($schema, 'manage'));
         // But should still be able to read.
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
+<<<<<<< HEAD
     }
+=======
+    }//end testManageActionDenied()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAdminBypassesManageCheck(): void
     {
         $this->mockUser('admin1', ['admin']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'manage' => ['register-beheerders'],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'manage' => ['register-beheerders'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
         // Admin always has all permissions.
         $this->assertTrue($this->handler->hasPermission($schema, 'manage'));
+<<<<<<< HEAD
     }
+=======
+    }//end testAdminBypassesManageCheck()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // ------------------------------------------------------------------
     // Conditional rule delegation tests (ADR-011 — ConditionMatcher).
@@ -335,30 +621,55 @@ class PermissionHandlerRbacTest extends TestCase
     // rule evaluation to the shared ConditionMatcher service and that the
     // admin/owner bypasses short-circuit before delegation.
     // ------------------------------------------------------------------
+<<<<<<< HEAD
 
     private function createObjectEntity(array $data, ?string $owner = null, ?string $organisation = null): ObjectEntity
+=======
+    private function createObjectEntity(array $data, ?string $owner=null, ?string $organisation=null): ObjectEntity
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     {
         $object = new ObjectEntity();
         $object->setObject($data);
         if ($owner !== null) {
             $object->setOwner($owner);
         }
+<<<<<<< HEAD
         if ($organisation !== null) {
             $object->setOrganisation($organisation);
         }
         return $object;
     }
+=======
+
+        if ($organisation !== null) {
+            $object->setOrganisation($organisation);
+        }
+
+        return $object;
+    }//end createObjectEntity()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testConditionalPublicRuleDelegatesToConditionMatcher(): void
     {
         // Anonymous caller, public-with-match rule.
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishDate' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishDate' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -370,9 +681,17 @@ class PermissionHandlerRbacTest extends TestCase
             ->expects($this->once())
             ->method('objectMatchesConditions')
             ->with(
+<<<<<<< HEAD
                 $this->callback(function (array $envelope): bool {
                     return ($envelope['publishDate'] ?? null) === '2025-01-01';
                 }),
+=======
+                $this->callback(
+                        function (array $envelope): bool {
+                            return ($envelope['publishDate'] ?? null) === '2025-01-01';
+                        }
+                        ),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ['publishDate' => ['$lte' => '$now']]
             )
             ->willReturn(true);
@@ -387,17 +706,32 @@ class PermissionHandlerRbacTest extends TestCase
                 object: $object
             )
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testConditionalPublicRuleDelegatesToConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testConditionalRuleReturnsFalseWhenConditionMatcherReturnsFalse(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishDate' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishDate' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -419,17 +753,32 @@ class PermissionHandlerRbacTest extends TestCase
                 object: $object
             )
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testConditionalRuleReturnsFalseWhenConditionMatcherReturnsFalse()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testUserIdVariableRuleDelegatesToConditionMatcher(): void
     {
         $this->mockUser('jan', ['medewerkers']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'medewerkers', 'match' => ['assignedTo' => '$userId']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'medewerkers', 'match' => ['assignedTo' => '$userId']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -455,17 +804,32 @@ class PermissionHandlerRbacTest extends TestCase
                 object: $object
             )
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testUserIdVariableRuleDelegatesToConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testInOperatorRuleDelegatesToConditionMatcher(): void
     {
         $this->mockUser('jan', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'behandelaars', 'match' => ['status' => ['$in' => ['open', 'review']]]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'behandelaars', 'match' => ['status' => ['$in' => ['open', 'review']]]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -478,17 +842,32 @@ class PermissionHandlerRbacTest extends TestCase
             ->willReturn(true);
 
         $this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan', null, true, $object));
+<<<<<<< HEAD
     }
+=======
+    }//end testInOperatorRuleDelegatesToConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testOrganisationVariableFoldsIntoEnvelopeViaSelf(): void
     {
         $this->mockUser('jan', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'behandelaars', 'match' => ['_organisation' => '$organisation']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'behandelaars', 'match' => ['_organisation' => '$organisation']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -502,26 +881,50 @@ class PermissionHandlerRbacTest extends TestCase
             ->expects($this->once())
             ->method('objectMatchesConditions')
             ->with(
+<<<<<<< HEAD
                 $this->callback(function (array $envelope): bool {
                     return (($envelope['@self']['organisation'] ?? null) === 'org-abc-123')
                         && (($envelope['name'] ?? null) === 'zaak-1');
                 }),
+=======
+                $this->callback(
+                        function (array $envelope): bool {
+                            return (($envelope['@self']['organisation'] ?? null) === 'org-abc-123')
+                            && (($envelope['name'] ?? null) === 'zaak-1');
+                        }
+                        ),
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 ['_organisation' => '$organisation']
             )
             ->willReturn(true);
 
         $this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan', null, true, $object));
+<<<<<<< HEAD
     }
+=======
+    }//end testOrganisationVariableFoldsIntoEnvelopeViaSelf()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAdminBypassSkipsConditionMatcher(): void
     {
         $this->mockUser('admin1', ['admin']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'behandelaars', 'match' => ['status' => 'open']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'behandelaars', 'match' => ['status' => 'open']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -534,17 +937,32 @@ class PermissionHandlerRbacTest extends TestCase
             ->method('objectMatchesConditions');
 
         $this->assertTrue($this->handler->hasPermission($schema, 'read', 'admin1', null, true, $object));
+<<<<<<< HEAD
     }
+=======
+    }//end testAdminBypassSkipsConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testOwnerBypassSkipsConditionMatcher(): void
     {
         $this->mockUser('jan', ['medewerkers']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'behandelaars', 'match' => ['status' => 'open']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'behandelaars', 'match' => ['status' => 'open']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -566,16 +984,29 @@ class PermissionHandlerRbacTest extends TestCase
                 object: $object
             )
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testOwnerBypassSkipsConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testSimpleStringRuleDoesNotInvokeConditionMatcher(): void
     {
         // Simple group match without a `match` clause never reaches ConditionMatcher.
         $this->mockUser('jan', ['juridisch-team']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => ['juridisch-team'],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => ['juridisch-team'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -585,16 +1016,29 @@ class PermissionHandlerRbacTest extends TestCase
             ->method('objectMatchesConditions');
 
         $this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan'));
+<<<<<<< HEAD
     }
+=======
+    }//end testSimpleStringRuleDoesNotInvokeConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testConditionalRuleWithoutMatchClauseDoesNotInvokeConditionMatcher(): void
     {
         // Conditional rule with an empty/missing match is treated as a plain group match.
         $this->mockUser('jan', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [['group' => 'behandelaars']],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [['group' => 'behandelaars']],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -604,7 +1048,11 @@ class PermissionHandlerRbacTest extends TestCase
             ->method('objectMatchesConditions');
 
         $this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan'));
+<<<<<<< HEAD
     }
+=======
+    }//end testConditionalRuleWithoutMatchClauseDoesNotInvokeConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymousCallerAgainstNonPublicRuleReturnsFalseWithoutDelegation(): void
     {
@@ -612,9 +1060,18 @@ class PermissionHandlerRbacTest extends TestCase
         // without consulting ConditionMatcher (no conditional `public` rule to evaluate).
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => ['juridisch-team'],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => ['juridisch-team'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -624,18 +1081,29 @@ class PermissionHandlerRbacTest extends TestCase
             ->method('objectMatchesConditions');
 
         $this->assertFalse($this->handler->hasPermission($schema, 'read'));
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymousCallerAgainstNonPublicRuleReturnsFalseWithoutDelegation()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // ------------------------------------------------------------------
     // End-to-end wiring test with REAL ConditionMatcher + OperatorEvaluator.
     //
     // Reproduces the user-reported bug: schema with
+<<<<<<< HEAD
     //   { "read": [{ "group": "public", "match": { "publishedAt": { "$lte": "$now" } } }] }
+=======
+    // { "read": [{ "group": "public", "match": { "publishedAt": { "$lte": "$now" } } }] }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     // must grant access to objects whose publishedAt is in the past AND deny
     // access to objects with publishedAt = null (so the list endpoint and the
     // find endpoint agree — SQL's NULL semantics is the contract).
     // ------------------------------------------------------------------
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     private function buildHandlerWithRealMatcher(): PermissionHandler
     {
         $operatorEvaluator = new OperatorEvaluator($this->logger);
@@ -652,25 +1120,48 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $realMatcher,
+<<<<<<< HEAD
             $this->logger,
             $this->container
         );
     }
+=======
+            $this->appConfig,
+            $this->logger,
+            $this->container
+        );
+    }//end buildHandlerWithRealMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testPublicLteNowRuleMatchesPastPublishedAt(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['publishedAt' => '2025-01-01 00:00:00']);
+=======
+        $object  = $this->createObjectEntity(['publishedAt' => '2025-01-01 00:00:00']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertTrue(
@@ -684,7 +1175,11 @@ class PermissionHandlerRbacTest extends TestCase
             ),
             'Past-dated publication should be accessible via $lte $now rule'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testPublicLteNowRuleMatchesPastPublishedAt()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testPublicLteNowRuleRejectsNullPublishedAt(): void
     {
@@ -692,18 +1187,33 @@ class PermissionHandlerRbacTest extends TestCase
         // OperatorEvaluator used raw PHP <= with null coerced to empty string.
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
         // Object has no publishedAt value at all — the property is absent from
         // the data map, so getObjectValue returns null.
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['title' => 'draft']);
+=======
+        $object  = $this->createObjectEntity(['title' => 'draft']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertFalse(
@@ -717,23 +1227,42 @@ class PermissionHandlerRbacTest extends TestCase
             ),
             'Publication with null publishedAt must NOT match $lte $now (SQL-aligned semantics)'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testPublicLteNowRuleRejectsNullPublishedAt()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testPublicLteNowRuleRejectsExplicitNullPublishedAt(): void
     {
         // Same as above but with the property explicitly set to null in the data map.
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['publishedAt' => null, 'title' => 'draft']);
+=======
+        $object  = $this->createObjectEntity(['publishedAt' => null, 'title' => 'draft']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertFalse(
@@ -746,23 +1275,42 @@ class PermissionHandlerRbacTest extends TestCase
                 object: $object
             )
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testPublicLteNowRuleRejectsExplicitNullPublishedAt()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testPublicLteNowRuleRejectsFuturePublishedAt(): void
     {
         // Sanity: future-dated publication should also be denied (not yet published).
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['publishedAt' => '2099-01-01 00:00:00']);
+=======
+        $object  = $this->createObjectEntity(['publishedAt' => '2099-01-01 00:00:00']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertFalse(
@@ -775,7 +1323,11 @@ class PermissionHandlerRbacTest extends TestCase
                 object: $object
             )
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testPublicLteNowRuleRejectsFuturePublishedAt()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // ------------------------------------------------------------------
     // $now format alignment tests.
@@ -787,7 +1339,10 @@ class PermissionHandlerRbacTest extends TestCase
     //
     // Canonical format: Y-m-d H:i:s (SQL-native).
     // ------------------------------------------------------------------
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testNowResolvesToSqlNativeFormat(): void
     {
         // If this test ever fails, the list and find endpoints will diverge
@@ -796,17 +1351,32 @@ class PermissionHandlerRbacTest extends TestCase
         // scenario in specs/rbac-scopes/spec.md.
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
         // Stored date in SQL-native Y-m-d H:i:s — the canonical format.
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['publishedAt' => '2025-06-01 12:00:00']);
+=======
+        $object  = $this->createObjectEntity(['publishedAt' => '2025-06-01 12:00:00']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertTrue(
@@ -820,7 +1390,11 @@ class PermissionHandlerRbacTest extends TestCase
             ),
             '$now must resolve to Y-m-d H:i:s so it lex-compares correctly against Y-m-d H:i:s stored dates'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testNowResolvesToSqlNativeFormat()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testNowAlignsWithSqlPathForIsoStoredDates(): void
     {
@@ -836,16 +1410,31 @@ class PermissionHandlerRbacTest extends TestCase
         // handles this on input).
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['publishedAt' => '2025-06-01T12:00:00Z']);
+=======
+        $object  = $this->createObjectEntity(['publishedAt' => '2025-06-01T12:00:00Z']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         // Both paths lex-compare: '2025-06-01T...' vs '<today> <time>'.
@@ -868,23 +1457,42 @@ class PermissionHandlerRbacTest extends TestCase
             $phpVerdict,
             'Past-year ISO-with-T date MUST $lte $now via lex comparison (year-level wins)'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testNowAlignsWithSqlPathForIsoStoredDates()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testNowAlignsWithSqlPathForDateOnlyStored(): void
     {
         // Date-only stored values (no time component) work on both paths.
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'public', 'match' => ['publishedAt' => ['$lte' => '$now']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
+<<<<<<< HEAD
         $object = $this->createObjectEntity(['publishedAt' => '2025-06-01']);
+=======
+        $object  = $this->createObjectEntity(['publishedAt' => '2025-06-01']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertTrue(
@@ -898,7 +1506,11 @@ class PermissionHandlerRbacTest extends TestCase
             ),
             'Date-only "2025-06-01" MUST $lte $now (prefix is lexicographically less than current year)'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testNowAlignsWithSqlPathForDateOnlyStored()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testCompositePublishedAndNotDepublishedRule(): void
     {
@@ -906,6 +1518,7 @@ class PermissionHandlerRbacTest extends TestCase
         // This is the rule the user asked about directly.
         $this->userSession->method('getUser')->willReturn(null);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 [
@@ -924,6 +1537,29 @@ class PermissionHandlerRbacTest extends TestCase
                 ],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        [
+                            'group' => 'public',
+                            'match' => [
+                                'publicatiedatum'   => ['$lte' => '$now'],
+                                'depublicatiedatum' => ['$gte' => '$now'],
+                            ],
+                        ],
+                        [
+                            'group' => 'public',
+                            'match' => [
+                                'publicatiedatum'   => ['$lte' => '$now'],
+                                'depublicatiedatum' => ['$exists' => false],
+                            ],
+                        ],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -932,11 +1568,25 @@ class PermissionHandlerRbacTest extends TestCase
         // Case A: published, within window → rule 1 matches.
         $this->assertTrue(
             $handler->hasPermission(
+<<<<<<< HEAD
                 $schema, 'read', null, null, true,
                 $this->createObjectEntity([
                     'publicatiedatum'   => '2025-01-01 00:00:00',
                     'depublicatiedatum' => '2099-01-01 00:00:00',
                 ])
+=======
+                $schema,
+                    'read',
+                    null,
+                    null,
+                    true,
+                $this->createObjectEntity(
+                        [
+                            'publicatiedatum'   => '2025-01-01 00:00:00',
+                            'depublicatiedatum' => '2099-01-01 00:00:00',
+                        ]
+                        )
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ),
             'Published, within window: allow'
         );
@@ -944,11 +1594,25 @@ class PermissionHandlerRbacTest extends TestCase
         // Case B: published, depublicatiedatum is null → rule 2 matches.
         $this->assertTrue(
             $handler->hasPermission(
+<<<<<<< HEAD
                 $schema, 'read', null, null, true,
                 $this->createObjectEntity([
                     'publicatiedatum'   => '2025-01-01 00:00:00',
                     'depublicatiedatum' => null,
                 ])
+=======
+                $schema,
+                    'read',
+                    null,
+                    null,
+                    true,
+                $this->createObjectEntity(
+                        [
+                            'publicatiedatum'   => '2025-01-01 00:00:00',
+                            'depublicatiedatum' => null,
+                        ]
+                        )
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ),
             'Published, never expires: allow'
         );
@@ -956,11 +1620,25 @@ class PermissionHandlerRbacTest extends TestCase
         // Case C: published but depublicatiedatum in the past → neither rule matches.
         $this->assertFalse(
             $handler->hasPermission(
+<<<<<<< HEAD
                 $schema, 'read', null, null, true,
                 $this->createObjectEntity([
                     'publicatiedatum'   => '2025-01-01 00:00:00',
                     'depublicatiedatum' => '2025-06-01 00:00:00',
                 ])
+=======
+                $schema,
+                    'read',
+                    null,
+                    null,
+                    true,
+                $this->createObjectEntity(
+                        [
+                            'publicatiedatum'   => '2025-01-01 00:00:00',
+                            'depublicatiedatum' => '2025-06-01 00:00:00',
+                        ]
+                        )
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ),
             'Expired publication: deny'
         );
@@ -968,11 +1646,25 @@ class PermissionHandlerRbacTest extends TestCase
         // Case D: not yet published → neither rule matches.
         $this->assertFalse(
             $handler->hasPermission(
+<<<<<<< HEAD
                 $schema, 'read', null, null, true,
                 $this->createObjectEntity([
                     'publicatiedatum'   => '2099-01-01 00:00:00',
                     'depublicatiedatum' => null,
                 ])
+=======
+                $schema,
+                    'read',
+                    null,
+                    null,
+                    true,
+                $this->createObjectEntity(
+                        [
+                            'publicatiedatum'   => '2099-01-01 00:00:00',
+                            'depublicatiedatum' => null,
+                        ]
+                        )
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ),
             'Future-dated publication: deny'
         );
@@ -980,12 +1672,24 @@ class PermissionHandlerRbacTest extends TestCase
         // Case E: no publicatiedatum at all → neither rule matches (null-handling).
         $this->assertFalse(
             $handler->hasPermission(
+<<<<<<< HEAD
                 $schema, 'read', null, null, true,
+=======
+                $schema,
+                    'read',
+                    null,
+                    null,
+                    true,
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 $this->createObjectEntity(['title' => 'draft'])
             ),
             'Draft with no publicatiedatum: deny'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testCompositePublishedAndNotDepublishedRule()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testResolvedRelationUnwrappingViaRealConditionMatcher(): void
     {
@@ -998,19 +1702,38 @@ class PermissionHandlerRbacTest extends TestCase
         // directly regardless of expansion). Real-wired end-to-end test — no mocks.
         $this->mockUser('jan', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'behandelaars', 'match' => ['parent' => 'uuid-123']],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'behandelaars', 'match' => ['parent' => 'uuid-123']],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
 
         // Object has `parent` expanded into a resolved relation.
+<<<<<<< HEAD
         $object  = $this->createObjectEntity([
             'parent' => ['id' => 'uuid-123', 'name' => 'Parent'],
         ]);
+=======
+        $object  = $this->createObjectEntity(
+                [
+                    'parent' => ['id' => 'uuid-123', 'name' => 'Parent'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $handler = $this->buildHandlerWithRealMatcher();
 
         $this->assertTrue(
@@ -1026,9 +1749,17 @@ class PermissionHandlerRbacTest extends TestCase
         );
 
         // Negative case: mismatched id.
+<<<<<<< HEAD
         $objectMismatch = $this->createObjectEntity([
             'parent' => ['id' => 'uuid-456', 'name' => 'Other'],
         ]);
+=======
+        $objectMismatch = $this->createObjectEntity(
+                [
+                    'parent' => ['id' => 'uuid-456', 'name' => 'Other'],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->assertFalse(
             $handler->hasPermission(
@@ -1041,7 +1772,11 @@ class PermissionHandlerRbacTest extends TestCase
             ),
             'Resolved relation with mismatched id MUST NOT satisfy the rule'
         );
+<<<<<<< HEAD
     }
+=======
+    }//end testResolvedRelationUnwrappingViaRealConditionMatcher()
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testUnknownOperatorFailsClosedViaRealConditionMatcher(): void
     {
@@ -1052,11 +1787,22 @@ class PermissionHandlerRbacTest extends TestCase
         // denied. Aligning both paths to fail-closed.
         $this->mockUser('jan', ['behandelaars']);
 
+<<<<<<< HEAD
         $schema = $this->createSchema(1, [
             'read' => [
                 ['group' => 'behandelaars', 'match' => ['publishedAt' => ['$foo' => 'bar']]],
             ],
         ]);
+=======
+        $schema = $this->createSchema(
+                1,
+                [
+                    'read' => [
+                        ['group' => 'behandelaars', 'match' => ['publishedAt' => ['$foo' => 'bar']]],
+                    ],
+                ]
+                );
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $register = $this->createRegister(10, null);
         $this->setupRegisterForSchema(1, $register);
@@ -1075,6 +1821,7 @@ class PermissionHandlerRbacTest extends TestCase
             ),
             'Malformed rule with unknown operator MUST NOT grant access'
         );
+<<<<<<< HEAD
     }
 
     // ------------------------------------------------------------------
@@ -1189,3 +1936,7 @@ class PermissionHandlerRbacTest extends TestCase
         );
     }
 }
+=======
+    }//end testUnknownOperatorFailsClosedViaRealConditionMatcher()
+}//end class
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -5,7 +5,10 @@
 	<RegistersSideBar v-else-if="$route.path.startsWith('/registers')" />
 	<ChatSideBar v-else-if="$route.path.startsWith('/chat')" />
 	<DeletedSideBar v-else-if="$route.path.startsWith('/deleted')" />
+<<<<<<< HEAD
 	<EntitiesSideBar v-else-if="$route.path.startsWith('/entities')" />
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	<AuditTrailSideBar v-else-if="$route.path.startsWith('/audit-trails')" />
 	<SearchTrailSideBar v-else-if="$route.path.startsWith('/search-trails')" />
 </template>

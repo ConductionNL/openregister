@@ -5,9 +5,12 @@
  *
  * First-class entity for workflow automation actions.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -101,7 +104,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDeleted(?DateTime $deleted)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -697,12 +703,20 @@ class Action extends Entity implements JsonSerializable
         }
 
         if (($object['eventType'] ?? null) !== null) {
+<<<<<<< HEAD
             $eventTypeValue = $object['eventType'];
             if (is_array($eventTypeValue) === true) {
                 $eventTypeValue = json_encode(value: $eventTypeValue);
             }
 
             $this->setEventType($eventTypeValue);
+=======
+            if (is_array($object['eventType']) === true) {
+                $this->setEventType(json_encode(value: $object['eventType']));
+            } else {
+                $this->setEventType($object['eventType']);
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if (($object['engine'] ?? null) !== null) {
@@ -737,6 +751,7 @@ class Action extends Entity implements JsonSerializable
             $this->setOnEngineDown($object['onEngineDown']);
         }
 
+<<<<<<< HEAD
         if (($object['filterCondition'] ?? null) !== null && is_array($object['filterCondition']) === true) {
             $this->setFilterConditionArray($object['filterCondition']);
         } else if (($object['filterCondition'] ?? null) !== null) {
@@ -747,12 +762,29 @@ class Action extends Entity implements JsonSerializable
             $this->setConfigurationArray($object['configuration']);
         } else if (($object['configuration'] ?? null) !== null) {
             $this->setConfiguration($object['configuration']);
+=======
+        if (($object['filterCondition'] ?? null) !== null) {
+            if (is_array($object['filterCondition']) === true) {
+                $this->setFilterConditionArray($object['filterCondition']);
+            } else {
+                $this->setFilterCondition($object['filterCondition']);
+            }
+        }
+
+        if (($object['configuration'] ?? null) !== null) {
+            if (is_array($object['configuration']) === true) {
+                $this->setConfigurationArray($object['configuration']);
+            } else {
+                $this->setConfiguration($object['configuration']);
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if (($object['mapping'] ?? null) !== null) {
             $this->setMapping((int) $object['mapping']);
         }
 
+<<<<<<< HEAD
         if (($object['schemas'] ?? null) !== null && is_array($object['schemas']) === true) {
             $this->setSchemasArray($object['schemas']);
         } else if (($object['schemas'] ?? null) !== null) {
@@ -763,6 +795,22 @@ class Action extends Entity implements JsonSerializable
             $this->setRegistersArray($object['registers']);
         } else if (($object['registers'] ?? null) !== null) {
             $this->setRegisters($object['registers']);
+=======
+        if (($object['schemas'] ?? null) !== null) {
+            if (is_array($object['schemas']) === true) {
+                $this->setSchemasArray($object['schemas']);
+            } else {
+                $this->setSchemas($object['schemas']);
+            }
+        }
+
+        if (($object['registers'] ?? null) !== null) {
+            if (is_array($object['registers']) === true) {
+                $this->setRegistersArray($object['registers']);
+            } else {
+                $this->setRegisters($object['registers']);
+            }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
 
         if (($object['schedule'] ?? null) !== null) {

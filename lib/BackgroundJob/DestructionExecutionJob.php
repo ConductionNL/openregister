@@ -7,9 +7,12 @@
  * deleting objects in configurable batches, generating audit trails and
  * destruction certificates upon completion.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -21,9 +24,15 @@
  *
  * @link https://www.OpenRegister.app
  *
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
+=======
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  */
 
 declare(strict_types=1);
@@ -80,9 +89,14 @@ class DestructionExecutionJob extends QueuedJob
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-2
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     protected function run($argument): void
     {
@@ -234,12 +248,16 @@ class DestructionExecutionJob extends QueuedJob
             }
 
             $logger->info(
+<<<<<<< HEAD
                 sprintf(
                     '[DestructionExecutionJob] Done: %d destroyed, %d held, %d errors',
                     $destroyedCount,
                     $skippedHolds,
                     $skippedErrors
                 )
+=======
+                '[DestructionExecutionJob] Done: '.$destroyedCount.' destroyed, '.$skippedHolds.' held, '.$skippedErrors.' errors'
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             );
         } catch (Exception $e) {
             $logger->error('[DestructionExecutionJob] Fatal: '.$e->getMessage(), ['exception' => $e]);
@@ -255,7 +273,11 @@ class DestructionExecutionJob extends QueuedJob
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+=======
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     private function notifySkippedHolds(
         string $listUuid,

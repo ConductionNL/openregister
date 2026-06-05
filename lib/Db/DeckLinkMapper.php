@@ -3,6 +3,7 @@
 /**
  * Mapper for deck link entities.
  *
+<<<<<<< HEAD
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -11,6 +12,13 @@
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
+=======
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
@@ -20,7 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+<<<<<<< HEAD
 use OCP\AppFramework\Db\DoesNotExistException;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -96,7 +107,11 @@ class DeckLinkMapper extends QBMapper
 
         try {
             return $this->findEntity(query: $qb);
+<<<<<<< HEAD
         } catch (DoesNotExistException $e) {
+=======
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             return null;
         }
     }//end findByObjectAndCard()
@@ -116,6 +131,7 @@ class DeckLinkMapper extends QBMapper
 
         return $qb->executeStatement();
     }//end deleteByObjectUuid()
+<<<<<<< HEAD
 
     /**
      * Delete a deck link by object UUID + card ID (Tier-2 unlink path).
@@ -137,4 +153,6 @@ class DeckLinkMapper extends QBMapper
 
         return $qb->executeStatement();
     }//end deleteByObjectAndCard()
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 }//end class

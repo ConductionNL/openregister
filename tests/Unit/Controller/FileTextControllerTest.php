@@ -6,7 +6,10 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\File\ManualEntityService;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -14,13 +17,17 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+<<<<<<< HEAD
 use OCP\IUserSession;
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class FileTextControllerTest extends TestCase
 {
+<<<<<<< HEAD
 
     private FileTextController $controller;
 
@@ -42,10 +49,22 @@ class FileTextControllerTest extends TestCase
 
     private IUserSession&MockObject $userSession;
 
+=======
+    private FileTextController $controller;
+    private IRequest&MockObject $request;
+    private TextExtractionService&MockObject $textExtractor;
+    private IndexService&MockObject $indexService;
+    private FileService&MockObject $fileService;
+    private EntityRelationMapper&MockObject $entityRelationMapper;
+    private LoggerInterface&MockObject $logger;
+    private IAppConfig&MockObject $config;
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     protected function setUp(): void
     {
         parent::setUp();
 
+<<<<<<< HEAD
         $this->request       = $this->createMock(IRequest::class);
         $this->textExtractor = $this->createMock(TextExtractionService::class);
         $this->indexService  = $this->createMock(IndexService::class);
@@ -55,6 +74,15 @@ class FileTextControllerTest extends TestCase
         $this->config = $this->createMock(IAppConfig::class);
         $this->manualEntityService = $this->createMock(ManualEntityService::class);
         $this->userSession         = $this->createMock(IUserSession::class);
+=======
+        $this->request = $this->createMock(IRequest::class);
+        $this->textExtractor = $this->createMock(TextExtractionService::class);
+        $this->indexService = $this->createMock(IndexService::class);
+        $this->fileService = $this->createMock(FileService::class);
+        $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->config = $this->createMock(IAppConfig::class);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->controller = new FileTextController(
             'openregister',
@@ -64,15 +92,25 @@ class FileTextControllerTest extends TestCase
             $this->fileService,
             $this->entityRelationMapper,
             $this->logger,
+<<<<<<< HEAD
             $this->config,
             $this->manualEntityService,
             $this->userSession
         );
     }//end setUp()
+=======
+            $this->config
+        );
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // getFileText
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetFileTextReturnsDeprecated(): void
     {
         $result = $this->controller->getFileText(1);
@@ -83,7 +121,11 @@ class FileTextControllerTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('deprecated', $data['message']);
         $this->assertEquals(1, $data['file_id']);
+<<<<<<< HEAD
     }//end testGetFileTextReturnsDeprecated()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testGetFileTextReturnsDeprecatedWithDifferentFileId(): void
     {
@@ -94,11 +136,19 @@ class FileTextControllerTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertEquals(42, $data['file_id']);
         $this->assertStringContainsString('chunk-based endpoints', $data['message']);
+<<<<<<< HEAD
     }//end testGetFileTextReturnsDeprecatedWithDifferentFileId()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // extractFileText
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testExtractFileTextDisabledWhenNoConfig(): void
     {
         $this->config->method('hasKey')->willReturn(false);
@@ -110,11 +160,16 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('disabled', $data['message']);
+<<<<<<< HEAD
     }//end testExtractFileTextDisabledWhenNoConfig()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testExtractFileTextDisabledWhenScopeIsNone(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(
                 json_encode(
                 [
@@ -122,6 +177,11 @@ class FileTextControllerTest extends TestCase
                 ]
                 )
                 );
+=======
+        $this->config->method('getValueString')->willReturn(json_encode([
+            'extractionScope' => 'none',
+        ]));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->logger->expects($this->once())
             ->method('info');
@@ -132,11 +192,16 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('disabled', $data['message']);
+<<<<<<< HEAD
     }//end testExtractFileTextDisabledWhenScopeIsNone()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testExtractFileTextSuccess(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(
                 json_encode(
                 [
@@ -144,6 +209,11 @@ class FileTextControllerTest extends TestCase
                 ]
                 )
                 );
+=======
+        $this->config->method('getValueString')->willReturn(json_encode([
+            'extractionScope' => 'all',
+        ]));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -155,11 +225,16 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertStringContainsString('successfully', $data['message']);
+<<<<<<< HEAD
     }//end testExtractFileTextSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testExtractFileTextSuccessWithDifferentFileId(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(
                 json_encode(
                 [
@@ -167,6 +242,11 @@ class FileTextControllerTest extends TestCase
                 ]
                 )
                 );
+=======
+        $this->config->method('getValueString')->willReturn(json_encode([
+            'extractionScope' => 'all',
+        ]));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -177,11 +257,16 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+<<<<<<< HEAD
     }//end testExtractFileTextSuccessWithDifferentFileId()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testExtractFileTextException(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(
                 json_encode(
                 [
@@ -189,6 +274,11 @@ class FileTextControllerTest extends TestCase
                 ]
                 )
                 );
+=======
+        $this->config->method('getValueString')->willReturn(json_encode([
+            'extractionScope' => 'all',
+        ]));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->textExtractor->method('extractFile')
             ->willThrowException(new \Exception('Extract error'));
 
@@ -201,12 +291,17 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Extract error', $data['message']);
+<<<<<<< HEAD
     }//end testExtractFileTextException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testExtractFileTextWithNullExtractionScope(): void
     {
         // Config has key but extractionScope is not set (null fallback).
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(
                 json_encode(
                 [
@@ -214,6 +309,11 @@ class FileTextControllerTest extends TestCase
                 ]
                 )
                 );
+=======
+        $this->config->method('getValueString')->willReturn(json_encode([
+            'someOtherKey' => 'value',
+        ]));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -224,11 +324,16 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+<<<<<<< HEAD
     }//end testExtractFileTextWithNullExtractionScope()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // bulkExtract
     // =========================================================================
+<<<<<<< HEAD
     public function testBulkExtractSuccess(): void
     {
         $this->request->method('getParam')
@@ -237,6 +342,15 @@ class FileTextControllerTest extends TestCase
                         ['limit', 100, '50'],
                     ]
                     );
+=======
+
+    public function testBulkExtractSuccess(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['limit', 100, '50'],
+            ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->textExtractor->method('extractPendingFiles')
             ->with(50)
             ->willReturn(['processed' => 10, 'failed' => 0, 'total' => 10]);
@@ -249,16 +363,26 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(10, $data['processed']);
         $this->assertEquals(0, $data['failed']);
         $this->assertEquals(10, $data['total']);
+<<<<<<< HEAD
     }//end testBulkExtractSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testBulkExtractCapsLimitAt500(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap(
                     [
                         ['limit', 100, '999'],
                     ]
                     );
+=======
+            ->willReturnMap([
+                ['limit', 100, '999'],
+            ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(500)
@@ -270,16 +394,26 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals(500, $data['processed']);
+<<<<<<< HEAD
     }//end testBulkExtractCapsLimitAt500()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testBulkExtractUsesDefaultLimit(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap(
                     [
                         ['limit', 100, 100],
                     ]
                     );
+=======
+            ->willReturnMap([
+                ['limit', 100, 100],
+            ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(100)
@@ -292,16 +426,26 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(5, $data['processed']);
         $this->assertEquals(1, $data['failed']);
         $this->assertEquals(6, $data['total']);
+<<<<<<< HEAD
     }//end testBulkExtractUsesDefaultLimit()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testBulkExtractException(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap(
                     [
                         ['limit', 100, '50'],
                     ]
                     );
+=======
+            ->willReturnMap([
+                ['limit', 100, '50'],
+            ]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->textExtractor->method('extractPendingFiles')
             ->willThrowException(new \Exception('Bulk error'));
 
@@ -314,11 +458,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Bulk error', $data['message']);
+<<<<<<< HEAD
     }//end testBulkExtractException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // getStats
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetStatsSuccess(): void
     {
         $statsData = ['totalFiles' => 100, 'extracted' => 80, 'pending' => 20];
@@ -330,7 +482,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals($statsData, $data['stats']);
+<<<<<<< HEAD
     }//end testGetStatsSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testGetStatsException(): void
     {
@@ -346,11 +502,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Stats error', $data['message']);
+<<<<<<< HEAD
     }//end testGetStatsException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // deleteFileText
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testDeleteFileTextNotImplemented(): void
     {
         $result = $this->controller->deleteFileText(1);
@@ -359,7 +523,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('not yet implemented', strtolower($data['message']));
+<<<<<<< HEAD
     }//end testDeleteFileTextNotImplemented()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testDeleteFileTextNotImplementedWithDifferentId(): void
     {
@@ -369,11 +537,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('chunk-based endpoints', $data['message']);
+<<<<<<< HEAD
     }//end testDeleteFileTextNotImplementedWithDifferentId()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // processAndIndexExtracted
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testProcessAndIndexExtractedSuccess(): void
     {
         $expectedResult = ['processed' => 5, 'indexed' => 5];
@@ -385,7 +561,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexExtractedSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexExtractedWithLimit(): void
     {
@@ -399,7 +579,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexExtractedWithLimit()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexExtractedWithChunkSize(): void
     {
@@ -411,7 +595,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexExtractedWithChunkSize()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexExtractedWithChunkOverlap(): void
     {
@@ -423,7 +611,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexExtractedWithChunkOverlap()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexExtractedWithAllParams(): void
     {
@@ -437,7 +629,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexExtractedWithAllParams()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexExtractedException(): void
     {
@@ -453,11 +649,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Index error', $data['message']);
+<<<<<<< HEAD
     }//end testProcessAndIndexExtractedException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // processAndIndexFile
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testProcessAndIndexFileSuccess(): void
     {
         $expectedResult = ['processed' => 1];
@@ -468,7 +672,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexFileSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexFileWithChunkSize(): void
     {
@@ -480,7 +688,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexFileWithChunkSize()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexFileWithChunkOverlap(): void
     {
@@ -492,7 +704,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexFileWithChunkOverlap()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexFileWithAllParams(): void
     {
@@ -505,7 +721,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }//end testProcessAndIndexFileWithAllParams()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testProcessAndIndexFileException(): void
     {
@@ -521,11 +741,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('File index error', $data['message']);
+<<<<<<< HEAD
     }//end testProcessAndIndexFileException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // getChunkingStats
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testGetChunkingStatsSuccess(): void
     {
         $statsData = ['total' => 100, 'indexed' => 90, 'pending' => 10];
@@ -538,7 +766,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals($statsData, $data['stats']);
+<<<<<<< HEAD
     }//end testGetChunkingStatsSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testGetChunkingStatsException(): void
     {
@@ -554,11 +786,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Chunking stats error', $data['message']);
+<<<<<<< HEAD
     }//end testGetChunkingStatsException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     // =========================================================================
     // anonymizeFile
     // =========================================================================
+<<<<<<< HEAD
+=======
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testAnonymizeFileNotFound(): void
     {
         $this->fileService->method('getFileById')->willReturn(null);
@@ -569,7 +809,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('not found', strtolower($data['message']));
+<<<<<<< HEAD
     }//end testAnonymizeFileNotFound()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileAlreadyAnonymized(): void
     {
@@ -583,7 +827,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('already anonymized', $data['message']);
+<<<<<<< HEAD
     }//end testAnonymizeFileAlreadyAnonymized()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileAlreadyAnonymizedMidName(): void
     {
@@ -594,14 +842,22 @@ class FileTextControllerTest extends TestCase
         $result = $this->controller->anonymizeFile(1);
 
         $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
+<<<<<<< HEAD
     }//end testAnonymizeFileAlreadyAnonymizedMidName()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileNoEntities(): void
     {
         $fileNode = $this->createMock(\OCP\Files\File::class);
         $fileNode->method('getName')->willReturn('test.pdf');
         $this->fileService->method('getFileById')->willReturn($fileNode);
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForAnonymization')->willReturn([]);
+=======
+        $this->entityRelationMapper->method('findEntitiesForFile')->willReturn([]);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->anonymizeFile(1);
 
@@ -609,7 +865,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('No entities', $data['message']);
+<<<<<<< HEAD
     }//end testAnonymizeFileNoEntities()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileSuccess(): void
     {
@@ -627,7 +887,11 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'SSN',
             ],
         ];
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForAnonymization')
+=======
+        $this->entityRelationMapper->method('findEntitiesForFile')
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ->with(10)
             ->willReturn($entityData);
 
@@ -637,6 +901,7 @@ class FileTextControllerTest extends TestCase
 
         $this->fileService->expects($this->once())
             ->method('anonymizeDocument')
+<<<<<<< HEAD
             ->with(
                     $fileNode,
                     $this->callback(
@@ -660,6 +925,21 @@ class FileTextControllerTest extends TestCase
         // the per-entity placeholder values.
         $this->entityRelationMapper->expects($this->never())
             ->method('markAsAnonymized');
+=======
+            ->with($fileNode, $this->callback(function ($entities) {
+                return count($entities) === 2
+                    && $entities[0]['text'] === 'John Doe'
+                    && $entities[0]['entityType'] === 'PERSON'
+                    && strlen($entities[0]['key']) === 8
+                    && $entities[1]['text'] === '123-45-6789'
+                    && $entities[1]['entityType'] === 'SSN';
+            }))
+            ->willReturn($anonymizedFileNode);
+
+        $this->entityRelationMapper->expects($this->once())
+            ->method('markAsAnonymized')
+            ->with(10, $this->stringStartsWith('anonymized_'));
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
         $result = $this->controller->anonymizeFile(10);
 
@@ -671,7 +951,11 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(20, $data['anonymized_file_id']);
         $this->assertEquals('/files/admin/contract_anonymized.pdf', $data['anonymized_path']);
         $this->assertEquals(2, $data['entities_replaced']);
+<<<<<<< HEAD
     }//end testAnonymizeFileSuccess()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileDeduplicatesEntities(): void
     {
@@ -694,7 +978,11 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'ORGANIZATION',
             ],
         ];
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForAnonymization')
+=======
+        $this->entityRelationMapper->method('findEntitiesForFile')
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ->willReturn($entityData);
 
         $anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
@@ -703,6 +991,7 @@ class FileTextControllerTest extends TestCase
 
         $this->fileService->expects($this->once())
             ->method('anonymizeDocument')
+<<<<<<< HEAD
             ->with(
                     $fileNode,
                     $this->callback(
@@ -717,6 +1006,15 @@ class FileTextControllerTest extends TestCase
         // Same as above: marking ownership belongs to the redaction
         // path (mocked via $this->fileService), not the controller.
         $this->entityRelationMapper->expects($this->never())
+=======
+            ->with($fileNode, $this->callback(function ($entities) {
+                // Should be deduplicated: 2 unique entities, not 3.
+                return count($entities) === 2;
+            }))
+            ->willReturn($anonymizedFileNode);
+
+        $this->entityRelationMapper->expects($this->once())
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ->method('markAsAnonymized');
 
         $result = $this->controller->anonymizeFile(5);
@@ -725,7 +1023,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals(2, $data['entities_replaced']);
+<<<<<<< HEAD
     }//end testAnonymizeFileDeduplicatesEntities()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileException(): void
     {
@@ -741,7 +1043,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('File error', $data['message']);
+<<<<<<< HEAD
     }//end testAnonymizeFileException()
+=======
+    }
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 
     public function testAnonymizeFileExceptionDuringAnonymization(): void
     {
@@ -755,7 +1061,11 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'PERSON',
             ],
         ];
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForAnonymization')
+=======
+        $this->entityRelationMapper->method('findEntitiesForFile')
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             ->willReturn($entityData);
 
         $this->fileService->method('anonymizeDocument')
@@ -767,5 +1077,10 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Anonymization failed', $data['message']);
+<<<<<<< HEAD
     }//end testAnonymizeFileExceptionDuringAnonymization()
 }//end class
+=======
+    }
+}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773

@@ -618,9 +618,12 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+<<<<<<< HEAD
 		/**
 		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
 		 */
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		updateMappingFromUI(_sourceProperty) {
 			// Convert UI mappings to our simple mapping format
 			this.convertUIToMapping()
