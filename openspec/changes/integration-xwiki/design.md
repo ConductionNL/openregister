@@ -1,5 +1,8 @@
 # Design: Integration — XWiki
 
+<!-- status: pr-created -->
+<!-- pr: https://codeberg.org/Conduction/openregister/pulls/92 -->
+
 > Umbrella decisions apply
 >
 > **Cross-repo note**: file paths under `nextcloud-vue/src/...` or bare component names (`CnXxxTab`, `CnXxxCard`) are **expected locations** in the `@conduction/nextcloud-vue` shared library, not binding spec. The frontend implementation PR lands in that separate repo and MAY choose different paths. First **external-storage** leaf — reuses the `getStorageStrategy() === 'external'` + `getOpenConnectorSource()` + `ExternalIntegrationRouter` machinery established by the `pluggable-integration-registry` umbrella (AD-4 external routing / AD-22 storage strategies / AD-23 failure-path contract).
