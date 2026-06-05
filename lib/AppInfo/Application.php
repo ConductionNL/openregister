@@ -195,6 +195,7 @@ use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportH
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
+use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
 
@@ -704,6 +705,17 @@ class Application extends App implements IBootstrap
      */
     private function registerObjectInteractionServices(IRegistrationContext $context): void
     {
+        // Register EmailProvider as a DI-tagged IntegrationProvider (ADR-019).
+        $context->registerService(
+            EmailProvider::class,
+            function (ContainerInterface $container): EmailProvider {
+                return new EmailProvider(
+                    emailService: $container->get(\OCA\OpenRegister\Service\EmailService::class)
+                );
+            }
+        );
+        $context->registerServiceAlias('IntegrationProvider::email', EmailProvider::class);
+
         $context->registerService(
             TaskService::class,
             function (ContainerInterface $container) {
