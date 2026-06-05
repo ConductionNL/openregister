@@ -19,6 +19,7 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+ * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-1
  */
 
 namespace OCA\OpenRegister\Service;
@@ -32,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\DB\Exception as DbException;
 use Psr\Log\LoggerInterface;
 
@@ -48,35 +50,11 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service integrates multiple mappers for cross-table lookups
+ *
+ * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-1
  */
 class LinkedEntityService
 {
-    /**
-     * Valid linked entity types and their column names.
-     *
-     * @deprecated since pluggable-integration-registry — the registry
-     * (`IntegrationRegistry`) is the new source of truth for what
-     * integrations exist; this map is retained as an implementation
-     * detail of the magic-column built-in providers until every
-     * Wave-1 leaf has shipped. The follow-up change
-     * `cleanup-linked-entity-type-map` removes it entirely once the
-     * built-in providers (FilesProvider / NotesProvider / TagsProvider /
-     * AuditTrailProvider / etc.) own their own column resolution.
-     *
-     * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry
-     *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-9
-     */
-    private const TYPE_COLUMN_MAP = [
-        'mail'     => 'mail',
-        'contacts' => 'contacts',
-        'notes'    => 'notes',
-        'todos'    => 'todos',
-        'calendar' => 'calendar',
-        'talk'     => 'talk',
-        'deck'     => 'deck',
-        'files'    => 'files',
-    ];
 
     /**
      * Maximum number of magic tables to scan for reverse lookups (circuit breaker).
@@ -86,17 +64,19 @@ class LinkedEntityService
     /**
      * Constructor for LinkedEntityService.
      *
-     * @param MagicMapper        $magicMapper        Magic mapper for object operations
-     * @param SchemaMapper       $schemaMapper       Schema mapper
-     * @param RegisterMapper     $registerMapper     Register mapper
-     * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param LoggerInterface    $logger             Logger
+     * @param MagicMapper         $magicMapper         Magic mapper for object operations
+     * @param SchemaMapper        $schemaMapper        Schema mapper
+     * @param RegisterMapper      $registerMapper      Register mapper
+     * @param OrganisationMapper  $organisationMapper  Organisation mapper
+     * @param IntegrationRegistry $integrationRegistry Integration registry for type validation
+     * @param LoggerInterface     $logger              Logger
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly OrganisationMapper $organisationMapper,
+        private readonly IntegrationRegistry $integrationRegistry,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -118,7 +98,7 @@ class LinkedEntityService
     public function addLink(string $objectUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $object      = $this->magicMapper->find($objectUuid);
         $getter      = 'get'.ucfirst($columnName);
@@ -152,7 +132,7 @@ class LinkedEntityService
     public function removeLink(string $objectUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $object      = $this->magicMapper->find($objectUuid);
         $getter      = 'get'.ucfirst($columnName);
@@ -190,7 +170,7 @@ class LinkedEntityService
     public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $registers = $this->registerMapper->findAll(filters: ['uuid' => $registerUuid]);
         if (empty($registers) === true) {
@@ -227,7 +207,7 @@ class LinkedEntityService
     public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $schemas = $this->schemaMapper->findAll(filters: ['uuid' => $schemaUuid]);
         if (empty($schemas) === true) {
@@ -267,7 +247,7 @@ class LinkedEntityService
     public function reverseLookup(string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
         $results    = [];
 
         // 1. Scan magic tables (objects).
@@ -433,21 +413,24 @@ class LinkedEntityService
     }//end scanEntityTables()
 
     /**
-     * Validate that the given type is a valid linked entity type.
+     * Validate that the given type is a registered integration id.
      *
      * @param string $type The type to validate
      *
-     * @throws Exception If the type is invalid
+     * @throws Exception If the type is not registered
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-2
      */
     private function validateType(string $type): void
     {
-        if (isset(self::TYPE_COLUMN_MAP[$type]) === false) {
+        $validIds = $this->integrationRegistry->listIds();
+        if (in_array($type, $validIds, true) === false) {
+            sort($validIds);
             throw new Exception(
-                "Invalid linked entity type '$type'. Valid types: ".implode(', ', array_keys(self::TYPE_COLUMN_MAP))
+                "Invalid linked entity type '$type'. Valid types: ".implode(', ', $validIds)
             );
         }
     }//end validateType()

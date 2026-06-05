@@ -4,18 +4,16 @@
  * LogDanglingLinkedTypes — surface schemas whose configuration.linkedTypes
  * references integration ids that the registry can no longer resolve.
  *
- * Per AD-5 of pluggable-integration-registry the registry validates
- * linkedTypes against either the legacy `VALID_LINKED_TYPES` set or
- * the live `IntegrationRegistry::listIds()` output. Existing schemas
- * may carry ids that are valid TODAY (because they appear in the
- * deprecated fallback) but will eventually become invalid as the
- * deprecated map is removed. This repair step scans all schemas at
+ * Per AD-5 of pluggable-integration-registry the registry is the sole
+ * source of truth for valid linked-type ids (via IntegrationRegistry::listIds()).
+ * The legacy VALID_LINKED_TYPES constant has been removed as part of
+ * `cleanup-linked-entity-type-map`. This repair step scans all schemas at
  * install / post-migration time and logs WARNING entries for any
  * linkedTypes value not registered with the registry.
  *
  * Strictly informational — never throws, never modifies data. The
  * goal is operational visibility so admins can plan provider
- * installation before the deprecated fallback disappears.
+ * installation for any unresolved integration ids.
  *
  * @category Repair
  * @package  OCA\OpenRegister\Repair
@@ -45,6 +43,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Repair step: log schemas with dangling linkedTypes values.
+ *
+ * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-3
  */
 class LogDanglingLinkedTypes implements IRepairStep
 {
@@ -110,7 +110,6 @@ class LogDanglingLinkedTypes implements IRepairStep
         foreach ($dangling as $row) {
             $template  = '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s"';
             $template .= ' which is not registered. Add the matching IntegrationProvider';
-            $template .= ' before the deprecated VALID_LINKED_TYPES fallback is removed.';
             $message   = sprintf(
                 $template,
                 $row['slug'],
