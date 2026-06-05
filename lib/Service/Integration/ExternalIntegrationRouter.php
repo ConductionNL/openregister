@@ -72,10 +72,10 @@ class ExternalIntegrationRouter
     /**
      * Constructor.
      *
-     * @param Client             $httpClient  HTTP client for OpenConnector calls.
-     * @param RequestScopedCache $cache       Request-scoped cache (AD-2: no cross-request persistence).
-     * @param IConfig            $config      Nextcloud config for base URL.
-     * @param LoggerInterface    $logger      Logger.
+     * @param Client             $httpClient HTTP client for OpenConnector calls.
+     * @param RequestScopedCache $cache      Request-scoped cache (AD-2: no cross-request persistence).
+     * @param IConfig            $config     Nextcloud config for base URL.
+     * @param LoggerInterface    $logger     Logger.
      *
      * @spec openspec/changes/integration-openproject/tasks.md#task-3
      */
@@ -92,20 +92,20 @@ class ExternalIntegrationRouter
      *
      * Returns cached response if the same object was fetched earlier in this request.
      *
-     * @param string              $sourceId    The OpenConnector source id (e.g. 'openproject').
-     * @param string              $objectId    The OpenRegister object UUID.
-     * @param array<string,mixed> $params      Additional query parameters (filters, pagination).
+     * @param string              $sourceId The OpenConnector source id (e.g. 'openproject').
+     * @param string              $objectId The OpenRegister object UUID.
+     * @param array<string,mixed> $params   Additional query parameters (filters, pagination).
      *
      * @return array{items: array, total: int, authStatus: string} Paginated result with auth status.
      *
      * @spec openspec/changes/integration-openproject/tasks.md#task-3
      */
-    public function listItems(string $sourceId, string $objectId, array $params = []): array
+    public function listItems(string $sourceId, string $objectId, array $params=[]): array
     {
         $cacheKey = $sourceId.':'.$objectId.':'.md5(serialize(value: $params));
 
         if ($this->cache->has(namespace: self::CACHE_NAMESPACE, key: $cacheKey) === true) {
-            /** @var array{items: array, total: int, authStatus: string} $cached */
+            // @var array{items: array, total: int, authStatus: string} $cached
             $cached = $this->cache->get(namespace: self::CACHE_NAMESPACE, key: $cacheKey);
             return $cached;
         }
@@ -125,9 +125,9 @@ class ExternalIntegrationRouter
     /**
      * Link an item to an object via OpenConnector source.
      *
-     * @param string              $sourceId    The OpenConnector source id.
-     * @param string              $objectId    The OpenRegister object UUID.
-     * @param array<string,mixed> $data        Link data (e.g. workPackageId, url).
+     * @param string              $sourceId The OpenConnector source id.
+     * @param string              $objectId The OpenRegister object UUID.
+     * @param array<string,mixed> $data     Link data (e.g. workPackageId, url).
      *
      * @return array{item: array, authStatus: string} The linked item.
      *
@@ -146,9 +146,9 @@ class ExternalIntegrationRouter
     /**
      * Unlink an item from an object via OpenConnector source.
      *
-     * @param string $sourceId    The OpenConnector source id.
-     * @param string $objectId    The OpenRegister object UUID.
-     * @param string $itemId      The external item id to unlink.
+     * @param string $sourceId The OpenConnector source id.
+     * @param string $objectId The OpenRegister object UUID.
+     * @param string $itemId   The external item id to unlink.
      *
      * @return array{authStatus: string} Result with auth status.
      *
@@ -180,7 +180,7 @@ class ExternalIntegrationRouter
         $cacheKey = 'auth_status:'.$sourceId;
 
         if ($this->cache->has(namespace: self::CACHE_NAMESPACE, key: $cacheKey) === true) {
-            /** @var string $status */
+            // @var string $status
             $status = $this->cache->get(namespace: self::CACHE_NAMESPACE, key: $cacheKey);
             return $status;
         }
@@ -237,7 +237,7 @@ class ExternalIntegrationRouter
         string $sourceId,
         string $operation,
         string $objectId,
-        array $data = []
+        array $data=[]
     ): array {
         $baseUrl = $this->getBaseUrl();
 
@@ -338,5 +338,4 @@ class ExternalIntegrationRouter
         $url = $this->config->getSystemValue(valueName: self::OPENCONNECTOR_BASE_URL, default: self::DEFAULT_BASE_URL);
         return rtrim(string: (string) $url, characters: '/');
     }//end getBaseUrl()
-
 }//end class

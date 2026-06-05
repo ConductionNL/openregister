@@ -265,7 +265,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      *
      * @spec openspec/changes/integration-openproject/tasks.md#task-3
      */
-    public function listWorkPackages(string $objectId, array $params = []): array
+    public function listWorkPackages(string $objectId, array $params=[]): array
     {
         return $this->router->listItems(
             sourceId: self::SOURCE_ID,
@@ -296,8 +296,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     /**
      * Link an existing work package to an object by work package URL.
      *
-     * @param string $objectId        The OpenRegister object UUID.
-     * @param string $workPackageUrl  The OpenProject work package URL.
+     * @param string $objectId       The OpenRegister object UUID.
+     * @param string $workPackageUrl The OpenProject work package URL.
      *
      * @return array{item: array, authStatus: string} The linked work package.
      *
@@ -330,5 +330,4 @@ class OpenProjectProvider extends AbstractIntegrationProvider
             itemId: $workPackageId
         );
     }//end unlinkWorkPackage()
-
 }//end class

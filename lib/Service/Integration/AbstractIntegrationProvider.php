@@ -39,7 +39,6 @@ namespace OCA\OpenRegister\Service\Integration;
  */
 abstract class AbstractIntegrationProvider implements IntegrationProvider
 {
-
     /**
      * Default: no required NC app.
      *
@@ -124,5 +123,4 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
     {
         return 'available';
     }//end health()
-
 }//end class

@@ -39,7 +39,6 @@ namespace OCA\OpenRegister\Service\Integration;
  */
 interface IntegrationProvider
 {
-
     /**
      * Unique identifier for this integration (e.g. 'openproject', 'deck').
      *
@@ -155,5 +154,4 @@ interface IntegrationProvider
      * @spec openspec/changes/integration-openproject/tasks.md#task-1
      */
     public function health(): string;
-
 }//end interface

@@ -167,5 +167,4 @@ class IntegrationRegistry
 
         return $capabilities;
     }//end getCapabilities()
-
 }//end class
