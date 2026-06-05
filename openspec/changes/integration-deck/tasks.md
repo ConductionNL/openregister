@@ -5,35 +5,35 @@
 ## Backend
 
 - [x] Create `lib/Service/Integration/Providers/DeckProvider.php` — id='deck', label='Cards', icon='ViewColumn', group='workflow', requiredApp='deck', storage='link-table'
-- [ ] DI-tag in `Application.php`
-- [ ] Extend `SettingsService` to persist schema-level default board+stack
-- [ ] Unit test
+- [x] DI-tag in `Application.php`
+- [x] Extend `SettingsService` to persist schema-level default board+stack
+- [x] Unit test
 
 ## Frontend — Tab
 
-- [ ] `CnDeckTab.vue` — list linked cards, "Create new card" inline form (board+stack with sticky default), "Link existing card" picker, unlink
-- [ ] Barrel + tests
+- [x] `CnDeckTab.vue` — list linked cards, "Create new card" inline form (board+stack with sticky default), "Link existing card" picker, unlink
+- [x] Barrel + tests
 
 ## Frontend — Widget
 
-- [ ] `CnDeckCard.vue`:
+- [x] `CnDeckCard.vue`:
   - `user-dashboard`: cards assigned to current user
   - `app-dashboard`: cards on objects in this app's scope
   - `detail-page`: mini-kanban with linked card highlighted
   - `single-entity`: chip with card title + stack name + assignees
-- [ ] Barrel + surface tests
+- [x] Barrel + surface tests
 
 ## Registration
 
-- [ ] `src/integrations/builtin/deck.js` — register with `referenceType: 'deck'`
-- [ ] Wire + barrels
+- [x] `src/integrations/builtin/deck.js` — register with `referenceType: 'deck'`
+- [x] Wire + barrels
 
 ## Quality
 
-- [ ] Parity gate passes
-- [ ] nl + en translations
-- [ ] PHPCS/PHPMD/PHPStan/Psalm strict pass
-- [ ] ESLint clean
+- [x] Parity gate passes
+- [x] nl + en translations
+- [x] PHPCS/PHPMD/PHPStan/Psalm strict pass
+- [x] ESLint clean
 
 ## Acceptance verification
 

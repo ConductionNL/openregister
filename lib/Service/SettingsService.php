@@ -2201,4 +2201,70 @@ class SettingsService
             ];
         }//end try
     }//end rebase()
+
+    /**
+     * Return the schema-level sticky Deck default (boardId + stackId).
+     *
+     * Returns `['boardId' => null, 'stackId' => null]` when no default has
+     * been saved yet for the given schema slug.
+     *
+     * @param string $schemaSlug Schema slug (used as the per-schema key).
+     *
+     * @return array{boardId: int|null, stackId: int|null}
+     *
+     * @spec openspec/changes/integration-deck/tasks.md#task-3
+     */
+    public function getDeckDefaultBoard(string $schemaSlug): array
+    {
+        $raw = $this->config->getAppValue(
+            app: $this->appName,
+            key: 'deck.defaultBoard.'.$schemaSlug,
+            default: ''
+        );
+
+        if ($raw === '') {
+            return ['boardId' => null, 'stackId' => null];
+        }
+
+        $decoded = json_decode(string: $raw, associative: true);
+        if (is_array($decoded) === false) {
+            return ['boardId' => null, 'stackId' => null];
+        }
+
+        $boardId = null;
+        if (isset($decoded['boardId']) === true) {
+            $boardId = (int) $decoded['boardId'];
+        }
+
+        $stackId = null;
+        if (isset($decoded['stackId']) === true) {
+            $stackId = (int) $decoded['stackId'];
+        }
+
+        return ['boardId' => $boardId, 'stackId' => $stackId];
+    }//end getDeckDefaultBoard()
+
+    /**
+     * Persist the schema-level sticky Deck default (boardId + stackId).
+     *
+     * Called automatically by DeckLinksController after a successful
+     * card-create so subsequent creates on the same schema pre-select
+     * the same board + stack.
+     *
+     * @param string $schemaSlug Schema slug (used as the per-schema key).
+     * @param int    $boardId    Deck board id to persist as default.
+     * @param int    $stackId    Deck stack id to persist as default.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-deck/tasks.md#task-3
+     */
+    public function setDeckDefaultBoard(string $schemaSlug, int $boardId, int $stackId): void
+    {
+        $this->config->setAppValue(
+            app: $this->appName,
+            key: 'deck.defaultBoard.'.$schemaSlug,
+            value: json_encode(['boardId' => $boardId, 'stackId' => $stackId])
+        );
+    }//end setDeckDefaultBoard()
 }//end class
