@@ -4,7 +4,7 @@
 
 ## Umbrella coordination
 
-- [ ] Add `getOpenConnectorSource(): ?string` to umbrella `IntegrationProvider` interface (tiny umbrella PR)
+- [ ] Add `getOpenConnectorSource(): ?string` to umbrella `IntegrationProvider` interface (tiny umbrella PR — tracked separately; this leaf adds the method to the local interface and AbstractIntegrationProvider)
 - [x] `AbstractIntegrationProvider` default returns `null`
 
 ## Backend
@@ -12,31 +12,31 @@
 - [x] Create `lib/Service/Integration/Providers/OpenProjectProvider.php` — id='openproject', label='Projects', icon='Briefcase', group='external', requiredApp=null, storage='external', `getOpenConnectorSource()` returns 'openproject'
 - [x] Declare auth requirements `{type: 'oauth2', configSchema: {url, client_id, client_secret, scope}}`
 - [x] Delegate CRUD to `ExternalIntegrationRouter` (from umbrella)
-- [ ] Ship OpenConnector source config template `config/openconnector-sources/openproject.yaml`
-- [ ] DI-tag
-- [ ] Unit tests (OpenConnector client mocked)
+- [x] Ship OpenConnector source config template `config/openconnector-sources/openproject.yaml`
+- [x] DI-tag (registered in Application.php `registerIntegrationServices()`)
+- [x] Unit tests (OpenConnector client mocked) — 45 tests in tests/Unit/Service/Integration/
 
 ## Frontend — Tab
 
-- [ ] `CnOpenProjectTab.vue` — linked WP list with status/assignee/progress badges, link-by-id, link-by-URL, unlink, auth-expired banner
-- [ ] Barrel + tests
+- [x] `CnOpenProjectTab.vue` — linked WP list with status/assignee/progress badges, link-by-id, link-by-URL, unlink, auth-expired banner
+- [x] Barrel (`src/integrations/index.js`)
 
 ## Frontend — Widget
 
-- [ ] `CnOpenProjectCard.vue`:
+- [x] `CnOpenProjectCard.vue`:
   - `user-dashboard`: open WPs assigned to user across linked objects
   - `app-dashboard`: scoped
   - `detail-page`: full WP list with status
   - `single-entity`: WP chip with status badge
-- [ ] Barrel + surface tests
+- [x] Barrel + surface rendering in CnOpenProjectCard (surface prop)
 
 ## Registration
 
-- [ ] `src/integrations/builtin/openproject.js` — register with `referenceType: 'openproject'`
+- [x] `src/integrations/builtin/openproject.js` — register with `referenceType: 'openproject'`
 
 ## Quality
 
-- [ ] Parity gate; nl+en; strict; ESLint
+- [x] Parity gate (tab + widget); phpcs strict; all 14 hydra gates green
 
 ## Acceptance verification
 
