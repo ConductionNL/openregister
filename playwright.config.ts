@@ -60,7 +60,16 @@ export default defineConfig({
 		// PR pipelines don't reshoot screenshots on every push.
 		{
 			name: 'chromium',
-			testIgnore: ['**/docs-screenshots.spec.ts'],
+			testIgnore: [
+				'**/docs-screenshots.spec.ts',
+				// API-direct specs (anti-pattern per ADR-020 / gate-19): they
+				// assert HTTP/JSON contracts via Playwright's `request` fixture
+				// instead of driving the UI. Their assertions are covered by the
+				// Newman collections under tests/integration/ + tests/newman/.
+				// Relocated to tests/e2e/api-direct/ and excluded from the UI
+				// regression project. See tests/e2e/README.md.
+				'**/api-direct/**',
+			],
 			use: { ...devices['Desktop Chrome'] },
 		},
 		// Documentation capture project (ADR-030 / journeydoc). Opt-in:
