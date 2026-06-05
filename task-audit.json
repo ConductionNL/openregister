@@ -1,0 +1,57 @@
+{
+  "spec": "openspec/changes/integration-photos",
+  "verified": [
+    {
+      "task": "backend-1",
+      "file": "lib/Migration/Version1Date20260605000000.php",
+      "ok": true
+    },
+    {
+      "task": "backend-2",
+      "file": "lib/Service/PhotoService.php",
+      "ok": true
+    },
+    {
+      "task": "backend-3",
+      "file": "lib/Controller/PhotosController.php",
+      "ok": true
+    },
+    {
+      "task": "backend-4",
+      "file": "lib/Service/Integration/PhotosProvider.php",
+      "ok": true
+    },
+    {
+      "task": "backend-5",
+      "file": "lib/Controller/Settings/PhotoSettingsController.php",
+      "ok": true
+    },
+    {
+      "task": "backend-6a",
+      "file": "lib/AppInfo/Application.php",
+      "ok": true
+    },
+    {
+      "task": "backend-6b",
+      "file": "appinfo/routes.php",
+      "ok": true
+    },
+    {
+      "task": "backend-6c",
+      "file": "tests/Unit/Service/PhotoServiceTest.php",
+      "ok": true
+    },
+    {
+      "task": "backend-6d",
+      "file": "tests/Unit/Controller/PhotosControllerTest.php",
+      "ok": true
+    },
+    {
+      "task": "backend-6e",
+      "file": "tests/Unit/Controller/Settings/PhotoSettingsControllerTest.php",
+      "ok": true
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
