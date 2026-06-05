@@ -892,4 +892,26 @@ class Application extends App implements IBootstrap
         // Register built-in integration providers (ADR-019).
         $this->bootBuiltinIntegrationProviders(context: $context);
     }//end boot()
+
+    /**
+     * Register all built-in integration providers with the IntegrationRegistry.
+     *
+     * The registry uses explicit addProvider() rather than DI tags because Nextcloud
+     * has no public queryAll() for tagged services. Each built-in provider is
+     * instantiated here and added; third-party apps may add their own providers
+     * from their own boot() methods.
+     *
+     * @param IBootContext $context The boot context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md#task-5
+     */
+    private function bootBuiltinIntegrationProviders(IBootContext $context): void
+    {
+        $container = $context->getServerContainer();
+        $registry  = $container->get(IntegrationRegistry::class);
+
+        $registry->addProvider(provider: $container->get(XwikiProvider::class));
+    }//end bootBuiltinIntegrationProviders()
 }//end class
