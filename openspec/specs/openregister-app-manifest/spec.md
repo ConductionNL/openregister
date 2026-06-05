@@ -34,11 +34,15 @@ fork or duplicate the schema.
 
 #### Scenario: Manifest exists and is loadable
 
+@e2e exclude build-time — covered by `npm run check:manifest` validator, not browser-observable
+
 - **WHEN** the OpenRegister Vue bundle is built
 - **THEN** `src/manifest.json` is present, parses as valid JSON, and matches
   the canonical schema (passes the build-time `npm run check:manifest` gate)
 
 #### Scenario: Schema is referenced, not duplicated
+
+@e2e exclude static code-inspection — reviewer/CI inspects `src/manifest.json` $schema field, no UI surface
 
 - **WHEN** a reviewer inspects `src/manifest.json`
 - **THEN** the `$schema` field points at the canonical v2 schema URL and the
@@ -55,10 +59,14 @@ is the platform foundation; it has no upstream Conduction-app dependencies.
 
 #### Scenario: Foundation declares no dependencies
 
+@e2e exclude static — asserts `manifest.dependencies === []` in JSON, validated by `check:manifest`, no UI surface
+
 - **WHEN** `src/manifest.json` is loaded
 - **THEN** `manifest.dependencies` is the empty array `[]`
 
 #### Scenario: Loader skips dependency check on empty deps
+
+@e2e exclude library-internal — CnAppRoot dependency-check phase is a no-op with no rendered marker; the absence of CnDependencyMissing on the foundation app is covered implicitly by the shell-mounts test
 
 - **WHEN** `CnAppRoot` runs and reads `dependencies: []` (passed via
   `:requires-apps="[]"` in `App.vue`)
@@ -87,6 +95,8 @@ not feasible.
 
 #### Scenario: Page count matches the manifest validator
 
+@e2e exclude build-time — `check:manifest` asserts page count + unique ids, no browser surface
+
 - **WHEN** the build runs `check:manifest`
 - **THEN** `manifest.pages[].length` equals the number of declared menu
   destinations (currently 31) and every `id` is unique
@@ -99,6 +109,8 @@ not feasible.
   kind-tagged `registry` prop's `kind:"page"` entries (ADR-036)
 
 #### Scenario: Titles are i18n keys
+
+@e2e exclude static — page `title` values are i18n keys verified against `l10n/{en,nl}.js`; covered by i18n spec, no UI assertion needed
 
 - **WHEN** an entry's `title` is read
 - **THEN** the value is a translation key resolved via the app's `t()`
@@ -125,6 +137,8 @@ key), `icon`, `route`, `order`, and `section`.
 - **THEN** the visible order in `CnAppNav` matches the manifest order exactly
 
 #### Scenario: Menu labels are i18n keys
+
+@e2e exclude static — menu `label` values are i18n keys verified against `l10n/{en,nl}.js`; covered by i18n spec, no UI assertion needed
 
 - **WHEN** a menu entry's `label` is read
 - **THEN** the value resolves via the app's `t()` function
