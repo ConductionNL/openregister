@@ -197,6 +197,9 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 
 /**
  * Class Application
@@ -822,5 +825,27 @@ class Application extends App implements IBootstrap
         $dispatcher = $server->get(IEventDispatcher::class);
         $registry   = $server->get(DeepLinkRegistryService::class);
         $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+
+        // Register built-in integration providers with the IntegrationRegistry.
+        // Uses explicit addProvider() rather than DI tags (NC has no public queryAll).
+        $this->bootBuiltinIntegrationProviders(server: $server);
     }//end boot()
+
+    /**
+     * Register all built-in integration providers.
+     *
+     * Providers are added via explicit addProvider() calls.
+     * First-wins collision policy: consuming apps can override built-in providers.
+     *
+     * @param \Psr\Container\ContainerInterface $server Server container.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md#task-5
+     */
+    private function bootBuiltinIntegrationProviders(\Psr\Container\ContainerInterface $server): void
+    {
+        $integrationRegistry = $server->get(IntegrationRegistry::class);
+        $integrationRegistry->addProvider(provider: $server->get(XwikiProvider::class));
+    }//end bootBuiltinIntegrationProviders()
 }//end class

@@ -1,0 +1,101 @@
+---
+# XWiki OpenConnector Source Configuration Template
+#
+# Import this file into OpenConnector via:
+#   Administration > OpenConnector > Sources > Import
+#
+# Then configure the credentials (Basic auth or OAuth 2.0) for your XWiki instance.
+#
+# OpenRegister uses this source under the identifier 'xwiki'.
+# All CRUD operations for XWiki-linked objects are routed through this source.
+
+name: xwiki
+description: XWiki external knowledge platform integration
+type: rest
+identifier: xwiki
+
+# Base URL for your XWiki REST API.
+# Replace with your actual XWiki instance URL.
+location: https://wiki.example.org
+
+# Authentication — choose one of: basic, oauth2
+# For Basic auth, configure username + password in the OpenConnector UI.
+# For OAuth 2.0, configure clientId, clientSecret, tokenUrl in the OpenConnector UI.
+auth: basic
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Endpoints
+# ──────────────────────────────────────────────────────────────────────────────
+
+endpoints:
+  # List pages in a space (paginated)
+  - name: list
+    method: GET
+    endpoint: /rest/wikis/xwiki/spaces/{space}/pages
+    description: >
+      Returns a paginated list of pages in a space.
+      Maps to XwikiProvider::list() via ExternalIntegrationRouter.
+    mapping:
+      results: pages
+      total: pageCount
+    fieldMapping:
+      id: id
+      title: title
+      space: space
+      reference: fullName
+      url: xwikiAbsoluteUrl
+      content: content
+
+  # Get a single page by its fullName reference (e.g. "Dept.Privacy")
+  - name: get
+    method: GET
+    endpoint: /rest/wikis/xwiki/spaces/{space}/pages/{page}
+    description: >
+      Returns a single page. 'space' and 'page' are extracted from the
+      canonical fullName reference stored in OpenRegister.
+    fieldMapping:
+      id: id
+      title: title
+      space: space
+      reference: fullName
+      url: xwikiAbsoluteUrl
+      # Rendered body (plain text) — fetched from /bin/get/{Space}/{Page}?xpage=plain
+      # by the source's enrichment step. Falls back to raw 'content' when unavailable.
+      content: renderedContent
+      hierarchy: hierarchy
+
+  # Create (link) — caller passes {reference: "<full URL or Space.Page>"}
+  # OpenConnector resolves the reference to a canonical Space.Page.
+  - name: create
+    method: POST
+    endpoint: /rest/wikis/xwiki/spaces/{space}/pages
+    description: >
+      Links a page to an OpenRegister object. The caller passes
+      {reference: "<full URL or wiki path>"}; OpenConnector resolves it
+      to the canonical Space.Page reference before storing the link.
+    fieldMapping:
+      id: id
+      title: title
+      reference: fullName
+      url: xwikiAbsoluteUrl
+
+  # Update a linked page's metadata (not the page content itself)
+  - name: update
+    method: PUT
+    endpoint: /rest/wikis/xwiki/spaces/{space}/pages/{page}
+    description: Updates link metadata (title alias, notes). Never edits XWiki page content.
+
+  # Unlink — removes the OpenRegister sub-resource pairing only
+  - name: delete
+    method: DELETE
+    endpoint: /rest/wikis/xwiki/spaces/{space}/pages/{page}
+    description: >
+      Removes the link record from OpenRegister. Never deletes the page in XWiki.
+
+  # Health probe
+  - name: health
+    method: GET
+    endpoint: /rest/wikis/xwiki
+    description: >
+      Probes XWiki reachability. Returns 200 when XWiki responds.
+      A 401 / 403 is mapped to an auth-expired banner in CnXwikiTab.
