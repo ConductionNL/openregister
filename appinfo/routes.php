@@ -311,6 +311,15 @@ return [
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 
+        // Photos operations under objects (filtered image view with EXIF).
+        ['name' => 'photos#index', 'url' => '/api/objects/{register}/{schema}/{id}/photos', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'photos#show', 'url' => '/api/objects/{register}/{schema}/{id}/photos/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+
+        // Photos admin settings.
+        ['name' => 'Settings\PhotoSettings#getPhotoSettings', 'url' => '/api/settings/photos', 'verb' => 'GET'],
+        ['name' => 'Settings\PhotoSettings#updatePhotoSettings', 'url' => '/api/settings/photos', 'verb' => 'PUT'],
+        ['name' => 'Settings\PhotoSettings#updatePhotoSettings', 'url' => '/api/settings/photos', 'verb' => 'PATCH'],
+
         // Tasks operations under objects (CalDAV VTODO wrapper).
         ['name' => 'tasks#index', 'url' => '/api/objects/{register}/{schema}/{id}/tasks', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'tasks#create', 'url' => '/api/objects/{register}/{schema}/{id}/tasks', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

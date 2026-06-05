@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
 use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\PhotoService;
+use OCA\OpenRegister\Service\Integration\PhotosProvider;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
@@ -272,6 +274,11 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+
+        // Photos integration provider (ADR-019).
+        $context->registerService(PhotosProvider::class, function () {
+            return new PhotosProvider();
+        });
     }//end register()
 
     /**
