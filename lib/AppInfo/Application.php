@@ -145,6 +145,9 @@ use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\MapLocationService;
+use OCA\OpenRegister\Service\Integration\MapsProvider;
+use OCA\OpenRegister\Db\MapLinkMapper;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -724,6 +727,28 @@ class Application extends App implements IBootstrap
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
+
+        // Maps integration: geocoordinate links for NC Maps.
+        $context->registerService(
+            MapLocationService::class,
+            function (ContainerInterface $container) {
+                return new MapLocationService(
+                    mapLinkMapper: $container->get(MapLinkMapper::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    clientService: $container->get('OCP\Http\Client\IClientService'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            MapsProvider::class,
+            function () {
+                return new MapsProvider();
             }
         );
     }//end registerObjectInteractionServices()
