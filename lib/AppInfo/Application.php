@@ -197,6 +197,9 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 
 /**
  * Class Application
@@ -271,6 +274,7 @@ class Application extends App implements IBootstrap
         $this->registerSearchBackend(context: $context);
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
+        $this->registerIntegrationServices(context: $context);
         $this->registerEventListeners(context: $context);
     }//end register()
 
@@ -727,6 +731,60 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerObjectInteractionServices()
+
+    /**
+     * Register integration services (registry, router, and all providers).
+     *
+     * The IntegrationRegistry is populated with providers after all are
+     * registered so that getEnabled() queries isEnabled() at runtime.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md#task-4
+     */
+    private function registerIntegrationServices(IRegistrationContext $context): void
+    {
+        // Register ExternalIntegrationRouter (used by external providers).
+        $context->registerService(
+            ExternalIntegrationRouter::class,
+            function (ContainerInterface $container) {
+                return new ExternalIntegrationRouter(
+                    httpClient: new \GuzzleHttp\Client(),
+                    cache: $container->get(\OCA\OpenRegister\Service\RequestScopedCache::class),
+                    config: $container->get('OCP\IConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // Register OpenProjectProvider.
+        $context->registerService(
+            OpenProjectProvider::class,
+            function (ContainerInterface $container) {
+                return new OpenProjectProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // Register IntegrationRegistry and populate with all providers.
+        $context->registerService(
+            IntegrationRegistry::class,
+            function (ContainerInterface $container) {
+                $registry = new IntegrationRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+
+                // Register OpenProject provider.
+                $registry->register(provider: $container->get(OpenProjectProvider::class));
+
+                return $registry;
+            }
+        );
+    }//end registerIntegrationServices()
 
     /**
      * Register all event listeners for the application.
