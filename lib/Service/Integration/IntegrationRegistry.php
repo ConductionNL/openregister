@@ -167,13 +167,15 @@ class IntegrationRegistry
     /**
      * Return the ids of every registered provider.
      *
-     * Used by `Schema::validateLinkedTypesValue()` (task 7) as the
-     * authoritative existence check, replacing the hardcoded
-     * `VALID_LINKED_TYPES` constant.
+     * Used by `Schema::validateLinkedTypesValue()` as the authoritative
+     * existence check. The legacy `Schema::VALID_LINKED_TYPES` constant
+     * was removed by `cleanup-linked-entity-type-map`; this method is
+     * now the sole validation source.
      *
      * @return array<int, string>
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
+     * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-4
      */
     public function listIds(): array
     {

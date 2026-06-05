@@ -1,0 +1,61 @@
+{
+  "spec": "openspec/changes/cleanup-linked-entity-type-map",
+  "verified": [
+    {
+      "task": "pre-removal.1",
+      "file": "lib/Service/LinkedEntityService.php",
+      "ok": true,
+      "note": "Grepped entire lib/ — TYPE_COLUMN_MAP absent"
+    },
+    {
+      "task": "pre-removal.2",
+      "file": "lib/Db/Schema.php",
+      "ok": true,
+      "note": "Grepped entire lib/ — VALID_LINKED_TYPES absent"
+    },
+    {
+      "task": "removal.1",
+      "file": "lib/Service/LinkedEntityService.php",
+      "ok": true,
+      "note": "const TYPE_COLUMN_MAP removed; validateType() now uses IntegrationRegistry::listIds()"
+    },
+    {
+      "task": "removal.2",
+      "file": "lib/Db/Schema.php",
+      "ok": true,
+      "note": "const VALID_LINKED_TYPES removed; validateLinkedTypesValue() uses registry-only path"
+    },
+    {
+      "task": "removal.3",
+      "file": "lib/Repair/LogDanglingLinkedTypes.php",
+      "ok": true,
+      "note": "Updated docblock and message template to remove forward references to the now-removed constant"
+    },
+    {
+      "task": "removal.4",
+      "file": "lib/Service/Integration/IntegrationRegistry.php",
+      "ok": true,
+      "note": "Updated listIds() docblock to reflect it is now the sole validation source"
+    },
+    {
+      "task": "verification.1",
+      "file": "tests/Unit/Service/LinkedEntityServiceTest.php",
+      "ok": true,
+      "note": "6 tests pass: TYPE_COLUMN_MAP absence verified, registry-driven validation verified"
+    },
+    {
+      "task": "verification.2",
+      "file": "tests/Unit/Db/SchemaLinkedTypesCleanupTest.php",
+      "ok": true,
+      "note": "7 tests pass: VALID_LINKED_TYPES absence verified, registry-skip-on-empty behavior verified"
+    },
+    {
+      "task": "documentation.1",
+      "file": "CHANGELOG.md",
+      "ok": true,
+      "note": "Breaking change note added under cleanup-linked-entity-type-map"
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
