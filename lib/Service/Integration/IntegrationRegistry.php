@@ -124,7 +124,7 @@ class IntegrationRegistry
         return array_keys(
             array_filter(
                 $this->providers,
-                static fn (IntegrationProviderInterface $p): bool => $p->isEnabled()
+                static fn (IntegrationProviderInterface $provider): bool => $provider->isEnabled()
             )
         );
     }//end enabledIds()

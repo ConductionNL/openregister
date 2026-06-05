@@ -188,6 +188,9 @@ class ExternalIntegrationRouter
         // Placeholder: real implementation calls OpenConnector's PHP service.
         // Return empty structure so providers stay functional in unit tests
         // and in environments where OpenConnector has no configured source yet.
+        // Payload is forwarded to OpenConnector once the PHP-native interface is available.
+        unset($payload);
+
         return [
             'source'  => $source,
             'action'  => $action,
