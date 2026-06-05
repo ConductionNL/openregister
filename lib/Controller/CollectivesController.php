@@ -26,15 +26,17 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
  * CollectivesController exposes REST endpoints under
  * /api/objects/{register}/{schema}/{id}/collectives.
  *
- * All endpoints are #[NoAdminRequired] and include per-object authorization via
- * the ObjectService ownership check before operating on links.
+ * All endpoints require user authentication and include per-object authorization
+ * via the ObjectService ownership check before operating on links.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -48,6 +50,7 @@ class CollectivesController extends Controller
      * @param IRequest               $request                HTTP request
      * @param CollectivesPageService $collectivesPageService Collectives page service
      * @param ObjectService          $objectService          Object service
+     * @param IUserSession           $userSession            User session
      * @param LoggerInterface        $logger                 Logger
      */
     public function __construct(
@@ -55,6 +58,7 @@ class CollectivesController extends Controller
         IRequest $request,
         private readonly CollectivesPageService $collectivesPageService,
         private readonly ObjectService $objectService,
+        private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -73,6 +77,8 @@ class CollectivesController extends Controller
     #[NoCSRFRequired]
     public function listCollectives(): JSONResponse
     {
+        $this->requireAuthenticatedUser();
+
         if ($this->collectivesPageService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'Nextcloud Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -104,6 +110,8 @@ class CollectivesController extends Controller
     #[NoCSRFRequired]
     public function listPages(string $collective): JSONResponse
     {
+        $this->requireAuthenticatedUser();
+
         if ($this->collectivesPageService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'Nextcloud Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -137,6 +145,8 @@ class CollectivesController extends Controller
     #[NoCSRFRequired]
     public function index(string $register, string $schema, string $id): JSONResponse
     {
+        $this->requireAuthenticatedUser();
+
         if ($this->collectivesPageService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'Nextcloud Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -177,6 +187,8 @@ class CollectivesController extends Controller
     #[NoCSRFRequired]
     public function create(string $register, string $schema, string $id): JSONResponse
     {
+        $this->requireAuthenticatedUser();
+
         if ($this->collectivesPageService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'Nextcloud Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -235,6 +247,8 @@ class CollectivesController extends Controller
     #[NoCSRFRequired]
     public function destroy(string $register, string $schema, string $id, string $linkId): JSONResponse
     {
+        $this->requireAuthenticatedUser();
+
         if ($this->collectivesPageService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'Nextcloud Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -278,6 +292,8 @@ class CollectivesController extends Controller
     #[NoCSRFRequired]
     public function content(string $register, string $schema, string $id, string $linkId): JSONResponse
     {
+        $this->requireAuthenticatedUser();
+
         if ($this->collectivesPageService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'Nextcloud Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
@@ -320,6 +336,20 @@ class CollectivesController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }//end try
     }//end content()
+
+    /**
+     * Assert that the current request is made by an authenticated user.
+     *
+     * @throws OCSForbiddenException When no user is logged in.
+     *
+     * @return void
+     */
+    private function requireAuthenticatedUser(): void
+    {
+        if ($this->userSession->getUser() === null) {
+            throw new OCSForbiddenException('Authentication required');
+        }
+    }//end requireAuthenticatedUser()
 
     /**
      * Resolve an object from register/schema/id route parameters.

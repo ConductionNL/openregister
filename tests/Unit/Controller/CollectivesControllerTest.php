@@ -21,6 +21,8 @@ use OCA\OpenRegister\Service\CollectivesPageService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -34,6 +36,8 @@ class CollectivesControllerTest extends TestCase
 
     private ObjectService&MockObject $objectService;
 
+    private IUserSession&MockObject $userSession;
+
     private LoggerInterface&MockObject $logger;
 
     private CollectivesController $controller;
@@ -43,13 +47,20 @@ class CollectivesControllerTest extends TestCase
         $this->request            = $this->createMock(IRequest::class);
         $this->collectivesService = $this->createMock(CollectivesPageService::class);
         $this->objectService      = $this->createMock(ObjectService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->userSession        = $this->createMock(IUserSession::class);
+        $this->logger             = $this->createMock(LoggerInterface::class);
+
+        // Default: authenticated user.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
 
         $this->controller = new CollectivesController(
             appName: 'openregister',
             request: $this->request,
             collectivesPageService: $this->collectivesService,
             objectService: $this->objectService,
+            userSession: $this->userSession,
             logger: $this->logger,
         );
     }//end setUp()
