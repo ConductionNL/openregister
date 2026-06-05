@@ -5,10 +5,20 @@
  *
  * Registry service for deep link registrations from consuming apps.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -16,6 +26,11 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-25
@@ -127,6 +142,8 @@ class DeepLinkRegistryService
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-25
      */
@@ -182,6 +199,8 @@ class DeepLinkRegistryService
      *
      * @return DeepLinkRegistration|null The registration, or null if none exists
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
      */
@@ -215,6 +234,8 @@ class DeepLinkRegistryService
      *
      * @return string|null The resolved URL, or null to use default
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-27
      */
@@ -243,6 +264,8 @@ class DeepLinkRegistryService
      *
      * @return string|null The icon identifier, or null
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
      */
@@ -257,6 +280,7 @@ class DeepLinkRegistryService
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     private function ensureIdMaps(): void
@@ -314,6 +338,7 @@ class DeepLinkRegistryService
      *
      * @return bool True if at least one deep link is registered
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     public function hasRegistrations(): bool
@@ -326,6 +351,7 @@ class DeepLinkRegistryService
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     public static function reset(): void

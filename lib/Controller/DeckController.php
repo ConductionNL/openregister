@@ -5,6 +5,12 @@
  *
  * REST controller for Deck card relation operations on OpenRegister objects.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -82,6 +88,7 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -93,7 +100,11 @@ class DeckController extends Controller
         }
 
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+=======
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+>>>>>>> origin/development
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -119,6 +130,7 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -130,7 +142,11 @@ class DeckController extends Controller
         }
 
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+=======
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+>>>>>>> origin/development
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -161,6 +177,7 @@ class DeckController extends Controller
     }//end create()
 
     /**
+<<<<<<< HEAD
      * Remove a Deck card link from an object.
      *
      * @param string $register The register slug
@@ -204,6 +221,8 @@ class DeckController extends Controller
     }//end destroy()
 
     /**
+=======
+>>>>>>> origin/development
      * Find all objects linked to cards on a board.
      *
      * @param string $boardId The board ID
@@ -212,6 +231,7 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function objects(string $boardId): JSONResponse
     {
@@ -239,6 +259,7 @@ class DeckController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     private function validateObject(
         string $register,

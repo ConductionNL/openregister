@@ -23,6 +23,9 @@
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
@@ -213,6 +216,10 @@ class SaveObjectCoverageTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+<<<<<<< HEAD
+=======
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+>>>>>>> origin/development
             new ArrayLoader()
         );
 
@@ -1491,6 +1498,7 @@ class SaveObjectCoverageTest extends TestCase
     }
 
     /**
+<<<<<<< HEAD
      * Test setSelfMetadata sets owner.
      *
      * @return void
@@ -1498,21 +1506,73 @@ class SaveObjectCoverageTest extends TestCase
     public function testSetSelfMetadataWithOwner(): void
     {
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+=======
+     * Test setSelfMetadata ignores owner from client @self input.
+     *
+     * SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self —
+     * applyOwnerAttribution() is the sole authoritative setter.
+     *
+     * @return void
+     */
+    public function testSetSelfMetadataWithOwnerIsIgnored(): void
+    {
+        $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+>>>>>>> origin/development
         $selfData = ['owner' => 'user123'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
+<<<<<<< HEAD
         $this->assertSame('user123', $entity->getOwner());
     }
 
     /**
      * Test setSelfMetadata sets organisation.
+=======
+        // owner must remain null — the client-supplied value is discarded.
+        $this->assertNull($entity->getOwner());
+    }
+
+    /**
+     * Test setSelfMetadata does NOT set organisation when caller has no access.
+     *
+     * SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
+     * has verified membership.  Default mock → hasAccessToOrganisation → false.
+>>>>>>> origin/development
      *
      * @return void
      */
     public function testSetSelfMetadataWithOrganisation(): void
     {
+<<<<<<< HEAD
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+=======
+        $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+        $selfData = ['organisation' => 'org-uuid'];
+
+        $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
+
+        // Organisation must NOT be stamped from client input without access verification.
+        $this->assertNull($entity->getOrganisation());
+    }
+
+    /**
+     * Test setSelfMetadata sets organisation when caller has verified access.
+     *
+     * SECURITY (wave-11 SB1): When hasAccessToOrganisation returns true the
+     * organisation value IS applied (admin / verified member use case).
+     *
+     * @return void
+     */
+    public function testSetSelfMetadataWithOrganisationWhenCallerHasAccess(): void
+    {
+        $this->organisationService
+            ->method('hasAccessToOrganisation')
+            ->with('org-uuid')
+            ->willReturn(true);
+
+        $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+>>>>>>> origin/development
         $selfData = ['organisation' => 'org-uuid'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);

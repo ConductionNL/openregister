@@ -108,6 +108,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
  */
 import {
@@ -142,6 +143,7 @@ export default {
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		hasChanges() {
@@ -163,6 +165,7 @@ export default {
 		 * Get additional fields that aren't in the main display
 		 * @return {Array} Array of key-value pairs
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		additionalFields() {
@@ -183,6 +186,7 @@ export default {
 		 * Close the dialog
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		closeDialog() {
@@ -194,6 +198,7 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatDate(dateString) {
@@ -210,6 +215,7 @@ export default {
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatChanges(changes) {
@@ -237,6 +243,7 @@ export default {
 		 * @param {*} data - Data to format
 		 * @return {string} Formatted JSON
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatJson(data) {
@@ -264,6 +271,7 @@ export default {
 		 * @param {string} fieldName - Field name to format
 		 * @return {string} Formatted field name
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatFieldName(fieldName) {
@@ -278,6 +286,7 @@ export default {
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatFieldValue(value) {
@@ -298,6 +307,7 @@ export default {
 		 * Copy full audit trail data to clipboard
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async copyFullData() {
@@ -315,6 +325,7 @@ export default {
 		 * Copy changes data to clipboard
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async copyChanges() {

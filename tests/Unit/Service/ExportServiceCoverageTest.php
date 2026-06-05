@@ -17,6 +17,9 @@
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
@@ -65,7 +68,12 @@ class ExportServiceCoverageTest extends TestCase
             $this->groupManager,
             $this->objectService,
             $this->cacheHandler,
+<<<<<<< HEAD
             $this->propertyRbacHandler
+=======
+            $this->propertyRbacHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class)
+>>>>>>> origin/development
         );
     }
 

@@ -6,10 +6,13 @@
  * This file contains the class for handling view mapper related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -28,6 +31,10 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
+<<<<<<< HEAD
+=======
+use OCP\IAppConfig;
+>>>>>>> origin/development
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -42,7 +49,11 @@ use Symfony\Component\Uid\Uuid;
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -69,6 +80,28 @@ class ViewMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+<<<<<<< HEAD
+=======
+     * Organisation mapper for multi-tenancy (from trait)
+     *
+     * Used to get active organisation UUID and apply organisation filters.
+     *
+     * @var OrganisationMapper Organisation mapper instance
+     */
+    protected OrganisationMapper $organisationMapper;
+
+    /**
+     * App configuration for multitenancy settings (from trait)
+     *
+     * Used by MultiTenancyTrait to check multitenancy configuration and
+     * resolve the default organisation UUID when no session org is set.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    protected IAppConfig $appConfig;
+
+    /**
+>>>>>>> origin/development
      * User session for current user
      *
      * Used to determine current user context for RBAC filtering.
@@ -101,33 +134,57 @@ class ViewMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
+<<<<<<< HEAD
      * @param IDBConnection    $db              Database connection
      * @param IUserSession     $userSession     User session for RBAC
      * @param IGroupManager    $groupManager    Group manager for RBAC
      * @param IEventDispatcher $eventDispatcher Event dispatcher for view lifecycle events
+=======
+     * @param IDBConnection      $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+     * @param IAppConfig         $appConfig          App configuration for multitenancy settings
+     * @param IUserSession       $userSession        User session for RBAC
+     * @param IGroupManager      $groupManager       Group manager for RBAC
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for view lifecycle events
+>>>>>>> origin/development
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
+<<<<<<< HEAD
         // REMOVED: Services should not be in mappers.
         // OrganisationMapper $organisationMapper.
         IUserSession $userSession,
         IGroupManager $groupManager,
         // REMOVED: Handlers should not be in mappers.
         // CacheHandler $configCacheSvc.
+=======
+        OrganisationMapper $organisationMapper,
+        IAppConfig $appConfig,
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+>>>>>>> origin/development
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
 
         // Store dependencies for use in mapper methods.
+<<<<<<< HEAD
         // REMOVED: Services should not be in mappers.
         // $this->organisationMapper = $organisationService.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
         // $this->configurationCacheService = $configCacheSvc; // REMOVED
         $this->eventDispatcher = $eventDispatcher;
+=======
+        $this->organisationMapper = $organisationMapper;
+        $this->appConfig          = $appConfig;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->eventDispatcher    = $eventDispatcher;
+>>>>>>> origin/development
     }//end __construct()
 
     /**

@@ -3,6 +3,12 @@
 /**
  * OpenRegister Validation Settings Controller
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -63,6 +69,7 @@ class ValidationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with validation results
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-7
      */
     public function validateAllObjects(): JSONResponse
     {
@@ -96,6 +103,7 @@ class ValidationSettingsController extends Controller
      * @return JSONResponse JSON response with mass validation results
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-7
      */
     public function massValidateObjects(): JSONResponse
     {
@@ -179,6 +187,7 @@ class ValidationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with memory prediction
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-7
      */
     public function predictMassValidationMemory(): JSONResponse
     {

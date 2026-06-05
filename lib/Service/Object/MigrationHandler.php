@@ -5,11 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -54,6 +66,7 @@ class MigrationHandler
      * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
      * @param LoggerInterface         $logger           Logger for logging operations.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
@@ -89,6 +102,7 @@ class MigrationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple migration paths for different object types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive migration requires detailed processing
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function migrateObjects(

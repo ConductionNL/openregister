@@ -198,6 +198,8 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
  */
@@ -244,6 +246,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude list-view active-filter detection helper (computed)
+		 */
 		hasActiveFilters() {
 			return Object.keys(searchTrailStore.searchTrailFilters || {}).some(key =>
 				searchTrailStore.searchTrailFilters[key] !== null
@@ -252,6 +257,7 @@ export default {
 			)
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		paginatedSearchTrails() {
@@ -263,15 +269,24 @@ export default {
 				return []
 			}
 		},
+		/**
+		 * @spec exclude list-view select-all checkbox state (computed)
+		 */
 		allSelected() {
 			return this.paginatedSearchTrails.length > 0 && this.paginatedSearchTrails.every(searchTrail => this.selectedSearchTrails.includes(searchTrail.id))
 		},
+		/**
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
+		 */
 		someSelected() {
 			return this.selectedSearchTrails.length > 0 && !this.allSelected
 		},
 	},
 	watch: {
 		paginatedSearchTrails: {
+			/**
+			 * @spec exclude list-view watcher; re-emits counts when the trail list changes
+			 */
 			handler() {
 				this.$nextTick(() => {
 					this.updateCounts()
@@ -280,6 +295,9 @@ export default {
 			deep: false,
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle; loads trails and registers sidebar listeners on mount
+	 */
 	mounted() {
 		// Initialize with safe defaults
 		try {
@@ -297,6 +315,9 @@ export default {
 			this.updateCounts()
 		})
 	},
+	/**
+	 * @spec exclude list-view lifecycle; tears down sidebar listeners on destroy
+	 */
 	beforeDestroy() {
 		this.$root.$off('search-trail-filters-changed')
 		this.$root.$off('search-trail-refresh')
@@ -306,6 +327,7 @@ export default {
 		 * Load search trails from API
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async loadSearchTrails() {
@@ -318,6 +340,7 @@ export default {
 		},
 		/**
 		 * Handle filter changes from sidebar
+		 * @spec exclude list-view filter-change handler; sets store filters and reloads (zoeken-filteren contract)
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 */
@@ -331,6 +354,7 @@ export default {
 		 * @param {object} searchTrail - Search trail entry to view
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
 		 */
 		viewDetails(searchTrail) {
@@ -361,6 +385,7 @@ export default {
 		 * @param {object} searchTrail - Search trail entry with parameters
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
 		 */
 		viewParameters(searchTrail) {
@@ -370,6 +395,7 @@ export default {
 		},
 		/**
 		 * Rerun a search based on the search trail parameters
+		 * @spec exclude list-view row-action; router-navigates to the search page with the trail's params (zoeken-filteren contract)
 		 * @param {object} searchTrail - Search trail entry to rerun
 		 * @return {void}
 		 */
@@ -408,6 +434,7 @@ export default {
 		},
 		/**
 		 * Delete a single search trail using the new modal
+		 * @spec exclude list-view row-action dialog-open plumbing
 		 * @param {object} searchTrail - Search trail to delete
 		 * @return {void}
 		 */
@@ -421,6 +448,7 @@ export default {
 		 * Clean up old search trails
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async cleanupSearchTrails() {
@@ -447,6 +475,7 @@ export default {
 		 * Refresh search trails list
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async refreshSearchTrails() {
@@ -454,6 +483,7 @@ export default {
 		},
 		/**
 		 * Update counts for sidebar
+		 * @spec exclude list-view count-emit plumbing for the sidebar
 		 * @return {void}
 		 */
 		updateCounts() {
@@ -467,6 +497,7 @@ export default {
 		},
 		/**
 		 * Handle page change from pagination component
+		 * @spec exclude list-view pagination page-change handler
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 */
@@ -484,6 +515,7 @@ export default {
 		},
 		/**
 		 * Handle page size change from pagination component
+		 * @spec exclude list-view pagination page-size-change handler
 		 * @param {number} pageSize - The new page size
 		 * @return {Promise<void>}
 		 */
@@ -501,6 +533,7 @@ export default {
 		},
 		/**
 		 * Check if search trail has parameters
+		 * @spec exclude list-view parameter-presence display helper
 		 * @param {object} searchTrail - The search trail item
 		 * @return {boolean} Whether the search trail has parameters
 		 */
@@ -525,6 +558,7 @@ export default {
 		},
 		/**
 		 * Format execution time for display
+		 * @spec exclude list-view execution-time formatting display helper
 		 * @param {number} executionTime - Execution time in milliseconds
 		 * @return {string} Formatted execution time
 		 */
@@ -538,6 +572,9 @@ export default {
 			return `${(executionTime / 1000).toFixed(2)}s`
 		},
 		formatBytes,
+		/**
+		 * @spec exclude list-view select-all checkbox plumbing
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedSearchTrails = this.paginatedSearchTrails.map(searchTrail => searchTrail.id)
@@ -545,6 +582,9 @@ export default {
 				this.selectedSearchTrails = []
 			}
 		},
+		/**
+		 * @spec exclude list-view single-row selection toggle plumbing
+		 */
 		toggleSearchTrailSelection(id, checked) {
 			if (checked) {
 				this.selectedSearchTrails.push(id)
@@ -556,6 +596,7 @@ export default {
 		 * Delete selected search trails using bulk operation
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async bulkDeleteSearchTrails() {

@@ -5,6 +5,12 @@
  *
  * Controller for managing source operations in the OpenRegister app.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -24,8 +30,14 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
+<<<<<<< HEAD
+=======
+use OCP\IGroupManager;
+>>>>>>> origin/development
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
+use OCP\Security\ICrypto;
 
 /**
  * Class SourcesController
@@ -33,17 +45,29 @@ use OCP\IRequest;
  * Controller for managing source operations.
  *
  * @psalm-suppress UnusedClass
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class SourcesController extends Controller
 {
     /**
      * Constructor for the SourcesController
      *
+<<<<<<< HEAD
      * @param string       $appName      The name of the app
      * @param IRequest     $request      The request object
      * @param IAppConfig   $config       The app configuration object
      * @param SourceMapper $sourceMapper The source mapper
      * @param IL10N        $l10n         The localization service
+=======
+     * @param string        $appName      The name of the app
+     * @param IRequest      $request      The request object
+     * @param IAppConfig    $config       The app configuration object
+     * @param SourceMapper  $sourceMapper The source mapper
+     * @param IL10N         $l10n         The localization service
+     * @param IUserSession  $userSession  User session for admin checks
+     * @param IGroupManager $groupManager Group manager for admin checks
+     * @param ICrypto       $crypto       Crypto service for databaseUrl encryption
+>>>>>>> origin/development
      *
      * @return void
      */
@@ -52,10 +76,49 @@ class SourcesController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper,
+<<<<<<< HEAD
         private readonly IL10N $l10n
+=======
+        private readonly IL10N $l10n,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
+        private readonly ICrypto $crypto
+>>>>>>> origin/development
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Serialize a source for the response, stripping databaseUrl for non-admins.
+     *
+     * @param Source $source The source entity to serialize.
+     *
+     * @return array<string, mixed> The serialized source data.
+     */
+    private function serializeSource(Source $source): array
+    {
+        $data = $source->jsonSerialize();
+        if ($this->isCurrentUserAdmin() === false) {
+            unset($data['databaseUrl']);
+        }
+
+        return $data;
+    }//end serializeSource()
 
     /**
      * Retrieves a list of all sources
@@ -69,6 +132,7 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function index(): JSONResponse
     {
@@ -90,13 +154,23 @@ class SourcesController extends Controller
         unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
         // Return all sources that match the filters.
+        // Strip databaseUrl from non-admin responses to prevent credential exposure.
+        $sources = $this->sourceMapper->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters
+        );
         return new JSONResponse(
             data: [
+<<<<<<< HEAD
                 'results' => $this->sourceMapper->findAll(
                     limit: $limit,
                     offset: $offset,
                     filters: $filters
                 ),
+=======
+                'results' => array_map(fn(Source $src) => $this->serializeSource(source: $src), $sources),
+>>>>>>> origin/development
             ]
         );
     }//end index()
@@ -112,12 +186,19 @@ class SourcesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function show(string $id): JSONResponse
     {
         try {
             // Try to find the source by ID.
+<<<<<<< HEAD
             return new JSONResponse(data: $this->sourceMapper->find(id: (int) $id));
+=======
+            $source = $this->sourceMapper->find(id: (int) $id);
+            return new JSONResponse(data: $this->serializeSource(source: $source));
+>>>>>>> origin/development
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
@@ -136,9 +217,14 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function create(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -154,8 +240,18 @@ class SourcesController extends Controller
             unset($data['id']);
         }
 
+        // Encrypt databaseUrl at rest before persisting.
+        if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
+            $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
+        }
+
         // Create a new source from the data.
+<<<<<<< HEAD
         return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
+=======
+        $source = $this->sourceMapper->createFromArray(object: $data);
+        return new JSONResponse(data: $this->serializeSource(source: $source));
+>>>>>>> origin/development
     }//end create()
 
     /**
@@ -172,9 +268,14 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -191,9 +292,18 @@ class SourcesController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+        // Encrypt databaseUrl at rest before persisting.
+        if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
+            $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
+        }
+
         // Update the source with the provided data.
         $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
+<<<<<<< HEAD
         return new JSONResponse(data: $source);
+=======
+        return new JSONResponse(data: $this->serializeSource(source: $source));
+>>>>>>> origin/development
     }//end update()
 
     /**
@@ -208,6 +318,7 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function patch(int $id): JSONResponse
     {
@@ -230,9 +341,14 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
         // Find the source by ID and delete it.
         $this->sourceMapper->delete($this->sourceMapper->find($id));
 
@@ -247,6 +363,12 @@ class SourcesController extends Controller
      * @param string               $key    Parameter key
      *
      * @return int|null Integer value or null
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned
+     *   by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+>>>>>>> origin/development
      */
     private function getIntParam(array $params, string $key): ?int
     {

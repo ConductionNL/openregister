@@ -5,6 +5,12 @@
  *
  * Setup class for SOLR configuration in the OpenRegister application.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -253,6 +259,7 @@ class SetupHandler
      * Get tenant-specific collection name using IndexService
      *
      * @return string Tenant-specific collection name (e.g., "openregister_nc_f0e53393")
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function getTenantCollectionName(): string
     {
@@ -269,6 +276,7 @@ class SetupHandler
      * Get tenant ID from IndexService
      *
      * @return string Tenant identifier (e.g., "nc_f0e53393")
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function getTenantId(): string
     {
@@ -347,6 +355,7 @@ class SetupHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex SOLR setup requires many configuration paths
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple setup scenarios with different execution paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive SOLR setup cannot be easily decomposed
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     public function setupSolr(): bool
     {
@@ -1056,6 +1065,7 @@ class SetupHandler
      * @param string $configSetName Name of the configSet to check
      *
      * @return bool True if configSet exists, false otherwise
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function configSetExists(string $configSetName): bool
     {
@@ -1485,6 +1495,7 @@ class SetupHandler
      * @param string $errorMessage Error message from SOLR
      *
      * @return bool True if this appears to be a configSet propagation issue
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function isConfigSetPropagationError(string $errorMessage): bool
     {
@@ -1964,6 +1975,7 @@ class SetupHandler
      * ObjectEntity class metadata fields, ensuring proper data types and indexing.
      *
      * @return bool True if schema configuration was successful
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function configureSchemaFields(): bool
     {
@@ -2122,6 +2134,7 @@ class SetupHandler
      * @param array  $fieldConfig Field configuration
      *
      * @return array Result with success status and optional error, exception_type, or solr_response.
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2181,6 +2194,7 @@ class SetupHandler
      * @param array  $fieldConfig Field configuration
      *
      * @return array Result with success status and optional error, exception_type, or solr_response.
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2246,6 +2260,7 @@ class SetupHandler
      * @return array<string, array<string, bool|string>> Field definitions with SOLR type configuration
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Field definitions require comprehensive specification
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     public function getObjectEntityFieldDefinitions(): array
     {

@@ -4,7 +4,11 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
+<<<<<<< HEAD
 		loading-message="Loading n8n configuration...">
+=======
+		:loading-message="t('openregister', 'Loading n8n configuration...')">
+>>>>>>> origin/development
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -195,7 +199,11 @@
 		<!-- Workflow Management -->
 		<SettingsCard
 			v-if="n8nEnabled && connectionStatus && connectionStatus.success && initResult && initResult.success"
+<<<<<<< HEAD
 			title="Workflow Management"
+=======
+			:title="t('openregister', 'Workflow Management')"
+>>>>>>> origin/development
 			icon="⚙️"
 			:collapsible="true"
 			:default-collapsed="false">
@@ -342,6 +350,10 @@ export default {
 		/**
 		 * Check if configuration has unsaved changes.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — dirty-state predicate comparing local fields to snapshot.
+>>>>>>> origin/development
 		 * @return {boolean} True if there are unsaved changes.
 		 */
 		hasChanges() {
@@ -362,6 +374,10 @@ export default {
 		/**
 		 * Load n8n configuration from backend.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
+>>>>>>> origin/development
 		 * @return {Promise<void>}
 		 */
 		async loadConfiguration() {
@@ -398,6 +414,10 @@ export default {
 		/**
 		 * Update n8n URL value.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
+>>>>>>> origin/development
 		 * @param {string} value New URL value.
 		 * @return {void}
 		 */
@@ -408,6 +428,10 @@ export default {
 		/**
 		 * Update n8n API key value.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
+>>>>>>> origin/development
 		 * @param {string} value New API key value.
 		 * @return {void}
 		 */
@@ -418,6 +442,10 @@ export default {
 		/**
 		 * Update n8n project value.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
+>>>>>>> origin/development
 		 * @param {string} value New project value.
 		 * @return {void}
 		 */
@@ -428,6 +456,10 @@ export default {
 		/**
 		 * Handle toggle of n8n integration.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — toggle handler delegating to saveConfiguration.
+>>>>>>> origin/development
 		 * @param {boolean} checked New enabled state.
 		 * @return {Promise<void>}
 		 */
@@ -442,6 +474,10 @@ export default {
 		/**
 		 * Save n8n configuration to backend.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — admin-settings save + toast.
+>>>>>>> origin/development
 		 * @return {Promise<void>}
 		 */
 		async saveConfiguration() {
@@ -476,6 +512,10 @@ export default {
 		/**
 		 * Test n8n connection.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — thin POST + result display.
+>>>>>>> origin/development
 		 * @return {Promise<void>}
 		 */
 		async testConnection() {
@@ -515,6 +555,10 @@ export default {
 		/**
 		 * Initialize n8n project and user.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — thin POST + result display + workflow refresh.
+>>>>>>> origin/development
 		 * @return {Promise<void>}
 		 */
 		async initializeN8n() {
@@ -553,6 +597,10 @@ export default {
 		/**
 		 * Load workflows from n8n.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — admin-settings load hydrating local workflow list.
+>>>>>>> origin/development
 		 * @return {Promise<void>}
 		 */
 		async loadWorkflows() {
@@ -571,6 +619,10 @@ export default {
 		/**
 		 * Open n8n editor in new tab.
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude UI plumbing — external window.open navigation, no observable contract.
+>>>>>>> origin/development
 		 * @return {void}
 		 */
 		openN8nEditor() {

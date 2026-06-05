@@ -9,10 +9,19 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
+<<<<<<< HEAD
  * @author  Conduction Development Team <dev@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> origin/development
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -52,6 +61,11 @@ class Version1Date20260325120000 extends SimpleMigrationStep
      * @return ISchemaWrapper|null The updated schema or null if no changes
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
+=======
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+>>>>>>> origin/development
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

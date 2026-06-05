@@ -6,10 +6,13 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -55,6 +58,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUser(?string $user)
  * @method string|null getUserName()
  * @method void setUserName(?string $userName)
+<<<<<<< HEAD
+=======
+ * @method string|null getSession()
+ * @method void setSession(?string $session)
+>>>>>>> origin/development
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()
@@ -70,6 +78,10 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.LongVariable)
+>>>>>>> origin/development
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
@@ -274,6 +286,21 @@ class AuditTrail extends Entity implements JsonSerializable
      * @var string|null SHA-256 hash of the previous audit trail entry
      */
     protected ?string $previousHash = null;
+<<<<<<< HEAD
+=======
+
+    /**
+     * Import-job tag attached to every `create` audit row generated
+     * during a bulk import. Powers the import-rollback contract: when
+     * a critical failure (or an explicit rollback request) hits, every
+     * object whose creation audit row carries this UUID can be
+     * soft-deleted as a unit. Null on rows produced by single-object
+     * writes outside of an import context.
+     *
+     * @var string|null UUID of the import job that produced this row.
+     */
+    protected ?string $importJobId = null;
+>>>>>>> origin/development
 
     /**
      * Constructor for the AuditTrail class
@@ -309,6 +336,10 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'expires', type: 'datetime');
         $this->addType(fieldName: 'hash', type: 'string');
         $this->addType(fieldName: 'previousHash', type: 'string');
+<<<<<<< HEAD
+=======
+        $this->addType(fieldName: 'importJobId', type: 'string');
+>>>>>>> origin/development
     }//end __construct()
 
     /**

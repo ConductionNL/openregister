@@ -48,6 +48,12 @@ export default {
 		TrashCanOutline,
 	},
 	methods: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
+>>>>>>> origin/development
 		deleteEndpoint() {
 			endpointStore.deleteEndpoint(endpointStore.endpointItem)
 				.then(() => {

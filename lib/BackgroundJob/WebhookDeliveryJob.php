@@ -5,6 +5,12 @@
  *
  * Background job for webhook delivery with retries.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,6 +22,8 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-79
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-79
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
  */
@@ -122,6 +130,8 @@ class WebhookDeliveryJob extends QueuedJob
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-79
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-79
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
      */

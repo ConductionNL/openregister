@@ -9,7 +9,14 @@ use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IRequest;
+=======
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
+>>>>>>> origin/development
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -23,6 +30,11 @@ class SearchTrailControllerTest extends TestCase
     private SearchTrailController $controller;
     private IRequest&MockObject $request;
     private SearchTrailService&MockObject $searchTrailService;
+<<<<<<< HEAD
+=======
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
+>>>>>>> origin/development
 
     protected function setUp(): void
     {
@@ -30,11 +42,30 @@ class SearchTrailControllerTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
+<<<<<<< HEAD
+=======
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        // Default: authenticated admin so the requireAdmin() gate on
+        // index()/show() lets the happy-path assertions through. Tests
+        // exercising the non-admin rejection override these expectations.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
+>>>>>>> origin/development
 
         $this->controller = new SearchTrailController(
             'openregister',
             $this->request,
+<<<<<<< HEAD
             $this->searchTrailService
+=======
+            $this->searchTrailService,
+            $this->userSession,
+            $this->groupManager
+>>>>>>> origin/development
         );
     }
 
@@ -1775,4 +1806,88 @@ class SearchTrailControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
     }
+<<<<<<< HEAD
+=======
+
+    // ── Wave-3 C7 admin-only gate (cross-tenant search-trail leak) ──
+
+    /**
+     * Build a fresh controller with a non-admin / anonymous user.
+     *
+     * The shared `setUp()` wires an admin user so the rest of the suite
+     * exercises the happy path. C7 denial tests need to override that.
+     */
+    private function makeControllerWithUser(?IUser $user, bool $isAdmin): SearchTrailController
+    {
+        $session  = $this->createMock(IUserSession::class);
+        $groupMgr = $this->createMock(IGroupManager::class);
+        $session->method('getUser')->willReturn($user);
+        if ($user !== null) {
+            $groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
+        }
+
+        return new SearchTrailController(
+            'openregister',
+            $this->request,
+            $this->searchTrailService,
+            $session,
+            $groupMgr
+        );
+    }
+
+    public function testIndexReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->index();
+
+        $this->assertEquals(401, $result->getStatus());
+        $this->assertEquals('Authentication required', $result->getData()['error']);
+    }
+
+    public function testIndexReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->index();
+
+        $this->assertEquals(403, $result->getStatus());
+        $this->assertStringContainsString('admin-only', $result->getData()['error']);
+    }
+
+    public function testShowReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->show(1);
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testShowReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->show(42);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testShowDoesNotInvokeServiceWhenForbidden(): void
+    {
+        // Defence-in-depth: non-admin must short-circuit before the
+        // search-trail service is touched (no DB hit, no row read).
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->searchTrailService->expects($this->never())->method('getSearchTrail');
+
+        $controller->show(42);
+    }
+>>>>>>> origin/development
 }

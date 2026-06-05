@@ -3,10 +3,20 @@
 /**
  * OpenRegister WorkflowEngineRegistry
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -14,6 +24,8 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-84
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-84
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
  */
@@ -67,6 +79,7 @@ class WorkflowEngineRegistry
      *
      * @throws InvalidArgumentException If engine type is unsupported
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-84
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-84
      */
     public function resolveAdapter(WorkflowEngine $engine): WorkflowEngineInterface
@@ -92,6 +105,7 @@ class WorkflowEngineRegistry
      * @param int $engineId Engine ID
      *
      * @return WorkflowEngineInterface
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-registration-and-discovery
      */
     public function resolveAdapterById(int $engineId): WorkflowEngineInterface
     {
@@ -140,6 +154,7 @@ class WorkflowEngineRegistry
      * @param array<string, mixed> $data Engine configuration data
      *
      * @return WorkflowEngine
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-specific-credential-management
      */
     public function createEngine(array $data): WorkflowEngine
     {
@@ -157,6 +172,7 @@ class WorkflowEngineRegistry
      * @param array<string, mixed> $data Updated data
      *
      * @return WorkflowEngine
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-specific-credential-management
      */
     public function updateEngine(int $id, array $data): WorkflowEngine
     {
@@ -173,6 +189,7 @@ class WorkflowEngineRegistry
      * @param int $id Engine ID
      *
      * @return WorkflowEngine The deleted engine
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-registration-and-discovery
      */
     public function deleteEngine(int $id): WorkflowEngine
     {
@@ -189,6 +206,7 @@ class WorkflowEngineRegistry
      *
      * @return array{healthy: bool, responseTime: int}
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
      */
     public function healthCheck(int $id): array
@@ -215,6 +233,7 @@ class WorkflowEngineRegistry
      * Discover available workflow engine ExApps.
      *
      * @return array<int, array{engineType: string, suggestedBaseUrl: string, installed: bool}>
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-registration-and-discovery
      */
     public function discoverEngines(): array
     {
@@ -252,6 +271,7 @@ class WorkflowEngineRegistry
      *
      * @return array<string, mixed> Decrypted auth config
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-84
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-84
      */
     private function decryptAuthConfig(WorkflowEngine $engine): array

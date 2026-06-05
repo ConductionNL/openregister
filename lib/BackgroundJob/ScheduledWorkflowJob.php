@@ -5,6 +5,12 @@
  *
  * Background job for executing scheduled workflows on their configured intervals.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,6 +22,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
  */
 
@@ -75,6 +82,7 @@ class ScheduledWorkflowJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-7
      */
     protected function run($argument): void
     {
@@ -122,14 +130,26 @@ class ScheduledWorkflowJob extends TimedJob
         try {
             $engines = $this->engineRegistry->getEnginesByType($engineType);
             if (empty($engines) === true) {
+<<<<<<< HEAD
                 $this->handleError(schedule: $schedule, startTime: $startTime, error: "No engine found for type '$engineType'");
+=======
+                $errorMessage = "No engine found for type '$engineType'";
+                $this->handleError(schedule: $schedule, startTime: $startTime, error: $errorMessage);
+>>>>>>> origin/development
                 return;
             }
 
             $engine  = $engines[0];
             $adapter = $this->engineRegistry->resolveAdapter($engine);
 
+<<<<<<< HEAD
             $payloadData = $schedule->getPayload() !== null ? (json_decode($schedule->getPayload(), true) ?? []) : [];
+=======
+            $payloadData = [];
+            if ($schedule->getPayload() !== null) {
+                $payloadData = (json_decode($schedule->getPayload(), true) ?? []);
+            }
+>>>>>>> origin/development
 
             $data = array_merge(
                     $payloadData,
@@ -154,11 +174,23 @@ class ScheduledWorkflowJob extends TimedJob
             $this->workflowMapper->update($schedule);
 
             // Persist execution history.
+<<<<<<< HEAD
+=======
+            $errors = null;
+            if ($result->isError() === true) {
+                $errors = json_encode($result->getErrors());
+            }
+
+>>>>>>> origin/development
             $this->executionMapper->createFromArray(
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
                         'eventType'  => 'scheduled',
+<<<<<<< HEAD
                         'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+=======
+                        'objectUuid' => $schedule->getUuid(),
+>>>>>>> origin/development
                         'schemaId'   => $schedule->getSchemaId(),
                         'registerId' => $schedule->getRegisterId(),
                         'engine'     => $engineType,
@@ -166,7 +198,11 @@ class ScheduledWorkflowJob extends TimedJob
                         'mode'       => 'sync',
                         'status'     => $result->getStatus(),
                         'durationMs' => $durationMs,
+<<<<<<< HEAD
                         'errors'     => $result->isError() === true ? json_encode($result->getErrors()) : null,
+=======
+                        'errors'     => $errors,
+>>>>>>> origin/development
                         'metadata'   => json_encode($result->getMetadata()),
                         'executedAt' => $now,
                     ]
@@ -195,6 +231,7 @@ class ScheduledWorkflowJob extends TimedJob
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
      */
     private function handleError(ScheduledWorkflow $schedule, $startTime, string $error): void
@@ -220,7 +257,11 @@ class ScheduledWorkflowJob extends TimedJob
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
                         'eventType'  => 'scheduled',
+<<<<<<< HEAD
                         'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+=======
+                        'objectUuid' => $schedule->getUuid(),
+>>>>>>> origin/development
                         'schemaId'   => $schedule->getSchemaId(),
                         'registerId' => $schedule->getRegisterId(),
                         'engine'     => $schedule->getEngine(),

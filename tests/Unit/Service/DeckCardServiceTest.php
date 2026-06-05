@@ -84,6 +84,67 @@ class DeckCardServiceTest extends TestCase
         $this->assertSame(0, $result['total']);
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Phase B-1: rows always carry the widened payload keys (dueDate,
+     * labels, assignees) — when Deck isn't resolvable they fall back
+     * to sensible defaults (null / empty arrays) without throwing.
+     *
+     * The DeckCardService resolves OCA\Deck\Service\CardService through
+     * \OC::$server (not injectable), so the unit test exercises the
+     * "Deck unavailable" path — the live Deck-installed path is
+     * exercised in the live verification (see commit message).
+     *
+     * @group requires-app-internal-api
+     */
+    public function testGetCardsForObjectShipsWidenedKeysWithDefaultsWhenDeckUnavailable(): void
+    {
+        $link = new DeckLink();
+        $link->setObjectUuid('abc-123');
+        $link->setCardTitle('Stub Card');
+        $link->setCardId(99);
+
+        $this->deckLinkMapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+
+        $result = $this->service->getCardsForObject('abc-123');
+
+        $this->assertCount(1, $result['results']);
+        $row = $result['results'][0];
+
+        $this->assertArrayHasKey('dueDate', $row);
+        $this->assertArrayHasKey('labels', $row);
+        $this->assertArrayHasKey('assignees', $row);
+
+        // Defaults when no Deck card service is reachable.
+        $this->assertNull($row['dueDate']);
+        $this->assertSame([], $row['labels']);
+        $this->assertSame([], $row['assignees']);
+
+        // Original payload intact.
+        $this->assertSame('Stub Card', $row['cardTitle']);
+        $this->assertSame(99, $row['cardId']);
+    }
+
+    /**
+     * Phase B-1: idempotency — calling getCardsForObject twice produces
+     * the same shape (no double-write into the link row, no key duplication).
+     */
+    public function testGetCardsForObjectIsIdempotent(): void
+    {
+        $link = new DeckLink();
+        $link->setObjectUuid('abc-123');
+        $link->setCardId(99);
+
+        $this->deckLinkMapper->method('findByObjectUuid')->willReturn([$link]);
+
+        $r1 = $this->service->getCardsForObject('abc-123');
+        $r2 = $this->service->getCardsForObject('abc-123');
+
+        $this->assertSame($r1, $r2);
+    }
+
+>>>>>>> origin/development
     public function testLinkOrCreateCardThrowsWhenNoUser(): void
     {
         $this->userSession->method('getUser')->willReturn(null);

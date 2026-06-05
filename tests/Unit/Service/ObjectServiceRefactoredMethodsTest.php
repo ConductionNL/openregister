@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
@@ -28,6 +31,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\DateTimeNormalizer;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -180,6 +187,10 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
+<<<<<<< HEAD
+=======
+			$this->createMock(DateTimeNormalizer::class),
+>>>>>>> origin/development
 			$this->createMock(IAppContainer::class)
 		);
 

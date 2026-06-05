@@ -212,9 +212,16 @@ class FilesControllerTest extends TestCase
     public function testShowFileNotFoundFallbackViaOwner(): void
     {
         $object = $this->getMockBuilder(ObjectEntity::class)
+<<<<<<< HEAD
             ->addMethods(['getOwner'])
             ->getMock();
         $object->method('getOwner')->willReturn('testuser');
+=======
+            ->addMethods(['getOwner', 'getUuid'])
+            ->getMock();
+        $object->method('getOwner')->willReturn('testuser');
+        $object->method('getUuid')->willReturn('object-uuid-1');
+>>>>>>> origin/development
         $this->setupObjectServiceMocks($object);
 
         $this->fileService->method('getFile')->willReturn(null);
@@ -231,12 +238,24 @@ class FilesControllerTest extends TestCase
                 return null;
             });
 
+<<<<<<< HEAD
+=======
+        // The resolved file's parent folder name must match the object UUID
+        // so the IDOR guard accepts it as belonging to this object (issue #1956 c).
+        $objectFolder = $this->createMock(Folder::class);
+        $objectFolder->method('getName')->willReturn('object-uuid-1');
+
+>>>>>>> origin/development
         $file = $this->createMock(File::class);
         $resource = fopen('php://memory', 'r');
         $file->method('fopen')->willReturn($resource);
         $file->method('getMimeType')->willReturn('image/png');
         $file->method('getName')->willReturn('logo.png');
         $file->method('getSize')->willReturn(1024);
+<<<<<<< HEAD
+=======
+        $file->method('getParent')->willReturn($objectFolder);
+>>>>>>> origin/development
 
         $userFolder = $this->createMock(Folder::class);
         $userFolder->method('getById')->willReturn([$file]);
@@ -251,12 +270,63 @@ class FilesControllerTest extends TestCase
         fclose($resource);
     }
 
+<<<<<<< HEAD
     public function testShowFileNotFoundFallbackViaSystemUser(): void
     {
         $object = $this->getMockBuilder(ObjectEntity::class)
             ->addMethods(['getOwner'])
             ->getMock();
         $object->method('getOwner')->willReturn(null);
+=======
+    /**
+     * Regression guard for issue #1956 part (c) — sibling-object IDOR.
+     *
+     * The fallback resolves a file (F1) that exists in the owner's user folder
+     * but lives under a DIFFERENT object's folder (uuid 'other-object-uuid').
+     * Before the fix, this returned the file content unchecked; after the fix
+     * the guard must reject it and return 404.
+     */
+    public function testShowFallbackRejectsSiblingObjectFile(): void
+    {
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getOwner', 'getUuid'])
+            ->getMock();
+        $object->method('getOwner')->willReturn('testuser');
+        $object->method('getUuid')->willReturn('object-uuid-A');
+        $this->setupObjectServiceMocks($object);
+
+        $this->fileService->method('getFile')->willReturn(null);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('testuser');
+        $this->userManager->method('get')->willReturn($user);
+
+        // The fallback finds the file, but its parent folder is a DIFFERENT object's folder.
+        $otherObjectFolder = $this->createMock(Folder::class);
+        $otherObjectFolder->method('getName')->willReturn('other-object-uuid-B');
+
+        $file = $this->createMock(File::class);
+        $file->method('getParent')->willReturn($otherObjectFolder);
+
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$file]);
+        $this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+        $result = $this->controller->show('reg1', 'schema1', 'obj1', 42);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertEquals(404, $result->getStatus());
+        $this->assertEquals(['error' => 'File not found'], $result->getData());
+    }
+
+    public function testShowFileNotFoundFallbackViaSystemUser(): void
+    {
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getOwner', 'getUuid'])
+            ->getMock();
+        $object->method('getOwner')->willReturn(null);
+        $object->method('getUuid')->willReturn('sysobj-uuid');
+>>>>>>> origin/development
         $this->setupObjectServiceMocks($object);
 
         $this->fileService->method('getFile')->willReturn(null);
@@ -273,10 +343,20 @@ class FilesControllerTest extends TestCase
                 return null;
             });
 
+<<<<<<< HEAD
+=======
+        $objectFolder = $this->createMock(Folder::class);
+        $objectFolder->method('getName')->willReturn('sysobj-uuid');
+
+>>>>>>> origin/development
         $file = $this->createMock(File::class);
         $resource = fopen('php://memory', 'r');
         $file->method('fopen')->willReturn($resource);
         $file->method('getMimeType')->willReturn('application/pdf');
+<<<<<<< HEAD
+=======
+        $file->method('getParent')->willReturn($objectFolder);
+>>>>>>> origin/development
         $file->method('getName')->willReturn('doc.pdf');
         $file->method('getSize')->willReturn(2048);
 
@@ -1596,10 +1676,69 @@ class FilesControllerTest extends TestCase
                 }
                 return null;
             });
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([]);
 
         $result = $this->invokePrivateMethod('extractUploadedFiles', []);
         $this->assertCount(1, $result);
+=======
+        $this->request->method('getParams')->willReturn([
+            'share' => 'true',
+            'tags' => 'a,b',
+        ]);
+
+        $result = $this->invokePrivateMethod('extractUploadedFiles', []);
+        $this->assertCount(1, $result);
+
+        // Regression guard: the 'file' branch must run through normalizeSingleFile
+        // so 'share' and 'tags' are populated. Without this, processUploadedFiles
+        // dereferences $file['share'] and throws a TypeError (null given).
+        $this->assertSame('single.txt', $result[0]['name']);
+        $this->assertArrayHasKey('share', $result[0]);
+        $this->assertIsBool($result[0]['share']);
+        $this->assertTrue($result[0]['share']);
+        $this->assertArrayHasKey('tags', $result[0]);
+        $this->assertSame(['a', 'b'], $result[0]['tags']);
+    }
+
+    /**
+     * @dataProvider shareValueProvider
+     */
+    public function testExtractUploadedFilesShareParsing(mixed $shareInput, bool $expected): void
+    {
+        $uploadedFile = [
+            'name' => 'single.txt',
+            'type' => 'text/plain',
+            'tmp_name' => '/tmp/phpSingle',
+            'error' => 0,
+            'size' => 100,
+        ];
+
+        $this->request->method('getUploadedFile')
+            ->willReturnCallback(function ($key) use ($uploadedFile) {
+                return $key === 'file' ? $uploadedFile : null;
+            });
+        $this->request->method('getParams')->willReturn(['share' => $shareInput]);
+
+        $result = $this->invokePrivateMethod('extractUploadedFiles', []);
+        $this->assertSame($expected, $result[0]['share']);
+    }
+
+    public static function shareValueProvider(): array
+    {
+        return [
+            'string true'  => ['true', true],
+            'string TRUE'  => ['TRUE', true],
+            'string 1'     => ['1', true],
+            'string yes'   => ['yes', true],
+            'string on'    => ['on', true],
+            'bool true'    => [true, true],
+            'string false' => ['false', false],
+            'string 0'     => ['0', false],
+            'bool false'   => [false, false],
+            'empty string' => ['', false],
+        ];
+>>>>>>> origin/development
     }
 
     public function testExtractUploadedFilesMultipart(): void

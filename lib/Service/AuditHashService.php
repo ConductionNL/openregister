@@ -6,6 +6,7 @@
  * Provides SHA-256 hash computation, chain verification, and genesis hash management
  * for the immutable audit trail system.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -21,6 +22,27 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-9
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-14
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-13
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-7
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-13
+>>>>>>> origin/development
  */
 
 declare(strict_types=1);
@@ -62,6 +84,8 @@ class AuditHashService
      *
      * @return string The SHA-256 hex digest of the genesis seed
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-10
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-10
      */
@@ -80,6 +104,8 @@ class AuditHashService
      *
      * @return string The canonical JSON string
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-9
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-9
      */
@@ -104,6 +130,8 @@ class AuditHashService
      *
      * @return string The SHA-256 hex digest
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-11
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-11
      */
@@ -121,6 +149,8 @@ class AuditHashService
      *
      * @return string The hash of the last entry or the genesis hash
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-13
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-13
      */
@@ -153,12 +183,28 @@ class AuditHashService
      * @param int|null $from Start entry ID (inclusive), null for beginning
      * @param int|null $to   End entry ID (inclusive), null for end
      *
+<<<<<<< HEAD
      * @return array{valid: bool, entriesVerified: int, brokenAt: int|null, skippedNullHashes: int, range?: array{from: int, to: int}}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-14
+=======
+     * @return array{
+     *     valid: bool,
+     *     entriesVerified: int,
+     *     brokenAt: int|null,
+     *     skippedNullHashes: int,
+     *     range?: array{from: int, to: int}
+     * }
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-14
+>>>>>>> origin/development
      */
     public function verifyChain(?int $from=null, ?int $to=null): array
     {
@@ -260,6 +306,7 @@ class AuditHashService
      *
      * @return string|null The hash of the previous entry, or null if none
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     private function getHashBefore(int $id): ?string
@@ -292,6 +339,7 @@ class AuditHashService
      *
      * @return array The mapped array with camelCase keys
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-7
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-7
      */
     private function mapRowToEntity(array $row): array

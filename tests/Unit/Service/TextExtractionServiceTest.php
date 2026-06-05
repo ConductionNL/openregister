@@ -51,6 +51,10 @@ class TextExtractionServiceTest extends TestCase
     private IRootFolder&MockObject $rootFolder;
     private IDBConnection&MockObject $db;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
+=======
+    private \OCA\OpenRegister\Service\TextExtraction\EmlParser&MockObject $emlParser;
+>>>>>>> origin/development
 
     protected function setUp(): void
     {
@@ -67,6 +71,10 @@ class TextExtractionServiceTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->riskLevelService = $this->createMock(RiskLevelService::class);
+<<<<<<< HEAD
+=======
+        $this->emlParser = $this->createMock(\OCA\OpenRegister\Service\TextExtraction\EmlParser::class);
+>>>>>>> origin/development
 
         $this->service = new TextExtractionService(
             $this->fileMapper,
@@ -81,7 +89,12 @@ class TextExtractionServiceTest extends TestCase
             $this->gdprEntityMapper,
             $this->entityRelationMapper,
             $this->settingsService,
+<<<<<<< HEAD
             $this->riskLevelService
+=======
+            $this->riskLevelService,
+            $this->emlParser
+>>>>>>> origin/development
         );
     }
 
@@ -3721,4 +3734,71 @@ class TextExtractionServiceTest extends TestCase
 
         $this->assertTrue(true); // no exception
     }
+<<<<<<< HEAD
+=======
+
+    // ────────────────────────────────────────────────────────
+    // EML delegation — parseEmlStructured + extractEml
+    // ────────────────────────────────────────────────────────
+
+    public function testParseEmlStructuredDelegatesToEmlParser(): void
+    {
+        $file = $this->createMock(File::class);
+        $structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+            headers: ['Subject' => 'hello'],
+            body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+            attachments: []
+        );
+
+        $this->emlParser->expects($this->once())
+            ->method('parse')
+            ->with($file)
+            ->willReturn($structure);
+
+        $this->assertSame($structure, $this->service->parseEmlStructured($file));
+    }
+
+    public function testParseEmlStructuredPropagatesEmlParseException(): void
+    {
+        $file = $this->createMock(File::class);
+        $this->emlParser->expects($this->once())
+            ->method('parse')
+            ->willThrowException(new \OCA\OpenRegister\Exception\EmlParseException('bad bytes'));
+
+        $this->expectException(\OCA\OpenRegister\Exception\EmlParseException::class);
+        $this->service->parseEmlStructured($file);
+    }
+
+    public function testExtractEmlReturnsFlattenedStringOnSuccess(): void
+    {
+        $file = $this->createMock(File::class);
+        $structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+            headers: ['Subject' => 'hello'],
+            body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+            attachments: []
+        );
+
+        $this->emlParser->expects($this->once())->method('parse')->with($file)->willReturn($structure);
+        $this->emlParser->expects($this->once())
+            ->method('flatten')
+            ->with($structure)
+            ->willReturn("Subject: hello\n\nbody");
+
+        $this->assertSame("Subject: hello\n\nbody", $this->invokePrivate('extractEml', [$file]));
+    }
+
+    public function testExtractEmlReturnsNullAndLogsOnParseException(): void
+    {
+        $file = $this->createMock(File::class);
+        $file->method('getId')->willReturn(99);
+
+        $this->emlParser->expects($this->once())
+            ->method('parse')
+            ->willThrowException(new \OCA\OpenRegister\Exception\EmlParseException('header parse failed'));
+        $this->emlParser->expects($this->never())->method('flatten');
+        $this->logger->expects($this->once())->method('error');
+
+        $this->assertNull($this->invokePrivate('extractEml', [$file]));
+    }
+>>>>>>> origin/development
 }

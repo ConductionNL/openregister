@@ -6,10 +6,13 @@
  * This file contains the controller class for handling configuration operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -30,7 +33,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -63,6 +68,11 @@ class ConfigurationsController extends Controller
      * @param ConfigurationService $configurationService The configuration service instance
      * @param UploadService        $uploadService        The upload service instance
      * @param string|null          $userId               The current user ID
+<<<<<<< HEAD
+=======
+     * @param IUserSession         $userSession          User session for admin checks
+     * @param IGroupManager        $groupManager         Group manager for admin checks
+>>>>>>> origin/development
      */
     public function __construct(
         string $appName,
@@ -70,11 +80,32 @@ class ConfigurationsController extends Controller
         private readonly ConfigurationMapper $configurationMapper,
         private readonly ConfigurationService $configurationService,
         private readonly UploadService $uploadService,
+<<<<<<< HEAD
         ?string $userId
+=======
+        ?string $userId,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
+>>>>>>> origin/development
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->userId = $userId;
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * List all configurations
@@ -86,6 +117,7 @@ class ConfigurationsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function index(): JSONResponse
     {
@@ -98,6 +130,13 @@ class ConfigurationsController extends Controller
         $searchConditions = [];
         $filters          = $filters;
 
+<<<<<<< HEAD
+=======
+        // Admins bypass multitenancy so they can see all configurations.
+        // Non-admin authenticated users see only their tenant's configurations.
+        $multitenancy = ($this->isCurrentUserAdmin() === false);
+
+>>>>>>> origin/development
         // Return all configurations that match the search conditions.
         // Disable multitenancy filtering so admins can see all configurations.
         return new JSONResponse(
@@ -108,7 +147,11 @@ class ConfigurationsController extends Controller
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams,
+<<<<<<< HEAD
                     _multitenancy: false
+=======
+                    _multitenancy: $multitenancy
+>>>>>>> origin/development
                 ),
             ]
         );
@@ -128,13 +171,20 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Configuration not found'}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function show(int $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             // Disable multitenancy filtering for show operations.
             // When retrieving by ID, admins should be able to access configurations regardless of organisation.
             return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: false));
+=======
+            // Admins bypass multitenancy; non-admins see only their tenant's configurations.
+            $multitenancy = ($this->isCurrentUserAdmin() === false);
+            return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: $multitenancy));
+>>>>>>> origin/development
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         }
@@ -156,9 +206,14 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function create(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         $data = $this->request->getParams();
 
         // Remove internal parameters and data attribute.
@@ -215,9 +270,14 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         $data = $this->request->getParams();
 
         // Remove internal parameters and data attribute.
@@ -265,6 +325,7 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function patch(int $id): JSONResponse
     {
@@ -285,6 +346,7 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<204, null,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+<<<<<<< HEAD
      */
     public function destroy(int $id): JSONResponse
     {
@@ -297,6 +359,26 @@ class ConfigurationsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
         }
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     */
+    public function destroy(int $id): JSONResponse
+    {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
+        try {
+            // Disable multitenancy filtering for delete operations.
+            // When deleting by ID, admins should be able to delete configurations regardless of organisation.
+            $configuration = $this->configurationMapper->find($id, _multitenancy: false);
+            $this->configurationMapper->delete($configuration);
+            return new JSONResponse(data: null, statusCode: 204);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => 'Failed to delete configuration: '.$e->getMessage()], statusCode: 400);
+        }
+>>>>>>> origin/development
     }//end destroy()
 
     /**
@@ -316,6 +398,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
@@ -367,9 +450,15 @@ class ConfigurationsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function import(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // Initialize uploadedFiles array.
             $uploadedFiles = [];
@@ -418,8 +507,13 @@ class ConfigurationsController extends Controller
 
             // Link the imported registers, schemas and objects to the configuration.
             $registerIds = array_map(static fn($r) => $r->getId(), $result['registers']);
+<<<<<<< HEAD
             $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas']);
             $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects']);
+=======
+            $schemaIds   = array_map(static fn($schema) => $schema->getId(), $result['schemas']);
+            $objectIds   = array_map(static fn($obj) => $obj->getId(), $result['objects']);
+>>>>>>> origin/development
 
             $configuration->setRegisters(array_values(array_unique($registerIds)));
             $configuration->setSchemas(array_values(array_unique($schemaIds)));

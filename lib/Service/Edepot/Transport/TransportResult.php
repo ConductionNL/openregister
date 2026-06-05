@@ -5,6 +5,12 @@
  *
  * Value object representing the result of a SIP transport operation.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -67,6 +73,13 @@ class TransportResult
      * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
      * @param string|null                                                                      $errorMessage      Error message.
      * @param string|null                                                                      $transferReference Transfer reference.
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
+>>>>>>> origin/development
      */
     public function __construct(
         bool $success=false,
@@ -85,6 +98,7 @@ class TransportResult
      *
      * @return bool True if successful.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function isSuccess(): bool
@@ -97,6 +111,7 @@ class TransportResult
      *
      * @return bool True if partially successful.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function isPartialSuccess(): bool
@@ -110,9 +125,16 @@ class TransportResult
         foreach ($this->objectResults as $result) {
             if ($result['accepted'] === true) {
                 $accepted++;
+<<<<<<< HEAD
             } else {
                 $rejected++;
             }
+=======
+                continue;
+            }
+
+            $rejected++;
+>>>>>>> origin/development
         }
 
         return ($accepted > 0 && $rejected > 0);
@@ -123,6 +145,7 @@ class TransportResult
      *
      * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getObjectResults(): array
@@ -135,6 +158,7 @@ class TransportResult
      *
      * @return string|null The error message.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getErrorMessage(): ?string
@@ -146,6 +170,7 @@ class TransportResult
      * Get the transfer reference.
      *
      * @return string|null The e-Depot transfer reference.
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
      */
     public function getTransferReference(): ?string
     {
@@ -157,6 +182,7 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of accepted objects.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getAcceptedUuids(): array
@@ -176,6 +202,7 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of rejected objects.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getRejectedUuids(): array
@@ -195,6 +222,7 @@ class TransportResult
      *
      * @return array<string,mixed> Serialized result.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function toArray(): array

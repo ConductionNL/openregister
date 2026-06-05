@@ -26,7 +26,11 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 			:show-mass-copy="false"
 			:show-mass-delete="false"
 			show-view-toggle
+<<<<<<< HEAD
 			add-label="Add Register"
+=======
+			:add-label="t('openregister', 'Add Register')"
+>>>>>>> origin/development
 			row-key="id"
 			:empty-text="emptyContentName"
 			:row-class="getRowClass"
@@ -59,7 +63,11 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
+<<<<<<< HEAD
 						input-label="Schemas"
+=======
+						:input-label="t('openregister', 'Schemas')"
+>>>>>>> origin/development
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
@@ -75,13 +83,21 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 					<template #icon>
 						<Upload :size="20" />
 					</template>
+<<<<<<< HEAD
 					Import
+=======
+					{{ t('openregister', 'Import') }}
+>>>>>>> origin/development
 				</NcActionButton>
 				<NcActionButton close-after-click @click="openAllApisDoc">
 					<template #icon>
 						<ApiIcon :size="20" />
 					</template>
+<<<<<<< HEAD
 					View APIs
+=======
+					{{ t('openregister', 'View APIs') }}
+>>>>>>> origin/development
 				</NcActionButton>
 				<NcActionButton close-after-click @click="warmupNamesCache">
 					<template #icon>
@@ -138,13 +154,18 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
+<<<<<<< HEAD
 						v-tooltip="isManagedByExternalConfig(row) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(row)?.title : ''"
+=======
+						v-tooltip="isManagedByExternalConfig(row) ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title: getManagingConfiguration(row)?.title }) : ''"
+>>>>>>> origin/development
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
 						@click="$refs.indexPage.openFormDialog(row)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
+<<<<<<< HEAD
 						Edit
 					</NcActionButton>
 					<NcActionButton
@@ -164,45 +185,74 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 							<PublishOff :size="20" />
 						</template>
 						Depublish
+=======
+						{{ t('openregister', 'Edit') }}
+>>>>>>> origin/development
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('publishRegister')">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
+<<<<<<< HEAD
 						Publish OAS
+=======
+						{{ t('openregister', 'Publish OAS') }}
+>>>>>>> origin/development
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('importRegister')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
+<<<<<<< HEAD
 						Import
+=======
+						{{ t('openregister', 'Import') }}
+>>>>>>> origin/development
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); viewOasDoc(row)">
 						<template #icon>
 							<ApiIcon :size="20" />
 						</template>
+<<<<<<< HEAD
 						View API Documentation
+=======
+						{{ t('openregister', 'View API Documentation') }}
+>>>>>>> origin/development
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); downloadOas(row)">
 						<template #icon>
 							<Download :size="20" />
 						</template>
+<<<<<<< HEAD
 						Download API Specification
 					</NcActionButton>
 					<NcActionButton v-tooltip="row.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+=======
+						{{ t('openregister', 'Download API Specification') }}
+					</NcActionButton>
+					<NcActionButton v-tooltip="row.stats?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
+>>>>>>> origin/development
 						close-after-click
 						:disabled="row.stats?.total > 0"
 						@click="registerStore.setRegisterItem(row); navigationStore.setDialog('deleteRegister')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
+<<<<<<< HEAD
 						Delete
+=======
+						{{ t('openregister', 'Delete') }}
+>>>>>>> origin/development
 					</NcActionButton>
 					<NcActionButton close-after-click @click="viewRegisterDetails(row)">
 						<template #icon>
 							<InformationOutline :size="20" />
 						</template>
+<<<<<<< HEAD
 						View Details
+=======
+						{{ t('openregister', 'View Details') }}
+>>>>>>> origin/development
 					</NcActionButton>
 				</NcActions>
 			</template>
@@ -222,8 +272,6 @@ import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
@@ -247,8 +295,11 @@ export default {
 		InformationOutline,
 		CogOutline,
 		CloudUploadOutline,
+<<<<<<< HEAD
 		Publish,
 		PublishOff,
+=======
+>>>>>>> origin/development
 		RegisterSchemaCard,
 	},
 	data() {
@@ -260,9 +311,18 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude list-view store-reference passthrough (computed)
+		 */
 		registerStore() {
 			return registerStore
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view inline form-schema definition for the register editor (computed)
+		 */
+>>>>>>> origin/development
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -275,12 +335,24 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view list filtering of synthetic rows (computed)
+		 */
+>>>>>>> origin/development
 		filteredRegisters() {
 			return registerStore.registerList.filter(register =>
 				register.title !== 'System Totals'
 				&& register.title !== 'Orphaned Items',
 			)
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view table column definitions (computed)
+		 */
+>>>>>>> origin/development
 		tableColumns() {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
@@ -289,6 +361,12 @@ export default {
 				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
 			]
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view pagination summary helper (computed)
+		 */
+>>>>>>> origin/development
 		paginationData() {
 			const page = registerStore.pagination.page || 1
 			const limit = registerStore.pagination.limit || 20
@@ -296,6 +374,9 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+		/**
+		 * @spec exclude list-view empty-state title text helper (computed)
+		 */
 		emptyContentName() {
 			if (registerStore.error) {
 				return registerStore.error
@@ -305,6 +386,9 @@ export default {
 			return t('openregister', 'Loading registers...')
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle; parallel-loads registers/configurations/schemas on mount
+	 */
 	async mounted() {
 		try {
 			this.schemasLoading = true
@@ -321,6 +405,12 @@ export default {
 		}
 	},
 	methods: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view manual refresh plumbing
+		 */
+>>>>>>> origin/development
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
@@ -330,24 +420,54 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view pagination page-change handler
+		 */
+>>>>>>> origin/development
 		onPageChanged(page) {
 			registerStore.setPagination(page, registerStore.pagination.limit)
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view pagination page-size-change handler
+		 */
+>>>>>>> origin/development
 		onPageSizeChanged(pageSize) {
 			registerStore.setPagination(1, pageSize)
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view row-selection state setter
+		 */
+>>>>>>> origin/development
 		onSelect(ids) {
 			this.selectedRegisters = ids
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view row CSS-class helper based on managing-configuration state
+		 */
+>>>>>>> origin/development
 		getRowClass(register) {
 			if (this.isManagedByExternalConfig(register)) return 'viewTableRow--managed'
 			if (this.isManagedByLocalConfig(register)) return 'viewTableRow--local'
 			return ''
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view lookup helper; finds the configuration managing a register
+		 */
+>>>>>>> origin/development
 		getManagingConfiguration(register) {
 			if (!register || !register.id) return null
 			return configurationStore.configurationList.find(
@@ -355,18 +475,36 @@ export default {
 			) || null
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view display predicate; whether a register is externally managed
+		 */
+>>>>>>> origin/development
 		isManagedByExternalConfig(register) {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
 			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view display predicate; whether a register is locally managed
+		 */
+>>>>>>> origin/development
 		isManagedByLocalConfig(register) {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
 			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view form-control mapping helper; resolves schema ids to select options
+		 */
+>>>>>>> origin/development
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -376,6 +514,12 @@ export default {
 			})
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view form-submit wiring; delegates to registerStore.saveRegister (registers-management contract)
+		 */
+>>>>>>> origin/development
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -388,6 +532,7 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
 		async publishRegister(register) {
 			try {
 				await registerStore.publishRegister(register.id)
@@ -408,11 +553,22 @@ export default {
 			}
 		},
 
+=======
+		/**
+		 * @spec exclude list-view row-action; router-navigates to the register detail page
+		 */
+>>>>>>> origin/development
 		viewRegisterDetails(register) {
 			registerStore.setRegisterItem({ id: register.id })
 			this.$router.push(`/registers/${register.id}`)
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
+		 */
+>>>>>>> origin/development
 		async downloadOas(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
@@ -432,18 +588,30 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
+		 */
 		viewOasDoc(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+		/**
+		 * @spec exclude list-view action; opens the combined all-registers OAS in the Redoc viewer (oas-validation contract)
+		 */
 		openAllApisDoc() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view action; POSTs to the names-cache warmup endpoint and reports results via toast
+		 */
+>>>>>>> origin/development
 		async warmupNamesCache() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/names/warmup`

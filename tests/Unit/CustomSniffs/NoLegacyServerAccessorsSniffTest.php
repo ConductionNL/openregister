@@ -13,6 +13,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -38,10 +41,38 @@ if (defined('PHP_CODESNIFFER_CBF') === false) {
 
 /**
  * NoLegacyServerAccessorsSniffTest — covers positive and negative cases.
+<<<<<<< HEAD
+=======
+ *
+ * The whole test body is skipped pending a PHP_CodeSniffer upgrade:
+ * squizlabs/php_codesniffer 3.9 references a `T_ANON_CLASS` constant via
+ * its Generic Functions sniff that fails to resolve once PHPCS's own
+ * autoloader has registered the ruleset — throwing
+ * `Error: Undefined constant "PHP_CodeSniffer\Standards\Generic\Sniffs\Functions\T_ANON_CLASS"`
+ * on PHP 8.3+. Re-enable once the app is on PHPCS 3.10+.
+>>>>>>> origin/development
  */
 final class NoLegacyServerAccessorsSniffTest extends TestCase
 {
     /**
+<<<<<<< HEAD
+=======
+     * Skip every case until PHPCS is upgraded.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->markTestSkipped(
+            'Disabled pending PHP_CodeSniffer 3.10+ upgrade — ' .
+            'PHPCS 3.9 Generic Functions sniff triggers ' .
+            'Error: Undefined constant ...T_ANON_CLASS on modern PHP.'
+        );
+    }//end setUp()
+
+    /**
+>>>>>>> origin/development
      * Run the sniff against a PHP source snippet and return the error messages.
      *
      * @param string $source Full PHP source including the opening tag.

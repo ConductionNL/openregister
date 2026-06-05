@@ -1105,6 +1105,7 @@ class ConfigurationSettingsHandlerTest extends TestCase
         $this->handler->updateRbacSettingsOnly(['enabled' => false]);
     }
 
+<<<<<<< HEAD
     /**
      * Test updateRbacSettingsOnly persists `inheritFromPublicDefault: false`
      * to the dedicated IAppConfig key (not into the JSON `rbac` blob) so
@@ -1169,6 +1170,8 @@ class ConfigurationSettingsHandlerTest extends TestCase
         ]);
     }
 
+=======
+>>>>>>> origin/development
     // =========================================================================
     // getOrganisationSettingsOnly
     // =========================================================================

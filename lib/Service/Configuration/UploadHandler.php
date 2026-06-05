@@ -6,6 +6,12 @@
  * This file contains the handler class for processing file uploads
  * and parsing JSON/YAML data in the OpenRegister application.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -83,6 +89,7 @@ class UploadHandler
      *     message?: 'Expected only 1 file.', 'Content-Type'?: string},
      *     array<never, never>>|array
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
@@ -129,6 +136,7 @@ class UploadHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function decode(string $data, ?string $type): ?array
@@ -170,6 +178,7 @@ class UploadHandler
      *
      * @return array The converted array data.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function ensureArrayStructure(mixed $data): array
@@ -203,6 +212,7 @@ class UploadHandler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
@@ -240,6 +250,7 @@ class UploadHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getJSONfromURL(string $url): array|JSONResponse
@@ -278,6 +289,7 @@ class UploadHandler
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse

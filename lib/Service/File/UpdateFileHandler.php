@@ -5,11 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 declare(strict_types=1);
@@ -60,6 +72,7 @@ class UpdateFileHandler
     /**
      * Constructor for UpdateFileHandler.
      *
+<<<<<<< HEAD
      * @param IRootFolder             $rootFolder           Root folder for file operations.
      * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler   $fileValidHandler     File validation handler.
@@ -68,6 +81,19 @@ class UpdateFileHandler
      * @param ISystemTagManager       $systemTagManager     System tag manager.
      * @param ISystemTagObjectMapper  $systemTagMapper      System tag object mapper.
      * @param LoggerInterface         $logger               Logger for logging operations.
+=======
+     * @param IRootFolder                          $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler              $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler                $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler                 $fileOwnershipHandler File ownership handler.
+     * @param ReadFileHandler                      $readFileHandler      Read file handler.
+     * @param ISystemTagManager                    $systemTagManager     System tag manager.
+     * @param ISystemTagObjectMapper               $systemTagMapper      System tag object mapper.
+     * @param LoggerInterface                      $logger               Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for
+     *                                                                   description / category / labels writes.
+     *                                                                   Null-safe so legacy fixtures keep working.
+>>>>>>> origin/development
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -77,11 +103,81 @@ class UpdateFileHandler
         private readonly ReadFileHandler $readFileHandler,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger
+=======
+        private readonly LoggerInterface $logger,
+        private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
+>>>>>>> origin/development
     ) {
     }//end __construct()
 
     /**
+<<<<<<< HEAD
+=======
+     * Update OR-side metadata (description / category / labels) for
+     * a Nextcloud file. Each parameter is optional — pass only the
+     * fields you want to update. Pass `null` to leave the existing
+     * value unchanged; pass an explicit value (including empty
+     * string for clearing string fields, or `[]` for clearing
+     * labels) to overwrite.
+     *
+     * The actual write goes through `FileMapper::setDescriptionForFile`
+     * / `setCategoryForFile` / `setLabelsForFile`, each of which is
+     * lazy-create-on-miss so no pre-existing OR-side row is required.
+     *
+     * @param int                $fileId      The Nextcloud filecache fileid.
+     * @param string|null        $description The new description, empty string to clear, null to skip.
+     * @param string|null        $category    The new category, empty string to clear, null to skip.
+     * @param array<string>|null $labels      The new labels, empty array to clear, null to skip.
+     *
+     * @return \OCA\OpenRegister\Db\File The persisted entity reflecting the updated state.
+     *
+     * @throws Exception When the FileMapper is not wired (legacy fixtures).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     */
+    public function updateFileMetadata(
+        int $fileId,
+        ?string $description=null,
+        ?string $category=null,
+        ?array $labels=null
+    ): \OCA\OpenRegister\Db\File {
+        if ($this->fileMapper === null) {
+            throw new Exception('FileMapper is not wired; cannot update OR-side metadata');
+        }
+
+        $entity = $this->fileMapper->findOrCreateByFileId(fileId: $fileId);
+
+        if ($description !== null) {
+            $entity = $this->fileMapper->setDescriptionForFile(fileId: $fileId, description: $description);
+        }
+
+        if ($category !== null) {
+            $entity = $this->fileMapper->setCategoryForFile(fileId: $fileId, category: $category);
+        }
+
+        if ($labels !== null) {
+            $entity = $this->fileMapper->setLabelsForFile(fileId: $fileId, labels: $labels);
+        }
+
+        $this->logger->info(
+            message: "[UpdateFileHandler] OR-side metadata updated for file $fileId",
+            context: [
+                'file'               => __FILE__,
+                'line'               => __LINE__,
+                'fileId'             => $fileId,
+                'descriptionTouched' => ($description !== null),
+                'categoryTouched'    => ($category !== null),
+                'labelsTouched'      => ($labels !== null),
+            ]
+        );
+
+        return $entity;
+    }//end updateFileMetadata()
+
+    /**
+>>>>>>> origin/development
      * Set the FileService instance for cross-handler coordination.
      *
      * @param FileService $fileService The file service instance.
@@ -114,6 +210,7 @@ class UpdateFileHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       File update requires handling many file system scenarios
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function updateFile(
         string|int $filePath,

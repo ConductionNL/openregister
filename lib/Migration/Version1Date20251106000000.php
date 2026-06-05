@@ -16,6 +16,9 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,7 +27,11 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use Doctrine\DBAL\Types\Type;
+<<<<<<< HEAD
 use Doctrine\DBAL\Types\Types;
+=======
+use OCP\DB\Types;
+>>>>>>> origin/development
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;

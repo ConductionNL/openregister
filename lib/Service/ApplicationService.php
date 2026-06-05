@@ -5,10 +5,13 @@
  *
  * This file contains the service class for managing applications.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -94,6 +97,11 @@ class ApplicationService
      * @return Application[] Array of application entities
      *
      * @psalm-return array<int, Application>
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::findAll, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function findAll(?int $limit=null, ?int $offset=null, array $filters=[]): array
     {
@@ -118,6 +126,11 @@ class ApplicationService
      * @throws DoesNotExistException If application not found with the given ID
      *
      * @psalm-return Application
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::find, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function find(int $id): Application
     {
@@ -136,6 +149,11 @@ class ApplicationService
      * @return Application The created application entity with assigned ID
      *
      * @psalm-return Application
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::createFromArray, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function create(array $data): Application
     {
@@ -180,6 +198,11 @@ class ApplicationService
      * @throws DoesNotExistException If application not found with the given ID
      *
      * @psalm-return Application
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::updateFromArray, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function update(int $id, array $data): Application
     {
@@ -223,6 +246,11 @@ class ApplicationService
      * @return void
      *
      * @throws DoesNotExistException If application not found with the given ID
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: find-then-delete delegation to ApplicationMapper, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function delete(int $id): void
     {
@@ -262,6 +290,11 @@ class ApplicationService
      * @return int Total number of applications
      *
      * @psalm-return int
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::countAll, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function countAll(): int
     {

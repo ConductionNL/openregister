@@ -17,23 +17,23 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
-				label="Url"
+				:label="t('openregister', 'Url')"
 				:value.sync="schema.url" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
-				<p>Schema</p>
+				<p>{{ t('openregister', 'Schema') }}</p>
 				<CodeMirror v-model="schema.json"
 					:basic="true"
 					:dark="getTheme() === 'dark'"
 					:lang="json()"
 					:linter="jsonParseLinter()"
-					placeholder="Enter your schema here..." />
+					:placeholder="t('openregister', 'Enter your schema here...')" />
 			</div>
 			<NcButton class="prettifyButton" @click="prettifyJson">
 				<template #icon>
 					<AutoFix :size="20" />
 				</template>
-				Prettify
+				{{ t('openregister', 'Prettify') }}
 			</NcButton>
 		</div>
 
@@ -101,6 +101,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — resets upload form state and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -113,9 +116,15 @@ export default {
 				url: '',
 			}
 		},
+		/**
+		 * @spec exclude UI helper — pretty-prints the JSON in the editor field.
+		 */
 		prettifyJson() {
 			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates schema upload to schemaStore.uploadSchema.
+		 */
 		async uploadSchema() {
 			this.loading = true
 
@@ -134,6 +143,9 @@ export default {
 				this.loading = false
 			})
 		},
+		/**
+		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

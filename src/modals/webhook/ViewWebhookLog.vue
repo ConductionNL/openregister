@@ -167,11 +167,21 @@ export default {
 		 * Navigation store computed property for template access.
 		 *
 		 * @return {object} Navigation store instance
+<<<<<<< HEAD
+=======
+		 * @spec exclude Computed passthrough exposing navigationStore to the template; UI plumbing.
+>>>>>>> origin/development
 		 */
 		navigationStore() {
 			return navigationStore
 		},
 	},
+<<<<<<< HEAD
+=======
+	/**
+	 * @spec exclude Vue mounted() hook loading log + webhook data on open; modal init plumbing.
+	 */
+>>>>>>> origin/development
 	mounted() {
 		this.loadLogData()
 		this.loadWebhooks()
@@ -181,6 +191,7 @@ export default {
 		 * Load log data from navigation store transferData.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
 		 */
 		loadLogData() {
 			const transferData = navigationStore.getTransferData()
@@ -199,6 +210,10 @@ export default {
 		 * Load webhooks list for name lookup.
 		 *
 		 * @return {Promise<void>}
+<<<<<<< HEAD
+=======
+		 * @spec exclude Loads the webhook list for id-to-name lookup; UI form-loading plumbing.
+>>>>>>> origin/development
 		 */
 		async loadWebhooks() {
 			try {
@@ -218,6 +233,10 @@ export default {
 		 *
 		 * @param {number} webhookId - Webhook ID
 		 * @return {string} Webhook name or ID
+<<<<<<< HEAD
+=======
+		 * @spec exclude Resolves a webhook id to its display name; UI presentation helper.
+>>>>>>> origin/development
 		 */
 		getWebhookName(webhookId) {
 			const webhook = this.webhooksList.find(w => w.id === webhookId)
@@ -229,6 +248,10 @@ export default {
 		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
+<<<<<<< HEAD
+=======
+		 * @spec exclude Locale date-string formatter for display; UI presentation helper.
+>>>>>>> origin/development
 		 */
 		formatDate(dateString) {
 			if (!dateString) {
@@ -247,6 +270,10 @@ export default {
 		 *
 		 * @param {string} jsonString - JSON string to format
 		 * @return {string} Formatted JSON or original string if invalid
+<<<<<<< HEAD
+=======
+		 * @spec exclude Pretty-prints a JSON payload string for display; UI presentation helper.
+>>>>>>> origin/development
 		 */
 		formatJson(jsonString) {
 			if (!jsonString) {
@@ -266,6 +293,10 @@ export default {
 		 *
 		 * @param {boolean} open - Dialog open state
 		 * @return {void}
+<<<<<<< HEAD
+=======
+		 * @spec exclude Dialog close-event handler closing the modal on dismiss; UI plumbing.
+>>>>>>> origin/development
 		 */
 		handleDialogClose(open) {
 			if (!open) {
@@ -277,6 +308,10 @@ export default {
 		 * Retry failed webhook delivery.
 		 *
 		 * @return {Promise<void>}
+<<<<<<< HEAD
+=======
+		 * @spec exclude Retry handler posting to the webhook-log retry endpoint and refreshing the parent; UI orchestration plumbing.
+>>>>>>> origin/development
 		 */
 		async retryWebhook() {
 			if (!this.logItem || !this.logItem.id) {
@@ -311,6 +346,10 @@ export default {
 		 * Close modal.
 		 *
 		 * @return {void}
+<<<<<<< HEAD
+=======
+		 * @spec exclude Modal close handler resetting navigationStore.modal/transferData; UI plumbing.
+>>>>>>> origin/development
 		 */
 		closeModal() {
 			navigationStore.setModal(false)

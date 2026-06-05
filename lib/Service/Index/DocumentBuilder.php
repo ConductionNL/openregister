@@ -6,6 +6,12 @@
  * Handles building Solr documents from ObjectEntity instances.
  * Extracted from SolrBackend to separate document creation logic.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -93,6 +99,7 @@ class DocumentBuilder
      * @psalm-return array{_text: false|string,...}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Document creation requires handling multiple data types
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-6
      */
     public function createDocument(
         ObjectEntity $object,
@@ -154,6 +161,7 @@ class DocumentBuilder
      * @psalm-return list<string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Relations flattening requires handling multiple data formats
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function flattenRelationsForSolr($relations): array
     {
@@ -229,6 +237,7 @@ class DocumentBuilder
      * @psalm-return list<mixed|string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Files flattening requires handling multiple data formats
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function flattenFilesForSolr($files): array
     {
@@ -266,6 +275,7 @@ class DocumentBuilder
      * @param array $object Object/array to extract ID from
      *
      * @return string|null Extracted ID or null if not found
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function extractIdFromObject(array $object): ?string
     {
@@ -298,6 +308,7 @@ class DocumentBuilder
      * @psalm-return array<string, array<int, mixed>>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dot-notation parsing requires handling multiple scenarios
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function extractArraysFromRelations(array $relations): array
     {
@@ -373,6 +384,7 @@ class DocumentBuilder
      * @psalm-return list<string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Value extraction requires handling multiple data types
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
     {
@@ -423,6 +435,7 @@ class DocumentBuilder
      * @return string|null SOLR field name or null if should be skipped
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
     {
@@ -448,6 +461,7 @@ class DocumentBuilder
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         DateTime::createFromFormat is standard PHP date pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function convertValueForSolr($value, string $fieldType)
     {
@@ -535,6 +549,7 @@ class DocumentBuilder
      * @param string $fieldName Field name for logging
      *
      * @return mixed Truncated value or original if within limits
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function truncateFieldValue($value, string $fieldName=''): mixed
     {
@@ -582,6 +597,7 @@ class DocumentBuilder
      * @param array  $fieldDefinition Schema field definition (if available)
      *
      * @return bool True if field should be truncated
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function shouldTruncateField(string $fieldName, array $fieldDefinition=[]): bool
     {
@@ -621,6 +637,7 @@ class DocumentBuilder
      * @return bool True if field is safe to index
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field validation requires handling multiple type scenarios
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function validateFieldForSolr(string $fieldName, $fieldValue, array $solrFieldTypes): bool
     {
@@ -691,6 +708,7 @@ class DocumentBuilder
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type compatibility check requires handling multiple SOLR types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple type combinations create many execution paths
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function isValueCompatibleWithSolrType($value, string $solrFieldType): bool
     {
@@ -749,6 +767,7 @@ class DocumentBuilder
      * @return int The resolved register ID
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register resolution requires handling multiple input formats
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register=null): int
     {
@@ -808,6 +827,7 @@ class DocumentBuilder
      * @return int The resolved schema ID
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema resolution requires handling multiple input formats
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema=null): int
     {

@@ -6,6 +6,12 @@
  * This file contains the controller class for handling user-specific settings,
  * particularly GitHub token management.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <info@conduction.nl>
@@ -95,6 +101,7 @@ class UserSettingsController extends Controller
      *     hasToken?: bool, isValid?: bool,
      *     message?: 'No GitHub token configured'|'Token is invalid or expired'|
      *     'Token is valid'}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-12
      */
     public function getGitHubTokenStatus(): JSONResponse
     {
@@ -148,10 +155,19 @@ class UserSettingsController extends Controller
      *
      * @return JSONResponse JSON response containing result of token save operation
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<int,
      *     array{error?: string, success?: true,
      *     message?: 'GitHub token saved successfully'},
      *     array<never, never>>
+=======
+     * @psalm-return JSONResponse<200|400|401|500,
+     *     array{error?: string, success?: true,
+     *     message?: 'GitHub token saved successfully'},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-12
+>>>>>>> origin/development
      */
     public function setGitHubToken(): JSONResponse
     {
@@ -215,6 +231,7 @@ class UserSettingsController extends Controller
      *     },
      *     array<never, never>
      * >
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-12
      */
     public function removeGitHubToken(): JSONResponse
     {

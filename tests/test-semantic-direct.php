@@ -1,6 +1,9 @@
 <?php
 /**
  * Direct semantic search test - bypass all caching
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 require_once __DIR__ . '/../../../lib/base.php';

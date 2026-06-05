@@ -6,10 +6,20 @@
  * Nextcloud Contacts Menu provider that bridges Contacts/CardDAV
  * with OpenRegister entity data.
  *
+<<<<<<< HEAD
  * @category Contacts
  * @package  OCA\OpenRegister\Contacts
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Contacts
+ * @package  OCA\OpenRegister\Contacts
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -100,6 +110,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function __construct(
@@ -125,6 +136,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function process(IEntry $entry): void
@@ -149,6 +161,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     private function doProcess(IEntry $entry): void
@@ -164,10 +177,22 @@ class ContactsMenuProvider implements IProvider
         }
 
         // Match contact against OpenRegister entities.
+<<<<<<< HEAD
         $matches = $this->matchingService->matchContact(
             $primaryEmail,
             $fullName,
             is_string($organization) === true ? $organization : null
+=======
+        $organizationString = null;
+        if (is_string($organization) === true) {
+            $organizationString = $organization;
+        }
+
+        $matches = $this->matchingService->matchContact(
+            $primaryEmail,
+            $fullName,
+            $organizationString
+>>>>>>> origin/development
         );
 
         if (empty($matches) === true) {
@@ -190,6 +215,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
@@ -230,6 +256,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     private function injectEntityActions(
@@ -264,7 +291,12 @@ class ContactsMenuProvider implements IProvider
                 ).'#/objects/'.urlencode($uuid);
             }
 
+<<<<<<< HEAD
             $icon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId) ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+=======
+            $resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
+            $icon         = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+>>>>>>> origin/development
 
             $label = $this->l10n->t('View in OpenRegister').' ('.($match['title'] ?? 'Unknown').')';
 

@@ -6,6 +6,12 @@
  * Handler for bulk validation operations and schema analysis.
  * Optimizes validation for bulk object operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObjects
  *
@@ -50,6 +56,7 @@ class BulkValidationHandler
      *
      * @param LoggerInterface $logger Logger interface for logging operations.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function __construct(
@@ -72,6 +79,7 @@ class BulkValidationHandler
      *
      * @return array Schema analysis with metadataFields, inverseProperties, validationRequired, etc.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function performComprehensiveSchemaAnalysis(Schema $schema): array
@@ -155,6 +163,7 @@ class BulkValidationHandler
      *
      * @return bool The boolean value.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function castToBoolean($value): bool
@@ -187,6 +196,7 @@ class BulkValidationHandler
      *
      * @psalm-return list{array, string}
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function handlePreValidationCascading(array $object, ?string $uuid): array

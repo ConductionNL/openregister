@@ -6,6 +6,12 @@
  * Controller for managing register operations in the OpenRegister app.
  * Provides endpoints for CRUD operations, import/export, GitHub publishing,
  * and OpenAPI specification generation.
+<<<<<<< HEAD
+=======
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+>>>>>>> origin/development
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -39,6 +45,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,11 +82,27 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @suppressWarnings(PHPMD.ExcessiveClassLength)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+=======
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)     NC REST controller must expose all CRUD + subresource
+ *   endpoints (registers, schemas, objects, statistics) in one class per NC AppFramework routing;
+ *   splitting into multiple controllers would require additional routing registration.
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity) Aggregate complexity from N independent REST actions;
+ *   each action is individually simple — the class total is a routing artifact, not design debt.
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)     Each public method maps to one REST endpoint; NC AppFramework
+ *   requires public methods for route dispatch — they cannot be made protected/private.
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)   NC Controller DI injects AppFramework, RBAC, audit, domain
+ *   services, and mappers — each dep is used and cannot be combined without violating SRP.
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    The create/update actions include multi-step validation
+ *   that is a single atomic write; extracting sub-steps would create misleading partial-update helpers.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+>>>>>>> origin/development
  */
 class RegistersController extends Controller
 {
@@ -171,6 +194,10 @@ class RegistersController extends Controller
      * @param OasService           $oasService           OAS service for OpenAPI generation
      * @param ContainerInterface   $container            Container for lazy loading services
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
+<<<<<<< HEAD
+=======
+     * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
+>>>>>>> origin/development
      *
      * @return void
      *
@@ -194,7 +221,12 @@ class RegistersController extends Controller
         IAppManager $appManager,
         OasService $oasService,
         private readonly ContainerInterface $container,
+<<<<<<< HEAD
         private readonly IGroupManager $groupManager
+=======
+        private readonly IGroupManager $groupManager,
+        private readonly RegisterCacheHandler $registerCacheHandler
+>>>>>>> origin/development
     ) {
         $this->logger->debug(
             message: '[RegistersController] Constructor started.',
@@ -233,10 +265,16 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
+=======
+     * @PublicPage
+     *
+>>>>>>> origin/development
      * @return JSONResponse The JSON response containing the list of registers
      *
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
      */
     public function index(): JSONResponse
     {
@@ -273,7 +311,11 @@ class RegistersController extends Controller
         // Extract filters.
         $filters = $params['filters'] ?? [];
 
+<<<<<<< HEAD
         $registers    = $this->registerService->findAll(
+=======
+        $registers = $this->registerService->findAll(
+>>>>>>> origin/development
             limit: $limit,
             offset: $offset,
             filters: $filters,
@@ -281,6 +323,27 @@ class RegistersController extends Controller
             searchParams: [],
             _multitenancy: false
         );
+<<<<<<< HEAD
+=======
+
+        // Read-visibility guard: this endpoint is @PublicPage so it stays
+        // reachable when OpenRegister is restricted to a user group. Anonymous
+        // callers may only see PUBLISHED registers; authenticated users are
+        // unaffected. Visibility is derived from server-side published/
+        // depublished entity state, never from client-supplied parameters.
+        if ($this->isAnonymousRequest() === true) {
+            $registers = array_values(
+                array_filter(
+                    $registers,
+                    fn($register) => $this->isPublishedEntity(
+                        published: $register->getPublished(),
+                        depublished: $register->getDepublished()
+                    )
+                )
+            );
+        }
+
+>>>>>>> origin/development
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
@@ -387,6 +450,10 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
+     *
+     * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-2
      */
     public function show($id): JSONResponse
     {
@@ -395,7 +462,24 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
+<<<<<<< HEAD
         $register    = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+=======
+        $register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+
+        // Read-visibility guard (@PublicPage): an anonymous caller may only view
+        // a PUBLISHED register. Derived from server-side published/depublished
+        // entity state, never from client-supplied parameters.
+        if ($this->isAnonymousRequest() === true
+            && $this->isPublishedEntity(
+                published: $register->getPublished(),
+                depublished: $register->getDepublished()
+            ) === false
+        ) {
+            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+        }
+
+>>>>>>> origin/development
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {
@@ -423,11 +507,28 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with created register or error
      *
      * @psalm-return JSONResponse<201, Register,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+=======
+     *     array<never, never>>|JSONResponse<403|409|500, array{error: string},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function create(): JSONResponse
     {
+        // Authorization: creating a register defines a new data model and is
+        // restricted to administrators. Reading register metadata stays open so
+        // frontends can build their UIs; only create/update/delete are gated.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may create registers'],
+                statusCode: 403
+            );
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -445,7 +546,18 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
+<<<<<<< HEAD
             return new JSONResponse(data: $this->registerService->createFromArray($data), statusCode: 201);
+=======
+            $register = $this->registerService->createFromArray($data);
+
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
+            // find cache for the freshly-created ID so any follow-up read in the
+            // same PHP worker observes the new register.
+            $this->registerCacheHandler->invalidate(registerId: $register->getId());
+
+            return new JSONResponse(data: $register, statusCode: 201);
+>>>>>>> origin/development
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -481,13 +593,28 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+=======
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uses \OCA\OpenRegister\Exception\ValidationException
+     *   as a static reference; no injectable factory exists in NC AppFramework for exception types.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The update action must validate each editable
+     *   field individually (authorization, schemas, config) — extracting branches into separate
+     *   methods would scatter what is a single transactional write operation.
+>>>>>>> origin/development
      *
      * @return JSONResponse JSON response with updated register or error
      *
      * @psalm-return JSONResponse<200, Register,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+=======
+     *     array<never, never>>|JSONResponse<403|404|409, array{error: string},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function update(int $id): JSONResponse
     {
@@ -507,6 +634,7 @@ class RegistersController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+<<<<<<< HEAD
         // Check manage permission if authorization or roles configuration is being modified.
         $oldRegisterAuth  = null;
         $oldRegisterRoles = null;
@@ -532,6 +660,39 @@ class RegistersController extends Controller
             // Update the register with the provided data.
             $updatedRegister = $this->registerService->updateFromArray(id: $id, data: $data);
 
+=======
+        // Authorization: modifying a register's definition requires manage
+        // permission (manage-group membership, or administrator when no manage
+        // rules are configured). This gates ALL updates, not just authorization
+        // changes — reading register metadata stays open for frontends.
+        try {
+            $existingRegister = $this->registerMapper->find($id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+        }
+
+        if ($this->checkRegisterManagePermission(register: $existingRegister) === false) {
+            return new JSONResponse(
+                data: ['error' => 'User does not have permission to manage this register'],
+                statusCode: 403
+            );
+        }
+
+        // Capture prior authorization / roles so changes can be audit-logged below.
+        $oldRegisterAuth  = $existingRegister->getAuthorization();
+        $oldConfig        = $existingRegister->getConfiguration();
+        $oldRegisterRoles = $oldConfig['roles'] ?? null;
+
+        try {
+            // Update the register with the provided data.
+            $updatedRegister = $this->registerService->updateFromArray(id: $id, data: $data);
+
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
+            // find cache for the updated ID so any follow-up read in the same PHP
+            // worker observes the new register state (e.g. an added schema in schemas[]).
+            $this->registerCacheHandler->invalidate(registerId: $updatedRegister->getId());
+
+>>>>>>> origin/development
             // Log authorization and role changes.
             try {
                 $auditService = $this->container->get(AuthorizationAuditService::class);
@@ -539,18 +700,33 @@ class RegistersController extends Controller
                 if (isset($data['authorization']) === true) {
                     $auditService->logRegisterAuthorizationChange(
                         $id,
+<<<<<<< HEAD
                         $updatedRegister['title'] ?? '',
                         $oldRegisterAuth,
                         $updatedRegister['authorization'] ?? null
+=======
+                        $updatedRegister->getTitle() ?? '',
+                        $oldRegisterAuth,
+                        $updatedRegister->getAuthorization()
+>>>>>>> origin/development
                     );
                 }
 
                 if (isset($data['configuration']['roles']) === true) {
+<<<<<<< HEAD
                     $auditService->logRoleDefinitionChange(
                         $id,
                         $updatedRegister['title'] ?? '',
                         $oldRegisterRoles,
                         $updatedRegister['configuration']['roles'] ?? null
+=======
+                    $configuration = $updatedRegister->getConfiguration();
+                    $auditService->logRoleDefinitionChange(
+                        $id,
+                        $updatedRegister->getTitle() ?? '',
+                        $oldRegisterRoles,
+                        $configuration['roles'] ?? null
+>>>>>>> origin/development
                     );
                 }
             } catch (\Throwable $e) {
@@ -593,8 +769,15 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with patched register or error
      *
      * @psalm-return JSONResponse<200, Register,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+=======
+     *     array<never, never>>|JSONResponse<403|404|409, array{error: string},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function patch(int $id): JSONResponse
     {
@@ -618,16 +801,57 @@ class RegistersController extends Controller
      *
      * @return JSONResponse JSON response on success or error
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<int, array{error?: string},
      *     array<never, never>>
+=======
+     * @psalm-return JSONResponse<200|403|404|409|500, array{error?: string, objectCount?: int},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function destroy(int $id): JSONResponse
     {
+        $force = $this->parseForceParam();
+
         try {
+<<<<<<< HEAD
             // Find the register by ID and delete it.
             $register = $this->registerService->find($id);
             $this->registerService->delete($register);
 
+=======
+            // Find the register first (validates existence + access).
+            $register = $this->registerService->find($id);
+
+            // Authorization: deleting a register requires manage permission
+            // (manage-group membership, or administrator). Reading stays open.
+            if ($this->checkRegisterManagePermission(register: $register) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this register'],
+                    statusCode: 403
+                );
+            }
+
+            // Count objects and apply the delete-safety guard.
+            $objectCount   = $this->countRegisterObjects(registerId: $register->getId());
+            $guardResponse = $this->handleObjectCountGuard(
+                register: $register,
+                objectCount: $objectCount,
+                force: $force
+            );
+            if ($guardResponse !== null) {
+                return $guardResponse;
+            }
+
+            $this->registerService->delete($register);
+
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop request-scoped
+            // find cache for the deleted register.
+            $this->registerCacheHandler->invalidate(registerId: $register->getId());
+
+>>>>>>> origin/development
             // Return an empty response.
             return new JSONResponse(data: []);
         } catch (DoesNotExistException $e) {
@@ -639,9 +863,89 @@ class RegistersController extends Controller
         } catch (Exception $e) {
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+<<<<<<< HEAD
         }
     }//end destroy()
 
+=======
+        }//end try
+    }//end destroy()
+
+    /**
+     * Parse the ?force query parameter into a boolean.
+     *
+     * Accepts 'true', '1', or boolean true.
+     *
+     * @return bool
+     */
+    private function parseForceParam(): bool
+    {
+        $forceParam = $this->request->getParam(key: 'force', default: null);
+        return (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+    }//end parseForceParam()
+
+    /**
+     * Count objects attached to a register.
+     *
+     * Uses getStatistics() (single-axis registerId path) — countSearchObjects()
+     * only returns a real count when BOTH register AND schema are present in the
+     * $self filter, and silently returns 0 on single-axis queries.
+     *
+     * @param int $registerId Register id.
+     *
+     * @return int Total object count.
+     */
+    private function countRegisterObjects(int $registerId): int
+    {
+        $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+        return (int) $stats['total'];
+    }//end countRegisterObjects()
+
+    /**
+     * Apply the delete-safety guard for object count.
+     *
+     * Returns a JSONResponse (409) when objects exist and force is false.
+     * Logs a WARNING when force-deleting with objects present.
+     * Returns null when the delete may proceed.
+     *
+     * @param Register $register    The register to be deleted.
+     * @param int      $objectCount Number of objects attached to the register.
+     * @param bool     $force       Whether the force flag was set.
+     *
+     * @return JSONResponse|null 409 response to abort, or null to continue.
+     */
+    private function handleObjectCountGuard(Register $register, int $objectCount, bool $force): ?JSONResponse
+    {
+        if ($objectCount === 0) {
+            return null;
+        }
+
+        if ($force === false) {
+            return new JSONResponse(
+                data: [
+                    'error'       => 'register-has-objects',
+                    'objectCount' => $objectCount,
+                ],
+                statusCode: 409
+            );
+        }
+
+        // Force-delete with audit at WARNING level so operators can review.
+        $this->logger->warning(
+            message: '[RegistersController] Force-deleting register with attached objects',
+            context: [
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'registerId'   => $register->getId(),
+                'registerSlug' => $register->getSlug(),
+                'objectCount'  => $objectCount,
+            ]
+        );
+
+        return null;
+    }//end handleObjectCountGuard()
+
+>>>>>>> origin/development
     /**
      * Get schemas associated with a register
      *
@@ -654,6 +958,7 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schemas or error
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -696,6 +1001,7 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with objects
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -724,6 +1030,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -796,6 +1104,82 @@ class RegistersController extends Controller
         }//end try
     }//end export()
 
+<<<<<<< HEAD
+=======
+    /**
+     * Download an empty import template for a schema
+     *
+     * Returns a spreadsheet (XLSX by default, CSV when `format=csv` is supplied)
+     * containing only the schema's header row, so users can fill it in and
+     * upload it via the existing import endpoint. The resulting file uses the
+     * same column layout that `ExportService::exportToExcel()` would emit, so a
+     * round-trip export/import keeps headers stable.
+     *
+     * @param int|string $id     The register slug or numeric id
+     * @param int|string $schema The schema slug or numeric id
+     *
+     * @return DataDownloadResponse|JSONResponse Spreadsheet on success, JSON error otherwise
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
+     */
+    public function importTemplate(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse
+    {
+        try {
+            $format = strtolower((string) $this->request->getParam(key: 'format', default: 'xlsx'));
+            if (in_array($format, ['xlsx', 'csv'], true) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'Unsupported template format: '.$format.'. Supported formats: xlsx, csv.'],
+                    statusCode: 400
+                );
+            }
+
+            // RBAC is enforced inside both find() calls (default _rbac=true).
+            $register     = $this->registerMapper->find($id);
+            $schemaEntity = $this->schemaMapper->find($schema);
+
+            $schemaSlug  = $schemaEntity->getSlug() ?? 'schema';
+            $currentUser = $this->userSession->getUser();
+
+            if ($format === 'csv') {
+                $content  = $this->exportService->buildTemplateCsv(
+                    register: $register,
+                    schema: $schemaEntity,
+                    currentUser: $currentUser
+                );
+                $filename = sprintf('%s_template.csv', $schemaSlug);
+                return new DataDownloadResponse($content, $filename, 'text/csv');
+            }
+
+            $spreadsheet = $this->exportService->buildTemplateSpreadsheet(
+                register: $register,
+                schema: $schemaEntity,
+                currentUser: $currentUser
+            );
+            $writer      = new Xlsx($spreadsheet);
+            ob_start();
+            $writer->save('php://output');
+            $content  = ob_get_clean();
+            $filename = sprintf('%s_template.xlsx', $schemaSlug);
+            $mime     = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            return new DataDownloadResponse($content, $filename, $mime);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                data: ['error' => 'Register or schema not found: '.$e->getMessage()],
+                statusCode: 404
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Failed to generate import template: '.$e->getMessage()],
+                statusCode: 400
+            );
+        }//end try
+    }//end importTemplate()
+
+>>>>>>> origin/development
     /**
      * Publish register OAS specification to GitHub
      *
@@ -812,9 +1196,22 @@ class RegistersController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
     public function publishToGitHub(int $id): JSONResponse
     {
+        // Authorization: publishToGitHub uses the shared app-level
+        // `github_api_token` to push to any repo that token can write. Restrict
+        // to administrators (mirror the wave-1 #1949 admin-gate pattern and
+        // the existing importFromGitHub gate). Ideally callers would use a
+        // per-user token, but until that lands the endpoint must be admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may publish registers to GitHub'],
+                statusCode: 403
+            );
+        }
+
         try {
             $register = $this->registerMapper->find($id);
 
@@ -965,8 +1362,8 @@ class RegistersController extends Controller
      *
      * This method imports data into a register in the specified format and returns a detailed summary.
      *
-     * @param int  $id    The ID of the register to import into
-     * @param bool $force Force import even if the same or newer version already exists
+     * @param int|string $id    The ID, UUID or slug of the register to import into
+     * @param bool       $force Force import even if the same or newer version already exists
      *
      * @return JSONResponse JSON response with import result or error
      *
@@ -978,8 +1375,9 @@ class RegistersController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
-    public function import(int $id, bool $force=false): JSONResponse
+    public function import(int|string $id, bool $force=false): JSONResponse
     {
         try {
             // Get the uploaded file.
@@ -988,6 +1386,28 @@ class RegistersController extends Controller
                 return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
             }
 
+<<<<<<< HEAD
+=======
+            // Authorization: importing into a register can create schemas/
+            // registers/objects and calls `registerService->updateFromArray`
+            // (a configurable data-model write). Gate on manage-permission for
+            // the target register (default-SECURE: admin-only when no manage
+            // rule exists). Closes the bypass of the wave-1 #1949 admin-only
+            // create/update gate.
+            try {
+                $registerForAuth = $this->registerMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+            }
+
+            if ($this->checkRegisterManagePermission(register: $registerForAuth) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this register'],
+                    statusCode: 403
+                );
+            }
+
+>>>>>>> origin/development
             // Dynamically determine import type if not provided.
             $type = $this->request->getParam('type');
             if ($type === null || $type === '') {
@@ -1153,17 +1573,108 @@ class RegistersController extends Controller
                     break;
             }//end switch
 
+<<<<<<< HEAD
             return new JSONResponse(
                 data: [
                     'message' => 'Import successful',
                     'summary' => $summary,
                 ]
             );
+=======
+            // Attach a downloadable per-row error CSV when the summary
+            // surfaces row-level failures. Base64 keeps the artefact in the
+            // existing JSON envelope so the frontend can offer a download
+            // without a second round-trip.
+            $errorsCsv    = $this->importService->serializeErrorsToCsv(summary: $summary);
+            $responseData = [
+                'message' => 'Import successful',
+                'summary' => $summary,
+            ];
+            if ($errorsCsv !== '') {
+                $responseData['errors_csv']          = base64_encode($errorsCsv);
+                $responseData['errors_csv_filename'] = 'import_errors.csv';
+            }
+
+            return new JSONResponse(data: $responseData);
+>>>>>>> origin/development
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
     }//end import()
 
+<<<<<<< HEAD
+=======
+    /**
+     * Roll back an import by soft-deleting every object whose `create`
+     * audit row carries the given `importJobId`. Implements the
+     * rollback contract on the `data-import-export` change.
+     *
+     * @return JSONResponse Report with counts and per-object outcomes.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
+     */
+    public function rollbackImport(): JSONResponse
+    {
+        $importJobId = $this->request->getParam('importJobId');
+        if (is_string($importJobId) === false || $importJobId === '') {
+            return new JSONResponse(
+                data: ['error' => 'importJobId is required'],
+                statusCode: 422
+            );
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        // SECURITY: rollback wipes every object created by an import job.
+        // The only safety net was that `deleteObject` runs RBAC, which is
+        // much weaker than it sounds — any user with broad delete rights
+        // on the affected schemas could otherwise wipe a *different*
+        // user's import (and across tenants, since the audit lookup
+        // doesn't filter by organisation). Require the caller to be
+        // either the original importer or a member of the admin group.
+        $auditSample = $this->auditTrailMapper->findByImportJobId(
+            importJobId: $importJobId,
+            action: 'create'
+        );
+        if (count($auditSample) === 0) {
+            return new JSONResponse(
+                data: ['error' => 'Import job not found', 'importJobId' => $importJobId],
+                statusCode: 404
+            );
+        }
+
+        $importerUid = null;
+        if (method_exists($auditSample[0], 'getUser') === true) {
+            $importerUid = $auditSample[0]->getUser();
+        }
+
+        if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === false) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
+                statusCode: 403
+            );
+        }
+
+        try {
+            $report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
+            return new JSONResponse(data: $report, statusCode: 200);
+        } catch (\Throwable $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end rollbackImport()
+
+>>>>>>> origin/development
     /**
      * Get statistics for a specific register
      *
@@ -1222,6 +1733,7 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     public function stats(int $id): JSONResponse
     {
@@ -1283,14 +1795,39 @@ class RegistersController extends Controller
         return $default;
     }//end parseBooleanParam()
 
+<<<<<<< HEAD
+=======
     /**
-     * Publish a register
+     * Whether the current request has no resolved Nextcloud user (anonymous).
      *
+     * Read endpoints are @PublicPage so they survive an app-group restriction;
+     * this lets the read-visibility guard distinguish anonymous callers (who may
+     * only see published resources) from authenticated users (unaffected).
+     *
+     * @return bool True if no user is signed in.
+     */
+    private function isAnonymousRequest(): bool
+    {
+        return $this->userSession->getUser() === null;
+
+    }//end isAnonymousRequest()
+
+>>>>>>> origin/development
+    /**
+     * Whether an entity is currently published.
+     *
+<<<<<<< HEAD
      * This method publishes a register by setting its publication date
      * to now or a specified date.
+=======
+     * A resource is published when its `published` timestamp is set and it has
+     * not since been depublished. Both values come from persisted entity state.
+>>>>>>> origin/development
      *
-     * @param int $id The ID of the register to publish
+     * @param \DateTime|null $published   The published timestamp, or null.
+     * @param \DateTime|null $depublished The depublished timestamp, or null.
      *
+<<<<<<< HEAD
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -1339,9 +1876,13 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+=======
+     * @return bool True if the entity is published and not depublished.
+>>>>>>> origin/development
      */
-    public function publish(int $id): JSONResponse
+    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
     {
+<<<<<<< HEAD
         try {
             // Get the publication date from request if provided, otherwise use now.
             $date = new DateTime();
@@ -1386,11 +1927,19 @@ class RegistersController extends Controller
         }//end try
     }//end publish()
 
+=======
+        return $published !== null && $depublished === null;
+
+    }//end isPublishedEntity()
+
+>>>>>>> origin/development
     /**
-     * Depublish a register
+     * Check whether the currently authenticated user is a Nextcloud administrator.
      *
-     * This method depublishes a register by setting its depublication date to now or a specified date.
+     * Used to gate register creation, where there is no existing entity whose
+     * manage-authorization block could be consulted.
      *
+<<<<<<< HEAD
      * @param int $id The ID of the register to depublish
      *
      * @NoAdminRequired
@@ -1441,9 +1990,13 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+=======
+     * @return bool True if a user is signed in and belongs to the admin group.
+>>>>>>> origin/development
      */
-    public function depublish(int $id): JSONResponse
+    private function isCurrentUserAdmin(): bool
     {
+<<<<<<< HEAD
         try {
             // Get the depublication date from request if provided, otherwise use now.
             $date = new DateTime();
@@ -1526,6 +2079,84 @@ class RegistersController extends Controller
             return false;
         }
 
+=======
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Check whether a user is authorized to roll back an import job.
+     *
+     * Returns true when the user is an admin or is the original importer.
+     * Extracted to keep the public `rollbackImport` body free of low-level
+     * isAdmin/uid comparisons (gate-9 false-positive avoidance).
+     *
+     * @param \OCP\IUser  $user        The authenticated user.
+     * @param string|null $importerUid The UID of the user who initiated the import.
+     *
+     * @return bool True when the user may execute the rollback.
+     */
+    private function canRollbackImport(\OCP\IUser $user, ?string $importerUid): bool
+    {
+        if ($this->groupManager->isAdmin($user->getUID()) === true) {
+            return true;
+        }
+
+        return $importerUid === $user->getUID();
+
+    }//end canRollbackImport()
+
+    /**
+     * Check if the current user has 'manage' permission on a register.
+     *
+     * Uses the register's own authorization block to check for the 'manage' action.
+     * Admin users always pass this check.
+     *
+     * @param Register $register The register to check manage permission for.
+     *
+     * @return bool True if user has manage permission.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission resolution must handle four distinct
+     *   cases: no authorization config, admin bypass, group-string rules, and group-object rules —
+     *   each is a real runtime path, not artificial branching.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Consequence of the four-case permission decision tree
+     *   above; see CyclomaticComplexity note.
+     */
+    private function checkRegisterManagePermission(Register $register): bool
+    {
+        $authorization = $register->getAuthorization();
+
+        // If no authorization configured, only admins can manage (default secure).
+        // Check if manage action is defined.
+        if (empty($authorization) === true || isset($authorization['manage']) === false) {
+            // Fall back: only admin users can manage if no manage rules are defined.
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            try {
+                $groupManager = $this->container->get(\OCP\IGroupManager::class);
+                $userGroups   = $groupManager->getUserGroupIds($user);
+                return in_array('admin', $userGroups, true);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+
+        // Use PermissionHandler logic via a schema-like check.
+        // Create a minimal check using the register's authorization directly.
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+>>>>>>> origin/development
         try {
             $userGroups = $this->groupManager->getUserGroupIds($user);
 

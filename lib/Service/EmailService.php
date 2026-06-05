@@ -6,6 +6,12 @@
  * Service that wraps Nextcloud Mail message lookups and manages email-to-object links.
  * Emails are immutable; this service only creates/removes link references.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -14,6 +20,10 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-46
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-50
@@ -28,6 +38,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+>>>>>>> origin/development
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -80,6 +95,7 @@ class EmailService
     private readonly LoggerInterface $logger;
 
     /**
+<<<<<<< HEAD
      * Constructor.
      *
      * @param EmailLinkMapper $emailLinkMapper Email link mapper
@@ -89,12 +105,38 @@ class EmailService
      * @param LoggerInterface $logger          Logger
      *
      * @return void
+=======
+     * Schema mapper for iterating over schemas with `_mail` linked-type column.
+     *
+     * @var SchemaMapper
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
+     * Magic mapper for cross-table _mail JSONB containment queries.
+     *
+     * @var MagicMapper
+     */
+    private readonly MagicMapper $magicMapper;
+
+    /**
+     * Constructor.
+     *
+     * @param EmailLinkMapper $emailLinkMapper Email link mapper.
+     * @param IAppManager     $appManager      App manager.
+     * @param IDBConnection   $db              Database connection.
+     * @param IUserSession    $userSession     User session.
+     * @param LoggerInterface $logger          Logger.
+     * @param SchemaMapper    $schemaMapper    Schema mapper.
+     * @param MagicMapper     $magicMapper     Magic mapper.
+>>>>>>> origin/development
      */
     public function __construct(
         EmailLinkMapper $emailLinkMapper,
         IAppManager $appManager,
         IDBConnection $db,
         IUserSession $userSession,
+<<<<<<< HEAD
         LoggerInterface $logger
     ) {
         $this->emailLinkMapper = $emailLinkMapper;
@@ -102,6 +144,19 @@ class EmailService
         $this->db          = $db;
         $this->userSession = $userSession;
         $this->logger      = $logger;
+=======
+        LoggerInterface $logger,
+        SchemaMapper $schemaMapper,
+        MagicMapper $magicMapper
+    ) {
+        $this->emailLinkMapper = $emailLinkMapper;
+        $this->appManager      = $appManager;
+        $this->db           = $db;
+        $this->userSession  = $userSession;
+        $this->logger       = $logger;
+        $this->schemaMapper = $schemaMapper;
+        $this->magicMapper  = $magicMapper;
+>>>>>>> origin/development
     }//end __construct()
 
     /**
@@ -123,6 +178,7 @@ class EmailService
      *
      * @return array{results: array, total: int} Email links with total count.
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
      */
     public function getEmailsForObject(string $objectUuid, ?int $limit=null, ?int $offset=null): array
@@ -152,6 +208,7 @@ class EmailService
      *
      * @throws Exception If the email does not exist or is already linked.
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-50
      */
     public function linkEmail(
@@ -203,6 +260,11 @@ class EmailService
      * @return void
      *
      * @throws Exception If the link is not found.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Legacy link-table delete by id; email link infrastructure being removed per linked-entity-types.
+>>>>>>> origin/development
      */
     public function unlinkEmail(int $linkId): void
     {
@@ -221,6 +283,7 @@ class EmailService
      *
      * @return array Array of email links with object UUIDs.
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
      */
     public function searchBySender(string $sender): array
@@ -236,11 +299,120 @@ class EmailService
     }//end searchBySender()
 
     /**
+=======
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+     */
+    public function searchBySender(string $sender): array
+    {
+        // Backward-compat: if the legacy openregister_email_links table is
+        // still present (deployments that haven't run the drop migration
+        // yet), prefer it.
+        $legacy = $this->emailLinkMapper->findBySender($sender);
+        if ($legacy !== []) {
+            return array_map(
+                static fn(EmailLink $link): array => $link->jsonSerialize(),
+                $legacy
+            );
+        }
+
+        // New path: find Mail messages from this sender, then for each
+        // {accountId}/{messageId} ID look up which OR objects link them
+        // via the `_mail` JSON column on each magic table.
+        $messageIds = $this->findMessageIdsBySender(sender: $sender);
+        if ($messageIds === []) {
+            return [];
+        }
+
+        $results = [];
+        foreach ($this->getMailLinkedSchemas() as $schema) {
+            foreach ($messageIds as $linkedId) {
+                $entities = $this->magicMapper->findByLinkedEntity(
+                    schema: $schema,
+                    columnName: '_mail',
+                    entityId: $linkedId
+                );
+                foreach ($entities as $entity) {
+                    $results[] = [
+                        'objectUuid'   => (string) $entity->getUuid(),
+                        'register'     => (string) $entity->getRegister(),
+                        'schema'       => (string) $entity->getSchema(),
+                        'mailLinkedId' => $linkedId,
+                    ];
+                }
+            }
+        }
+
+        return $results;
+    }//end searchBySender()
+
+    /**
+     * Query the Mail app's database for message IDs from a sender.
+     *
+     * @param string $sender The sender email address to query.
+     *
+     * @return array<int, string> List of "{accountId}/{messageId}" identifiers.
+     */
+    private function findMessageIdsBySender(string $sender): array
+    {
+        if ($this->isMailAvailable() === false) {
+            return [];
+        }
+
+        try {
+            // The mail_recipients.type=0 is "from"; mail_recipients.email is the address.
+            $sql  = "SELECT mb.account_id, m.id AS message_id
+                     FROM oc_mail_messages m
+                     JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
+                     JOIN oc_mail_mailboxes mb ON mb.id = m.mailbox_id
+                     WHERE LOWER(r.email) = LOWER(?)
+                     LIMIT 200";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$sender]);
+            $ids = [];
+            while (($row = $stmt->fetch()) !== false) {
+                $ids[] = ((int) $row['account_id']).'/'.((int) $row['message_id']);
+            }
+
+            return $ids;
+        } catch (Exception $e) {
+            $this->logger->warning('[EmailService] findMessageIdsBySender failed: '.$e->getMessage());
+            return [];
+        }
+    }//end findMessageIdsBySender()
+
+    /**
+     * Schemas that opt into mail linkage via `linkedTypes: ["mail"]`.
+     *
+     * @return array<int, \OCA\OpenRegister\Db\Schema>
+     */
+    private function getMailLinkedSchemas(): array
+    {
+        try {
+            $all = $this->schemaMapper->findAll(_multitenancy: false);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_values(
+                array_filter(
+            $all,
+            static fn($schema) => in_array('mail', $schema->getLinkedTypes(), true) === true
+        )
+                );
+    }//end getMailLinkedSchemas()
+
+    /**
+>>>>>>> origin/development
      * Delete all email links for an object (cleanup).
      *
      * @param string $objectUuid The object UUID.
      *
      * @return int Number of deleted links.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Legacy link-table bulk cleanup delegating to EmailLinkMapper; email link infrastructure being removed per linked-entity-types.
+>>>>>>> origin/development
      */
     public function deleteLinksForObject(string $objectUuid): int
     {
@@ -255,6 +427,7 @@ class EmailService
      *
      * @return array|null Message data or null if not found.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-46
      */
     private function fetchMailMessage(int $messageId, int $accountId): ?array
@@ -320,7 +493,12 @@ class EmailService
     private function buildMailboxSubquery(\OCP\DB\QueryBuilder\IQueryBuilder $qb, int $accountId): string
     {
         $param = $qb->createNamedParameter($accountId);
+<<<<<<< HEAD
         return '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param.' AND mb.id = m.mailbox_id LIMIT 1)';
+=======
+        $sql   = '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param;
+        return $sql.' AND mb.id = m.mailbox_id LIMIT 1)';
+>>>>>>> origin/development
 
     }//end buildMailboxSubquery()
 }//end class

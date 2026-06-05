@@ -3,6 +3,12 @@
 /**
  * UiController
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  OpenRegister
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction b.v. <info@conduction.nl>
@@ -40,7 +46,17 @@ use OCP\IRequest;
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
+=======
+ * @SuppressWarnings(PHPMD.TooManyMethods)       Every public method is a one-liner
+ *     SPA-mount route stub required by the NC AppFramework router: each history-
+ *     mode deep-link path needs its own named action so OC\Route\Router does not
+ *     drop duplicate route names. Splitting into multiple controllers would not
+ *     reduce complexity and would scatter the route registration.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Same reason as TooManyMethods
+ *     above: each SPA route requires its own public NC controller action.
+>>>>>>> origin/development
  */
 class UiController extends Controller
 {
@@ -73,6 +89,7 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     private function makeSpaResponse(): TemplateResponse
     {
@@ -119,6 +136,12 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function registers(): TemplateResponse
     {
@@ -141,6 +164,12 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function registersDetails(): TemplateResponse
     {
@@ -163,6 +192,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function schemas(): TemplateResponse
     {
@@ -185,6 +220,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function schemasDetails(): TemplateResponse
     {
@@ -203,6 +244,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function sources(): TemplateResponse
     {
@@ -221,6 +268,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function organisation(): TemplateResponse
     {
@@ -239,11 +292,48 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function objects(): TemplateResponse
     {
         return $this->makeSpaResponse();
     }//end objects()
+
+    /**
+<<<<<<< HEAD
+     * Returns the tables page template.
+=======
+     * Returns the standalone integrations view template.
+     *
+     * Used by the per-leaf screenshot harness so a single URL of the form
+     * `/integrations/{register}/{schema}/{objectId}` lands on a Vue Router
+     * route that mounts IntegrationsView.vue — bypassing ObjectDetails and
+     * its legacy sub-resource plugin races.
+>>>>>>> origin/development
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
+     */
+    public function integrationsView(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end integrationsView()
 
     /**
      * Returns the tables page template.
@@ -257,6 +347,10 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function tables(): TemplateResponse
     {
@@ -275,6 +369,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function chat(): TemplateResponse
     {
@@ -293,6 +393,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function configurations(): TemplateResponse
     {
@@ -311,6 +417,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function deleted(): TemplateResponse
     {
@@ -329,6 +441,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function auditTrail(): TemplateResponse
     {
@@ -347,6 +465,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function searchTrail(): TemplateResponse
     {
@@ -365,6 +489,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function webhooks(): TemplateResponse
     {
@@ -383,6 +513,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function webhooksLogs(): TemplateResponse
     {
@@ -401,6 +537,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function entities(): TemplateResponse
     {
@@ -419,6 +561,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function entitiesDetails(): TemplateResponse
     {
@@ -426,6 +574,76 @@ class UiController extends Controller
     }//end entitiesDetails()
 
     /**
+<<<<<<< HEAD
+=======
+     * Render the AVG / Verwerkingsregister UI.
+     *
+     * Serves the SPA shell for the AVG management surface (CRUD over
+     * verwerkingsactiviteiten, verantwoordingsdocument, DSAR flows,
+     * compliance audit). Frontend routing inside the SPA picks the
+     * right view based on the URL path.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
+     */
+    public function avg(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end avg()
+
+    /**
+     * Render the reports / rapportage list view.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     */
+    public function reports(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end reports()
+
+    /**
+     * Render the single-dashboard view (`/reports/{id}`).
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     */
+    public function reportView(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end reportView()
+
+    /**
+>>>>>>> origin/development
      * Render endpoints UI
      *
      * Serves the Single Page Application template for the endpoints management interface.
@@ -440,6 +658,12 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function endpoints(): TemplateResponse
     {
@@ -461,9 +685,139 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+>>>>>>> origin/development
      */
     public function endpointLogs(): TemplateResponse
     {
         return $this->makeSpaResponse();
     }//end endpointLogs()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Render templates UI
+     *
+     * Serves the Single Page Application template for the templates management interface.
+     * This route is used when users navigate to the templates section of the application.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function templates(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end templates()
+
+    /**
+     * Render features & roadmap UI
+     *
+     * Serves the Single Page Application template for the features and roadmap interface.
+     * This route is used when users navigate to the features & roadmap section of the application.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function featuresRoadmap(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end featuresRoadmap()
+
+    /**
+     * Render My-account UI
+     *
+     * Serves the Single Page Application template for the per-user account page
+     * (`/mijn-account`). Mounted by the manifest as `myAccount` and reached via
+     * the settings menu. Without this route the hard-load and deep-link 404
+     * server-side. See ConductionNL/openregister#1962.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function myAccount(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end myAccount()
+
+    /**
+     * Render Application-detail UI
+     *
+     * Serves the Single Page Application template for `/applications/{id}`.
+     * Without this route the hard-load and deep-link 404 server-side. See
+     * ConductionNL/openregister#1962.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function applicationDetails(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end applicationDetails()
+
+    /**
+     * Render Object-detail (deep-link) UI
+     *
+     * Serves the Single Page Application template for
+     * `/objects/{register}/{schema}/{id}`. Has its own action name (distinct
+     * from `ui#objects`) so OC's `OC\Route\Router` duplicate-route-name guard
+     * does not drop one of the two — same trick as `ui#integrationsView` at
+     * `appinfo/routes.php`. See ConductionNL/openregister#1962.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function objectDetail(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end objectDetail()
+>>>>>>> origin/development
 }//end class

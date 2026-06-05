@@ -6,6 +6,12 @@
  * Handles HTTP client configuration and basic HTTP operations for Solr.
  * Responsible for building URLs, managing HTTP client, and making requests.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -105,6 +111,7 @@ class SolrHttpClient
      * Initialize HTTP client for Solr requests.
      *
      * @return void
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     private function initializeHttpClient(): void
     {
@@ -126,6 +133,11 @@ class SolrHttpClient
      * Check if Solr is configured.
      *
      * @return bool True if configured
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude boilerplate config getter — checks enabled/host/core presence
+>>>>>>> origin/development
      */
     public function isConfigured(): bool
     {
@@ -158,6 +170,11 @@ class SolrHttpClient
      * Build base Solr URL.
      *
      * @return string Base Solr URL
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude boilerplate URL builder — host/port/path string concatenation
+>>>>>>> origin/development
      */
     public function buildSolrBaseUrl(): string
     {
@@ -174,6 +191,11 @@ class SolrHttpClient
      * @param string|null $collection Collection name (null = use default core)
      *
      * @return string Endpoint URL
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude boilerplate URL builder — appends collection/core to base URL
+>>>>>>> origin/development
      */
     public function getEndpointUrl(?string $collection=null): string
     {
@@ -192,6 +214,11 @@ class SolrHttpClient
      * @return array Response data
      *
      * @throws Exception If request fails
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin Guzzle GET wrapper — request/json-decode/log-and-rethrow
+>>>>>>> origin/development
      */
     public function get(string $url, array $opts=[]): array
     {
@@ -219,6 +246,11 @@ class SolrHttpClient
      * @return array Response data
      *
      * @throws Exception If request fails
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin Guzzle POST wrapper — request/json-decode/log-and-rethrow
+>>>>>>> origin/development
      */
     public function post(string $url, array $data=[], array $opts=[]): array
     {
@@ -245,6 +277,11 @@ class SolrHttpClient
      * @param string $baseCollectionName Base collection name
      *
      * @return string Tenant-specific collection name
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude boilerplate config helper — optional tenant prefix from settings
+>>>>>>> origin/development
      */
     public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {

@@ -5,6 +5,12 @@
  *
  * Listens for object creation and update events to queue asynchronous text extraction.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -55,6 +61,7 @@ class ObjectChangeListener implements IEventListener
      * @param IJobList              $jobList         Job list for queuing background jobs
      * @param LoggerInterface       $logger          Logger
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function __construct(
@@ -72,6 +79,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function handle(Event $event): void
@@ -135,6 +143,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function processExtractionMode(string $mode, int $objectId, string $objectUuid): void
@@ -170,6 +179,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function processImmediateExtraction(int $objectId, string $objectUuid): void
@@ -211,6 +221,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function processBackgroundExtraction(int $objectId, string $objectUuid): void
@@ -251,6 +262,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function processCronMode(int $objectId): void
@@ -268,6 +280,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function processManualMode(int $objectId): void
@@ -286,6 +299,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function processUnknownMode(string $mode, int $objectId): void

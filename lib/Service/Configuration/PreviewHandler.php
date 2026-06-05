@@ -6,6 +6,12 @@
  * This file contains the handler class for previewing configuration changes
  * in the OpenRegister application.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -126,6 +132,7 @@ class PreviewHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component preview has many entity type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full preview involves registers, schemas, objects, and metadata
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
@@ -235,6 +242,7 @@ class PreviewHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register preview has multiple version comparison branches
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     public function previewRegisterChange(string $slug, array $registerData): array
@@ -383,6 +391,7 @@ class PreviewHandler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     private function previewObjectChange(array $objectData, array $registerSlugToId, array $schemaSlugToId): array
@@ -405,6 +414,7 @@ class PreviewHandler
      * @psalm-suppress UnusedParam Parameters will be used when method is fully implemented
      * @psalm-return   array<never, never>
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     public function compareArrays(array $current, array $proposed, string $prefix=''): array
@@ -427,6 +437,7 @@ class PreviewHandler
      *
      * @psalm-return array<never, never>
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     public function importConfigurationWithSelection(Configuration $_configuration, array $_selection): array

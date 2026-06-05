@@ -5,11 +5,11 @@
 		:size="'normal'"
 		@closing="closeDialog">
 		<div class="delete-configset-dialog">
-			<p>{{ t('openregister', 'Are you sure you want to delete this ConfigSet?') }}</p>
+			<p>{{ t('openregister', 'Are you sure you want to delete this configset?') }}</p>
 			<div class="warning-box">
 				<p><strong>⚠️ {{ t('openregister', 'Warning') }}</strong></p>
 				<p>{{ t('openregister', 'ConfigSet:') }} <strong>{{ navigationStore.transferData.name }}</strong></p>
-				<p>{{ t('openregister', 'This action cannot be undone. Make sure no collections are using this ConfigSet.') }}</p>
+				<p>{{ t('openregister', 'This action cannot be undone. Make sure no collections are using this configset.') }}</p>
 			</div>
 
 			<div class="form-actions">
@@ -57,12 +57,18 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			navigationStore.clearTransferData()
 			this.deleting = false
 		},
 
+		/**
+		 * @spec exclude modal submit handler deleting a config set via API
+		 */
 		async deleteConfigSet() {
 			const configSet = navigationStore.transferData
 			if (!configSet) return

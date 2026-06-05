@@ -1,4 +1,5 @@
 ---
+<<<<<<< HEAD
 title: Integrations Overview
 sidebar_position: 1
 description: Overview of all OpenRegister integrations including LLM hosting, models, and entity extraction
@@ -37,6 +38,78 @@ Workflow automation and integration platforms:
 - **[n8n](./n8n.md)** - Workflow automation platform
 - **[Windmill](./windmill.md)** - Developer-focused workflow engine
 - **[Custom Webhooks](./custom-webhooks.md)** - Build your own integrations
+=======
+title: Integrations
+sidebar_position: 1
+description: Open Register surfaces every linked thing (meetings, contacts, files, wiki pages, ...) through one pluggable registry. This index links the leaf-by-leaf reference plus the LLM and automation integrations.
+keywords:
+  - Open Register
+  - Integrations
+  - Leaf system
+  - LLM
+  - Automation
+---
+
+# Integrations
+
+Every "linked thing" on an Open Register object is a **leaf**. Meetings, contacts, files, wiki pages, kanban cards, chat threads — each is a leaf with the same provider contract on the backend and the same registry surface on the frontend. Plus a separate set of integrations for LLMs and automation engines.
+
+## Leaf integrations
+
+Open Register ships **18 leaves** plus the 5 always-available built-ins. Every leaf surfaces as a sidebar tab on linked objects, a dashboard widget in four surfaces, and an admin row with health status. See **[Leaf integration system](./leaf-system.md)** for the architecture and **[Pluggable integration registry](./pluggable-integration-registry.md)** for the full ADR-019 contract.
+
+### Always-available built-ins
+
+- **[Files](../features/files)** — files attached to an object (magic-column).
+- **Notes** — free-form notes (link-table). Documented under the [pluggable integration registry](./pluggable-integration-registry.md).
+- **Tags** — system tags (link-table).
+- **Tasks** — to-dos (link-table).
+- **Audit trail** — every change on the object (query-time).
+
+### NC-native leaves
+
+| Group | Leaf |
+|---|---|
+| Core | [Shares](./shares.md) |
+| Comms | [Calendar](./calendar.md) · [Contacts](./contacts.md) · [Email](./email.md) · [Talk](./talk.md) |
+| Docs | [Bookmarks](./bookmarks.md) · [Collectives](./collectives.md) · [Maps](./maps.md) · [Photos](./photos.md) |
+| Workflow | [Activity](./activity.md) · [Analytics](./analytics.md) · [Cospend](./cospend.md) · [Deck](./deck.md) · [Flow](./flow.md) · [Forms](./forms.md) · [Polls](./polls.md) · [Time tracker](./time-tracker.md) |
+
+### External leaves (OpenConnector-routed)
+
+- **[xWiki](./xwiki.md)** — link xWiki pages with breadcrumb + text preview.
+- **[OpenProject](./openproject.md)** — link OpenProject work packages.
+
+## OpenRegister's own push events
+
+OpenRegister itself emits `notify_custom` events on every object lifecycle change so consumers can subscribe and refresh without polling.
+
+- **[OpenRegister Push Events](./OpenRegister.md)** — `or-object-{uuid}` and `or-collection-{register}-{schema}` event reference, fan-out semantics, batch mode, subscription examples.
+
+## LLM hosting platforms
+
+Services that host and run large language models locally.
+
+- **[Ollama](./ollama.md)** — simple native API for running LLMs.
+- **[Hugging Face](./huggingface.md)** — TGI / vLLM with an OpenAI-compatible API.
+
+## LLM models
+
+Specific models you can plug in.
+
+- **[Mistral](./mistral.md)** — high-performance 7B model.
+- **[Dolphin](./dolphin.md)** — document parsing and OCR.
+
+## Entity extraction
+
+- **[Presidio](./presidio.md)** — Microsoft's PII detector.
+
+## Automation platforms
+
+- **[n8n](./n8n.md)** — workflow automation.
+- **[Windmill](./windmill.md)** — developer-focused workflow engine.
+- **[Custom webhooks](./custom-webhooks.md)** — build your own.
+>>>>>>> origin/development
 
 ## Integration Architecture
 

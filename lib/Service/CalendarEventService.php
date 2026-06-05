@@ -7,6 +7,12 @@
  * Events are stored as standard VEVENT items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -15,6 +21,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
  */
 
@@ -25,6 +32,10 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+<<<<<<< HEAD
+=======
+use OCP\IConfig;
+>>>>>>> origin/development
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -44,6 +55,26 @@ class CalendarEventService
 {
 
     /**
+<<<<<<< HEAD
+=======
+     * NC app id used for IConfig user-value persistence.
+     *
+     * @var string
+     */
+    private const APP_NAME = 'openregister';
+
+    /**
+     * IConfig user-value key that pins the calendar URI chosen on the
+     * first write. Subsequent reads honour this pin so read/write target
+     * the same calendar regardless of `getCalendarsForUser()` ordering
+     * — see {@see findUserCalendar()}.
+     *
+     * @var string
+     */
+    private const CONFIG_CALENDAR_URI = 'events_calendar_uri';
+
+    /**
+>>>>>>> origin/development
      * CalDAV backend.
      *
      * @var CalDavBackend
@@ -58,6 +89,16 @@ class CalendarEventService
     private readonly IUserSession $userSession;
 
     /**
+<<<<<<< HEAD
+=======
+     * Config for user-scoped key/value persistence.
+     *
+     * @var IConfig
+     */
+    private readonly IConfig $config;
+
+    /**
+>>>>>>> origin/development
      * Logger.
      *
      * @var LoggerInterface
@@ -69,6 +110,10 @@ class CalendarEventService
      *
      * @param CalDavBackend   $calDavBackend CalDAV backend
      * @param IUserSession    $userSession   User session
+<<<<<<< HEAD
+=======
+     * @param IConfig         $config        NC config (user-value store)
+>>>>>>> origin/development
      * @param LoggerInterface $logger        Logger
      *
      * @return void
@@ -76,10 +121,18 @@ class CalendarEventService
     public function __construct(
         CalDavBackend $calDavBackend,
         IUserSession $userSession,
+<<<<<<< HEAD
+=======
+        IConfig $config,
+>>>>>>> origin/development
         LoggerInterface $logger
     ) {
         $this->calDavBackend = $calDavBackend;
         $this->userSession   = $userSession;
+<<<<<<< HEAD
+=======
+        $this->config        = $config;
+>>>>>>> origin/development
         $this->logger        = $logger;
     }//end __construct()
 
@@ -91,6 +144,7 @@ class CalendarEventService
      * @return array Array of event arrays in JSON-friendly format
      *
      * @throws Exception If no user is logged in or no calendar found
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function getEventsForObject(string $objectUuid): array
     {
@@ -117,7 +171,15 @@ class CalendarEventService
             }
 
             try {
+<<<<<<< HEAD
                 $eventArray = $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
+=======
+                $eventArray = $this->veventToArray(
+                    calendarData: $calendarData,
+                    calendarId: (string) $calendarId,
+                    uri: $calendarObject['uri']
+                );
+>>>>>>> origin/development
                 if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
                     $events[] = $eventArray;
                 }
@@ -144,6 +206,7 @@ class CalendarEventService
      * @return array|null The created event in JSON-friendly format
      *
      * @throws Exception If no user or calendar found
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function createEvent(
         int $registerId,
@@ -225,6 +288,7 @@ class CalendarEventService
      * @return array|null The updated event
      *
      * @throws Exception If the event is not found
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function linkEvent(
         int $calendarId,
@@ -264,6 +328,7 @@ class CalendarEventService
      * @return void
      *
      * @throws Exception If the event is not found
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function unlinkEvent(string $calendarId, string $eventUri): void
     {
@@ -304,6 +369,7 @@ class CalendarEventService
      * @param string $objectUuid The object UUID.
      *
      * @return void
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {
@@ -321,7 +387,29 @@ class CalendarEventService
     }//end unlinkEventsForObject()
 
     /**
+<<<<<<< HEAD
      * Find the user's first VEVENT-supporting calendar.
+=======
+     * Find the calendar OpenRegister should target for the current user.
+     *
+     * Resolution order:
+     *   1. The URI pinned in the user's IConfig (`openregister`/`events_calendar_uri`).
+     *      If present AND the underlying calendar still exists AND supports
+     *      VEVENT, that calendar is returned. This guarantees that a write
+     *      via {@see createEvent()} and a subsequent read via
+     *      {@see getEventsForObject()} always touch the same calendar even
+     *      when `CalDavBackend::getCalendarsForUser()` returns rows in a
+     *      different order across calls.
+     *   2. Fallback to the first VEVENT-supporting calendar in the list and
+     *      persist its URI as the pin for future calls. A user's `personal`
+     *      calendar is preferred when present so the pin lands on a sensible
+     *      default rather than on whichever VEVENT calendar happens to be
+     *      first (e.g. `contact_birthdays`).
+     *
+     * The pin is stored under `openregister`/`events_calendar_uri` and can
+     * be reset by clearing that user-value if a user wants OR to retarget
+     * (e.g. via `occ user:setting … --delete`).
+>>>>>>> origin/development
      *
      * @return array Calendar data with 'id' and 'uri' keys
      *
@@ -334,6 +422,7 @@ class CalendarEventService
             throw new Exception('No user logged in');
         }
 
+<<<<<<< HEAD
         $principal = 'principals/users/'.$user->getUID();
         $calendars = $this->calDavBackend->getCalendarsForUser($principal);
 
@@ -361,11 +450,30 @@ class CalendarEventService
                 }//end if
 
                 if ($supportsVevent === true) {
+=======
+        $userId    = $user->getUID();
+        $principal = 'principals/users/'.$userId;
+        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
+
+        // Try the persisted URI first so write/read stay aligned.
+        $pinnedUri = $this->config->getUserValue(
+            $userId,
+            self::APP_NAME,
+            self::CONFIG_CALENDAR_URI,
+            ''
+        );
+        if ($pinnedUri !== '') {
+            foreach ($calendars as $calendar) {
+                if (($calendar['uri'] ?? null) === $pinnedUri
+                    && $this->calendarSupportsVevent(calendar: $calendar) === true
+                ) {
+>>>>>>> origin/development
                     return [
                         'id'  => $calendar['id'],
                         'uri' => $calendar['uri'],
                     ];
                 }
+<<<<<<< HEAD
             }//end if
         }//end foreach
 
@@ -373,6 +481,104 @@ class CalendarEventService
     }//end findUserCalendar()
 
     /**
+=======
+            }
+
+            // Pin is stale (calendar gone / no longer VEVENT). Fall through
+            // to redetect + repin, and log so admins can see the migration.
+            $this->logger->info(
+                'Pinned calendar URI '.$pinnedUri.' no longer resolves for user '.$userId.'; reselecting'
+            );
+        }
+
+        // Prefer `personal` when present so the pin lands on the user's
+        // default calendar rather than on whichever calendar happens to
+        // be first in the row order (`contact_birthdays`, …).
+        $chosen = null;
+        foreach ($calendars as $calendar) {
+            if ($this->calendarSupportsVevent(calendar: $calendar) === false) {
+                continue;
+            }
+
+            if (($calendar['uri'] ?? null) === 'personal') {
+                $chosen = $calendar;
+                break;
+            }
+
+            if ($chosen === null) {
+                $chosen = $calendar;
+            }
+        }
+
+        if ($chosen === null) {
+            throw new Exception('No VEVENT-supporting calendar found for user '.$userId);
+        }
+
+        // Persist the pin so subsequent calls are deterministic.
+        try {
+            $this->config->setUserValue(
+                $userId,
+                self::APP_NAME,
+                self::CONFIG_CALENDAR_URI,
+                (string) $chosen['uri']
+            );
+        } catch (Exception $e) {
+            // Best-effort: missing pin only means the next call repeats
+            // this selection — not a fatal error for the current operation.
+            $this->logger->warning(
+                'Failed to persist calendar URI pin: '.$e->getMessage(),
+                ['userId' => $userId, 'uri' => $chosen['uri'] ?? null]
+            );
+        }
+
+        return [
+            'id'  => $chosen['id'],
+            'uri' => $chosen['uri'],
+        ];
+    }//end findUserCalendar()
+
+    /**
+     * Inspect a calendar row from CalDavBackend and decide whether it
+     * supports VEVENT.
+     *
+     * @param array $calendar Row returned by CalDavBackend::getCalendarsForUser().
+     *
+     * @return bool
+     */
+    private function calendarSupportsVevent(array $calendar): bool
+    {
+        $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'] ?? null;
+        if ($components === null) {
+            return false;
+        }
+
+        if (is_object($components) === true && method_exists($components, 'getValue') === true) {
+            foreach ($components->getValue() as $comp) {
+                if (strtoupper((string) $comp) === 'VEVENT') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (is_string($components) === true) {
+            return stripos($components, 'VEVENT') !== false;
+        }
+
+        if (is_iterable($components) === true) {
+            foreach ($components as $comp) {
+                if (strtoupper((string) $comp) === 'VEVENT') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }//end calendarSupportsVevent()
+
+    /**
+>>>>>>> origin/development
      * Parse a VEVENT iCalendar string into a JSON-friendly array.
      *
      * @param string $calendarData The raw iCalendar string
@@ -409,6 +615,7 @@ class CalendarEventService
             }
         }
 
+<<<<<<< HEAD
         return [
             'id'          => $uri,
             'uid'         => isset($vevent->UID) === true ? (string) $vevent->UID : null,
@@ -420,6 +627,44 @@ class CalendarEventService
             'description' => isset($vevent->DESCRIPTION) === true ? (string) $vevent->DESCRIPTION : '',
             'attendees'   => $attendees,
             'status'      => isset($vevent->STATUS) === true ? strtolower((string) $vevent->STATUS) : null,
+=======
+        $uid = null;
+        if (isset($vevent->UID) === true) {
+            $uid = (string) $vevent->UID;
+        }
+
+        $summary = '';
+        if (isset($vevent->SUMMARY) === true) {
+            $summary = (string) $vevent->SUMMARY;
+        }
+
+        $location = null;
+        if (isset($vevent->LOCATION) === true) {
+            $location = (string) $vevent->LOCATION;
+        }
+
+        $description = '';
+        if (isset($vevent->DESCRIPTION) === true) {
+            $description = (string) $vevent->DESCRIPTION;
+        }
+
+        $status = null;
+        if (isset($vevent->STATUS) === true) {
+            $status = strtolower((string) $vevent->STATUS);
+        }
+
+        return [
+            'id'          => $uri,
+            'uid'         => $uid,
+            'calendarId'  => $calendarId,
+            'summary'     => $summary,
+            'dtstart'     => $dtstart,
+            'dtend'       => $dtend,
+            'location'    => $location,
+            'description' => $description,
+            'attendees'   => $attendees,
+            'status'      => $status,
+>>>>>>> origin/development
             'objectUuid'  => $linkData['objectUuid'],
             'registerId'  => $linkData['registerId'],
             'schemaId'    => $linkData['schemaId'],
@@ -433,6 +678,7 @@ class CalendarEventService
      *
      * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
      */
     private function extractOpenRegisterProperties(mixed $vevent): array

@@ -2,7 +2,12 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'Activity') }}</h2>
 		<div class="activity-section__filters">
+<<<<<<< HEAD
 			<NcSelect v-model="typeFilter"
+=======
+			<NcSelect
+						input-label="Type Filter" v-model="typeFilter"
+>>>>>>> origin/development
 				:options="typeOptions"
 				:placeholder="t('openregister', 'Filter by type')"
 				@input="loadActivity" />
@@ -59,16 +64,36 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * Reset paging state and load the first page of the current user's activity feed.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-5
+		 */
+>>>>>>> origin/development
 		async loadActivity() {
 			this.loading = true
 			this.offset = 0
 			this.activities = []
 			await this.fetchActivity()
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view pagination plumbing; advances offset and re-fetches the activity feed
+		 */
+>>>>>>> origin/development
 		async loadMore() {
 			this.offset += this.limit
 			await this.fetchActivity()
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude list-view store fetch plumbing for the user activity feed (activity contract owned by activity-provider)
+		 */
+>>>>>>> origin/development
 		async fetchActivity() {
 			this.loading = true
 			try {
@@ -86,6 +111,12 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude detail-view timestamp formatting helper for display only
+		 */
+>>>>>>> origin/development
 		formatTime(timestamp) {
 			if (!timestamp) return ''
 			const date = new Date(timestamp)

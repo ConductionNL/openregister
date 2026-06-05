@@ -6,10 +6,20 @@
  * This file contains the event class dispatched when an organisation is updated
  * in the OpenRegister application.
  *
+<<<<<<< HEAD
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Event
+ * @package  OCA\OpenRegister\Event
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -63,6 +73,7 @@ class OrganisationUpdatedEvent extends Event
      *
      * @return Organisation The organisation after update.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOrganisation(): Organisation
@@ -75,6 +86,7 @@ class OrganisationUpdatedEvent extends Event
      *
      * @return Organisation The organisation after update.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewOrganisation(): Organisation
@@ -87,6 +99,7 @@ class OrganisationUpdatedEvent extends Event
      *
      * @return Organisation The organisation before update.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldOrganisation(): Organisation

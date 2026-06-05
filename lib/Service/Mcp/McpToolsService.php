@@ -4,7 +4,17 @@
  * MCP Tools Service
  *
  * Handles MCP standard tool listing and execution for the OpenRegister
+<<<<<<< HEAD
  * MCP server. Provides CRUD tools for registers, schemas, and objects.
+=======
+ * MCP server. Enumerates all registered IMcpToolProvider implementations
+ * (built-ins first, then externally registered providers) and aggregates
+ * their tool descriptors. Namespace enforcement (ADR-034 D5) rejects any
+ * descriptor whose id does not start with `{provider->getAppId()}.`.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+>>>>>>> origin/development
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Mcp
@@ -16,23 +26,36 @@
  * @version GIT: <git_id>
  *
  * @link https://OpenRegister.app
+ * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#mcptoolsservice-provider-discovery-refactor
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Mcp;
 
+<<<<<<< HEAD
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\ObjectService;
 use InvalidArgumentException;
+=======
+use InvalidArgumentException;
+use OCA\OpenRegister\Mcp\IMcpToolProvider;
+>>>>>>> origin/development
 use Psr\Log\LoggerInterface;
 
 /**
  * McpToolsService handles MCP tool operations
  *
+<<<<<<< HEAD
  * Provides tool definitions and execution for the three core
  * OpenRegister entities: registers, schemas, and objects.
+=======
+ * Enumerates all registered IMcpToolProvider implementations (built-ins
+ * first) and aggregates their tool descriptors into a single list for the
+ * LLM tool-loop. Non-conforming tool ids (where the prefix does not match
+ * the provider's app id) are silently dropped with a warning-level log.
+>>>>>>> origin/development
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  *
@@ -40,6 +63,7 @@ use Psr\Log\LoggerInterface;
  */
 class McpToolsService
 {
+<<<<<<< HEAD
     /**
      * McpToolsService constructor
      *
@@ -83,6 +107,103 @@ class McpToolsService
      * @return array MCP tool result with content array
      *
      * @throws InvalidArgumentException If tool name is unknown
+=======
+
+    /**
+     * Registered tool providers.
+     *
+     * Built-ins are prepended first by Application.php registration order.
+     *
+     * @var list<IMcpToolProvider>
+     */
+    private array $providers;
+
+    /**
+     * McpToolsService constructor
+     *
+     * @param list<IMcpToolProvider> $providers Ordered list of tool providers (built-ins first)
+     * @param LoggerInterface        $logger    Logger
+     */
+    public function __construct(
+        array $providers,
+        private readonly LoggerInterface $logger
+    ) {
+        $this->providers = $providers;
+    }//end __construct()
+
+    /**
+     * Return the registered providers in order so the chat-side
+     * ToolRegistrationListener can wrap each one in an McpProviderBridge
+     * and register it on the ToolRegistry. Read-only accessor; the
+     * underlying list cannot be mutated post-construction (use
+     * addProvider() for that).
+     *
+     * @return list<IMcpToolProvider>
+     */
+    public function getProviders(): array
+    {
+        return $this->providers;
+
+    }//end getProviders()
+
+    /**
+     * List available MCP tools
+     *
+     * Aggregates tool descriptors from all registered providers. Descriptors
+     * whose id does not start with `{provider->getAppId()}.` are dropped and
+     * a warning is logged per D5 of the design.
+     *
+     * @return array{tools: array} MCP tools/list response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
+     */
+    public function listTools(): array
+    {
+        $tools = [];
+
+        foreach ($this->providers as $provider) {
+            $appId = $provider->getAppId();
+
+            foreach ($provider->getTools() as $descriptor) {
+                $toolId = $descriptor['id'] ?? '';
+
+                // Namespace enforcement: drop descriptors with wrong prefix.
+                if (str_starts_with($toolId, $appId.'.') === false) {
+                    $this->logger->warning(
+                        message: '[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix',
+                        context: [
+                            'file'          => __FILE__,
+                            'line'          => __LINE__,
+                            'providerClass' => get_class($provider),
+                            'appId'         => $appId,
+                            'toolId'        => $toolId,
+                        ]
+                    );
+                    continue;
+                }
+
+                $tools[] = $descriptor;
+            }
+        }//end foreach
+
+        return ['tools' => $tools];
+    }//end listTools()
+
+    /**
+     * Execute an MCP tool by its namespaced id
+     *
+     * Routes the invocation to the provider whose app id prefix matches
+     * the given tool id. The first matching provider wins.
+     *
+     * @param string               $name      Namespaced tool id (e.g. "openregister.registers")
+     * @param array<string, mixed> $arguments Tool arguments
+     *
+     * @return array<string, mixed> MCP tool result with content array
+     *
+     * @throws InvalidArgumentException If no provider handles the tool id
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function callTool(string $name, array $arguments): array
     {
@@ -91,6 +212,7 @@ class McpToolsService
             context: ['tool' => $name, 'arguments' => $arguments]
         );
 
+<<<<<<< HEAD
         try {
             $result = match ($name) {
                 'registers' => $this->executeRegisters(arguments: $arguments),
@@ -100,6 +222,17 @@ class McpToolsService
                     message: 'Unknown tool: '.$name
                 ),
             };
+=======
+        // Find a provider that owns this tool id.
+        $provider = $this->findProviderForTool(toolId: $name);
+
+        if ($provider === null) {
+            throw new InvalidArgumentException('Unknown tool: '.$name);
+        }
+
+        try {
+            $result = $provider->invokeTool(toolId: $name, arguments: $arguments);
+>>>>>>> origin/development
 
             return [
                 'content' => [
@@ -110,7 +243,15 @@ class McpToolsService
                 ],
                 'isError' => false,
             ];
+<<<<<<< HEAD
         } catch (\Exception $e) {
+=======
+        } catch (\Throwable $e) {
+            // Catch \Throwable, not \Exception: TypeError / ArgumentCountError
+            // and friends are \Error subclasses. If we only caught \Exception
+            // those would propagate to the framework as fatal 500s without
+            // the SSE / JSON envelope the caller is parsing.
+>>>>>>> origin/development
             $this->logger->error(
                 message: '[MCP] Tool execution failed',
                 context: ['tool' => $name, 'error' => $e->getMessage()]
@@ -129,6 +270,7 @@ class McpToolsService
     }//end callTool()
 
     /**
+<<<<<<< HEAD
      * Get the registers tool definition
      *
      * @return array MCP tool definition
@@ -615,4 +757,116 @@ class McpToolsService
             );
         }
     }//end requireParam()
+=======
+     * Invoke a tool by namespaced id, returning a flat result array.
+     *
+     * Used by ChatStreamController to invoke tools in the LLM pipeline
+     * and emit tool_result SSE events.
+     *
+     * @param string               $toolId    Namespaced tool id
+     * @param array<string, mixed> $arguments Tool arguments
+     *
+     * @return array{result: array<string, mixed>, isError: bool} Result envelope
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
+     */
+    public function invokeTool(string $toolId, array $arguments): array
+    {
+        $provider = $this->findProviderForTool(toolId: $toolId);
+
+        if ($provider === null) {
+            return [
+                'result'  => ['error' => 'Unknown tool: '.$toolId],
+                'isError' => true,
+            ];
+        }
+
+        try {
+            $result = $provider->invokeTool(toolId: $toolId, arguments: $arguments);
+            return [
+                'result'  => $result,
+                'isError' => false,
+            ];
+        } catch (\Throwable $e) {
+            // See callTool(): catching \Throwable (not \Exception) prevents
+            // \Error subclasses from escaping the MCP envelope.
+            $this->logger->error(
+                message: '[MCP] invokeTool failed',
+                context: ['tool' => $toolId, 'error' => $e->getMessage()]
+            );
+
+            return [
+                'result'  => ['error' => $e->getMessage()],
+                'isError' => true,
+            ];
+        }//end try
+    }//end invokeTool()
+
+    /**
+     * Find the first provider that owns the given tool id.
+     *
+     * A provider owns a tool id when the tool's id starts with
+     * `{provider->getAppId()}.` AND the provider lists that tool in getTools().
+     *
+     * @param string $toolId Namespaced tool id
+     *
+     * @return IMcpToolProvider|null The matching provider, or null if not found
+     */
+    private function findProviderForTool(string $toolId): ?IMcpToolProvider
+    {
+        foreach ($this->providers as $provider) {
+            $appId = $provider->getAppId();
+
+            if (str_starts_with($toolId, $appId.'.') === false) {
+                continue;
+            }
+
+            // Confirm the provider actually lists this tool.
+            foreach ($provider->getTools() as $descriptor) {
+                if (($descriptor['id'] ?? '') === $toolId) {
+                    return $provider;
+                }
+            }
+        }
+
+        return null;
+    }//end findProviderForTool()
+
+    /**
+     * Add a provider to the list at runtime (e.g. from external apps).
+     *
+     * Idempotent: if a provider with the same `getAppId()` is already
+     * registered, the call is a no-op. This handles the dual-path case
+     * where (a) OR's factory in `Application::registerMcpToolProviders`
+     * discovers the provider by walking `IAppManager::getInstalledApps()`
+     * AND (b) the consumer app's own `Application::boot()` also calls
+     * `addProvider()` to be self-sufficient when OR's discovery path
+     * misses the app (e.g. alias not registered on OR's container scope).
+     *
+     * @param IMcpToolProvider $provider The provider to add
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
+     */
+    public function addProvider(IMcpToolProvider $provider): void
+    {
+        $appId = $provider->getAppId();
+        foreach ($this->providers as $existing) {
+            if ($existing->getAppId() === $appId) {
+                $this->logger->debug(
+                    message: '[McpToolsService] addProvider() skipped — provider with same appId already registered',
+                    context: [
+                        'appId'         => $appId,
+                        'incomingClass' => get_class($provider),
+                        'existingClass' => get_class($existing),
+                    ]
+                );
+                return;
+            }
+        }
+
+        $this->providers[] = $provider;
+    }//end addProvider()
+>>>>>>> origin/development
 }//end class

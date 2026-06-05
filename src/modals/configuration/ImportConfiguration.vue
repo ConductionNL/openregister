@@ -6,7 +6,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
 		name="importConfiguration"
-		title="Import Configuration"
+		:title="t('openregister', 'Import Configuration')"
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">
@@ -47,8 +47,8 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						<div class="searchContainer">
 							<NcTextField
 								:value.sync="searchQuery"
-								label="Search configurations"
-								placeholder="Enter search terms or leave empty to browse all"
+								:label="t('openregister', 'Search configurations')"
+								:placeholder="t('openregister', 'Enter search terms or leave empty to browse all')"
 								@keyup.enter="searchConfigurations">
 								<Magnify :size="20" />
 							</NcTextField>
@@ -156,7 +156,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcButton>
 
 						<NcSelect
-							v-if="branches.length > 0"
+							v-if="branches.length !== 0"
 							v-model="selectedBranch"
 							:options="branches"
 							input-label="Branch"
@@ -404,15 +404,24 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude Computed deep-link to the admin api-tokens settings page; UI presentation helper.
+		 */
 		settingsUrl() {
 			return window.location.origin + '/index.php/settings/admin/openregister#api-tokens'
 		},
+		/**
+		 * @spec exclude Computed form-enablement guard for the fetch-branches button; UI validation helper.
+		 */
 		canFetchBranches() {
 			if (this.repoSource === 'GitHub') {
 				return this.repoOwner && this.repoName
 			}
 			return this.repoNamespace && this.repoName
 		},
+		/**
+		 * @spec exclude Computed per-tab form-enablement guard for the import button; UI validation helper.
+		 */
 		canImport() {
 		// Tab 0: Discover (imports are handled per-card, not via main button)
 		// Tab 1: GitHub/GitLab
@@ -437,6 +446,8 @@ export default {
 	methods: {
 		/**
 		 * Check if API tokens are configured
+		 *
+		 * @spec exclude On-mount fetch of masked api-token presence to toggle UI warnings; modal init plumbing.
 		 */
 		async checkTokenAvailability() {
 			try {
@@ -459,6 +470,7 @@ export default {
 		 * Get token warning title based on which tokens are missing
 		 *
 		 * @return {string}
+		 * @spec exclude Computes a warning-banner title string from token-presence flags; UI presentation helper.
 		 */
 		getTokenWarningTitle() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
@@ -474,6 +486,7 @@ export default {
 		 * Get token warning message based on which tokens are missing
 		 *
 		 * @return {string}
+		 * @spec exclude Computes a warning-banner message string from token-presence flags; UI presentation helper.
 		 */
 		getTokenWarningMessage() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
@@ -485,10 +498,16 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.resetForm()
 		},
+		/**
+		 * @spec exclude Resets all local form/search/upload state to defaults; UI plumbing.
+		 */
 		resetForm() {
 			this.loading = false
 			this.success = false
@@ -513,6 +532,9 @@ export default {
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
+		/**
+		 * @spec exclude Discover-tab search handler delegating to configurationStore.discoverConfigurations; UI search plumbing.
+		 */
 		async searchConfigurations() {
 			this.searchLoading = true
 			this.hasSearched = true
@@ -535,6 +557,9 @@ export default {
 				this.searchLoading = false
 			}
 		},
+		/**
+		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
+		 */
 		async importDiscoveredConfiguration(result) {
 			this.loading = true
 			this.error = null
@@ -589,6 +614,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Fetches repo branches via configurationStore.getBranches to populate the branch select; UI form-loading plumbing.
+		 */
 		async fetchBranches() {
 			this.loading = true
 			this.error = null
@@ -620,6 +648,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Fetches config files for the selected branch via configurationStore.getConfigurationFiles; UI form-loading plumbing.
+		 */
 		async fetchConfigurationFiles() {
 			if (!this.selectedBranch) return
 
@@ -643,6 +674,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Main import-button handler dispatching per-tab to configurationStore import actions and refreshing lists; UI orchestration plumbing.
+		 */
 		async performImport() {
 			this.loading = true
 			this.error = null
@@ -716,12 +750,24 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
+		 */
+>>>>>>> origin/development
 		handleFileSelect(event) {
 			const file = event.target.files[0]
 			if (file) {
 				this.validateAndSetFile(file)
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
+		 */
+>>>>>>> origin/development
 		handleFileDrop(event) {
 			this.isDragging = false
 			const file = event.dataTransfer.files[0]
@@ -729,6 +775,12 @@ export default {
 				this.validateAndSetFile(file)
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
+		 */
+>>>>>>> origin/development
 		validateAndSetFile(file) {
 			this.fileError = null
 
@@ -746,6 +798,12 @@ export default {
 
 			this.selectedUploadFile = file
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Clears the selected upload file and resets the file input; UI file-picker plumbing.
+		 */
+>>>>>>> origin/development
 		clearFileSelection() {
 			this.selectedUploadFile = null
 			this.fileError = null
@@ -753,11 +811,23 @@ export default {
 				this.$refs.fileInput.value = ''
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
+		 */
+>>>>>>> origin/development
 		formatFileSize(bytes) {
 			if (bytes < 1024) return bytes + ' B'
 			if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
 			return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
+		 */
+>>>>>>> origin/development
 		async importFromFile() {
 			const formData = new FormData()
 			formData.append('file', this.selectedUploadFile)
@@ -780,6 +850,12 @@ export default {
 
 			return response.data
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
+		 */
+>>>>>>> origin/development
 		async handleCheckVersion(configuration) {
 			// Handle check version for already imported configurations
 			try {
@@ -789,17 +865,17 @@ export default {
 
 				if (response.data.hasUpdate) {
 					showSuccess(
-						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
+						t('openregister', 'Update available: {local} → {remote}', { local: response.data.localVersion, remote: response.data.remoteVersion }),
 					)
 				} else {
-					showSuccess('Configuration is up to date')
+					showSuccess(t('openregister', 'Configuration is up to date'))
 				}
 
 				// Refresh the list to show updated version info
 				await configurationStore.refreshConfigurationList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
-				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
+				showError(t('openregister', 'Failed to check version: {error}', { error: error.response?.data?.error || error.message }))
 			}
 		},
 	},

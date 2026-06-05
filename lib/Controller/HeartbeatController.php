@@ -6,6 +6,9 @@
  * This file contains the controller class for handling heartbeat requests in the OpenRegister application.
  * Used to keep connections alive during long-running operations to prevent gateway timeouts.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -84,6 +87,7 @@ class HeartbeatController extends Controller
      *     array{status: 'alive', timestamp: int<1, max>,
      *     message: 'Heartbeat successful - connection kept alive'},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-5
      */
     public function heartbeat(): JSONResponse
     {

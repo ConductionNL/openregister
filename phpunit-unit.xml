@@ -4,11 +4,19 @@
          bootstrap="tests/bootstrap-unit.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
+<<<<<<< HEAD
          executionOrder="depends,defects"
          requireCoverageMetadata="false"
          beStrictAboutCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
          failOnRisky="true"
+=======
+         executionOrder="default"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+>>>>>>> origin/development
          failOnWarning="true">
     
     <testsuites>

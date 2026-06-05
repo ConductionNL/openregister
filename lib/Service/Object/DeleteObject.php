@@ -12,6 +12,12 @@
  * - Maintaining referential integrity
  * - Tracking deletion operations
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -23,6 +29,8 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-29
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-29
  */
@@ -125,6 +133,7 @@ class DeleteObject
      * @param ReferentialIntegrityService $integrityService   Referential integrity service
      * @param IDBConnection               $db                 Database connection for transactions
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
@@ -166,6 +175,8 @@ class DeleteObject
      *
      * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
      */
@@ -174,10 +185,16 @@ class DeleteObject
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
         // @psalm-suppress UndefinedInterfaceMethod.
+<<<<<<< HEAD
         if ($object instanceof ObjectEntity === true) {
             $identifier = $object->getUuid();
         } else {
             $identifier = $object['id'];
+=======
+        $identifier = $object['id'];
+        if ($object instanceof ObjectEntity) {
+            $identifier = $object->getUuid();
+>>>>>>> origin/development
         }
 
         $includeDeleted = ($object instanceof ObjectEntity);
@@ -187,10 +204,16 @@ class DeleteObject
             _rbac: false,
             _multitenancy: false
         );
+<<<<<<< HEAD
         if ($object instanceof ObjectEntity === true) {
             $objectEntity = $object;
         } else {
             $objectEntity = $context['object'];
+=======
+        $objectEntity   = $context['object'];
+        if ($object instanceof ObjectEntity === true) {
+            $objectEntity = $object;
+>>>>>>> origin/development
         }
 
         $registerEntity = $context['register'];
@@ -216,9 +239,25 @@ class DeleteObject
             $result = true;
 
             // Cache invalidation for permanent delete.
+<<<<<<< HEAD
             $this->cacheHandler->invalidateForObjectChange(
                 registerId: is_numeric($objectEntity->getRegister()) === true ? (int) $objectEntity->getRegister() : null,
                 schemaId: is_numeric($objectEntity->getSchema()) === true ? (int) $objectEntity->getSchema() : null,
+=======
+            $registerIdForCache = null;
+            if (is_numeric($objectEntity->getRegister()) === true) {
+                $registerIdForCache = (int) $objectEntity->getRegister();
+            }
+
+            $schemaIdForCache = null;
+            if (is_numeric($objectEntity->getSchema()) === true) {
+                $schemaIdForCache = (int) $objectEntity->getSchema();
+            }
+
+            $this->cacheHandler->invalidateForObjectChange(
+                registerId: $registerIdForCache,
+                schemaId: $schemaIdForCache,
+>>>>>>> origin/development
                 operation: 'permanent_delete'
             );
 
@@ -240,8 +279,15 @@ class DeleteObject
             try {
                 $organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
                 $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+<<<<<<< HEAD
             } catch (\Exception $e) {
                 // If we can't get the active organisation, log and continue with null.
+=======
+            } catch (\Throwable $e) {
+                // If we can't get the active organisation, log and continue with null.
+                // Catches Error too so a null DB in tests (or a missing binding) doesn't
+                // abort the whole delete path.
+>>>>>>> origin/development
                 $this->logger->warning(
                     message: '[DeleteObject] Failed to get active organisation during delete',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
@@ -347,6 +393,8 @@ class DeleteObject
      *
      * @return DeletionAnalysis The analysis result.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-29
      */
@@ -362,6 +410,7 @@ class DeleteObject
      * has incoming onDelete references from other schemas, walks the dependency graph
      * to detect blockers (RESTRICT) and apply actions (CASCADE, SET_NULL, SET_DEFAULT).
      *
+<<<<<<< HEAD
      * @param Register|int|string $register         The register containing the object.
      * @param Schema|int|string   $schema           The schema of the object.
      * @param string              $uuid             The UUID of the object to delete.
@@ -373,10 +422,34 @@ class DeleteObject
      *
      * @throws ReferentialIntegrityException If deletion is blocked by RESTRICT constraints.
      * @throws Exception If there is an error during deletion.
+=======
+     * @param Register|int|string|null $register         The register containing the object.
+     * @param Schema|int|string|null   $schema           The schema of the object.
+     * @param string                   $uuid             The UUID of the object to delete.
+     * @param string|null              $originalObjectId The ID of original object for cascading.
+     * @param bool                     $_rbac            Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy    Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $scoped           When true, the caller has guaranteed `$register`
+     *                                                   and `$schema` resolve to a specific magic table
+     *                                                   and the lookup MUST target only that table —
+     *                                                   a UUID in another scope raises DoesNotExistException
+     *                                                   without touching any row (#1638).
+     *                                                   When false (default), legacy cross-table lookup
+     *                                                   via `findAcrossAllSources` is used.
+     *
+     * @return bool Whether the deletion was successful.
+     *
+     * @throws ReferentialIntegrityException                If deletion is blocked by RESTRICT constraints.
+     * @throws \OCP\AppFramework\Db\DoesNotExistException   If `$scoped` is true and the UUID is not present
+     *                                                       in the given (register, schema) magic table.
+     * @throws Exception                                    If there is an error during deletion.
+>>>>>>> origin/development
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function deleteObject(
@@ -385,13 +458,19 @@ class DeleteObject
         string $uuid,
         ?string $originalObjectId=null,
         bool $_rbac=true,
+<<<<<<< HEAD
         bool $_multitenancy=true
+=======
+        bool $_multitenancy=true,
+        bool $scoped=false
+>>>>>>> origin/development
     ): bool {
         // Reset cascade count for root deletions.
         if ($originalObjectId === null) {
             $this->lastCascadeCount = 0;
         }
 
+<<<<<<< HEAD
         // Find object with context (searches across all magic tables).
         $context = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $uuid,
@@ -400,6 +479,23 @@ class DeleteObject
             _multitenancy: $_multitenancy
         );
         $object  = $context['object'];
+=======
+        // Resolve the lookup: when the caller has guaranteed a (register, schema)
+        // scope, use the scoped `MagicMapper::find()` path which targets exactly
+        // one magic table. Otherwise fall back to the legacy cross-table scan.
+        // The scoped path raises DoesNotExistException if the UUID is not in
+        // the requested scope — this is the fix for #1638.
+        $context = $this->resolveDeletionContext(
+            register: $register,
+            schema: $schema,
+            uuid: $uuid,
+            scoped: $scoped,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+
+        $object = $context['object'];
+>>>>>>> origin/development
 
         // Root deletions: check referential integrity and handle cascade.
         if ($originalObjectId === null) {
@@ -431,6 +527,78 @@ class DeleteObject
     }//end deleteObject()
 
     /**
+<<<<<<< HEAD
+=======
+     * Resolve the lookup context for a deletion call.
+     *
+     * Centralises the branch between the scoped MagicMapper::find() path
+     * (introduced for #1638) and the legacy `findAcrossAllSources` cross-table
+     * scan. The early return on the scoped path keeps the dispatch flat and
+     * avoids an else-clause (PHPMD ElseExpression).
+     *
+     * @param Register|int|string|null $register      Register scope (object, ID, UUID, or slug).
+     * @param Schema|int|string|null   $schema        Schema scope.
+     * @param string                   $uuid          The UUID being deleted.
+     * @param bool                     $scoped        When true, the caller has guaranteed
+     *                                                $register/$schema resolve to a specific
+     *                                                magic table; lookup MUST target only that table.
+     * @param bool                     $_rbac         Whether to apply RBAC checks.
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array{object: ObjectEntity, register: Register|int|string, schema: Schema|int|string}
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If $scoped is true and the UUID is
+     *                                                     not present in the given magic table.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
+     */
+    private function resolveDeletionContext(
+        Register | int | string | null $register,
+        Schema | int | string | null $schema,
+        string $uuid,
+        bool $scoped,
+        bool $_rbac,
+        bool $_multitenancy
+    ): array {
+        // Scoped path: lookup hits exactly one magic table — a UUID in a
+        // different scope raises DoesNotExistException. This is the fix for
+        // #1638 (cross-scope silent deletes).
+        if ($scoped === true
+            && $register instanceof Register === true
+            && $schema instanceof Schema === true
+        ) {
+            $scopedObject = $this->objectEntityMapper->find(
+                identifier: $uuid,
+                register: $register,
+                schema: $schema,
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+
+            return [
+                'object'   => $scopedObject,
+                'register' => $register,
+                'schema'   => $schema,
+            ];
+        }
+
+        // Legacy path: cross-table scan via findAcrossAllSources — still in
+        // use by every unscoped caller. Soft-deprecated; preferred call site
+        // is the scoped branch above.
+        return $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $uuid,
+            includeDeleted: true,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+
+    }//end resolveDeletionContext()
+
+    /**
+>>>>>>> origin/development
      * Handle referential integrity checks and cascade deletion for root deletions.
      *
      * Returns the deletion result if integrity processing handled the delete,
@@ -445,6 +613,7 @@ class DeleteObject
      * @throws ReferentialIntegrityException If blocked by RESTRICT
      * @throws Exception If cascade transaction fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleIntegrityDeletion(
@@ -487,6 +656,7 @@ class DeleteObject
      *
      * @throws ReferentialIntegrityException Always thrown
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function logAndThrowRestrict(string $uuid, ?string $schemaId, DeletionAnalysis $analysis): void
@@ -516,6 +686,7 @@ class DeleteObject
      *
      * @throws Exception If the transaction fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function executeIntegrityTransaction(
@@ -583,6 +754,7 @@ class DeleteObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function runLegacyCascade(array $context, ObjectEntity $object, string $uuid): void
@@ -610,6 +782,7 @@ class DeleteObject
      *
      * @return array|null The cascade context, or null if no cascades occurred
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function buildCascadeContext(string $uuid, ?string $triggerSlug, DeletionAnalysis $analysis): ?array
@@ -638,6 +811,7 @@ class DeleteObject
      *
      * @return array{0: string, 1: mixed} [userId, activeOrganisation]
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveUserContext(): array
@@ -670,6 +844,7 @@ class DeleteObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function cascadeDeleteObjects(
@@ -716,6 +891,7 @@ class DeleteObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isAuditTrailsEnabled(): bool
@@ -741,6 +917,7 @@ class DeleteObject
      *
      * @return int The number of cascade-deleted objects.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getLastCascadeCount(): int

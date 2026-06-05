@@ -18,6 +18,9 @@
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
@@ -26,11 +29,19 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IAvatarManager;
+<<<<<<< HEAD
+=======
+use OCP\IDBConnection;
+>>>>>>> origin/development
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\IConfig;
 use OCP\IGroupManager;
+<<<<<<< HEAD
+=======
+use OCP\L10N\IFactory;
+>>>>>>> origin/development
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountProperty;
@@ -76,7 +87,13 @@ class UserServiceCoverageTest extends TestCase
             $this->eventDispatcher,
             $this->createMock(IAvatarManager::class),
             $this->createMock(AuditTrailMapper::class),
+<<<<<<< HEAD
             $this->createMock(ISecureRandom::class)
+=======
+            $this->createMock(ISecureRandom::class),
+            $this->createMock(IDBConnection::class),
+            $this->createMock(IFactory::class)
+>>>>>>> origin/development
         );
     }
 

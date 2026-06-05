@@ -7,6 +7,12 @@
  * This abstraction allows the system to switch between different storage strategies
  * (column-mapped storage via MagicMapper) while maintaining a consistent interface.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

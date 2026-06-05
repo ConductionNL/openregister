@@ -3,11 +3,21 @@
 		<h3>{{ isEdit ? 'Edit Hook' : 'Add Hook' }}</h3>
 		<div class="form-group">
 			<label>Event Type</label>
+<<<<<<< HEAD
 			<NcSelect v-model="form.event" :options="eventTypes" />
 		</div>
 		<div class="form-group">
 			<label>Engine</label>
 			<NcSelect v-model="form.engine" :options="engineOptions" />
+=======
+			<NcSelect
+						input-label="Form Event" v-model="form.event" :options="eventTypes" />
+		</div>
+		<div class="form-group">
+			<label>Engine</label>
+			<NcSelect
+						input-label="Form Engine" v-model="form.engine" :options="engineOptions" />
+>>>>>>> origin/development
 		</div>
 		<div class="form-group">
 			<label>Workflow ID</label>
@@ -15,7 +25,12 @@
 		</div>
 		<div class="form-group">
 			<label>Mode</label>
+<<<<<<< HEAD
 			<NcSelect v-model="form.mode" :options="['sync', 'async']" />
+=======
+			<NcSelect
+						input-label="Form Mode" v-model="form.mode" :options="['sync', 'async']" />
+>>>>>>> origin/development
 		</div>
 		<div class="form-group">
 			<label>Order</label>
@@ -27,6 +42,7 @@
 		</div>
 		<div class="form-group">
 			<label>On Failure</label>
+<<<<<<< HEAD
 			<NcSelect v-model="form.onFailure" :options="failureModes" />
 		</div>
 		<div class="form-group">
@@ -36,6 +52,20 @@
 		<div class="form-group">
 			<label>On Engine Down</label>
 			<NcSelect v-model="form.onEngineDown" :options="failureModes" />
+=======
+			<NcSelect
+						input-label="Form On Failure" v-model="form.onFailure" :options="failureModes" />
+		</div>
+		<div class="form-group">
+			<label>On Timeout</label>
+			<NcSelect
+						input-label="Form On Timeout" v-model="form.onTimeout" :options="failureModes" />
+		</div>
+		<div class="form-group">
+			<label>On Engine Down</label>
+			<NcSelect
+						input-label="Form On Engine Down" v-model="form.onEngineDown" :options="failureModes" />
+>>>>>>> origin/development
 		</div>
 		<div class="form-group">
 			<NcCheckboxRadioSwitch :checked.sync="form.enabled">
@@ -86,11 +116,23 @@ export default {
 		isEdit() {
 			return this.hook !== null
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude computed select-option mapping from engines prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		engineOptions() {
 			return this.engines.map(e => e.engineType || e.name || e)
 		},
 	},
 	methods: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude emit UI handler dispatching save event with form data, UI plumbing
+		 */
+>>>>>>> origin/development
 		save() {
 			this.$emit('save', { ...this.form })
 		},

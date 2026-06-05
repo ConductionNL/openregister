@@ -6,6 +6,9 @@
  * This file contains the notifier class for displaying notifications
  * in the Nextcloud notification center.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Notification
  * @package  OCA\OpenRegister\Notification
  *
@@ -56,6 +59,7 @@ class Notifier implements INotifier
      *
      * @psalm-return 'openregister'
      *
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
      */
     public function getID(): string
@@ -82,6 +86,7 @@ class Notifier implements INotifier
      * @return INotification The prepared notification
      * @throws InvalidArgumentException If the notification is not from this app
      *
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
      */
     public function prepare(INotification $notification, string $languageCode): INotification
@@ -98,6 +103,7 @@ class Notifier implements INotifier
                 return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
             default:
+<<<<<<< HEAD
                 // System entity notifications use a shared template renderer.
                 if (str_starts_with(haystack: $notification->getSubject(), needle: 'system_entity_') === true) {
                     return $this->prepareSystemEntityNotification(
@@ -106,10 +112,16 @@ class Notifier implements INotifier
                         languageCode: $languageCode
                     );
                 }
+=======
+                // Unknown subject. Object-lifecycle subjects
+                // (object_created / object_updated / object_transitioned)
+                // are rendered by AnnotationNotifier, not here.
+>>>>>>> origin/development
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
     }//end prepare()
 
+<<<<<<< HEAD
     /**
      * Prepare a system entity notification for display.
      *
@@ -149,6 +161,8 @@ class Notifier implements INotifier
         return $notification;
     }//end prepareSystemEntityNotification()
 
+=======
+>>>>>>> origin/development
     /**
      * Prepare configuration update notification.
      *
@@ -157,6 +171,7 @@ class Notifier implements INotifier
      *
      * @return INotification The prepared notification
      *
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
      */
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification

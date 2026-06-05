@@ -10,6 +10,17 @@
 
 import Vue from 'vue'
 import { translate as t } from '@nextcloud/l10n'
+<<<<<<< HEAD
+=======
+import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
+import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
+
+// Bootstrap the integration registry on the files-sidebar bundle so any
+// tab component that uses useIntegrationRegistry() sees the same populated
+// singleton main.js produced on a non-Files page. Idempotent. See ADR-019.
+ensureIntegrationRegistry()
+>>>>>>> origin/development
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline
@@ -34,19 +45,29 @@ document.addEventListener('DOMContentLoaded', () => {
 	// Register Objects Tab
 	OCA.Files.Sidebar.registerTab(new OCA.Files.Sidebar.Tab({
 		id: 'openregister-objects',
+<<<<<<< HEAD
 		name: t('openregister', 'Register Objects'),
 		icon: databaseOutlineIcon,
 
 		async mount(el, fileInfo, _context) {
+=======
+		name: t('openregister', 'Register objects'),
+		icon: databaseOutlineIcon,
+
+		mount(el, fileInfo, _context) {
+>>>>>>> origin/development
 			if (el._registerObjectsVm) {
 				el._registerObjectsVm.$destroy()
 			}
 
+<<<<<<< HEAD
 			const { default: RegisterObjectsTab } = await import(
 				/* webpackChunkName: "files-sidebar-objects-tab" */
 				'./components/files-sidebar/RegisterObjectsTab.vue'
 			)
 
+=======
+>>>>>>> origin/development
 			const View = Vue.extend(RegisterObjectsTab)
 			el._registerObjectsVm = new View({
 				propsData: {
@@ -80,16 +101,23 @@ document.addEventListener('DOMContentLoaded', () => {
 		name: t('openregister', 'Extraction'),
 		icon: textBoxSearchOutlineIcon,
 
+<<<<<<< HEAD
 		async mount(el, fileInfo, _context) {
+=======
+		mount(el, fileInfo, _context) {
+>>>>>>> origin/development
 			if (el._extractionVm) {
 				el._extractionVm.$destroy()
 			}
 
+<<<<<<< HEAD
 			const { default: ExtractionTab } = await import(
 				/* webpackChunkName: "files-sidebar-extraction-tab" */
 				'./components/files-sidebar/ExtractionTab.vue'
 			)
 
+=======
+>>>>>>> origin/development
 			const View = Vue.extend(ExtractionTab)
 			el._extractionVm = new View({
 				propsData: {

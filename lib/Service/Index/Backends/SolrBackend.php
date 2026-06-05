@@ -6,6 +6,12 @@
  * Solr backend implementation for OpenRegister search operations.
  * Coordinates specialized Solr service classes to provide SearchBackendInterface.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -149,6 +155,11 @@ class SolrBackend implements SearchBackendInterface
      *     collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade — checks isConfigured and active collection presence
+>>>>>>> origin/development
      */
     public function testConnection(bool $inclCollTests=true): array
     {
@@ -182,6 +193,11 @@ class SolrBackend implements SearchBackendInterface
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::indexObject
+>>>>>>> origin/development
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -202,6 +218,11 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::bulkIndexObjects
+>>>>>>> origin/development
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -220,6 +241,11 @@ class SolrBackend implements SearchBackendInterface
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::deleteObject
+>>>>>>> origin/development
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -241,6 +267,11 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::deleteByQuery
+>>>>>>> origin/development
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -262,6 +293,11 @@ class SolrBackend implements SearchBackendInterface
      * @return array Search results with pagination info.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrQueryExecutor::searchPaginated
+>>>>>>> origin/development
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -291,6 +327,11 @@ class SolrBackend implements SearchBackendInterface
      * Commit changes.
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::commit
+>>>>>>> origin/development
      */
     public function commit(): bool
     {
@@ -301,6 +342,11 @@ class SolrBackend implements SearchBackendInterface
      * Optimize the index.
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::optimize
+>>>>>>> origin/development
      */
     public function optimize(): bool
     {
@@ -315,6 +361,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|string)[] Results
      *
      * @psalm-return array{success: bool, message: string, collection?: string}
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::clearIndex
+>>>>>>> origin/development
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -339,6 +390,11 @@ class SolrBackend implements SearchBackendInterface
      * @psalm-return array{success: true, message: 'Simplified warmup - collection exists', collection_exists: bool}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude simplified stub — returns collection-exists flag; full warmup deferred
+>>>>>>> origin/development
      */
     public function warmupIndex(
         array $schemas=[],
@@ -383,6 +439,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|int|mixed|null|string)[] Statistics
      *
      * @psalm-return array{available: bool, collection: null|string, error?: string, documents?: 0|mixed, status?: 'OK'}
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrQueryExecutor::getStats
+>>>>>>> origin/development
      */
     public function getStats(): array
     {
@@ -396,6 +457,11 @@ class SolrBackend implements SearchBackendInterface
      * @param array  $config Configuration
      *
      * @return array Results with success status and collection info.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrCollectionManager::createCollection
+>>>>>>> origin/development
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -413,6 +479,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|string)[] Results
      *
      * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrCollectionManager::deleteCollection
+>>>>>>> origin/development
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -425,6 +496,11 @@ class SolrBackend implements SearchBackendInterface
      * @param string $collectionName Collection name
      *
      * @return bool True if exists
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrCollectionManager::collectionExists
+>>>>>>> origin/development
      */
     public function collectionExists(string $collectionName): bool
     {
@@ -435,6 +511,11 @@ class SolrBackend implements SearchBackendInterface
      * List all collections.
      *
      * @return array Collection names
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrCollectionManager::listCollections
+>>>>>>> origin/development
      */
     public function listCollections(): array
     {
@@ -447,6 +528,11 @@ class SolrBackend implements SearchBackendInterface
      * @param array $documents Documents to index
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrDocumentIndexer::indexDocuments
+>>>>>>> origin/development
      */
     public function index(array $documents): bool
     {
@@ -454,11 +540,39 @@ class SolrBackend implements SearchBackendInterface
     }//end index()
 
     /**
+<<<<<<< HEAD
+=======
+     * Run an aggregation against this Solr backend.
+     *
+     * The translator already exists at
+     * `Aggregation\SolrAggregationQueryBuilder` — this method is the
+     * HTTP-client adapter on top. Returns null until the dev container
+     * ships a Solr instance the runtime can talk to, so the caller
+     * falls back to the PHP path. Stub matches the interface contract.
+     *
+     * @param \OCA\OpenRegister\Service\Aggregation\AggregationQuery $query Portable aggregation request.
+     *
+     * @return array|null The aggregation result, or null when the backend cannot execute it.
+     *
+     * @spec exclude stub — returns null so caller falls back to PHP path (HTTP adapter not yet wired)
+     */
+    public function aggregate(\OCA\OpenRegister\Service\Aggregation\AggregationQuery $query): ?array
+    {
+        return null;
+    }//end aggregate()
+
+    /**
+>>>>>>> origin/development
      * Perform generic search.
      *
      * @param array $params Search parameters
      *
      * @return array Search results
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrQueryExecutor::search
+>>>>>>> origin/development
      */
     public function search(array $params): array
     {
@@ -484,6 +598,11 @@ class SolrBackend implements SearchBackendInterface
      * @param array  $fieldType  Field type definition
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrSchemaManager::addFieldType
+>>>>>>> origin/development
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -512,6 +631,11 @@ class SolrBackend implements SearchBackendInterface
      * @param bool  $force       Force update
      *
      * @return string Action taken
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude facade delegation to SolrSchemaManager::addOrUpdateField
+>>>>>>> origin/development
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
@@ -534,6 +658,11 @@ class SolrBackend implements SearchBackendInterface
      * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, message: 'Index cleared (simplified reindex)', indexed: 0}
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude simplified stub — clears index only; full reindex deferred to IndexService
+>>>>>>> origin/development
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -592,6 +721,11 @@ class SolrBackend implements SearchBackendInterface
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude stub — returns empty result shape; file indexing handled by FileHandler (REQ-8)
+>>>>>>> origin/development
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
@@ -615,6 +749,11 @@ class SolrBackend implements SearchBackendInterface
      * @param bool  $dryRun           Whether to preview changes only.
      *
      * @return array Results of the fix operation.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude stub — returns empty array; mismatch fixing handled by SchemaHandler (REQ-7)
+>>>>>>> origin/development
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {

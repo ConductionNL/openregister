@@ -16,6 +16,12 @@
  * - Register/schema pair discovery from database table names
  * - Row-to-ObjectEntity conversion for magic table rows
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -589,7 +595,14 @@ class MagicStatisticsHandler
                 if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
                     if ($propertyFormat === 'date') {
                         $normalised = $this->dateTimeNormalizer->normalize($value);
+<<<<<<< HEAD
                         $value      = $normalised !== null ? $normalised->format('Y-m-d') : null;
+=======
+                        $value      = null;
+                        if ($normalised !== null) {
+                            $value = $normalised->format('Y-m-d');
+                        }
+>>>>>>> origin/development
                     } else if ($propertyFormat === 'date-time') {
                         $value = $this->dateTimeNormalizer->formatForIso8601($value);
                     }

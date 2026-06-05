@@ -5,12 +5,21 @@ status: implemented
 # Event-Driven Architecture
 
 ## Purpose
+<<<<<<< HEAD
 OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\EventDispatcher\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.
 
 **Source**: Gap identified in cross-platform analysis; four platforms implement event-driven architectures. Core implementation exists with 39+ typed event classes in `lib/Event/`, 8 event listeners in `lib/Listener/`, and webhook delivery infrastructure.
 
 ## Requirements
 
+=======
+
+@e2e exclude PHP event dispatcher backend — covered by PHPUnit
+OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\EventDispatcher\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.
+
+**Source**: Gap identified in cross-platform analysis; four platforms implement event-driven architectures. Core implementation exists with 39+ typed event classes in `lib/Event/`, 8 event listeners in `lib/Listener/`, and webhook delivery infrastructure.
+## Requirements
+>>>>>>> origin/development
 ### Requirement: All entity mutations MUST dispatch typed PHP events via IEventDispatcher
 Every create, update, and delete operation across all entity types MUST dispatch a typed event class extending `OCP\EventDispatcher\Event` through Nextcloud's `IEventDispatcher::dispatchTyped()`. This ensures all mutations are observable by any registered listener, whether internal or from another Nextcloud app.
 
@@ -399,6 +408,35 @@ The `WebhookService::interceptRequest()` method MUST find webhooks configured wi
 - **WHEN** `interceptRequest()` is called
 - **THEN** it MUST return the original request params immediately without any HTTP calls
 
+<<<<<<< HEAD
+=======
+### Requirement: State-machine transitions MUST dispatch a typed ObjectTransitionedEvent
+When an object's lifecycle field is changed through a declared transition (per `x-openregister-lifecycle`), the system MUST dispatch an `ObjectTransitionedEvent` carrying the post-transition `ObjectEntity` together with the transition metadata. This lets listeners (notifications, cascades, calculation re-materialisation, audit enrichment) react to the specific transition without inferring the action from the generic `ObjectUpdatedEvent`.
+
+#### Scenario: Transition event carries object and transition metadata
+- **GIVEN** schema `besluiten` declares a lifecycle transition `publish` from state `concept` to state `vastgesteld`
+- **WHEN** the `publish` transition is applied to an object and persisted
+- **THEN** an `ObjectTransitionedEvent` MUST be dispatched after the lifecycle-field update
+- **AND** `getObject()` MUST return the `ObjectEntity` in its post-transition state
+- **AND** `getAction()` MUST return `"publish"`, `getFrom()` MUST return `"concept"`, and `getTo()` MUST return `"vastgesteld"`
+- **AND** `getRegister()` and `getSchema()` MUST return the object's register and schema slugs
+
+#### Scenario: System-applied transition reports a null caller
+- **GIVEN** a transition is applied by a background process rather than an interactive user
+- **WHEN** the `ObjectTransitionedEvent` is constructed
+- **THEN** `getUserId()` MUST return `null`
+- **AND** when the transition was applied by an authenticated user, `getUserId()` MUST return that user's uid
+
+### Requirement: Object unlock MUST dispatch a typed ObjectUnlockedEvent
+Symmetric to the lock operation, releasing a lock on an object MUST dispatch an `ObjectUnlockedEvent` carrying the affected `ObjectEntity`. This completes the lock/unlock pair so listeners can observe both halves of the locking lifecycle.
+
+#### Scenario: Unlock dispatches the unlocked object
+- **GIVEN** object `obj-1` is currently locked
+- **WHEN** the lock on `obj-1` is released
+- **THEN** an `ObjectUnlockedEvent` MUST be dispatched
+- **AND** `getObject()` MUST return the `ObjectEntity` whose lock was released
+
+>>>>>>> origin/development
 ## Current Implementation Status
 - **Implemented:**
   - 39+ typed event classes in `lib/Event/` covering all entity types with Created/Updated/Deleted patterns, plus specialized events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent with StoppableEventInterface; ObjectLockedEvent, ObjectUnlockedEvent, ObjectRevertedEvent; ToolRegistrationEvent, DeepLinkRegistrationEvent, UserProfileUpdatedEvent)

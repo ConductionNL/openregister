@@ -10,7 +10,11 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 				<NcTextField
 					:value.sync="searchStore.search"
 					:show-trailing-button="searchStore.search !== ''"
+<<<<<<< HEAD
 					label="Search"
+=======
+					:label="t('openregister', 'Search')"
+>>>>>>> origin/development
 					class="searchField"
 					trailing-button-icon="close"
 					@trailing-button-click="endpointStore.refreshEndpointList()">
@@ -21,13 +25,21 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
+<<<<<<< HEAD
 						Refresh
+=======
+						{{ t('openregister', 'Refresh') }}
+>>>>>>> origin/development
 					</NcActionButton>
 					<NcActionButton close-after-click @click="endpointStore.setEndpointItem({}); navigationStore.setModal('editEndpoint')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
+<<<<<<< HEAD
 						Add endpoint
+=======
+						{{ t('openregister', 'Add endpoint') }}
+>>>>>>> origin/development
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -51,13 +63,21 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 							<template #icon>
 								<Pencil />
 							</template>
+<<<<<<< HEAD
 							Edit
+=======
+							{{ t('openregister', 'Edit') }}
+>>>>>>> origin/development
 						</NcActionButton>
 						<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
+<<<<<<< HEAD
 							Delete
+=======
+							{{ t('openregister', 'Delete') }}
+>>>>>>> origin/development
 						</NcActionButton>
 					</template>
 				</NcListItem>
@@ -68,10 +88,17 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
+<<<<<<< HEAD
 			name="Loading endpoints" />
 
 		<div v-if="!endpointStore.endpointList.length" class="emptyListHeader">
 			No endpoints defined
+=======
+			:name="t('openregister', 'Loading endpoints')" />
+
+		<div v-if="!endpointStore.endpointList.length" class="emptyListHeader">
+			{{ t('openregister', 'No endpoints defined') }}
+>>>>>>> origin/development
 		</div>
 	</NcAppContentList>
 </template>

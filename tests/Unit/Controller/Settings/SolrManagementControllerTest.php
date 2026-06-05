@@ -879,6 +879,7 @@ class SolrManagementControllerTest extends TestCase
     }
 
     // ========================================================================
+<<<<<<< HEAD
     // listSolrCollections tests
     // ========================================================================
 
@@ -1117,6 +1118,8 @@ class SolrManagementControllerTest extends TestCase
     }
 
     // ========================================================================
+=======
+>>>>>>> origin/development
     // updateSolrCollectionAssignments tests
     // ========================================================================
 

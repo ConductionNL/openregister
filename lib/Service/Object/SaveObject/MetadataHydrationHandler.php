@@ -6,6 +6,12 @@
  * Handler for extracting and hydrating object metadata.
  * Handles name, description, summary, image extraction, and slug generation.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
@@ -61,6 +67,7 @@ class MetadataHydrationHandler
      * @param LoggerInterface $logger       Logger interface for logging operations.
      * @param CacheHandler    $cacheHandler Cache handler for UUID-to-name resolution.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function __construct(
@@ -91,8 +98,16 @@ class MetadataHydrationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+=======
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-6 (Deprecation Warnings — logs a warning for
+     *       objectPublishedField/objectDepublishedField/autoPublish schema config keys, recommending RBAC $now rules)
+>>>>>>> origin/development
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -123,10 +138,16 @@ class MetadataHydrationHandler
         // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
         // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
+<<<<<<< HEAD
         if ((isset($objectData['object']) === true && is_array($objectData['object']) === true)) {
             $businessData = $objectData['object'];
         } else {
             $businessData = $objectData;
+=======
+        $businessData = $objectData;
+        if ((isset($objectData['object']) === true && is_array($objectData['object']) === true)) {
+            $businessData = $objectData['object'];
+>>>>>>> origin/development
         }
 
         // Get schema properties for relation field detection.
@@ -214,6 +235,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The first non-empty value found, or null.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function tryCommonFields(array $data, array $fieldNames): ?string
@@ -241,6 +263,7 @@ class MetadataHydrationHandler
      *
      * @return mixed The value at the path, or null if not found.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function getValueFromPath(array $data, string $path)
@@ -283,6 +306,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The extracted/concatenated value, or null if not found.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function extractMetadataValue(array $data, string $fieldPath, array $schemaProperties=[]): ?string
@@ -320,6 +344,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The first non-empty value found, or null if none found.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties=[]): ?string
@@ -374,6 +399,7 @@ class MetadataHydrationHandler
      *
      * @return null|string The processed result or null if no values found.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties=[]): string|null
@@ -471,6 +497,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The mapped value, the raw field value as fallback, or null if field is empty.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processMapFilter(array $data, string $fieldName, string $mapDefinition): ?string
@@ -520,6 +547,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The selected value based on whether the field is filled or empty.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processIfFilledFilter(array $data, string $fieldName, string $definition): ?string
@@ -558,6 +586,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The resolved name, or the original value if not a relation.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function resolveRelationValue(string $fieldName, mixed $value, array $schemaProperties): ?string
@@ -620,6 +649,7 @@ class MetadataHydrationHandler
      *
      * @return bool True if the property is a relation.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function isRelationProperty(array $property): bool
@@ -672,6 +702,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The extracted UUID or null.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function extractUuidFromValue(mixed $value): ?string
@@ -703,6 +734,7 @@ class MetadataHydrationHandler
      *
      * @return string|null The generated slug or null if value is empty.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function createSlugFromValue(string $value): ?string
@@ -733,6 +765,7 @@ class MetadataHydrationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple fallback paths for slug source determination
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple nested conditional paths for evaluating different field options
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function generateSlug(array $data, Schema $schema): string|null
@@ -789,6 +822,7 @@ class MetadataHydrationHandler
      *
      * @return string The generated slug.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function createSlug(string $text): string

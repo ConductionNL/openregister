@@ -5,6 +5,12 @@
  *
  * Controller for managing database tables view and magic table operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -77,6 +83,7 @@ class TablesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
      */
     public function sync(int|string $registerId, int|string $schemaId): JSONResponse
     {
@@ -205,6 +212,13 @@ class TablesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
+>>>>>>> origin/development
      */
     public function syncAll(): JSONResponse
     {

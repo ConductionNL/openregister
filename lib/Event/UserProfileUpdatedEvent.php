@@ -6,10 +6,20 @@
  * This file contains the event class dispatched when a user profile is updated
  * via the OpenRegister /me endpoint.
  *
+<<<<<<< HEAD
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Event
+ * @package  OCA\OpenRegister\Event
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -55,6 +65,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return IUser The user object.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getUser(): IUser
@@ -67,6 +78,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return string The user ID.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getUserId(): string
@@ -79,6 +91,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return array The old user data.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldData(): array
@@ -91,6 +104,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return array The new user data.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewData(): array
@@ -103,6 +117,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return array Array of field names that were changed.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getChanges(): array
@@ -117,6 +132,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return bool True if the field was changed, false otherwise.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function hasChanged(string $fieldName): bool
@@ -129,6 +145,7 @@ class UserProfileUpdatedEvent extends Event
      *
      * @return bool True if firstName, lastName, middleName, or displayName was changed.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function hasNameChanges(): bool

@@ -5,6 +5,12 @@
  *
  * Registers Twig functions and filters for the mapping engine.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
@@ -42,6 +48,7 @@ class MappingExtension extends AbstractExtension
      *
      * @return TwigFilter[] Array of Twig filters
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function getFilters(): array
@@ -61,6 +68,7 @@ class MappingExtension extends AbstractExtension
      *
      * @return TwigFunction[] Array of Twig functions
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function getFunctions(): array

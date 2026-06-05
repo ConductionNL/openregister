@@ -21,6 +21,9 @@
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Test class requires many collaborator mocks
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   Comprehensive coverage requires many test methods
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Comprehensive test suite
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,6 +39,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+<<<<<<< HEAD
+=======
+use OCP\IDBConnection;
+>>>>>>> origin/development
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -116,7 +123,12 @@ class ReferentialIntegrityServiceTest extends TestCase
             registerMapper: $this->registerMapper,
             objectEntityMapper: $this->objectMapper,
             auditTrailMapper: $this->auditTrailMapper,
+<<<<<<< HEAD
             logger: $this->logger
+=======
+            logger: $this->logger,
+            db: $this->createMock(IDBConnection::class)
+>>>>>>> origin/development
         );
 
         $this->reflection = new \ReflectionClass($this->service);

@@ -14,6 +14,9 @@
  * - CRUD operations on objects
  * - Audit trails and data aggregation
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -90,6 +93,11 @@ class UploadService
      *
      * @throws \Exception If file processing fails
      * @throws \GuzzleHttp\Exception\GuzzleException If URL fetching fails
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Source-dispatch helper routing to per-source (file/url/json) processors; no business rule of its own.
+>>>>>>> origin/development
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {

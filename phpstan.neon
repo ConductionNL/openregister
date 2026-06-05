@@ -1,4 +1,10 @@
 includes:
+<<<<<<< HEAD
+=======
+    # Per-app tracked lint debt lives here (auto-generated via `phpstan --generate-baseline`).
+    # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
+    # across the fleet.
+>>>>>>> origin/development
     - phpstan-baseline.neon
 
 parameters:
@@ -6,11 +12,21 @@ parameters:
     paths:
         - lib
     bootstrapFiles:
+<<<<<<< HEAD
         - vendor/autoload.php
+=======
+        - phpstan-bootstrap.php
+    excludePaths:
+        - vendor
+        - vendor-bin
+        # Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuild).
+        - lib/Resources/template
+>>>>>>> origin/development
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
+<<<<<<< HEAD
         # Nextcloud internal classes not available via OCP stubs
         - '#Call to an undefined method OC::#'
         - '#Class OC not found#'
@@ -46,3 +62,63 @@ parameters:
         - '#Access to constant .+ on an unknown class Doctrine\\\\DBAL\\\\#'
         # Throwing OC internal SecurityException
         - '#Throwing object of an unknown class OC\\\\#'
+=======
+        # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp
+        - '#Call to an undefined method OC::#'
+        - '#Class OC not found#'
+        - '#Access to static property \$server on an unknown class OC#'
+        - '#unknown class OC\\#'
+        - '#Caught class OC\\#'
+        - '#unknown class OC_App#'
+        - '#Class OC_App not found#'
+        # OCA\DAV is server-internal and not in nextcloud/ocp stubs
+        - '#unknown class OCA\\DAV\\#'
+        - '#Class OCA\\DAV\\#'
+        # OCA\Bookmarks is an optional peer app (lazy-resolved via
+        # \OCP\Server::get() behind a class_exists guard) — not a
+        # composer dependency, so its classes are absent during analysis.
+        - '#unknown class OCA\\Bookmarks\\#'
+        - '#OCA\\Bookmarks\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\Bookmarks\\#'
+        - '#has invalid return type OCA\\Bookmarks\\#'
+        - '#Instantiated class OCA\\Bookmarks\\#'
+        # OCA classes from other apps (OpenRegister) not available during static analysis
+        - '#unknown class OCA\\OpenRegister\\#'
+        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\OpenRegister\\#'
+        - '#has invalid return type OCA\\OpenRegister\\#'
+        - '#has invalid type OCA\\OpenRegister\\#'
+        - '#implements unknown interface OCA\\OpenRegister\\#'
+        # GuzzleHttp is available at runtime via Nextcloud but not in composer require
+        - '#unknown class GuzzleHttp\\#'
+        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class GuzzleHttp\\#'
+        - '#invalid type GuzzleHttp\\#'
+        - '#Caught class GuzzleHttp\\#'
+        # Doctrine\DBAL is shipped by Nextcloud server but not stubbed in nextcloud/ocp
+        - '#unknown class Doctrine\\DBAL\\#'
+        - '#Doctrine\\DBAL\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class Doctrine\\DBAL\\#'
+        # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
+        # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
+        # PHPDocs (upstream typo — fictitious classes that PHPStan can't
+        # resolve). The actual runtime types are PDFObject / PDFValue
+        # subclasses / string / Buffer respectively. Cleanup goes into
+        # an upstream PR; until then ignore PHPStan's "unknown class
+        # ddn\sapp\<lowercase>" diagnostic chain.
+        - '#on an unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#should return [^ ]+ but returns ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#Parameter \$pdf_object of method ddn\\sapp\\PDFDoc::add_object\(\) expects ddn\\sapp\\PDFObject, ddn\\sapp\\obj given#'
+        - '#Strict comparison using === between ddn\\sapp\\(obj|value|pdfentry) and false will always evaluate to false#'
+        # Dynamic HTTP status codes from business rule validation results
+        # (matches both `Parameter $statusCode` and `Parameter #N $statusCode` forms emitted by phpstan)
+        - '#Parameter (\#\d+ )?\$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
+        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
+        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
+        # OCP stub gaps for methods that exist at runtime
+        - '#Call to an undefined method OCP\\IRequest::getContent\(\)#'
+        - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
+        - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
+        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'
+>>>>>>> origin/development

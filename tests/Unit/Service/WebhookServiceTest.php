@@ -20,6 +20,9 @@
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Test class requires many collaborator mocks
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   Comprehensive coverage requires many test methods
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -2288,4 +2291,324 @@ class WebhookServiceTest extends TestCase
 
         $this->assertTrue($result);
     }//end testDeliverWebhookWithMappingTransformation()
+<<<<<<< HEAD
+=======
+
+
+    // ─── Wave-3 C9: SSRF / TLS / response-body cap tests ────────────────
+    //
+    // The webhook HTTP client used to ship with `verify: false`,
+    // `allow_redirects: true` (no allowlist), no body cap, and full-body
+    // logging. That gave any admin with webhook-create rights an SSRF
+    // primitive that could probe internal services through TLS-error
+    // suppression and exfiltrate via response-body echo. The fix:
+    //   1. TLS verification ON.
+    //   2. Initial URL passes assertSafeWebhookUri(); redirects re-validated.
+    //   3. Persisted body capped at 1 MB; logged preview capped at 1 KB and
+    //      redacted entirely when the target host is private/internal.
+    //
+    // These tests exercise the visible parts of that contract via the
+    // private helpers (reflection) and via the public client config.
+
+    /**
+     * The Guzzle client must be initialised with TLS verification enabled.
+     *
+     * Verifies the C9 fix: `verify: true` (was `false`).
+     */
+    public function testGuzzleClientHasTlsVerificationEnabled(): void
+    {
+        $clientProp = $this->reflection->getProperty('client');
+        $clientProp->setAccessible(true);
+        $client = $clientProp->getValue($this->service);
+
+        $this->assertInstanceOf(GuzzleClient::class, $client);
+        $this->assertTrue(
+            $client->getConfig('verify'),
+            'Webhook HTTP client must enable TLS verification (C9).'
+        );
+    }//end testGuzzleClientHasTlsVerificationEnabled()
+
+    /**
+     * The Guzzle client must not blindly follow redirects.
+     *
+     * The `allow_redirects` config must be an array (configured with an
+     * `on_redirect` callback that re-validates each Location), not the
+     * boolean `true` that the old config used.
+     */
+    public function testGuzzleClientRedirectsUseAllowlistCallback(): void
+    {
+        $clientProp = $this->reflection->getProperty('client');
+        $clientProp->setAccessible(true);
+        $client = $clientProp->getValue($this->service);
+
+        $redirectsConfig = $client->getConfig('allow_redirects');
+        $this->assertIsArray(
+            $redirectsConfig,
+            'allow_redirects must be configured as an array with an on_redirect callback (C9).'
+        );
+        $this->assertArrayHasKey('on_redirect', $redirectsConfig);
+        $this->assertIsCallable($redirectsConfig['on_redirect']);
+    }//end testGuzzleClientRedirectsUseAllowlistCallback()
+
+    /**
+     * Provider: URLs that the SSRF guard must reject.
+     *
+     * Covers each blocked range from assertSafeWebhookUri() plus an
+     * unsupported scheme (file://, used here to verify the scheme check
+     * runs before the DNS check).
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function blockedWebhookUrls(): array
+    {
+        return [
+            'loopback IPv4'              => ['http://127.0.0.1/webhook'],
+            'loopback hostname'          => ['http://localhost/webhook'],
+            'RFC-1918 10/8'              => ['https://10.0.0.5/webhook'],
+            'RFC-1918 172.16/12'         => ['https://172.16.0.1/webhook'],
+            'RFC-1918 192.168/16'        => ['http://192.168.1.1/webhook'],
+            'AWS cloud metadata (169.254)' => ['http://169.254.169.254/latest/'],
+            'file scheme (unsupported)'  => ['file:///etc/passwd'],
+        ];
+    }//end blockedWebhookUrls()
+
+    /**
+     * The private SSRF guard must reject internal/private/loopback/metadata URLs.
+     *
+     * @param string $url URL to validate.
+     *
+     * @dataProvider blockedWebhookUrls
+     */
+    public function testAssertSafeWebhookUriBlocksInternalRanges(string $url): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => $url]);
+    }//end testAssertSafeWebhookUriBlocksInternalRanges()
+
+    /**
+     * A normal external HTTPS URL must pass the SSRF guard.
+     */
+    public function testAssertSafeWebhookUriAllowsPublicHttps(): void
+    {
+        // No exception expected.
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'https://example.com/webhook']
+        );
+        $this->addToAssertionCount(1);
+    }//end testAssertSafeWebhookUriAllowsPublicHttps()
+
+    /**
+     * Response-body cap (MAX_RESPONSE_BODY_BYTES = 1 MB) for persistent storage.
+     *
+     * Bodies under the cap must pass through unchanged.
+     */
+    public function testCapResponseBodyKeepsShortBodies(): void
+    {
+        $body = 'short response';
+        $result = $this->invokePrivateMethod('capResponseBody', ['body' => $body]);
+        $this->assertSame($body, $result);
+    }//end testCapResponseBodyKeepsShortBodies()
+
+    /**
+     * Bodies over the 1 MB cap must be truncated.
+     */
+    public function testCapResponseBodyTruncatesOversize(): void
+    {
+        // 1.5 MB body.
+        $body = str_repeat('A', 1572864);
+        $result = $this->invokePrivateMethod('capResponseBody', ['body' => $body]);
+
+        // Truncated to 1 MB + suffix.
+        $this->assertLessThan(strlen($body), strlen($result));
+        $this->assertStringEndsWith('[truncated]', $result);
+        $this->assertStringStartsWith('AAAA', $result);
+    }//end testCapResponseBodyTruncatesOversize()
+
+    /**
+     * The log preview must redact entirely when the target is on a private network.
+     *
+     * Prevents the SSRF probe → response-echo-into-logs exfiltration channel.
+     */
+    public function testPreviewResponseBodyRedactsPrivateTargets(): void
+    {
+        $body = 'internal-secret-data';
+        $result = $this->invokePrivateMethod(
+            'previewResponseBody',
+            ['body' => $body, 'url' => 'http://127.0.0.1/probe']
+        );
+
+        $this->assertStringContainsString('redacted', $result);
+        $this->assertStringNotContainsString('internal-secret-data', $result);
+    }//end testPreviewResponseBodyRedactsPrivateTargets()
+
+    /**
+     * The log preview keeps content for public targets, but truncates >1 KB.
+     */
+    public function testPreviewResponseBodyTruncatesLongPublicBodies(): void
+    {
+        // 2 KB body.
+        $body = str_repeat('B', 2048);
+        $result = $this->invokePrivateMethod(
+            'previewResponseBody',
+            ['body' => $body, 'url' => 'https://example.com/hook']
+        );
+
+        $this->assertLessThan(strlen($body), strlen($result));
+        $this->assertStringEndsWith('[truncated]', $result);
+    }//end testPreviewResponseBodyTruncatesLongPublicBodies()
+
+    // ─── Wave-6 IPv6 SSRF guard tests ───────────────────────────────────
+    //
+    // The C9 fix from wave-3 covered IPv4 only. gethostbyname() + ip2long()
+    // never return IPv6 data, so http://[::1]/ and http://[fd00::1]/ would
+    // silently bypass the guard. Wave-6 adds:
+    //   1. IPv6 literal detection via filter_var(FILTER_FLAG_IPV6) / colon heuristic.
+    //   2. AAAA DNS look-up via dns_get_record().
+    //   3. blockedIpv6Reason() covering ::1/128, ::/128, fc00::/7, fe80::/10,
+    //      2001:db8::/32, and ::ffff:0:0/96 (with embedded-IPv4 re-validation).
+
+    /**
+     * Provider: IPv6 URLs that the SSRF guard must reject as literals.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function blockedIpv6WebhookUrls(): array
+    {
+        return [
+            'IPv6 loopback ::1'                       => ['http://[::1]/webhook'],
+            'IPv6 unspecified ::'                     => ['http://[::]/webhook'],
+            'IPv6 unique-local fd00::1'               => ['http://[fd00::1]/webhook'],
+            'IPv6 unique-local fc00::1'               => ['http://[fc00::1]/webhook'],
+            'IPv6 link-local fe80::1'                 => ['http://[fe80::1]/webhook'],
+            'IPv6 documentation 2001:db8::1'          => ['http://[2001:db8::1]/webhook'],
+            'IPv6 IPv4-mapped loopback ::ffff:127.0.0.1' => ['http://[::ffff:127.0.0.1]/webhook'],
+            'IPv6 IPv4-mapped RFC-1918 ::ffff:10.0.0.1' => ['http://[::ffff:10.0.0.1]/webhook'],
+            'IPv6 IPv4-mapped RFC-1918 ::ffff:192.168.1.1' => ['http://[::ffff:192.168.1.1]/webhook'],
+            'IPv6 IPv4-mapped link-local ::ffff:169.254.169.254' => ['http://[::ffff:169.254.169.254]/webhook'],
+        ];
+    }//end blockedIpv6WebhookUrls()
+
+    /**
+     * assertSafeWebhookUri must reject IPv6 literal addresses in all blocked ranges.
+     *
+     * @param string $url URL to validate.
+     *
+     * @dataProvider blockedIpv6WebhookUrls
+     */
+    public function testAssertSafeWebhookUriBlocksIpv6Literals(string $url): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => $url]);
+    }//end testAssertSafeWebhookUriBlocksIpv6Literals()
+
+    /**
+     * A global-scope IPv6 URL (2001:db8::/32 excluded; a genuine public
+     * address such as 2606:4700::1 — Cloudflare DNS) must pass the SSRF guard.
+     */
+    public function testAssertSafeWebhookUriAllowsPublicIpv6(): void
+    {
+        // 2606:4700::1 is a real Cloudflare anycast address (public, not reserved).
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'https://[2606:4700::1]/webhook']
+        );
+        $this->addToAssertionCount(1);
+    }//end testAssertSafeWebhookUriAllowsPublicIpv6()
+
+    /**
+     * blockedIpv6Reason must return 'loopback' for the ::1 address.
+     */
+    public function testBlockedIpv6ReasonLoopback(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '::1']);
+        $this->assertSame('loopback', $result);
+    }//end testBlockedIpv6ReasonLoopback()
+
+    /**
+     * blockedIpv6Reason must return 'unspecified' for the :: address.
+     */
+    public function testBlockedIpv6ReasonUnspecified(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '::']);
+        $this->assertSame('unspecified', $result);
+    }//end testBlockedIpv6ReasonUnspecified()
+
+    /**
+     * blockedIpv6Reason must return 'unique-local' for fc00::/7 addresses.
+     */
+    public function testBlockedIpv6ReasonUniqueLocal(): void
+    {
+        // fd00::/8 falls within fc00::/7.
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => 'fd00::1']);
+        $this->assertSame('unique-local', $result);
+
+        $result2 = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => 'fc00::1']);
+        $this->assertSame('unique-local', $result2);
+    }//end testBlockedIpv6ReasonUniqueLocal()
+
+    /**
+     * blockedIpv6Reason must return 'link-local' for fe80::/10 addresses.
+     */
+    public function testBlockedIpv6ReasonLinkLocal(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => 'fe80::1']);
+        $this->assertSame('link-local', $result);
+    }//end testBlockedIpv6ReasonLinkLocal()
+
+    /**
+     * blockedIpv6Reason must return 'documentation' for 2001:db8::/32 addresses.
+     */
+    public function testBlockedIpv6ReasonDocumentation(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '2001:db8::1']);
+        $this->assertSame('documentation', $result);
+    }//end testBlockedIpv6ReasonDocumentation()
+
+    /**
+     * blockedIpv6Reason must detect IPv4-mapped loopback (::ffff:127.0.0.1).
+     */
+    public function testBlockedIpv6ReasonIpv4MappedLoopback(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '::ffff:127.0.0.1']);
+        $this->assertSame('IPv4-mapped loopback', $result);
+    }//end testBlockedIpv6ReasonIpv4MappedLoopback()
+
+    /**
+     * blockedIpv6Reason must detect IPv4-mapped RFC-1918 (::ffff:10.0.0.1).
+     */
+    public function testBlockedIpv6ReasonIpv4MappedRfc1918(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '::ffff:10.0.0.1']);
+        $this->assertSame('IPv4-mapped RFC-1918', $result);
+    }//end testBlockedIpv6ReasonIpv4MappedRfc1918()
+
+    /**
+     * blockedIpv6Reason must detect IPv4-mapped link-local/metadata (::ffff:169.254.169.254).
+     */
+    public function testBlockedIpv6ReasonIpv4MappedLinkLocal(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '::ffff:169.254.169.254']);
+        $this->assertSame('IPv4-mapped link-local/metadata', $result);
+    }//end testBlockedIpv6ReasonIpv4MappedLinkLocal()
+
+    /**
+     * blockedIpv6Reason must return null for a genuine public IPv6 address.
+     */
+    public function testBlockedIpv6ReasonAllowsPublicAddress(): void
+    {
+        // 2606:4700::1 is Cloudflare's anycast DNS (real public address).
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => '2606:4700::1']);
+        $this->assertNull($result);
+    }//end testBlockedIpv6ReasonAllowsPublicAddress()
+
+    /**
+     * blockedIpv6Reason must return null for a non-IPv6 string.
+     */
+    public function testBlockedIpv6ReasonNullForInvalidInput(): void
+    {
+        $result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => 'not-an-ip']);
+        $this->assertNull($result);
+    }//end testBlockedIpv6ReasonNullForInvalidInput()
+>>>>>>> origin/development
 }//end class

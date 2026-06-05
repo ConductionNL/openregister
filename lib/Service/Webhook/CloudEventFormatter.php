@@ -5,6 +5,12 @@
  *
  * Formatter for creating CloudEvents specification compliant webhook payloads.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Webhook
  *
@@ -16,6 +22,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-84
  */
 
@@ -69,6 +76,7 @@ class CloudEventFormatter
      *     id: string, time: string, datacontenttype: 'application/json',
      *     subject: null|string, dataschema: null, data: array,
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -125,6 +133,7 @@ class CloudEventFormatter
      *     data: array{method: mixed|string, path: false|mixed|string,
      *     queryParams: array|mixed, headers: array|mixed, body: array|mixed,...},
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -277,6 +286,7 @@ class CloudEventFormatter
      * @param IRequest $request Request object with getHeader method
      *
      * @return string Content type header value
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-26
      */
     private function getContentTypeHeader(IRequest $request): string
     {

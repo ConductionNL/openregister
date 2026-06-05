@@ -22,6 +22,12 @@
  * - Admin override capabilities
  * - Unauthenticated user handling
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -80,6 +86,21 @@ class MagicRbacHandler
 {
 
     /**
+<<<<<<< HEAD
+=======
+     * Raw-SQL impossible predicate used to fail closed on the SQL-string RBAC path.
+     *
+     * Emitted when a `match` rule's dynamic variable resolves to null so the
+     * predicate is NOT silently dropped from the AND (#1953). Mirrors the
+     * QueryBuilder path's {@see impossibleCondition()} and ConditionMatcher's
+     * fail-closed semantics.
+     *
+     * @var string
+     */
+    private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
+
+    /**
+>>>>>>> origin/development
      * Cached active organisation UUID
      *
      * @var string|null
@@ -93,7 +114,11 @@ class MagicRbacHandler
      * @param IGroupManager      $groupManager     Group manager for user group operations
      * @param IUserManager       $userManager      User manager for user operations
      * @param IAppConfig         $appConfig        App configuration for RBAC settings
+<<<<<<< HEAD
      * @param ConditionMatcher   $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays in this class).
+=======
+     * @param ConditionMatcher   $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
+>>>>>>> origin/development
      * @param ContainerInterface $container        Container for service injection
      * @param LoggerInterface    $logger           Logger for debugging
      */
@@ -172,9 +197,12 @@ class MagicRbacHandler
             return;
         }
 
+<<<<<<< HEAD
         // Resolve the inheritFromPublic flag once (schema → register → IAppConfig → true).
         $inheritFromPublic = $this->resolveInheritFromPublic(schema: $schema);
 
+=======
+>>>>>>> origin/development
         // Build the RBAC filter conditions.
         $conditions = [];
 
@@ -183,14 +211,32 @@ class MagicRbacHandler
             $conditions[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
         }
 
+<<<<<<< HEAD
+=======
+        // Condition: User is in a configured system-reader group - grant
+        // visibility on rows owned by the system identifier (e.g. cron-written
+        // rows). See openregister#1617. Admins already returned at line 147 so
+        // this branch only fires for non-admin reader-group members.
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $conditions[] = $qb->expr()->eq(
+                't._owner',
+                $qb->createNamedParameter($this->getSystemUserId())
+            );
+        }
+
+>>>>>>> origin/development
         // Process each authorization rule.
         foreach ($rules as $rule) {
             $ruleCondition = $this->processAuthorizationRule(
                 qb: $qb,
                 rule: $rule,
                 userGroups: $userGroups,
+<<<<<<< HEAD
                 userId: $userId,
                 inheritFromPublic: $inheritFromPublic
+=======
+                userId: $userId
+>>>>>>> origin/development
             );
 
             if ($ruleCondition === true) {
@@ -227,11 +273,18 @@ class MagicRbacHandler
     /**
      * Process a single authorization rule
      *
+<<<<<<< HEAD
      * @param IQueryBuilder $qb                Query builder
      * @param mixed         $rule              Authorization rule (string or array)
      * @param array         $userGroups        User's group IDs
      * @param string|null   $userId            Current user ID
      * @param bool          $inheritFromPublic Whether authenticated users qualify for `public` rules.
+=======
+     * @param IQueryBuilder $qb         Query builder
+     * @param mixed         $rule       Authorization rule (string or array)
+     * @param array         $userGroups User's group IDs
+     * @param string|null   $userId     Current user ID
+>>>>>>> origin/development
      *
      * @return mixed True if unconditional access, SQL expression for conditional, null/false if no access
      */
@@ -239,6 +292,7 @@ class MagicRbacHandler
         IQueryBuilder $qb,
         mixed $rule,
         array $userGroups,
+<<<<<<< HEAD
         ?string $userId,
         bool $inheritFromPublic=true
     ): mixed {
@@ -250,10 +304,18 @@ class MagicRbacHandler
                 userId: $userId,
                 inheritFromPublic: $inheritFromPublic
             );
+=======
+        ?string $userId
+    ): mixed {
+        // Simple rule: just a group name string.
+        if (is_string($rule) === true) {
+            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId);
+>>>>>>> origin/development
         }
 
         // Conditional rule: object with 'group' and optional 'match'.
         if (is_array($rule) === true && isset($rule['group']) === true) {
+<<<<<<< HEAD
             return $this->processConditionalRule(
                 qb: $qb,
                 rule: $rule,
@@ -261,6 +323,9 @@ class MagicRbacHandler
                 userId: $userId,
                 inheritFromPublic: $inheritFromPublic
             );
+=======
+            return $this->processConditionalRule(qb: $qb, rule: $rule, userGroups: $userGroups, userId: $userId);
+>>>>>>> origin/development
         }
 
         // Invalid rule format.
@@ -274,6 +339,7 @@ class MagicRbacHandler
     /**
      * Process a simple (unconditional) authorization rule
      *
+<<<<<<< HEAD
      * @param string      $rule              Group name
      * @param array       $userGroups        User's group IDs
      * @param string|null $userId            Current user ID
@@ -294,6 +360,18 @@ class MagicRbacHandler
                 return false;
             }
 
+=======
+     * @param string      $rule       Group name
+     * @param array       $userGroups User's group IDs
+     * @param string|null $userId     Current user ID
+     *
+     * @return bool True if user has access, false otherwise
+     */
+    private function processSimpleRule(string $rule, array $userGroups, ?string $userId): bool
+    {
+        // 'public' grants access to anyone, including unauthenticated users.
+        if ($rule === 'public') {
+>>>>>>> origin/development
             return true;
         }
 
@@ -313,11 +391,18 @@ class MagicRbacHandler
     /**
      * Process a conditional authorization rule
      *
+<<<<<<< HEAD
      * @param IQueryBuilder $qb                Query builder
      * @param array         $rule              Rule with 'group' and optional 'match'
      * @param array         $userGroups        User's group IDs
      * @param string|null   $userId            Current user ID
      * @param bool          $inheritFromPublic Whether authenticated users qualify for `public` rules.
+=======
+     * @param IQueryBuilder $qb         Query builder
+     * @param array         $rule       Rule with 'group' and optional 'match'
+     * @param array         $userGroups User's group IDs
+     * @param string|null   $userId     Current user ID
+>>>>>>> origin/development
      *
      * @return mixed True if unconditional access, SQL expression for conditional, false if no access
      */
@@ -325,8 +410,12 @@ class MagicRbacHandler
         IQueryBuilder $qb,
         array $rule,
         array $userGroups,
+<<<<<<< HEAD
         ?string $userId,
         bool $inheritFromPublic=true
+=======
+        ?string $userId
+>>>>>>> origin/development
     ): mixed {
         $group = $rule['group'];
         $match = $rule['match'] ?? null;
@@ -334,6 +423,7 @@ class MagicRbacHandler
         // Check if user qualifies for this group.
         $userQualifies = false;
         if ($group === 'public') {
+<<<<<<< HEAD
             // Public group qualifies anonymous users, and authenticated users only
             // when inheritFromPublic is true (default — preserves pre-change semantics).
             if ($inheritFromPublic === false && $userId !== null) {
@@ -341,6 +431,10 @@ class MagicRbacHandler
             } else {
                 $userQualifies = true;
             }
+=======
+            // Public group means anyone can access, including unauthenticated users.
+            $userQualifies = true;
+>>>>>>> origin/development
         } else if ($group === 'authenticated' && $userId !== null) {
             $userQualifies = true;
         } else if (in_array($group, $userGroups, true) === true) {
@@ -398,6 +492,27 @@ class MagicRbacHandler
     }//end buildMatchConditions()
 
     /**
+<<<<<<< HEAD
+=======
+     * Build an IMPOSSIBLE SQL predicate (`1 = 0`) for the QueryBuilder path.
+     *
+     * Used to fail closed when a `match` rule's dynamic variable resolves to null
+     * (#1953): the predicate is included in the AND but can never be satisfied, so
+     * the rule grants no rows — matching the PHP/find path verdict rather than
+     * silently dropping the condition. Mirrors the existing impossible predicate in
+     * applyRbacFilters().
+     *
+     * @param IQueryBuilder $qb Query builder.
+     *
+     * @return mixed An always-false SQL expression.
+     */
+    private function impossibleCondition(IQueryBuilder $qb): mixed
+    {
+        return $qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0));
+    }//end impossibleCondition()
+
+    /**
+>>>>>>> origin/development
      * Resolve dynamic variable values in match conditions
      *
      * Supports special variables:
@@ -480,9 +595,21 @@ class MagicRbacHandler
         // Resolve dynamic variables in the value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
 
+<<<<<<< HEAD
         // If dynamic variable resolved to null, this condition cannot be met.
         if ($value !== $resolvedValue && $resolvedValue === null) {
             return null;
+=======
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) for this property rather than returning null.
+        // Returning null would let buildMatchConditions() silently DROP the predicate
+        // from the AND, degrading a multi-condition match rule to its surviving
+        // static predicates and leaking objects on the LIST path that the PHP/find
+        // path (ConditionMatcher) denies. The impossible predicate makes the LIST and
+        // FIND verdicts identical (both deny) for unresolved variables.
+        if ($value !== $resolvedValue && $resolvedValue === null) {
+            return $this->impossibleCondition(qb: $qb);
+>>>>>>> origin/development
         }
 
         // Simple value: equals comparison.
@@ -687,7 +814,11 @@ class MagicRbacHandler
      *
      * @return bool True if user has permission
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.NPathComplexity) Rule-type dispatch is inlined to keep the delegation to ConditionMatcher single-site.
+=======
+     * @SuppressWarnings(PHPMD.NPathComplexity) Inlined dispatch keeps the ConditionMatcher delegation in one place.
+>>>>>>> origin/development
      */
     public function hasPermission(
         Schema $schema,
@@ -730,11 +861,14 @@ class MagicRbacHandler
             return true;
         }
 
+<<<<<<< HEAD
         // Resolve the inheritFromPublic flag once (schema → register → IAppConfig → true).
         // When false, authenticated users do NOT qualify for `public` rules.
         $inheritFromPublic = $this->resolveInheritFromPublic(schema: $schema);
         $publicQualifies   = ($inheritFromPublic === true || $userId === null);
 
+=======
+>>>>>>> origin/development
         // Process each rule.
         //
         // Deduplication note (ADR-011):
@@ -746,6 +880,7 @@ class MagicRbacHandler
         foreach ($rules as $rule) {
             // Simple string rule: direct group match.
             if (is_string($rule) === true) {
+<<<<<<< HEAD
                 if ($rule === 'public') {
                     if ($publicQualifies === true) {
                         return true;
@@ -755,6 +890,9 @@ class MagicRbacHandler
                 }
 
                 if (in_array($rule, $userGroups, true) === true) {
+=======
+                if ($rule === 'public' || in_array($rule, $userGroups, true) === true) {
+>>>>>>> origin/development
                     return true;
                 }
 
@@ -763,6 +901,7 @@ class MagicRbacHandler
 
             // Conditional rule: array with 'group' and optional 'match'.
             if (is_array($rule) === true && isset($rule['group']) === true) {
+<<<<<<< HEAD
                 $group = $rule['group'];
 
                 if ($group === 'public') {
@@ -771,6 +910,10 @@ class MagicRbacHandler
                     $userQualifies = in_array($group, $userGroups, true);
                 }
 
+=======
+                $group         = $rule['group'];
+                $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
+>>>>>>> origin/development
                 if ($userQualifies === false) {
                     continue;
                 }
@@ -807,6 +950,11 @@ class MagicRbacHandler
      * @return array{bypass: bool, conditions: string[]} Result with:
      *               - 'bypass' => true means no filtering needed (user has full access)
      *               - 'conditions' => SQL conditions to OR together, empty array means deny all
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Mirrors applyRbacFilters dispatch; carries the system-owner carve-out (openregister#1617).
+>>>>>>> origin/development
      */
     public function buildRbacConditionsSql(Schema $schema, string $action='read'): array
     {
@@ -840,9 +988,12 @@ class MagicRbacHandler
             return ['bypass' => true, 'conditions' => []];
         }
 
+<<<<<<< HEAD
         // Resolve the inheritFromPublic flag once (schema → register → IAppConfig → true).
         $inheritFromPublic = $this->resolveInheritFromPublic(schema: $schema);
 
+=======
+>>>>>>> origin/development
         // Build the RBAC filter conditions.
         $conditions = [];
 
@@ -852,13 +1003,28 @@ class MagicRbacHandler
             $conditions[] = "_owner = {$quotedUserId}";
         }
 
+<<<<<<< HEAD
+=======
+        // Condition: User is in a configured system-reader group - grant
+        // visibility on rows owned by the system identifier. See
+        // openregister#1617. Admins already returned at line 781.
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
+            $conditions[]   = "_owner = {$quotedSystemId}";
+        }
+
+>>>>>>> origin/development
         // Process each authorization rule.
         foreach ($rules as $rule) {
             $ruleResult = $this->processAuthorizationRuleSql(
                 rule: $rule,
                 userGroups: $userGroups,
+<<<<<<< HEAD
                 userId: $userId,
                 inheritFromPublic: $inheritFromPublic
+=======
+                userId: $userId
+>>>>>>> origin/development
             );
 
             if ($ruleResult === true) {
@@ -879,6 +1045,7 @@ class MagicRbacHandler
     /**
      * Process a single authorization rule for raw SQL output.
      *
+<<<<<<< HEAD
      * @param mixed       $rule              Authorization rule (string or array).
      * @param array       $userGroups        User's group IDs.
      * @param string|null $userId            Current user ID.
@@ -900,16 +1067,33 @@ class MagicRbacHandler
                 userId: $userId,
                 inheritFromPublic: $inheritFromPublic
             );
+=======
+     * @param mixed       $rule       Authorization rule (string or array).
+     * @param array       $userGroups User's group IDs.
+     * @param string|null $userId     Current user ID.
+     *
+     * @return mixed True if unconditional access, SQL string for conditional, false if no access.
+     */
+    private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId): mixed
+    {
+        // Simple rule: just a group name string.
+        if (is_string($rule) === true) {
+            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId);
+>>>>>>> origin/development
         }
 
         // Conditional rule: object with 'group' and optional 'match'.
         if (is_array($rule) === true && isset($rule['group']) === true) {
+<<<<<<< HEAD
             return $this->processConditionalRuleSql(
                 rule: $rule,
                 userGroups: $userGroups,
                 userId: $userId,
                 inheritFromPublic: $inheritFromPublic
             );
+=======
+            return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId);
+>>>>>>> origin/development
         }
 
         return false;
@@ -918,6 +1102,7 @@ class MagicRbacHandler
     /**
      * Process a conditional authorization rule for raw SQL output.
      *
+<<<<<<< HEAD
      * @param array       $rule              Rule with 'group' and optional 'match'.
      * @param array       $userGroups        User's group IDs.
      * @param string|null $userId            Current user ID.
@@ -931,12 +1116,25 @@ class MagicRbacHandler
         ?string $userId,
         bool $inheritFromPublic=true
     ): mixed {
+=======
+     * @param array       $rule       Rule with 'group' and optional 'match'.
+     * @param array       $userGroups User's group IDs.
+     * @param string|null $userId     Current user ID.
+     *
+     * @return mixed True if unconditional access, SQL string for conditional, false if no access.
+     *
+     * @psalm-suppress UnusedParam $userId reserved for user-specific match conditions in future RBAC rules
+     */
+    private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId): mixed
+    {
+>>>>>>> origin/development
         $group = $rule['group'];
         $match = $rule['match'] ?? null;
 
         // Check if user qualifies for this group.
         $userQualifies = false;
         if ($group === 'public') {
+<<<<<<< HEAD
             // Public group qualifies anonymous users, and authenticated users only
             // when inheritFromPublic is true (default — preserves pre-change semantics).
             if ($inheritFromPublic === false && $userId !== null) {
@@ -944,6 +1142,9 @@ class MagicRbacHandler
             } else {
                 $userQualifies = true;
             }
+=======
+            $userQualifies = true;
+>>>>>>> origin/development
         } else if (in_array($group, $userGroups, true) === true) {
             $userQualifies = true;
         }
@@ -1009,9 +1210,18 @@ class MagicRbacHandler
         // Resolve dynamic variables in the value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
 
+<<<<<<< HEAD
         // If dynamic variable resolved to null, this condition cannot be met.
         if ($value !== $resolvedValue && $resolvedValue === null) {
             return null;
+=======
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) rather than returning null, which would let
+        // buildMatchConditionsSql() drop the predicate from the AND and leak objects
+        // on this LIST path. Mirrors the QueryBuilder path and ConditionMatcher.
+        if ($value !== $resolvedValue && $resolvedValue === null) {
+            return self::IMPOSSIBLE_SQL_CONDITION;
+>>>>>>> origin/development
         }
 
         // Simple value: equals comparison.
@@ -1141,9 +1351,16 @@ class MagicRbacHandler
         $sqlOperator     = $comparisonMap[$operator];
         $resolvedOperand = $this->resolveDynamicValue(value: $operand);
 
+<<<<<<< HEAD
         // If dynamic variable resolved to null, this condition cannot be met.
         if ($operand !== $resolvedOperand && $resolvedOperand === null) {
             return null;
+=======
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) rather than dropping the condition.
+        if ($operand !== $resolvedOperand && $resolvedOperand === null) {
+            return self::IMPOSSIBLE_SQL_CONDITION;
+>>>>>>> origin/development
         }
 
         $quotedValue = $this->quoteValue(value: $resolvedOperand);
@@ -1411,6 +1628,7 @@ class MagicRbacHandler
     }//end resolveSchemaAuthorization()
 
     /**
+<<<<<<< HEAD
      * Resolve the effective `inheritFromPublic` flag for a schema.
      *
      * Delegates to PermissionHandler::resolveInheritFromPublic() which walks the
@@ -1437,4 +1655,72 @@ class MagicRbacHandler
         return $permissionHandler->resolveInheritFromPublic($schema);
 
     }//end resolveInheritFromPublic()
+=======
+     * Decide whether the current user qualifies for the system-row visibility
+     * carve-out (openregister#1617).
+     *
+     * Admins are NOT handled here — they bypass RBAC entirely at the top of
+     * the filter methods. This helper exists for non-admin users in groups
+     * configured under `openregister.systemReaderGroups`.
+     *
+     * @param string[] $userGroups The current user's group IDs.
+     *
+     * @return bool True if the user should see rows owned by the system identifier.
+     */
+    private function shouldGrantSystemRowVisibility(array $userGroups): bool
+    {
+        if (empty($userGroups) === true) {
+            return false;
+        }
+
+        $readerGroups = $this->resolveOrganisationService()?->getSystemReaderGroups() ?? [];
+        if (empty($readerGroups) === true) {
+            return false;
+        }
+
+        return count(array_intersect($userGroups, $readerGroups)) > 0;
+    }//end shouldGrantSystemRowVisibility()
+
+    /**
+     * Get the configured system identifier used as `_owner` for session-less
+     * writes.
+     *
+     * Falls back to {@see OrganisationService::SYSTEM_USER_ID_DEFAULT} when
+     * the OrganisationService is not available in the container (defensive
+     * default; matches the helper's own fallback path).
+     *
+     * @return string The system identifier.
+     */
+    private function getSystemUserId(): string
+    {
+        $service = $this->resolveOrganisationService();
+        if ($service === null) {
+            return \OCA\OpenRegister\Service\OrganisationService::SYSTEM_USER_ID_DEFAULT;
+        }
+
+        return $service->getSystemUserId();
+    }//end getSystemUserId()
+
+    /**
+     * Lazy-load OrganisationService from the container.
+     *
+     * Matches the lazy-load pattern already in use elsewhere in this class
+     * (see e.g. line 415) — avoids constructor-level circular DI dependencies.
+     *
+     * @return \OCA\OpenRegister\Service\OrganisationService|null The service or
+     *         null if the container cannot resolve it (defensive).
+     */
+    private function resolveOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService
+    {
+        try {
+            return $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[MagicRbacHandler] OrganisationService unavailable - skipping system-owner carve-out',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return null;
+        }
+    }//end resolveOrganisationService()
+>>>>>>> origin/development
 }//end class

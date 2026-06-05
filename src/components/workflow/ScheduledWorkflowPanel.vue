@@ -79,6 +79,12 @@ export default {
 		this.fetchSchedules()
 	},
 	methods: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude API passthrough loading schedules; scheduled-workflow contract owned by workflow-operations capability
+		 */
+>>>>>>> origin/development
 		async fetchSchedules() {
 			try {
 				const url = generateUrl('/apps/openregister/api/scheduled-workflows')
@@ -88,6 +94,12 @@ export default {
 				console.error('Failed to fetch schedules:', error)
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude API passthrough creating schedule + refetch; scheduled-workflow contract owned by workflow-operations capability
+		 */
+>>>>>>> origin/development
 		async createSchedule() {
 			try {
 				const url = generateUrl('/apps/openregister/api/scheduled-workflows')
@@ -98,6 +110,12 @@ export default {
 				console.error('Failed to create schedule:', error)
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude computed interval-format display helper, UI plumbing
+		 */
+>>>>>>> origin/development
 		formatInterval(seconds) {
 			if (seconds >= 86400) return `${Math.floor(seconds / 86400)}d`
 			if (seconds >= 3600) return `${Math.floor(seconds / 3600)}h`

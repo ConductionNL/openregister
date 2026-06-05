@@ -1,3 +1,7 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog :open="showDialog"
 		:name="dialogTitle"
@@ -57,12 +61,13 @@
 
 				<!-- File Type Filter -->
 				<div class="form-group">
-					<label>File Types to Process</label>
-					<NcSelect v-model="config.selectedFileTypes"
+					<label>{{ t('openregister', 'File Types to Process') }}</label>
+					<NcSelect
+						input-label="Config Selected File Types" v-model="config.selectedFileTypes"
 						:options="fileTypeOptions"
 						:multiple="true"
 						:label-outside="true"
-						placeholder="All file types">
+						:placeholder="t('openregister', 'All file types')">
 						<template #selected-option="{ label }">
 							<span class="option-label">{{ label }}</span>
 						</template>
@@ -237,6 +242,9 @@ export default {
 	watch: {
 		open: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher syncing dialog state and loading stats
+			 */
 			handler(newVal) {
 				console.info('🔍 FileWarmupModal: open prop changed to:', newVal)
 				this.showDialog = newVal
@@ -251,6 +259,7 @@ export default {
 	methods: {
 		/**
 		 * Load file processing statistics
+		 * @spec exclude form-state loader for warmup stats via API
 		 */
 		async loadStats() {
 			try {
@@ -278,14 +287,16 @@ export default {
 
 		/**
 		 * Refresh statistics
+		 * @spec exclude stats-refresh UI handler
 		 */
 		async refreshStats() {
 			await this.loadStats()
-			showSuccess('Statistics refreshed')
+			showSuccess(t('openregister', 'Statistics refreshed'))
 		},
 
 		/**
 		 * Start file warmup process
+		 * @spec exclude modal submit handler triggering file warmup via API
 		 */
 		async startWarmup() {
 			this.isProcessing = true
@@ -318,20 +329,20 @@ export default {
 					this.failedFiles = response.data.failed
 
 					if (response.data.failed === 0) {
-						showSuccess(`Successfully processed ${response.data.indexed} files!`)
+						showSuccess(t('openregister', 'Successfully processed {count} files!', { count: response.data.indexed }))
 					} else {
-						showError(`Processed ${response.data.indexed} files, ${response.data.failed} failed`)
+						showError(t('openregister', 'Processed {indexed} files, {failed} failed', { indexed: response.data.indexed, failed: response.data.failed }))
 					}
 
 					// Refresh stats
 					await this.loadStats()
 				} else {
-					showError(response.data.message || 'Warmup failed')
+					showError(response.data.message || t('openregister', 'Warmup failed'))
 				}
 
 			} catch (error) {
 				console.error('Warmup failed:', error)
-				showError('Failed to start file warmup: ' + (error.response?.data?.message || error.message))
+				showError(t('openregister', 'Failed to start file warmup: {error}', { error: error.response?.data?.message || error.message }))
 			} finally {
 				this.isProcessing = false
 			}
@@ -340,6 +351,7 @@ export default {
 		/**
 		 * Handle dialog open/close state update
 		 * @param {boolean} isOpen - The new state of the dialog
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogUpdate(isOpen) {
 			console.info('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
@@ -350,6 +362,7 @@ export default {
 
 		/**
 		 * Handle dialog close
+		 * @spec exclude modal close handler emitting close events
 		 */
 		handleClose() {
 			console.info('❌ FileWarmupModal: Closing dialog...')

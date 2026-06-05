@@ -1,11 +1,20 @@
 ---
+<<<<<<< HEAD
 status: in-progress
+=======
+status: implemented
+>>>>>>> origin/development
 ---
 
 # Object Interactions
 
 ## Purpose
 
+<<<<<<< HEAD
+=======
+@e2e exclude REST API convenience layer — covered by Newman
+
+>>>>>>> origin/development
 OpenRegister objects require rich interaction capabilities — notes, tasks, file attachments, tags, and audit trails — that allow users to collaborate on and track the lifecycle of register data. Rather than building custom interaction systems, this spec defines a convenience API layer that wraps Nextcloud's native subsystems (CalDAV for tasks, ICommentsManager for notes, IRootFolder for files, Nextcloud tags) and links them to OpenRegister objects via standardized properties. Any consuming app (Procest, Pipelinq, OpenCatalogi, ZaakAfhandelApp) can use these unified sub-resource endpoints without knowledge of the underlying Nextcloud internals.
 
 **Standards**: RFC 5545 (iCalendar/VTODO), RFC 9253 (iCalendar LINK property), Nextcloud Comments API, Nextcloud Activity API, CloudEvents v1.0
@@ -13,10 +22,14 @@ OpenRegister objects require rich interaction capabilities — notes, tasks, fil
 
 **OpenSpec changes**
 - `fix-object-files-listing-lock-and-limit` (active) — makes the object files listing endpoint resilient to Nextcloud file locks, raises the `_limit` ceiling from 100 to 1000, replaces the `getContent()` ownership probe with `isReadable()`, and adds `locked`/`lock` metadata to each file entry.
+<<<<<<< HEAD
 
 
 ## Requirements
 
+=======
+## Requirements
+>>>>>>> origin/development
 ### Requirement: Notes on Objects via ICommentsManager
 
 The system SHALL provide a `NoteService` that wraps Nextcloud's `OCP\Comments\ICommentsManager` for creating, listing, and deleting notes (comments) on OpenRegister objects. Notes MUST be stored using `objectType: "openregister"` and `objectId: {uuid}`. The service MUST resolve actor display names via `OCP\IUserManager` and indicate whether the current user authored each note.
@@ -391,6 +404,115 @@ All interaction endpoints SHALL follow a consistent sub-resource pattern under t
 
 ---
 
+<<<<<<< HEAD
+=======
+### Requirement: User-Wide Task Aggregate Endpoint
+
+The system MUST expose a user-wide task aggregate endpoint that returns every
+CalDAV VTODO belonging to the current session user across all of their
+VTODO-supporting calendars, independent of any single object. `TasksController::allUserTasks()`
+MUST resolve the calendar set from the session user (`IUserSession`), never from
+a request parameter, so the endpoint cannot be used to read another user's tasks.
+It MUST accept optional `status`, `assignee`, and pagination (`_limit`/`limit`
+capped at 200, `_offset`/`offset`) filters, where `assignee` is a free-text
+filter applied within the caller's own task list and is NOT an identity claim.
+On error it MUST return HTTP 500 with an `error` message.
+
+#### Scenario: List all of the current user's tasks
+- **GIVEN** an authenticated user with VTODOs spread across multiple calendars
+- **WHEN** a GET request is sent to `/api/tasks`
+- **THEN** `TasksController::allUserTasks()` MUST return the aggregate via `TaskService::getAllUserTasks()` resolved from `IUserSession::getUser()->getUID()`
+- **AND** the response MUST NOT depend on any object register/schema/id
+
+#### Scenario: Filter the aggregate by status and assignee
+- **GIVEN** a GET request to `/api/tasks?status=needs-action&assignee=jan`
+- **WHEN** the controller reads the parameters
+- **THEN** `status` and `assignee` MUST be forwarded to `TaskService::getAllUserTasks()`
+- **AND** `assignee` MUST be applied as a free-text filter within the caller's own task list, not as an identity claim
+
+#### Scenario: Aggregate pagination caps the limit
+- **GIVEN** a GET request to `/api/tasks?_limit=500`
+- **WHEN** the controller computes the limit
+- **THEN** the effective limit MUST be capped at 200
+
+### Requirement: Deck Card Linkage on Objects
+
+The system MUST provide object-scoped Nextcloud Deck card linkage as a
+sub-resource of objects. `DeckController` MUST support listing the Deck cards
+linked to an object, creating or linking a card to an object, and a reverse
+lookup of every object linked to cards on a given board. When the Nextcloud Deck
+app is not installed, every endpoint MUST return HTTP 501 with
+`{"error": "Nextcloud Deck app is not installed", "code": "APP_NOT_AVAILABLE"}`.
+Object-scoped operations MUST validate the object exists (HTTP 404 otherwise) via
+`ObjectService` before delegating to `DeckCardService`.
+
+#### Scenario: List Deck cards for an object
+- **GIVEN** the Deck app is installed and object `abc-123` exists
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/deck`
+- **THEN** the controller MUST validate the object and return `DeckCardService::getCardsForObject()` results
+
+#### Scenario: Create or link a Deck card to an object
+- **GIVEN** the Deck app is installed and object `abc-123` exists
+- **WHEN** a POST request supplies card link/create data
+- **THEN** `DeckCardService::linkOrCreateCard()` MUST be invoked and the link returned with HTTP 201
+- **AND** a duplicate link MUST return HTTP 409, a missing target MUST return HTTP 404
+
+#### Scenario: Reverse lookup objects on a board
+- **GIVEN** the Deck app is installed
+- **WHEN** a GET request is sent for objects linked to a board id
+- **THEN** the response MUST return `{"results": [...], "total": N}` from `DeckCardService::getObjectsForBoard()`
+
+#### Scenario: Deck app not installed
+- **GIVEN** the Nextcloud Deck app is not installed
+- **WHEN** any `DeckController` endpoint is called
+- **THEN** the response MUST be HTTP 501 with `code: "APP_NOT_AVAILABLE"`
+
+### Requirement: The endpoint dispatcher MUST route execution by target type
+
+`EndpointService` MUST act as the runtime dispatcher behind the dynamic endpoint surface, routing an endpoint to a target-type-specific handler (`view`, `agent`, `webhook`, `register`, `schema`) and returning a uniform result shape `{success, statusCode, response, error?}`. A test entry point MUST allow executing an endpoint with supplied test data without a real inbound request.
+
+#### Scenario: Route by target type
+
+- **GIVEN** an `Endpoint` with a `targetType`
+- **WHEN** `executeEndpoint()` runs
+- **THEN** it MUST dispatch to the matching handler for `view`, `agent`, `webhook`, `register`, or `schema`
+- **AND** an unknown target type MUST return `{success: false, statusCode: 400, error: "Unknown target type: ..."}`
+
+#### Scenario: Test an endpoint with supplied data
+
+- **GIVEN** an endpoint and an optional `testData` array
+- **WHEN** `testEndpoint()` runs
+- **THEN** it MUST first check access via `canExecuteEndpoint()` and return `statusCode: 403` when denied
+- **AND** on success it MUST build a request from the endpoint method/path plus test data, dispatch via `executeEndpoint()`, log the call, and return the handler result
+- **AND** any thrown exception MUST be caught, logged, and surfaced as `{success: false, statusCode: 500, error: <message>}`
+
+#### Scenario: Agent endpoint executes an AI agent
+
+- **GIVEN** an endpoint with `targetType: agent` and a `targetId` resolving to an agent
+- **WHEN** `executeAgentEndpoint()` runs
+- **THEN** a missing agent MUST return `statusCode: 404` and an empty message MUST return `statusCode: 400`
+- **AND** on success it MUST resolve the agent's configured tools through `ToolRegistry` and execute the agent with the request message
+
+### Requirement: Endpoint execution MUST enforce group access and log every call
+
+Endpoint execution MUST be gated by group-based access control and MUST persist an execution log entry for audit and debugging.
+
+#### Scenario: Group-based access control
+
+- **GIVEN** an endpoint with a configured `groups` list
+- **WHEN** `canExecuteEndpoint()` evaluates the current user
+- **THEN** an unauthenticated request MUST be allowed only when the endpoint declares no groups (public)
+- **AND** a member of the `admin` group MUST always be allowed
+- **AND** an authenticated user MUST be allowed when the endpoint declares no groups, or when the user belongs to at least one of the endpoint's groups; otherwise access MUST be denied
+
+#### Scenario: Execution call is logged with a TTL
+
+- **GIVEN** any endpoint execution
+- **WHEN** `logEndpointCall()` runs
+- **THEN** it MUST persist an `EndpointLog` with a generated uuid, the endpoint id, the acting user (when present), the request and response payloads, the status code and message, a creation timestamp, and an expiry one week out
+- **AND** the entry size MUST be computed before insert
+
+>>>>>>> origin/development
 ## Non-Functional Requirements
 
 - **Performance**: Task listing MUST complete within 2 seconds for objects with up to 50 tasks. Note listing MUST complete within 1 second for objects with up to 200 notes. File listing MUST complete within 1 second.

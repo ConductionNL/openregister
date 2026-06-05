@@ -5,6 +5,12 @@
  *
  * Handles e-Depot transfer list operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -16,6 +22,8 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
  */
@@ -67,6 +75,8 @@ class TransferController extends Controller
      *
      * @return JSONResponse The list of transfer lists.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */
@@ -86,6 +96,7 @@ class TransferController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      */
     public function show(string $id): JSONResponse
@@ -105,6 +116,8 @@ class TransferController extends Controller
      *
      * @return JSONResponse The transfer initiation result.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */

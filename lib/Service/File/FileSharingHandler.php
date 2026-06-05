@@ -5,11 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 declare(strict_types=1);
@@ -95,6 +107,7 @@ class FileSharingHandler
      *
      * @psalm-return   array<IShare>
      * @phpstan-return array<int, IShare>
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function findShares(Node $file, int $shareType=3): array
     {
@@ -126,6 +139,7 @@ class FileSharingHandler
      *
      * @psalm-return   IShare
      * @phpstan-return IShare
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function createShare(array $shareData): IShare
     {
@@ -194,6 +208,7 @@ class FileSharingHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function shareFileWithUser(File $file, string $userId, int $permissions=31): void
     {
@@ -247,6 +262,7 @@ class FileSharingHandler
      *
      * @psalm-return   IShare|null
      * @phpstan-return IShare|null
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
     {

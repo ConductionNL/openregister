@@ -6,10 +6,13 @@
  * This file contains the class for handling register mapper related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -214,16 +217,26 @@ class RegisterMapper extends QBMapper
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
+<<<<<<< HEAD
         if ($_rbac === true) {
             $rbacFlag = '1';
         } else {
             $rbacFlag = '0';
+=======
+        $rbacFlag = '0';
+        $mtFlag   = '0';
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+>>>>>>> origin/development
         }
 
         if ($_multitenancy === true) {
             $mtFlag = '1';
+<<<<<<< HEAD
         } else {
             $mtFlag = '0';
+=======
+>>>>>>> origin/development
         }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
@@ -320,16 +333,26 @@ class RegisterMapper extends QBMapper
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+<<<<<<< HEAD
             if ($_rbac === true) {
                 $rbacChar = '1';
             } else {
                 $rbacChar = '0';
+=======
+            $rbacChar = '0';
+            $mtChar   = '0';
+            if ($_rbac === true) {
+                $rbacChar = '1';
+>>>>>>> origin/development
             }
 
             if ($_multitenancy === true) {
                 $mtChar = '1';
+<<<<<<< HEAD
             } else {
                 $mtChar = '0';
+=======
+>>>>>>> origin/development
             }
 
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
@@ -362,6 +385,33 @@ class RegisterMapper extends QBMapper
         }//end try
     }//end find()
 
+<<<<<<< HEAD
+=======
+    /**
+     * Clear the request-scoped find cache for a specific register
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given register (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $registerId The register ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $registerId): void
+    {
+        // Find every cache key whose value points at this register ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Register && $cached->getId() === $registerId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
+
+>>>>>>> origin/development
     /**
      * Finds multiple registers by id
      *
@@ -771,8 +821,22 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
+        // Three platforms in production: SQLite (no REGEXP function),
+        // MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
+        // but stores the `schemas` column as `json`, which doesn't
+        // even cast cleanly to text for a LIKE prefilter without an
+        // explicit `::text` cast). The intersection of "portable" and
+        // "works regardless of `schemas` column type" is "fetch every
+        // register row and decode in PHP".
+        //
+        // Registers are O(10s) per install, so the cost is trivial.
+        // The previous MySQL-only REGEXP query (with `[[:<:]]N[[:>:]]`
+        // word-boundary syntax) is replaced wholesale — see #50.
         $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
 
+<<<<<<< HEAD
         // REGEXP: match number with optional whitespace and newlines.
         $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
 
@@ -786,11 +850,56 @@ class RegisterMapper extends QBMapper
 
         if ($result !== false) {
             return (int) $result;
+=======
+        $candidates = $qb->executeQuery()->fetchAllAssociative();
+        $needle     = (string) $schemaId;
+
+        foreach ($candidates as $row) {
+            $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
+            foreach ($schemas as $candidate) {
+                if ((string) $candidate === $needle) {
+                    return (int) $row['id'];
+                }
+            }
+>>>>>>> origin/development
         }
 
         return null;
     }//end getFirstRegisterWithSchema()
 
+<<<<<<< HEAD
+=======
+    /**
+     * Decode the persisted `schemas` column into a flat ID list.
+     *
+     * Accepts the column's raw value (typically a JSON array) and
+     * returns the contained schema IDs. Tolerates legacy shapes
+     * (comma-separated string) and unexpected types by returning [].
+     *
+     * @param mixed $raw The raw column value
+     *
+     * @return array<int,int|string>
+     */
+    private function decodeSchemasField(mixed $raw): array
+    {
+        if (is_array($raw) === true) {
+            return $raw;
+        }
+
+        if (is_string($raw) === true && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            // Legacy comma-separated fallback.
+            return array_filter(array_map('trim', explode(',', $raw)));
+        }
+
+        return [];
+    }//end decodeSchemasField()
+
+>>>>>>> origin/development
     /**
      * Check if a register has a schema with a specific title
      *

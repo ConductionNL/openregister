@@ -8,7 +8,11 @@ import axios from '@nextcloud/axios'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
 		name="export-register-dialog"
+<<<<<<< HEAD
 		title="Export Objects"
+=======
+		:title="t('openregister', 'Export Objects')"
+>>>>>>> origin/development
 		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="error" type="error">
@@ -16,11 +20,16 @@ import axios from '@nextcloud/axios'
 		</NcNoteCard>
 
 		<div class="formContainer">
+<<<<<<< HEAD
 			<p>Export "{{ schemaTitle }}" objects from "{{ registerTitle }}"</p>
+=======
+			<p>{{ t('openregister', 'Export "{schema}" objects from "{register}"', { schema: schemaTitle, register: registerTitle }) }}</p>
+>>>>>>> origin/development
 
 			<div class="formGroup">
-				<label>Export Format:</label>
-				<NcSelect v-model="exportFormat"
+				<label>{{ t('openregister', 'Export Format:') }}</label>
+				<NcSelect
+						input-label="Export Format" v-model="exportFormat"
 					:options="exportFormats"
 					option-label="label"
 					option-value="value"
@@ -33,7 +42,7 @@ import axios from '@nextcloud/axios'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				Cancel
+				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				:disabled="loading"
@@ -43,7 +52,7 @@ import axios from '@nextcloud/axios'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Export v-else :size="20" />
 				</template>
-				Export
+				{{ t('openregister', 'Export') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -85,28 +94,50 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed register title for display; UI presentation helper.
+		 */
 		registerTitle() {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Computed schema title for display; UI presentation helper.
+		 */
+>>>>>>> origin/development
 		schemaTitle() {
 			const item = schemaStore.schemaItem
 			return item?.title || 'Unknown'
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
 			this.exportFormat = 'excel'
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
+		 */
+>>>>>>> origin/development
 		async exportObjects() {
 			const register = registerStore.registerItem
 			const schema = schemaStore.schemaItem
 
 			if (!register?.id || !schema?.id) {
+<<<<<<< HEAD
 				this.error = 'Register and schema are required'
+=======
+				this.error = t('openregister', 'Register and schema are required')
+>>>>>>> origin/development
 				return
 			}
 
@@ -146,7 +177,11 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
+<<<<<<< HEAD
 				this.error = error.response?.data?.error || error.message || 'Failed to export objects'
+=======
+				this.error = error.response?.data?.error || error.message || t('openregister', 'Failed to export objects')
+>>>>>>> origin/development
 			} finally {
 				this.loading = false
 			}

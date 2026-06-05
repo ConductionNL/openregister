@@ -6,10 +6,20 @@
  * Represents a selectielijst entry that maps classification categories
  * to retention periods and archival actions per Dutch archival standards.
  *
+<<<<<<< HEAD
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -147,6 +157,19 @@ class SelectionList extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+<<<<<<< HEAD
+=======
+        $created = null;
+        if ($this->created instanceof DateTime) {
+            $created = $this->created->format('c');
+        }
+
+        $updated = null;
+        if ($this->updated instanceof DateTime) {
+            $updated = $this->updated->format('c');
+        }
+
+>>>>>>> origin/development
         return [
             'id'              => $this->uuid,
             'uuid'            => $this->uuid,
@@ -156,8 +179,13 @@ class SelectionList extends Entity implements JsonSerializable
             'description'     => $this->description,
             'schemaOverrides' => $this->schemaOverrides ?? [],
             'organisation'    => $this->organisation,
+<<<<<<< HEAD
             'created'         => $this->created instanceof DateTime ? $this->created->format('c') : null,
             'updated'         => $this->updated instanceof DateTime ? $this->updated->format('c') : null,
+=======
+            'created'         => $created,
+            'updated'         => $updated,
+>>>>>>> origin/development
         ];
     }//end jsonSerialize()
 

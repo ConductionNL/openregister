@@ -5,6 +5,12 @@
  *
  * Handler for message storage and history management.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -15,6 +21,7 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -77,6 +84,7 @@ class MessageHistoryHandler
      * @param LoggerInterface    $logger             Logger.
      *
      * @return void
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         MessageMapper $messageMapper,
@@ -101,6 +109,7 @@ class MessageHistoryHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         LLPhantMessage factory methods are standard LLPhant pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Message role handling requires multiple conditional branches
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function buildMessageHistory(int $conversationId): array
     {
@@ -194,14 +203,28 @@ class MessageHistoryHandler
      * @param string     $role           Message role (user or assistant).
      * @param string     $content        Message content.
      * @param array|null $sources        Optional RAG sources.
+<<<<<<< HEAD
      *
      * @return Message Stored message entity
+=======
+     * @param array|null $context        Optional CnAiContext snapshot the user
+     *                                   sent with the message (orchestrator §8).
+     *
+     * @return Message Stored message entity
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+>>>>>>> origin/development
      */
     public function storeMessage(
         int $conversationId,
         string $role,
         string $content,
+<<<<<<< HEAD
         ?array $sources=null
+=======
+        ?array $sources=null,
+        ?array $context=null
+>>>>>>> origin/development
     ): Message {
         $message = new Message();
         $message->setUuid(Uuid::v4()->toRfc4122());
@@ -215,6 +238,18 @@ class MessageHistoryHandler
             $message->setMetadata(['sources' => $sources]);
         }
 
+<<<<<<< HEAD
+=======
+        // Persist the CnAiContext snapshot the frontend sent with the
+        // message so future replays + the LLM can ground answers in the
+        // user's scope at send-time. Only set when non-empty; null/empty
+        // leaves the column at its DEFAULT '{}' to avoid noise in the
+        // audit trail.
+        if ($context !== null && empty($context) === false) {
+            $message->setContext($context);
+        }
+
+>>>>>>> origin/development
         $this->messageMapper->insert($message);
 
         $this->logger->debug(

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+<<<<<<< HEAD
 namespace OCA\Mail\Events {
     if (!class_exists(\OCA\Mail\Events\BeforeMailTemplateRenderedEvent::class, false)) {
         class BeforeMailTemplateRenderedEvent extends \OCP\EventDispatcher\Event {}
@@ -14,6 +15,15 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCP\App\IAppManager;
+=======
+namespace Unit\Listener;
+
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
+use OCP\App\IAppManager;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
+use OCP\AppFramework\Http\TemplateResponse;
+>>>>>>> origin/development
 use OCP\EventDispatcher\Event;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -60,7 +70,10 @@ class MailAppScriptListenerTest extends TestCase
 
     public function testIgnoresWhenNoUserIsLoggedIn(): void
     {
+<<<<<<< HEAD
         // Create a mock event class that appears to be from the Mail app
+=======
+>>>>>>> origin/development
         $event = $this->createMailEvent();
 
         $this->userSession->method('getUser')->willReturn(null);
@@ -111,6 +124,7 @@ class MailAppScriptListenerTest extends TestCase
     }
 
     /**
+<<<<<<< HEAD
      * Create an event that looks like it comes from the Mail app.
      *
      * Uses a real class in the OCA\Mail namespace so that get_class()
@@ -124,3 +138,23 @@ class MailAppScriptListenerTest extends TestCase
     }
 }
 } // end namespace Unit\Listener
+=======
+     * Create a mock BeforeTemplateRenderedEvent that looks like a Mail app event.
+     *
+     * The listener checks for BeforeTemplateRenderedEvent and then
+     * verifies $event->getResponse()->getApp() === 'mail'.
+     *
+     * @return BeforeTemplateRenderedEvent&MockObject
+     */
+    private function createMailEvent(): BeforeTemplateRenderedEvent&MockObject
+    {
+        $response = $this->createMock(TemplateResponse::class);
+        $response->method('getApp')->willReturn('mail');
+
+        $event = $this->createMock(BeforeTemplateRenderedEvent::class);
+        $event->method('getResponse')->willReturn($response);
+
+        return $event;
+    }
+}
+>>>>>>> origin/development

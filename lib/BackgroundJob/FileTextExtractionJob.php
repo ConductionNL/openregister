@@ -7,6 +7,12 @@
  * This job is queued automatically when files are created or modified to avoid
  * blocking user requests with potentially slow text extraction operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  BackgroundJob
  * @package   OCA\OpenRegister\BackgroundJob
  * @author    Conduction Development Team <info@conduction.nl>
@@ -104,6 +110,8 @@ class FileTextExtractionJob extends QueuedJob
      *                                       - file_id: The ID of the file to extract text from (required)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-10
      */
     protected function run($argument): void
     {

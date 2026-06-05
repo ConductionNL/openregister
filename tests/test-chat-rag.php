@@ -7,6 +7,9 @@
  * 1. Creates a new conversation with Agent 4
  * 2. Sends a message about "Mokum"
  * 3. Checks if RAG correctly retrieves object data
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';

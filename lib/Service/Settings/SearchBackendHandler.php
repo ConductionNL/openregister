@@ -5,6 +5,12 @@
  *
  * This file contains the handler class for managing search backend configuration.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -16,6 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
  */
 
@@ -96,6 +103,7 @@ class SearchBackendHandler
      *
      * @throws \RuntimeException If backend configuration retrieval fails.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
      */
     public function getSearchBackendConfig(): array
@@ -130,6 +138,7 @@ class SearchBackendHandler
      *
      * @psalm-return array{active: 'elasticsearch'|'solr', available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
      */
     public function updateSearchBackendConfig(string $backend): array

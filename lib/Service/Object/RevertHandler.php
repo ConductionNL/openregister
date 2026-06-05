@@ -5,6 +5,12 @@
  *
  * Service class for handling object reversion in the OpenRegister application.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -69,6 +75,39 @@ class RevertHandler
     private MagicMapper $objectEntityMapper;
 
     /**
+<<<<<<< HEAD
+=======
+     * Permission handler for RBAC enforcement
+     *
+     * @var PermissionHandler
+     */
+    private PermissionHandler $permissionHandler;
+
+    /**
+     * RevertHandler constructor.
+     *
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper.
+     * @param ContainerInterface $container          DI container.
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher.
+     * @param MagicMapper        $objectEntityMapper Object entity mapper.
+     * @param PermissionHandler  $permissionHandler  Permission handler for RBAC.
+     */
+    public function __construct(
+        AuditTrailMapper $auditTrailMapper,
+        ContainerInterface $container,
+        IEventDispatcher $eventDispatcher,
+        MagicMapper $objectEntityMapper,
+        PermissionHandler $permissionHandler
+    ) {
+        $this->auditTrailMapper   = $auditTrailMapper;
+        $this->container          = $container;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->permissionHandler  = $permissionHandler;
+    }//end __construct()
+
+    /**
+>>>>>>> origin/development
      * Revert an object to a previous state
      *
      * @param string $register         The register identifier
@@ -86,6 +125,7 @@ class RevertHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-12
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-12
      */
     public function revert(
@@ -95,12 +135,19 @@ class RevertHandler
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
+<<<<<<< HEAD
         // Get the object with context (searches across all magic tables).
         $context        = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $id,
             includeDeleted: false,
             _rbac: false,
             _multitenancy: false
+=======
+        // Get the object with RBAC and multitenancy enforced (tenant-scoped find).
+        $context        = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $id,
+            includeDeleted: false
+>>>>>>> origin/development
         );
         $object         = $context['object'];
         $registerEntity = $context['register'];
@@ -111,6 +158,21 @@ class RevertHandler
             throw new DoesNotExistException('Object not found in specified register/schema');
         }
 
+<<<<<<< HEAD
+=======
+        // Enforce RBAC: the caller must have 'update' permission on this object.
+        if ($this->permissionHandler->hasPermission(
+            schema: $schemaEntity,
+            action: 'update',
+            object: $object
+        ) === false
+        ) {
+            throw new NotAuthorizedException(
+                message: 'You do not have permission to revert this object'
+            );
+        }
+
+>>>>>>> origin/development
         // Check if the object is locked.
         if ($object->isLocked() === true) {
             $userId = $this->container->get('userId');

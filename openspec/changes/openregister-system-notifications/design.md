@@ -1,7 +1,10 @@
 # Design — OpenRegister System-Schema Notifications
 
+<<<<<<< HEAD
 status: pr-created
 
+=======
+>>>>>>> origin/development
 ## Context
 
 OpenRegister owns the notification engine (`notificatie-engine`). The engine
@@ -67,6 +70,7 @@ dispatcher. Two pieces of engine wiring are required:
 
 ## Implementation decisions (resolved)
 
+<<<<<<< HEAD
 ### 1. System-schema rule source: (b) System-rule registry
 
 `SystemSchemaNotificationRegistry` (lib/Service/) holds `x-openregister-notifications`
@@ -102,6 +106,29 @@ The notification rules are expressed as schema-equivalent data structures in
 `x-openregister-notifications`). No new `*Service.php` class with trip-wire method
 names (`notifyOn*`, `dispatch*`) was introduced; the dispatcher is a pure evaluator
 with no domain logic.
+=======
+1. **System-schema rule source: (b) in-code registry.** `SystemSchemaRules`
+   (`lib/Service/Notification/SystemSchemaRules.php`) holds rules keyed by
+   canonical slug and produces synthetic `Schema` objects via `buildSchema()`.
+   Option (a) — synthetic schema rows — was rejected: system entities are not
+   schema-backed objects; adding synthetic rows would require DB migrations and
+   distort the data model.
+
+2. **Canonical slugs:** `openregister_register`, `openregister_schema`,
+   `openregister_configuration`, `openregister_source`, `openregister_agent`,
+   `openregister_webhook`.
+
+3. **Existing event coverage:** Register, Schema, Configuration, Source, and
+   Agent already emit Created/Updated events and are bridged by
+   `SystemEntityNotificationListener`. `Synchronization` and `Import` do not
+   exist as DB entities in the current codebase; rule coverage for those is
+   deferred to when those entities are introduced.
+
+4. **Source/Agent health:** modelled as `updated`+`condition` on a `status`
+   field (`equals`:`error`). No separate numeric failure counter is required.
+
+5. **status: pr-created** (set below)
+>>>>>>> origin/development
 
 ## Non-goals
 

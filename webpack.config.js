@@ -43,8 +43,16 @@ webpackConfig.resolve.extensions = [
 // THESE MAKE THE DEVELOPMENT ENVIRONMENT FUNCTIONAL
 // ==================================================
 // Use local source when available (monorepo dev), otherwise fall back to npm package
+<<<<<<< HEAD
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
 const useLocalLib = fs.existsSync(localLib)
+=======
+// Set OR_SKIP_LOCAL_NCVUE=1 in the env to bypass this alias when the
+// apps-extra/nextcloud-vue submodule is on an unrelated branch (e.g. during
+// dist-based verification of feature/integration-leaves-consolidated).
+const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
+const useLocalLib = fs.existsSync(localLib) && !process.env.OR_SKIP_LOCAL_NCVUE
+>>>>>>> origin/development
 
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
@@ -76,6 +84,15 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'main.js'),
 		filename: appId + '-main.js',
 	},
+	// Global registry bootstrap (universal-shared-integration-registry).
+	// Loaded on EVERY page via \OCP\Util::addInitScript so the shared
+	// integration registry is installed + populated everywhere, letting
+	// leaves render inside any consuming app's detail page without that
+	// app bootstrapping the registry itself. Kept separate + tiny.
+	integrationGlobal: {
+		import: path.join(__dirname, 'src', 'integration-global.js'),
+		filename: appId + '-integration-global.js',
+	},
 	adminSettings: {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
@@ -88,6 +105,16 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'mail-sidebar.js'),
 		filename: appId + '-mail-sidebar.js',
 	},
+<<<<<<< HEAD
+=======
+	// ADR-019 Phase E (Option B): umbrella widget for NC user-dashboard.
+	// Loaded by `OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::load()`
+	// which calls `Util::addScript('openregister', 'openregister-user-dashboard')`.
+	userDashboard: {
+		import: path.join(__dirname, 'src', 'user-dashboard.js'),
+		filename: appId + '-user-dashboard.js',
+	},
+>>>>>>> origin/development
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)

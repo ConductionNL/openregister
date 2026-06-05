@@ -27,7 +27,11 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
+<<<<<<< HEAD
 					{{ t('openregister', 'Extract Now') }}
+=======
+					{{ t('openregister', 'Extract now') }}
+>>>>>>> origin/development
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -130,7 +134,11 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
+<<<<<<< HEAD
 					{{ t('openregister', 'Extract Now') }}
+=======
+					{{ t('openregister', 'Extract now') }}
+>>>>>>> origin/development
 				</NcButton>
 			</div>
 		</div>
@@ -192,6 +200,10 @@ export default {
 		 * Human-readable extraction status label.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
+=======
+		 * @spec exclude computed status-label display helper, UI plumbing
+>>>>>>> origin/development
 		 */
 		statusLabel() {
 			const labels = {
@@ -208,6 +220,10 @@ export default {
 		 * Human-readable risk level label.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
+=======
+		 * @spec exclude computed risk-label display helper, UI plumbing
+>>>>>>> origin/development
 		 */
 		riskLabel() {
 			const labels = {
@@ -224,6 +240,10 @@ export default {
 		 * CSS class for risk level badge.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
+=======
+		 * @spec exclude computed risk-badge CSS-class display helper, UI plumbing
+>>>>>>> origin/development
 		 */
 		riskBadgeClass() {
 			const classes = {
@@ -240,6 +260,10 @@ export default {
 		 * Formatted extraction date.
 		 *
 		 * @return {string}
+<<<<<<< HEAD
+=======
+		 * @spec exclude computed date-format display helper, UI plumbing
+>>>>>>> origin/development
 		 */
 		formattedDate() {
 			if (!this.status.extractedAt) {
@@ -255,6 +279,12 @@ export default {
 
 	watch: {
 		fileId: {
+<<<<<<< HEAD
+=======
+			/**
+			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
+			 */
+>>>>>>> origin/development
 			handler(newVal) {
 				if (newVal) {
 					this.fetchExtractionStatus()
@@ -269,6 +299,10 @@ export default {
 
 		/**
 		 * Fetch extraction status from the API.
+<<<<<<< HEAD
+=======
+		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
+>>>>>>> origin/development
 		 */
 		async fetchExtractionStatus() {
 			this.loading = true
@@ -298,6 +332,10 @@ export default {
 
 		/**
 		 * Trigger text extraction for this file.
+<<<<<<< HEAD
+=======
+		 * @spec exclude API passthrough triggering extraction + refresh; extraction contract owned by text-extraction capability
+>>>>>>> origin/development
 		 */
 		async triggerExtraction() {
 			this.extracting = true

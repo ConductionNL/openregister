@@ -112,7 +112,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openregister', 'Clear Filters') }}
+					{{ t('openregister', 'Clear filters') }}
 				</NcButton>
 			</div>
 
@@ -203,6 +203,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 
 <script>
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
  */
 import {
@@ -284,6 +285,7 @@ export default {
 	},
 	computed: {
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		registerOptions() {
@@ -302,6 +304,7 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		schemaOptions() {
@@ -324,6 +327,7 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		selectedRegisterValue() {
@@ -337,6 +341,7 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		selectedSchemaValue() {
@@ -350,6 +355,7 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		userOptions() {
@@ -368,6 +374,7 @@ export default {
 		// React to query param changes as single source of truth (only on /audit-trails)
 		'$route.query': {
 			/**
+			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 			 */
 			handler() {
@@ -391,6 +398,9 @@ export default {
 			this.applyFilters()
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; fire-and-forget load of lists/audit-trail data and route-seed, delegating to already-annotated methods.
+	 */
 	mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
@@ -427,6 +437,7 @@ export default {
 		 * Load audit trail data and update filtered count
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async loadAuditTrailData() {
@@ -441,6 +452,7 @@ export default {
 		 * Clear filters (alias for clearAllFilters for template compatibility)
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		clearFilters() {
@@ -451,6 +463,7 @@ export default {
 		 * @param {string} value - The filter value
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		handleObjectFilterChange(value) {
@@ -461,6 +474,7 @@ export default {
 		 * Apply filters and sync them to the URL query (single source of truth)
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		applyFilters() {
@@ -470,6 +484,7 @@ export default {
 		 * Debounced version of applyFilters for text input
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		debouncedApplyFilters() {
@@ -483,6 +498,7 @@ export default {
 		 * @param {boolean} value - Whether to show only entries with changes
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		updateChangesFilter(value) {
@@ -493,6 +509,7 @@ export default {
 		 * Update filtered count from store
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		updateFilteredCount() {
@@ -503,6 +520,7 @@ export default {
 		 * Load statistics
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async loadStatistics() {
@@ -520,6 +538,7 @@ export default {
 		 * Load action distribution for stats
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async loadActionDistribution() {
@@ -538,6 +557,7 @@ export default {
 		 * Load top objects for stats
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async loadTopObjects() {
@@ -556,6 +576,7 @@ export default {
 		 * @param {object} register - Selected register
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		handleRegisterChange(register) {
@@ -568,6 +589,7 @@ export default {
 		 * @param {object} schema - Selected schema
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		handleSchemaChange(schema) {
@@ -578,6 +600,7 @@ export default {
 		 * Build URL query object from current sidebar state
 		 * @return {object}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		buildQueryFromState() {
@@ -607,6 +630,7 @@ export default {
 		 * @param {object} b - Second query object to compare
 		 * @return {boolean}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		queriesEqual(a, b) {
@@ -623,6 +647,7 @@ export default {
 		 * Write current state to the router query (only on /audit-trails)
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		updateRouteQueryFromState() {
@@ -638,6 +663,7 @@ export default {
 		 * Apply URL query params to component/store state and refresh list
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		applyQueryParamsFromRoute() {
@@ -702,6 +728,7 @@ export default {
 		 * Build filters from state and push to store, then refresh list
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		applyFiltersToStore() {
@@ -737,6 +764,7 @@ export default {
 		 * Clear all filters and sync URL
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		clearAllFilters() {

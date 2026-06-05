@@ -2262,6 +2262,72 @@ class SettingsControllerTest extends TestCase
             {
                 return $this->rows;
             }
+<<<<<<< HEAD
+=======
+
+            /**
+             * Fetch the next row as an associative array (Doctrine DBAL).
+             *
+             * Added for Nextcloud 34's expanded OCP\DB\IResult. This is a
+             * row-less stub (parity with fetch()/fetchOne()).
+             *
+             * @return array|false False — no cursor rows in this stub.
+             */
+            public function fetchAssociative(): array|false
+            {
+                return false;
+            }
+
+            /**
+             * Fetch the next row as a numeric array (Doctrine DBAL).
+             *
+             * @return array|false False — no cursor rows in this stub.
+             */
+            public function fetchNumeric(): array|false
+            {
+                return false;
+            }
+
+            /**
+             * Fetch all rows as numeric-indexed arrays (Doctrine DBAL).
+             *
+             * @return array Numeric-indexed copies of the rows.
+             */
+            public function fetchAllNumeric(): array
+            {
+                return array_map(static fn ($row): array => array_values((array) $row), $this->rows);
+            }
+
+            /**
+             * Fetch the first column of every row (Doctrine DBAL).
+             *
+             * @return array First-column values.
+             */
+            public function fetchFirstColumn(): array
+            {
+                return array_map(static fn ($row) => (array_values((array) $row)[0] ?? null), $this->rows);
+            }
+
+            /**
+             * Iterate rows as numeric arrays (Doctrine DBAL).
+             *
+             * @return \Traversable Iterator over numeric-indexed rows.
+             */
+            public function iterateNumeric(): \Traversable
+            {
+                return new \ArrayIterator(array_map(static fn ($row): array => array_values((array) $row), $this->rows));
+            }
+
+            /**
+             * Iterate rows as associative arrays (Doctrine DBAL).
+             *
+             * @return \Traversable Iterator over the associative rows.
+             */
+            public function iterateAssociative(): \Traversable
+            {
+                return new \ArrayIterator($this->rows);
+            }
+>>>>>>> origin/development
         };
     }
 

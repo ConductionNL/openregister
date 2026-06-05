@@ -5,11 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 declare(strict_types=1);
@@ -20,9 +32,17 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+<<<<<<< HEAD
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+=======
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\IRequest;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
+>>>>>>> origin/development
 
 /**
  * Handles file download audit logging.
@@ -65,6 +85,13 @@ class FileAuditHandler
      * @param string $objectUuid The UUID of the parent object.
      *
      * @return void
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude No-op audit shim: only emits a log line; the AuditTrail insert is commented out, so there is no persisted behavior to specify.
+>>>>>>> origin/development
      */
     public function logDownload(
         int $fileId,
@@ -102,6 +129,7 @@ class FileAuditHandler
     }//end logDownload()
 
     /**
+<<<<<<< HEAD
      * Log a bulk download event (ZIP archive).
      *
      * @param array  $fileIds    Array of file IDs included in the archive.
@@ -119,15 +147,164 @@ class FileAuditHandler
                 message: '[FileAuditHandler] Bulk download logged for '.count($fileIds)." files by {$userId}",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
+=======
+     * Log a bulk download event (ZIP archive) as a SINGLE audit-trail row.
+     *
+     * One audit row per ZIP — not one per included file — to match the
+     * file-actions spec requirement that bulk download is recorded as a
+     * single auditable event. The fileIds + fileNames array is captured
+     * in the `changed` payload so consumers can reconstruct the contents
+     * of the archive.
+     *
+     * @param ObjectEntity $object     The parent object whose files were zipped.
+     * @param int[]        $fileIds    File IDs included in the archive.
+     * @param string[]     $fileNames  File names included in the archive (parallel index to fileIds).
+     * @param string       $zipName    The generated ZIP filename.
+     * @param int|null     $totalBytes Total uncompressed bytes across included files (best-effort).
+     *
+     * @return AuditTrail|null The persisted audit row, or null on failure.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
+     */
+    public function logBulkDownload(
+        ObjectEntity $object,
+        array $fileIds,
+        array $fileNames,
+        string $zipName,
+        ?int $totalBytes=null
+    ): ?AuditTrail {
+        try {
+            $auditTrail = new AuditTrail();
+            $auditTrail->setUuid((string) Uuid::v4());
+            $auditTrail->setObject($object->getId());
+            $auditTrail->setObjectUuid($object->getUuid());
+            $auditTrail->setRegister($object->getRegister());
+            $auditTrail->setSchema($object->getSchema());
+            $auditTrail->setAction('file.bulk_downloaded');
+            $auditTrail->setChanged(
+                [
+                    'fileIds'    => array_values($fileIds),
+                    'fileNames'  => array_values($fileNames),
+                    'fileCount'  => count($fileIds),
+                    'zipName'    => $zipName,
+                    'totalBytes' => $totalBytes,
+                ]
+            );
+
+            $user = $this->userSession->getUser();
+            if ($user !== null) {
+                $auditTrail->setUser($user->getUID());
+                $auditTrail->setUserName($user->getDisplayName());
+            }
+
+            if ($user === null) {
+                // Anonymous bulk downloads still get attributed by IP + UA so the
+                // download can be traced back even without a logged-in user.
+                $remote = $this->request->getRemoteAddress();
+                $auditTrail->setUser('Anonymous');
+                $auditTrail->setUserName('Anonymous ('.$remote.')');
+            }
+
+            $auditTrail->setCreated(new DateTime());
+            $auditTrail->setExpires(new DateTime('+30 days'));
+            $auditTrail->setSize(14);
+
+            return $this->auditTrailMapper->insert($auditTrail);
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[FileAuditHandler] Failed to log bulk download: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
+<<<<<<< HEAD
+=======
+            return null;
+>>>>>>> origin/development
         }//end try
     }//end logBulkDownload()
 
     /**
+<<<<<<< HEAD
+=======
+     * Log a file-action audit trail entry tied to the parent object.
+     *
+     * Creates an `AuditTrail` row whose `action` field is the namespaced
+     * file event (e.g. `file.renamed`, `file.locked`, `file.version_restored`)
+     * and whose `changed` payload carries action-specific metadata.
+     *
+     * The audit row is keyed off the parent ObjectEntity (object/objectUuid/
+     * register/schema columns) so file events surface in the same audit
+     * timeline as object updates -- this matches how the existing
+     * `createAuditTrail` flow stamps rows.
+     *
+     * Failures are swallowed and logged: audit logging must never break
+     * the underlying file operation.
+     *
+     * @param ObjectEntity $object The parent object the file belongs to.
+     * @param int          $fileId The file ID the action targeted.
+     * @param string       $action The namespaced action (e.g. 'file.renamed').
+     * @param array        $data   Action-specific metadata (newName, targetUuid, etc.).
+     *
+     * @return AuditTrail|null The persisted audit row, or null on failure.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
+     */
+    public function logFileAction(
+        ObjectEntity $object,
+        int $fileId,
+        string $action,
+        array $data=[]
+    ): ?AuditTrail {
+        try {
+            $auditTrail = new AuditTrail();
+            $auditTrail->setUuid((string) Uuid::v4());
+            $auditTrail->setObject($object->getId());
+            $auditTrail->setObjectUuid($object->getUuid());
+            $auditTrail->setRegister($object->getRegister());
+            $auditTrail->setSchema($object->getSchema());
+            $auditTrail->setAction($action);
+            $auditTrail->setChanged(
+                [
+                    'fileId' => $fileId,
+                    'data'   => $data,
+                ]
+            );
+
+            // User context.
+            $user = $this->userSession->getUser();
+            if ($user !== null) {
+                $auditTrail->setUser($user->getUID());
+                $auditTrail->setUserName($user->getDisplayName());
+            }
+
+            if ($user === null) {
+                $auditTrail->setUser('System');
+                $auditTrail->setUserName('System');
+            }
+
+            $auditTrail->setCreated(new DateTime());
+            $auditTrail->setExpires(new DateTime('+30 days'));
+            // Minimum default size from AuditTrailMapper::createAuditTrail.
+            $auditTrail->setSize(14);
+
+            return $this->auditTrailMapper->insert($auditTrail);
+        } catch (Exception $e) {
+            // Audit logging should never break the file operation.
+            $this->logger->warning(
+                message: '[FileAuditHandler] Failed to log file action '.$action.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return null;
+        }//end try
+
+    }//end logFileAction()
+
+    /**
+>>>>>>> origin/development
      * Get the current user ID.
      *
      * @return string The current user ID or 'anonymous'.
@@ -135,6 +312,14 @@ class FileAuditHandler
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
+<<<<<<< HEAD
         return $user !== null ? $user->getUID() : 'anonymous';
+=======
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        return 'anonymous';
+>>>>>>> origin/development
     }//end getCurrentUserId()
 }//end class

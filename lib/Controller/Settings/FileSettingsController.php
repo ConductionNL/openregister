@@ -3,6 +3,12 @@
 /**
  * OpenRegister File Settings Controller
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -70,6 +76,7 @@ class FileSettingsController extends Controller
      * @return JSONResponse File settings
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getFileSettings(): JSONResponse
     {
@@ -87,6 +94,7 @@ class FileSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated file settings
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function updateFileSettings(): JSONResponse
     {
@@ -133,6 +141,7 @@ class FileSettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
      *     message?: 'Dolphin connection successful'}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function testDolphinConnection(string $apiEndpoint, string $apiKey): JSONResponse
     {
@@ -182,6 +191,7 @@ class FileSettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
      *     message?: string, capabilities?: array}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function testPresidioConnection(string $apiEndpoint): JSONResponse
     {
@@ -231,6 +241,7 @@ class FileSettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
      *     message?: string}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function testOpenAnonymiserConnection(string $apiEndpoint): JSONResponse
     {
@@ -269,6 +280,7 @@ class FileSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with file collection fields
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getFileCollectionFields(): JSONResponse
     {
@@ -300,6 +312,7 @@ class FileSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with creation result
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function createMissingFileFields(): JSONResponse
     {
@@ -361,6 +374,7 @@ class FileSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with warmup result
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function warmupFiles(): JSONResponse
     {
@@ -477,6 +491,7 @@ class FileSettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function indexFile(int $fileId): JSONResponse
     {
@@ -530,6 +545,7 @@ class FileSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with reindex result
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function reindexFiles(): JSONResponse
     {
@@ -607,6 +623,7 @@ class FileSettingsController extends Controller
      * @psalm-return JSONResponse<200, array<array-key, mixed>,
      *     array<never, never>>|JSONResponse<500,
      *     array{success: false, message: string}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getFileIndexStats(): JSONResponse
     {
@@ -666,6 +683,7 @@ class FileSettingsController extends Controller
      *     completed: 0|mixed, failed: 0|mixed, indexed: 0|mixed,
      *     processing: 0|mixed, vectorized: 0|mixed, error?: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getFileExtractionStats(): JSONResponse
     {
@@ -744,6 +762,12 @@ class FileSettingsController extends Controller
      * @param string[] $headers     Optional HTTP headers (default: Content-Type: application/json).
      *
      * @return array{success: bool, message?: string, error?: string} Health check result.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Private helper: shared cURL health-check used by the connection-test endpoints;
+     *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+>>>>>>> origin/development
      */
     private function performHealthCheck(string $url, string $serviceName, array $headers=[]): array
     {
@@ -796,6 +820,12 @@ class FileSettingsController extends Controller
      * @param string $apiEndpoint The Presidio API base endpoint URL.
      *
      * @return array Capabilities array, potentially containing 'supported_entities'.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Private helper: fetches Presidio supported-entities for the connection test;
+     *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+>>>>>>> origin/development
      */
     private function fetchPresidioCapabilities(string $apiEndpoint): array
     {

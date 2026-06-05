@@ -6,13 +6,20 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -40,6 +47,10 @@ class Version1Date20260325000002 extends SimpleMigrationStep
      * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
+=======
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+>>>>>>> origin/development
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

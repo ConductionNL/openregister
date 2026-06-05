@@ -5,6 +5,12 @@
  *
  * REST controller for email relation operations on OpenRegister objects.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -13,6 +19,8 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
  */
@@ -105,6 +113,7 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(
         string $register,
@@ -125,8 +134,20 @@ class EmailsController extends Controller
             }
 
             $params = $this->request->getParams();
+<<<<<<< HEAD
             $limit  = isset($params['limit']) === true ? (int) $params['limit'] : null;
             $offset = isset($params['offset']) === true ? (int) $params['offset'] : null;
+=======
+            $limit  = null;
+            if (isset($params['limit']) === true) {
+                $limit = (int) $params['limit'];
+            }
+
+            $offset = null;
+            if (isset($params['offset']) === true) {
+                $offset = (int) $params['offset'];
+            }
+>>>>>>> origin/development
 
             $result = $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
 
@@ -149,6 +170,7 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function create(
         string $register,
@@ -213,6 +235,7 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(
         string $register,
@@ -256,6 +279,7 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
      */
     public function search(): JSONResponse
@@ -312,6 +336,7 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
      */
     public function bySender(): JSONResponse

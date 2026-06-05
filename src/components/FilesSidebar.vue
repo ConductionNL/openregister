@@ -110,7 +110,7 @@
 			<NcButton
 				type="secondary"
 				@click="clearFilters">
-				{{ t('openregister', 'Clear Filters') }}
+				{{ t('openregister', 'Clear filters') }}
 			</NcButton>
 		</div>
 	</div>
@@ -132,14 +132,26 @@ export default {
 	},
 
 	props: {
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
 		search: {
 			type: String,
 			default: '',
 		},
+		/**
+		 * @spec exclude two-way-bound extraction-status filter prop, UI plumbing
+		 */
 		status: {
 			type: String,
 			default: null,
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude two-way-bound risk-level filter prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		riskLevel: {
 			type: String,
 			default: null,
@@ -167,12 +179,24 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		status(newVal) {
 			this.selectedStatus = newVal
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
+>>>>>>> origin/development
 		riskLevel(newVal) {
 			this.selectedRiskLevel = newVal
 		},
@@ -186,6 +210,7 @@ export default {
 		 *
 		 * @param {string} value - The search value
 		 * @return {void}
+		 * @spec exclude debounced search-emit UI plumbing
 		 */
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
@@ -199,6 +224,7 @@ export default {
 		 *
 		 * @param {string|null} status - The status to filter by
 		 * @return {void}
+		 * @spec exclude filter-state writer emitting update:status, UI plumbing
 		 */
 		updateStatus(status) {
 			this.selectedStatus = status
@@ -210,6 +236,10 @@ export default {
 		 *
 		 * @param {string|null} level - The risk level to filter by
 		 * @return {void}
+<<<<<<< HEAD
+=======
+		 * @spec exclude filter-state writer emitting update:riskLevel, UI plumbing
+>>>>>>> origin/development
 		 */
 		updateRiskLevel(level) {
 			this.selectedRiskLevel = level
@@ -220,6 +250,7 @@ export default {
 		 * Clear all filters
 		 *
 		 * @return {void}
+		 * @spec exclude filter-reset emitting cleared values, UI plumbing
 		 */
 		clearFilters() {
 			this.localSearch = ''

@@ -180,13 +180,25 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
+<<<<<<< HEAD
 						input-label="Schemas"
+=======
+						:input-label="t('openregister', 'Schemas')"
+>>>>>>> origin/development
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
 						@input="vals => updateField('schemas', vals)" />
+<<<<<<< HEAD
+=======
+					<RegisterLanguagesEditor
+						:value="formData.languages || []"
+						:label="t('openregister', 'Languages')"
+						:helper-text="t('openregister', 'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.')"
+						@input="vals => updateField('languages', vals)" />
+>>>>>>> origin/development
 				</div>
 			</template>
 		</CnFormDialog>
@@ -196,6 +208,10 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 <script>
 import { NcAppSidebar, NcAppSidebarTab, NcButton, NcEmptyContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
 import { CnStatsBlock, CnKpiGrid, CnItemCard, CnFormDialog } from '@conduction/nextcloud-vue'
+<<<<<<< HEAD
+=======
+import RegisterLanguagesEditor from '../../components/i18n/RegisterLanguagesEditor.vue'
+>>>>>>> origin/development
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
@@ -226,6 +242,10 @@ export default {
 		CnKpiGrid,
 		CnItemCard,
 		CnFormDialog,
+<<<<<<< HEAD
+=======
+		RegisterLanguagesEditor,
+>>>>>>> origin/development
 		ChartBar,
 		FileCodeOutline,
 		Pencil,
@@ -246,19 +266,37 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Resolve the active register (with stats) from the dashboard store.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @return {object|undefined} The active register record
+		 */
 		register() {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.getRegisterItem?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
 		},
 		activeTab: {
+			/**
+			 * @spec exclude Tab-switch state accessor; proxies the active tab to/from the register store, no domain behavior.
+			 */
 			get() {
 				return registerStore.getActiveTab
 			},
+			/**
+			 * @spec exclude Tab-switch state mutator; proxies the active tab to the register store, no domain behavior.
+			 */
 			set(value) {
 				registerStore.setActiveTab(value)
 			},
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Presentation-only formatter; builds the object stats breakdown (size/invalid/deleted/locked) for display.
+		 * @return {object} Breakdown descriptor for the objects stats block
+		 */
+>>>>>>> origin/development
 		objectsBreakdown() {
 			const stats = this.register?.stats?.objects
 			const breakdown = {
@@ -269,6 +307,14 @@ export default {
 			}
 			return breakdown
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Build the schema definition used by the inline register-edit form dialog.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @return {object} JSON-schema-like definition for the edit form
+		 */
+>>>>>>> origin/development
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -277,12 +323,25 @@ export default {
 					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
 					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
 					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+<<<<<<< HEAD
+=======
+					languages: { type: 'array', title: t('openregister', 'Languages'), order: 5 },
+>>>>>>> origin/development
 				},
 				required: ['title', 'slug'],
 			}
 		},
 	},
 	watch: {
+<<<<<<< HEAD
+=======
+		/**
+		 * Load schema options when the register-edit dialog opens.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {boolean} val - Whether the edit dialog is open
+		 * @return {void}
+		 */
+>>>>>>> origin/development
 		showEditDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
@@ -290,11 +349,27 @@ export default {
 		},
 	},
 	methods: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
+		 * @param {number} size - Byte size
+		 * @return {object|null} Breakdown descriptor or null
+		 */
+>>>>>>> origin/development
 		sizeBreakdown(size) {
 			if (!size) return null
 			return { size: formatBytes(size) }
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * Load the schema list and build select options for the register-edit form.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -307,6 +382,15 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * Resolve persisted schema references into select-option shape for the edit form.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {Array} schemas - Schema ids or objects
+		 * @return {Array} Select options
+		 */
+>>>>>>> origin/development
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -316,6 +400,15 @@ export default {
 			})
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * Submit the register-edit form through the register store and refresh dashboard stats.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {object} formData - Edited register fields
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -329,6 +422,14 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * Trigger a server-side size recalculation for the register and refresh stats.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async calculateSizes() {
 			if (!this.register) return
 
@@ -341,6 +442,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Fetch the register's generated OpenAPI spec and download it as a JSON file.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-10
+		 * @return {Promise<void>}
+		 */
 		async downloadOas() {
 			if (!this.register) return
 
@@ -362,6 +468,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the register's generated OpenAPI spec in an interactive ReDoc viewer.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-10
+		 * @return {void}
+		 */
 		viewOasDoc() {
 			if (!this.register) return
 
@@ -370,6 +481,12 @@ export default {
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+		/**
+		 * Stage a schema for editing and open the schema-edit modal.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {object} schema - The schema to edit
+		 * @return {void}
+		 */
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')

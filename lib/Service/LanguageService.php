@@ -6,6 +6,12 @@
  * Request-scoped service that stores the resolved language from the Accept-Language header.
  * Used by RenderObject and SaveObject to determine which translation variant to serve or store.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -125,6 +131,11 @@ class LanguageService
      * Check if all translations should be returned.
      *
      * @return bool True if _translations=all was requested
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial boolean getter for the request-scoped returnAll flag; no business logic.
+>>>>>>> origin/development
      */
     public function shouldReturnAllTranslations(): bool
     {
@@ -163,6 +174,13 @@ class LanguageService
      * @param array $registerLanguages Array of language codes from the register
      *
      * @return string The best matching language code
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/register-i18n/spec.md#fallback-language-chain (matches accepted languages against a
+     *       register's available languages in priority order, with base-language fallback and register-default
+     *       fallback flagged as fallbackUsed)
+>>>>>>> origin/development
      */
     public function resolveLanguageForRegister(array $registerLanguages): string
     {
@@ -201,6 +219,12 @@ class LanguageService
      * @param string $headerValue The Accept-Language header value
      *
      * @return string[] Ordered array of language codes (highest priority first)
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/register-i18n/spec.md#language-negotiation-accept-language (parses the Accept-Language
+     *       header per RFC 9110, ordering language tags by descending q-value then appearance)
+>>>>>>> origin/development
      */
     public static function parseAcceptLanguageHeader(string $headerValue): array
     {

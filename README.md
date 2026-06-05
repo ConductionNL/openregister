@@ -67,6 +67,10 @@ It is the shared data backbone for apps like [OpenCatalogi](https://github.com/C
 
 ### Integrations
 
+<<<<<<< HEAD
+=======
+- **Pluggable integration registry** — Object surfaces (sidebar tabs, dashboard widgets, detail pages, reference properties) are driven by a registry of `IntegrationProvider`s. Five built-ins ship out of the box (Files, Notes, Tags, Tasks, Audit Trail); apps add their own — including OpenConnector-backed external integrations like xWiki — without touching OpenRegister core. See [docs/Integrations/pluggable-integration-registry.md](docs/Integrations/pluggable-integration-registry.md) for the "how to add an integration" walkthrough.
+>>>>>>> origin/development
 - **SOLR Integration** — Optional Apache Solr for advanced search scenarios
 - **Source Synchronization** — Keep registers in sync with external data sources
 - **Schema Import** — Import schemas from Schema.org, OpenAPI, and GGM standards
@@ -170,6 +174,7 @@ npm run build      # Production build
 ### Code quality
 
 ```bash
+<<<<<<< HEAD
 # PHP
 composer phpcs          # Check coding standards
 composer cs:fix         # Auto-fix issues
@@ -181,6 +186,23 @@ npm run lint            # ESLint
 npm run stylelint       # CSS linting
 ```
 
+=======
+# Authoritative gate (same as CI) — must pass before pushing
+composer check:strict   # phpcs + phpmd + phpstan + psalm + all tests
+
+# Individual tools
+composer phpcs          # Check coding standards (0 errors required)
+composer cs:fix         # Auto-fix coding-standard issues
+composer phpmd          # Mess detection (52 violations tracked in openspec/changes/openregister-legacy-quality-cleanup/)
+composer phpstan        # Static analysis (baseline: 1371 entries, tracked in phpstan-baseline.neon)
+composer phpmetrics     # HTML metrics report
+
+# Frontend
+npm run lint            # ESLint
+npm run stylelint       # CSS linting
+```
+
+>>>>>>> origin/development
 ## Tech Stack
 
 | Layer | Technology |

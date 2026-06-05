@@ -5,7 +5,11 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editEndpoint'"
+<<<<<<< HEAD
 		:name="endpointStore.endpointItem?.id ? 'Edit Endpoint' : 'Add Endpoint'"
+=======
+		:name="endpointStore.endpointItem?.id ? t('openregister', 'Edit Endpoint') : t('openregister', 'Add Endpoint')"
+>>>>>>> origin/development
 		size="large"
 		:can-close="true"
 		@update:open="navigationStore.setModal(false)">
@@ -13,20 +17,33 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			<div class="form">
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.name"
+<<<<<<< HEAD
 					label="Name*"
+=======
+					:label="t('openregister', 'Name*')"
+>>>>>>> origin/development
 					required
 					maxlength="255" />
 				<NcTextArea
 					:value.sync="endpointStore.endpointItem.description"
+<<<<<<< HEAD
 					label="Description"
 					rows="3" />
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.endpoint"
 					label="Endpoint Path*"
+=======
+					:label="t('openregister', 'Description')"
+					rows="3" />
+				<NcTextField
+					:value.sync="endpointStore.endpointItem.endpoint"
+					:label="t('openregister', 'Endpoint Path*')"
+>>>>>>> origin/development
 					:placeholder="endpointPlaceholder"
 					required
 					maxlength="255" />
 				<NcSelect
+<<<<<<< HEAD
 					v-model="endpointStore.endpointItem.method"
 					:options="methodOptions"
 					label="Method*"
@@ -52,13 +69,46 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					:value.sync="endpointStore.endpointItem.outputMapping"
 					label="Output Mapping"
 					placeholder="ID of output mapping (optional)" />
+=======
+						input-label="Endpoint Store Endpoint Item Method"
+					v-model="endpointStore.endpointItem.method"
+					:options="methodOptions"
+					:label="t('openregister', 'Method*')"
+					:placeholder="t('openregister', 'Select HTTP method')" />
+				<NcSelect
+						input-label="Endpoint Store Endpoint Item Target Type"
+					v-model="endpointStore.endpointItem.targetType"
+					:options="targetTypeOptions"
+					:label="t('openregister', 'Target Type*')"
+					:placeholder="t('openregister', 'Select target type')" />
+				<NcTextField
+					:value.sync="endpointStore.endpointItem.targetId"
+					:label="t('openregister', 'Target ID')"
+					:placeholder="t('openregister', 'ID of the target resource')" />
+				<NcTextField
+					:value.sync="endpointStore.endpointItem.version"
+					:label="t('openregister', 'Version')"
+					placeholder="0.0.0" />
+				<NcTextField
+					:value.sync="endpointStore.endpointItem.inputMapping"
+					:label="t('openregister', 'Input Mapping')"
+					:placeholder="t('openregister', 'ID of input mapping (optional)')" />
+				<NcTextField
+					:value.sync="endpointStore.endpointItem.outputMapping"
+					:label="t('openregister', 'Output Mapping')"
+					:placeholder="t('openregister', 'ID of output mapping (optional)')" />
+>>>>>>> origin/development
 			</div>
 			<div class="modalFooter">
 				<NcButton @click="navigationStore.setModal(false)">
 					<template #icon>
 						<Cancel :size="20" />
 					</template>
+<<<<<<< HEAD
 					Cancel
+=======
+					{{ t('openregister', 'Cancel') }}
+>>>>>>> origin/development
 				</NcButton>
 				<NcButton
 					:disabled="!endpointStore.endpointItem.name || !endpointStore.endpointItem.endpoint || !endpointStore.endpointItem.method || !endpointStore.endpointItem.targetType"
@@ -67,7 +117,11 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<ContentSaveOutline :size="20" />
 					</template>
+<<<<<<< HEAD
 					Save
+=======
+					{{ t('openregister', 'Save') }}
+>>>>>>> origin/development
 				</NcButton>
 			</div>
 		</div>
@@ -104,6 +158,12 @@ export default {
 		}
 	},
 	methods: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
+>>>>>>> origin/development
 		saveEndpoint() {
 			if (endpointStore.endpointItem.id) {
 				endpointStore.updateEndpoint(endpointStore.endpointItem)

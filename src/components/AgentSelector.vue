@@ -201,6 +201,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec exclude translation function placeholder, no observable behaviour
+		 */
 		t(app, text) {
 			// Translation function placeholder
 			return text
@@ -221,6 +224,7 @@ export default {
 		 *
 		 * @param {object|string} view - The view object or string identifier
 		 * @return {string} The view name
+		 * @spec exclude computed display helper deriving view label from prop
 		 */
 		getViewName(view) {
 			if (typeof view === 'string') {
@@ -234,6 +238,7 @@ export default {
 		 *
 		 * @param {object|string} tool - The tool object or string identifier
 		 * @return {string} The tool name
+		 * @spec exclude computed display helper deriving tool label from prop
 		 */
 		getToolName(tool) {
 			if (typeof tool === 'string') {
@@ -248,6 +253,7 @@ export default {
 		 * Handle start conversation click
 		 *
 		 * @param {object} agent - The agent to start conversation with
+		 * @spec exclude emit/UI handler delegating to parent via select-agent/confirm events
 		 */
 		handleStartConversation(agent) {
 			this.startingAgentId = agent.id
@@ -261,6 +267,7 @@ export default {
 		 *
 		 * @param {string|number} agentId - The agent ID
 		 * @param {string} section - The section to toggle ('views' or 'tools')
+		 * @spec exclude local UI expand-state toggle plumbing
 		 */
 		toggleExpand(agentId, section) {
 			const key = `${agentId}-${section}`
@@ -273,6 +280,7 @@ export default {
 		 * @param {string|number} agentId - The agent ID
 		 * @param {string} section - The section to check ('views' or 'tools')
 		 * @return {boolean} True if section is expanded
+		 * @spec exclude computed read of local UI expand state
 		 */
 		isExpanded(agentId, section) {
 			const key = `${agentId}-${section}`
@@ -284,6 +292,7 @@ export default {
 		 *
 		 * @param {object} agent - The agent object
 		 * @return {Array} Array of visible views
+		 * @spec exclude computed display slice of views by expand state
 		 */
 		getVisibleViews(agent) {
 			if (this.isExpanded(agent.id, 'views')) {
@@ -297,6 +306,7 @@ export default {
 		 *
 		 * @param {object} agent - The agent object
 		 * @return {Array} Array of visible tools
+		 * @spec exclude computed display slice of tools by expand state
 		 */
 		getVisibleTools(agent) {
 			if (this.isExpanded(agent.id, 'tools')) {

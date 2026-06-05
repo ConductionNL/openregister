@@ -6,6 +6,12 @@
  * Controller for user management operations including profile retrieval
  * and update operations for the currently authenticated user.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -58,6 +64,10 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+>>>>>>> origin/development
  */
 class UserController extends Controller
 {
@@ -102,6 +112,7 @@ class UserController extends Controller
      * @return JSONResponse JSON response with user profile data
      *
      * @suppressWarnings(PHPMD.ShortMethodName) Standard REST API endpoint name for current user
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
      */
     public function me(): JSONResponse
     {
@@ -146,6 +157,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated user profile
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
      */
     public function updateMe(): JSONResponse
     {
@@ -222,6 +234,7 @@ class UserController extends Controller
      * @PublicPage
      *
      * @return JSONResponse A JSON response containing login result and user information
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-9
      */
     public function login(): JSONResponse
     {
@@ -380,6 +393,7 @@ class UserController extends Controller
      * @PublicPage
      *
      * @return JSONResponse A JSON response confirming logout
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-9
      */
     public function logout(): JSONResponse
     {
@@ -397,6 +411,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
      */
     public function changePassword(): JSONResponse
     {
@@ -432,7 +447,15 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+>>>>>>> origin/development
             if ($code === 403) {
                 $clientIp = $this->securityService->getClientIpAddress(request: $this->request);
                 $this->securityService->recordFailedLoginAttempt(
@@ -457,6 +480,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
      */
     public function uploadAvatar(): JSONResponse
     {
@@ -479,7 +503,16 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logError(message: 'Failed to upload avatar', exception: $e);
             return $this->errorResponse(message: 'Failed to upload avatar', statusCode: 500);
@@ -494,6 +527,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
      */
     public function deleteAvatar(): JSONResponse
     {
@@ -507,7 +541,16 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logError(message: 'Failed to delete avatar', exception: $e);
             return $this->errorResponse(message: 'Failed to delete avatar', statusCode: 500);
@@ -522,6 +565,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse|DataDownloadResponse JSON response with export data
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function exportData(): JSONResponse|DataDownloadResponse
     {
@@ -538,7 +582,15 @@ class UserController extends Controller
 
             return new DataDownloadResponse($json, $filename, 'application/json');
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+>>>>>>> origin/development
             if ($code === 429) {
                 $errorData = json_decode($e->getMessage(), true);
                 $response  = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 429);
@@ -560,6 +612,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with preferences
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function getNotificationPreferences(): JSONResponse
     {
@@ -586,6 +639,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated preferences
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function updateNotificationPreferences(): JSONResponse
     {
@@ -623,6 +677,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with activity list
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function getActivity(): JSONResponse
     {
@@ -655,6 +710,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with token list
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function listTokens(): JSONResponse
     {
@@ -681,6 +737,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with the created token
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function createToken(): JSONResponse
     {
@@ -702,7 +759,16 @@ class UserController extends Controller
             $response = new JSONResponse(data: $token, statusCode: 201);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logError(message: 'Failed to create token', exception: $e);
             return $this->errorResponse(message: 'Failed to create token', statusCode: 500);
@@ -718,6 +784,7 @@ class UserController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function revokeToken(string $id): JSONResponse
     {
@@ -731,7 +798,16 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logError(message: 'Failed to revoke token', exception: $e);
             return $this->errorResponse(message: 'Failed to revoke token', statusCode: 500);
@@ -746,6 +822,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function requestDeactivation(): JSONResponse
     {
@@ -762,7 +839,15 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+>>>>>>> origin/development
             if ($code === 409) {
                 $errorData = json_decode($e->getMessage(), true);
                 $response  = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 409);
@@ -784,6 +869,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with status
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function getDeactivationStatus(): JSONResponse
     {
@@ -810,6 +896,7 @@ class UserController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
      */
     public function cancelDeactivation(): JSONResponse
     {
@@ -823,7 +910,16 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
+<<<<<<< HEAD
             return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+=======
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logError(message: 'Failed to cancel deactivation', exception: $e);
             return $this->errorResponse(message: 'Failed to cancel deactivation', statusCode: 500);

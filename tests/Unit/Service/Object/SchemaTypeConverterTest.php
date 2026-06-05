@@ -14,6 +14,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -253,4 +256,26 @@ class SchemaTypeConverterTest extends TestCase
         $this->assertSame('hello', $this->converter->convertValue('hello', ''));
         $this->assertSame('5', $this->converter->convertValue(5, ''));
     }//end testEmptySchemaTypeUsesStringFallback()
+<<<<<<< HEAD
+=======
+
+    /*
+        ====================================================================
+     * Extended field types — color / recurrence (extended-field-types spec)
+     * ==================================================================== */
+
+    public function testColorTypeReturnsStringUnchanged(): void
+    {
+        // REQ-EFT-005: color is a typed string returned verbatim on read.
+        $this->assertSame('#a4b8ff', $this->converter->convertValue('#a4b8ff', 'color'));
+        $this->assertSame('rgba(0,0,0,1)', $this->converter->convertValue('rgba(0,0,0,1)', 'color'));
+    }//end testColorTypeReturnsStringUnchanged()
+
+    public function testRecurrenceTypeReturnsRruleUnchanged(): void
+    {
+        // REQ-EFT-003: the base RRULE string is preserved unchanged for round-trip.
+        $rrule = 'FREQ=WEEKLY;BYDAY=MO;COUNT=10';
+        $this->assertSame($rrule, $this->converter->convertValue($rrule, 'recurrence'));
+    }//end testRecurrenceTypeReturnsRruleUnchanged()
+>>>>>>> origin/development
 }//end class

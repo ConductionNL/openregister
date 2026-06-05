@@ -92,7 +92,11 @@
 			<NcButton
 				type="secondary"
 				@click="clearFilters">
+<<<<<<< HEAD
 				{{ t('openregister', 'Clear Filters') }}
+=======
+				{{ t('openregister', 'Clear filters') }}
+>>>>>>> origin/development
 			</NcButton>
 		</div>
 	</div>
@@ -112,14 +116,32 @@ export default {
 		Magnify,
 	},
 	props: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		search: {
 			type: String,
 			default: '',
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude two-way-bound entity-type filter prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		type: {
 			type: String,
 			default: null,
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude two-way-bound category filter prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		category: {
 			type: String,
 			default: null,
@@ -139,32 +161,78 @@ export default {
 		},
 	},
 	watch: {
+<<<<<<< HEAD
 		search(newVal) {
 			this.localSearch = newVal
 		},
 		type(newVal) {
 			this.selectedType = newVal
 		},
+=======
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
+		search(newVal) {
+			this.localSearch = newVal
+		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
+		type(newVal) {
+			this.selectedType = newVal
+		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
+>>>>>>> origin/development
 		category(newVal) {
 			this.selectedCategory = newVal
 		},
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * Handle search input with 500ms debounce; emits `update:search` once typing pauses.
+		 *
+		 * @param {string} value - The search value
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
+		 */
+>>>>>>> origin/development
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
 				this.$emit('update:search', value)
 			}, 500)
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude filter-state writer emitting update:type to parent, UI plumbing
+		 */
+>>>>>>> origin/development
 		updateType(type) {
 			this.selectedType = type
 			this.$emit('update:type', type)
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude filter-state writer emitting update:category to parent, UI plumbing
+		 */
+>>>>>>> origin/development
 		updateCategory(category) {
 			this.selectedCategory = category
 			this.$emit('update:category', category)
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude filter-reset emitting cleared values to parent, UI plumbing
+		 */
+>>>>>>> origin/development
 		clearFilters() {
 			this.localSearch = ''
 			this.selectedType = null

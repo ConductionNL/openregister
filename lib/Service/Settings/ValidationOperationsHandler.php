@@ -5,6 +5,12 @@
  *
  * Handles administrative validation operations for all objects in the system.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -117,6 +123,7 @@ class ValidationOperationsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Try-catch and conditional result handling creates multiple paths
      *     Circular dependency workaround and validation result handling require else branch
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     public function validateAllObjects(): array
     {

@@ -1,6 +1,9 @@
 <?php
 /**
  * Simple chat API test using curl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 $url = 'http://localhost/index.php/apps/openregister/api/chat/send';

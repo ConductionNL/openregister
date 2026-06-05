@@ -109,6 +109,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
  */
 import {
@@ -145,6 +146,7 @@ export default {
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		hasChanges() {
@@ -166,6 +168,7 @@ export default {
 		 * Get processed changes data
 		 * @return {object} Processed changes
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		changes() {
@@ -193,6 +196,7 @@ export default {
 		 * Check if changes are in table format
 		 * @return {boolean} True if table format
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		isTableChanges() {
@@ -204,6 +208,7 @@ export default {
 		 * Close the dialog
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		closeDialog() {
@@ -215,6 +220,7 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatDate(dateString) {
@@ -231,6 +237,7 @@ export default {
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatChanges(changes) {
@@ -258,6 +265,7 @@ export default {
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatValue(value) {
@@ -281,6 +289,7 @@ export default {
 		 * @param {*} value - Value to check
 		 * @return {boolean} True if object
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		isObject(value) {
@@ -292,6 +301,7 @@ export default {
 		 * @param {object} change - Change object
 		 * @return {string} CSS class for change type
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		getChangeType(change) {
@@ -312,6 +322,7 @@ export default {
 		 * @param {object} change - Change object
 		 * @return {string} Human readable change type
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		getChangeTypeLabel(change) {
@@ -332,6 +343,7 @@ export default {
 		 * Copy changes data to clipboard
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async copyChanges() {
@@ -349,6 +361,7 @@ export default {
 		 * Switch to full details view
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		viewFullDetails() {

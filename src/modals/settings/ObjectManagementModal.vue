@@ -109,7 +109,7 @@
 
 					<div class="cost-note">
 						<InformationOutline :size="16" />
-						<small>{{ t('openregister', 'Tip: Only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
+						<small>{{ t('openregister', 'Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
 					</div>
 				</div>
 			</div>
@@ -148,7 +148,7 @@
 						type="switch">
 						{{ t('openregister', 'Include related object references') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Include IDs and names of related objects for better contextual search') }}</small>
+					<small>{{ t('openregister', 'Include ids and names of related objects for better contextual search') }}</small>
 				</div>
 			</div>
 
@@ -181,7 +181,7 @@
 
 			<!-- Embedding Provider Info -->
 			<div class="config-section">
-				<h3>{{ t('openregister', 'ℹ️ Current Configuration') }}</h3>
+				<h3>{{ t('openregister', 'ℹ️ current configuration') }}</h3>
 
 				<div class="info-grid">
 					<div class="info-item">
@@ -199,7 +199,7 @@
 				</div>
 
 				<div class="info-note">
-					<small>{{ t('openregister', 'To change the embedding provider or model, go to LLM Configuration.') }}</small>
+					<small>{{ t('openregister', 'To change the embedding provider or model, go to LLM configuration.') }}</small>
 				</div>
 			</div>
 		</div>
@@ -278,11 +278,17 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed count of selected views
+		 */
 		selectedViewsCount() {
 			return this.config.enabledViews.length
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	mounted() {
 		this.loadConfiguration()
 		this.loadViews()
@@ -290,6 +296,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async loadConfiguration() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
@@ -306,6 +315,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form-state loader for views via API
+		 */
 		async loadViews() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/views'))
@@ -316,6 +328,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form-state loader for embedding-provider info via API
+		 */
 		async loadEmbeddingProviderInfo() {
 			try {
 				// Load current LLM configuration to show embedding provider info
@@ -330,6 +345,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler persisting vectorization config via API
+		 */
 		async saveConfiguration() {
 			this.saving = true
 

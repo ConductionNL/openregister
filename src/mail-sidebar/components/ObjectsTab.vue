@@ -1,6 +1,7 @@
 <template>
 	<div class="or-tab-objects">
 		<div v-if="loading" class="or-tab-loading">
+<<<<<<< HEAD
 			{{ t('openregister', 'Loading linked objects...') }}
 		</div>
 		<div v-else-if="objects.length === 0" class="or-tab-empty">
@@ -23,17 +24,112 @@
 				</button>
 			</li>
 		</ul>
+=======
+			<NcLoadingIcon :size="28" />
+			<span>{{ t('openregister', 'Loading linked objects...') }}</span>
+		</div>
+		<NcEmptyContent
+			v-else-if="objects.length === 0"
+			:name="t('openregister', 'No linked objects')"
+			:description="t('openregister', 'Link an object to see it here.')">
+			<template #icon>
+				<LinkVariant :size="48" />
+			</template>
+			<template #action>
+				<NcButton type="primary" @click="$emit('switch-tab', 'actions')">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openregister', 'Link to Object') }}
+				</NcButton>
+			</template>
+		</NcEmptyContent>
+		<template v-else>
+			<div class="or-mail-object-list">
+				<div
+					v-for="obj in objects"
+					:key="obj.uuid"
+					class="or-mail-object-card"
+					@dragover.prevent="onAttachmentDragOver"
+					@drop.prevent="onAttachmentDrop($event, obj)">
+					<div class="or-mail-object-card__header">
+						<div class="or-mail-object-card__title">
+							<a
+								:href="objectUrl(obj)"
+								target="_blank"
+								:title="t('openregister', 'Open in OpenRegister')">
+								{{ obj.name || obj.uuid }}
+							</a>
+						</div>
+						<NcButton
+							type="tertiary"
+							:aria-label="t('openregister', 'Remove link to {name}', { name: obj.name || obj.uuid })"
+							@click="unlinkObject(obj)">
+							<template #icon>
+								<Close :size="20" />
+							</template>
+						</NcButton>
+					</div>
+					<div class="or-mail-object-card__meta">
+						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
+						<span v-if="obj.register" class="or-mail-object-card__register">{{ t('openregister', 'Register #{id}', { id: obj.register }) }}</span>
+					</div>
+				</div>
+			</div>
+			<div class="or-tab-objects__actions">
+				<NcButton type="secondary" wide @click="$emit('switch-tab', 'actions')">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openregister', 'Link another object') }}
+				</NcButton>
+			</div>
+		</template>
+>>>>>>> origin/development
 	</div>
 </template>
 
 <script>
+<<<<<<< HEAD
+=======
+/**
+ * Objects tab — linked-objects list inside the three-tab sidebar; also acts
+ * as the drop target for Mail attachments (drops upload the file to the
+ * linked OR object via /api/objects/{r}/{s}/{id}/filesMultipart).
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
+ */
+>>>>>>> origin/development
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
+<<<<<<< HEAD
 
 export default {
 	name: 'ObjectsTab',
+=======
+import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
+import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Close from 'vue-material-design-icons/Close.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
+
+export default {
+	name: 'ObjectsTab',
+	components: {
+		NcButton,
+		NcEmptyContent,
+		NcLoadingIcon,
+		Plus,
+		Close,
+		LinkVariant,
+	},
+>>>>>>> origin/development
 	props: {
 		accountId: { type: Number, default: null },
 		messageId: { type: Number, default: null },
@@ -42,9 +138,19 @@ export default {
 		return {
 			objects: [],
 			loading: false,
+<<<<<<< HEAD
 		}
 	},
 	watch: {
+=======
+			uploadingObjectUuid: null,
+		}
+	},
+	watch: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
+>>>>>>> origin/development
 		messageId() {
 			this.loadObjects()
 		},
@@ -54,6 +160,22 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
+		objectUrl(obj) {
+			return generateUrl('/apps/openregister/registers/{register}/{schemaId}/{uuid}', {
+				register: obj.register,
+				schemaId: obj.schemaId,
+				uuid: obj.uuid,
+			})
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
+>>>>>>> origin/development
 		async loadObjects() {
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
@@ -73,6 +195,12 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
+>>>>>>> origin/development
 		async unlinkObject(obj) {
 			if (!confirm(t('openregister', 'Remove link to {name}?', { name: obj.name || obj.uuid }))) {
 				return
@@ -91,6 +219,86 @@ export default {
 				console.error('[ObjectsTab] Unlink failed:', err)
 			}
 		},
+<<<<<<< HEAD
 	},
 }
 </script>
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 */
+		onAttachmentDragOver(event) {
+			if (event.dataTransfer) {
+				event.dataTransfer.dropEffect = 'copy'
+			}
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 */
+		async onAttachmentDrop(event, obj) {
+			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
+			if (!raw) {
+				return
+			}
+			const register = obj.register
+			const schema = obj.schemaId || obj.schema
+			const objectId = obj.id || obj.uuid
+			if (!register || !schema || !objectId) {
+				showError(t('openregister', 'Object metadata incomplete for file upload'))
+				return
+			}
+			try {
+				const attachment = JSON.parse(raw)
+				this.uploadingObjectUuid = obj.uuid
+				await this.uploadAttachmentToObject(attachment, { register, schema, objectId })
+				showSuccess(t('openregister', 'Attachment added to {name}', { name: obj.name || obj.uuid }))
+			} catch (err) {
+				showError(t('openregister', 'Failed to add attachment to object'))
+				console.error('[ObjectsTab] Attachment drop upload failed:', err)
+			} finally {
+				this.uploadingObjectUuid = null
+			}
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 */
+		async uploadAttachmentToObject(attachment, target) {
+			const response = await fetch(attachment.downloadUrl, { credentials: 'same-origin' })
+			if (!response.ok) {
+				throw new Error(`Attachment download failed with status ${response.status}`)
+			}
+			const blob = await response.blob()
+			const fileName = attachment.fileName || `attachment-${attachment.attachmentId}`
+			const file = new File([blob], fileName, { type: attachment.mime || blob.type || 'application/octet-stream' })
+			const formData = new FormData()
+			formData.append('files[]', file)
+			const uploadUrl = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart', {
+				register: target.register,
+				schema: target.schema,
+				id: target.objectId,
+			})
+			await axios.post(uploadUrl, formData, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+				timeout: 20000,
+			})
+		},
+	},
+}
+</script>
+
+<style scoped>
+.or-tab-objects__actions {
+	margin-top: 12px;
+	padding: 0 4px;
+}
+
+.or-tab-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 24px 0;
+	color: var(--color-text-maxcontrast);
+}
+</style>
+>>>>>>> origin/development

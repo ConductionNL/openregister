@@ -6,6 +6,12 @@
  * Processes organisations in 'deprovisioning' state by soft-deleting their
  * objects and transitioning them to 'archived' state.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -15,6 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
  */
 
@@ -32,6 +39,11 @@ use Psr\Log\LoggerInterface;
  * Processes deprovisioning organisations.
  *
  * @package OCA\OpenRegister\BackgroundJob
+<<<<<<< HEAD
+=======
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
+>>>>>>> origin/development
  */
 class TenantDeprovisionJob extends TimedJob
 {
@@ -63,6 +75,8 @@ class TenantDeprovisionJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
      * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
      */

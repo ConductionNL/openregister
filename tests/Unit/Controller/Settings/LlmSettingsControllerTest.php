@@ -443,6 +443,7 @@ class LlmSettingsControllerTest extends TestCase
 
     public function testGetVectorStatsContainsTimestamp(): void
     {
+<<<<<<< HEAD
         $this->vectorizationService->method('getVectorStats')
             ->willReturn(['total' => 100, 'by_schema' => []]);
 
@@ -451,6 +452,13 @@ class LlmSettingsControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $this->assertArrayHasKey('timestamp', $result->getData());
         $this->assertIsString($result->getData()['timestamp']);
+=======
+        $this->markTestSkipped(
+            'LlmSettingsController::getVectorStats() was removed; '
+            .'vector stats now live on a dedicated endpoint. Test kept '
+            .'as a marker until the replacement controller is finalised.'
+        );
+>>>>>>> origin/development
     }
 
     public function testPatchLLMSettingsWithAllModelConfigs(): void
@@ -521,6 +529,7 @@ class LlmSettingsControllerTest extends TestCase
 
     public function testGetVectorStatsSuccess(): void
     {
+<<<<<<< HEAD
         $stats = ['total_vectors' => 500];
         $this->vectorizationService->method('getVectorStats')->willReturn($stats);
 
@@ -529,10 +538,14 @@ class LlmSettingsControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $this->assertTrue($result->getData()['success']);
         $this->assertEquals($stats, $result->getData()['stats']);
+=======
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+>>>>>>> origin/development
     }
 
     public function testGetVectorStatsException(): void
     {
+<<<<<<< HEAD
         $this->vectorizationService->method('getVectorStats')
             ->willThrowException(new \Exception('Failed'));
 
@@ -540,6 +553,9 @@ class LlmSettingsControllerTest extends TestCase
 
         $this->assertEquals(500, $result->getStatus());
         $this->assertFalse($result->getData()['success']);
+=======
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+>>>>>>> origin/development
     }
 
     // =========================================================================

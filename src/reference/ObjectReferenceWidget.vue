@@ -70,6 +70,7 @@ export default {
 	},
 
 	computed: {
+<<<<<<< HEAD
 		title() {
 			return this.richObject.title || t('openregister', 'Unknown Object')
 		},
@@ -85,12 +86,53 @@ export default {
 		registerTitle() {
 			return this.richObject.register?.title || t('openregister', 'Unknown Register')
 		},
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+		title() {
+			return this.richObject.title || t('openregister', 'Unknown Object')
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+		objectUrl() {
+			return this.richObject.url || '#'
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+		iconUrl() {
+			return this.richObject.icon_url || ''
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+		schemaTitle() {
+			return this.richObject.schema?.title || t('openregister', 'Unknown Schema')
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+		registerTitle() {
+			return this.richObject.register?.title || t('openregister', 'Unknown Register')
+		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+>>>>>>> origin/development
 		properties() {
 			return this.richObject.properties || []
 		},
 		updated() {
 			return this.richObject.updated || ''
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 */
+>>>>>>> origin/development
 		formattedDate() {
 			if (!this.updated) {
 				return ''

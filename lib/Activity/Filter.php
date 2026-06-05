@@ -5,10 +5,20 @@
  *
  * Filter for OpenRegister activity events in the activity stream.
  *
+<<<<<<< HEAD
  * @category Activity
  * @package  OCA\OpenRegister\Activity
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Activity
+ * @package  OCA\OpenRegister\Activity
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -37,6 +47,7 @@ class Filter implements IFilter
      * @param IL10N         $l            The localization service.
      * @param IURLGenerator $urlGenerator The URL generator.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function __construct(
@@ -50,6 +61,7 @@ class Filter implements IFilter
      *
      * @return string The filter identifier.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getIdentifier(): string
@@ -62,6 +74,7 @@ class Filter implements IFilter
      *
      * @return string The filter name.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getName(): string
@@ -74,6 +87,7 @@ class Filter implements IFilter
      *
      * @return int The filter priority.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getPriority(): int
@@ -86,6 +100,7 @@ class Filter implements IFilter
      *
      * @return string The icon URL.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getIcon(): string
@@ -104,6 +119,7 @@ class Filter implements IFilter
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $types required by IFilter interface
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function filterTypes(array $types): array
@@ -116,6 +132,7 @@ class Filter implements IFilter
      *
      * @return array<array-key, string> The allowed app IDs.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function allowedApps(): array

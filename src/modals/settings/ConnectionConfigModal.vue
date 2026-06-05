@@ -27,7 +27,7 @@
 			<div class="modal-header">
 				<h3>{{ t('openregister', 'SOLR Connection Settings') }}</h3>
 				<p class="header-description">
-					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. Use the separate ConfigSet and Collection Management dialogs to manage cores and collections.') }}
+					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. Use the separate configset and collection management dialogs to manage cores and collections.') }}
 				</p>
 			</div>
 
@@ -195,7 +195,7 @@
 						{{ localConfig.useCloud ? t('openregister', 'SolrCloud mode enabled') : t('openregister', 'Standalone SOLR mode') }}
 					</NcCheckboxRadioSwitch>
 					<p class="option-description">
-						{{ t('openregister', 'Use SolrCloud with Zookeeper for distributed search') }}
+						{{ t('openregister', 'Use SolrCloud with zookeeper for distributed search') }}
 					</p>
 
 					<NcCheckboxRadioSwitch
@@ -393,6 +393,9 @@ export default {
 		config: {
 			immediate: true,
 			deep: true,
+			/**
+			 * @spec exclude watcher syncing local config copy from prop
+			 */
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
@@ -402,6 +405,8 @@ export default {
 	methods: {
 		/**
 		 * Handle modal close
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
 		 */
 		handleClose() {
 			// Reset test results when closing
@@ -411,6 +416,7 @@ export default {
 
 		/**
 		 * Handle save button click
+		 * @spec exclude modal save handler emitting config to parent
 		 */
 		handleSave() {
 			this.$emit('save', this.localConfig)
@@ -418,6 +424,7 @@ export default {
 
 		/**
 		 * Test connection with current settings
+		 * @spec exclude connection-test handler delegating to API
 		 */
 		async handleTestConnection() {
 			this.testing = true

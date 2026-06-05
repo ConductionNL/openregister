@@ -6,6 +6,12 @@
  * Handles audit trail and logging operations for objects.
  * Tracks all changes and access to objects for compliance and debugging.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -17,6 +23,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
  */
@@ -49,6 +57,7 @@ class AuditHandler
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
      * @param LoggerInterface  $logger           PSR-3 logger
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     public function __construct(
@@ -71,6 +80,8 @@ class AuditHandler
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
      */
@@ -129,6 +140,7 @@ class AuditHandler
      *
      * @return bool True if object belongs to register/schema
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     public function validateObjectOwnership(object|array $object, string $requestedRegister, string $requestedSchema): bool
@@ -182,6 +194,7 @@ class AuditHandler
      *
      * @return array Prepared filters for audit trail query.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     private function prepareFilters(string $uuid, array $filters): array
@@ -220,6 +233,7 @@ class AuditHandler
      *
      * @return string Schema ID
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     private function extractSchemaId(mixed $schema): string
@@ -242,6 +256,7 @@ class AuditHandler
      *
      * @return null|string Schema slug
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     private function extractSchemaSlug(mixed $schema): string|null

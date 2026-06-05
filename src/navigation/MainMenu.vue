@@ -1,18 +1,18 @@
 <template>
-	<NcAppNavigation>
-		<NcAppNavigationNew
-			:text="activeOrganisationName"
-			@click="handleNavigate('/')">
-			<template #icon>
-				<Finance :size="20" />
-			</template>
-		</NcAppNavigationNew>
-
-		<NcAppNavigationList>
-			<NcAppNavigationItem :active="$route.path.startsWith('/chat')" :name="t('openregister', 'AI Chat')" @click="handleNavigate('/chat')">
+	<CnAppNav :manifest="manifest" :translate="translate">
+		<!-- Primary action: the active-organisation switcher button. Rendered
+		     in CnAppNav's #primary-action slot because its label is live store
+		     state (organisationStore.activeOrganisation) — the manifest's
+		     static nav.primaryAction can't express that. Clicking returns to
+		     the dashboard. -->
+		<template #primary-action>
+			<NcAppNavigationNew
+				:text="activeOrganisationName"
+				@click="handleNavigate('/')">
 				<template #icon>
-					<MessageTextOutline :size="20" />
+					<Finance :size="20" />
 				</template>
+<<<<<<< HEAD
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/registers')" :name="t('openregister', 'Registers')" @click="handleNavigate('/registers')">
 				<template #icon>
@@ -104,20 +104,21 @@
 			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
+=======
+			</NcAppNavigationNew>
+		</template>
+	</CnAppNav>
+>>>>>>> origin/development
 </template>
 <script>
-import { t } from '@nextcloud/l10n'
+import { translate as t } from '@nextcloud/l10n'
 
-import {
-	NcAppNavigation,
-	NcAppNavigationList,
-	NcAppNavigationSettings,
-	NcAppNavigationItem,
-	NcAppNavigationNew,
-} from '@nextcloud/vue'
+import { NcAppNavigationNew } from '@nextcloud/vue'
+import { CnAppNav } from '@conduction/nextcloud-vue'
 
 // Icons
 import Finance from 'vue-material-design-icons/Finance.vue'
+<<<<<<< HEAD
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
@@ -135,6 +136,11 @@ import Webhook from 'vue-material-design-icons/Webhook.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+=======
+
+// Manifest (menu declared declaratively; rendered by CnAppNav)
+import manifest from '../manifest.json'
+>>>>>>> origin/development
 
 // Store
 import { organisationStore } from '../store/store.js'
@@ -142,14 +148,10 @@ import { organisationStore } from '../store/store.js'
 export default {
 	name: 'MainMenu',
 	components: {
-		// components
-		NcAppNavigation,
-		NcAppNavigationList,
-		NcAppNavigationItem,
-		NcAppNavigationSettings,
+		CnAppNav,
 		NcAppNavigationNew,
-		// icons
 		Finance,
+<<<<<<< HEAD
 		DatabaseOutline,
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
@@ -167,6 +169,13 @@ export default {
 		Api,
 		AccountOutline,
 		FileOutline,
+=======
+	},
+	data() {
+		return {
+			manifest,
+		}
+>>>>>>> origin/development
 	},
 	computed: {
 		/**
@@ -174,6 +183,9 @@ export default {
 		 * Shows the current organisational context for the user.
 		 *
 		 * @return {string} The active organisation name or a fallback
+		 */
+		/**
+		 * @spec exclude App-navigation plumbing: reads the active organisation name with a fallback label; no standalone behavioural contract.
 		 */
 		activeOrganisationName() {
 			const activeOrg = organisationStore.activeOrganisation
@@ -186,11 +198,25 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Translate function passed to CnAppNav so manifest menu labels
+		 * resolve through openregister's l10n catalogue.
+		 *
+		 * @param {string} key The label key from the manifest.
+		 * @return {string} The translated string.
+		 * @spec exclude App-navigation plumbing: t() wrapper; no standalone behavioural contract.
+		 */
+		translate(key) {
+			return t('openregister', key)
+		},
+		/**
+		 * Navigate to a router path (used by the primary-action button).
+		 *
+		 * @param {string} path The vue-router path to push.
+		 * @spec exclude App-navigation plumbing: $router.push wrapper; no standalone behavioural contract.
+		 */
 		handleNavigate(path) {
 			this.$router.push(path)
-		},
-		openLink(url, type = '') {
-			window.open(url, type)
 		},
 	},
 }

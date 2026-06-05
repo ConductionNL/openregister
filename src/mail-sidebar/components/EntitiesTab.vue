@@ -31,6 +31,16 @@
 </template>
 
 <script>
+<<<<<<< HEAD
+=======
+/**
+ * Entities tab — surfaces NLP-extracted entities (PERSON / ORGANIZATION /
+ * EMAIL / PHONE / LOCATION / ADDRESS / DATE / IBAN) from the email body via
+ * /apps/openregister/api/entities?emailId={messageId}.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-4
+ */
+>>>>>>> origin/development
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -48,6 +58,12 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
+>>>>>>> origin/development
 		groupedEntities() {
 			const groups = {}
 			for (const entity of this.entities) {
@@ -61,6 +77,12 @@ export default {
 		},
 	},
 	watch: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
+>>>>>>> origin/development
 		messageId() {
 			this.loadEntities()
 		},
@@ -70,6 +92,12 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
+>>>>>>> origin/development
 		formatType(type) {
 			const labels = {
 				PERSON: t('openregister', 'Persons'),
@@ -84,6 +112,12 @@ export default {
 			}
 			return labels[type] || type
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
+>>>>>>> origin/development
 		async loadEntities() {
 			if (!this.messageId) {
 				this.entities = []

@@ -6,6 +6,9 @@
  * This file contains the service class for handling configuration imports and exports
  * in the OpenRegister application, supporting various formats including OpenAPI.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
  */
 
 namespace OCA\OpenRegister\Service;
@@ -306,6 +311,8 @@ class ConfigurationService
      *
      * @return bool True if the OpenConnector service is available, false otherwise.
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     *
+     * @spec exclude Facade plumbing: peer-app presence probe (installed-apps check + container resolve), no standalone behavioral contract.
      */
     public function hasOpenConnector(): bool
     {
@@ -340,6 +347,11 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Toggle to include/exclude objects in export
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input types
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
@@ -369,6 +381,8 @@ class ConfigurationService
      *
      * @throws Exception
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {
@@ -442,6 +456,11 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+>>>>>>> origin/development
      */
     public function importFromJson(
         array $data,
@@ -507,6 +526,11 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -548,6 +572,11 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -571,6 +600,11 @@ class ConfigurationService
      * @throws GuzzleException If HTTP request fails
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function checkRemoteVersion(Configuration $configuration): ?string
     {
@@ -685,6 +719,11 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version comparison has multiple null and comparison checks
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -752,6 +791,11 @@ class ConfigurationService
      * @throws GuzzleException If HTTP request fails.
      *
      * @psalm-return JSONResponse<400|500, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -771,6 +815,11 @@ class ConfigurationService
      * @throws GuzzleException If fetching remote configuration fails
      *
      * @return array|JSONResponse Preview data with registers, schemas, objects, endpoints, and metadata.
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -786,6 +835,11 @@ class ConfigurationService
      * @param string $appId The app ID to get the version for.
      *
      * @return null|string The configured version or null if not set.
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function getConfiguredAppVersion(string $appId): string|null
     {
@@ -843,6 +897,11 @@ class ConfigurationService
      * @param string $version The version to store.
      *
      * @return void
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function setConfiguredAppVersion(string $appId, string $version): void
     {
@@ -893,6 +952,11 @@ class ConfigurationService
      * @throws Exception If search fails
      *
      * @return array Search results with total count, results array, page, and per_page.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: thin delegation to GitHubHandler::searchConfigurations, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
@@ -915,6 +979,11 @@ class ConfigurationService
      * @throws Exception If search fails
      *
      * @return array Search results with total count, results array, page, and per_page.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Facade plumbing: thin delegation to GitLabHandler::searchConfigurations, no standalone behavioral contract.
+>>>>>>> origin/development
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
@@ -966,6 +1035,11 @@ class ConfigurationService
      * @return array Import results
      *
      * @psalm-return array<never, never>
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {

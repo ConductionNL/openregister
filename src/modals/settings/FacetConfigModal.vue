@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog
 		v-if="show"
-		name="Configure SOLR Facets v3.0"
+		:name="t('openregister', 'Configure SOLR Facets')"
 		:can-close="!loading"
 		size="large"
 		@closing="$emit('close')">
@@ -101,7 +105,7 @@
 											</NcCheckboxRadioSwitch>
 											<button
 												class="chevron-toggle"
-												:aria-label="facet.expanded ? 'Collapse details' : 'Expand details'"
+												:aria-label="facet.expanded ? t('openregister', 'Collapse details') : t('openregister', 'Expand details')"
 												@click="toggleFacetExpanded(facet)">
 												<ChevronUp v-if="facet.expanded" :size="20" />
 												<ChevronDown v-else :size="20" />
@@ -124,7 +128,7 @@
 											<textarea
 												v-model="facet.config.description"
 												class="form-textarea"
-												placeholder="Optional description for this facet"
+												:placeholder="t('openregister', 'Optional description for this facet')"
 												rows="2" />
 										</div>
 
@@ -203,7 +207,7 @@
 											</NcCheckboxRadioSwitch>
 											<button
 												class="chevron-toggle"
-												:aria-label="facet.expanded ? 'Collapse details' : 'Expand details'"
+												:aria-label="facet.expanded ? t('openregister', 'Collapse details') : t('openregister', 'Expand details')"
 												@click="toggleFacetExpanded(facet)">
 												<ChevronUp v-if="facet.expanded" :size="20" />
 												<ChevronDown v-else :size="20" />
@@ -226,7 +230,7 @@
 											<textarea
 												v-model="facet.config.description"
 												class="form-textarea"
-												placeholder="Optional description for this facet"
+												:placeholder="t('openregister', 'Optional description for this facet')"
 												rows="2" />
 										</div>
 
@@ -326,8 +330,13 @@
 
 <script>
 /**
+<<<<<<< HEAD
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+=======
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+>>>>>>> origin/development
  */
 import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
@@ -388,16 +397,26 @@ export default {
 	},
 	computed: {
 		/**
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+>>>>>>> origin/development
 		 */
 		totalFacets() {
 			if (!this.facetsData || !this.facetsData.facets) return 0
 			return this.metadataCount + this.objectFieldCount
 		},
+		/**
+		 * @spec exclude UI display helper — counts metadata (@self) facets.
+		 */
 		metadataCount() {
 			if (!this.facetsData || !this.facetsData.facets || !this.facetsData.facets['@self']) return 0
 			return Object.keys(this.facetsData.facets['@self']).length
 		},
+		/**
+		 * @spec exclude UI display helper — counts object-field facets.
+		 */
 		objectFieldCount() {
 			if (!this.facetsData || !this.facetsData.facets || !this.facetsData.facets.object_fields) return 0
 			return Object.keys(this.facetsData.facets.object_fields).length
@@ -405,6 +424,9 @@ export default {
 	},
 	watch: {
 		show: {
+			/**
+			 * @spec exclude UI watcher — loads facets when shown, resets when hidden.
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.loadFacets()
@@ -419,7 +441,11 @@ export default {
 		/**
 		 * Load facets from SOLR API
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+>>>>>>> origin/development
 		 */
 		async loadFacets() {
 			console.info('🚀 FacetConfigModal: loadFacets called')
@@ -499,7 +525,11 @@ export default {
 		 * Format display type for human-readable labels
 		 * @param {string} displayType - The display type to format
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+=======
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+>>>>>>> origin/development
 		 */
 		formatDisplayType(displayType) {
 			const typeMap = {
@@ -516,7 +546,11 @@ export default {
 		/**
 		 * Save facet configuration
 		 *
+<<<<<<< HEAD
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+=======
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+>>>>>>> origin/development
 		 */
 		async saveFacetConfiguration() {
 			console.info('💾 Saving facet configuration...')
@@ -547,7 +581,7 @@ export default {
 
 				// Check if the response is successful
 				if (response.data && response.data.success) {
-					showSuccess(`Successfully saved configuration for ${Object.keys(facetConfig.facets).length} facets!`)
+					showSuccess(t('openregister', 'Successfully saved configuration for {count} facets!', { count: Object.keys(facetConfig.facets).length }))
 					console.info('✅ Facet configuration saved successfully:', response.data)
 				} else {
 					throw new Error(response.data?.message || response.data?.error || 'Failed to save configuration')
@@ -555,7 +589,7 @@ export default {
 
 			} catch (error) {
 				console.error('❌ Failed to save facet configuration:', error)
-				showError(error.response?.data?.message || error.message || 'Failed to save facet configuration')
+				showError(error.response?.data?.message || error.message || t('openregister', 'Failed to save facet configuration'))
 			} finally {
 				this.loading = false
 			}
@@ -564,6 +598,7 @@ export default {
 		/**
 		 * Toggle facet expanded state
 		 * @param {object} facet - The facet to toggle
+		 * @spec exclude UI state helper — toggles a facet row's expanded flag.
 		 */
 		toggleFacetExpanded(facet) {
 			facet.expanded = !facet.expanded
@@ -571,6 +606,7 @@ export default {
 
 		/**
 		 * Reset modal state
+		 * @spec exclude Modal state plumbing — resets local facet state.
 		 */
 		resetModal() {
 			this.facetsData = null

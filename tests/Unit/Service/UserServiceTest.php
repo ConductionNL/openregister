@@ -222,6 +222,7 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
+<<<<<<< HEAD
             public function canChangeAvatar()
             {
                 return $this->v['canChangeAvatar'];
@@ -235,6 +236,26 @@ class UserServiceTest extends TestCase
             public function canChangeDisplayName()
             {
                 return $this->v['canChangeDisplayName'];
+=======
+            public function canChangeAvatar(): bool
+            {
+                return (bool) $this->v['canChangeAvatar'];
+            }
+
+            public function canChangePassword(): bool
+            {
+                return (bool) $this->v['canChangePassword'];
+            }
+
+            public function canChangeDisplayName(): bool
+            {
+                return (bool) $this->v['canChangeDisplayName'];
+            }
+
+            public function canEditProperty(string $property): bool
+            {
+                return (bool) ($this->v['canEditProperty'] ?? true);
+>>>>>>> origin/development
             }
 
             public function isEnabled()
@@ -1158,17 +1179,34 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
+<<<<<<< HEAD
             public function canChangeAvatar()
+=======
+            public function canChangeAvatar(): bool
+>>>>>>> origin/development
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangePassword()
+=======
+            public function canChangePassword(): bool
+>>>>>>> origin/development
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangeDisplayName()
+=======
+            public function canChangeDisplayName(): bool
+            {
+                return false;
+            }
+
+            public function canEditProperty(string $property): bool
+>>>>>>> origin/development
             {
                 return false;
             }
@@ -1969,17 +2007,34 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
+<<<<<<< HEAD
             public function canChangeAvatar()
+=======
+            public function canChangeAvatar(): bool
+>>>>>>> origin/development
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangePassword()
+=======
+            public function canChangePassword(): bool
+>>>>>>> origin/development
             {
                 return false;
             }
 
+<<<<<<< HEAD
             public function canChangeDisplayName()
+=======
+            public function canChangeDisplayName(): bool
+            {
+                return false;
+            }
+
+            public function canEditProperty(string $property): bool
+>>>>>>> origin/development
             {
                 return false;
             }

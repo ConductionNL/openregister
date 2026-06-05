@@ -9,6 +9,9 @@
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Db
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Db;
@@ -822,4 +825,123 @@ class MagicRbacHandlerIntegrationTest extends TestCase
         );
         $this->assertIsArray($results);
     }
+<<<<<<< HEAD
+=======
+
+    // =========================================================================
+    // Fail-closed SQL match evaluation on null-resolved dynamic variables (#1953).
+    //
+    // When a `match` rule's dynamic variable ($organisation/$userId/$now)
+    // resolves to null, the SQL/list path MUST emit an impossible predicate
+    // (1 = 0) for that property rather than dropping it from the AND. This makes
+    // the LIST path agree with the PHP/find path (ConditionMatcher), which
+    // already fails closed on null dynamic values. These tests run as anonymous
+    // (the genuine null-$organisation case) so $organisation cannot resolve.
+    // =========================================================================
+
+    public function testListFailsClosedOnMultiConditionMatchWithNullOrganisation(): void
+    {
+        // Multi-condition public match rule: a static `status` predicate AND a
+        // dynamic `_organisation` => '$organisation' predicate. As anonymous,
+        // $organisation resolves to null, so the rule must grant NO rows even
+        // though the static predicate matches the inserted object.
+        $register = $this->createTestRegister();
+        $schema   = $this->createTestSchema([
+            'read' => [
+                [
+                    'group' => 'public',
+                    'match' => [
+                        'status'        => 'published',
+                        '_organisation' => '$organisation',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        // Object satisfies the static predicate (status=published) but the
+        // $organisation predicate cannot be satisfied for an anonymous caller.
+        $this->insertTestObject($register, $schema, ['name' => 'Leaky', 'status' => 'published', 'age' => 1]);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_multitenancy' => false],
+            $register,
+            $schema
+        );
+
+        // Pre-fix: the null $organisation predicate was DROPPED, leaving only
+        // status=published, so the object leaked on LIST. Post-fix the impossible
+        // predicate (1 = 0) is ANDed in, so LIST returns nothing — matching the
+        // PHP/find verdict.
+        $this->assertIsArray($results);
+        $this->assertEmpty(
+            $results,
+            'Multi-condition match with null-resolved $organisation MUST deny on LIST (no silent drop)'
+        );
+    }
+
+    public function testListFailsClosedOnSingleConditionMatchWithNullOrganisation(): void
+    {
+        // Single-condition match on a null-resolving dynamic variable: LIST must
+        // also deny (parity with find), confirming the impossible predicate is
+        // emitted rather than the whole match being dropped.
+        $register = $this->createTestRegister();
+        $schema   = $this->createTestSchema([
+            'read' => [
+                ['group' => 'public', 'match' => ['_organisation' => '$organisation']],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'SingleLeaky', 'status' => 'x', 'age' => 1]);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_multitenancy' => false],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($results);
+        $this->assertEmpty(
+            $results,
+            'Single-condition match with null-resolved $organisation MUST deny on LIST'
+        );
+    }
+
+    public function testResolvableMatchRuleStillReturnsRowsOnList(): void
+    {
+        // Guard against over-denial: a match rule whose predicates DO resolve
+        // (a static-only public match) must still return its rows on LIST. The
+        // fail-closed change introduces no new denials for resolvable rules.
+        $register = $this->createTestRegister();
+        $schema   = $this->createTestSchema([
+            'read' => [
+                ['group' => 'public', 'match' => ['status' => 'published']],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Visible', 'status' => 'published', 'age' => 1]);
+        $this->insertTestObject($register, $schema, ['name' => 'Hidden', 'status' => 'draft', 'age' => 1]);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_multitenancy' => false],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($results);
+        $this->assertCount(
+            1,
+            $results,
+            'A fully-resolvable static match rule MUST still return its matching rows (no new denials)'
+        );
+    }
+>>>>>>> origin/development
 }

@@ -1,0 +1,193 @@
+{
+  "info": {
+    "_postman_id": "openregister-chat-streaming",
+    "name": "OpenRegister AI Chat Streaming (spec: ai-chat-companion-streaming)",
+    "description": "Newman collection that validates the contract of the AI Chat backend after the ai-chat-companion-streaming change.\n\nScope:\n- GET  /api/chat/health             — public probe (#[PublicPage])\n- POST /api/chat/send               — non-streaming JSON regression guard\n- POST /api/chat/stream — unauth    — must return 401 (auth gate)\n- POST /api/chat/stream — auth      — must return text/event-stream + at least one event: line\n- POST /api/chat/stream — context   — final event's payload must echo the context the client sent (Message.context persistence path)\n\nRun:\n```\nbash tests/newman/run-all.sh COLLECTIONS=openregister-chat-streaming\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url",       "value": "http://localhost:8080" },
+    { "key": "admin_user",     "value": "admin" },
+    { "key": "admin_password", "value": "admin" }
+  ],
+  "item": [
+    {
+      "name": "GET /api/chat/health — public, returns 200 or 503 (never 401)",
+      "request": {
+        "method": "GET",
+        "auth":  { "type": "noauth" },
+        "header": [{ "key": "OCS-APIREQUEST", "value": "true" }],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/chat/health",
+          "host": ["{{base_url}}"],
+          "path": ["index.php", "apps", "openregister", "api", "chat", "health"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('200 or 503 (never 401 — confirms #[PublicPage])', () => {",
+            "  pm.expect([200, 503]).to.include(pm.response.code);",
+            "});",
+            "pm.test('JSON body has status key', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('status');",
+            "  if (pm.response.code === 200) {",
+            "    pm.expect(body.status).to.eql('ok');",
+            "    pm.expect(body).to.have.property('capabilities').that.is.an('array');",
+            "    pm.expect(body.capabilities).to.include('chat');",
+            "  }",
+            "});"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "POST /api/chat/send — JSON content-type regression guard",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",   "value": "application/json" },
+          { "key": "OCS-APIREQUEST", "value": "true" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"message\":\"smoke\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/chat/send",
+          "host": ["{{base_url}}"],
+          "path": ["index.php", "apps", "openregister", "api", "chat", "send"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Content-Type is application/json (NOT text/event-stream)', () => {",
+            "  const ct = pm.response.headers.get('Content-Type') || '';",
+            "  pm.expect(ct).to.match(/application\\/json/i);",
+            "  pm.expect(ct).to.not.match(/text\\/event-stream/i);",
+            "});",
+            "pm.test('body parses as JSON', () => { pm.response.json(); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "POST /api/chat/stream — unauth must return 401",
+      "request": {
+        "method": "POST",
+        "auth":  { "type": "noauth" },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"message\":\"unauth-smoke\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/chat/stream",
+          "host": ["{{base_url}}"],
+          "path": ["index.php", "apps", "openregister", "api", "chat", "stream"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('unauth → 401', () => { pm.expect(pm.response.code).to.eql(401); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "POST /api/chat/stream — auth returns text/event-stream",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",   "value": "application/json" },
+          { "key": "OCS-APIREQUEST", "value": "true" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"message\":\"smoke contract check\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/chat/stream",
+          "host": ["{{base_url}}"],
+          "path": ["index.php", "apps", "openregister", "api", "chat", "stream"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Content-Type is text/event-stream', () => {",
+            "  const ct = pm.response.headers.get('Content-Type') || '';",
+            "  pm.expect(ct).to.match(/text\\/event-stream/i);",
+            "});",
+            "pm.test('X-Accel-Buffering: no header present', () => {",
+            "  const buf = pm.response.headers.get('X-Accel-Buffering') || '';",
+            "  pm.expect(buf.toLowerCase()).to.eql('no');",
+            "});",
+            "pm.test('body contains at least one event: line', () => {",
+            "  const body = pm.response.text();",
+            "  pm.expect(body).to.match(/^event:\\s*\\w+/m);",
+            "});",
+            "pm.test('emits final or error event (no orphan stream)', () => {",
+            "  const body = pm.response.text();",
+            "  pm.expect(body).to.match(/event:\\s*(final|error)/);",
+            "});"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "POST /api/chat/stream — final event echoes context (persistence path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",   "value": "application/json" },
+          { "key": "OCS-APIREQUEST", "value": "true" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"message\":\"reply ok\",\"context\":{\"app\":\"openbuild\",\"slug\":\"newman-smoke\"}}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/chat/stream",
+          "host": ["{{base_url}}"],
+          "path": ["index.php", "apps", "openregister", "api", "chat", "stream"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('final event payload echoes the context', () => {",
+            "  const body = pm.response.text();",
+            "  // Pull the data line that follows `event: final`.",
+            "  const m = body.match(/event:\\s*final\\s*\\ndata:\\s*(\\{[^\\n]+\\})/);",
+            "  pm.expect(m, 'no final event found in body').to.not.eql(null);",
+            "  const payload = JSON.parse(m[1]);",
+            "  pm.expect(payload).to.have.property('context');",
+            "  pm.expect(payload.context).to.eql({ app: 'openbuild', slug: 'newman-smoke' });",
+            "});"
+          ]
+        }
+      }]
+    }
+  ]
+}

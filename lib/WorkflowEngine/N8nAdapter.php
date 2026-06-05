@@ -3,10 +3,20 @@
 /**
  * OpenRegister N8nAdapter
  *
+<<<<<<< HEAD
  * @category WorkflowEngine
  * @package  OCA\OpenRegister\WorkflowEngine
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category WorkflowEngine
+ * @package  OCA\OpenRegister\WorkflowEngine
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -14,6 +24,8 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-93
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-93
  */
@@ -57,6 +69,7 @@ class N8nAdapter implements WorkflowEngineInterface
      * @param IClientService  $clientService HTTP client
      * @param LoggerInterface $logger        Logger
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function __construct(
@@ -78,6 +91,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function configure(string $baseUrl, array $authConfig=[]): void
@@ -93,6 +107,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return string The workflow ID
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function deployWorkflow(array $workflowDefinition): string
@@ -116,6 +131,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return string The workflow ID
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function updateWorkflow(string $workflowId, array $workflowDefinition): string
@@ -138,6 +154,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return array<string, mixed> The workflow definition
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function getWorkflow(string $workflowId): array
@@ -158,6 +175,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function deleteWorkflow(string $workflowId): void
@@ -176,6 +194,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function activateWorkflow(string $workflowId): void
@@ -194,6 +213,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function deactivateWorkflow(string $workflowId): void
@@ -214,6 +234,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return WorkflowResult The execution result
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function executeWorkflow(string $workflowId, array $data, int $timeout=30): WorkflowResult
@@ -267,6 +288,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return string The webhook URL
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function getWebhookUrl(string $workflowId): string
@@ -279,6 +301,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return array<int, array{id: string, name: string}> List of workflows
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     public function listWorkflows(): array
@@ -317,6 +340,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return bool True if healthy
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
      */
     public function healthCheck(): bool
@@ -346,6 +370,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return array<string, mixed>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     private function buildRequestOptions(array $extra=[]): array
@@ -365,6 +390,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return array<string, string>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     private function buildAuthHeaders(): array
@@ -391,6 +417,7 @@ class N8nAdapter implements WorkflowEngineInterface
      *
      * @return WorkflowResult
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-4
      */
     private function parseWorkflowResponse(?array $responseData): WorkflowResult

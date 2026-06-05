@@ -15,9 +15,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
+=======
+use OCA\OpenRegister\Service\Configuration\AttributionFormatter;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCP\Http\Client\IClient;
+>>>>>>> origin/development
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -55,6 +61,12 @@ class GitHubHandlerTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
+<<<<<<< HEAD
+=======
+    /** @var AttributionFormatter&MockObject */
+    private AttributionFormatter $attributionFormatter;
+
+>>>>>>> origin/development
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,9 +76,13 @@ class GitHubHandlerTest extends TestCase
         $this->config = $this->createMock(IConfig::class);
         $this->cache = $this->createMock(ICache::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
 
         $clientService = $this->createMock(IClientService::class);
         $clientService->method('newClient')->willReturn($this->client);
+=======
+        $this->attributionFormatter = $this->createMock(AttributionFormatter::class);
+>>>>>>> origin/development
 
         $cacheFactory = $this->createMock(ICacheFactory::class);
         $cacheFactory->method('createDistributed')
@@ -74,11 +90,20 @@ class GitHubHandlerTest extends TestCase
             ->willReturn($this->cache);
 
         $this->handler = new GitHubHandler(
+<<<<<<< HEAD
             $clientService,
             $this->appConfig,
             $this->config,
             $cacheFactory,
             $this->logger
+=======
+            client: $this->client,
+            appConfig: $this->appConfig,
+            config: $this->config,
+            cacheFactory: $cacheFactory,
+            attributionFormatter: $this->attributionFormatter,
+            logger: $this->logger,
+>>>>>>> origin/development
         );
     }
 

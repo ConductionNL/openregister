@@ -7,7 +7,10 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+=======
+>>>>>>> origin/development
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -45,6 +48,7 @@ class MagicRbacHandlerTest extends TestCase
     private ConditionMatcher&MockObject $conditionMatcher;
     private ContainerInterface&MockObject $container;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
     private PermissionHandler&MockObject $permissionHandler;
 
     protected function setUp(): void
@@ -65,6 +69,18 @@ class MagicRbacHandlerTest extends TestCase
         $this->container->method('get')->willReturnCallback(
             fn (string $class) => $class === PermissionHandler::class ? $this->permissionHandler : null
         );
+=======
+
+    protected function setUp(): void
+    {
+        $this->userSession      = $this->createMock(IUserSession::class);
+        $this->groupManager     = $this->createMock(IGroupManager::class);
+        $this->userManager      = $this->createMock(IUserManager::class);
+        $this->appConfig        = $this->createMock(IAppConfig::class);
+        $this->conditionMatcher = $this->createMock(ConditionMatcher::class);
+        $this->container        = $this->createMock(ContainerInterface::class);
+        $this->logger           = $this->createMock(LoggerInterface::class);
+>>>>>>> origin/development
 
         $this->handler = new MagicRbacHandler(
             $this->userSession,

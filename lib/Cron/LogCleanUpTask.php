@@ -6,6 +6,12 @@
  * This file contains the background job for cleaning up expired audit trail logs
  * in the OpenRegister application.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Cron
  * @package   OCA\OpenRegister\Cron
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -60,6 +66,7 @@ class LogCleanUpTask extends TimedJob
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-15
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-15
      */
     public function __construct(
@@ -93,6 +100,7 @@ class LogCleanUpTask extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-15
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-15
      */
     protected function run($argument): void

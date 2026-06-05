@@ -6,6 +6,12 @@
  * REST controller for CalDAV task operations on OpenRegister objects.
  * Follows the FilesController pattern for sub-resource endpoints.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -14,6 +20,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
  */
 
@@ -79,6 +86,56 @@ class TasksController extends Controller
     }//end __construct()
 
     /**
+<<<<<<< HEAD
+=======
+     * Get all tasks for the current user across all calendars.
+     *
+     * Returns all CalDAV VTODOs from the user's VTODO-supporting calendars,
+     * optionally filtered by status or assignee.
+     *
+     * Authorization: this endpoint is anchored to the current session user.
+     * TaskService::getAllUserTasks() resolves the calendar set from
+     * IUserSession::getUser()->getUID() (principals/users/<uid>); the request
+     * never controls which user's calendars are read. The optional `assignee`
+     * request parameter is a free-text filter applied to each task's
+     * description ATTENDEE field within the caller's own task list — it is
+     * NOT an identity claim and cannot be used to read another user's tasks.
+     * Per ADR-005 Rule 3, no per-object authorization anchor is needed beyond
+     * the session-user binding already enforced in the service.
+     *
+     * @return JSONResponse JSON response with all user tasks
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-2
+     */
+    public function allUserTasks(): JSONResponse
+    {
+        try {
+            $status   = $this->request->getParam('status');
+            $limit    = min((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 200);
+            $offset   = (int) ($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
+            $assignee = $this->request->getParam('assignee');
+
+            $result = $this->taskService->getAllUserTasks(
+                status: $status,
+                limit: $limit,
+                offset: $offset,
+                assignee: $assignee
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }//end try
+    }//end allUserTasks()
+
+    /**
+>>>>>>> origin/development
      * List all tasks linked to a specific object.
      *
      * @param string $register The register slug or identifier
@@ -90,6 +147,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function index(
@@ -131,6 +189,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function create(
@@ -186,6 +245,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function update(
@@ -248,6 +308,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function destroy(
@@ -300,6 +361,7 @@ class TasksController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     private function validateObject(
         string $register,

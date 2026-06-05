@@ -6,6 +6,12 @@
  * Controller for TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden)
  * metadata operations including MDTO XML export and archival status summary.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -57,6 +63,7 @@ class TmloController extends Controller
      * @param RegisterMapper  $registerMapper Register mapper
      * @param SchemaMapper    $schemaMapper   Schema mapper
      * @param LoggerInterface $logger         Logger interface
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
      */
     public function __construct(
         string $appName,
@@ -81,6 +88,7 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -125,6 +133,7 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -177,6 +186,7 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -203,7 +213,11 @@ class TmloController extends Controller
             ];
 
             // Query objects for each status.
+<<<<<<< HEAD
             foreach ($counts as $status => $count) {
+=======
+            foreach (array_keys($counts) as $status) {
+>>>>>>> origin/development
                 $result          = $this->objectService->findAll(
                     register: $registerEntity,
                     schema: $schemaEntity,

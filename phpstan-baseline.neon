@@ -1,6 +1,7 @@
 parameters:
 	ignoreErrors:
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
 			count: 2
 			path: lib/Controller/GraphQLController.php
@@ -31,6 +32,8 @@ parameters:
 			path: lib/Controller/GraphQLController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
 			count: 1
 			path: lib/AppInfo/Application.php
@@ -56,6 +59,7 @@ parameters:
 			path: lib/BackgroundJob/ActionScheduleJob.php
 
 		-
+<<<<<<< HEAD
 			message: "#^PHPDoc tag @param references unknown parameter\\: \\$arguments$#"
 			count: 1
 			path: lib/BackgroundJob/ActionScheduleJob.php
@@ -64,6 +68,11 @@ parameters:
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 1
 			path: lib/BackgroundJob/BlobMigrationJob.php
+=======
+			message: "#^Parameter \\#1 \\$callback of method OCP\\\\IUserManager\\:\\:callForSeenUsers\\(\\) expects Closure\\(OCP\\\\IUser\\)\\: \\(bool\\|null\\), Closure\\(mixed\\)\\: void given\\.$#"
+			count: 1
+			path: lib/BackgroundJob/BackfillCalendarLinksJob.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Variable \\$fileId on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -71,6 +80,49 @@ parameters:
 			path: lib/BackgroundJob/CronFileTextExtractionJob.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:get\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:newFile\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:nodeExists\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 2
+			path: lib/BackgroundJob/ScheduledNotificationJob.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/BackgroundJob/TenantDeprovisionJob.php
@@ -91,6 +143,44 @@ parameters:
 			path: lib/Calendar/RegisterCalendarProvider.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Calendar/RegisterCalendarProvider.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
 			count: 1
 			path: lib/Command/MigrateStorageCommand.php
@@ -101,6 +191,19 @@ parameters:
 			path: lib/Command/MigrateStorageCommand.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/RematerialiseCalculationsCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/RematerialiseCalculationsCommand.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Command\\\\SolrDebugCommand\\:\\:\\$clientService is never read, only written\\.$#"
 			count: 1
 			path: lib/Command/SolrDebugCommand.php
@@ -121,6 +224,7 @@ parameters:
 			path: lib/Command/SolrManagementCommand.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Missing parameter \\$id \\(int\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\ActionsController\\:\\:update\\(\\)\\.$#"
 			count: 1
 			path: lib/Controller/ActionsController.php
@@ -131,6 +235,8 @@ parameters:
 			path: lib/Controller/ActionsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
@@ -146,6 +252,7 @@ parameters:
 			path: lib/Controller/AgentsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:show\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|404, array\\{error\\: 'Access denied to…'\\|'Agent not found'\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Agent, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Agent, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
@@ -161,6 +268,8 @@ parameters:
 			path: lib/Controller/AgentsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', total\\?\\: int, active\\?\\: int, inactive\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{total\\: int, active\\: int, inactive\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
@@ -181,6 +290,24 @@ parameters:
 			path: lib/Controller/AgentsController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\NotAuthorizedException is never thrown in the try block\\.$#"
+			count: 1
+			path: lib/Controller/AggregationController.php
+
+		-
+			message: "#^Offset 'cached' on array\\{name\\: string, metric\\: string, field\\: string\\|null, value\\?\\: float\\|int\\|null, groups\\?\\: array\\<int, array\\{key\\: mixed, value\\: float\\|int\\|null\\}\\>\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Controller/AggregationController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Controller/AggregationController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ApplicationsController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400, array\\{error\\?\\: 'Failed to delete…', message\\?\\: 'Application deleted…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ApplicationsController.php
@@ -231,6 +358,7 @@ parameters:
 			path: lib/Controller/ArchivalController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findByIdentifier\\(\\)\\.$#"
 			count: 1
 			path: lib/Controller/AuditTrailController.php
@@ -241,6 +369,8 @@ parameters:
 			path: lib/Controller/AuditTrailController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AuditTrailController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\>, total\\: int\\<0, max\\>, page\\: int\\|null, pages\\: float, limit\\: int, offset\\: int\\|null\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\>, total\\: int, page\\: mixed, pages\\: float, limit\\: mixed, offset\\: mixed\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AuditTrailController.php
@@ -282,7 +412,11 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+<<<<<<< HEAD
 			count: 1
+=======
+			count: 2
+>>>>>>> origin/development
 			path: lib/Controller/BulkController.php
 
 		-
@@ -291,6 +425,7 @@ parameters:
 			path: lib/Controller/BulkController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Missing parameter \\$id \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\CalendarEventsController\\:\\:validateObject\\(\\)\\.$#"
 			count: 4
 			path: lib/Controller/CalendarEventsController.php
@@ -309,6 +444,16 @@ parameters:
 			message: "#^Unknown parameter \\$schemaObject in call to method OCA\\\\OpenRegister\\\\Controller\\\\CalendarEventsController\\:\\:validateObject\\(\\)\\.$#"
 			count: 4
 			path: lib/Controller/CalendarEventsController.php
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/BulkController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, error_code\\: string, detail\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/BulkController.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ChatController\\:\\:getChatStats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to get chat…', message\\?\\: string, total_agents\\?\\: int, total_conversations\\?\\: int, total_messages\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{total_agents\\: int, total_conversations\\: int, total_messages\\: int\\}, array\\{\\}\\>\\.$#"
@@ -321,7 +466,11 @@ parameters:
 			path: lib/Controller/ChatController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ChatController\\:\\:page\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Offset 'context' does not exist on array\\{conversationUuid\\: string, agentUuid\\: string, message\\: non\\-falsy\\-string, selectedViews\\: array, selectedTools\\: array, ragSettings\\: array\\{includeObjects\\: mixed, includeFiles\\: mixed, numSourcesFiles\\: mixed, numSourcesObjects\\: mixed\\}\\}\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/ChatController.php
 
@@ -336,6 +485,29 @@ parameters:
 			path: lib/Controller/ChatController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Offset 'message' on array\\{message\\: string, messageId\\: string, sources\\: array\\<int, array\\>, timings\\: array\\{context\\: string, history\\: string, llm\\: string, total\\: string\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Controller/ChatStreamController.php
+
+		-
+			message: "#^Offset 'messageId' on array\\{message\\: string, messageId\\: string, sources\\: array\\<int, array\\>, timings\\: array\\{context\\: string, history\\: string, llm\\: string, total\\: string\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Controller/ChatStreamController.php
+
+		-
+			message: "#^Offset 'response' on array\\{message\\: string, messageId\\: string, sources\\: array\\<int, array\\>, timings\\: array\\{context\\: string, history\\: string, llm\\: string, total\\: string\\}\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Controller/ChatStreamController.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: lib/Controller/ChatStreamController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404\\|500, array\\{error\\?\\: 'Configuration not…'\\|'Failed to delete…', success\\?\\: true\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ConfigurationController.php
@@ -536,6 +708,7 @@ parameters:
 			path: lib/Controller/ConfigurationsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:unlinkContact\\(\\) invoked with 2 parameters, 1 required\\.$#"
 			count: 1
 			path: lib/Controller/ContactsController.php
@@ -566,6 +739,8 @@ parameters:
 			path: lib/Controller/ContactsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConversationController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|500, array\\{error\\?\\: 'Failed to create…', message\\?\\: string, id\\?\\: int, uuid\\?\\: string\\|null, title\\?\\: string\\|null, userId\\?\\: string\\|null, organisation\\?\\: string\\|null, agentId\\?\\: int\\|null, \\.\\.\\.\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{id\\: int, uuid\\: string\\|null, title\\: string\\|null, userId\\: string\\|null, organisation\\: string\\|null, agentId\\: int\\|null, metadata\\: array\\|null, deletedAt\\: string\\|null, \\.\\.\\.\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ConversationController.php
@@ -681,6 +856,7 @@ parameters:
 			path: lib/Controller/DashboardController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\DeckCardService\\:\\:unlinkCard\\(\\) invoked with 2 parameters, 1 required\\.$#"
 			count: 1
 			path: lib/Controller/DeckController.php
@@ -711,6 +887,8 @@ parameters:
 			path: lib/Controller/DeckController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DeletedController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, results\\?\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\?\\: int, page\\?\\: int, pages\\?\\: 1\\|float, limit\\?\\: int\\|null, offset\\?\\: int\\|null\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, mixed\\>, total\\: mixed, page\\: mixed, pages\\: float\\|int, limit\\: mixed, offset\\: mixed\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/DeletedController.php
@@ -766,6 +944,7 @@ parameters:
 			path: lib/Controller/EndpointsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404\\|500, array\\{error\\: 'Endpoint not found'\\|'Failed to delete…'\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<204, null, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<204, null, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/EndpointsController.php
@@ -781,6 +960,8 @@ parameters:
 			path: lib/Controller/EndpointsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to list…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\>, total\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\>, total\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/EndpointsController.php
@@ -791,6 +972,7 @@ parameters:
 			path: lib/Controller/EndpointsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:logs\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404\\|500, array\\{error\\?\\: 'Endpoint not found'\\|'Failed to retrieve…', results\\?\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\EndpointLog\\>, total\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\EndpointLog\\>, total\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/EndpointsController.php
@@ -821,6 +1003,8 @@ parameters:
 			path: lib/Controller/EndpointsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:test\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string, success\\?\\: bool, message\\?\\: string, statusCode\\?\\: int, response\\?\\: mixed\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{success\\: bool, message\\: string, statusCode\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/EndpointsController.php
@@ -856,11 +1040,14 @@ parameters:
 			path: lib/Controller/EndpointsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
 			count: 1
 			path: lib/Controller/EndpointsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Type int in generic type OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\<string, mixed\\>, array\\> in PHPDoc tag @return is not subtype of template type S of int of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\.$#"
 			count: 1
 			path: lib/Controller/EndpointsController.php
@@ -886,6 +1073,7 @@ parameters:
 			path: lib/Controller/FileExtractionController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:extract\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404\\|500, array\\{success\\: bool, error\\?\\: 'Extraction failed'\\|'File not found in…', message\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/FileExtractionController.php
@@ -901,6 +1089,8 @@ parameters:
 			path: lib/Controller/FileExtractionController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{processed\\: int, failed\\: int, total\\: int\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/FileExtractionController.php
@@ -931,6 +1121,7 @@ parameters:
 			path: lib/Controller/FileExtractionController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:show\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404, array\\{success\\: bool, error\\?\\: 'File not found in…', message\\?\\: string, data\\?\\: non\\-empty\\-array\\<int, array\\{checksum\\: string\\|null, chunkIndex\\: int, createdAt\\: string\\|null, embeddingProvider\\: string\\|null, endOffset\\: int, id\\: int, indexed\\: bool, language\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, data\\: non\\-empty\\-array\\<int, array\\{id\\: int, uuid\\: string\\|null, sourceType\\: string\\|null, sourceId\\: int\\|null, chunkIndex\\: int, startOffset\\: int, endOffset\\: int, language\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/FileExtractionController.php
@@ -941,6 +1132,8 @@ parameters:
 			path: lib/Controller/FileExtractionController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, data\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/FileExtractionController.php
@@ -1036,11 +1229,14 @@ parameters:
 			path: lib/Controller/FilesController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FilesController\\:\\:processUploadedFiles\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Controller\\\\OCP\\\\Files\\\\File\\.$#"
 			count: 1
 			path: lib/Controller/FilesController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FilesController\\:\\:processUploadedFiles\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Controller\\\\OCP\\\\Files\\\\File\\> but returns array\\<int\\<0, max\\>, OCP\\\\Files\\\\File\\>\\.$#"
 			count: 1
 			path: lib/Controller/FilesController.php
@@ -1091,6 +1287,14 @@ parameters:
 			path: lib/Controller/FilesController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Result of && is always true\\.$#"
+			count: 1
+			path: lib/Controller/FilesController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Controller/FilesController.php
@@ -1101,16 +1305,32 @@ parameters:
 			path: lib/Controller/FilesController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
+			count: 2
+			path: lib/Controller/GraphQLController.php
+
+		-
+			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
+			count: 2
+			path: lib/Controller/GraphQLController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\HeartbeatController\\:\\:heartbeat\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: 'alive', timestamp\\: int\\<1, max\\>, message\\: 'Heartbeat…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: string, timestamp\\: int, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/HeartbeatController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method jsonSerialize\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Mapping\\.$#"
 			count: 1
 			path: lib/Controller/MappingsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Parameter \\#1 \\$callback of function array_map expects \\(callable\\(OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Mapping\\)\\: mixed\\)\\|null, Closure\\(OCA\\\\OpenRegister\\\\Db\\\\Mapping\\)\\: array\\<string, mixed\\> given\\.$#"
 			count: 1
 			path: lib/Controller/MappingsController.php
@@ -1141,6 +1361,7 @@ parameters:
 			path: lib/Controller/NamesController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\OasController\\:\\:generate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<string, mixed\\>, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/OasController.php
@@ -1159,6 +1380,16 @@ parameters:
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\OasController\\:\\:generateAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/OasController.php
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/NotificationSubscriptionsController.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/NotificationSubscriptionsController.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Call to function is_array\\(\\) with string\\|null will always evaluate to false\\.$#"
@@ -1181,27 +1412,52 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
@@ -1226,6 +1482,7 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<string, mixed\\>, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
@@ -1233,6 +1490,10 @@ parameters:
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: mixed, total\\: mixed, pages\\: int, page\\: int, limit\\: int, @self\\: array\\{source\\: string, register\\: string, schema\\: string, query\\: non\\-empty\\-array\\<string, mixed\\>, rbac\\: bool, multi\\: bool, deleted\\: bool, activeOrganisation\\: mixed, \\.\\.\\.\\}, facets\\?\\: mixed\\}, array\\{\\}\\>\\.$#"
 			count: 1
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\{\\}\\>\\.$#"
+			count: 2
+>>>>>>> origin/development
 			path: lib/Controller/ObjectsController.php
 
 		-
@@ -1341,11 +1602,14 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:\\$importService is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Result of && is always false\\.$#"
 			count: 2
 			path: lib/Controller/ObjectsController.php
@@ -1382,7 +1646,11 @@ parameters:
 
 		-
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+<<<<<<< HEAD
 			count: 4
+=======
+			count: 3
+>>>>>>> origin/development
 			path: lib/Controller/ObjectsController.php
 
 		-
@@ -1476,17 +1744,34 @@ parameters:
 			path: lib/Controller/OrganisationController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 2
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
@@ -1506,22 +1791,43 @@ parameters:
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
@@ -1556,22 +1862,38 @@ parameters:
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|404\\|409, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 2
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|404\\|409, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|404\\|409, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403\\|404\\|409, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/RegistersController.php
 
@@ -1591,11 +1913,14 @@ parameters:
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
 			count: 4
 			path: lib/Controller/RegistersController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:\\$appManager is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
@@ -1616,11 +1941,14 @@ parameters:
 			path: lib/Controller/RegistersController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Type int in generic type OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\<string, string\\>, array\\> in PHPDoc tag @return is not subtype of template type S of int of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\.$#"
 			count: 4
 			path: lib/Controller/RegistersController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
@@ -1646,27 +1974,52 @@ parameters:
 			path: lib/Controller/ScheduledWorkflowController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 2
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
@@ -1691,6 +2044,19 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string, objectCount\\: int\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
@@ -1701,6 +2067,7 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:download\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: 'Schema not found'\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
@@ -1711,6 +2078,8 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: int, uuid\\: string\\|null, uri\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, description\\: string\\|null, version\\: string\\|null, summary\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: int, uuid\\: string\\|null, uri\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, description\\: string\\|null, version\\: string\\|null, summary\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
@@ -1731,37 +2100,65 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 2
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400\\|403\\|404\\|409\\|500, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/SchemasController.php
 
@@ -1771,21 +2168,27 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
 			count: 6
 			path: lib/Controller/SchemasController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:\\$config is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:\\$downloadService is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\Schema and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
@@ -1801,11 +2204,14 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Type int in generic type OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\<string, string\\>, array\\> in PHPDoc tag @return is not subtype of template type S of int of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\.$#"
 			count: 3
 			path: lib/Controller/SchemasController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Unknown parameter \\$_extend in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
@@ -1817,12 +2223,20 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 1
+=======
+			count: 6
+>>>>>>> origin/development
 			path: lib/Controller/SchemasController.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 1
+=======
+			count: 2
+>>>>>>> origin/development
 			path: lib/Controller/SchemasController.php
 
 		-
@@ -1841,6 +2255,39 @@ parameters:
 			path: lib/Controller/SchemasController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\Register and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Controller/ScopesController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\Schema and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Controller/ScopesController.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/ScopesController.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/ScopesController.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/ScopesController.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/ScopesController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SearchController\\:\\:search\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: 'object', url\\: mixed, source\\: 'openregister'\\}\\>, total\\: mixed, facets\\: mixed\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\{\\}, total\\: mixed, facets\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SearchController.php
@@ -1921,6 +2368,7 @@ parameters:
 			path: lib/Controller/Settings/ApiTokenSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method get\\(\\) on an unknown class OC\\\\Files\\\\AppData\\\\Factory\\.$#"
 			count: 1
 			path: lib/Controller/Settings/CacheSettingsController.php
@@ -1941,13 +2389,20 @@ parameters:
 			path: lib/Controller/Settings/CacheSettingsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Parameter \\$appDataFactory of method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\CacheSettingsController\\:\\:__construct\\(\\) has invalid type OC\\\\Files\\\\AppData\\\\Factory\\.$#"
 			count: 2
 			path: lib/Controller/Settings/CacheSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\CacheSettingsController\\:\\:\\$appDataFactory has unknown class OC\\\\Files\\\\AppData\\\\Factory as its type\\.$#"
 			count: 2
+=======
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\CacheSettingsController\\:\\:\\$indexService is never read, only written\\.$#"
+			count: 1
+>>>>>>> origin/development
 			path: lib/Controller/Settings/CacheSettingsController.php
 
 		-
@@ -2131,6 +2586,7 @@ parameters:
 			path: lib/Controller/Settings/SolrManagementController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\SolrManagementController\\:\\:copySolrCollection\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: false, error\\: string, trace\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\|bool\\|float\\|int\\|JsonSerializable\\|stdClass\\|string\\|null, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/SolrManagementController.php
@@ -2171,6 +2627,8 @@ parameters:
 			path: lib/Controller/Settings/SolrManagementController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\SolrManagementController\\:\\:fixMismatchedSolrFields\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|422, array\\{success\\: bool, message\\: string, details\\?\\: array\\{error\\: mixed\\}, fixed\\?\\: array, errors\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, fixed\\: array\\{\\}, errors\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/SolrManagementController.php
@@ -2191,6 +2649,7 @@ parameters:
 			path: lib/Controller/Settings/SolrManagementController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\SolrManagementController\\:\\:listSolrCollections\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: string, trace\\?\\: string, collections\\?\\: mixed, count\\?\\: int\\<0, max\\>, timestamp\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, collections\\: mixed, count\\: int, timestamp\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/SolrManagementController.php
@@ -2211,6 +2670,8 @@ parameters:
 			path: lib/Controller/Settings/SolrManagementController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\SolrManagementController\\:\\:updateSolrCollectionAssignments\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: string, trace\\?\\: string, message\\?\\: 'Collection…', objectCollection\\?\\: mixed, fileCollection\\?\\: mixed, timestamp\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, objectCollection\\: mixed, fileCollection\\: mixed, timestamp\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/Settings/SolrManagementController.php
@@ -2346,11 +2807,14 @@ parameters:
 			path: lib/Controller/Settings/VectorSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method getName\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 1
 			path: lib/Controller/SettingsController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:debugTypeFiltering\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, trace\\?\\: string, all_organizations\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{all_organizations\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SettingsController.php
@@ -2416,6 +2880,14 @@ parameters:
 			path: lib/Controller/SettingsController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 1
+			path: lib/Controller/ShareLinksController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SolrController\\:\\:bulkVectorizeObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: mixed, error\\?\\: mixed, message\\?\\: mixed, total\\?\\: mixed, successful\\?\\: mixed, failed\\?\\: mixed, results\\?\\: mixed, timestamp\\?\\: string, \\.\\.\\.\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, total\\: int, successful\\: int, failed\\: int, results\\: array\\{\\}, timestamp\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SolrController.php
@@ -2701,16 +3173,42 @@ parameters:
 			path: lib/Controller/TransferController.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\HookStoppedException is never thrown in the try block\\.$#"
+			count: 1
+			path: lib/Controller/TransitionController.php
+
+		-
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\NotAuthorizedException is never thrown in the try block\\.$#"
+			count: 1
+			path: lib/Controller/TransitionController.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/TranslationController.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/TranslationController.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UiController\\:\\:makeSpaResponse\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse but returns static\\(OCP\\\\AppFramework\\\\Http\\\\Response\\<int, array\\<string, mixed\\>\\>\\)\\.$#"
 			count: 1
 			path: lib/Controller/UiController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
 			count: 1
 			path: lib/Controller/UserController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\UserController\\:\\:\\$l10n is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/UserController.php
@@ -2731,29 +3229,51 @@ parameters:
 			path: lib/Controller/UserSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|401\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/UserSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|401\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 2
 			path: lib/Controller/UserSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|401\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/UserSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:setGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|401\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'GitHub token saved…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Controller/UserSettingsController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Type int in generic type OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\<string, string\\|true\\>, array\\> in PHPDoc tag @return is not subtype of template type S of int of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\.$#"
 			count: 1
 			path: lib/Controller/UserSettingsController.php
+=======
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 2
+			path: lib/Controller/VerwerkingsactiviteitenController.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\:\\:getWebhookId\\(\\)\\.$#"
@@ -2766,6 +3286,7 @@ parameters:
 			path: lib/Controller/WebhooksController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\WebhooksController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404\\|500, array\\{error\\: 'Failed to delete…'\\|'Webhook not found'\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<204, null, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<204, null, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/WebhooksController.php
@@ -2781,6 +3302,8 @@ parameters:
 			path: lib/Controller/WebhooksController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\WebhooksController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to list…', results\\?\\: array\\<array\\<string, mixed\\>\\>, total\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: int, uuid\\: string, name\\: string, url\\: string, method\\: string, events\\: array, headers\\: array, secret\\: string\\|null, \\.\\.\\.\\}\\>, total\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/WebhooksController.php
@@ -2791,6 +3314,7 @@ parameters:
 			path: lib/Controller/WebhooksController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\WebhooksController\\:\\:logs\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404\\|500, array\\{error\\?\\: 'Failed to retrieve…'\\|'Webhook not found', results\\?\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\>, total\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\>, total\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/WebhooksController.php
@@ -2821,11 +3345,14 @@ parameters:
 			path: lib/Controller/WebhooksController.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\WorkflowExecutionController\\:\\:\\$logger is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/WorkflowExecutionController.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$objectMapper of method OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:__construct\\(\\) has invalid type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
 			count: 2
 			path: lib/Cron/TransferCheckJob.php
@@ -2834,6 +3361,21 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:\\$objectMapper has unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper as its type\\.$#"
 			count: 2
 			path: lib/Cron/TransferCheckJob.php
+=======
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Cron/ArchivalRetentionTask.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Cron/ArchivalRetentionTask.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Cron/ArchivalRetentionTask.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:\\$objectMapper is never read, only written\\.$#"
@@ -2886,11 +3428,14 @@ parameters:
 			path: lib/Db/AgentMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AgentMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Agent\\.$#"
 			count: 1
 			path: lib/Db/AgentMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AgentMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Agent\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\.$#"
 			count: 1
 			path: lib/Db/AgentMapper.php
@@ -2911,11 +3456,14 @@ parameters:
 			path: lib/Db/ApplicationMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ApplicationMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Application\\.$#"
 			count: 1
 			path: lib/Db/ApplicationMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ApplicationMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Application\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Application\\>\\.$#"
 			count: 1
 			path: lib/Db/ApplicationMapper.php
@@ -2941,16 +3489,33 @@ parameters:
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setImportJobId\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/AuditTrailMapper.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setIpAddress\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setProcessingActivityId\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/AuditTrailMapper.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setRequest\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setSession\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
@@ -2961,26 +3526,34 @@ parameters:
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setSize\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\>\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Offset '@self' on array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\} in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Parameter \\#1 \\$register of method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setRegister\\(\\) expects int\\|null, string\\|null given\\.$#"
 			count: 2
 			path: lib/Db/AuditTrailMapper.php
@@ -3001,11 +3574,14 @@ parameters:
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/ConfigurationMapper.php
@@ -3021,11 +3597,14 @@ parameters:
 			path: lib/Db/ConfigurationMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ConfigurationMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Configuration\\.$#"
 			count: 1
 			path: lib/Db/ConfigurationMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ConfigurationMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Configuration\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Configuration\\>\\.$#"
 			count: 1
 			path: lib/Db/ConfigurationMapper.php
@@ -3071,11 +3650,14 @@ parameters:
 			path: lib/Db/EndpointLog.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\EndpointLogMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\EndpointLog\\.$#"
 			count: 1
 			path: lib/Db/EndpointLogMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\EndpointLogMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\EndpointLog\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\EndpointLog\\>\\.$#"
 			count: 1
 			path: lib/Db/EndpointLogMapper.php
@@ -3091,11 +3673,14 @@ parameters:
 			path: lib/Db/EndpointMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\EndpointMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\.$#"
 			count: 1
 			path: lib/Db/EndpointMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\EndpointMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\>\\.$#"
 			count: 1
 			path: lib/Db/EndpointMapper.php
@@ -3141,9 +3726,120 @@ parameters:
 			path: lib/Db/FeedbackMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 10
 			path: lib/Db/MagicMapper.php
+=======
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getDownloadCount\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setCategory\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setCreated\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setDescription\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setDownloadCount\\(\\)\\.$#"
+			count: 2
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setFileId\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setLabels\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setLockExpires\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setLockedAt\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setLockedBy\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:setUpdated\\(\\)\\.$#"
+			count: 5
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Cannot call method getFileId\\(\\) on array\\<string, int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:findByFileId\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File\\|null but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:findOrCreateByFileId\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:incrementDownloadCount\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:setCategoryForFile\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:setDescriptionForFile\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:setLabelsForFile\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\:\\:setLockForFile\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\File but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^PHPDoc tag @return with type array\\<string, int\\|string\\|null\\> is incompatible with native type OCA\\\\OpenRegister\\\\Db\\\\File\\.$#"
+			count: 6
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^PHPDoc tag @return with type array\\<string, int\\|string\\|null\\>\\|null is not subtype of native type OCA\\\\OpenRegister\\\\Db\\\\File\\|null\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+
+		-
+			message: "#^Type alias File already exists as a class in scope of OCA\\\\OpenRegister\\\\Db\\\\FileMapper\\.$#"
+			count: 1
+			path: lib/Db/FileMapper.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Call to an undefined method OCP\\\\IDBConnection\\:\\:quoteIdentifier\\(\\)\\.$#"
@@ -3161,11 +3857,14 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
 			count: 4
 			path: lib/Db/MagicMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:buildUnionSelectPart\\(\\) never returns null so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
@@ -3261,11 +3960,14 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
 			count: 2
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicBulkHandler\\:\\:\\$eventDispatcher is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
@@ -3276,11 +3978,14 @@ parameters:
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
 			count: 3
 			path: lib/Db/MagicMapper/MagicFacetHandler.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicFacetHandler\\:\\:\\$uuidLabelCache is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicFacetHandler.php
@@ -3311,11 +4016,14 @@ parameters:
 			path: lib/Db/MagicMapper/MagicSearchHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
 			count: 4
 			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
@@ -3336,11 +4044,14 @@ parameters:
 			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\#1 \\$array of function array_flip expects array\\<int\\|string\\>, array\\<array\\> given\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicTableHandler.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:\\$id \\(int\\) in isset\\(\\) is not nullable\\.$#"
 			count: 1
 			path: lib/Db/Mapping.php
@@ -3371,11 +4082,14 @@ parameters:
 			path: lib/Db/MappingMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\MappingMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Mapping\\.$#"
 			count: 1
 			path: lib/Db/MappingMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\MappingMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Mapping\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Mapping\\>\\.$#"
 			count: 1
 			path: lib/Db/MappingMapper.php
@@ -3386,6 +4100,34 @@ parameters:
 			path: lib/Db/MappingMapper.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\NotificationReadStateMapper\\:\\:findByUserAndNotification\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\NotificationReadStateEntity but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/NotificationReadStateMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\NotificationReadStateMapper\\:\\:markRead\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\NotificationReadStateEntity but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/NotificationReadStateMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\NotificationSubscriptionMapper\\:\\:findByUser\\(\\) should return array\\<OCA\\\\OpenRegister\\\\Db\\\\NotificationSubscription\\> but returns array\\<int, OCP\\\\AppFramework\\\\Db\\\\Entity\\>\\.$#"
+			count: 1
+			path: lib/Db/NotificationSubscriptionMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\NotificationSubscriptionMapper\\:\\:findExisting\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\NotificationSubscription but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/NotificationSubscriptionMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\NotificationSubscriptionMapper\\:\\:subscribe\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\NotificationSubscription but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
+			count: 1
+			path: lib/Db/NotificationSubscriptionMapper.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Variable \\$object on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Db/ObjectEntity.php
@@ -3401,11 +4143,14 @@ parameters:
 			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Function React\\\\Async\\\\await not found\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^PHPDoc tag @return with type React\\\\Promise\\\\PromiseInterface is not subtype of native type React\\\\Promise\\\\Promise\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
@@ -3441,6 +4186,7 @@ parameters:
 			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$calendar\\.$#"
 			count: 1
 			path: lib/Db/Organisation.php
@@ -3476,11 +4222,14 @@ parameters:
 			path: lib/Db/Organisation.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/Organisation.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
 			count: 1
 			path: lib/Db/OrganisationMapper.php
@@ -3491,6 +4240,8 @@ parameters:
 			path: lib/Db/OrganisationMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Organisation\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Organisation\\>\\.$#"
 			count: 1
 			path: lib/Db/OrganisationMapper.php
@@ -3516,12 +4267,21 @@ parameters:
 			path: lib/Db/OrganisationMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setSchemas\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/Register.php
 
 		-
 			message: "#^Caught class OCA\\\\OpenRegister\\\\Db\\\\Exception not found\\.$#"
+=======
+			message: "#^Strict comparison using \\=\\=\\= between bool\\|float\\|int\\|string and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Db/RealtimeEventMapper.php
+
+		-
+			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setSchemas\\(\\)\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Db/Register.php
 
@@ -3546,7 +4306,11 @@ parameters:
 			path: lib/Db/RegisterMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Register\\.$#"
+=======
+			message: "#^Call to an undefined method OCP\\\\DB\\\\IResult\\:\\:fetchAllAssociative\\(\\)\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Db/RegisterMapper.php
 
@@ -3626,11 +4390,14 @@ parameters:
 			path: lib/Db/SchemaMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Schema\\.$#"
 			count: 1
 			path: lib/Db/SchemaMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Schema\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Schema\\>\\.$#"
 			count: 1
 			path: lib/Db/SchemaMapper.php
@@ -3731,6 +4498,7 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractMySQLPlatform not found\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
@@ -3751,6 +4519,8 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SearchTrailMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\>\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
@@ -3776,11 +4546,14 @@ parameters:
 			path: lib/Db/SourceMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SourceMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Source\\.$#"
 			count: 1
 			path: lib/Db/SourceMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SourceMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Source\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Source\\>\\.$#"
 			count: 1
 			path: lib/Db/SourceMapper.php
@@ -3831,11 +4604,14 @@ parameters:
 			path: lib/Db/ViewMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\View\\.$#"
 			count: 1
 			path: lib/Db/ViewMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\View\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\View\\>\\.$#"
 			count: 1
 			path: lib/Db/ViewMapper.php
@@ -3856,6 +4632,7 @@ parameters:
 			path: lib/Db/ViewMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
 			count: 1
 			path: lib/Db/WebhookLogMapper.php
@@ -3866,6 +4643,8 @@ parameters:
 			path: lib/Db/WebhookLogMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\WebhookLogMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\>\\.$#"
 			count: 1
 			path: lib/Db/WebhookLogMapper.php
@@ -3886,11 +4665,14 @@ parameters:
 			path: lib/Db/WebhookMapper.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\WebhookMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Webhook\\.$#"
 			count: 1
 			path: lib/Db/WebhookMapper.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\WebhookMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Webhook\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Webhook\\>\\.$#"
 			count: 1
 			path: lib/Db/WebhookMapper.php
@@ -3951,11 +4733,87 @@ parameters:
 			path: lib/EventListener/AbstractNodesFolderEventListener.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/CalculationOnSaveListener.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/LifecycleInitialStateListener.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/LifecycleValidationListener.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Listener/MailAppScriptListener.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Listener\\\\NotifyPushListener\\:\\:\\$appManager is never read, only written\\.$#"
+			count: 1
+			path: lib/Listener/NotifyPushListener.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/NotifyPushListener.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/NotifyPushListener.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/NotifyPushListener.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/NotifyPushListener.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Strict comparison using \\=\\=\\= between int and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Listener/ObjectChangeListener.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Mcp/BuiltIn/SchemasToolProvider.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Mcp/BuiltIn/SchemasToolProvider.php
+
+		-
+			message: "#^Offset 'allowed' on array\\{allowed\\: bool, lockout_until\\?\\: int, reason\\?\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Middleware/RateLimitMiddleware.php
+
+		-
+			message: "#^Offset 'lockout_until' on \\*NEVER\\* on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Middleware/RateLimitMiddleware.php
+
+		-
+			message: "#^Offset 'reason' on \\*NEVER\\* on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Middleware/RateLimitMiddleware.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Constant OCA\\\\OpenRegister\\\\Middleware\\\\TenantQuotaMiddleware\\:\\:ENV_BANDWIDTH_MULTIPLIER is unused\\.$#"
 			count: 1
 			path: lib/Middleware/TenantQuotaMiddleware.php
@@ -3966,6 +4824,7 @@ parameters:
 			path: lib/Middleware/TenantQuotaMiddleware.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\#2 \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
 			count: 1
 			path: lib/Middleware/TenantQuotaMiddleware.php
@@ -4136,11 +4995,14 @@ parameters:
 			path: lib/Migration/Version1Date20250102000001.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250102000001\\:\\:\\$connection is never read, only written\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250102000001.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
 			count: 5
 			path: lib/Migration/Version1Date20250115230511.php
@@ -4161,11 +5023,14 @@ parameters:
 			path: lib/Migration/Version1Date20250123120000.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250123120000\\:\\:\\$connection is never read, only written\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250123120000.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
 			count: 28
 			path: lib/Migration/Version1Date20250321061615.php
@@ -4211,11 +5076,14 @@ parameters:
 			path: lib/Migration/Version1Date20250723110323.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250723110323\\:\\:\\$connection is never read, only written\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250723110323.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
 			count: 3
 			path: lib/Migration/Version1Date20250801000000.php
@@ -4236,11 +5104,14 @@ parameters:
 			path: lib/Migration/Version1Date20250801000000.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250801000000\\:\\:\\$connection is never read, only written\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250801000000.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250829120000.php
@@ -4421,11 +5292,14 @@ parameters:
 			path: lib/Migration/Version1Date20260322000000.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Right side of \\|\\| is always false\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20260322000000.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
 			count: 2
 			path: lib/Migration/Version1Date20260322100000.php
@@ -4446,11 +5320,14 @@ parameters:
 			path: lib/Migration/Version1Date20260322100000.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Access to undefined constant OCP\\\\DB\\\\Types\\:\\:DATETIME_MUTABLE\\.$#"
 			count: 2
 			path: lib/Migration/Version1Date20260325120000.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
 			count: 104
 			path: lib/Migration/Version1Date20260326000000.php
@@ -4476,6 +5353,8 @@ parameters:
 			path: lib/Reference/ObjectReferenceProvider.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Offset '@self' on array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Reference/ObjectReferenceProvider.php
@@ -4511,6 +5390,39 @@ parameters:
 			path: lib/Service/ActionService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Strict comparison using \\=\\=\\= between int and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Aggregation/AggregationRunner.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between string and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Aggregation/AggregationRunner.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Aggregation/AggregationRunner.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Aggregation/AggregationRunner.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Aggregation/AggregationRunner.php
+
+		-
+			message: "#^Offset 'title' on array\\{title\\: string, type\\: string\\|null, subheader\\: string\\|null, createdAt\\: DateTime\\|null, modifiedAt\\: DateTime\\|null\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/AnalyticsLinkService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\ApplicationMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/ApplicationService.php
@@ -4566,6 +5478,7 @@ parameters:
 			path: lib/Service/AuthorizationService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Throwing object of an unknown class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException\\.$#"
 			count: 1
 			path: lib/Service/AuthorizationService.php
@@ -4597,6 +5510,64 @@ parameters:
 
 		-
 			message: "#^Call to static method read\\(\\) on an unknown class Sabre\\\\VObject\\\\Reader\\.$#"
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/AvgComplianceService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 2
+			path: lib/Service/AvgComplianceService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/AvgComplianceService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 2
+			path: lib/Service/AvgComplianceService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between int\\<min, \\-1\\>\\|int\\<1, max\\>\\|non\\-empty\\-string and '' will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/AvgRetentionService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/BulkTranslationService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/BulkTranslationService.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Calculation\\\\CalculationAnnotationValidator\\:\\:findCycle\\(\\) never returns array\\<int, string\\> so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Service/Calculation/CalculationAnnotationValidator.php
+
+		-
+			message: "#^Strict comparison using \\!\\=\\= between false and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Calculation/CalculationAnnotationValidator.php
+
+		-
+			message: "#^Strict comparison using \\!\\=\\= between null and null will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Service/Calculation/CalculationAnnotationValidator.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Calculation\\\\CalculationEvaluator\\:\\:modulo\\(\\) never returns int so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Service/Calculation/CalculationEvaluator.php
+
+		-
+			message: "#^Access to an undefined property Sabre\\\\VObject\\\\Document\\:\\:\\$VEVENT\\.$#"
+>>>>>>> origin/development
 			count: 3
 			path: lib/Service/CalendarEventService.php
 
@@ -4606,9 +5577,20 @@ parameters:
 			path: lib/Service/CalendarEventService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\CalendarEventService\\:\\:\\$calDavBackend has unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend as its type\\.$#"
 			count: 2
 			path: lib/Service/CalendarEventService.php
+=======
+			message: "#^Access to an undefined property Sabre\\\\VObject\\\\Document\\:\\:\\$VEVENT\\.$#"
+			count: 2
+			path: lib/Service/CalendarLinkService.php
+
+		-
+			message: "#^Parameter \\$calDavBackend of method OCA\\\\OpenRegister\\\\Service\\\\CalendarLinkService\\:\\:__construct\\(\\) has invalid type OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
+			count: 2
+			path: lib/Service/CalendarLinkService.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
@@ -4666,6 +5648,14 @@ parameters:
 			path: lib/Service/ChatService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 1
+			path: lib/Service/ChatService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ChatService\\:\\:\\$toolHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/ChatService.php
@@ -4832,21 +5822,51 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 5
+=======
+			count: 6
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+>>>>>>> origin/development
 			path: lib/Service/Configuration/ImportHandler.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 4
+=======
+			count: 5
+>>>>>>> origin/development
 			path: lib/Service/Configuration/ImportHandler.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 3
+=======
+			count: 4
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+>>>>>>> origin/development
 			path: lib/Service/Configuration/ImportHandler.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
+=======
+			count: 2
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Service/Configuration/ImportHandler.php
 
@@ -5001,6 +6021,14 @@ parameters:
 			path: lib/Service/ContactMatchingService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/ContactMatchingService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 2
 			path: lib/Service/ContactMatchingService.php
@@ -5011,6 +6039,7 @@ parameters:
 			path: lib/Service/ContactService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method createCard\\(\\) on an unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
 			count: 1
 			path: lib/Service/ContactService.php
@@ -5036,13 +6065,20 @@ parameters:
 			path: lib/Service/ContactService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Parameter \\$cardDavBackend of method OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:__construct\\(\\) has invalid type OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
 			count: 2
 			path: lib/Service/ContactService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:\\$cardDavBackend has unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend as its type\\.$#"
 			count: 2
+=======
+			message: "#^Strict comparison using \\=\\=\\= between DateTime and null will always evaluate to false\\.$#"
+			count: 1
+>>>>>>> origin/development
 			path: lib/Service/ContactService.php
 
 		-
@@ -5076,6 +6112,7 @@ parameters:
 			path: lib/Service/DeepLinkRegistryService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method find\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
 			count: 1
 			path: lib/Service/Edepot/EdepotTransferService.php
@@ -5084,6 +6121,11 @@ parameters:
 			message: "#^Call to method update\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
 			count: 2
 			path: lib/Service/Edepot/EdepotTransferService.php
+=======
+			message: "#^Strict comparison using \\=\\=\\= between int\\<min, \\-1\\>\\|int\\<1, max\\>\\|non\\-empty\\-string and '' will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/DsarService.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Offset int\\<0, 2\\> on array\\{30, 120, 480\\} on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -5091,6 +6133,7 @@ parameters:
 			path: lib/Service/Edepot/EdepotTransferService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$objectMapper of method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\EdepotTransferService\\:\\:__construct\\(\\) has invalid type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
 			count: 2
 			path: lib/Service/Edepot/EdepotTransferService.php
@@ -5101,6 +6144,8 @@ parameters:
 			path: lib/Service/Edepot/EdepotTransferService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\EdepotTransferService\\:\\:\\$transferListService is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Edepot/EdepotTransferService.php
@@ -5111,11 +6156,14 @@ parameters:
 			path: lib/Service/Edepot/EdepotTransferService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Parameter \\$objectMapper of method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:__construct\\(\\) has invalid type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
 			count: 2
 			path: lib/Service/Edepot/TransferListService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$appConfig is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Edepot/TransferListService.php
@@ -5126,11 +6174,14 @@ parameters:
 			path: lib/Service/Edepot/TransferListService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$objectMapper has unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper as its type\\.$#"
 			count: 2
 			path: lib/Service/Edepot/TransferListService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$objectMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Edepot/TransferListService.php
@@ -5156,11 +6207,32 @@ parameters:
 			path: lib/Service/Edepot/Transport/SftpTransport.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Variable \\$logged might not be defined\\.$#"
+			count: 1
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between string and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/EmailLinkService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\EmailLinkMapper\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/EmailService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/EmailService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\:\\:getMethod\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
@@ -5271,6 +6343,14 @@ parameters:
 			path: lib/Service/ExportService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ExportService\\:\\:\\$translationHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/ExportService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\CreateFileHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/CreateFileHandler.php
@@ -5291,11 +6371,14 @@ parameters:
 			path: lib/Service/File/DocumentProcessingHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:getContent\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/File/DocumentProcessingHandler.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\DocumentProcessingHandler\\:\\:\\$fileService is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/DocumentProcessingHandler.php
@@ -5316,8 +6399,18 @@ parameters:
 			path: lib/Service/File/DocumentProcessingHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileAuditHandler\\:\\:\\$auditTrailMapper is never read, only written\\.$#"
 			count: 1
+=======
+			message: "#^Parameter \\#1 \\$register of method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setRegister\\(\\) expects int\\|null, string\\|null given\\.$#"
+			count: 2
+			path: lib/Service/File/FileAuditHandler.php
+
+		-
+			message: "#^Parameter \\#1 \\$schema of method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setSchema\\(\\) expects int\\|null, string\\|null given\\.$#"
+			count: 2
+>>>>>>> origin/development
 			path: lib/Service/File/FileAuditHandler.php
 
 		-
@@ -5366,12 +6459,50 @@ parameters:
 			path: lib/Service/File/FileCrudHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
+=======
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getCategory\\(\\)\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Service/File/FileFormattingHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$logger is never read, only written\\.$#"
+=======
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getDescription\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/File/FileFormattingHandler.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getDownloadCount\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/File/FileFormattingHandler.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getLabels\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/File/FileFormattingHandler.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getLockExpires\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/File/FileFormattingHandler.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getLockedAt\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/File/FileFormattingHandler.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getLockedBy\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/File/FileFormattingHandler.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Service/File/FileFormattingHandler.php
 
@@ -5426,6 +6557,14 @@ parameters:
 			path: lib/Service/File/FolderManagementHandler.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Cannot call method getCategory\\(\\) on array\\<string, int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: lib/Service/File/ReadFileHandler.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:getFile\\(\\) should return OCP\\\\Files\\\\File\\|null but returns OCP\\\\Files\\\\Node\\.$#"
 			count: 2
 			path: lib/Service/File/ReadFileHandler.php
@@ -5456,11 +6595,14 @@ parameters:
 			path: lib/Service/File/UpdateFileHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Service\\\\File\\\\CreateFileHandler\\:\\:createFile\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/FileService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\FileService\\:\\:APP_GROUP is unused\\.$#"
 			count: 1
 			path: lib/Service/FileService.php
@@ -5521,11 +6663,42 @@ parameters:
 			path: lib/Service/FileSidebarService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\FlowLinkService\\:\\:\\$container is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/FlowLinkService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\) invoked with 4 parameters, 0\\-2 required\\.$#"
 			count: 1
 			path: lib/Service/GraphQL/GraphQLResolver.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/GraphQL/SchemaGenerator.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/GraphQL/SchemaGenerator.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/GraphQL/SchemaGenerator.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/GraphQL/SchemaGenerator.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
 			count: 1
 			path: lib/Service/HookExecutor.php
@@ -5581,6 +6754,14 @@ parameters:
 			path: lib/Service/ImportService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Service/ImportService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Offset 'id' does not exist on array\\{_text\\: string\\|false\\}\\.$#"
 			count: 2
 			path: lib/Service/Index/Backends/Elasticsearch/ElasticsearchDocumentIndexer.php
@@ -5721,6 +6902,89 @@ parameters:
 			path: lib/Service/Index/WarmupHandler.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 2
+			path: lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php
+
+		-
+			message: "#^Offset 'results' on array\\{results\\: array, total\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/ContactsProvider.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Integration\\\\Providers\\\\DeckProvider\\:\\:\\$appManager is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/DeckProvider.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Integration\\\\Providers\\\\EmailProvider\\:\\:\\$appManager is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/EmailProvider.php
+
+		-
+			message: "#^Call to function array_is_list\\(\\) with array\\<string, mixed\\> will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/OpenProjectProvider.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/OpenProjectProvider.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Integration\\\\Providers\\\\PollsProvider\\:\\:\\$userSession is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/PollsProvider.php
+
+		-
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 4
+			path: lib/Service/Integration/Providers/SharesProvider.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Integration\\\\Providers\\\\SharesProvider\\:\\:\\$appManager is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/SharesProvider.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Integration\\\\Providers\\\\SharesProvider\\:\\:\\$db is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/SharesProvider.php
+
+		-
+			message: "#^Call to function array_is_list\\(\\) with array\\<string, mixed\\> will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/XwikiProvider.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/XwikiProvider.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Integration/Providers/XwikiProvider.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Lifecycle/TransitionEngine.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/LinkedEntityService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/LinkedEntityService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/LinkedEntityService.php
@@ -5771,17 +7035,33 @@ parameters:
 			path: lib/Service/LogService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/ManifestService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\MappingService\\:\\:getMappings\\(\\) should return array\\<OCA\\\\OpenRegister\\\\Db\\\\Mapping\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Mapping\\>\\.$#"
 			count: 1
 			path: lib/Service/MappingService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Strict comparison using \\=\\=\\= between \\*NEVER\\* and null will always evaluate to false\\.$#"
+=======
+			message: "#^Strict comparison using \\=\\=\\= between array and false will always evaluate to false\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Service/MappingService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Strict comparison using \\=\\=\\= between array and false will always evaluate to false\\.$#"
+=======
+			message: "#^Strict comparison using \\=\\=\\= between array and null will always evaluate to false\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Service/MappingService.php
 
@@ -5796,6 +7076,14 @@ parameters:
 			path: lib/Service/MappingService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 2
+			path: lib/Service/Mcp/McpToolsService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
 			path: lib/Service/MetricsService.php
@@ -5831,6 +7119,24 @@ parameters:
 			path: lib/Service/NoteService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Parameter \\$recipients of method OCA\\\\OpenRegister\\\\Service\\\\Notification\\\\AnnotationNotificationDispatcher\\:\\:filterBySubscription\\(\\) expects array\\<int, array\\>, array\\<int, string\\> given\\.$#"
+			count: 1
+			path: lib/Service/Notification/AnnotationNotificationDispatcher.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Service/Notification/AnnotationNotificationDispatcher.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Notification/AnnotationNotificationDispatcher.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Class OCA\\\\OpenRegister\\\\Service\\\\NotificationService has an uninitialized readonly property \\$groupManager\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: lib/Service/NotificationService.php
@@ -6041,16 +7347,32 @@ parameters:
 			path: lib/Service/Object/MigrationHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/Object/ObjectServiceFacetExample.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/Object/PerformanceHandler.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Object/PermissionHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Object/PermissionHandler.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\QueryHandler\\:\\:\\$getHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/QueryHandler.php
@@ -6252,7 +7574,11 @@ parameters:
 
 		-
 			message: "#^Using nullsafe method call on non\\-nullable type OCA\\\\OpenRegister\\\\Db\\\\Register\\. Use \\-\\> instead\\.$#"
+<<<<<<< HEAD
 			count: 2
+=======
+			count: 4
+>>>>>>> origin/development
 			path: lib/Service/Object/SaveObject.php
 
 		-
@@ -6486,6 +7812,7 @@ parameters:
 			path: lib/Service/Object/ValidationHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
 			count: 1
 			path: lib/Service/ObjectService.php
@@ -6496,6 +7823,8 @@ parameters:
 			path: lib/Service/ObjectService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^PHPDoc tag @throws with type OCP\\\\AppFramework\\\\Http\\\\ContentSecurityPolicy is not subtype of Throwable$#"
 			count: 1
 			path: lib/Service/ObjectService.php
@@ -6572,22 +7901,38 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 3
+=======
+			count: 4
+>>>>>>> origin/development
 			path: lib/Service/ObjectService.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 3
+=======
+			count: 4
+>>>>>>> origin/development
 			path: lib/Service/ObjectService.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 3
+=======
+			count: 4
+>>>>>>> origin/development
 			path: lib/Service/ObjectService.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+<<<<<<< HEAD
 			count: 3
+=======
+			count: 4
+>>>>>>> origin/development
 			path: lib/Service/ObjectService.php
 
 		-
@@ -6606,6 +7951,7 @@ parameters:
 			path: lib/Service/ObjectService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method getMessage\\(\\) on an unknown class OC\\\\DB\\\\Exceptions\\\\DbalException\\.$#"
 			count: 2
 			path: lib/Service/OrganisationService.php
@@ -6619,6 +7965,31 @@ parameters:
 			message: "#^Throwing object of an unknown class OC\\\\DB\\\\Exceptions\\\\DbalException\\.$#"
 			count: 2
 			path: lib/Service/OrganisationService.php
+=======
+			message: "#^Call to function array_is_list\\(\\) with array\\<string, mixed\\> will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/OpenProjectLinkService.php
+
+		-
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\ProviderUnavailableException is never thrown in the try block\\.$#"
+			count: 1
+			path: lib/Service/OpenProjectLinkService.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 1
+			path: lib/Service/OpenProjectLinkService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/OpenProjectLinkService.php
+
+		-
+			message: "#^Method OCP\\\\IDBConnection\\:\\:lastInsertId\\(\\) invoked with 0 parameters, 1 required\\.$#"
+			count: 1
+			path: lib/Service/PollLinkService.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\RegisterService\\:\\:\\$schemaMapper is never read, only written\\.$#"
@@ -6666,6 +8037,19 @@ parameters:
 			path: lib/Service/RegisterService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Variable \\$output on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/Reporting/PdfReportWriter.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: lib/Service/Reporting/ReportRenderService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getTitle\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/RetentionService.php
@@ -6746,6 +8130,19 @@ parameters:
 			path: lib/Service/Schemas/SchemaCacheHandler.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Variable \\$sign might not be defined\\.$#"
+			count: 1
+			path: lib/Service/Search/PlaceholderResolver.php
+
+		-
+			message: "#^Variable \\$unit might not be defined\\.$#"
+			count: 1
+			path: lib/Service/Search/PlaceholderResolver.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Offset 1 on array\\{string, non\\-empty\\-string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/SearchTrailService.php
@@ -6816,11 +8213,14 @@ parameters:
 			path: lib/Service/Settings/ValidationOperationsHandler.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 1
 			path: lib/Service/SettingsService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\SettingsService\\:\\:MIN_OPENREGISTER_VERSION is unused\\.$#"
 			count: 1
 			path: lib/Service/SettingsService.php
@@ -6886,6 +8286,7 @@ parameters:
 			path: lib/Service/SettingsService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to method createCalendarObject\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
 			count: 1
 			path: lib/Service/TaskService.php
@@ -6917,6 +8318,29 @@ parameters:
 
 		-
 			message: "#^Call to static method read\\(\\) on an unknown class Sabre\\\\VObject\\\\Reader\\.$#"
+=======
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 3
+			path: lib/Service/ShareLinkService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ShareLinkService\\:\\:\\$l10n is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/ShareLinkService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between OCP\\\\Files\\\\File\\|OCP\\\\Files\\\\Folder and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/ShareLinkService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between DateTime and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/TalkLinkService.php
+
+		-
+			message: "#^Access to an undefined property Sabre\\\\VObject\\\\Document\\:\\:\\$VTODO\\.$#"
+>>>>>>> origin/development
 			count: 2
 			path: lib/Service/TaskService.php
 
@@ -6926,11 +8350,14 @@ parameters:
 			path: lib/Service/TaskService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TaskService\\:\\:\\$calDavBackend has unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend as its type\\.$#"
 			count: 2
 			path: lib/Service/TaskService.php
 
 		-
+=======
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TenantLifecycleService\\:\\:\\$eventDispatcher is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/TenantLifecycleService.php
@@ -6996,6 +8423,19 @@ parameters:
 			path: lib/Service/TextExtractionService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^PHPDoc tag @param for parameter \\$emlParser with type OCA\\\\OpenRegister\\\\Service\\\\EmlParser is not subtype of native type OCA\\\\OpenRegister\\\\Service\\\\TextExtraction\\\\EmlParser\\.$#"
+			count: 1
+			path: lib/Service/TextExtractionService.php
+
+		-
+			message: "#^PHPDoc type for property OCA\\\\OpenRegister\\\\Service\\\\TextExtractionService\\:\\:\\$emlParser with type OCA\\\\OpenRegister\\\\Service\\\\EmlParser is not subtype of native type OCA\\\\OpenRegister\\\\Service\\\\TextExtraction\\\\EmlParser\\.$#"
+			count: 1
+			path: lib/Service/TextExtractionService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TextExtractionService\\:\\:\\$entityMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/TextExtractionService.php
@@ -7026,6 +8466,24 @@ parameters:
 			path: lib/Service/TmloService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Call to function in_array\\(\\) with arguments string, array\\{\\} and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/TranslationProjectionService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/TranslationProjectionService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/TranslationProjectionService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Class OCA\\\\OpenRegister\\\\Service\\\\UploadService has an uninitialized readonly property \\$client\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: lib/Service/UploadService.php
@@ -7046,6 +8504,7 @@ parameters:
 			path: lib/Service/UploadService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findByActor\\(\\)\\.$#"
 			count: 2
 			path: lib/Service/UserService.php
@@ -7054,6 +8513,31 @@ parameters:
 			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
 			count: 1
 			path: lib/Service/UserService.php
+=======
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/UrnService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/UrnService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/UrnService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/UrnService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/UrnService.php
+>>>>>>> origin/development
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\UserService\\:\\:getDefaultPropertyScope\\(\\) is unused\\.$#"
@@ -7066,6 +8550,14 @@ parameters:
 			path: lib/Service/UserService.php
 
 		-
+<<<<<<< HEAD
+=======
+			message: "#^Offset 'id' on array\\{id\\: int, uuid\\: string\\|null, schema\\: int\\|null, register\\: int\\|null, object\\: int\\|null, objectUuid\\: string\\|null, registerUuid\\: string\\|null, schemaUuid\\: string\\|null, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/UserService.php
+
+		-
+>>>>>>> origin/development
 			message: "#^Strict comparison using \\=\\=\\= between 'daily' and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/UserService.php
@@ -7111,7 +8603,26 @@ parameters:
 			path: lib/Service/ViewService.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Method OCA\\\\OpenRegister\\\\Settings\\\\OpenRegisterAdmin\\:\\:getForm\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\{\\}\\>\\.$#"
+=======
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\ProviderUnavailableException is never thrown in the try block\\.$#"
+			count: 2
+			path: lib/Service/XwikiLinkService.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\XwikiLinkService\\:\\:toServiceException\\(\\) is unused\\.$#"
+			count: 1
+			path: lib/Service/XwikiLinkService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Settings\\\\IntegrationsAdminSettings\\:\\:\\$l10n is never read, only written\\.$#"
+			count: 1
+			path: lib/Settings/IntegrationsAdminSettings.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Settings\\\\OpenRegisterAdmin\\:\\:getForm\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\<string, mixed\\>\\> but returns OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\{\\}\\>\\.$#"
+>>>>>>> origin/development
 			count: 1
 			path: lib/Settings/OpenRegisterAdmin.php
 
@@ -7121,6 +8632,109 @@ parameters:
 			path: lib/Settings/OpenRegisterAdmin.php
 
 		-
+<<<<<<< HEAD
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Tool/SchemaTool.php
+=======
+			message: "#^Offset 'description' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Tool/McpProviderBridge.php
+
+		-
+			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 2
+			path: lib/Tool/McpProviderBridge.php
+
+		-
+			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Tool/McpProviderBridge.php
+
+		-
+			message: "#^Offset 'name' on \\*NEVER\\* on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Tool/McpProviderBridge.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Tool\\\\McpProviderBridge\\:\\:\\$agent is never read, only written\\.$#"
+			count: 1
+			path: lib/Tool/McpProviderBridge.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Tool/SchemaTool.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<201, OCA\\\\OpenRegister\\\\Db\\\\Configuration, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Configuration, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<204, null, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400\\|500, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<201, OCA\\\\OpenRegister\\\\Db\\\\Endpoint, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/EndpointsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<404\\|500, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Endpoint, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/EndpointsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FilesController\\:\\:resolveParentObjectForFile\\(\\) never returns OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Controller/FilesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array\\{results: array<OCA\\\\OpenRegister\\\\Db\\\\Source>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array\\{results: array<array<string, mixed>>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array<string, mixed>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array<string, mixed>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+>>>>>>> origin/development

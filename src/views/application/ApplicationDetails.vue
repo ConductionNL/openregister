@@ -227,6 +227,9 @@ export default {
 		Database,
 		FileOutline,
 	},
+	/**
+	 * @spec exclude detail-view lifecycle fetch of the application by route id on mount
+	 */
 	async mounted() {
 		// Load application details if we have an ID in the route
 		const applicationId = this.$route.params.id

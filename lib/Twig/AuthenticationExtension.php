@@ -3,11 +3,23 @@
 /**
  * Twig extension for authentication token functions.
  *
+<<<<<<< HEAD
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
  * @author  Conduction Development Team <dev@conductio.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Twig
+ * @package  OCA\OpenRegister\Twig
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> origin/development
  *
  * @link https://OpenRegister.app
  */
@@ -29,6 +41,7 @@ class AuthenticationExtension extends AbstractExtension
      *
      * @return TwigFunction[] Array of TwigFunction instances
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function getFunctions(): array

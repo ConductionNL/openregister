@@ -3872,7 +3872,11 @@
             ],
             "body": {
               "mode": "raw",
+<<<<<<< HEAD
               "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for file tests\", \"properties\": {\"name\": {\"type\": \"string\"}}}"
+=======
+              "raw": "{\"title\": \"Person Schema Files {{$timestamp}}-{{$randomInt}}\", \"description\": \"Schema for file tests\", \"properties\": {\"name\": {\"type\": \"string\"}}}"
+>>>>>>> origin/development
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
@@ -4112,7 +4116,11 @@
             ],
             "body": {
               "mode": "raw",
+<<<<<<< HEAD
               "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for import tests\", \"properties\": {\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"integer\"}}}"
+=======
+              "raw": "{\"title\": \"Person Schema Imports {{$timestamp}}-{{$randomInt}}\", \"description\": \"Schema for import tests\", \"properties\": {\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"integer\"}}}"
+>>>>>>> origin/development
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",

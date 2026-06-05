@@ -19,6 +19,7 @@
 			</NcButton>
 		</div>
 
+<<<<<<< HEAD
 		<NcModal v-if="showConfirmModal" @close="showConfirmModal = false">
 			<div class="account-section__modal">
 				<h3>{{ t('openregister', 'Confirm Account Deactivation') }}</h3>
@@ -44,6 +45,17 @@
 				</NcButton>
 			</div>
 		</NcModal>
+=======
+		<ConfirmDeactivationModal
+			v-if="showConfirmModal"
+			:username="username"
+			:reason="reason"
+			:confirm-username="confirmUsername"
+			@close="showConfirmModal = false"
+			@confirm="requestDeactivation"
+			@update:reason="reason = $event"
+			@update:confirmUsername="confirmUsername = $event" />
+>>>>>>> origin/development
 
 		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
 			{{ message }}
@@ -56,12 +68,21 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+<<<<<<< HEAD
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
 
 export default {
 	name: 'AccountSection',
 	components: { NcButton, NcModal, NcTextField },
+=======
+import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
+
+export default {
+	name: 'AccountSection',
+	components: { NcButton, NcTextField, ConfirmDeactivationModal },
+>>>>>>> origin/development
 	data() {
 		return {
 			status: 'active',
@@ -74,6 +95,15 @@ export default {
 			isError: false,
 		}
 	},
+<<<<<<< HEAD
+=======
+	/**
+	 * Prime username + deactivation status on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook hydrating local display state; account self-service contract owned by account-self-service.
+	 * @return {Promise<void>}
+	 */
+>>>>>>> origin/development
 	async mounted() {
 		try {
 			const [userRes, statusRes] = await Promise.all([
@@ -89,6 +119,17 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * Submit a deactivation request for the signed-in user. Soft state change —
+		 * does not end the current session; an admin must approve before any account
+		 * effect.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-4
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async requestDeactivation() {
 			try {
 				await axios.post(
@@ -105,6 +146,15 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Cancel a pending deactivation request.
+		 *
+		 * @spec exclude UI plumbing — inverse of the requestDeactivation contract (account-self-service); thin DELETE + local state reset.
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async cancelDeactivation() {
 			try {
 				await axios.delete(generateUrl('/apps/openregister/api/user/me/deactivate'))
@@ -117,6 +167,16 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Format a date string for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} dateStr - ISO date string
+		 * @return {string} localized date/time
+		 */
+>>>>>>> origin/development
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleString()
@@ -132,5 +192,8 @@ export default {
 .section__error { color: var(--color-error); margin-top: 8px; }
 .section__success { color: var(--color-success); margin-top: 8px; }
 .account-section__pending { background: var(--color-warning-background, #fff3cd); padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+<<<<<<< HEAD
 .account-section__modal { padding: 24px; }
+=======
+>>>>>>> origin/development
 </style>

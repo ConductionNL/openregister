@@ -2,6 +2,9 @@
 /**
  * Minimal bootstrap for unit tests that do not require a running Nextcloud server.
  * Loads only the composer autoloader + OCP stubs provided by nextcloud/ocp.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

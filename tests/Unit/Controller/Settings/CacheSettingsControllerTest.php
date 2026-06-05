@@ -186,6 +186,7 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals(422, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testClearSpecificCollectionSuccess(): void
     {
         $this->indexService->method('clearIndex')
@@ -219,6 +220,8 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals(422, $result->getStatus());
     }
 
+=======
+>>>>>>> origin/development
     public function testGetWarmupIntervalWithEmptyLastRun(): void
     {
         // When last_run is empty, the response last_run should be null.
@@ -312,6 +315,7 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
     }
 
+<<<<<<< HEAD
     public function testClearSpecificCollectionReturnsCollectionName(): void
     {
         $this->indexService->method('clearIndex')->willReturn(['success' => true]);
@@ -334,6 +338,8 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals('bad-index', $result->getData()['collection']);
     }
 
+=======
+>>>>>>> origin/development
     // ── clearAppStoreCache() ──
 
     private function buildFileMock(array $json): ISimpleFile&MockObject

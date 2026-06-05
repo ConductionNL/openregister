@@ -20,6 +20,12 @@
  * - Schema property columns mapped from JSON schema to SQL types
  * - Automatic indexing for performance optimization
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -150,6 +156,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.LongVariable)
+>>>>>>> origin/development
  */
 class MagicMapper extends AbstractObjectMapper
 {
@@ -292,6 +302,7 @@ class MagicMapper extends AbstractObjectMapper
     private ?bool $hasPgTrgm = null;
 
     /**
+<<<<<<< HEAD
      * Count of constructor calls.
      *
      * @var integer
@@ -299,6 +310,8 @@ class MagicMapper extends AbstractObjectMapper
     private static int $constructCount = 0;
 
     /**
+=======
+>>>>>>> origin/development
      * Constructor for MagicMapper service.
      *
      * Initializes the service with required dependencies for database operations,
@@ -333,6 +346,7 @@ class MagicMapper extends AbstractObjectMapper
         private readonly SettingsService $settingsService,
         private readonly ContainerInterface $container
     ) {
+<<<<<<< HEAD
         self::$constructCount++;
         file_put_contents(
             '/tmp/or-debug.log',
@@ -349,6 +363,28 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         // Initialize specialized handlers for modular functionality.
+=======
+        // Initialize specialized handlers for modular functionality.
+        //
+        // The circular-construction guard that lived here previously (#1564)
+        // was a holdover from a March 2026 refactor; the cycles it guarded
+        // (CacheHandler→RegisterMapper→MagicMapper, SettingsService→MagicMapper)
+        // were since broken via lazy container resolution + the
+        // `objectMapper`-removed-from-SettingsService fix.
+        // Verification trail for future readers (PR #1431 review minor):
+        // - CacheHandler→RegisterMapper cycle: `CacheHandler` no longer
+        // eagerly constructs a `RegisterMapper`; it resolves via its
+        // injected `ContainerInterface $container` at first use.
+        // - SettingsService→MagicMapper cycle: `SettingsService` no
+        // longer carries the `$objectMapper` field that previously
+        // transitively pulled in `MagicMapper` at construction.
+        // Both paths can be re-verified by inspection:
+        // git grep -nE 'new RegisterMapper|RegisterMapper \$' lib/Service/Object/CacheHandler.php
+        // git grep -nE '\$objectMapper|MagicMapper \$' lib/Service/SettingsService.php
+        // If a future change re-introduces either pattern, restoring a
+        // static `$constructCount` is the documented escape hatch — see
+        // issue #1564 for the original trigger conditions.
+>>>>>>> origin/development
         $this->initializeHandlers();
     }//end __construct()
 
@@ -1195,10 +1231,16 @@ class MagicMapper extends AbstractObjectMapper
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
+<<<<<<< HEAD
                         if (strtoupper($direction) === 'DESC') {
                             $dir = 'DESC';
                         } else {
                             $dir = 'ASC';
+=======
+                        $dir = 'ASC';
+                        if (strtoupper($direction) === 'DESC') {
+                            $dir = 'DESC';
+>>>>>>> origin/development
                         }
 
                         $orderClauses[] = "_search_score {$dir}";
@@ -1211,7 +1253,27 @@ class MagicMapper extends AbstractObjectMapper
                 // Translate field name to column name.
                 $columnName = $this->sanitizeColumnName(name: $field);
                 if (str_starts_with($field, '@self.') === true) {
+<<<<<<< HEAD
                     $columnName = self::METADATA_PREFIX.substr($field, 6);
+=======
+                    // Metadata fields: sanitize the bare name, then validate against
+                    // the known METADATA_PREFIX column allowlist before quoting.
+                    // Without this allowlist, raw user input was concatenated into
+                    // the UNION SQL (SQL injection via ORDER BY).
+                    $rawMetaName     = substr($field, 6);
+                    $sanitizedMeta   = $this->sanitizeColumnName(name: $rawMetaName);
+                    $candidateColumn = self::METADATA_PREFIX.$sanitizedMeta;
+                    $allowedMetadata = array_keys($this->getMetadataColumns());
+                    if (in_array($candidateColumn, $allowedMetadata, true) === false) {
+                        // Unknown metadata column - skip this ORDER BY clause entirely.
+                        continue;
+                    }
+
+                    $columnName = $this->quoteIdentifier(
+                        name: $candidateColumn,
+                        isPostgres: $isPostgres
+                    );
+>>>>>>> origin/development
                 } else if (str_starts_with($field, '_') === false) {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
@@ -1220,12 +1282,20 @@ class MagicMapper extends AbstractObjectMapper
                         name: $this->sanitizeColumnName(name: $field),
                         isPostgres: $isPostgres
                     );
+<<<<<<< HEAD
                 }
 
                 if (strtoupper($direction) === 'DESC') {
                     $dir = 'DESC';
                 } else {
                     $dir = 'ASC';
+=======
+                }//end if
+
+                $dir = 'ASC';
+                if (strtoupper($direction) === 'DESC') {
+                    $dir = 'DESC';
+>>>>>>> origin/development
                 }
 
                 $orderClauses[] = "{$columnName} {$dir}";
@@ -1240,8 +1310,15 @@ class MagicMapper extends AbstractObjectMapper
         }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
+<<<<<<< HEAD
         $limit     = $query['_limit'] ?? 100;
         $offset    = $query['_offset'] ?? 0;
+=======
+        // Cast + clamp at the boundary so raw user input cannot reach the
+        // interpolated SQL string (SQL injection via _limit / _offset).
+        $limit     = max(1, min(1000, (int) ($query['_limit'] ?? 100)));
+        $offset    = max(0, (int) ($query['_offset'] ?? 0));
+>>>>>>> origin/development
         $unionSql .= " LIMIT {$limit} OFFSET {$offset}";
 
         // Execute the combined query.
@@ -1288,6 +1365,10 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
+=======
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable)   `$_` is the conventional ignore name in the metadata-column foreach
+>>>>>>> origin/development
      */
     private function buildUnionSelectPart(
         string $tableName,
@@ -1305,11 +1386,27 @@ class MagicMapper extends AbstractObjectMapper
         // Add table prefix.
         $fullTableName = 'oc_'.$tableName;
 
+<<<<<<< HEAD
         // Get metadata column names (common across all tables).
         $metadataColumns = array_keys($this->getMetadataColumns());
 
         // Base SELECT with metadata columns.
         $selectColumns = $metadataColumns;
+=======
+        // Get metadata column names, checking each exists in this table.
+        // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
+        // Cast to text for UNION type compatibility (some columns are jsonb, others text).
+        $metadataColumns = $this->getMetadataColumns();
+        $selectColumns   = [];
+        foreach (array_keys($metadataColumns) as $metaCol) {
+            if ($this->columnExistsInTable(tableName: $tableName, columnName: $metaCol) === true) {
+                $selectColumns[] = "{$metaCol}::text AS {$metaCol}";
+                continue;
+            }
+
+            $selectColumns[] = "NULL::text AS {$metaCol}";
+        }
+>>>>>>> origin/development
 
         /*
          * Every SELECT in the UNION must have identical columns in the same order.
@@ -1330,10 +1427,16 @@ class MagicMapper extends AbstractObjectMapper
                 isPostgres: $isPostgres
             );
             // Absent column: emit a typed NULL placeholder.
+<<<<<<< HEAD
             if ($isPostgres === true) {
                 $colExpr = "NULL::text AS {$quotedCol}";
             } else {
                 $colExpr = "NULL AS {$quotedCol}";
+=======
+            $colExpr = "NULL AS {$quotedCol}";
+            if ($isPostgres === true) {
+                $colExpr = "NULL::text AS {$quotedCol}";
+>>>>>>> origin/development
             }
 
             $columnInTable = $this->columnExistsInTable(
@@ -1342,10 +1445,16 @@ class MagicMapper extends AbstractObjectMapper
             );
             if ($columnInTable === true) {
                 // Present column: cast to text for cross-schema type compatibility.
+<<<<<<< HEAD
                 if ($isPostgres === true) {
                     $colExpr = "{$quotedCol}::text AS {$quotedCol}";
                 } else {
                     $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+=======
+                $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+                if ($isPostgres === true) {
+                    $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+>>>>>>> origin/development
                 }
 
                 $existingColumns[] = $columnName;
@@ -1390,6 +1499,12 @@ class MagicMapper extends AbstractObjectMapper
                         isPostgres: $isPostgres
                     );
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
+<<<<<<< HEAD
+=======
+                    // MariaDB/MySQL default: ILIKE and similarity() are unavailable;
+                    // use case-sensitive LIKE with a standard CAST instead.
+                    $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
+>>>>>>> origin/development
                     if ($isPostgres === true) {
                         // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
                         // fall back to ILIKE when pg_trgm is unavailable.
@@ -1397,10 +1512,13 @@ class MagicMapper extends AbstractObjectMapper
                         if ($hasTrgm === true) {
                             $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
                         }
+<<<<<<< HEAD
                     } else {
                         // MariaDB/MySQL: ILIKE and similarity() are unavailable;
                         // use case-sensitive LIKE with a standard CAST instead.
                         $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
+=======
+>>>>>>> origin/development
                     }
 
                     $searchColumns[] = $scoreExpr;
@@ -2332,6 +2450,27 @@ class MagicMapper extends AbstractObjectMapper
                         'comment'  => 'Object reference (UUID)',
                     ];
                 }//end if
+<<<<<<< HEAD
+=======
+
+                // For object-typed properties, use an order-preserving JSON column type.
+                // PostgreSQL JSONB hashes keys and loses client-supplied insertion order, which
+                // breaks object-keyed schemas where order is semantically meaningful (e.g. the
+                // openconnector mapping rules, where drag-to-reorder must round-trip via the
+                // PUT API). See issue #1720. Plain JSON stores the document verbatim and
+                // preserves PHP/JSON-encoder insertion order. Arrays continue to use JSONB
+                // because (a) JSON arrays preserve element order regardless of column type
+                // and (b) MagicSearchHandler/MagicFacetHandler rely on jsonb containment
+                // operators (`@>`, `jsonb_array_elements_text`) for array filtering.
+                if ($type === 'object') {
+                    return [
+                        'name'     => $columnName,
+                        'type'     => 'json_ordered',
+                        'nullable' => $isRequired === false,
+                        'comment'  => 'Order-preserving JSON (object-typed schema property)',
+                    ];
+                }
+>>>>>>> origin/development
                 return [
                     'name'     => $columnName,
                     'type'     => 'json',
@@ -2660,8 +2799,25 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // Add UNIQUE constraints (required for PostgreSQL ON CONFLICT).
+<<<<<<< HEAD
             foreach ($uniqueConstraints as $uniqueCol) {
                 $sql .= ', UNIQUE ('.$uniqueCol.')';
+=======
+            // Constraints are named explicitly so MySQL/MariaDB doesn't fall
+            // back to using the column name as the constraint/index name,
+            // which collides across tables (e.g. every dynamic table getting
+            // a constraint literally called `_uuid`) and breaks Nextcloud's
+            // ensureUniqueNamesConstraints check on the next app install.
+            foreach ($uniqueConstraints as $uniqueCol) {
+                $rawCol         = trim($uniqueCol, '`"');
+                $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
+                $quote          = '`';
+                if ($isPostgres === true) {
+                    $quote = '"';
+                }
+
+                $sql .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';
+>>>>>>> origin/development
             }
 
             $sql .= ')';
@@ -2737,6 +2893,16 @@ class MagicMapper extends AbstractObjectMapper
                     return 'JSONB';
                 }
                 return 'JSON';
+<<<<<<< HEAD
+=======
+            case 'json_ordered':
+                // Order-preserving JSON storage for object-typed schema properties.
+                // PostgreSQL JSONB hashes keys and loses insertion order; the JSON type
+                // stores the document verbatim. MySQL/MariaDB JSON also stores in document
+                // order (LONGTEXT-backed), so the same type label maps to JSON on both
+                // platforms. See issue #1720.
+                return 'JSON';
+>>>>>>> origin/development
             default:
                 return 'TEXT';
         }//end switch
@@ -3005,6 +3171,7 @@ class MagicMapper extends AbstractObjectMapper
         $data     = $objectData;
         unset($data['@self']);
 
+<<<<<<< HEAD
         // Ensure register and schema IDs are set correctly.
         if (empty($metadata['register']) === true) {
             $metadata['register'] = $register->getId();
@@ -3013,6 +3180,48 @@ class MagicMapper extends AbstractObjectMapper
         if (empty($metadata['schema']) === true) {
             $metadata['schema'] = $schema->getId();
         }
+=======
+        // SECURITY (wave-7 CRITICAL C2 — @self allowlist enforcement):
+        // Clients must not be able to overwrite server-controlled fields via the @self
+        // block. The primary defence for field-level injection lives in
+        // SaveObject::setSelfMetadata (which now strips owner/authorization from raw
+        // client $selfData before applying them to the entity). This layer adds
+        // defense-in-depth at the DB write boundary for fields that can be reached by
+        // any code path, not just the REST request path.
+        //
+        // Fields handled here:
+        //
+        // owner        – stripped from client @self to prevent ownership hijacking.
+        // For the internal entity-serialization path the owner was
+        // stamped by SaveObject::applyOwnerAttribution before
+        // jsonSerialize() was called. Stripping it here prevents any
+        // residual client value from persisting. The DB column will
+        // receive the value set by the entity's setter (not @self).
+        // Note: this means that for any path that does NOT go through
+        // applyOwnerAttribution, _owner will be null. That is safer
+        // than persisting an attacker-controlled value.
+        //
+        // authorization – per-object RBAC rules must not be writable by ordinary
+        // object-create/update calls. Management of per-object
+        // authorization is intentionally limited to the dedicated
+        // authorization management endpoint.
+        //
+        // register / schema – always derived from the authoritative $register and
+        // $schema method parameters. Unconditional override (extends
+        // the previous conditional-on-empty guard to be absolute).
+        //
+        // The following fields are intentionally NOT stripped here because they carry
+        // legitimate values set by the server before this function is reached:
+        // version, created, updated, deleted, locked, retention, uuid, slug, uri
+        // Those fields must be fixed at the SaveObject/controller level if client
+        // injection is possible for any of them.
+        unset($metadata['owner'], $metadata['authorization']);
+
+        // Always force register and schema from the authoritative server parameters —
+        // never accept client-supplied values, even when non-empty.
+        $metadata['register'] = $register->getId();
+        $metadata['schema']   = $schema->getId();
+>>>>>>> origin/development
 
         // Map metadata fields with prefix.
         $metadataFields = [
@@ -3188,10 +3397,16 @@ class MagicMapper extends AbstractObjectMapper
                             $cleanedArray[] = $item;
                         }
 
+<<<<<<< HEAD
                         if (empty($cleanedArray) === true) {
                             $value = null;
                         } else {
                             $value = $cleanedArray;
+=======
+                        $value = $cleanedArray;
+                        if (empty($cleanedArray) === true) {
+                            $value = null;
+>>>>>>> origin/development
                         }
                     }//end if
 
@@ -3211,11 +3426,20 @@ class MagicMapper extends AbstractObjectMapper
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
                     if (is_bool($value) === true) {
+<<<<<<< HEAD
                         if ($value === true) {
                             $value = 1;
                         } else {
                             $value = 0;
                         }
+=======
+                        $boolInt = 0;
+                        if ($value === true) {
+                            $boolInt = 1;
+                        }
+
+                        $value = $boolInt;
+>>>>>>> origin/development
                     }
 
                     // Convert complex types to JSON.
@@ -3673,6 +3897,20 @@ class MagicMapper extends AbstractObjectMapper
 
         $columnsDeRequired = array_merge($columnsDeRequired, $obsoleteDeRequired);
 
+<<<<<<< HEAD
+=======
+        // 7. Migrate object-typed columns from JSONB to JSON to preserve insertion order.
+        // PostgreSQL JSONB normalises key order; for schema properties of `type: object`
+        // (which use object-keyed semantics like openconnector mapping rules) clients
+        // require the order they sent on PUT to round-trip on GET. See issue #1720.
+        $columnsRetyped = $this->migrateJsonbToJsonForOrderedColumns(
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns,
+            isPostgres: $isPostgres
+        );
+
+>>>>>>> origin/development
         $this->logger->info(
             message: '[MagicMapper] Successfully updated table structure',
             context: [
@@ -3683,6 +3921,10 @@ class MagicMapper extends AbstractObjectMapper
                 'columnsDeRequired' => $columnsDeRequired,
                 'columnsReRequired' => $columnsReRequired,
                 'columnsDropped'    => $columnsDropped,
+<<<<<<< HEAD
+=======
+                'columnsRetyped'    => $columnsRetyped,
+>>>>>>> origin/development
             ]
         );
 
@@ -3692,10 +3934,152 @@ class MagicMapper extends AbstractObjectMapper
             'columnsDeRequired' => $columnsDeRequired,
             'columnsReRequired' => $columnsReRequired,
             'columnsDropped'    => $columnsDropped,
+<<<<<<< HEAD
+=======
+            'columnsRetyped'    => $columnsRetyped,
+>>>>>>> origin/development
         ];
     }//end updateTableStructure()
 
     /**
+<<<<<<< HEAD
+=======
+     * Identify object-typed columns still backed by PostgreSQL JSONB that need retyping
+     * to JSON for key-order preservation (issue #1720).
+     *
+     * Returns the list of column names where:
+     *   - the schema column definition is type `json_ordered` (object-typed schema property), and
+     *   - the live database column is `jsonb` (the legacy storage type).
+     *
+     * MySQL/MariaDB JSON already preserves document order; this helper short-circuits to
+     * an empty list on any non-PostgreSQL platform, so the fast-path check stays cheap.
+     *
+     * @param array $currentColumns  Live column definitions from information_schema (see
+     *                               getExistingTableColumns()).
+     * @param array $requiredColumns Required column definitions from the schema (see
+     *                               buildTableColumnsFromSchema()).
+     *
+     * @return string[] Column names whose storage type needs to change from JSONB to JSON.
+     */
+    public function findJsonbColumnsNeedingRetype(array $currentColumns, array $requiredColumns): array
+    {
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+        if ($isPostgres === false) {
+            return [];
+        }
+
+        $needsRetype = [];
+
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            if (($columnDef['type'] ?? null) !== 'json_ordered') {
+                continue;
+            }
+
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentType = strtolower((string) ($currentColumns[$columnName]['type'] ?? ''));
+            if ($currentType === 'jsonb') {
+                $needsRetype[] = $columnName;
+            }
+        }
+
+        return $needsRetype;
+    }//end findJsonbColumnsNeedingRetype()
+
+    /**
+     * Migrate object-typed JSONB columns to JSON to preserve client-supplied key order.
+     *
+     * PostgreSQL JSONB stores keys in hashed/normalised order, which silently drops
+     * client-supplied ordering for object-keyed schema properties (e.g. openconnector
+     * mapping/cast rules where insertion order is semantically meaningful — issue #1720).
+     * The plain JSON type stores the document verbatim and round-trips insertion order.
+     *
+     * On MySQL/MariaDB the JSON type already preserves document order, so this method
+     * is a no-op there. On other platforms (e.g. SQLite) JSON is stored as TEXT and
+     * order is preserved by definition, so nothing to do.
+     *
+     * Idempotent: re-running on an already-JSON column issues no SQL.
+     *
+     * @param string $tableNameQuoted The quoted full table name.
+     * @param array  $currentColumns  Current column definitions from information_schema.
+     * @param array  $requiredColumns Required column definitions from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return string[] Names of columns whose type was migrated.
+     */
+    private function migrateJsonbToJsonForOrderedColumns(
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $requiredColumns,
+        bool $isPostgres
+    ): array {
+        // Only PostgreSQL distinguishes JSONB from JSON. MySQL/MariaDB JSON already
+        // preserves document order; no migration is required there.
+        if ($isPostgres === false) {
+            return [];
+        }
+
+        $columnsRetyped = [];
+
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            if (($columnDef['type'] ?? null) !== 'json_ordered') {
+                continue;
+            }
+
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentType = strtolower((string) ($currentColumns[$columnName]['type'] ?? ''));
+            if ($currentType !== 'jsonb') {
+                // Already JSON (or some other type added by an out-of-band migration); skip.
+                continue;
+            }
+
+            $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: true);
+
+            // Cast JSONB to text first to retain a stable serialisation, then parse as JSON.
+            // JSONB → text gives PostgreSQL's normalised key order; that's the same order the
+            // column has held until now, so this migration does not retroactively reorder
+            // existing rows — only NEW writes will preserve client-supplied order.
+            $sql  = 'ALTER TABLE '.$tableNameQuoted;
+            $sql .= ' ALTER COLUMN '.$colNameQuoted;
+            $sql .= ' TYPE JSON USING '.$colNameQuoted.'::text::json';
+
+            try {
+                $this->db->executeStatement($sql);
+                $columnsRetyped[] = $columnName;
+                $this->logger->info(
+                    message: '[MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'columnName' => $columnName,
+                    ]
+                );
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to migrate column from JSONB to JSON',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'columnName' => $columnName,
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        return $columnsRetyped;
+    }//end migrateJsonbToJsonForOrderedColumns()
+
+    /**
+>>>>>>> origin/development
      * Quote a column or identifier name for the current database platform.
      *
      * @param string $name       The unquoted identifier name.
@@ -5862,6 +6246,7 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
 
         try {
+<<<<<<< HEAD
             if ($isPostgres === true) {
                 // PostgreSQL: use JSONB containment operator.
                 $sql = "SELECT * FROM {$fullTableName}
@@ -5875,6 +6260,23 @@ class MagicMapper extends AbstractObjectMapper
                         WHERE _deleted IS NULL
                         AND {$columnName} IS NOT NULL
                         AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
+=======
+            // MySQL default: use JSON_SEARCH to find the ID as a value in the array.
+            $sql = "SELECT * FROM {$fullTableName}
+                    WHERE _deleted IS NULL
+                    AND {$columnName} IS NOT NULL
+                    AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
+                    LIMIT 100";
+            if ($isPostgres === true) {
+                // PostgreSQL: use JSONB containment operator.
+                // Note: ::jsonb cast is intentional for polymorphic column support, but defeats any GIN
+                // index on $columnName if it is already jsonb. Acceptable for now; if a GIN index is added
+                // in a future migration for this column, branch the query to omit the cast in the jsonb case.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE (_deleted IS NULL OR _deleted::text = 'null')
+                        AND {$columnName} IS NOT NULL
+                        AND {$columnName}::jsonb @> to_jsonb(?::text)
+>>>>>>> origin/development
                         LIMIT 100";
             }
 
@@ -6515,7 +6917,12 @@ class MagicMapper extends AbstractObjectMapper
                 register: $register,
                 schema: $schema,
                 _rbac: $_rbac,
+<<<<<<< HEAD
                 _multitenancy: $_multitenancy
+=======
+                _multitenancy: $_multitenancy,
+                includeDeleted: $includeDeleted
+>>>>>>> origin/development
             );
             $entity->setSource('orm');
             return $entity;

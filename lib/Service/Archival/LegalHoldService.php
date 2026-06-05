@@ -6,6 +6,12 @@
  * Manages legal holds (bevriezing) on register objects, preventing destruction
  * regardless of archival dates. Supports WOB/WOO requests and regulatory investigations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *
@@ -17,6 +23,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
  */
 
@@ -111,6 +118,8 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold applied.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
      */
@@ -154,6 +163,8 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold released.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
      */
@@ -207,6 +218,7 @@ class LegalHoldService
      *
      * @return bool True if the object has an active legal hold.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function hasActiveHold(ObjectEntity $object): bool
@@ -224,6 +236,7 @@ class LegalHoldService
      *
      * @return bool True if the retention data indicates an active legal hold.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function hasActiveHoldFromRetention(array $retention): bool
@@ -242,6 +255,8 @@ class LegalHoldService
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
      */
@@ -277,6 +292,7 @@ class LegalHoldService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     private function getCurrentUserId(): string

@@ -9,6 +9,12 @@
  * allowing the IndexService to be backend-agnostic and support multiple search
  * technologies without code changes.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Interface
  * @package  OCA\OpenRegister\Service\Index
  *
@@ -20,6 +26,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-92
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
  */
 
@@ -28,6 +35,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+>>>>>>> origin/development
 
 /**
  * Search Backend Interface
@@ -59,6 +70,11 @@ interface SearchBackendInterface
      * @return bool True if backend is available, false otherwise.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function isAvailable(bool $forceRefresh=false): bool;
 
@@ -70,6 +86,11 @@ interface SearchBackendInterface
      * @return array Test results with status, timing, and error information.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function testConnection(bool $inclCollTests=true): array;
 
@@ -82,6 +103,11 @@ interface SearchBackendInterface
      * @return bool True if indexing succeeded, false otherwise.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool;
 
@@ -94,6 +120,11 @@ interface SearchBackendInterface
      * @return array Result with success count, failure count, and errors.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array;
 
@@ -106,6 +137,11 @@ interface SearchBackendInterface
      * @return bool True if deletion succeeded, false otherwise.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool;
 
@@ -119,6 +155,11 @@ interface SearchBackendInterface
      * @return array|bool Results array if returnDetails=true, bool otherwise.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool;
 
@@ -134,6 +175,7 @@ interface SearchBackendInterface
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-92
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
      */
     public function searchObjectsPaginated(
@@ -154,6 +196,11 @@ interface SearchBackendInterface
      * Commit pending changes to the index.
      *
      * @return bool True if commit succeeded, false otherwise.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function commit(): bool;
 
@@ -161,6 +208,11 @@ interface SearchBackendInterface
      * Optimize the search index for better performance.
      *
      * @return bool True if optimization succeeded, false otherwise.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function optimize(): bool;
 
@@ -170,6 +222,11 @@ interface SearchBackendInterface
      * @param string|null $collectionName Optional collection/index name to clear.
      *
      * @return array Results with count of deleted documents.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function clearIndex(?string $collectionName=null): array;
 
@@ -186,6 +243,11 @@ interface SearchBackendInterface
      * @return array Warmup results with statistics and errors.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function warmupIndex(
         array $schemas=[],
@@ -217,6 +279,11 @@ interface SearchBackendInterface
      * @param array  $config Configuration for the collection.
      *
      * @return array Creation results.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function createCollection(string $name, array $config=[]): array;
 
@@ -226,6 +293,11 @@ interface SearchBackendInterface
      * @param string|null $collectionName Name of collection to delete, null for default.
      *
      * @return array Deletion results.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function deleteCollection(?string $collectionName=null): array;
 
@@ -235,6 +307,11 @@ interface SearchBackendInterface
      * @param string $collectionName Name of the collection to check.
      *
      * @return bool True if collection exists, false otherwise.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function collectionExists(string $collectionName): bool;
 
@@ -242,6 +319,11 @@ interface SearchBackendInterface
      * List all collections/indices in the backend.
      *
      * @return array Array of collection names.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function listCollections(): array;
 
@@ -253,10 +335,40 @@ interface SearchBackendInterface
      * @param array $documents Array of documents to index
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function index(array $documents): bool;
 
     /**
+<<<<<<< HEAD
+=======
+     * Run an aggregation against this backend.
+     *
+     * Cross-backend contract: every implementation translates the
+     * portable AggregationQuery value object into its native syntax
+     * (Postgres SQL, Solr facets, ES aggs) and returns the normalised
+     * `{value: int|float|null}` (ungrouped) or
+     * `{groups: [{key, value}, ...]}` (grouped) shape that
+     * AggregationRunner consumes.
+     *
+     * Returns `null` when this backend cannot execute the query (e.g.
+     * unsupported metric, unreachable backend) — the caller falls back
+     * to the PHP path.
+     *
+     * @param AggregationQuery $query The portable aggregation request.
+     *
+     * @return array|null The aggregation result, or null on a backend miss.
+     *
+     * @spec openspec/changes/aggregations-backend-native/tasks.md task 1.1
+     */
+    public function aggregate(AggregationQuery $query): ?array;
+
+    /**
+>>>>>>> origin/development
      * Perform a generic search query.
      *
      * Used by handlers for custom search queries.
@@ -264,6 +376,11 @@ interface SearchBackendInterface
      * @param array $params Search parameters
      *
      * @return array Search results
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function search(array $params): array;
 
@@ -287,6 +404,11 @@ interface SearchBackendInterface
      * @param array  $fieldType  Field type definition
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function addFieldType(string $collection, array $fieldType): bool;
 
@@ -310,6 +432,11 @@ interface SearchBackendInterface
      * @param bool  $force       Force update if exists
      *
      * @return string Action taken ('created', 'updated', 'skipped')
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string;
 
@@ -323,6 +450,11 @@ interface SearchBackendInterface
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Reindexing results with statistics.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array;
 
@@ -335,6 +467,11 @@ interface SearchBackendInterface
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results with 'indexed', 'failed', and 'errors' keys.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array;
 
@@ -359,6 +496,11 @@ interface SearchBackendInterface
      * @return array Results with fixed/failed fields.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude interface contract declaration — no implementation in this file
+>>>>>>> origin/development
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array;
 }//end interface

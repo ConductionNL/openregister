@@ -1,0 +1,46 @@
+# Pre-merge quality gate — runs composer check:strict + all 19 Hydra gates on every PR.
+# Configured as a required status check in branch protection on `development`
+# to keep the merge button disabled until this workflow passes.
+#
+# Diff-scoped per ADR-020 so legacy debt never blocks a PR — only new failures fail.
+
+name: pre-merge-check-strict
+
+on:
+  pull_request:
+    branches:
+      - development
+      - main
+      - beta
+
+jobs:
+  quality-gates:
+    runs-on: codeberg-small
+    container:
+      image: code.forgejo.org/oci/ci-php:8.3
+    steps:
+      - name: Checkout PR
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Install composer deps
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run composer check:strict
+        run: composer check:strict
+
+      - name: Clone Hydra (for gate runner)
+        uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          repository: Conduction/hydra
+          ref: development
+          path: .hydra
+
+      - name: Run all 19 Hydra gates (diff-scoped per ADR-020)
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }} || true
+          bash .hydra/scripts/run-hydra-gates.sh --scope-to-diff --base origin/${{ github.base_ref }} .
+
+      - name: Gate-19 e2e coverage report (informational)
+        if: always()
+        run: |
+          python3 .hydra/scripts/lib/check_e2e_coverage.py . --mode report || true

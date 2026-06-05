@@ -14,6 +14,9 @@
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -47,7 +50,10 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\UploadService;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DownloadService;
+=======
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\ViewService;
@@ -55,6 +61,10 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+<<<<<<< HEAD
+=======
+use OCP\IGroupManager;
+>>>>>>> origin/development
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -247,7 +257,10 @@ class ControllersIntegrationTest extends TestCase
             \OC::$server->get(IAppConfig::class),
             $this->schemaMapper,
             $this->objectMapper,
+<<<<<<< HEAD
             \OC::$server->get(DownloadService::class),
+=======
+>>>>>>> origin/development
             \OC::$server->get(UploadService::class),
             \OC::$server->get(AuditTrailMapper::class),
             \OC::$server->get(OrganisationService::class),
@@ -279,11 +292,23 @@ class ControllersIntegrationTest extends TestCase
             \OC::$server->get(LoggerInterface::class)
         );
 
+<<<<<<< HEAD
         // Build SearchTrailController.
         $this->searchTrailController = new SearchTrailController(
             'openregister',
             $this->request,
             \OC::$server->get(SearchTrailService::class)
+=======
+        // Build SearchTrailController. Reuse the shared userSession mock and
+        // wire a real IGroupManager so the search-trail admin-only gate
+        // (wave-3 C7) reflects production behaviour in integration runs.
+        $this->searchTrailController = new SearchTrailController(
+            'openregister',
+            $this->request,
+            \OC::$server->get(SearchTrailService::class),
+            $this->userSession,
+            \OC::$server->get(IGroupManager::class)
+>>>>>>> origin/development
         );
 
         // Build EndpointsController.
@@ -1782,6 +1807,11 @@ class ControllersIntegrationTest extends TestCase
      */
     public function testSearchTrailIndex(): void
     {
+<<<<<<< HEAD
+=======
+        // SearchTrail index is admin-only (wave-3 C7).
+        $this->setupAdminUser();
+>>>>>>> origin/development
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getRequestUri')->willReturn('/api/search-trails');
 
@@ -1800,6 +1830,10 @@ class ControllersIntegrationTest extends TestCase
      */
     public function testSearchTrailIndexWithPagination(): void
     {
+<<<<<<< HEAD
+=======
+        $this->setupAdminUser();
+>>>>>>> origin/development
         $this->request->method('getParams')->willReturn([
             '_limit' => 5,
             '_offset' => 0,
@@ -1820,6 +1854,10 @@ class ControllersIntegrationTest extends TestCase
      */
     public function testSearchTrailIndexWithPage(): void
     {
+<<<<<<< HEAD
+=======
+        $this->setupAdminUser();
+>>>>>>> origin/development
         $this->request->method('getParams')->willReturn([
             '_limit' => 10,
             '_page' => 2,
@@ -1840,6 +1878,10 @@ class ControllersIntegrationTest extends TestCase
      */
     public function testSearchTrailShowNotFound(): void
     {
+<<<<<<< HEAD
+=======
+        $this->setupAdminUser();
+>>>>>>> origin/development
         $response = $this->searchTrailController->show(999999);
 
         $this->assertInstanceOf(JSONResponse::class, $response);
@@ -2121,6 +2163,10 @@ class ControllersIntegrationTest extends TestCase
      */
     public function testSearchTrailIndexWithDateFilters(): void
     {
+<<<<<<< HEAD
+=======
+        $this->setupAdminUser();
+>>>>>>> origin/development
         $this->request->method('getParams')->willReturn([
             'from' => '2024-01-01',
             'to' => '2025-12-31',
@@ -2140,6 +2186,10 @@ class ControllersIntegrationTest extends TestCase
      */
     public function testSearchTrailIndexWithSort(): void
     {
+<<<<<<< HEAD
+=======
+        $this->setupAdminUser();
+>>>>>>> origin/development
         $this->request->method('getParams')->willReturn([
             '_sort' => 'created',
             '_order' => 'ASC',

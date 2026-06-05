@@ -47,7 +47,11 @@
 			<NcButton
 				type="secondary"
 				@click="clearFilters">
+<<<<<<< HEAD
 				{{ t('openregister', 'Clear Filters') }}
+=======
+				{{ t('openregister', 'Clear filters') }}
+>>>>>>> origin/development
 			</NcButton>
 		</div>
 	</div>
@@ -69,10 +73,22 @@ export default {
 	},
 
 	props: {
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		search: {
 			type: String,
 			default: '',
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * @spec exclude two-way-bound enabled-status filter prop, UI plumbing
+		 */
+>>>>>>> origin/development
 		enabled: {
 			type: Boolean,
 			default: null,
@@ -99,9 +115,21 @@ export default {
 	},
 
 	watch: {
+<<<<<<< HEAD
 		search(newVal) {
 			this.localSearch = newVal
 		},
+=======
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
+		search(newVal) {
+			this.localSearch = newVal
+		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
+>>>>>>> origin/development
 		enabled(newVal) {
 			this.selectedEnabled = newVal
 		},
@@ -115,6 +143,7 @@ export default {
 		 *
 		 * @param {string} value - The search value
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
 		 */
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
@@ -128,6 +157,10 @@ export default {
 		 *
 		 * @param {boolean|null} enabled - The enabled status to filter by
 		 * @return {void}
+<<<<<<< HEAD
+=======
+		 * @spec exclude filter-state writer emitting update:enabled, UI plumbing
+>>>>>>> origin/development
 		 */
 		updateEnabled(enabled) {
 			this.selectedEnabled = enabled
@@ -138,6 +171,10 @@ export default {
 		 * Clear all filters
 		 *
 		 * @return {void}
+<<<<<<< HEAD
+=======
+		 * @spec exclude filter-reset emitting cleared values, UI plumbing
+>>>>>>> origin/development
 		 */
 		clearFilters() {
 			this.localSearch = ''

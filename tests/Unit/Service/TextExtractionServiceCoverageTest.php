@@ -32,6 +32,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\Files\File;
@@ -91,6 +95,12 @@ class TextExtractionServiceCoverageTest extends TestCase
     /** @var RiskLevelService&MockObject */
     private $riskLevelService;
 
+<<<<<<< HEAD
+=======
+    /** @var EmlParser&MockObject */
+    private $emlParser;
+
+>>>>>>> origin/development
     /**
      * Set up test dependencies
      *
@@ -111,6 +121,7 @@ class TextExtractionServiceCoverageTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->settingsService      = $this->createMock(SettingsService::class);
         $this->riskLevelService     = $this->createMock(RiskLevelService::class);
+<<<<<<< HEAD
 
         $this->service = new TextExtractionService(
             $this->fileMapper,
@@ -126,6 +137,25 @@ class TextExtractionServiceCoverageTest extends TestCase
             $this->entityRelationMapper,
             $this->settingsService,
             $this->riskLevelService
+=======
+        $this->emlParser            = $this->createMock(EmlParser::class);
+
+        $this->service = new TextExtractionService(
+            fileMapper: $this->fileMapper,
+            chunkMapper: $this->chunkMapper,
+            rootFolder: $this->rootFolder,
+            db: $this->db,
+            logger: $this->logger,
+            objectEntityMapper: $this->objectMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            entityHandler: $this->entityHandler,
+            entityMapper: $this->entityMapper,
+            entityRelationMapper: $this->entityRelationMapper,
+            settingsService: $this->settingsService,
+            riskLevelService: $this->riskLevelService,
+            emlParser: $this->emlParser,
+>>>>>>> origin/development
         );
     }
 

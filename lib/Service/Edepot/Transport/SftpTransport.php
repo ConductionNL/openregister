@@ -5,6 +5,12 @@
  *
  * Transmits SIP packages to e-Depot systems via SFTP.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -16,6 +22,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
  */
 
@@ -23,6 +30,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
+<<<<<<< HEAD
+=======
+use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Net\SFTP;
+>>>>>>> origin/development
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -54,6 +66,8 @@ class SftpTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
      */
@@ -128,6 +142,7 @@ class SftpTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function testConnection(array $config): bool
@@ -159,6 +174,7 @@ class SftpTransport implements TransportInterface
      *
      * @return string The transport name.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getName(): string
@@ -175,6 +191,7 @@ class SftpTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function validateConfig(array $config): void
@@ -202,6 +219,7 @@ class SftpTransport implements TransportInterface
      *
      * @psalm-suppress UndefinedClass
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function createSftpConnection(array $config): \phpseclib3\Net\SFTP
@@ -215,6 +233,25 @@ class SftpTransport implements TransportInterface
             );
             $logged = $sftp->login($config['username'], $key);
         } else {
+=======
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
+    private function createSftpConnection(array $config): SFTP
+    {
+        $port = (int) ($config['port'] ?? 22);
+        $sftp = new SFTP($config['host'], $port);
+
+        if (empty($config['keyPath']) === false) {
+            $key    = PublicKeyLoader::load(
+                file_get_contents($config['keyPath'])
+            );
+            $logged = $sftp->login($config['username'], $key);
+        }
+
+        if (empty($config['keyPath']) === true) {
+>>>>>>> origin/development
             $logged = $sftp->login($config['username'], ($config['password'] ?? ''));
         }
 

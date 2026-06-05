@@ -5,6 +5,12 @@
  *
  * Thrown when an organisation exceeds its request or bandwidth quota.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Exception
  * @package  OCA\OpenRegister\Middleware
  *
@@ -36,6 +42,7 @@ class TenantQuotaExceededException extends Exception
      * @param string $resetAt    ISO 8601 timestamp when quota resets
      * @param int    $retryAfter Seconds until quota reset
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function __construct(
@@ -52,6 +59,7 @@ class TenantQuotaExceededException extends Exception
      *
      * @return int The quota
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function getQuota(): int
@@ -64,6 +72,7 @@ class TenantQuotaExceededException extends Exception
      *
      * @return string ISO 8601 timestamp
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function getResetAt(): string
@@ -76,6 +85,7 @@ class TenantQuotaExceededException extends Exception
      *
      * @return int Seconds until reset
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function getRetryAfter(): int

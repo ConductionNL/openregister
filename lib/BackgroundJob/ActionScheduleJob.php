@@ -5,6 +5,12 @@
  *
  * Background job for evaluating and executing scheduled actions.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -15,6 +21,7 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -49,6 +56,7 @@ class ActionScheduleJob extends TimedJob
      * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-6
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     public function __construct(
@@ -70,6 +78,8 @@ class ActionScheduleJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-5
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     protected function run($argument): void
@@ -105,11 +115,17 @@ class ActionScheduleJob extends TimedJob
                     $cron = new CronExpression($action->getSchedule());
 
                     $lastExecuted = $action->getLastExecutedAt();
+<<<<<<< HEAD
                     $isDue        = false;
 
                     if ($lastExecuted === null) {
                         $isDue = true;
                     } else {
+=======
+                    $isDue        = true;
+
+                    if ($lastExecuted !== null) {
+>>>>>>> origin/development
                         /*
                          * @psalm-suppress UndefinedClass
                          */

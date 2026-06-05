@@ -6,6 +6,12 @@
  * Calculates the archive action date (archiefactiedatum) using configurable
  * derivation methods (afleidingswijzen) as defined by the ZGW API standard.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *
@@ -17,6 +23,9 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-2
  */
@@ -80,6 +89,8 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The calculated archiefactiedatum, or null if calculation is not possible.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-2
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-2
      */
@@ -161,6 +172,7 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The determined base date.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      */
     private function determineBrondatum(
@@ -199,6 +211,7 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The closure date or null if not provided.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      */
     private function brondatumFromClosure(?DateTime $closureDate): ?DateTime
@@ -221,6 +234,7 @@ class ArchiefactiedatumCalculator
      * @param array<string, mixed> $objectData    The object data.
      *
      * @return DateTime|null The date from the property value, or null.
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-8
      */
     private function brondatumFromProperty(array $archiveConfig, array $objectData): ?DateTime
     {
@@ -270,6 +284,7 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The base date (closure + procestermijn), or null.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      */
     private function brondatumFromTermijn(array $archiveConfig, ?DateTime $closureDate): ?DateTime

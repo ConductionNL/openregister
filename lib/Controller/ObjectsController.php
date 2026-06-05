@@ -6,9 +6,18 @@
  * Controller for managing object operations in the OpenRegister app.
  * Provides CRUD functionality for objects within registers and schemas.
  *
+<<<<<<< HEAD
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+>>>>>>> origin/development
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -17,6 +26,12 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
@@ -32,9 +47,14 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Exception\AppendOnlyException;
+>>>>>>> origin/development
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
@@ -101,6 +121,7 @@ class ObjectsController extends Controller
     /**
      * Constructor for the ObjectsController
      *
+<<<<<<< HEAD
      * @param string             $appName          The name of the app
      * @param IRequest           $request          The request object
      * @param IAppConfig         $config           The app configuration object
@@ -116,6 +137,25 @@ class ObjectsController extends Controller
      * @param ImportService      $importService    The import service
      * @param WebhookService     $webhookService   The webhook service (optional)
      * @param LoggerInterface    $logger           The logger (optional)
+=======
+     * @param string                                          $appName          The name of the app
+     * @param IRequest                                        $request          The request object
+     * @param IAppConfig                                      $config           The app configuration object
+     * @param IAppManager                                     $appManager       The app manager
+     * @param ContainerInterface                              $container        The DI container
+     * @param RegisterMapper                                  $registerMapper   The register mapper
+     * @param SchemaMapper                                    $schemaMapper     The schema mapper
+     * @param AuditTrailMapper                                $auditTrailMapper The audit trail mapper
+     * @param ObjectService                                   $objectService    The object service
+     * @param IUserSession                                    $userSession      The user session
+     * @param IGroupManager                                   $groupManager     The group manager
+     * @param ExportService                                   $exportService    The export service
+     * @param ImportService                                   $importService    The import service
+     * @param WebhookService                                  $webhookService   The webhook service (optional)
+     * @param LoggerInterface                                 $logger           The logger (optional)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
+>>>>>>> origin/development
      *
      * @return void
      *
@@ -136,7 +176,13 @@ class ObjectsController extends Controller
         ExportService $exportService,
         ImportService $importService,
         private readonly ?WebhookService $webhookService=null,
+<<<<<<< HEAD
         private readonly ?LoggerInterface $logger=null
+=======
+        private readonly ?LoggerInterface $logger=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null
+>>>>>>> origin/development
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -210,6 +256,55 @@ class ObjectsController extends Controller
     }//end normalizeFormDataValues()
 
     /**
+<<<<<<< HEAD
+=======
+     * Strip server-managed @self fields from client-supplied object data.
+     *
+     * The top-level filter in create/update/patch/postPatch already passes `@self`
+     * through unchanged because certain integrations legitimately set `@self.slug`
+     * or `@self.relations`. However, several `@self` sub-fields MUST NOT be accepted
+     * from client input because they are either server-authoritative (owner, organisation)
+     * or carry security-sensitive semantics (authorization, groups).
+     *
+     * The service layer (SaveObject::setSelfMetadata + applyOwnerAttribution) enforces
+     * the same rules; this controller-level strip is an additional defense-in-depth
+     * boundary that catches injections before they even reach the service (wave-11 WF2).
+     *
+     * Allowed @self keys for client input (non-exhaustive; extend as features are added):
+     *   slug, name, description, summary, image, relations, tmlo (update path only)
+     *
+     * Rejected at this layer (server-managed or security-sensitive):
+     *   owner, organisation, authorization, groups, application, folder
+     *
+     * @param array $data The raw request data (may contain a '@self' key)
+     *
+     * @return array The data with dangerous @self sub-keys stripped
+     */
+    private function sanitiseSelfMetadata(array $data): array
+    {
+        if (isset($data['@self']) === false || is_array($data['@self']) === false) {
+            return $data;
+        }
+
+        // Fields that clients must never supply — they are set server-side.
+        $serverManagedKeys = [
+            'owner',
+            'organisation',
+            'authorization',
+            'groups',
+            'application',
+            'folder',
+        ];
+
+        foreach ($serverManagedKeys as $key) {
+            unset($data['@self'][$key]);
+        }
+
+        return $data;
+    }//end sanitiseSelfMetadata()
+
+    /**
+>>>>>>> origin/development
      * Extract all uploaded files from the current request.
      *
      * Uses IRequest::getUploadedFile() to retrieve files by known field names.
@@ -909,6 +1004,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
@@ -1185,11 +1281,23 @@ class ObjectsController extends Controller
                     );
                 }
 
+<<<<<<< HEAD
+=======
+                // Spatial post-filter on the magic-mapped result before
+                // returning. Mirrors the hook on the non-magic-mapped
+                // path so geo filtering works for both register layouts.
+                $responseData = $this->applyGeoQueryFilters(params: $params, result: $responseData);
+
+>>>>>>> origin/development
                 // Return in expected format.
                 $response = new JSONResponse(data: $responseData);
 
                 // Enable gzip compression for large payloads.
+<<<<<<< HEAD
                 if (count($serializedResults) > 10) {
+=======
+                if (count($responseData['results'] ?? []) > 10) {
+>>>>>>> origin/development
                     $response->addHeader('Content-Encoding', 'gzip');
                     $response->addHeader('Vary', 'Accept-Encoding');
                 }
@@ -1238,6 +1346,15 @@ class ObjectsController extends Controller
             );
         }
 
+<<<<<<< HEAD
+=======
+        // Spatial post-filter: when ?geo.bbox= / ?geo.near=&geo.radius=
+        // (or ?geo.property=) is set, parse the params via GeoFilterParser
+        // and apply the filters to $result['results']. Pure-PHP fallback;
+        // PostGIS push-down is tracked in `geo-spatial-queries`.
+        $result = $this->applyGeoQueryFilters(params: $params, result: $result);
+
+>>>>>>> origin/development
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
 
@@ -1250,6 +1367,171 @@ class ObjectsController extends Controller
         return $response;
     }//end index()
 
+<<<<<<< HEAD
+=======
+    /**
+     * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
+     *
+     * Body shape (per REQ-GEO-004):
+     *   {
+     *     "geometry": {
+     *       "within":     <GeoJSON Polygon | MultiPolygon>,
+     *       "intersects": <GeoJSON Polygon | MultiPolygon>
+     *     },
+     *     "property": "<optional geo property name>"
+     *   }
+     *
+     * Either `within` or `intersects` (or both) MAY appear; both are
+     * AND-composed. Underlying listing query honours the standard
+     * filter / pagination params from the same request.
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     */
+    public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
+            return new JSONResponse(
+                data: ['error' => 'Geo filtering primitives not configured'],
+                statusCode: 501
+            );
+        }
+
+        $body = $this->request->getParams();
+        try {
+            $filters = $this->geoFilterParser->fromGeoSearchBody(body: $body);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
+        }
+
+        // Reuse the standard listing path, then post-filter.
+        $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+        $payload = (array) $listing->getData();
+        $rows    = ($payload['results'] ?? []);
+        if (is_array($rows) === false) {
+            return $listing;
+        }
+
+        $filtered           = $this->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
+        $payload['results'] = $filtered;
+        if (isset($payload['total']) === true) {
+            $payload['total'] = count($filtered);
+        }
+
+        return new JSONResponse(data: $payload);
+
+    }//end geoSearch()
+
+    /**
+     * Apply geo query-param filters to a listing result.
+     *
+     * Reads `geo.bbox` / `geo.near` / `geo.radius` / `geo.property` from
+     * the query params via GeoFilterParser and post-filters
+     * `$result['results']` via GeoFilterApplier under AND-composition.
+     *
+     * Null-safe: when the geo deps aren't wired (older fixtures),
+     * returns the result unchanged. Parser failures (malformed bbox,
+     * missing radius) return a 422-like error envelope replacing the
+     * results.
+     *
+     * @param array $params The HTTP query params from the request.
+     * @param array $result The listing-result envelope from objectService.
+     *
+     * @return array The result, possibly with `results` filtered down.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     */
+    private function applyGeoQueryFilters(array $params, array $result): array
+    {
+        if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
+            return $result;
+        }
+
+        // NC's IRequest parses `geo.bbox` etc. as a nested array
+        // (`geo: {bbox: ...}`). Re-flatten back to the dotted form the
+        // parser expects, so callers using either notation work.
+        $flatParams = $this->flattenGeoParams(params: $params);
+
+        $hasGeoParam = false;
+        foreach (['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'] as $key) {
+            if (isset($flatParams[$key]) === true) {
+                $hasGeoParam = true;
+                break;
+            }
+        }
+
+        if ($hasGeoParam === false) {
+            return $result;
+        }
+
+        try {
+            $filters = $this->geoFilterParser->fromQueryParams(params: $flatParams);
+        } catch (\InvalidArgumentException $e) {
+            // Malformed input: surface a 422-shape envelope inside the
+            // existing result body so consumers see the validation error
+            // without crashing the whole listing path.
+            return [
+                'error'   => 'geo filter parse error: '.$e->getMessage(),
+                'results' => [],
+                'total'   => 0,
+            ];
+        }
+
+        if ($filters === [] || isset($result['results']) === false || is_array($result['results']) === false) {
+            return $result;
+        }
+
+        $rows     = $result['results'];
+        $filtered = $this->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
+        $result['results'] = $filtered;
+        // Update `total` to reflect the post-filter count when present.
+        if (isset($result['total']) === true) {
+            $result['total'] = count($filtered);
+        }
+
+        return $result;
+
+    }//end applyGeoQueryFilters()
+
+    /**
+     * Flatten NC's nested `geo: {bbox: ...}` query-param shape back into
+     * the dotted `geo.bbox: ...` form the GeoFilterParser expects.
+     *
+     * Accepts both already-flat keys and nested `geo` arrays — the
+     * dotted form takes priority when both are present.
+     *
+     * @param array $params The raw query params from IRequest::getParams.
+     *
+     * @return array The same params with `geo.*` keys hoisted from `geo`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     */
+    private function flattenGeoParams(array $params): array
+    {
+        $nested = ($params['geo'] ?? null);
+        if (is_array($nested) === true) {
+            foreach ($nested as $subkey => $value) {
+                $flatKey = 'geo.'.$subkey;
+                if (isset($params[$flatKey]) === false) {
+                    $params[$flatKey] = $value;
+                }
+            }
+        }
+
+        return $params;
+
+    }//end flattenGeoParams()
+
+>>>>>>> origin/development
     /**
      * Retrieves a list of all objects across all registers and schemas
      *
@@ -1291,6 +1573,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-1
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -1475,6 +1758,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-2
      */
     public function show(
         string $id,
@@ -1637,9 +1921,13 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @PublicPage
      *
      * @psalm-return JSONResponse<201|403|404,
+=======
+     * @psalm-return JSONResponse<201|401|403|404,
+>>>>>>> origin/development
      *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
      *     message?: mixed|string, error?: mixed|string,...},
      *     array<never, never>>|JSONResponse<400, string, array<never, never>>
@@ -1649,6 +1937,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
      */
     public function create(
@@ -1656,6 +1945,7 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+<<<<<<< HEAD
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -1664,6 +1954,26 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
         }
 
+=======
+        // Defense-in-depth: ensure a session user is present even though
+        // @NoAdminRequired already restricts this to authenticated callers.
+        // Guards against any future middleware changes that could bypass NC auth.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required to create objects'],
+                statusCode: 401
+            );
+        }
+
+        try {
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+            // Return 404 with clear error message if register or schema not found.
+            return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+        }
+
+>>>>>>> origin/development
         // Intercept request and send to webhooks before processing.
         // This allows external systems to validate, transform, or enrich the request.
         $object = $this->request->getParams();
@@ -1705,6 +2015,13 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
 
+<<<<<<< HEAD
+=======
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields so they
+        // cannot be injected via the single-object create path.
+        $object = $this->sanitiseSelfMetadata(data: $object);
+
+>>>>>>> origin/development
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
 
@@ -1752,6 +2069,13 @@ class ObjectsController extends Controller
                 ],
                 statusCode: 422
             );
+<<<<<<< HEAD
+=======
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception to avoid being absorbed as a 403 with
+            // a non-structured body. See the `self-folder-access-control` capability spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
+>>>>>>> origin/development
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -1786,6 +2110,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
      */
     public function update(
@@ -1819,6 +2144,12 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
 
+<<<<<<< HEAD
+=======
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $object = $this->sanitiseSelfMetadata(data: $object);
+
+>>>>>>> origin/development
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
 
@@ -1916,6 +2247,12 @@ class ObjectsController extends Controller
 
             // Return the successfully saved object directly.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+<<<<<<< HEAD
+=======
+        } catch (AppendOnlyException $exception) {
+            // Reject update on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+>>>>>>> origin/development
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
@@ -1924,6 +2261,12 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+<<<<<<< HEAD
+=======
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception. See `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
+>>>>>>> origin/development
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -1950,6 +2293,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-3
      */
     public function patch(
         string $register,
@@ -1979,6 +2323,12 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
 
+<<<<<<< HEAD
+=======
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
+
+>>>>>>> origin/development
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = $isAdmin === false;
@@ -2081,6 +2431,12 @@ class ObjectsController extends Controller
             // Return the successfully saved object directly.
             // We already have it in memory from saveObject(), no need to re-fetch.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+<<<<<<< HEAD
+=======
+        } catch (AppendOnlyException $exception) {
+            // Reject patch on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+>>>>>>> origin/development
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             $this->logger->warning(
@@ -2097,6 +2453,12 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+<<<<<<< HEAD
+=======
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception. See `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
+>>>>>>> origin/development
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
@@ -2126,11 +2488,19 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the updated object
      *
+<<<<<<< HEAD
      * @PublicPage
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+=======
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-13
+>>>>>>> origin/development
      */
     public function postPatch(
         string $register,
@@ -2138,6 +2508,19 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
+<<<<<<< HEAD
+=======
+        // Defense-in-depth: ensure a session user is present even though
+        // @NoAdminRequired already restricts this to authenticated callers.
+        // Guards against any future middleware changes that could bypass NC auth.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required to update objects'],
+                statusCode: 401
+            );
+        }
+
+>>>>>>> origin/development
         try {
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
@@ -2157,6 +2540,12 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
 
+<<<<<<< HEAD
+=======
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
+
+>>>>>>> origin/development
         // Extract uploaded files — works because this is a POST request.
         $uploadedFiles = $this->extractAllUploadedFiles();
         if (empty($uploadedFiles) === false) {
@@ -2210,6 +2599,12 @@ class ObjectsController extends Controller
             }
 
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+<<<<<<< HEAD
+=======
+        } catch (AppendOnlyException $exception) {
+            // Reject post-patch on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+>>>>>>> origin/development
         } catch (ValidationException | CustomValidationException $exception) {
             return $objectService->handleValidationException(exception: $exception);
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
@@ -2217,6 +2612,15 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+<<<<<<< HEAD
+=======
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception so a @self.folder
+            // denial on the post-patch path returns 403 with the structured
+            // body (no folder-id oracle) — same contract as create/update/patch.
+            // See the `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
+>>>>>>> origin/development
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try
@@ -2239,6 +2643,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
@@ -2265,6 +2670,12 @@ class ObjectsController extends Controller
 
             // Return 204 No Content for successful delete (REST convention).
             return new JSONResponse(data: null, statusCode: 204);
+<<<<<<< HEAD
+=======
+        } catch (AppendOnlyException $exception) {
+            // Reject delete on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+>>>>>>> origin/development
         } catch (ReferentialIntegrityException $exception) {
             return new JSONResponse(
                 data: $exception->toResponseBody(),
@@ -2295,6 +2706,7 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-14
      */
     public function canDelete(
         string $id,
@@ -2351,6 +2763,7 @@ class ObjectsController extends Controller
      *     page: float|int<1, max>, pages: 1|float, limit: int<1, max>,
      *     offset: int<0, max>, next?: string, prev?: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2427,6 +2840,7 @@ class ObjectsController extends Controller
      *     array{results: list<ObjectEntity>, total: int<0, max>,
      *     limit: 30|mixed, offset: 0|mixed},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2474,6 +2888,7 @@ class ObjectsController extends Controller
      *     array{results: array<never, never>, total: 0, limit: 30|mixed,
      *     offset: 0|mixed, message?: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2525,6 +2940,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-7
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2628,6 +3044,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
      */
     public function lock(string $register, string $schema, string $id): JSONResponse
     {
@@ -2672,6 +3090,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<200, array{
      *     message: 'Object unlocked successfully', locked: false, uuid: string
      * }, array<never, never>>
@@ -2682,6 +3101,39 @@ class ObjectsController extends Controller
         $this->objectService->setSchema(schema: $schema);
         $this->objectService->unlockObject($id);
 
+=======
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
+     */
+    public function unlock(string $register, string $schema, string $id): JSONResponse
+    {
+        // Authorization: anonymous callers cannot unlock anything; the
+        // per-object permission check (lock-holder OR owner OR schema-manage
+        // OR admin) lives in LockHandler::unlock and surfaces a permission
+        // error message we map to 403 here. This closes the wave-3 C14
+        // "any authenticated user can unlock anything" finding.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
+        try {
+            $this->objectService->setRegister(register: $register);
+            $this->objectService->setSchema(schema: $schema);
+            $this->objectService->unlockObject($id);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'does not have permission to unlock') === true) {
+                return new JSONResponse(data: ['error' => $message], statusCode: 403);
+            }
+
+            return new JSONResponse(data: ['error' => $message], statusCode: 500);
+        }
+
+>>>>>>> origin/development
         // Return response with locked status for test compatibility.
         return new JSONResponse(
             data: [
@@ -2711,6 +3163,8 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-22
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
@@ -2787,6 +3241,8 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-20
      */
     public function import(int $register): JSONResponse
@@ -2801,12 +3257,17 @@ class ObjectsController extends Controller
             // Find the register.
             $registerEntity = $this->registerMapper->find($register);
 
+<<<<<<< HEAD
             // Get optional schema for CSV (can be null, handler will auto-resolve).
+=======
+            // Get optional schema for CSV (can be null, Excel auto-resolves per sheet).
+>>>>>>> origin/development
             $schemaId = $this->request->getParam(key: 'schema');
             $schema   = null;
             if ($schemaId !== null && $schemaId !== '') {
                 $schema = $this->schemaMapper->find($schemaId);
             }
+<<<<<<< HEAD
 
             // Get optional parameters with sensible defaults.
             $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
@@ -2825,6 +3286,57 @@ class ObjectsController extends Controller
                 _multitenancy: $multi,
                 _currentUser: $this->userSession->getUser()
             );
+=======
+
+            // Get optional parameters with sensible defaults.
+            $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
+            $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
+            $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
+            $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
+            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
+            $enrich     = filter_var($this->request->getParam(key: 'enrich', default: true), FILTER_VALIDATE_BOOLEAN);
+
+            // Determine the import type from the uploaded file extension.
+            $filename  = ($uploadedFile['name'] ?? '');
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+            // Route to the real ImportService. CSV requires a specific schema;
+            // Excel auto-resolves schemas per sheet.
+            if ($extension === 'csv') {
+                if ($schema === null) {
+                    return new JSONResponse(
+                        data: ['error' => 'Schema parameter is required for CSV imports.'],
+                        statusCode: 400
+                    );
+                }
+
+                $result = $this->importService->importFromCsv(
+                    filePath: $uploadedFile['tmp_name'],
+                    register: $registerEntity,
+                    schema: $schema,
+                    validation: $validation,
+                    events: $events,
+                    _rbac: $rbac,
+                    _multitenancy: $multi,
+                    publish: $publish,
+                    currentUser: $this->userSession->getUser(),
+                    enrich: $enrich
+                );
+            } else {
+                $result = $this->importService->importFromExcel(
+                    filePath: $uploadedFile['tmp_name'],
+                    register: $registerEntity,
+                    schema: $schema,
+                    validation: $validation,
+                    events: $events,
+                    _rbac: $rbac,
+                    _multitenancy: $multi,
+                    publish: $publish,
+                    currentUser: $this->userSession->getUser(),
+                    enrich: $enrich
+                );
+            }//end if
+>>>>>>> origin/development
 
             return new JSONResponse(
                 data: [
@@ -2853,6 +3365,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with merge result or error
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-5
      */
     public function merge(
         string $id,
@@ -2910,6 +3423,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with migration result or error
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-12
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -2984,6 +3498,8 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-10
      */
     public function downloadFiles(
         string $id,
@@ -3028,6 +3544,31 @@ class ObjectsController extends Controller
                 unlink($zipInfo['path']);
             }
 
+<<<<<<< HEAD
+=======
+            // Audit the bulk download as ONE entry tied to the parent object.
+            // Best-effort: an audit-trail failure must not break the download.
+            try {
+                $files     = $fileService->getFiles($object);
+                $fileIds   = [];
+                $fileNames = [];
+                foreach ($files as $f) {
+                    $fileIds[]   = $f->getId();
+                    $fileNames[] = $f->getName();
+                }
+
+                $fileService->getAuditHandler()->logBulkDownload(
+                    $object,
+                    $fileIds,
+                    $fileNames,
+                    $zipInfo['filename'],
+                    $zipInfo['size'] ?? null
+                );
+            } catch (\Throwable $auditError) {
+                // Silently swallow — audit-trail must never break the response.
+            }
+
+>>>>>>> origin/development
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
                 $zipContent,
@@ -3058,6 +3599,7 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -3101,6 +3643,7 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -3143,6 +3686,7 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
      */
     public function getObjectVectorizationCount(): JSONResponse
     {
@@ -3185,6 +3729,7 @@ class ObjectsController extends Controller
      * @return JSONResponse JSON response with validation results
      *
      * @psalm-return JSONResponse
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
      */
     public function validate(): JSONResponse
     {
@@ -3403,6 +3948,7 @@ class ObjectsController extends Controller
      * @psalm-return JSONResponse
      *
      * @deprecated Blob storage has been retired; this endpoint is a no-op.
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
      */
     public function clearBlob(): JSONResponse
     {
@@ -3476,4 +4022,53 @@ class ObjectsController extends Controller
 
         return $result;
     }//end stripEmptyValues()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Build the structured HTTP 403 response for a folder-access denial.
+     *
+     * Per the `self-folder-access-control` capability spec, every save
+     * endpoint that propagates `FolderAccessDeniedException` MUST return
+     * status 403 with body `{ "error": "folder_access_denied" }`.
+     *
+     * The body does NOT echo the attempted folder ID. Doing so would add
+     * an enumeration oracle: a caller probing `@self.folder` with sequential
+     * integers could distinguish "folder exists but I can't read it" (403)
+     * from "folder does not exist" (auto-create / no-op) just by observing
+     * the response shape. Returning a uniform 403 with no folder context
+     * forces the attacker to rely on the status code alone — which is already
+     * a documented privacy property of the spec — and removes the body-level
+     * confirmation. The caller already knows which folder ID they sent.
+     *
+     * The exception's `getAttemptedFolderId()` still carries the ID for
+     * server-side logging and the audit trail.
+     *
+     * Centralised here so the three save endpoints (create / update / postPatch)
+     * stay in sync without copy-pasting the response shape.
+     *
+     * @param FolderAccessDeniedException $exception The denial exception carrying the attempted folder ID.
+     *
+     * @return JSONResponse HTTP 403 with the structured body.
+     */
+    private function folderAccessDeniedResponse(FolderAccessDeniedException $exception): JSONResponse
+    {
+        // Side-effect: ensure the attempted ID is recorded server-side
+        // (visible in the audit trail via logFolderAccessDenied + the
+        // exception message) even though we do NOT echo it back to the
+        // caller. `$exception` is referenced only to make the audit
+        // intent clear; the structured body is intentionally minimal.
+        $this->logger?->info(
+            '[ObjectsController] Folder access denied — returning 403',
+            [
+                'attemptedFolderId' => $exception->getAttemptedFolderId(),
+            ]
+        );
+
+        return new JSONResponse(
+            data: ['error' => 'folder_access_denied'],
+            statusCode: FolderAccessDeniedException::HTTP_STATUS
+        );
+    }//end folderAccessDeniedResponse()
+>>>>>>> origin/development
 }//end class

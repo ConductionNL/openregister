@@ -6,6 +6,9 @@
  * This file contains the Message entity class for the OpenRegister application.
  * Messages represent individual chat messages within conversations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Entity
  * @package  OCA\OpenRegister\Db
  *
@@ -118,6 +121,25 @@ class Message extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
+<<<<<<< HEAD
+=======
+    /**
+     * AI Chat Companion context snapshot
+     *
+     * Free-form structured snapshot the frontend sends with each user
+     * message so the LLM can ground its answer in the user's current
+     * scope (selected register, schema, object id, recent search query,
+     * etc.). Persisted as a TEXT column with JSON contents via the
+     * `json` addType binding below; explicit `getContext()` and
+     * `setContext()` wrappers below normalise null → [] for callers.
+     *
+     * Added by Version1Date20260511130000 per ai-chat-companion-orchestrator §7.
+     *
+     * @var array|null Context snapshot, JSON-encoded on disk
+     */
+    protected ?array $context = null;
+
+>>>>>>> origin/development
     /**
      * Message constructor
      *
@@ -130,9 +152,47 @@ class Message extends Entity implements JsonSerializable
         $this->addType(fieldName: 'role', type: 'string');
         $this->addType(fieldName: 'content', type: 'string');
         $this->addType(fieldName: 'sources', type: 'json');
+<<<<<<< HEAD
         $this->addType(fieldName: 'created', type: 'datetime');
     }//end __construct()
 
+=======
+        $this->addType(fieldName: 'context', type: 'json');
+        $this->addType(fieldName: 'created', type: 'datetime');
+    }//end __construct()
+
+    /**
+     * Get the context snapshot, normalised to an array.
+     *
+     * Shadows the magic `getContext()` getter to guarantee callers get
+     * a real array even when the row has NULL or an empty default.
+     *
+     * @return array<string,mixed>
+     */
+    public function getContext(): array
+    {
+        return $this->context ?? [];
+
+    }//end getContext()
+
+    /**
+     * Set the context snapshot.
+     *
+     * Shadows the magic setter to enforce non-null array semantics.
+     * The `json` addType binding handles JSON-encoding on persist.
+     *
+     * @param array<string,mixed> $context Context snapshot
+     *
+     * @return void
+     */
+    public function setContext(array $context): void
+    {
+        $this->context = $context;
+        $this->markFieldUpdated(attribute: 'context');
+
+    }//end setContext()
+
+>>>>>>> origin/development
     /**
      * Serialize the message to JSON
      *
@@ -157,6 +217,10 @@ class Message extends Entity implements JsonSerializable
             'role'           => $this->role,
             'content'        => $this->content,
             'sources'        => $this->sources,
+<<<<<<< HEAD
+=======
+            'context'        => $this->getContext(),
+>>>>>>> origin/development
             'created'        => $this->created?->format('c'),
         ];
     }//end jsonSerialize()

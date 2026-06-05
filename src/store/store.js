@@ -18,6 +18,11 @@ import { useViewsStore } from './modules/views.js'
 import { useAgentStore } from './modules/agent.js'
 import { useConversationStore } from './modules/conversation.ts'
 import { useEndpointStore } from './modules/endpoints.ts'
+<<<<<<< HEAD
+=======
+import { useAvgStore } from './modules/avg.js'
+import { useReportsStore } from './modules/reports.js'
+>>>>>>> origin/development
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)
@@ -36,6 +41,11 @@ const viewsStore = useViewsStore(pinia)
 const agentStore = useAgentStore(pinia)
 const conversationStore = useConversationStore(pinia)
 const endpointStore = useEndpointStore(pinia)
+<<<<<<< HEAD
+=======
+const avgStore = useAvgStore(pinia)
+const reportsStore = useReportsStore(pinia)
+>>>>>>> origin/development
 
 export {
 	// generic
@@ -56,4 +66,9 @@ export {
 	agentStore,
 	conversationStore,
 	endpointStore,
+<<<<<<< HEAD
+=======
+	avgStore,
+	reportsStore,
+>>>>>>> origin/development
 }

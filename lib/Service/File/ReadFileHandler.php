@@ -5,11 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 declare(strict_types=1);
@@ -59,12 +71,24 @@ class ReadFileHandler
     /**
      * Constructor for ReadFileHandler.
      *
+<<<<<<< HEAD
      * @param IRootFolder             $rootFolder           Root folder for file operations.
      * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler   $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
      * @param MagicMapper             $objectMapper         Object mapper for magic table operations.
      * @param LoggerInterface         $logger               Logger for logging operations.
+=======
+     * @param IRootFolder                          $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler              $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler                $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler                 $fileOwnershipHandler File ownership handler.
+     * @param MagicMapper                          $objectMapper         Object mapper for magic table operations.
+     * @param LoggerInterface                      $logger               Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for
+     *                                                                   category-based filtering. Null-safe so legacy
+     *                                                                   fixtures keep working.
+>>>>>>> origin/development
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -72,7 +96,12 @@ class ReadFileHandler
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly MagicMapper $objectMapper,
+<<<<<<< HEAD
         private readonly LoggerInterface $logger
+=======
+        private readonly LoggerInterface $logger,
+        private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
+>>>>>>> origin/development
     ) {
     }//end __construct()
 
@@ -119,6 +148,7 @@ class ReadFileHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File lookup requires handling ID vs path scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple file resolution paths with fallback logic
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
      */
     public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
     {
@@ -202,6 +232,7 @@ class ReadFileHandler
      *
      * @phpstan-param  int $fileId
      * @phpstan-return File|null
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
      */
     public function getFileById(int $fileId): ?File
     {
@@ -239,6 +270,10 @@ class ReadFileHandler
      *
      * @param ObjectEntity|string $object          The object or object ID to fetch files for.
      * @param bool|null           $sharedFilesOnly Whether to return only shared files.
+<<<<<<< HEAD
+=======
+     * @param string|null         $category        Optional FileMapper category to filter on.
+>>>>>>> origin/development
      *
      * @return array Array of file nodes.
      *
@@ -248,9 +283,20 @@ class ReadFileHandler
      * @phpstan-return array<int, \OCP\Files\Node>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
+<<<<<<< HEAD
      */
     public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
     {
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     */
+    public function getFiles(
+        ObjectEntity|string $object,
+        ?bool $sharedFilesOnly=false,
+        ?string $category=null
+    ): array {
+>>>>>>> origin/development
         // If string ID provided, try to find the object entity.
         // Use findAcrossAllSources to search across all magic tables.
         if (is_string($object) === true) {
@@ -262,7 +308,78 @@ class ReadFileHandler
             $object = $result['object'];
         }
 
+<<<<<<< HEAD
         // Use the new ID-based folder approach.
         return $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
     }//end getFiles()
+=======
+        $files = $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
+
+        if ($category === null || $this->fileMapper === null) {
+            return $files;
+        }
+
+        return $this->filterByCategory(files: $files, category: $category);
+    }//end getFiles()
+
+    /**
+     * Filter a node list by OR-side category metadata.
+     *
+     * Uses one bulk lookup to fetch the OR-side rows for every
+     * candidate fileId, then keeps only nodes whose row carries the
+     * requested category. Files without an OR-side row are excluded
+     * because they have no category — matching SQL `WHERE category =
+     * :cat` semantics on a left-join.
+     *
+     * @param array<int, mixed> $files    The candidate file nodes.
+     * @param string            $category The category to match exactly.
+     *
+     * @return array<int, mixed> The filtered nodes (sequential keys).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function filterByCategory(array $files, string $category): array
+    {
+        if (empty($files) === true) {
+            return [];
+        }
+
+        $fileIds = [];
+        foreach ($files as $node) {
+            try {
+                if (is_object($node) === true && method_exists($node, 'getId') === true) {
+                    $fid = (int) $node->getId();
+                    if ($fid > 0) {
+                        $fileIds[] = $fid;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Node without a usable id — skip; it can't match.
+                continue;
+            }
+        }
+
+        if (empty($fileIds) === true) {
+            return [];
+        }
+
+        $orMap   = $this->fileMapper->findByFileIds(fileIds: $fileIds);
+        $matched = [];
+        foreach ($files as $node) {
+            try {
+                if (is_object($node) === true && method_exists($node, 'getId') === true) {
+                    $fid = (int) $node->getId();
+                    $row = ($orMap[$fid] ?? null);
+                    if ($row !== null && $row->getCategory() === $category) {
+                        $matched[] = $node;
+                    }
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return $matched;
+    }//end filterByCategory()
+>>>>>>> origin/development
 }//end class

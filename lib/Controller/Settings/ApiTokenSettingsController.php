@@ -3,6 +3,12 @@
 /**
  * OpenRegister API Token Settings Controller
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -66,6 +72,7 @@ class ApiTokenSettingsController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, github_token?: string, gitlab_token?: string,
      *     gitlab_url?: string}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
      */
     public function getApiTokens(): JSONResponse
     {
@@ -108,6 +115,7 @@ class ApiTokenSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with save result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
      */
     public function saveApiTokens(): JSONResponse
     {
@@ -154,6 +162,7 @@ class ApiTokenSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
      */
     public function testGitHubToken(): JSONResponse
     {
@@ -211,6 +220,7 @@ class ApiTokenSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
      */
     public function testGitLabToken(): JSONResponse
     {

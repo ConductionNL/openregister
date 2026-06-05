@@ -6,6 +6,12 @@
  * This file contains the controller for handling dashboard related operations
  * in the OpenRegister application.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -44,6 +50,10 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-7
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
  * @psalm-suppress UnusedClass
  */
 class DashboardController extends Controller
@@ -107,6 +117,7 @@ class DashboardController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-5
      */
     public function page(): TemplateResponse
     {
@@ -252,6 +263,7 @@ class DashboardController extends Controller
      *     },
      *     array<never, never>
      * >
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
      */
     public function index(): JSONResponse
     {
@@ -302,6 +314,7 @@ class DashboardController extends Controller
      *     total: array{processed: mixed, failed: mixed}},
      *     summary?: array{total_processed: mixed, total_failed: mixed,
      *     success_rate: float}}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-7
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -343,6 +356,7 @@ class DashboardController extends Controller
      *     array{error?: string, labels?: list<array-key>,
      *     series?: list<array{data: list<int>, name: string}>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getAuditTrailActionChart(
         ?string $from=null,
@@ -388,6 +402,7 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, labels?: array<'Unknown'|mixed>, series?: array<int>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -414,6 +429,7 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, labels?: array<'Unknown'|mixed>, series?: array<int>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -442,6 +458,7 @@ class DashboardController extends Controller
      *     labels?: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>,
      *     series?: list<int>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -470,6 +487,7 @@ class DashboardController extends Controller
      *     array{error?: string, total?: int, creates?: int,
      *     updates?: int, deletes?: int, reads?: int},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
@@ -501,6 +519,7 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, actions?: list<array{count: int, name: mixed}>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
@@ -533,6 +552,7 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, objects?: list<array{count: int, id: mixed, name: string}>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getMostActiveObjects(
         ?int $registerId=null,

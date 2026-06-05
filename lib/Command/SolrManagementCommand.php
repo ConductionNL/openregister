@@ -8,6 +8,9 @@
  * This command provides comprehensive SOLR management operations including
  * setup, schema validation, optimization, warming, and maintenance tasks.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *
@@ -62,6 +65,7 @@ class SolrManagementCommand extends Command
      * @param LoggerInterface $logger      Logger for debugging and monitoring
      * @param IndexService    $solrService SOLR service for operations
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function __construct(
@@ -76,6 +80,7 @@ class SolrManagementCommand extends Command
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     protected function configure(): void
@@ -155,6 +160,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -195,6 +201,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleSetup(OutputInterface $output): int
@@ -280,6 +287,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleOptimize(OutputInterface $output, bool $commit): int
@@ -328,6 +336,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleWarm(OutputInterface $output): int
@@ -388,6 +397,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleHealth(OutputInterface $output): int
@@ -472,6 +482,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleSchemaCheck(OutputInterface $output): int
@@ -554,6 +565,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 0|1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleClear(OutputInterface $output, bool $force): int
@@ -596,6 +608,7 @@ class SolrManagementCommand extends Command
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleStats(OutputInterface $output): int
@@ -672,6 +685,7 @@ class SolrManagementCommand extends Command
      *
      * @psalm-return 1
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function handleInvalidAction(OutputInterface $output, string $action): int

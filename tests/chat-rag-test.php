@@ -6,6 +6,9 @@
  * Tests if semantic search correctly finds objects based on vector similarity
  * 
  * Usage: docker exec -u 33 master-nextcloud-1 php apps-extra/openregister/tests/chat-rag-test.php
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 require_once '/var/www/html/lib/base.php';

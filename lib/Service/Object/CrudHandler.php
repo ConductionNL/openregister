@@ -6,6 +6,12 @@
  * Handles core CRUD (Create, Read, Update, Delete) operations for objects.
  * Coordinates between controller and ObjectService for data operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -17,6 +23,9 @@
  *
  * @link https://www.OpenRegister.nl
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-64
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-64
@@ -61,6 +70,7 @@ class CrudHandler
      * @param ObjectService   $objectService Object service for save/search operations
      * @param LoggerInterface $logger        PSR-3 logger
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
@@ -88,6 +98,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags provide flexible API filtering options
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-64
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-64
      */
@@ -162,6 +174,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-64
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-64
      */
@@ -212,6 +226,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
      */
@@ -264,6 +280,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
      */
@@ -326,6 +344,7 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function patch(
@@ -404,6 +423,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
      */
@@ -458,6 +479,7 @@ class CrudHandler
      *
      * @psalm-return array<string, mixed>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function buildSearchQuery(

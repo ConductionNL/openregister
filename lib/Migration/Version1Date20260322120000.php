@@ -13,10 +13,19 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
+<<<<<<< HEAD
  * @author  Conduction Development Team <dev@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> origin/development
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -78,6 +87,7 @@ class Version1Date20260322120000 extends SimpleMigrationStep
 
         if (str_contains(get_class($platform), 'PostgreSQL') === true) {
             $this->createPostgreSqlIndex(connection: $this->connection, tableName: $tableName, output: $output);
+<<<<<<< HEAD
         } else if (str_contains(get_class($platform), 'MariaDb') === true
             || str_contains(get_class($platform), 'MySQL') === true
         ) {
@@ -85,6 +95,19 @@ class Version1Date20260322120000 extends SimpleMigrationStep
         } else {
             $output->info('Skipping retention JSON index: unsupported database platform');
         }//end if
+=======
+            return;
+        }
+
+        if (str_contains(get_class($platform), 'MariaDb') === true
+            || str_contains(get_class($platform), 'MySQL') === true
+        ) {
+            $this->createMariaDbIndexes(connection: $this->connection, tableName: $tableName, output: $output);
+            return;
+        }
+
+        $output->info('Skipping retention JSON index: unsupported database platform');
+>>>>>>> origin/development
     }//end postSchemaChange()
 
     /**

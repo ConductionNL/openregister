@@ -6,10 +6,13 @@
  * This file contains the custom exception class for handling database constraint violations
  * with user-friendly error messages.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -32,7 +35,11 @@ use Exception;
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -61,6 +68,7 @@ class DatabaseConstraintException extends Exception
      * @param int            $httpStatus The HTTP status code (default: 409 Conflict)
      * @param Exception|null $previous   The previous exception
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
@@ -77,6 +85,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return int The HTTP status code (typically 409 for constraint violations)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function getHttpStatusCode(): int
@@ -97,6 +106,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public static function fromDatabaseException(
@@ -129,6 +139,7 @@ class DatabaseConstraintException extends Exception
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Constraint parsing requires many conditional error type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Constraint parsing requires many conditional error type checks
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     private static function parseConstraintError(string $dbMessage, string $entityType): string

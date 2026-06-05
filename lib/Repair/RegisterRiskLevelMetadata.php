@@ -3,6 +3,12 @@
 /**
  * Repair step to register the risk level metadata key.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Repair
  * @package  OCA\OpenRegister\Repair
  *
@@ -38,6 +44,7 @@ class RegisterRiskLevelMetadata implements IRepairStep
      *
      * @param RiskLevelService $riskLevelService Risk level service
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function __construct(
@@ -50,6 +57,7 @@ class RegisterRiskLevelMetadata implements IRepairStep
      *
      * @return string
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function getName(): string
@@ -64,6 +72,7 @@ class RegisterRiskLevelMetadata implements IRepairStep
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function run(IOutput $output): void

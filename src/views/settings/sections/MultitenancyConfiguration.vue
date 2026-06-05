@@ -1,9 +1,13 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<SettingsSection
-		name="Multitenancy"
-		description="Configure multi-organization support and tenant isolation"
+		:name="t('openregister', 'Multitenancy')"
+		:description="t('openregister', 'Configure multi-organization support and tenant isolation')"
 		:loading="loading"
-		loading-message="Loading multitenancy settings...">
+		:loading-message="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
 			<NcButton
 				type="error"
@@ -98,7 +102,7 @@
 						<NcSelect
 							v-model="multitenancyOptions.defaultUserTenant"
 							:options="tenantOptions"
-							input-label="Default User Tenant"
+							:input-label="t('openregister', 'Default User Tenant')"
 							:disabled="loading || saving" />
 					</div>
 				</div>
@@ -114,7 +118,7 @@
 						<NcSelect
 							v-model="multitenancyOptions.defaultObjectTenant"
 							:options="tenantOptions"
-							input-label="Default Object Tenant"
+							:input-label="t('openregister', 'Default Object Tenant')"
 							:disabled="loading || saving" />
 					</div>
 				</div>
@@ -148,36 +152,85 @@ export default {
 		...mapStores(useSettingsStore),
 
 		multitenancyOptions: {
+			/**
+			 * Read multitenancy options from the settings store.
+			 *
+			 * @spec exclude UI plumbing — store passthrough getter; tenant config owned by tenant-lifecycle.
+			 * @return {object}
+			 */
 			get() {
 				return this.settingsStore.multitenancyOptions
 			},
+			/**
+			 * Write multitenancy options to the settings store.
+			 *
+			 * @spec exclude UI plumbing — store passthrough setter; tenant config owned by tenant-lifecycle.
+			 * @param {object} value - new options
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.multitenancyOptions = value
 			},
 		},
 
+		/**
+		 * Tenant options from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {Array}
+		 */
 		tenantOptions() {
 			return this.settingsStore.tenantOptions
 		},
 
+		/**
+		 * Loading flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Saving flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
+		/**
+		 * Rebasing flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
 	},
 
 	methods: {
+		/**
+		 * Open the tenant-rebase confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — store passthrough; rebase contract owned by tenant-lifecycle.
+		 * @return {void}
+		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
+		/**
+		 * Persist multitenancy settings.
+		 *
+		 * @spec exclude UI plumbing — store delegation; tenant config contract owned by tenant-lifecycle.
+		 * @return {Promise<void>}
+		 */
 		async saveSettings() {
 			await this.settingsStore.updateMultitenancySettings(this.multitenancyOptions)
 		},

@@ -5,11 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -60,6 +72,7 @@ class ValidationHandler
      * @param MagicMapper     $magicMapper        Mapper for magic tables.
      * @param LoggerInterface $logger             Logger for logging operations.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function __construct(
@@ -82,6 +95,7 @@ class ValidationHandler
      * @psalm-param   ValidationException|CustomValidationException $exception
      * @phpstan-param ValidationException|CustomValidationException $exception
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception): mixed
@@ -104,6 +118,7 @@ class ValidationHandler
      *
      * @throws InvalidArgumentException If required fields are missing.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function validateRequiredFields(array $objects): void
@@ -159,6 +174,7 @@ class ValidationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple exception types require separate handling
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function validateObjectsBySchema(int $schemaId, callable $saveCallback): array
@@ -277,6 +293,7 @@ class ValidationHandler
      *
      * @throws \Exception If schema/register loading fails or object retrieval fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function validateAndSaveObjectsBySchema(
@@ -344,10 +361,16 @@ class ValidationHandler
         $objectsToProcess = count($allObjects);
         $chunkSize        = $this->calculateChunkSize(objectsToProcess: $objectsToProcess);
 
+<<<<<<< HEAD
         if ($objectsToProcess > 0) {
             $estimatedChunks = ceil($objectsToProcess / $chunkSize);
         } else {
             $estimatedChunks = 0;
+=======
+        $estimatedChunks = 0;
+        if ($objectsToProcess > 0) {
+            $estimatedChunks = ceil($objectsToProcess / $chunkSize);
+>>>>>>> origin/development
         }
 
         $this->logger->info(
@@ -411,6 +434,7 @@ class ValidationHandler
      * @psalm-return   array{schema: \OCA\OpenRegister\Db\Schema, register: \OCA\OpenRegister\Db\Register}|null
      * @phpstan-return array{schema: \OCA\OpenRegister\Db\Schema, register: \OCA\OpenRegister\Db\Register}|null
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function loadSchemaAndRegister(int $registerId, int $schemaId): ?array
@@ -448,6 +472,7 @@ class ValidationHandler
      *
      * @return array|null Array of objects, or null on failure.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function loadObjectsForValidation(mixed $register, mixed $schema, int $schemaId): ?array
@@ -480,6 +505,7 @@ class ValidationHandler
      *
      * @return array The sliced array of objects.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function applyLimitOffset(array $allObjects, int $schemaId, int $totalObjects, ?int $limit, int $offset): array
@@ -510,6 +536,7 @@ class ValidationHandler
      *
      * @return int The chunk size to use.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function calculateChunkSize(int $objectsToProcess): int
@@ -543,6 +570,7 @@ class ValidationHandler
      *
      * @return array{processed: int, updated: int, failed: int} Aggregated totals.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function processAllChunks(
@@ -608,6 +636,7 @@ class ValidationHandler
      *
      * @return array{processed: int, updated: int, failed: int} Chunk processing results.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function processValidationChunk(
@@ -727,17 +756,27 @@ class ValidationHandler
      *
      * @return array Array of object data arrays.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function convertChunkToArrays(array $objectsChunk): array
     {
         $objectsData = [];
         foreach ($objectsChunk as $object) {
+<<<<<<< HEAD
             if (is_array($object) === true) {
                 $objectsData[] = $object;
             } else {
                 $objectsData[] = $object->getObject();
             }
+=======
+            $objectData = $object->getObject();
+            if (is_array($object) === true) {
+                $objectData = $object;
+            }
+
+            $objectsData[] = $objectData;
+>>>>>>> origin/development
         }
 
         return $objectsData;
@@ -770,6 +809,7 @@ class ValidationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Comprehensive validation with detailed error extraction
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
@@ -859,6 +899,7 @@ class ValidationHandler
      *
      * @return array|null Matching object IDs or null.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function applyInversedByFilter(array &$_filters): array|null

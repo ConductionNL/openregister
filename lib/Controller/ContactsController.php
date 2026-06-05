@@ -5,6 +5,12 @@
  *
  * REST controller for contact relation operations on OpenRegister objects.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -126,11 +132,16 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+=======
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+>>>>>>> origin/development
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -149,7 +160,16 @@ class ContactsController extends Controller
      * Link or create a contact for an object.
      *
      * If addressbookId and contactUri are provided, links an existing contact.
+<<<<<<< HEAD
      * If fullName is provided, creates a new contact and links it.
+=======
+     * If fullName or displayName is provided, creates a new contact and links
+     * it (back-compat path for callers that don't use `/contacts/new`).
+     *
+     * Tier-2 — both the link and create paths thread the object's
+     * register + schema ids into the link row so the consumer side can
+     * scope the picker by `schemaId` without extra round-trips.
+>>>>>>> origin/development
      *
      * @param string $register The register slug
      * @param string $schema   The schema slug
@@ -159,31 +179,69 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+>>>>>>> origin/development
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+=======
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+>>>>>>> origin/development
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
             $data = $this->request->getParams();
 
+<<<<<<< HEAD
             if (empty($data['addressbookId']) === false && empty($data['contactUri']) === false) {
+=======
+            $hasLinkData = (empty($data['addressbookId']) === false && empty($data['contactUri']) === false);
+            // Accept `displayName` (Tier-2 dialog field) alongside `fullName`.
+            $hasCreateData = (empty($data['fullName']) === false || empty($data['displayName']) === false);
+
+            if ($hasLinkData === false && $hasCreateData === false) {
+                return new JSONResponse(
+                    ['error' => 'Either addressbookId+contactUri or fullName/displayName is required'],
+                    400
+                );
+            }
+
+            $schemaId = $this->resolveSchemaId(object: $object);
+
+            if ($hasLinkData === true) {
+>>>>>>> origin/development
                 // Link existing contact.
                 $link = $this->contactService->linkContact(
                     $object->getUuid(),
                     (int) $object->getRegister(),
                     (int) $data['addressbookId'],
                     $data['contactUri'],
+<<<<<<< HEAD
                     $data['role'] ?? null
                 );
             } else if (empty($data['fullName']) === false) {
+=======
+                    $data['role'] ?? null,
+                    $schemaId
+                );
+            }
+
+            if ($hasLinkData === false) {
+>>>>>>> origin/development
                 // Create new contact.
                 $link = $this->contactService->createAndLinkContact(
                     $object->getUuid(),
                     (int) $object->getRegister(),
+<<<<<<< HEAD
                     $data
                 );
             } else {
@@ -192,6 +250,12 @@ class ContactsController extends Controller
                     400
                 );
             }//end if
+=======
+                    $data,
+                    $schemaId
+                );
+            }
+>>>>>>> origin/development
 
             return new JSONResponse($link, 201);
         } catch (DoesNotExistException $e) {
@@ -207,6 +271,105 @@ class ContactsController extends Controller
     }//end create()
 
     /**
+<<<<<<< HEAD
+=======
+     * Create a new contact (only) and link it to an object.
+     *
+     * Tier-2 dedicated route — surfaced to the `CnContactCreate` dialog
+     * so the consumer can hit a single unambiguous endpoint for the
+     * create-only flow. Accepts `displayName` (or `fullName`), `email`,
+     * `phone`, `org`, `role`. Rejects payloads carrying `contactUri`
+     * (link-existing) with a 400 — those callers must use the bare
+     * POST endpoint instead.
+     *
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-16
+     */
+    public function createNew(string $register, string $schema, string $id): JSONResponse
+    {
+        try {
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+            if ($object === null) {
+                return new JSONResponse(['error' => 'Object not found'], 404);
+            }
+
+            $data = $this->request->getParams();
+
+            // Refuse "link" payloads here — `/contacts/new` is create-only.
+            if (empty($data['contactUri']) === false) {
+                return new JSONResponse(
+                    ['error' => 'Use POST /contacts to link an existing contact'],
+                    400
+                );
+            }
+
+            $displayName = $data['displayName'] ?? $data['fullName'] ?? '';
+            if ($displayName === '' || trim($displayName) === '') {
+                return new JSONResponse(
+                    ['error' => 'displayName is required'],
+                    400
+                );
+            }
+
+            $schemaId = $this->resolveSchemaId(object: $object);
+
+            $link = $this->contactService->createAndLinkContact(
+                $object->getUuid(),
+                (int) $object->getRegister(),
+                $data,
+                $schemaId
+            );
+
+            return new JSONResponse($link, 201);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (Exception $e) {
+            $code = $e->getCode();
+            if ($code === 404) {
+                return new JSONResponse(['error' => $e->getMessage()], 404);
+            }
+
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }//end try
+    }//end createNew()
+
+    /**
+     * Resolve the object's schema id as an int (or null).
+     *
+     * `ObjectEntity::getSchema()` returns the schema id as a string;
+     * the link table accepts a nullable int.
+     *
+     * @param \OCA\OpenRegister\Db\ObjectEntity $object The object entity.
+     *
+     * @return int|null
+     */
+    private function resolveSchemaId(\OCA\OpenRegister\Db\ObjectEntity $object): ?int
+    {
+        $schema = $object->getSchema();
+        if ($schema === null || $schema === '') {
+            return null;
+        }
+
+        // Non-numeric schema slugs map to null here — the link row keeps
+        // the register id only, and the consumer side falls back to
+        // resolving the schema from the URL.
+        if (is_numeric($schema) === false) {
+            return null;
+        }
+
+        return (int) $schema;
+    }//end resolveSchemaId()
+
+    /**
+>>>>>>> origin/development
      * Update a contact link (role change).
      *
      * @param string $register   The register slug
@@ -218,11 +381,22 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Route-bound; method 501 pending role updates.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+>>>>>>> origin/development
      */
     public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+=======
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+>>>>>>> origin/development
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -245,25 +419,58 @@ class ContactsController extends Controller
     /**
      * Remove a contact link.
      *
+<<<<<<< HEAD
      * @param string $register   The register slug
      * @param string $schema     The schema slug
      * @param string $id         The object ID
      * @param string $contactUid The contact UID
+=======
+     * `{contactUid}` may be either the vCard UID *or* a numeric link id
+     * — the route requirement is `[^/]+` and consumers historically
+     * passed both shapes. The service resolves the contact-uid form via
+     * the (objectUuid, contactUid) composite index, falling back to the
+     * id-based path when the param looks numeric. Both code paths
+     * tolerate a missing underlying vCard per Phase F-3.
+     *
+     * @param string $register   The register slug
+     * @param string $schema     The schema slug
+     * @param string $id         The object ID
+     * @param string $contactUid The contact UID (or numeric link id).
+>>>>>>> origin/development
      *
      * @return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
         try {
+<<<<<<< HEAD
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+=======
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+>>>>>>> origin/development
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
+<<<<<<< HEAD
             $this->contactService->unlinkContact($object->getUuid(), $contactUid);
+=======
+            // Numeric param → legacy/link-id path.
+            if (ctype_digit($contactUid) === true) {
+                $this->contactService->unlinkContact((int) $contactUid);
+                return new JSONResponse(['success' => true]);
+            }
+
+            // Non-numeric: resolve via the (objectUuid, contactUid) composite index.
+            $this->contactService->unlinkContactByUid(
+                objectUuid: $object->getUuid(),
+                contactUid: $contactUid
+            );
+>>>>>>> origin/development
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -287,6 +494,7 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
      */
     public function objects(string $contactUid): JSONResponse
     {
@@ -327,6 +535,7 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function match(): JSONResponse
     {
@@ -342,10 +551,27 @@ class ContactsController extends Controller
         }
 
         try {
+<<<<<<< HEAD
             $matches         = $this->matchingService->matchContact(
                 (string) $email,
                 empty($name) === false ? (string) $name : null,
                 empty($organization) === false ? (string) $organization : null
+=======
+            $nameValue         = null;
+            $organizationValue = null;
+            if (empty($name) === false) {
+                $nameValue = (string) $name;
+            }
+
+            if (empty($organization) === false) {
+                $organizationValue = (string) $organization;
+            }
+
+            $matches         = $this->matchingService->matchContact(
+                (string) $email,
+                $nameValue,
+                $organizationValue
+>>>>>>> origin/development
             );
             $enrichedMatches = $this->enrichMatches(matches: $matches);
 
@@ -353,8 +579,16 @@ class ContactsController extends Controller
         } catch (\Exception $e) {
             $this->logger->error('[ContactsAPI] Match failed: {error}', ['error' => $e->getMessage(), 'exception' => $e]);
 
+<<<<<<< HEAD
             return new JSONResponse(['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0], 500);
         }
+=======
+            return new JSONResponse(
+                ['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0],
+                500
+            );
+        }//end try
+>>>>>>> origin/development
     }//end match()
 
     /**
@@ -363,6 +597,7 @@ class ContactsController extends Controller
      * @param array $matches The raw matches
      *
      * @return array Enriched matches
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     private function enrichMatches(array $matches): array
     {

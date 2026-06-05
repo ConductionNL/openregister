@@ -7,6 +7,12 @@
  * from text chunks for GDPR compliance and data classification.
  * This handler is invoked after chunks are created to detect and store entities.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -126,6 +132,7 @@ class EntityRecognitionHandler
      * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
      */
     public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
@@ -210,6 +217,7 @@ class EntityRecognitionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity extraction requires multiple condition checks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple entity detection paths with error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity extraction with logging
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -296,7 +304,11 @@ class EntityRecognitionHandler
                 $entity = $this->findOrCreateEntity(
                     type: $detected['type'],
                     value: $detected['value'],
+<<<<<<< HEAD
                     category: $detected['category'] ?? $this->getCategoryForType(type: $detected['type'])
+=======
+                    category: $detected['category'] ?? self::getCategoryForType(type: $detected['type'])
+>>>>>>> origin/development
                 );
 
                 // Create entity relation.
@@ -321,6 +333,19 @@ class EntityRecognitionHandler
                     $relation->setFileId($chunk->getSourceId());
                 } else if ($chunk->getSourceType() === 'object') {
                     $relation->setObjectId($chunk->getSourceId());
+<<<<<<< HEAD
+=======
+
+                    // Populate disambiguating columns so DSAR /
+                    // retention-enforcement composition can resolve the
+                    // owning object deterministically across magic-tables.
+                    // The int `object_id` alone collides because magic-table
+                    // sequences are scoped per-table.
+                    $this->populateObjectContextOnRelation(
+                        relation: $relation,
+                        objectId: $chunk->getSourceId()
+                    );
+>>>>>>> origin/development
                 }
 
                 $this->entityRelationMapper->insert($relation);
@@ -762,7 +787,11 @@ class EntityRecognitionHandler
             $entities[] = [
                 'type'           => $entityType,
                 'value'          => $value,
+<<<<<<< HEAD
                 'category'       => $this->getCategoryForType(type: $entityType),
+=======
+                'category'       => self::getCategoryForType(type: $entityType),
+>>>>>>> origin/development
                 'position_start' => $start,
                 'position_end'   => $end,
                 'confidence'     => $score,
@@ -932,11 +961,27 @@ class EntityRecognitionHandler
     /**
      * Get category for entity type.
      *
+<<<<<<< HEAD
      * @param string $type Entity type.
      *
      * @return string Category.
      */
     private function getCategoryForType(string $type): string
+=======
+     * Lifted to `public static` so flows that produce GdprEntity rows
+     * outside the detector pipeline (notably the manual-entity endpoint
+     * in `ManualEntityService`) can derive the same category mapping
+     * without taking on this handler's DI graph. The `oc_openregister_entities.category`
+     * column is NOT NULL with no default — every insert path MUST set it,
+     * and consistency with detector-produced rows is desirable so the
+     * catalogue stays homogeneous.
+     *
+     * @param string $type Entity type tag (e.g. `PERSON`, `IBAN`).
+     *
+     * @return string One of the `CATEGORY_*` constants on this class.
+     */
+    public static function getCategoryForType(string $type): string
+>>>>>>> origin/development
     {
         return match ($type) {
             self::ENTITY_TYPE_PERSON,
@@ -968,4 +1013,44 @@ class EntityRecognitionHandler
 
         return substr($text, $start, $end - $start);
     }//end extractContext()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Populate the disambiguating object-context columns on a relation.
+     *
+     * Magic-table id sequences are scoped per-table, so the same
+     * `object_id` int can collide across tables. Storing the owning
+     * register slug + schema slug + object uuid makes downstream
+     * lookups (DSAR composition, retention enforcement) deterministic.
+     *
+     * Best-effort: on any failure (object not found, mapper throws,
+     * etc.) the legacy `object_id` is still set and the new columns
+     * stay null — preserves current behaviour.
+     *
+     * @param EntityRelation $relation Relation being persisted.
+     * @param int            $objectId Magic-table object id.
+     *
+     * @return void
+     */
+    private function populateObjectContextOnRelation(EntityRelation $relation, int $objectId): void
+    {
+        try {
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $object       = $objectMapper->find(
+                $objectId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            // Best-effort enrichment; leave the new columns null.
+            return;
+        }
+
+        $relation->setRegisterId((string) $object->getRegister());
+        $relation->setSchemaId((string) $object->getSchema());
+        $relation->setObjectUuid((string) $object->getUuid());
+
+    }//end populateObjectContextOnRelation()
+>>>>>>> origin/development
 }//end class

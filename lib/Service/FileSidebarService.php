@@ -7,6 +7,12 @@
  * OpenRegister objects that reference a given file ID and aggregating
  * extraction / entity-recognition metadata for the Extraction tab.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -78,7 +84,18 @@ class FileSidebarService
      *
      * @param int $fileId The Nextcloud file ID to search for.
      *
+<<<<<<< HEAD
      * @return array<int, array{uuid: string, title: string, register: array{id: int, title: string}, schema: array{id: int, title: string}}>
+=======
+     * @return array<int, array{
+     *     uuid: string,
+     *     title: string,
+     *     register: array{id: int, title: string},
+     *     schema: array{id: int, title: string}
+     * }>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-4
+>>>>>>> origin/development
      */
     public function getObjectsForFile(int $fileId): array
     {
@@ -264,6 +281,7 @@ class FileSidebarService
      *   anonymizedAt: string|null,
      *   anonymizedFileId: int|null
      * }
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-4
      */
     public function getExtractionStatus(int $fileId): array
     {

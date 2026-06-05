@@ -5,6 +5,12 @@
  *
  * GDPR entity representing detected PII/contact information.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

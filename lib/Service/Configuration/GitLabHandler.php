@@ -6,6 +6,12 @@
  * This file contains the GitLabHandler class for interacting with the GitLab API
  * to discover, fetch, and manage OpenRegister configurations stored in GitLab repositories.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -113,6 +119,7 @@ class GitLabHandler
      *
      * @psalm-return array{'PRIVATE-TOKEN'?: string}
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getHeaders(): array
@@ -149,6 +156,7 @@ class GitLabHandler
      *     path: mixed, project_id: mixed, ref: 'main'|mixed,
      *     url: ''|mixed}>, page: int, per_page: int}
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
@@ -246,6 +254,7 @@ class GitLabHandler
      *
      * @psalm-return array<array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}>
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getBranches(int $projectId): array
@@ -309,6 +318,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getFileContent(int $projectId, string $path, string $ref='main'): array
@@ -380,6 +390,7 @@ class GitLabHandler
      *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
      *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function listConfigurationFiles(int $projectId, string $ref='main', string $path=''): array
@@ -468,6 +479,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getProjectByPath(string $namespace, string $project): array
@@ -522,6 +534,7 @@ class GitLabHandler
      *
      * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): array|null
@@ -566,6 +579,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getApiBase(): string

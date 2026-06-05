@@ -27,6 +27,12 @@
  *   }
  * }
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -82,6 +88,12 @@ class PropertyRbacHandler
      * @param array  $object   Object data (for conditional matching)
      *
      * @return bool True if user can read the property
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level read authorization:
+     *       evaluates the property's read rules against the current user's groups + object conditions)
+>>>>>>> origin/development
      */
     public function canReadProperty(Schema $schema, string $property, array $object): bool
     {
@@ -102,6 +114,12 @@ class PropertyRbacHandler
      * @param bool   $isCreate Whether this is a create operation
      *
      * @return bool True if user can update the property
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level update authorization,
+     *       with create-mode organisation-match skipping per the FLS-on-create requirement)
+>>>>>>> origin/development
      */
     public function canUpdateProperty(
         Schema $schema,
@@ -125,6 +143,12 @@ class PropertyRbacHandler
      * @param array  $object Object data to filter
      *
      * @return array Filtered object with only readable properties
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#fls-strips-restricted-fields (strips unreadable
+     *       property-authorized fields from outgoing data; admin + no-property-auth short-circuit)
+>>>>>>> origin/development
      */
     public function filterReadableProperties(Schema $schema, array $object): array
     {
@@ -174,6 +198,12 @@ class PropertyRbacHandler
      * @param bool   $isCreate     Whether this is a create operation
      *
      * @return array Array of property names user cannot update
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (validates incoming writes against
+     *       property update rules; skips unchanged values so PATCH may resubmit protected fields)
+>>>>>>> origin/development
      */
     public function getUnauthorizedProperties(
         Schema $schema,
@@ -407,6 +437,11 @@ class PropertyRbacHandler
      * Check if current user is admin
      *
      * @return bool True if user is in admin group
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Trivial admin-group membership check helper; no business logic.
+>>>>>>> origin/development
      */
     public function isAdmin(): bool
     {

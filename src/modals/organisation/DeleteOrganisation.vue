@@ -94,23 +94,38 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed ownership check gating the delete UI; UI state helper.
+		 */
 		isOwner() {
 			// Check if current user is the owner of the organisation
 			const currentUser = this.getCurrentUser()
 			return organisationStore.organisationItem?.owner === currentUser
 		},
+		/**
+		 * @spec exclude Computed member-presence check for the delete warning; UI state helper.
+		 */
 		hasMembers() {
 		// Check if organisation has members (excluding the owner)
 			return (organisationStore.organisationItem?.users?.length || 0) > 1
 		},
+		/**
+		 * @spec exclude Computed member count for display; UI presentation helper.
+		 */
 		memberCount() {
 			return organisationStore.organisationItem?.users?.length || 0
 		},
+		/**
+		 * @spec exclude Computed check whether this org is the active one; UI state helper.
+		 */
 		isActiveOrganisation() {
 			// Check if this is the currently active organisation
 			return organisationStore.userStats.active
 				   && organisationStore.userStats.active.uuid === organisationStore.organisationItem?.uuid
 		},
+		/**
+		 * @spec exclude Computed delete-enablement guard combining ownership/membership/active checks; UI validation helper.
+		 */
 		canDelete() {
 			// Can only delete if:
 			// 1. Not the default organisation
@@ -124,10 +139,16 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		getCurrentUser() {
 			// Implementation would depend on how you get current user
 			return 'current-user' // Placeholder
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and local state; UI plumbing.
+		 */
 		closeDialog() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -135,6 +156,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Delete-confirm handler delegating to organisationStore.deleteOrganisation; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteOrganisation() {
 			this.loading = true
 			this.error = null

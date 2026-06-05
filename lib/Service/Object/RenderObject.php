@@ -11,6 +11,12 @@
  * - Applying field filtering and selection
  * - Formatting object properties for display
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -29,7 +35,13 @@ use Adbar\Dot;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\FileMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\FileService;
+=======
+use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Service\FileService;
+use OCP\IRequest;
+>>>>>>> origin/development
 use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -43,6 +55,13 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\TranslationStatusService;
+>>>>>>> origin/development
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -68,6 +87,11 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.LongVariable)
+>>>>>>> origin/development
  */
 class RenderObject
 {
@@ -126,6 +150,7 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
+<<<<<<< HEAD
      * @param FileMapper             $fileMapper           File mapper for database operations.
      * @param MagicMapper            $objectEntityMapper   Object entity mapper for database operations.
      * @param RegisterMapper         $registerMapper       Register mapper for database operations.
@@ -144,6 +169,30 @@ class RenderObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+=======
+     * @param FileMapper               $fileMapper               File mapper for database operations.
+     * @param MagicMapper              $objectEntityMapper       Object entity mapper for database operations.
+     * @param RegisterMapper           $registerMapper           Register mapper for database operations.
+     * @param SchemaMapper             $schemaMapper             Schema mapper for database operations.
+     * @param ISystemTagManager        $systemTagManager         System tag manager for file tags.
+     * @param ISystemTagObjectMapper   $systemTagMapper          System tag object mapper for file tags.
+     * @param CacheHandler             $cacheHandler             Cache service for performance optimization.
+     * @param CacheHandler             $objectCacheService       Object cache service for optimized loading.
+     * @param PropertyRbacHandler      $propertyRbacHandler      Property-level RBAC handler.
+     * @param LoggerInterface          $logger                   Logger for performance monitoring.
+     * @param FileService              $fileService              File service for file operations.
+     * @param ComputedFieldHandler     $computedFieldHandler     Handler for computed field evaluation.
+     * @param TranslationHandler       $translationHandler       Handler for translatable property resolution.
+     * @param LinkedEntityEnricher     $linkedEntityEnricher     Enricher for linked entity metadata.
+     * @param CalculationEvaluator     $calculationEvaluator     Evaluator for derived/computed properties.
+     * @param UrnService               $urnService               URN resolver for register/schema/object identifiers.
+     * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
+     * @param IRequest|null            $request                  Current request, used to read `?recurrenceOccurrences=N`.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+>>>>>>> origin/development
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -160,6 +209,13 @@ class RenderObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
+<<<<<<< HEAD
+=======
+        private readonly CalculationEvaluator $calculationEvaluator,
+        private readonly UrnService $urnService,
+        private readonly TranslationStatusService $translationStatusService,
+        private readonly ?IRequest $request=null,
+>>>>>>> origin/development
     ) {
     }//end __construct()
 
@@ -177,6 +233,7 @@ class RenderObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function setUltraPreloadCache(array $ultraPreloadCache): void
@@ -199,6 +256,7 @@ class RenderObject
      *
      * @psalm-return int<0, max>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getUltraCacheSize(): int
@@ -213,6 +271,7 @@ class RenderObject
      *
      * @return Register|null The register or null if not found
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getRegister(int | string $id): ?Register
@@ -239,6 +298,7 @@ class RenderObject
      *
      * @return Schema|null The schema or null if not found
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getSchema(int | string $id): ?Schema
@@ -261,6 +321,98 @@ class RenderObject
     }//end getSchema()
 
     /**
+<<<<<<< HEAD
+=======
+     * Enrich `recurrence`-typed properties with their upcoming occurrences.
+     *
+     * For every property declared as `type: recurrence` whose value is a non-empty
+     * RRULE string, this attaches a sibling virtual field `_occurrences` listing
+     * the next N occurrences (ISO 8601). N defaults to 5 and may be overridden per
+     * request via `?recurrenceOccurrences=N` (clamped to 1..100). The RRULE string
+     * itself is preserved unchanged for round-trip integrity. When the object
+     * declares exactly one recurrence property, `_occurrences` is attached at the
+     * object root; with multiple, each is keyed as `<prop>_occurrences` to avoid
+     * collisions.
+     *
+     * @param array  $objectData The object data being rendered.
+     * @param Schema $schema     The schema for the object.
+     *
+     * @return array The object data, possibly enriched with occurrence lists.
+     *
+     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+     */
+    private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array
+    {
+        $properties = $schema->getProperties() ?? [];
+
+        // Collect recurrence properties present in the object with a string value.
+        $recurrenceProps = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            $type = null;
+            if (is_array($propertyConfig) === true) {
+                $type = ($propertyConfig['type'] ?? null);
+            } else if (is_object($propertyConfig) === true) {
+                $type = ($propertyConfig->type ?? null);
+            }
+
+            if ($type !== 'recurrence') {
+                continue;
+            }
+
+            $value = ($objectData[$propertyName] ?? null);
+            if (is_string($value) === true && $value !== '') {
+                $recurrenceProps[$propertyName] = $value;
+            }
+        }//end foreach
+
+        if (empty($recurrenceProps) === true) {
+            return $objectData;
+        }
+
+        $count     = $this->resolveOccurrenceCount();
+        $validator = new ExtendedFieldTypeValidator();
+        $single    = (count($recurrenceProps) === 1);
+
+        foreach ($recurrenceProps as $propertyName => $rrule) {
+            $occurrences = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
+            $key         = $propertyName.'_occurrences';
+            if ($single === true) {
+                $key = '_occurrences';
+            }
+
+            $objectData[$key] = $occurrences;
+        }
+
+        return $objectData;
+    }//end enrichRecurrenceOccurrences()
+
+    /**
+     * Resolve the requested number of recurrence occurrences from the request.
+     *
+     * Reads the `recurrenceOccurrences` query parameter (default 5, clamped to
+     * 1..100 by the validator). Falls back to the default when no request is
+     * available (e.g. in unit-test construction without an injected IRequest).
+     *
+     * @return int The requested occurrence count.
+     *
+     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+     */
+    private function resolveOccurrenceCount(): int
+    {
+        if ($this->request === null) {
+            return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+        }
+
+        $raw = $this->request->getParam('recurrenceOccurrences', null);
+        if ($raw === null || is_numeric($raw) === false) {
+            return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+        }
+
+        return (int) $raw;
+    }//end resolveOccurrenceCount()
+
+    /**
+>>>>>>> origin/development
      * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
      *
      * This allows non-RFC 4122 compliant UUIDs like those from GEMMA ArchiMate exports
@@ -270,6 +422,7 @@ class RenderObject
      *
      * @return bool True if the string matches UUID format
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isUuidLike(string $value): bool
@@ -284,6 +437,7 @@ class RenderObject
      *
      * @return ObjectEntity|null The object or null if not found
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getObject(int | string $id): ?ObjectEntity
@@ -318,6 +472,7 @@ class RenderObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function clearCache(): void
@@ -335,6 +490,7 @@ class RenderObject
      *
      * @return array<string, array> Objects indexed by UUID, serialized as arrays
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getObjectsCache(): array
@@ -374,6 +530,7 @@ class RenderObject
      *
      * Caller must not call this when rows already have full file metadata from
      * renderEntities() — this method overwrites with IDs.
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-15
      */
     public function attachLightweightFilesToRows(array &$rows): void
     {
@@ -395,7 +552,15 @@ class RenderObject
 
         foreach ($rows as $index => &$row) {
             $uuid = $uuidByIndex[$index] ?? null;
+<<<<<<< HEAD
             $ids  = ($uuid !== null) ? ($idsByUuid[$uuid] ?? []) : [];
+=======
+            $ids  = [];
+            if ($uuid !== null) {
+                $ids = ($idsByUuid[$uuid] ?? []);
+            }
+
+>>>>>>> origin/development
             self::writeFilesToRow(row: $row, ids: $ids);
         }
 
@@ -541,6 +706,7 @@ class RenderObject
      *
      * @throws \RuntimeException If multiple nodes are found for the object's uuid
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function renderFiles(ObjectEntity $object): ObjectEntity
@@ -632,6 +798,7 @@ class RenderObject
      *
      * @return array List of file tags
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getFileTags(string $fileId): array
@@ -692,6 +859,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File property handling requires multiple type checks
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function renderFileProperties(ObjectEntity $entity): ObjectEntity
@@ -766,6 +934,7 @@ class RenderObject
      * @psalm-return   bool
      * @phpstan-return bool
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isFilePropertyConfig(array $propertyConfig): bool
@@ -811,6 +980,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName)
@@ -874,6 +1044,7 @@ class RenderObject
      *
      * @return string|null The base64 data URI or null if file not found.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getFileAsBase64($fileId): ?string
@@ -919,6 +1090,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Metadata extraction requires multiple conditional checks
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity
@@ -970,6 +1142,7 @@ class RenderObject
      *
      * @return mixed|null The value at the path or null if not found.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getValueFromPath(array $data, string $path)
@@ -1005,6 +1178,7 @@ class RenderObject
      *     modified: int|null, labels: list<string>}|null
      * @phpstan-return array<string, mixed>|null
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getFileObject($fileId): array|null
@@ -1080,6 +1254,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive rendering requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function renderEntity(
@@ -1133,7 +1308,13 @@ class RenderObject
         // Both extend spellings are equivalent (see normalizeMap below).
         if (self::shouldExtendFiles(extend: $_extend) === true) {
             $entity = $this->renderFiles(object: $entity);
+<<<<<<< HEAD
         } else {
+=======
+        }
+
+        if (self::shouldExtendFiles(extend: $_extend) === false) {
+>>>>>>> origin/development
             $entity = $this->setLightweightFileIds(entity: $entity);
         }
 
@@ -1194,11 +1375,21 @@ class RenderObject
                 // These are the properties that need inverse lookups to populate their data.
                 $inversePropertyNames = array_keys($inversedProperties);
 
+<<<<<<< HEAD
                 // Normalize extend to array.
                 if (is_array($_extend) === true) {
                     $extendArray = $_extend;
                 } else {
                     $extendArray = explode(',', $_extend);
+=======
+                // Normalize extend to array. $_extend may already be an array
+                // (CnPageRenderer config-path) or a comma-separated string
+                // (legacy query-string path) — explode only when it's a string,
+                // otherwise PHP 8 throws TypeError on array input.
+                $extendArray = $_extend;
+                if (is_array($_extend) === false) {
+                    $extendArray = explode(',', (string) $_extend);
+>>>>>>> origin/development
                 }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
@@ -1279,7 +1470,11 @@ class RenderObject
                 $serialized = $entity->jsonSerialize();
                 $enriched   = $this->linkedEntityEnricher->enrich($serialized, $linkedExtend);
                 // Update the linked type values on the entity.
+<<<<<<< HEAD
                 foreach ($linkedExtend as $key => $unused) {
+=======
+                foreach (array_keys($linkedExtend) as $key) {
+>>>>>>> origin/development
                     if (isset($enriched[$key]) === true) {
                         $setter = 'set'.ucfirst(ltrim($key, '_'));
                         $entity->$setter($enriched[$key]);
@@ -1300,6 +1495,16 @@ class RenderObject
             $entity->setObject($objectData);
         }
 
+<<<<<<< HEAD
+=======
+        // Enrich `recurrence` properties with upcoming occurrences under `_occurrences`.
+        // The base RRULE string is preserved unchanged for round-trip integrity.
+        if ($readSchema !== null) {
+            $objectData = $this->enrichRecurrenceOccurrences(objectData: $objectData, schema: $readSchema);
+            $entity->setObject($objectData);
+        }
+
+>>>>>>> origin/development
         // Apply property-level RBAC filtering.
         // This filters out properties that the current user is not authorized to read.
         $schema = $readSchema ?? $this->getSchema(id: $entity->getSchema());
@@ -1340,12 +1545,220 @@ class RenderObject
             );
         }
 
+<<<<<<< HEAD
         $entity->setObject($objectData);
 
+=======
+        // Evaluate virtual calculations (`materialise: false`) when the
+        // caller asks for them via _extend. Materialised calcs are
+        // already in $objectData (set by CalculationOnSaveListener).
+        $extendArr = [$_extend];
+        if (is_array($_extend) === true) {
+            $extendArr = $_extend;
+        } else if ($_extend === null) {
+            $extendArr = [];
+        }
+
+        if (in_array('calculations', $extendArr, true) === true) {
+            $objectData = $this->applyVirtualCalculations(
+                entity: $entity,
+                schema: $renderSchema,
+                data: $objectData
+            );
+        }
+
+        $entity->setObject($objectData);
+
+        // Compute the RFC 8141 URN once per render. UrnService resolves
+        // the entity's register/schema references to slugs and builds
+        // the canonical urn:nl-or:{instance}:{register-slug}:{schema-slug}:{uuid}
+        // identifier, which then surfaces in @self.urn via getObjectArray.
+        try {
+            $entity->setUrn($this->urnService->buildForObject($entity));
+        } catch (\Throwable $e) {
+            // URN derivation MUST NOT break rendering; log + skip on failure.
+            $this->logger->debug(
+                sprintf('[RenderObject] URN derivation failed for object %s: %s', (string) $entity->getUuid(), $e->getMessage())
+            );
+        }
+
+        // Per-language translation completeness (Decision 4 from
+        // register-i18n). Compute-on-read against the translations
+        // sidecar; skipped when the schema has no translatable
+        // properties (returns []).
+        try {
+            if ($renderSchema !== null && $entity->getUuid() !== null) {
+                $completeness = $this->translationStatusService->completenessForObject(
+                    (string) $entity->getUuid(),
+                    $renderSchema
+                );
+                if (count($completeness) > 0) {
+                    $entity->setTranslationCompleteness($completeness);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] translation completeness lookup failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }
+
+        // Annotation-driven retention block.
+        // When the schema declares `x-openregister-archival`, compute the
+        // effective retention for this row from the annotation's default +
+        // condition rules and merge it under `retention.annotation` so the
+        // records-management retention surface and the annotation surface
+        // never collide. See add-archival-annotation-support design R3 + D7.
+        $this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
+
+>>>>>>> origin/development
         return $entity;
     }//end renderEntity()
 
     /**
+<<<<<<< HEAD
+=======
+     * Compute + attach the annotation-driven `_retention.annotation` block.
+     *
+     * Stateless w.r.t. the row's persisted columns; pulls the annotation off
+     * the schema's `configuration` and asks `RetentionEvaluator` to produce
+     * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
+     * current row + `_created` timestamp.
+     *
+     * Failures are logged + swallowed: a malformed annotation must NEVER
+     * break object rendering.
+     *
+     * @param ObjectEntity $entity The entity being rendered.
+     * @param Schema|null  $schema The resolved schema (may be null).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-6
+     */
+    private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void
+    {
+        if ($schema === null) {
+            return;
+        }
+
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-archival'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        try {
+            $createdAt = $entity->getCreated();
+            if ($createdAt === null) {
+                return;
+            }
+
+            $objectData = $entity->getObject();
+            if (is_array($objectData) === false) {
+                $objectData = [];
+            }
+
+            $row       = $objectData;
+            $evaluator = new RetentionEvaluator(logger: $this->logger);
+            $annotationBlock = $evaluator->evaluate(
+                annotation: $annotation,
+                row: $row,
+                createdAt: $createdAt
+            );
+
+            $existing = ($entity->getRetention() ?? []);
+            $existing['annotation'] = $annotationBlock;
+            $entity->setRetention($existing);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] archival retention compute failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }//end try
+    }//end applyArchivalRetentionBlock()
+
+    /**
+     * Apply virtual (materialise:false) calculations declared on the
+     * schema to the given data array. Materialised calculations are
+     * persisted on save and skipped here.
+     *
+     * @param ObjectEntity         $entity The object being rendered (used for @self.* refs).
+     * @param Schema|null          $schema The schema definition (may be null).
+     * @param array<string, mixed> $data   The current rendered data array.
+     *
+     * @return array<string, mixed>
+     */
+    private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array
+    {
+        if ($schema === null) {
+            return $data;
+        }
+
+        $config = ($schema->getConfiguration() ?? []);
+        $calcs  = ($config['x-openregister-calculations'] ?? null);
+        if (is_array($calcs) === false || count($calcs) === 0) {
+            return $data;
+        }
+
+        $created = $entity->getCreated();
+        $updated = $entity->getUpdated();
+
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(\DateTimeInterface::ATOM);
+        }
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
+        }
+
+        $payload          = $data;
+        $payload['@self'] = [
+            'id'       => $entity->getUuid(),
+            'uuid'     => $entity->getUuid(),
+            'register' => $entity->getRegister(),
+            'schema'   => $entity->getSchema(),
+            'owner'    => $entity->getOwner(),
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
+        ];
+
+        foreach ($calcs as $name => $spec) {
+            if (is_array($spec) === false) {
+                continue;
+            }
+
+            // Skip materialised — already in $data from save-time listener.
+            if (($spec['materialise'] ?? false) === true) {
+                continue;
+            }
+
+            try {
+                $value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
+                if ($value instanceof \DateTimeInterface) {
+                    $value = $value->format(\DateTimeInterface::ATOM);
+                }
+
+                $data[(string) $name] = $value;
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string) $name, $e->getMessage())
+                );
+            }
+        }//end foreach
+
+        return $data;
+    }//end applyVirtualCalculations()
+
+    /**
+>>>>>>> origin/development
      * Handle extends containing a wildcard ($)
      *
      * @param array $objectData The data to extend
@@ -1354,6 +1767,7 @@ class RenderObject
      *
      * @return array
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array
@@ -1421,6 +1835,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dot notation handling requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleExtendDot(
@@ -1617,6 +2032,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extendObject(
@@ -1695,6 +2111,7 @@ class RenderObject
      *
      * @return array Array of UUIDs to preload
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function collectUuidsForExtend(array $objectData, array $extend): array
@@ -1756,6 +2173,7 @@ class RenderObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function preloadInverseRelationships(array $entities, array $extend): void
@@ -1825,6 +2243,7 @@ class RenderObject
      *
      * @return array Filtered array of inverse properties that are being extended
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function filterExtendedInverseProperties(array $inversedProperties, array $extend): array
@@ -1846,6 +2265,7 @@ class RenderObject
      *
      * @return array Array of UUID strings
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function collectEntityUuids(array $entities): array
@@ -1869,6 +2289,7 @@ class RenderObject
      *
      * @return array|null Array with keys 'targetSchemaRef' and 'inversedByFields', or null if invalid
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extractInverseConfig(array $propConfig): ?array
@@ -1883,10 +2304,16 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
+<<<<<<< HEAD
         if (is_array($inversedByField) === true) {
             $inversedByFields = $inversedByField;
         } else {
             $inversedByFields = [$inversedByField];
+=======
+        $inversedByFields = [$inversedByField];
+        if (is_array($inversedByField) === true) {
+            $inversedByFields = $inversedByField;
+>>>>>>> origin/development
         }
 
         return [
@@ -1908,6 +2335,7 @@ class RenderObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function preloadSingleInverseProperty(
@@ -1994,6 +2422,7 @@ class RenderObject
      *
      * @return array Array of ObjectEntity instances that reference the given UUIDs
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function batchLoadReferencingObjects(
@@ -2014,10 +2443,16 @@ class RenderObject
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
+<<<<<<< HEAD
         if (count($inversedByFields) > 1) {
             $additionalFields = array_slice($inversedByFields, 1);
         } else {
             $additionalFields = [];
+=======
+        $additionalFields = [];
+        if (count($inversedByFields) > 1) {
+            $additionalFields = array_slice($inversedByFields, 1);
+>>>>>>> origin/development
         }
 
         $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -2042,6 +2477,7 @@ class RenderObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function initializeInverseCacheEntries(array $entityUuids, string $propName): void
@@ -2067,6 +2503,7 @@ class RenderObject
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function indexReferencingObjects(
@@ -2114,6 +2551,7 @@ class RenderObject
      *
      * @return array Array of UUID strings (may contain nulls which should be filtered by caller)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveReferencedUuids(array $refData, string $field): array
@@ -2142,6 +2580,7 @@ class RenderObject
      *
      * @return array Array of property names that have inversedBy configurations
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getInversedProperties(Schema $schema): array
@@ -2185,6 +2624,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleInversedProperties(
@@ -2329,10 +2769,16 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
+<<<<<<< HEAD
             if (is_array($inversedByProperty) === true) {
                 $inversedByProperties = $inversedByProperty;
             } else {
                 $inversedByProperties = [$inversedByProperty];
+=======
+            $inversedByProperties = [$inversedByProperty];
+            if (is_array($inversedByProperty) === true) {
+                $inversedByProperties = $inversedByProperty;
+>>>>>>> origin/development
             }
 
             // Resolve schema reference to actual schema ID.
@@ -2350,11 +2796,20 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
+<<<<<<< HEAD
                 if ($isArray === true) {
                     $objectData[$targetProperty] = [];
                 } else {
                     $objectData[$targetProperty] = null;
                 }
+=======
+                $defaultValue = null;
+                if ($isArray === true) {
+                    $defaultValue = [];
+                }
+
+                $objectData[$targetProperty] = $defaultValue;
+>>>>>>> origin/development
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.
@@ -2446,6 +2901,7 @@ class RenderObject
      *
      * @return array The updated object data with inversed properties populated
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleInversedPropertiesFromCache(
@@ -2507,10 +2963,16 @@ class RenderObject
             }
 
             if ($isArray === false) {
+<<<<<<< HEAD
                 if (empty($renderedObjects) === false) {
                     $objectData[$targetProperty] = end($renderedObjects);
                 } else {
                     $objectData[$targetProperty] = null;
+=======
+                $objectData[$targetProperty] = null;
+                if (empty($renderedObjects) === false) {
+                    $objectData[$targetProperty] = end($renderedObjects);
+>>>>>>> origin/development
                 }
             }
         }//end foreach
@@ -2525,6 +2987,7 @@ class RenderObject
      *
      * @return string The resolved schema ID
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveSchemaReference(string $schemaRef): string
@@ -2587,6 +3050,7 @@ class RenderObject
      *
      * @return string The reference string without query parameters
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function removeQueryParameters(string $reference): string
@@ -2619,6 +3083,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function renderEntities(

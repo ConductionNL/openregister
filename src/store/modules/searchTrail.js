@@ -1,4 +1,5 @@
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
  */
 /* eslint-disable no-console */
@@ -74,6 +75,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set search trail list
 		 * @param {Array} searchTrailList - The search trail list to set
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setSearchTrailList(searchTrailList) {
 			// Ensure we have a clean array without reactive references
@@ -84,6 +87,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set search trail item
 		 * @param {object} searchTrailItem - The search trail item to set
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setSearchTrailItem(searchTrailItem) {
 			this.searchTrailItem = searchTrailItem
@@ -93,6 +98,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set search trail pagination
 		 * @param {object} pagination - The pagination object
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setSearchTrailPagination(pagination) {
 			this.searchTrailPagination = {
@@ -105,6 +112,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set statistics
 		 * @param {object} stats - The statistics object
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setStatistics(stats) {
 			this.statistics = {
@@ -130,6 +139,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set popular terms
 		 * @param {object} response - The popular terms response object
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setPopularTerms(response) {
 			// Handle response structure from API
@@ -141,6 +152,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set activity data
 		 * @param {object} activityResponse - The activity data response
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setActivity(activityResponse) {
 			// Handle response structure from API
@@ -166,6 +179,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set register schema statistics
 		 * @param {object} response - The register schema statistics response
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setRegisterSchemaStats(response) {
 			// Handle response structure from API
@@ -177,6 +192,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set user agent statistics
 		 * @param {object} response - The user agent statistics response
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setUserAgentStats(response) {
 			// Handle response structure from API
@@ -188,6 +205,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set search trail filters
 		 * @param {object} filters - The filters to set
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setSearchTrailFilters(filters) {
 			this.searchTrailFilters = filters
@@ -197,6 +216,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Set search trail search
 		 * @param {string} search - The search term
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		setSearchTrailSearch(search) {
 			this.searchTrailSearch = search
@@ -208,6 +229,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async fetchSearchTrails(options = {}) {
@@ -285,6 +307,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Fetch search trail statistics
 		 * @return {Promise<object>} The statistics data
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async fetchStatistics() {
 			this.statisticsLoading = true
@@ -321,6 +345,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * Fetch popular search terms
 		 * @param {number} limit - Number of terms to fetch
 		 * @return {Promise<Array>} The popular terms data
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async fetchPopularTerms(limit = 10) {
 			this.popularTermsLoading = true
@@ -357,6 +383,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * Fetch search activity data
 		 * @param {string} period - The period to fetch (hourly, daily, weekly, monthly)
 		 * @return {Promise<Array>} The activity data
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async fetchActivity(period = 'daily') {
 			this.activityLoading = true
@@ -392,6 +420,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Fetch register schema statistics
 		 * @return {Promise<Array>} The register schema statistics
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async fetchRegisterSchemaStats() {
 			try {
@@ -423,6 +453,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Fetch user agent statistics
 		 * @return {Promise<Array>} The user agent statistics
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async fetchUserAgentStats() {
 			try {
@@ -456,6 +488,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @param {number} days - Number of days to keep
 		 * @return {Promise<object>} The response data
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async cleanupSearchTrails(days = 30) {
@@ -488,6 +521,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Refresh search trail list with current filters
 		 * @return {Promise} The refresh promise
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async refreshSearchTrailList() {
 			return this.fetchSearchTrails({
@@ -499,6 +534,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Get search trail statistics
 		 * @return {Promise<object>} The statistics
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async getStatistics() {
 			try {
@@ -528,6 +565,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * Get popular search terms
 		 * @param {number} limit - Number of terms to get
 		 * @return {Promise<Array>} The popular terms
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async getPopularTerms(limit = 10) {
 			try {
@@ -543,6 +582,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * Get search activity data
 		 * @param {string} period - The period to get data for
 		 * @return {Promise<Array>} The activity data
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async getActivity(period = 'daily') {
 			try {
@@ -557,6 +598,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Get register schema usage statistics
 		 * @return {Promise<Array>} The register schema statistics
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async getRegisterSchemaStats() {
 			try {
@@ -571,6 +614,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		/**
 		 * Get user agent statistics
 		 * @return {Promise<Array>} The user agent statistics
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async getUserAgentStats() {
 			try {
@@ -584,6 +629,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Clear all search trail store data
+		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		clearSearchTrailStore() {
 			this.searchTrailList = []

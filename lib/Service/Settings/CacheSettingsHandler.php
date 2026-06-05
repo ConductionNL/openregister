@@ -5,6 +5,12 @@
  *
  * This file contains the handler class for managing cache operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -89,6 +95,25 @@ class CacheSettingsHandler
     private ?IAppContainer $container = null;
 
     /**
+<<<<<<< HEAD
+=======
+     * In-process cache for object cache stats with a short TTL to avoid
+     * calling CacheHandler on every request. Instance-scoped rather than
+     * method-static so test isolation is preserved.
+     *
+     * @var array|null
+     */
+    private ?array $objectStatsCache = null;
+
+    /**
+     * Unix timestamp of the last refresh of $objectStatsCache.
+     *
+     * @var integer
+     */
+    private int $objectStatsCacheTimestamp = 0;
+
+    /**
+>>>>>>> origin/development
      * Constructor for CacheSettingsHandler
      *
      * @param ICacheFactory      $cacheFactory       Cache factory.
@@ -124,6 +149,7 @@ class CacheSettingsHandler
      * @return array Cache stats with overview, services, names, distributed, performance, and lastUpdated.
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex statistics aggregation requires comprehensive data structure
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
      */
     public function getCacheStats(): array
     {
@@ -223,12 +249,18 @@ class CacheSettingsHandler
      */
     private function getCachedObjectStats(): array
     {
+<<<<<<< HEAD
         // Use a simple in-memory cache with 30-second TTL to avoid expensive CacheHandler calls.
         static $cachedStats = null;
         static $lastUpdate  = 0;
 
         $now = time();
         if ($cachedStats === null || ($now - $lastUpdate) > 30) {
+=======
+        // In-memory cache with 30-second TTL to avoid expensive CacheHandler calls.
+        $now = time();
+        if ($this->objectStatsCache === null || ($now - $this->objectStatsCacheTimestamp) > 30) {
+>>>>>>> origin/development
             try {
                 $objectCacheService = $this->objectCacheService;
                 if ($objectCacheService === null && $this->container !== null) {
@@ -243,10 +275,17 @@ class CacheSettingsHandler
                     throw new Exception('CacheHandler not available');
                 }
 
+<<<<<<< HEAD
                 $cachedStats = $objectCacheService->getStats();
             } catch (Exception $e) {
                 // If no object cache stats available, use defaults.
                 $cachedStats = [
+=======
+                $this->objectStatsCache = $objectCacheService->getStats();
+            } catch (Exception $e) {
+                // If no object cache stats available, use defaults.
+                $this->objectStatsCache = [
+>>>>>>> origin/development
                     'entries'         => 0,
                     'hits'            => 0,
                     'requests'        => 0,
@@ -259,10 +298,17 @@ class CacheSettingsHandler
                 ];
             }//end try
 
+<<<<<<< HEAD
             $lastUpdate = $now;
         }//end if
 
         return $cachedStats;
+=======
+            $this->objectStatsCacheTimestamp = $now;
+        }//end if
+
+        return $this->objectStatsCache;
+>>>>>>> origin/development
     }//end getCachedObjectStats()
 
      /**
@@ -389,6 +435,7 @@ class CacheSettingsHandler
       *
       * @SuppressWarnings(PHPMD.UnusedFormalParameter)
       * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple cache types require switch-based routing
+      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
       */
     public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
@@ -576,6 +623,7 @@ class CacheSettingsHandler
       *
       * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache warmup with fallback logic requires multiple branches
       * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
+      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
       */
     public function warmupNamesCache(): array
     {

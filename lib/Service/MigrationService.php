@@ -2,6 +2,12 @@
 /**
  * MigrationService for OpenRegister.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -57,6 +63,11 @@ class MigrationService
      * @return array{register: Register, schema: Schema}
      *
      * @throws \Exception If register or schema not found.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Two-line mapper lookup resolving register/schema by id or slug; no orchestration.
+>>>>>>> origin/development
      */
     public function resolveRegisterAndSchema(string|int $registerId, string|int $schemaId): array
     {
@@ -75,6 +86,11 @@ class MigrationService
      * @param Schema   $schema   The schema.
      *
      * @return array Storage status with magic table counts.
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Reporting shim: assembles register/schema/magic-table-count read into a response array; no business rule.
+>>>>>>> origin/development
      */
     public function getStorageStatus(Register $register, Schema $schema): array
     {
@@ -125,6 +141,11 @@ class MigrationService
      * @return array Migration report indicating blob storage is no longer available.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Deprecated no-op stub; blob storage retired, returns a static report pointing to BlobMigrationJob.
+>>>>>>> origin/development
      */
     public function migrateToMagicTable(
         Register $register,
@@ -158,6 +179,11 @@ class MigrationService
      * @return array Migration report indicating blob storage is no longer available.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Deprecated no-op stub; reverse migration to retired blob storage is no longer supported.
+>>>>>>> origin/development
      */
     public function migrateToBlobStorage(
         Register $register,

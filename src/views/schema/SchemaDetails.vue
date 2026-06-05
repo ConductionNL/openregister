@@ -79,6 +79,15 @@ import formatBytes from '../../services/formatBytes.js'
 					<CalendarMonth :size="16" />
 					{{ t('openregister', 'Calendar') }}
 				</button>
+<<<<<<< HEAD
+=======
+				<button
+					:class="['tabButton', { active: activeTab === 'workflows' }]"
+					@click="activeTab = 'workflows'">
+					<Cog :size="16" />
+					{{ t('openregister', 'Workflows') }}
+				</button>
+>>>>>>> origin/development
 			</div>
 
 			<!-- Calendar Provider Tab -->
@@ -86,6 +95,14 @@ import formatBytes from '../../services/formatBytes.js'
 				v-if="activeTab === 'calendar'"
 				:schema="schemaStore.schemaItem" />
 
+<<<<<<< HEAD
+=======
+			<!-- Workflows Tab — execution history, scheduled workflows, approval chains -->
+			<SchemaWorkflowTab
+				v-if="activeTab === 'workflows'"
+				:schema="schemaStore.schemaItem" />
+
+>>>>>>> origin/development
 			<!-- Dashboard Tab (original content) -->
 			<div v-show="activeTab === 'dashboard'" class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
@@ -189,7 +206,13 @@ import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
 import ChartBox from 'vue-material-design-icons/ChartBox.vue'
+<<<<<<< HEAD
 import CalendarProviderTab from './CalendarProviderTab.vue'
+=======
+import Cog from 'vue-material-design-icons/Cog.vue'
+import CalendarProviderTab from './CalendarProviderTab.vue'
+import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
+>>>>>>> origin/development
 
 export default {
 	name: 'SchemaDetails',
@@ -209,7 +232,13 @@ export default {
 		AlertCircle,
 		CalendarMonth,
 		ChartBox,
+<<<<<<< HEAD
 		CalendarProviderTab,
+=======
+		Cog,
+		CalendarProviderTab,
+		SchemaWorkflowTab,
+>>>>>>> origin/development
 	},
 	data() {
 		return {
@@ -222,6 +251,7 @@ export default {
 	computed: {
 		/**
 		 * Chart options for the Audit Trail Actions chart
+		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
@@ -244,6 +274,7 @@ export default {
 		},
 		/**
 		 * Chart options for the Objects by Register chart
+		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
 		registerChartOptions() {
@@ -262,6 +293,7 @@ export default {
 		},
 		/**
 		 * Chart options for the Objects by Size Distribution chart
+		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
 		sizeChartOptions() {
@@ -283,6 +315,12 @@ export default {
 			}
 		},
 	},
+	/**
+	 * Lifecycle hook: load chart data and schema stats on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		// Fetch dashboard data if not already loaded
 		if (!dashboardStore.chartData || Object.keys(dashboardStore.chartData).length === 0) {
@@ -297,6 +335,7 @@ export default {
 	methods: {
 		/**
 		 * Load schema statistics from the dedicated stats endpoint
+		 * @spec exclude UI plumbing — delegates to the schema store stats fetch
 		 * @return {Promise<void>}
 		 */
 		async loadSchemaStats() {
@@ -319,6 +358,7 @@ export default {
 		/**
 		 * Set the active property for editing
 		 * @param {string|null} key - The key to process
+		 * @spec exclude UI plumbing — toggles active-property selection state
 		 * @return {void}
 		 */
 		setActiveProperty(key) {

@@ -325,6 +325,7 @@ class LlmSettingsControllerBranchTest extends TestCase
 
     public function testGetVectorStatsSuccess(): void
     {
+<<<<<<< HEAD
         $this->vectorizationService->method('getVectorStats')
             ->willReturn(['total' => 100, 'models' => ['nomic']]);
 
@@ -333,10 +334,14 @@ class LlmSettingsControllerBranchTest extends TestCase
 
         $this->assertTrue($data['success']);
         $this->assertSame(100, $data['stats']['total']);
+=======
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+>>>>>>> origin/development
     }
 
     public function testGetVectorStatsException(): void
     {
+<<<<<<< HEAD
         $this->vectorizationService->method('getVectorStats')
             ->willThrowException(new \Exception('Stats error'));
 
@@ -345,5 +350,8 @@ class LlmSettingsControllerBranchTest extends TestCase
 
         $this->assertFalse($data['success']);
         $this->assertSame(500, $response->getStatus());
+=======
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
+>>>>>>> origin/development
     }
 }

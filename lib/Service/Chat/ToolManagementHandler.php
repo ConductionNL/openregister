@@ -5,6 +5,12 @@
  *
  * Handler for LLM tool/function calling management.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -15,6 +21,7 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -72,6 +79,7 @@ class ToolManagementHandler
      * @param LoggerInterface $logger       Logger.
      *
      * @return void
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         AgentMapper $agentMapper,
@@ -95,6 +103,18 @@ class ToolManagementHandler
      * @return array Array of ToolInterface instances
      *
      * @psalm-return list<ToolInterface>
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) getAgentTools() iterates tool ids, tries multiple
+     * candidate key formats (raw / prefixed) per id, and logs both found and not-found results — each
+     * branch is a required backward-compatibility guard for agent records from different schema eras.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Three independent early-returns (null agent, empty
+     * enabledToolIds, filtered-to-empty selection) plus the two-candidate loop expand the NPath count
+     * without adding logical complexity.
+>>>>>>> origin/development
      */
     public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
@@ -125,6 +145,7 @@ class ToolManagementHandler
         $tools = [];
 
         foreach ($enabledToolIds as $toolId) {
+<<<<<<< HEAD
             // Support both old format (register, schema, objects) and new format (app.tool).
             $fullToolId = 'openregister.'.$toolId;
             if (strpos($toolId, '.') !== false) {
@@ -132,6 +153,31 @@ class ToolManagementHandler
             }
 
             $tool = $this->toolRegistry->getTool($fullToolId);
+=======
+            // Try three formats in turn so agent records from different
+            // eras keep working:
+            // 1. The raw id as stored ("openbuild", "openregister.register")
+            // 2. The legacy openregister-prefixed form ("openregister.objects"
+            // when the agent stores just "objects")
+            // 3. An "openbuild" -> "openbuild.{x}" fallback handled by
+            // the McpProviderBridge — that bridge exposes every
+            // function under one appId-level registration.
+            $candidates = [$toolId];
+            if (strpos($toolId, '.') === false) {
+                $candidates[] = 'openregister.'.$toolId;
+            }
+
+            $tool       = null;
+            $fullToolId = $toolId;
+            foreach ($candidates as $candidate) {
+                $tool = $this->toolRegistry->getTool($candidate);
+                if ($tool !== null) {
+                    $fullToolId = $candidate;
+                    break;
+                }
+            }
+
+>>>>>>> origin/development
             if ($tool !== null) {
                 $tool->setAgent($agent);
                 $tools[] = $tool;
@@ -170,6 +216,7 @@ class ToolManagementHandler
      * @return array Array of function definitions for OpenAI
      *
      * @psalm-return list<array>
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function convertToolsToFunctions(array $tools): array
     {
@@ -199,6 +246,7 @@ class ToolManagementHandler
      *
      * @psalm-return list<FunctionInfo>
      *
+     * @spec openspec/changes/retrofit-2026-05-24-chat-ai/tasks.md#task-1
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types
      */

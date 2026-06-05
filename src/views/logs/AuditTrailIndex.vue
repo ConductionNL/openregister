@@ -200,6 +200,7 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
  */
 import {
@@ -255,6 +256,7 @@ export default {
 	},
 	computed: {
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		hasActiveFilters() {
@@ -265,6 +267,7 @@ export default {
 			)
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		paginatedAuditTrails() {
@@ -277,12 +280,14 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		allSelected() {
 			return this.paginatedAuditTrails.length > 0 && this.paginatedAuditTrails.every(auditTrail => this.selectedAuditTrails.includes(auditTrail.id))
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		someSelected() {
@@ -292,6 +297,7 @@ export default {
 	watch: {
 		paginatedAuditTrails: {
 			/**
+			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 			 */
 			handler() {
@@ -302,6 +308,12 @@ export default {
 			deep: false,
 		},
 	},
+	/**
+	 * Lifecycle hook: load audit trails and subscribe to sidebar events on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch and event wiring
+	 * @return {void}
+	 */
 	mounted() {
 		// Initialize with safe defaults
 		try {
@@ -320,6 +332,12 @@ export default {
 			this.updateCounts()
 		})
 	},
+	/**
+	 * Lifecycle hook: unsubscribe from sidebar events before teardown.
+	 *
+	 * @spec exclude UI plumbing — event-listener teardown
+	 * @return {void}
+	 */
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filters-changed')
 		this.$root.$off('audit-trail-export')
@@ -330,6 +348,7 @@ export default {
 		 * Load audit trails from API
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async loadAuditTrails() {
@@ -345,6 +364,7 @@ export default {
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		handleFiltersChanged(filters) {
@@ -357,6 +377,7 @@ export default {
 		 * @param {object} options - Export options from sidebar
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		handleExport(options) {
@@ -367,6 +388,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail entry to view
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		viewDetails(auditTrail) {
@@ -380,6 +402,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail entry with changes
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		viewChanges(auditTrail) {
@@ -392,6 +415,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail entry to copy
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async copyData(auditTrail) {
@@ -441,6 +465,7 @@ export default {
 		 * Export audit trails with current filters
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		exportAuditTrails() {
@@ -451,6 +476,7 @@ export default {
 		 * @param {object} options - Export options
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async exportFilteredAuditTrails(options) {
@@ -500,6 +526,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail to delete
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		deleteAuditTrail(auditTrail) {
@@ -512,6 +539,7 @@ export default {
 		 * Refresh audit trails list
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async refreshAuditTrails() {
@@ -521,6 +549,7 @@ export default {
 		 * Update counts for sidebar
 		 * @return {void}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		updateCounts() {
@@ -537,6 +566,7 @@ export default {
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async onPageChanged(page) {
@@ -556,6 +586,7 @@ export default {
 		 * @param {number} pageSize - The new page size
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async onPageSizeChanged(pageSize) {
@@ -575,6 +606,7 @@ export default {
 		 * @param {object} auditTrail - The audit trail item
 		 * @return {boolean} Whether the audit trail has changes
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		hasChanges(auditTrail) {
@@ -597,6 +629,7 @@ export default {
 		},
 		formatBytes,
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		toggleSelectAll(checked) {
@@ -607,6 +640,7 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		toggleAuditTrailSelection(id, checked) {
@@ -620,6 +654,7 @@ export default {
 		 * Delete selected audit trails using bulk operation
 		 * @return {Promise<void>}
 		 *
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async bulkDeleteAuditTrails() {

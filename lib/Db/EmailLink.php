@@ -3,6 +3,12 @@
 /**
  * EmailLink entity for linking Nextcloud Mail messages to OpenRegister objects.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -30,6 +36,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setObjectUuid(string $objectUuid)
  * @method int getRegisterId()
  * @method void setRegisterId(int $registerId)
+<<<<<<< HEAD
+=======
+ * @method int|null getSchemaId()
+ * @method void setSchemaId(?int $schemaId)
+>>>>>>> origin/development
  * @method int getMailAccountId()
  * @method void setMailAccountId(int $mailAccountId)
  * @method int getMailMessageId()
@@ -40,8 +51,15 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSubject(?string $subject)
  * @method string|null getSender()
  * @method void setSender(?string $sender)
+<<<<<<< HEAD
  * @method DateTime|null getDate()
  * @method void setMailDate(?DateTime $mailDate)
+=======
+ * @method DateTime|null getMailDate()
+ * @method void setMailDate(?DateTime $mailDate)
+ * @method string|null getMetadata()
+ * @method void setMetadata(?string $metadata)
+>>>>>>> origin/development
  * @method string getLinkedBy()
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
@@ -67,6 +85,16 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?int $registerId = null;
 
     /**
+<<<<<<< HEAD
+=======
+     * The schema id (nullable).
+     *
+     * @var integer|null
+     */
+    protected ?int $schemaId = null;
+
+    /**
+>>>>>>> origin/development
      * The mail account id.
      *
      * @var integer|null
@@ -109,6 +137,16 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?DateTime $mailDate = null;
 
     /**
+<<<<<<< HEAD
+=======
+     * Free-form metadata (JSON-encoded string) for future per-row hints.
+     *
+     * @var string|null
+     */
+    protected ?string $metadata = null;
+
+    /**
+>>>>>>> origin/development
      * The linked by.
      *
      * @var string|null
@@ -129,12 +167,20 @@ class EmailLink extends Entity implements JsonSerializable
     {
         $this->addType(fieldName: 'objectUuid', type: 'string');
         $this->addType(fieldName: 'registerId', type: 'integer');
+<<<<<<< HEAD
+=======
+        $this->addType(fieldName: 'schemaId', type: 'integer');
+>>>>>>> origin/development
         $this->addType(fieldName: 'mailAccountId', type: 'integer');
         $this->addType(fieldName: 'mailMessageId', type: 'integer');
         $this->addType(fieldName: 'mailMessageUid', type: 'string');
         $this->addType(fieldName: 'subject', type: 'string');
         $this->addType(fieldName: 'sender', type: 'string');
         $this->addType(fieldName: 'mailDate', type: 'datetime');
+<<<<<<< HEAD
+=======
+        $this->addType(fieldName: 'metadata', type: 'string');
+>>>>>>> origin/development
         $this->addType(fieldName: 'linkedBy', type: 'string');
         $this->addType(fieldName: 'linkedAt', type: 'datetime');
     }//end __construct()
@@ -150,12 +196,20 @@ class EmailLink extends Entity implements JsonSerializable
             'id'             => $this->id,
             'objectUuid'     => $this->objectUuid,
             'registerId'     => $this->registerId,
+<<<<<<< HEAD
+=======
+            'schemaId'       => $this->schemaId,
+>>>>>>> origin/development
             'mailAccountId'  => $this->mailAccountId,
             'mailMessageId'  => $this->mailMessageId,
             'mailMessageUid' => $this->mailMessageUid,
             'subject'        => $this->subject,
             'sender'         => $this->sender,
             'mailDate'       => $this->mailDate?->format(DateTime::ATOM),
+<<<<<<< HEAD
+=======
+            'metadata'       => $this->metadata,
+>>>>>>> origin/development
             'linkedBy'       => $this->linkedBy,
             'linkedAt'       => $this->linkedAt?->format(DateTime::ATOM),
         ];

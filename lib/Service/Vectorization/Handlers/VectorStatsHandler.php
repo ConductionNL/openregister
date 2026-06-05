@@ -5,6 +5,12 @@
  *
  * Handles gathering statistics about stored vectors from database and Solr.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  *
@@ -64,6 +70,7 @@ class VectorStatsHandler
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int,
      *     source?: 'solr'|'solr_error'|'solr_unavailable'}
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     public function getStats(string $backend='php'): array
     {
@@ -94,6 +101,7 @@ class VectorStatsHandler
      *
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int>, object_vectors: int, file_vectors: int}
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     private function getStatsFromDatabase(): array
     {
@@ -154,6 +162,7 @@ class VectorStatsHandler
      * }
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-collection stats gathering requires multiple conditions
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     private function getStatsFromSolr(): array
     {
@@ -262,6 +271,7 @@ class VectorStatsHandler
      * @return array{count: int, by_model: array} Count and breakdown by model
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Facet processing requires multiple conditions
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     private function countVectorsInCollection(
         string $collection,

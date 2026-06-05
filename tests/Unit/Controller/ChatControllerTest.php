@@ -15,7 +15,10 @@ use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\AppFramework\Http\TemplateResponse;
+=======
+>>>>>>> origin/development
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
@@ -73,12 +76,15 @@ class ChatControllerTest extends TestCase
         );
     }
 
+<<<<<<< HEAD
     public function testPage(): void
     {
         $result = $this->controller->page();
         $this->assertInstanceOf(TemplateResponse::class, $result);
     }
 
+=======
+>>>>>>> origin/development
     public function testSendMessageEmptyMessage(): void
     {
         $this->request->method('getParam')->willReturn('');

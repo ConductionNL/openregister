@@ -6,6 +6,12 @@
  * Periodic background job that scans for objects eligible for destruction
  * and generates destruction lists for archivist review.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -17,6 +23,9 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-63
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
@@ -65,6 +74,7 @@ class DestructionCheckJob extends TimedJob
      * @param ITimeFactory  $time Time factory for parent class
      * @param IDBConnection $db   Database connection
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-8
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
      */
     public function __construct(
@@ -94,6 +104,9 @@ class DestructionCheckJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-24-archival-destruction-workflow/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
      * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
@@ -116,7 +129,14 @@ class DestructionCheckJob extends TimedJob
             }
 
             // Step 1: Send pre-destruction notifications.
+<<<<<<< HEAD
             $this->sendPreDestructionNotifications(retentionService: $retentionService, settings: $settings, logger: $logger);
+=======
+            $this->sendPreDestructionNotifications(
+                settings: $settings,
+                logger: $logger
+            );
+>>>>>>> origin/development
 
             // Step 2: Find eligible objects and create destruction list.
             $excludeUuids = $retentionService->getObjectsOnPendingDestructionLists();
@@ -164,18 +184,31 @@ class DestructionCheckJob extends TimedJob
     /**
      * Send pre-destruction notifications for approaching objects.
      *
+<<<<<<< HEAD
      * @param RetentionService $retentionService The retention service
      * @param array            $settings         Archival settings
      * @param LoggerInterface  $logger           Logger
+=======
+     * @param array           $settings Archival settings
+     * @param LoggerInterface $logger   Logger
+>>>>>>> origin/development
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
      */
     private function sendPreDestructionNotifications(
         RetentionService $retentionService,
+=======
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-63
+     */
+    private function sendPreDestructionNotifications(
+>>>>>>> origin/development
         array $settings,
         LoggerInterface $logger
     ): void {
@@ -228,7 +261,14 @@ class DestructionCheckJob extends TimedJob
                     continue;
                 }
 
+<<<<<<< HEAD
                 $subject = $nominatie === 'bewaren' ? 'Object requires e-Depot transfer' : 'Object approaching destruction date';
+=======
+                $subject = 'Object approaching destruction date';
+                if ($nominatie === 'bewaren') {
+                    $subject = 'Object requires e-Depot transfer';
+                }
+>>>>>>> origin/development
 
                 $this->sendObjectNotification(
                     uuid: $uuid,
@@ -264,6 +304,8 @@ class DestructionCheckJob extends TimedJob
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-24-archival-destruction-workflow/tasks.md#task-1
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
      * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
      */
@@ -315,6 +357,7 @@ class DestructionCheckJob extends TimedJob
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     private function sendReviewNotification(

@@ -75,7 +75,12 @@ class ExportServiceTest extends TestCase
             $this->groupManager,
             $this->objectService,
             $this->cacheHandler,
+<<<<<<< HEAD
             $this->propertyRbacHandler
+=======
+            $this->propertyRbacHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class)
+>>>>>>> origin/development
         );
     }
 

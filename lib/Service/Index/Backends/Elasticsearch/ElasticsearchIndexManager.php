@@ -5,6 +5,12 @@
  *
  * Manages Elasticsearch indices.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Elasticsearch
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -68,6 +74,11 @@ class ElasticsearchIndexManager
      * @param string $indexName The index name to check.
      *
      * @return bool True if index exists
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — GET index, no error means exists
+>>>>>>> origin/development
      */
     public function indexExists(string $indexName): bool
     {
@@ -88,6 +99,11 @@ class ElasticsearchIndexManager
      * @param array  $mapping   Index mapping configuration (default: empty array).
      *
      * @return bool True on success
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — PUTs index settings/mappings
+>>>>>>> origin/development
      */
     public function createIndex(string $indexName, array $mapping=[]): bool
     {
@@ -141,6 +157,11 @@ class ElasticsearchIndexManager
      * @param string $indexName The index name to delete.
      *
      * @return bool True on success
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — DELETEs the index
+>>>>>>> origin/development
      */
     public function deleteIndex(string $indexName): bool
     {
@@ -182,6 +203,11 @@ class ElasticsearchIndexManager
      * @param string $indexName The index name to ensure exists.
      *
      * @return bool True on success
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin helper — checks indexExists then createIndex
+>>>>>>> origin/development
      */
     public function ensureIndex(string $indexName): bool
     {
@@ -216,6 +242,11 @@ class ElasticsearchIndexManager
      * @param string $indexName Index name
      *
      * @return array Index statistics
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — GETs /_stats
+>>>>>>> origin/development
      */
     public function getIndexStats(string $indexName): array
     {
@@ -242,6 +273,11 @@ class ElasticsearchIndexManager
      * @param string $indexName Index name
      *
      * @return bool True on success
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — POSTs /_refresh
+>>>>>>> origin/development
      */
     public function refreshIndex(string $indexName): bool
     {

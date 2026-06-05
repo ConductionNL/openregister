@@ -3,11 +3,22 @@
 /**
  * Mapper for deck link entities.
  *
+<<<<<<< HEAD
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+>>>>>>> origin/development
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
@@ -17,6 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+<<<<<<< HEAD
+=======
+use OCP\AppFramework\Db\DoesNotExistException;
+>>>>>>> origin/development
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -92,7 +107,11 @@ class DeckLinkMapper extends QBMapper
 
         try {
             return $this->findEntity(query: $qb);
+<<<<<<< HEAD
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+=======
+        } catch (DoesNotExistException $e) {
+>>>>>>> origin/development
             return null;
         }
     }//end findByObjectAndCard()
@@ -112,4 +131,28 @@ class DeckLinkMapper extends QBMapper
 
         return $qb->executeStatement();
     }//end deleteByObjectUuid()
+<<<<<<< HEAD
+=======
+
+    /**
+     * Delete a deck link by object UUID + card ID (Tier-2 unlink path).
+     *
+     * Returns the number of rows actually deleted so callers can
+     * distinguish "no such link" (0) from "ok" (>=1).
+     *
+     * @param string $objectUuid The object UUID.
+     * @param int    $cardId     The Deck card ID.
+     *
+     * @return int Number of deleted rows.
+     */
+    public function deleteByObjectAndCard(string $objectUuid, int $cardId): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->delete($this->getTableName())
+            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+            ->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
+
+        return $qb->executeStatement();
+    }//end deleteByObjectAndCard()
+>>>>>>> origin/development
 }//end class

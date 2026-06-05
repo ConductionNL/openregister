@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
@@ -238,6 +241,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+<<<<<<< HEAD
+=======
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+>>>>>>> origin/development
             $arrayLoader
         );
 

@@ -21,6 +21,9 @@
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2.1
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3.1
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

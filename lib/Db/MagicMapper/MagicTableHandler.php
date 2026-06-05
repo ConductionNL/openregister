@@ -15,6 +15,12 @@
  * - Discovery of existing register+schema tables
  * - Magic mapping configuration checking
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -45,9 +51,20 @@ use Psr\Log\LoggerInterface;
  * for register+schema dynamic tables, including creation, synchronization,
  * existence checking, and cache management.
  *
+<<<<<<< HEAD
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.StaticAccess)
+=======
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Table lifecycle requires IDBConnection, IAppConfig,
+ *   LoggerInterface, MagicMapper, Register, and Schema — each used for a distinct concern (DDL, feature
+ *   flags, audit, column building, and schema metadata).
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  syncTableForRegisterSchema contains necessarily long
+ *   column-diff + DDL logic that is a single atomic database operation; splitting it would create
+ *   misleading partial-sync helpers.
+ * @SuppressWarnings(PHPMD.StaticAccess)           MagicMapper::isTableColumnsVerified / setTableColumnsVerified
+ *   are process-scoped static caches with no injectable alternative in the current design.
+>>>>>>> origin/development
  */
 class MagicTableHandler
 {
@@ -108,6 +125,7 @@ class MagicTableHandler
             // Check if table exists using cached method.
             $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
 
+<<<<<<< HEAD
             if (($tableExists === true) && ($force === false)) {
                 // Table exists and not forcing update - check if schema changed.
                 if ($this->magicMapper->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
@@ -154,6 +172,19 @@ class MagicTableHandler
 
             // Create new table or recreate if forced.
             if (($tableExists === true) && ($force === true)) {
+=======
+            if ($tableExists === true && $force === false) {
+                return $this->handleExistingTable(
+                    register: $register,
+                    schema: $schema,
+                    tableName: $tableName,
+                    cacheKey: $cacheKey
+                );
+            }
+
+            // Create new table or recreate if forced.
+            if ($tableExists === true && $force === true) {
+>>>>>>> origin/development
                 $this->magicMapper->dropTable(tableName: $tableName);
                 $this->magicMapper->invalidateTableCache(cacheKey: $cacheKey);
             }
@@ -181,6 +212,78 @@ class MagicTableHandler
     }//end ensureTableForRegisterSchema()
 
     /**
+<<<<<<< HEAD
+=======
+     * Handle an existing table: verify columns or sync if schema has changed.
+     *
+     * Called only when the table exists and force=false. Returns true when the
+     * table is already up to date; triggers a sync and returns its result when
+     * columns are missing or need retyping.
+     *
+     * @param Register $register  The register context.
+     * @param Schema   $schema    The schema context.
+     * @param string   $tableName Physical table name.
+     * @param string   $cacheKey  Per-register+schema cache key.
+     *
+     * @return bool True when the table is ready to use.
+     */
+    private function handleExistingTable(
+        Register $register,
+        Schema $schema,
+        string $tableName,
+        string $cacheKey
+    ): bool {
+        // Fast path: schema unchanged and columns already verified this process.
+        if ($this->magicMapper->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
+            if (MagicMapper::isTableColumnsVerified(cacheKey: $cacheKey) === true) {
+                return true;
+            }
+
+            // Sanity check: verify all schema columns exist and that object-typed
+            // columns aren't still on the legacy JSONB storage type (issue #1720).
+            $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
+            $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+            $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
+            $retypeColumns   = $this->magicMapper->findJsonbColumnsNeedingRetype(
+                currentColumns: $currentColumns,
+                requiredColumns: $requiredColumns
+            );
+
+            if (empty($missingColumns) === true && empty($retypeColumns) === true) {
+                MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
+                $this->logger->debug(
+                    message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'tableName' => $tableName,
+                        'cacheKey'  => $cacheKey,
+                    ]
+                );
+                return true;
+            }
+
+            $warnMsg  = '[MagicTableHandler] Schema version unchanged';
+            $warnMsg .= ' but columns missing or need retype, forcing sync';
+            $this->logger->warning(
+                message: $warnMsg,
+                context: [
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
+                    'tableName'      => $tableName,
+                    'missingColumns' => array_keys($missingColumns),
+                    'retypeColumns'  => $retypeColumns,
+                ]
+            );
+        }//end if
+
+        // Schema changed or columns missing/wrong type: sync.
+        $result = $this->syncTableForRegisterSchema(register: $register, schema: $schema);
+        return $result['success'] ?? true;
+    }//end handleExistingTable()
+
+    /**
+>>>>>>> origin/development
      * Get table name for a specific register+schema combination
      *
      * @param Register $register The register context
@@ -314,7 +417,11 @@ class MagicTableHandler
      *
      * @throws Exception If table sync fails
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Table sync: create-vs-update branch, then add/make-nullable/skip per column — necessary DDL paths
+>>>>>>> origin/development
      */
     public function syncTableForRegisterSchema(Register $register, Schema $schema): array
     {
@@ -605,7 +712,11 @@ class MagicTableHandler
      *
      * @return bool True if MagicMapper should be used for this register+schema
      *
+<<<<<<< HEAD
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+=======
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_register is for future per-register overrides; check uses schema config and global flag only
+>>>>>>> origin/development
      */
     public function isMagicMappingEnabled(Register $_register, Schema $schema): bool
     {

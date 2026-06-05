@@ -7,6 +7,7 @@ reviewed_date: 2026-02-28
 
 ## Purpose
 
+<<<<<<< HEAD
 The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time. When Nextcloud's unified search returns objects belonging to a claimed combination, results link directly to the consuming app's detail view instead of OpenRegister's generic object view. This decouples object storage (OpenRegister) from object presentation (consuming apps), allowing each app to own its user experience while sharing a common data layer.
 
 The registry is event-driven and in-memory only: OpenRegister dispatches a `DeepLinkRegistrationEvent` during `Application::boot()`, consuming apps listen and call `register()`, and the resulting mappings are used by `ObjectsProvider` (the unified search provider) to resolve URLs and icons for the current request cycle.
@@ -16,6 +17,17 @@ The registry is event-driven and in-memory only: OpenRegister dispatches a `Deep
 ### Requirement: Apps SHALL register deep link patterns via boot-time events
 
 Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister schema/register combinations via the `DeepLinkRegistryService`. A registration maps a (register, schema) pair to a URL template and optional icon, so that OpenRegister can generate URLs pointing to the consuming app's detail view instead of its own. Registration is event-driven: OpenRegister dispatches a `DeepLinkRegistrationEvent` during its `Application::boot()` phase. Consuming apps listen for this event and call `register()` on the provided `DeepLinkRegistryService` (or use the convenience `register()` method on the event itself).
+=======
+@e2e exclude backend deep-link registration service — covered by PHPUnit
+
+The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time. When Nextcloud's unified search returns objects belonging to a claimed combination, results link directly to the consuming app's detail view instead of OpenRegister's generic object view. This decouples object storage (OpenRegister) from object presentation (consuming apps), allowing each app to own its user experience while sharing a common data layer.
+
+The registry is event-driven and in-memory only: OpenRegister dispatches a `DeepLinkRegistrationEvent` during `Application::boot()`, consuming apps listen and call `register()`, and the resulting mappings are used by `ObjectsProvider` (the unified search provider) to resolve URLs and icons for the current request cycle.
+## Requirements
+### Requirement: Apps SHALL register deep link patterns via boot-time events
+
+Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister schema/register combinations via the `DeepLinkRegistryService`. A registration maps a (register, schema) pair to a URL template and optional icon, so that OpenRegister can generate URLs pointing to the consuming app's detail view instead of its own. Registration is event-driven: OpenRegister dispatches a `DeepLinkRegistrationEvent` during its `Application::boot()` phase. Consuming apps listen for this event and call `register()` on the provided `DeepLinkRegistryService` (or use the convenience `register()` method on the event itself). The event MUST expose the wrapped registry service via `getRegistry()` so listeners can interact with the registry directly.
+>>>>>>> origin/development
 
 **Key classes:**
 - `OCA\OpenRegister\Service\DeepLinkRegistryService` -- In-memory registry with `register()`, `resolve()`, `resolveUrl()`, `resolveIcon()`, `hasRegistrations()`, `reset()` methods
@@ -51,6 +63,15 @@ Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister
 - **THEN** on the next request, Procest's boot listener does not fire
 - **AND** the `case-management::case` pair has no registration, so search results fall back to OpenRegister's default URL
 
+<<<<<<< HEAD
+=======
+#### Scenario: Listener obtains the registry service from the event
+- **GIVEN** a consuming app's `DeepLinkRegistrationListener` receives a `DeepLinkRegistrationEvent`
+- **WHEN** the listener calls `getRegistry()` on the event
+- **THEN** it MUST receive the live `DeepLinkRegistryService` instance
+- **AND** calling `register()` on that service MUST be equivalent to calling the event's convenience `register()` method
+
+>>>>>>> origin/development
 ### Requirement: Deep link registry SHALL resolve URLs for unified search results
 
 The `ObjectsProvider` search provider SHALL use the deep link registry to generate URLs for `SearchResultEntry` objects. When a registered deep link exists for an object's (register, schema) combination, the search result URL MUST point to the consuming app's route. When no registration exists, it MUST fall back to OpenRegister's `openregister.objects.show` route via `IURLGenerator::linkToRoute()`.

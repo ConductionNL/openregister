@@ -11,7 +11,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<NcTextField
 						:value.sync="search"
 						:show-trailing-button="search !== ''"
-						label="Search"
+						:label="t('openregister', 'Search')"
 						class="searchField"
 						trailing-button-icon="close"
 						@trailing-button-click="search = ''">
@@ -149,12 +149,18 @@ export default {
 		}
 	},
 	watch: {
+		/**
+		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
+		 */
 		currentPage(newVal) {
 			this.loading = true
 			objectStore.refreshObjectList({ limit: this.limit, page: newVal, search: this.search }).finally(() => {
 				this.loading = false
 			})
 		},
+		/**
+		 * @spec exclude list-view watcher; debounced reload of the object list on search change (object-lifecycle contract)
+		 */
 		search(newVal) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
@@ -165,13 +171,31 @@ export default {
 			}, 700)
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle; conditionally loads the object list on mount when register+schema are scoped (object-lifecycle contract)
+	 */
 	mounted() {
+		// Skip the refresh when neither a register nor a schema is in
+		// scope — the deep-link route /objects/:register/:schema/:id
+		// mounts this list with empty stores, and refreshObjectList()
+		// throws 'Register and schema are required.' which crashes the
+		// surrounding Vue render. Once the user picks a register/schema
+		// in the side bars the existing watchers re-trigger the call.
+		const registerSet = !!objectStore?.filters?.register
+		const schemaSet = !!objectStore?.filters?.schema
+		if (!registerSet || !schemaSet) {
+			this.loading = false
+			return
+		}
 		this.loading = true
 		objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: this.search }).finally(() => {
 			this.loading = false
 		})
 	},
 	methods: {
+		/**
+		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)
+		 */
 		addObject() {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)

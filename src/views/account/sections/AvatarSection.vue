@@ -44,6 +44,15 @@ export default {
 			isError: false,
 		}
 	},
+<<<<<<< HEAD
+=======
+	/**
+	 * Lifecycle hook: load the current user's id and avatar capability for display.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
+>>>>>>> origin/development
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me'))
@@ -55,9 +64,30 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
 		triggerUpload() {
 			this.$refs.fileInput.click()
 		},
+=======
+		/**
+		 * Open the native file picker by programmatically clicking the hidden
+		 * file input. Avatar upload itself runs from the input's `change` handler
+		 * (`uploadAvatar`), not from this method.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-5
+		 * @return {void}
+		 */
+		triggerUpload() {
+			this.$refs.fileInput.click()
+		},
+		/**
+		 * Upload the selected image as the user's avatar via the account API.
+		 *
+		 * @param {Event} event The file input change event.
+		 * @spec exclude UI plumbing — delegates to the account avatar API
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async uploadAvatar(event) {
 			const file = event.target.files[0]
 			if (!file) return
@@ -76,6 +106,15 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Remove the user's avatar via the account API.
+		 *
+		 * @spec exclude UI plumbing — delegates to the account avatar API
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async deleteAvatar() {
 			this.message = ''
 			try {

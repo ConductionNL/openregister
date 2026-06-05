@@ -13,10 +13,18 @@ use OCP\Accounts\IAccountProperty;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatarManager;
 use OCP\IConfig;
+<<<<<<< HEAD
+=======
+use OCP\IDBConnection;
+>>>>>>> origin/development
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+<<<<<<< HEAD
+=======
+use OCP\L10N\IFactory;
+>>>>>>> origin/development
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -65,7 +73,13 @@ class UserServiceBranchCoverageTest extends TestCase
             $this->eventDispatcher,
             $this->createMock(IAvatarManager::class),
             $this->createMock(AuditTrailMapper::class),
+<<<<<<< HEAD
             $this->createMock(ISecureRandom::class)
+=======
+            $this->createMock(ISecureRandom::class),
+            $this->createMock(IDBConnection::class),
+            $this->createMock(IFactory::class)
+>>>>>>> origin/development
         );
     }
 

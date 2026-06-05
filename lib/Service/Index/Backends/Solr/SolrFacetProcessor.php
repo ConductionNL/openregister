@@ -6,6 +6,12 @@
  * Handles facet processing operations for Solr.
  * Manages facet discovery, building, and formatting.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -14,6 +20,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
  */
 
@@ -88,6 +95,7 @@ class SolrFacetProcessor
      *
      * @psalm-return list<array{name: non-empty-string, type: 'unknown'|mixed}>
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
@@ -154,6 +162,11 @@ class SolrFacetProcessor
      * @return (array|int|string)[]
      *
      * @psalm-return array{facet?: 'true', 'facet.field'?: array, 'facet.limit'?: 100}
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude boilerplate query-param builder — assembles Solr facet.* params array
+>>>>>>> origin/development
      */
     public function buildFacetQuery(array $facetFields): array
     {
@@ -176,6 +189,7 @@ class SolrFacetProcessor
      * @return (array[]|mixed)[][] Processed facets
      *
      * @psalm-return array<array{field: mixed, items: non-empty-list<array{count: mixed, value: mixed}>}>
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function processFacetResponse(array $solrResponse): array
     {

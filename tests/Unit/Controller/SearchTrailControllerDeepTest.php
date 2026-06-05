@@ -7,7 +7,14 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
+<<<<<<< HEAD
 use OCP\IRequest;
+=======
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
+>>>>>>> origin/development
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -17,6 +24,11 @@ class SearchTrailControllerDeepTest extends TestCase
     private SearchTrailController $controller;
     private IRequest|MockObject $request;
     private SearchTrailService|MockObject $searchTrailService;
+<<<<<<< HEAD
+=======
+    private IUserSession|MockObject $userSession;
+    private IGroupManager|MockObject $groupManager;
+>>>>>>> origin/development
 
     protected function setUp(): void
     {
@@ -24,11 +36,27 @@ class SearchTrailControllerDeepTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
+<<<<<<< HEAD
+=======
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
+>>>>>>> origin/development
 
         $this->controller = new SearchTrailController(
             'openregister',
             $this->request,
+<<<<<<< HEAD
             $this->searchTrailService
+=======
+            $this->searchTrailService,
+            $this->userSession,
+            $this->groupManager
+>>>>>>> origin/development
         );
     }
 

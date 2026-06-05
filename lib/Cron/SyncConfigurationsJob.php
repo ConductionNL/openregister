@@ -6,6 +6,9 @@
  * This file contains the background job class for synchronizing external configurations
  * from their source repositories (GitHub, GitLab, URL).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *
@@ -98,6 +101,7 @@ class SyncConfigurationsJob extends TimedJob
      * @param Client               $httpClient           HTTP client
      * @param LoggerInterface      $logger               Logger
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     public function __construct(
@@ -133,6 +137,7 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     protected function run($argument): void
@@ -222,6 +227,7 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return bool True if sync is due
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function isDueForSync(Configuration $configuration): bool
@@ -250,6 +256,7 @@ class SyncConfigurationsJob extends TimedJob
      * @return void
      * @throws Exception If sync fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncConfiguration(Configuration $configuration): void
@@ -286,6 +293,7 @@ class SyncConfigurationsJob extends TimedJob
      * @return void
      * @throws Exception If sync fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromGitHub(Configuration $configuration): void
@@ -338,6 +346,7 @@ class SyncConfigurationsJob extends TimedJob
      * @return void
      * @throws Exception If sync fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromGitLab(Configuration $configuration): void
@@ -394,6 +403,7 @@ class SyncConfigurationsJob extends TimedJob
      * @return void
      * @throws Exception If sync fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromUrl(Configuration $configuration): void
@@ -441,6 +451,7 @@ class SyncConfigurationsJob extends TimedJob
      * @return void
      * @throws Exception If sync fails
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromLocal(Configuration $configuration): void

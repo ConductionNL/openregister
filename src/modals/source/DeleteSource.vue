@@ -72,6 +72,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -79,6 +82,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Delete-confirm handler delegating to sourceStore.deleteSource; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteSource() {
 			this.loading = true
 

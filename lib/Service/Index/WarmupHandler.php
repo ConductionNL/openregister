@@ -6,6 +6,12 @@
  * Handles Solr index warmup operations.
  * Extracted from GuzzleSolrService to separate warmup logic.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -106,6 +112,7 @@ class WarmupHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Index warmup requires handling multiple configuration scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple warmup modes create many execution paths
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     public function warmupIndex(
         array $schemas=[],

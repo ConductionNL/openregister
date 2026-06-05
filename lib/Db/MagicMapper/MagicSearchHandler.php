@@ -22,6 +22,12 @@
  * - Optimized counting and sizing operations
  * - Support for pagination and sorting
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -115,8 +121,12 @@ class MagicSearchHandler
         }
 
         // Not PostgreSQL = no pg_trgm.
+<<<<<<< HEAD
         $platform = $this->db->getDatabasePlatform();
         if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+=======
+        if ($this->isPostgresPlatform() === false) {
+>>>>>>> origin/development
             $this->hasPgTrgm = false;
             return false;
         }
@@ -370,6 +380,11 @@ class MagicSearchHandler
         // Get connection for value quoting through QueryBuilder.
         $qb         = $this->db->getQueryBuilder();
         $connection = $qb->getConnection();
+<<<<<<< HEAD
+=======
+        // Detect platform once and pass down (avoids per-UNION-arm DBAL lookups).
+        $isPostgres = $this->isPostgresPlatform();
+>>>>>>> origin/development
 
         // Extract options from query.
         $search         = $query['_search'] ?? null;
@@ -396,6 +411,10 @@ class MagicSearchHandler
                 schema: $schema,
                 query: $query,
                 connection: $connection,
+<<<<<<< HEAD
+=======
+                isPostgres: $isPostgres,
+>>>>>>> origin/development
                 existingColumns: $existingColumns
             );
             if ($searchCondition !== null) {
@@ -407,7 +426,12 @@ class MagicSearchHandler
         $objectConditions = $this->buildObjectFilterConditionsSql(
             query: $query,
             schema: $schema,
+<<<<<<< HEAD
             connection: $connection
+=======
+            connection: $connection,
+            isPostgres: $isPostgres
+>>>>>>> origin/development
         );
         $conditions       = array_merge($conditions, $objectConditions);
 
@@ -459,6 +483,10 @@ class MagicSearchHandler
      * @param Schema     $schema          Schema for determining searchable columns
      * @param array      $query           Full query array for extracting _fuzzy param
      * @param object     $connection      Database connection for value quoting
+<<<<<<< HEAD
+=======
+     * @param bool       $isPostgres      Whether the active platform is PostgreSQL
+>>>>>>> origin/development
      * @param array|null $existingColumns Optional list of existing column names.
      *
      * @return string|null SQL condition or null if no search conditions generated
@@ -468,6 +496,10 @@ class MagicSearchHandler
         Schema $schema,
         array $query,
         object $connection,
+<<<<<<< HEAD
+=======
+        bool $isPostgres,
+>>>>>>> origin/development
         ?array $existingColumns=null
     ): ?string {
         $searchConditions = [];
@@ -477,7 +509,11 @@ class MagicSearchHandler
         // Check if fuzzy search is explicitly requested via _fuzzy=true parameter.
         $fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
 
+<<<<<<< HEAD
         // Search in schema string properties (ILIKE only for performance).
+=======
+        // Search in schema string properties (ILIKE/LIKE only for performance).
+>>>>>>> origin/development
         $properties = $schema->getProperties() ?? [];
         foreach ($properties as $propName => $propDef) {
             $type = $propDef['type'] ?? 'string';
@@ -488,9 +524,25 @@ class MagicSearchHandler
                     continue;
                 }
 
+<<<<<<< HEAD
                 $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
             }
         }
+=======
+                // Quote column name to handle reserved words (e.g., 'case', 'status').
+                $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+                if ($isPostgres === true) {
+                    // ILIKE is always case-insensitive on PostgreSQL.
+                    $searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
+                    continue;
+                }
+
+                // CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
+                // collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
+                $searchConditions[] = "LOWER(CAST({$quotedCol} AS CHAR)) LIKE LOWER({$likePattern})";
+            }//end if
+        }//end foreach
+>>>>>>> origin/development
 
         // Search in metadata text fields (ILIKE for all).
         $searchConditions[] = "_name::text ILIKE {$likePattern}";
@@ -513,6 +565,7 @@ class MagicSearchHandler
     /**
      * Build object field filter SQL conditions for non-reserved query parameters
      *
+<<<<<<< HEAD
      * @param array  $query      Full query array
      * @param Schema $schema     Schema for property type lookup
      * @param object $connection Database connection for value quoting
@@ -521,6 +574,28 @@ class MagicSearchHandler
      */
     private function buildObjectFilterConditionsSql(array $query, Schema $schema, object $connection): array
     {
+=======
+     * Column identifiers are quoted via quoteIdentifier() so that schema properties
+     * named with SQL reserved words (e.g. 'status', 'case', 'order', 'group', 'key')
+     * do not break the generated query. Mirrors the same defence the search path
+     * already applies in buildSearchConditionSql().
+     *
+     * @param array  $query      Full query array
+     * @param Schema $schema     Schema for property type lookup
+     * @param object $connection Database connection for value quoting
+     * @param bool   $isPostgres Whether the active platform is PostgreSQL (selects "" vs ``)
+     *
+     * @return string[] Array of SQL WHERE conditions
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function buildObjectFilterConditionsSql(
+        array $query,
+        Schema $schema,
+        object $connection,
+        bool $isPostgres
+    ): array {
+>>>>>>> origin/development
         $conditions     = [];
         $reservedParams = $this->getReservedParams();
         $properties     = $schema->getProperties() ?? [];
@@ -542,12 +617,20 @@ class MagicSearchHandler
             }
 
             $columnName   = $this->sanitizeColumnName(name: $key);
+<<<<<<< HEAD
+=======
+            $quotedCol    = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+>>>>>>> origin/development
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Handle array-type properties (JSONB columns) with JSON containment operator.
             if ($propertyType === 'array') {
                 $conditions[] = $this->buildArrayPropertyConditionSql(
+<<<<<<< HEAD
                     columnName: $columnName,
+=======
+                    columnName: $quotedCol,
+>>>>>>> origin/development
                     value: $value,
                     connection: $connection
                 );
@@ -559,6 +642,7 @@ class MagicSearchHandler
                 $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
                     if (isset($value['gte']) === true) {
+<<<<<<< HEAD
                         $conditions[] = "{$columnName} >= ".$connection->quote((string) $value['gte']);
                     }
 
@@ -578,20 +662,53 @@ class MagicSearchHandler
                         $inValues     = is_array($value['in']) === true ? $value['in'] : [$value['in']];
                         $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
                         $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+=======
+                        $conditions[] = "{$quotedCol} >= ".$connection->quote((string) $value['gte']);
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $conditions[] = "{$quotedCol} <= ".$connection->quote((string) $value['lte']);
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $conditions[] = "{$quotedCol} > ".$connection->quote((string) $value['gt']);
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $conditions[] = "{$quotedCol} < ".$connection->quote((string) $value['lt']);
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues = [$value['in']];
+                        if (is_array($value['in']) === true) {
+                            $inValues = $value['in'];
+                        }
+
+                        $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
+                        $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
+>>>>>>> origin/development
                     }
                 } else if (empty($value) === false) {
                     $quotedValues = array_map(
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
+<<<<<<< HEAD
                     $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+=======
+                    $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
+>>>>>>> origin/development
                 }//end if
 
                 continue;
             }//end if
 
             // Simple equality filter.
+<<<<<<< HEAD
             $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
+=======
+            $conditions[] = "{$quotedCol} = ".$connection->quote((string) $value);
+>>>>>>> origin/development
         }//end foreach
 
         return $conditions;
@@ -929,6 +1046,11 @@ class MagicSearchHandler
      * @param Schema        $schema  Schema for column mapping
      *
      * @return void
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+>>>>>>> origin/development
      */
     private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void
     {
@@ -975,6 +1097,7 @@ class MagicSearchHandler
 
             if (is_array($value) === true) {
                 $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+<<<<<<< HEAD
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
                     if (isset($value['gte']) === true) {
                         $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
@@ -1002,13 +1125,51 @@ class MagicSearchHandler
                         );
                     }
                 } else {
+=======
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
+>>>>>>> origin/development
                     $qb->andWhere(
                         $qb->expr()->in(
                             "t.{$columnName}",
                             $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
+<<<<<<< HEAD
                 }//end if
+=======
+                    continue;
+                }
+
+                if (isset($value['gte']) === true) {
+                    $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
+                }
+
+                if (isset($value['lte']) === true) {
+                    $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
+                }
+
+                if (isset($value['gt']) === true) {
+                    $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
+                }
+
+                if (isset($value['lt']) === true) {
+                    $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
+                }
+
+                if (isset($value['in']) === true) {
+                    $inValues = [$value['in']];
+                    if (is_array($value['in']) === true) {
+                        $inValues = $value['in'];
+                    }
+
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            "t.{$columnName}",
+                            $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+                        )
+                    );
+                }
+>>>>>>> origin/development
 
                 continue;
             }//end if
@@ -1172,6 +1333,10 @@ class MagicSearchHandler
     ): void {
         $properties       = $schema->getProperties();
         $searchConditions = $qb->expr()->orX();
+<<<<<<< HEAD
+=======
+        $isPostgres       = $this->isPostgresPlatform();
+>>>>>>> origin/development
 
         // Use lowercase search for case-insensitive matching.
         $lowerSearch     = strtolower($search);
@@ -1186,9 +1351,18 @@ class MagicSearchHandler
                 && in_array($propertyConfig['format'] ?? '', $dateFormats, true) === false
             ) {
                 $columnName = $this->sanitizeColumnName(name: $field);
+<<<<<<< HEAD
                 $searchConditions->add(
                     $qb->expr()->like(
                         $qb->createFunction("LOWER(t.{$columnName})"),
+=======
+                // Quote the column to handle reserved words (e.g., 'case', 'status').
+                // Without quoting, LOWER(t.case) raises a PostgreSQL syntax error.
+                $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+                $searchConditions->add(
+                    $qb->expr()->like(
+                        $qb->createFunction("LOWER(t.{$quotedCol})"),
+>>>>>>> origin/development
                         $searchPattern
                     )
                 );
@@ -1377,8 +1551,16 @@ class MagicSearchHandler
                 // Delegates to the shared SchemaTypeConverter so this handler and
                 // MagicStatisticsHandler agree on type semantics across read paths.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
+<<<<<<< HEAD
                 $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $propertyType);
             }
+=======
+                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(
+                    value: $value,
+                    schemaType: $propertyType
+                );
+            }//end foreach
+>>>>>>> origin/development
 
             // Set metadata properties.
             if (($metadataData['uuid'] ?? null) !== null) {
@@ -1581,6 +1763,44 @@ class MagicSearchHandler
     }//end convertRowToObjectEntity()
 
     /**
+<<<<<<< HEAD
+=======
+     * Whether the active database platform is PostgreSQL.
+     *
+     * Mirrors the idiom used in MagicMapper, MagicFacetHandler, SettingsService
+     * and AggregationRunner so that all platform-detection sites in the codebase
+     * agree on a single check.
+     *
+     * @return bool True when the connection's platform class name contains 'PostgreSQL'.
+     */
+    private function isPostgresPlatform(): bool
+    {
+        return stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+    }//end isPostgresPlatform()
+
+    /**
+     * Quote a column or identifier name for the current database platform.
+     *
+     * Mirrors MagicMapper::quoteIdentifier(). Kept as a private helper here
+     * because MagicSearchHandler is a collaborator of MagicMapper, not a
+     * subclass, and the helper there is private.
+     *
+     * @param string $name       The unquoted identifier name.
+     * @param bool   $isPostgres Whether the platform is PostgreSQL.
+     *
+     * @return string The quoted identifier.
+     */
+    private function quoteIdentifier(string $name, bool $isPostgres): string
+    {
+        if ($isPostgres === true) {
+            return '"'.$name.'"';
+        }
+
+        return '`'.$name.'`';
+    }//end quoteIdentifier()
+
+    /**
+>>>>>>> origin/development
      * Sanitize column name for safe database usage
      *
      * @param string $name Column name to sanitize

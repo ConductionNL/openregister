@@ -5,6 +5,12 @@
  *
  * This file contains the exception class for object lock errors.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

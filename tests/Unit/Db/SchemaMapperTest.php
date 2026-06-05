@@ -12,6 +12,10 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+<<<<<<< HEAD
+=======
+use Psr\Log\LoggerInterface;
+>>>>>>> origin/development
 
 /**
  * Unit tests for SchemaMapper
@@ -30,6 +34,10 @@ class SchemaMapperTest extends TestCase
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
     private IAppConfig&MockObject $appConfig;
+<<<<<<< HEAD
+=======
+    private LoggerInterface&MockObject $logger;
+>>>>>>> origin/development
     private SchemaMapper $mapper;
 
     protected function setUp(): void
@@ -41,6 +49,10 @@ class SchemaMapperTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
+<<<<<<< HEAD
+=======
+        $this->logger = $this->createMock(LoggerInterface::class);
+>>>>>>> origin/development
 
         $this->mapper = new SchemaMapper(
             $this->db,
@@ -49,7 +61,12 @@ class SchemaMapperTest extends TestCase
             $this->organisationMapper,
             $this->userSession,
             $this->groupManager,
+<<<<<<< HEAD
             $this->appConfig
+=======
+            $this->appConfig,
+            $this->logger
+>>>>>>> origin/development
         );
     }
 

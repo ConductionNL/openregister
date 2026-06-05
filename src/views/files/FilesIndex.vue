@@ -245,6 +245,7 @@ export default {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude list-view pagination current-page helper (computed)
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -254,6 +255,7 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude list-view pagination total-pages helper (computed)
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -269,6 +271,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec exclude list-view detail-sidebar toggle plumbing
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -278,6 +281,10 @@ export default {
 		/**
 		 * Toggle sort field and direction
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude list-view sort-toggle plumbing; resets offset and reloads
+>>>>>>> origin/development
 		 * @param {string} field - The field to sort by
 		 * @return {void}
 		 */
@@ -295,6 +302,7 @@ export default {
 		/**
 		 * Handle search query update
 		 *
+		 * @spec exclude list-view search-input handler; resets offset and reloads
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -307,6 +315,7 @@ export default {
 		/**
 		 * Handle status filter update
 		 *
+		 * @spec exclude list-view filter-input handler; resets offset and reloads
 		 * @param {string|null} status - Status filter
 		 * @return {void}
 		 */
@@ -319,6 +328,10 @@ export default {
 		/**
 		 * Handle risk level filter update
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude list-view filter-input handler; resets offset and reloads
+>>>>>>> origin/development
 		 * @param {string|null} level - Risk level filter
 		 * @return {void}
 		 */
@@ -331,6 +344,7 @@ export default {
 		/**
 		 * Load files from the API
 		 *
+		 * @spec exclude list-view API fetch plumbing
 		 * @return {Promise<void>}
 		 */
 		async loadFiles() {
@@ -375,6 +389,7 @@ export default {
 		/**
 		 * Refresh the files list
 		 *
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshFiles() {
@@ -384,6 +399,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude list-view pagination previous-page handler
 		 * @return {void}
 		 */
 		previousPage() {
@@ -396,6 +412,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude list-view pagination next-page handler
 		 * @return {void}
 		 */
 		nextPage() {
@@ -408,6 +425,7 @@ export default {
 		/**
 		 * Retry extraction for a failed file
 		 *
+		 * @spec exclude list-view row-action wiring; POSTs a re-extract request and reloads
 		 * @param {number} fileId - File ID
 		 * @return {Promise<void>}
 		 */
@@ -428,6 +446,7 @@ export default {
 		/**
 		 * Show error details for a failed file
 		 *
+		 * @spec exclude list-view toast-display helper for extraction errors
 		 * @param {object} file - File object
 		 * @return {void}
 		 */
@@ -444,6 +463,7 @@ export default {
 		/**
 		 * Format file size in human-readable format
 		 *
+		 * @spec exclude list-view file-size formatting display helper
 		 * @param {number} bytes - File size in bytes
 		 * @return {string} Formatted file size
 		 */
@@ -458,6 +478,7 @@ export default {
 		/**
 		 * Format extraction status
 		 *
+		 * @spec exclude list-view status-label formatting display helper
 		 * @param {string} status - Extraction status
 		 * @return {string} Formatted status
 		 */
@@ -474,6 +495,7 @@ export default {
 		/**
 		 * Format mime type for display
 		 *
+		 * @spec exclude list-view mime-type formatting display helper
 		 * @param {string} mimeType - MIME type
 		 * @return {string} Formatted MIME type
 		 */
@@ -486,6 +508,10 @@ export default {
 		/**
 		 * Format risk level for display
 		 *
+<<<<<<< HEAD
+=======
+		 * @spec exclude list-view risk-level formatting display helper
+>>>>>>> origin/development
 		 * @param {string} level - Risk level
 		 * @return {string} Formatted risk level
 		 */
@@ -503,6 +529,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

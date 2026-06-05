@@ -5,22 +5,45 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
+ * @link      https://github.com/ConductionNL/openregister
+>>>>>>> origin/development
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
+<<<<<<< HEAD
 use Exception;
+=======
+use DateTime;
+use Exception;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+>>>>>>> origin/development
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -31,6 +54,10 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+<<<<<<< HEAD
+=======
+use Symfony\Component\Uid\Uuid;
+>>>>>>> origin/development
 
 /**
  * Handles folder management operations for files.
@@ -55,6 +82,10 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Lifecycle + access-control by design.
+>>>>>>> origin/development
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FolderManagementHandler
@@ -82,6 +113,10 @@ class FolderManagementHandler
      * @param IUserSession     $userSession        User session for user context.
      * @param IGroupManager    $groupManager       Group manager for group operations.
      * @param LoggerInterface  $logger             Logger for logging operations.
+<<<<<<< HEAD
+=======
+     * @param AuditTrailMapper $auditTrailMapper   Mapper for writing forensic audit-trail entries on folder-access denials.
+>>>>>>> origin/development
      * @param FileService|null $fileService        File service facade for cross-handler coordination
      *                                             (injected lazily to avoid circular dependency).
      */
@@ -92,6 +127,10 @@ class FolderManagementHandler
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly LoggerInterface $logger,
+<<<<<<< HEAD
+=======
+        private readonly AuditTrailMapper $auditTrailMapper,
+>>>>>>> origin/development
         private ?FileService $fileService=null
     ) {
     }//end __construct()
@@ -126,6 +165,7 @@ class FolderManagementHandler
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
@@ -138,6 +178,13 @@ class FolderManagementHandler
             }
 
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+<<<<<<< HEAD
+=======
+        } catch (FolderAccessDeniedException $e) {
+            // Access denials must propagate to the controller so it can return HTTP 403
+            // with the structured body. Do NOT downgrade to a logged null-return.
+            throw $e;
+>>>>>>> origin/development
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[FolderManagementHandler] Failed to create folder for entity: {message}',
@@ -149,7 +196,11 @@ class FolderManagementHandler
                 ]
             );
             return null;
+<<<<<<< HEAD
         }
+=======
+        }//end try
+>>>>>>> origin/development
     }//end createEntityFolder()
 
     /**
@@ -166,6 +217,7 @@ class FolderManagementHandler
      * @phpstan-return Node
      *
      * @psalm-return Node
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function createRegisterFolderById(Register $register, ?IUser $currentUser=null): Node
     {
@@ -227,6 +279,7 @@ class FolderManagementHandler
      * @throws NotPermittedException If folder creation is not permitted.
      *
      * @return Folder The created or existing folder for the object.
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createObjectFolderById(
         ObjectEntity|string $objectEntity,
@@ -238,7 +291,34 @@ class FolderManagementHandler
             $folderProperty = $objectEntity->getFolder();
         }
 
+<<<<<<< HEAD
         // Try to get existing folder by ID.
+=======
+        // Three branches per `self-folder-access-control` spec:
+        // (a) empty               → fall through to auto-create (unchanged legacy behaviour).
+        // (b) non-digit-string     → legacy path-style value, fall through to auto-create.
+        // (c) bare-integer node ID → caller-supplied node ID; require a positive read-access
+        // check. On failure, propagate FolderAccessDeniedException —
+        // do NOT fall through to auto-create (would silently mask
+        // a cross-tenant bind attempt).
+        // Gate on ctype_digit (not is_numeric) so "42.5"/"4e2"/"+42" don't slip
+        // through and get (int)-truncated to a different node than was validated.
+        if ($folderProperty !== null && $folderProperty !== '' && ctype_digit((string) $folderProperty) === true) {
+            $existingFolder = $this->assertFolderIsAccessible(
+                folderId: $folderProperty,
+                currentUser: $currentUser,
+                objectEntity: $objectEntity
+            );
+            $this->logger->info(
+                message: "[FolderManagementHandler] Object folder bind verified (ID: ".$folderProperty.")",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return $existingFolder;
+        }
+
+        // Empty / legacy non-numeric → unchanged auto-create flow below. `getExistingFolderFromProperty`
+        // returns null for both, so the rest of the method handles them as before.
+>>>>>>> origin/development
         $existingFolder = $this->getExistingFolderFromProperty(folderProperty: $folderProperty);
         if ($existingFolder !== null) {
             $this->logger->info(
@@ -294,6 +374,7 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getRegisterFolderById(Register $register): ?Folder
     {
@@ -350,6 +431,7 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -410,6 +492,7 @@ class FolderManagementHandler
      * @psalm-return   int
      * @phpstan-return int
      * @return         int The folder ID.
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
@@ -474,6 +557,7 @@ class FolderManagementHandler
      * @phpstan-return Node
      * @return         Node The folder node.
      * @throws         Exception If folder creation fails.
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function createFolderPath(string $folderPath): Node
     {
@@ -544,6 +628,7 @@ class FolderManagementHandler
      *
      * @psalm-return   Node
      * @phpstan-return Node
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createFolder(string $folderPath): Node
     {
@@ -561,6 +646,7 @@ class FolderManagementHandler
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getRegisterFolderName(Register $register): string|null
     {
@@ -584,6 +670,7 @@ class FolderManagementHandler
      *
      * @psalm-return   string
      * @phpstan-return string
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
@@ -612,6 +699,7 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder
      * @phpstan-return Folder
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getOpenRegisterUserFolder(): Folder
     {
@@ -637,6 +725,7 @@ class FolderManagementHandler
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getNodeById(int $nodeId): ?Node
     {
@@ -680,6 +769,7 @@ class FolderManagementHandler
      *
      * @psalm-return   'file'|'folder'|'unknown'
      * @phpstan-return 'file'|'folder'|'unknown'
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function getNodeTypeFromFolder(Node $node): string
     {
@@ -782,6 +872,203 @@ class FolderManagementHandler
     }//end getExistingFolderFromProperty()
 
     /**
+<<<<<<< HEAD
+=======
+     * Resolve a numeric folder ID and verify the acting user can read it.
+     *
+     * Restrictive lookup that deliberately does NOT use `$this->rootFolder`
+     * and does NOT call `getNodeById()` (which has a root-folder fallback for
+     * anonymous file reads). For folder *binding* the rootFolder fallback is
+     * the cross-tenant escape hatch this method exists to close — see
+     * `getNodeById()` for the general-purpose helper that retains the fallback.
+     *
+     * Per the `self-folder-access-control` capability spec:
+     *  - "Self" is `$currentUser` if non-null, else `IUserSession::getUser()`.
+     *    If neither resolves, the bind is denied.
+     *  - The lookup MUST go through the user's user-folder mount only.
+     *  - The resolved node MUST be a `Folder` instance.
+     *  - The folder MUST report `isReadable() === true`.
+     *
+     * Every failure path emits a `folder_access_denied` audit-trail entry
+     * (best-effort — audit failure is logged but never swallows the denial)
+     * and throws `FolderAccessDeniedException`. This is the default-deny
+     * invariant: any condition that prevents a positive read-access
+     * confirmation results in denial.
+     *
+     * @param string                   $folderId     The numeric folder ID supplied by the caller.
+     * @param IUser|null               $currentUser  Explicit acting user; falls back to session user.
+     * @param ObjectEntity|string|null $objectEntity Object the bind would attach to (used for audit context).
+     *
+     * @return Folder The accessible folder, ready to be used as the existing object folder.
+     *
+     * @throws FolderAccessDeniedException If the folder cannot be resolved, is not a Folder, or is not readable.
+     *
+     * @internal The method is `final` to prevent subclasses from overriding
+     * (and thereby weakening) the default-deny security invariant. Direct
+     * callers from the OpenRegister codebase MUST invoke this method as-is;
+     * if a different access-check policy is needed, introduce a new method
+     * rather than overriding this one.
+     */
+    final public function assertFolderIsAccessible(
+        string $folderId,
+        ?IUser $currentUser=null,
+        ObjectEntity|string|null $objectEntity=null
+    ): Folder {
+        $actingUser = $currentUser ?? $this->getCurrentUser();
+        if ($actingUser === null) {
+            $this->logFolderAccessDenied(
+                folderId: $folderId,
+                currentUser: null,
+                objectEntity: $objectEntity,
+                reason: 'no acting user (default-deny when no IUser is present)'
+            );
+            throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+        }
+
+        try {
+            $userFolder = $this->rootFolder->getUserFolder($actingUser->getUID());
+            $nodes      = $userFolder->getById((int) $folderId);
+        } catch (Exception $e) {
+            $this->logFolderAccessDenied(
+                folderId: $folderId,
+                currentUser: $actingUser,
+                objectEntity: $objectEntity,
+                reason: 'lookup error: '.$e->getMessage()
+            );
+            throw new FolderAccessDeniedException(
+                attemptedFolderId: $folderId,
+                previous: $e
+            );
+        }
+
+        if (empty($nodes) === true) {
+            $this->logFolderAccessDenied(
+                folderId: $folderId,
+                currentUser: $actingUser,
+                objectEntity: $objectEntity,
+                reason: 'not found in user folder mount'
+            );
+            throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+        }
+
+        $node = reset($nodes);
+        if ($node instanceof Folder === false) {
+            $this->logFolderAccessDenied(
+                folderId: $folderId,
+                currentUser: $actingUser,
+                objectEntity: $objectEntity,
+                reason: 'resolved node is not a Folder (file ID supplied?)'
+            );
+            throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+        }
+
+        if ($node->isReadable() === false) {
+            $this->logFolderAccessDenied(
+                folderId: $folderId,
+                currentUser: $actingUser,
+                objectEntity: $objectEntity,
+                reason: 'folder not readable for acting user'
+            );
+            throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+        }
+
+        return $node;
+    }//end assertFolderIsAccessible()
+
+    /**
+     * Write a `folder_access_denied` entry to the audit trail.
+     *
+     * Best-effort: a mapper failure is logged at warning level but MUST NOT
+     * suppress the denial — `assertFolderIsAccessible()` always throws
+     * `FolderAccessDeniedException` after this returns. Per the spec, denial
+     * is authoritative; audit is forensic.
+     *
+     * Called immediately before each throw site in `assertFolderIsAccessible()`
+     * so even a caller that catches the exception still has the forensic
+     * record of the denial.
+     *
+     * @param string                   $folderId     The folder ID the caller attempted to bind to.
+     * @param IUser|null               $currentUser  The acting user, if present (otherwise actor is `system`).
+     * @param ObjectEntity|string|null $objectEntity The object entity the bind would have attached to.
+     * @param string                   $reason       Human-readable reason for the denial (`not found`, `not a folder`,
+     *                                               …).
+     *
+     * @return void
+     */
+    private function logFolderAccessDenied(
+        string $folderId,
+        ?IUser $currentUser,
+        ObjectEntity|string|null $objectEntity,
+        string $reason
+    ): void {
+        $actorUid = $currentUser?->getUID() ?? 'system';
+
+        try {
+            // Use positional args throughout — Nextcloud Entity setters route through __call,
+            // which doesn't honour PHP named-args (the parameter name on the magic method
+            // doesn't match the entity field name).
+            $auditTrail = new AuditTrail();
+            $auditTrail->setUuid(Uuid::v4()->toRfc4122());
+            $auditTrail->setAction('folder_access_denied');
+            $auditTrail->setUser($actorUid);
+            // Required NOT NULL columns on `oc_openregister_audit_trails` (per migration
+            // Version1Date20241020231700: `object` INT NOT NULL, `user_name` STR NOT NULL,
+            // `session` STR NOT NULL). The audit row is about a save that was REJECTED
+            // before persistence, so there is no object id to record. We use:
+            // - `object = 0` as the documented sentinel for "no object persisted yet".
+            // Auto-increment PKs on this schema start at 1, so 0 cannot collide with
+            // a real ObjectEntity row. Audit-trail queries filtering on
+            // `WHERE action = 'folder_access_denied'` are the canonical way to
+            // find these rows; querying by `object = 0` is also safe.
+            // - `user_name = $actorUid` so the audit UI has something to display in the
+            // "user" column when the system actor is involved.
+            // - `session = ''` (empty string) rather than $actorUid: the UID is already
+            // recorded in the `user` column; duplicating it into the `session` field
+            // adds no information and would mislead forensic correlation. We use
+            // empty string (not null) because the column is NOT NULL.
+            $auditTrail->setObject(0);
+            $auditTrail->setUserName($actorUid);
+            $auditTrail->setSession('');
+            $auditTrail->setCreated(new DateTime());
+            $auditTrail->setChanged(
+                [
+                    'folder' => $folderId,
+                    'reason' => $reason,
+                ]
+            );
+
+            if ($objectEntity instanceof ObjectEntity === true) {
+                if ($objectEntity->getUuid() !== null) {
+                    $auditTrail->setObjectUuid($objectEntity->getUuid());
+                }
+
+                if ($objectEntity->getRegister() !== null) {
+                    $auditTrail->setRegister((int) $objectEntity->getRegister());
+                }
+
+                if ($objectEntity->getSchema() !== null) {
+                    $auditTrail->setSchema((int) $objectEntity->getSchema());
+                }
+            }
+
+            $this->auditTrailMapper->insert(entity: $auditTrail);
+        } catch (Exception $e) {
+            // Audit is best-effort — log a warning and let the denial proceed.
+            $this->logger->warning(
+                message: '[FolderManagementHandler] Failed to write folder_access_denied audit entry: '.$e->getMessage(),
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'folder' => $folderId,
+                    'actor'  => $actorUid,
+                    'reason' => $reason,
+                ]
+            );
+        }//end try
+    }//end logFolderAccessDenied()
+
+    /**
+>>>>>>> origin/development
      * Share folder with current user if different from system user.
      *
      * @param Node       $folderNode  The folder to share.

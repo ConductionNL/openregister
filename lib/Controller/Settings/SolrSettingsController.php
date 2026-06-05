@@ -3,6 +3,12 @@
 /**
  * OpenRegister SOLR Settings Controller
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -66,6 +72,7 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with SOLR settings
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-18
      */
     public function getSolrSettings(): JSONResponse
     {
@@ -83,6 +90,7 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated SOLR settings
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-18
      */
     public function updateSolrSettings(): JSONResponse
     {
@@ -103,6 +111,7 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with SOLR info
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-18
      */
     public function getSolrInfo(): JSONResponse
     {
@@ -203,6 +212,7 @@ class SolrSettingsController extends Controller
      * @psalm-return JSONResponse<200, array<array-key, mixed>,
      *     array<never, never>>|JSONResponse<500, array{error: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-18
      */
     public function getSolrDashboardStats(): JSONResponse
     {
@@ -224,6 +234,7 @@ class SolrSettingsController extends Controller
      * @return JSONResponse SOLR facet configuration
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-19
      */
     public function getSolrFacetConfiguration(): JSONResponse
     {
@@ -241,6 +252,7 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated facet configuration
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-19
      */
     public function updateSolrFacetConfiguration(): JSONResponse
     {
@@ -259,6 +271,7 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with discovered facets
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-19
      */
     public function discoverSolrFacets(): JSONResponse
     {
@@ -308,6 +321,7 @@ class SolrSettingsController extends Controller
      * @return JSONResponse JSON response with facet config and discovery
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-19
      */
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {
@@ -450,6 +464,7 @@ class SolrSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated facet config
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-19
      */
     public function updateSolrFacetConfigWithDiscovery(): JSONResponse
     {

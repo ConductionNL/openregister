@@ -25,6 +25,9 @@
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
@@ -236,6 +239,10 @@ class SaveObjectAdditionalTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+<<<<<<< HEAD
+=======
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+>>>>>>> origin/development
             new ArrayLoader([])
         );
 

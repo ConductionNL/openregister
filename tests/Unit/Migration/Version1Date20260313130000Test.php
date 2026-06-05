@@ -10,7 +10,11 @@ declare(strict_types=1);
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Migration
+<<<<<<< HEAD
  * @author   Conduction Development Team <dev@conductio.nl>
+=======
+ * @author   Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 

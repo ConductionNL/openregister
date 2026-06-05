@@ -28,6 +28,7 @@
 			</p>
 		</div>
 
+<<<<<<< HEAD
 		<NcModal v-if="showCreateModal" @close="showCreateModal = false">
 			<div class="tokens-section__modal">
 				<h3>{{ t('openregister', 'Create API Token') }}</h3>
@@ -65,6 +66,22 @@
 				</div>
 			</div>
 		</NcModal>
+=======
+		<CreateTokenModal
+			v-if="showCreateModal"
+			:token-name="newTokenName"
+			:token-expires="newTokenExpires"
+			@close="showCreateModal = false"
+			@create="createToken"
+			@update:tokenName="newTokenName = $event"
+			@update:tokenExpires="newTokenExpires = $event" />
+
+		<CreatedTokenModal
+			v-if="createdToken"
+			:token="createdToken"
+			@close="createdToken = null"
+			@copy="copyToken" />
+>>>>>>> origin/development
 
 		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
 			{{ message }}
@@ -77,12 +94,21 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+<<<<<<< HEAD
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
 
 export default {
 	name: 'TokensSection',
 	components: { NcButton, NcModal, NcTextField },
+=======
+import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
+import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
+
+export default {
+	name: 'TokensSection',
+	components: { NcButton, CreateTokenModal, CreatedTokenModal },
+>>>>>>> origin/development
 	data() {
 		return {
 			tokens: [],
@@ -100,6 +126,16 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * Load the signed-in user's personal API tokens. Errors during initial load
+		 * are swallowed because a new user legitimately has no tokens yet.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-5
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async loadTokens() {
 			this.loading = true
 			try {
@@ -111,6 +147,15 @@ export default {
 				this.loading = false
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Create a personal API token and surface the one-time secret.
+		 *
+		 * @spec exclude UI plumbing — POST + reveal-modal glue around the account-self-service token list contract.
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async createToken() {
 			try {
 				const payload = { name: this.newTokenName }
@@ -129,6 +174,16 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Revoke a personal API token by id.
+		 *
+		 * @spec exclude UI plumbing — thin DELETE + list refresh; token contract owned by account-self-service.
+		 * @param {string|number} id - token identifier
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async revokeToken(id) {
 			try {
 				await axios.delete(generateUrl(`/apps/openregister/api/user/me/tokens/${id}`))
@@ -140,6 +195,15 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Copy the one-time token to the clipboard.
+		 *
+		 * @spec exclude UI plumbing — clipboard write + toast, no observable contract.
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async copyToken() {
 			try {
 				await navigator.clipboard.writeText(this.createdToken)
@@ -150,6 +214,16 @@ export default {
 				this.isError = true
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Format a token expiry date for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} dateStr - ISO date string
+		 * @return {string} localized date
+		 */
+>>>>>>> origin/development
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleDateString()
@@ -170,8 +244,11 @@ export default {
 .tokens-section__info { display: flex; flex-direction: column; gap: 4px; }
 .tokens-section__preview { font-family: monospace; color: var(--color-text-maxcontrast); }
 .tokens-section__expires { font-size: 0.85em; color: var(--color-text-maxcontrast); }
+<<<<<<< HEAD
 .tokens-section__modal { padding: 24px; }
 .tokens-section__warning { color: var(--color-warning); font-weight: bold; margin-bottom: 12px; }
 .tokens-section__token-display { display: flex; gap: 8px; align-items: center; }
 .tokens-section__token-display code { background: var(--color-background-dark); padding: 8px; border-radius: 4px; word-break: break-all; flex: 1; }
+=======
+>>>>>>> origin/development
 </style>

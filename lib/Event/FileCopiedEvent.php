@@ -3,6 +3,12 @@
 /**
  * OpenRegister FileCopiedEvent
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -30,6 +36,7 @@ class FileCopiedEvent extends Event
      * @param array  $data       Additional event data.
      *
      * @return void
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function __construct(
         private readonly string $objectUuid,
@@ -44,6 +51,7 @@ class FileCopiedEvent extends Event
      *
      * @return string The object UUID.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getObjectUuid(): string
@@ -56,6 +64,7 @@ class FileCopiedEvent extends Event
      *
      * @return int The file ID.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getFileId(): int
@@ -68,6 +77,7 @@ class FileCopiedEvent extends Event
      *
      * @return array The event data.
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getData(): array

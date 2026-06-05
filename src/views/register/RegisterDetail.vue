@@ -9,7 +9,11 @@ import formatBytes from '../../services/formatBytes.js'
 		<CnDetailPage
 			:title="register?.title || ''"
 			:loading="dashboardStore.loading"
+<<<<<<< HEAD
 			loading-label="Loading register data..."
+=======
+			:loading-label="t('openregister', 'Loading register data...')"
+>>>>>>> origin/development
 			:error="!!dashboardStore.error || (!dashboardStore.loading && !register)"
 			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
 			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
@@ -191,7 +195,11 @@ import formatBytes from '../../services/formatBytes.js'
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
+<<<<<<< HEAD
 						input-label="Schemas"
+=======
+						:input-label="t('openregister', 'Schemas')"
+>>>>>>> origin/development
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
@@ -250,6 +258,15 @@ export default {
 		}
 	},
 	computed: {
+<<<<<<< HEAD
+=======
+		/**
+		 * Inline JSON-schema describing the register edit form.
+		 *
+		 * @spec exclude UI plumbing — static form-schema for the edit dialog, no observable contract.
+		 * @return {object}
+		 */
+>>>>>>> origin/development
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -262,11 +279,26 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Resolve the active register from the dashboard store.
+		 *
+		 * @spec exclude UI plumbing — store lookup; register dashboard contract owned by built-in-dashboards.
+		 * @return {object|undefined}
+		 */
+>>>>>>> origin/development
 		register() {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.getRegisterItem?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
 		},
+		/**
+		 * ApexCharts options for the audit-trail line chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		auditTrailChartOptions() {
 			return {
 				chart: {
@@ -302,6 +334,12 @@ export default {
 				},
 			}
 		},
+		/**
+		 * ApexCharts options for the objects-by-schema pie chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		schemaChartOptions() {
 			return {
 				chart: {
@@ -324,6 +362,12 @@ export default {
 				}],
 			}
 		},
+		/**
+		 * ApexCharts options for the objects-by-size bar chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		sizeChartOptions() {
 			return {
 				chart: {
@@ -355,6 +399,12 @@ export default {
 	},
 	watch: {
 		register: {
+			/**
+			 * Reload schemas + managing configuration when the register changes.
+			 *
+			 * @spec exclude UI plumbing — watcher delegating to loaders; dashboard contract owned by built-in-dashboards.
+			 * @return {void}
+			 */
 			handler() {
 				// Reload schemas and check configuration when register changes
 				this.loadSchemas()
@@ -362,12 +412,28 @@ export default {
 			},
 			deep: true,
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Lazy-load schema options when the edit dialog opens.
+		 *
+		 * @spec exclude UI plumbing — watcher triggering option load on dialog open.
+		 * @param {boolean} val - dialog visibility
+		 * @return {void}
+		 */
+>>>>>>> origin/development
 		showEditDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
 			}
 		},
 	},
+	/**
+	 * Fetch register/dashboard data and stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to store loaders; dashboard contract owned by built-in-dashboards.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		// If we have a register ID but no data, fetch dashboard data
 		if (registerStore.getRegisterItem?.id && !this.register) {
@@ -395,6 +461,8 @@ export default {
 	methods: {
 		/**
 		 * Load register statistics from the dedicated stats endpoint
+		 *
+		 * @spec exclude UI plumbing — store delegation hydrating local stats; dashboard contract owned by built-in-dashboards.
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterStats() {
@@ -414,6 +482,12 @@ export default {
 				this.statsLoading = false
 			}
 		},
+		/**
+		 * ApexCharts options for a per-schema validity pie chart.
+		 *
+		 * @spec exclude UI plumbing — chart config builder; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		getSchemaChartOptions() {
 			return {
 				chart: {
@@ -427,6 +501,13 @@ export default {
 				colors: ['#41B883', '#E46651', '#00D8FF', '#DD6B20'],
 				tooltip: {
 					y: {
+						/**
+						 * Format a chart tooltip value as an object count.
+						 *
+						 * @spec exclude UI plumbing — inline chart tooltip formatter, no observable contract.
+						 * @param {number} val - data point value
+						 * @return {string}
+						 */
 						formatter(val) {
 							return val + ' objects'
 						},
@@ -435,6 +516,15 @@ export default {
 			}
 		},
 
+<<<<<<< HEAD
+=======
+		/**
+		 * Load schema select options for the edit dialog.
+		 *
+		 * @spec exclude UI plumbing — store delegation hydrating select options.
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -446,6 +536,16 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Map schema ids/objects to NcSelect option values.
+		 *
+		 * @spec exclude UI plumbing — select-value normalizer for the edit form.
+		 * @param {Array} schemas - schema ids or objects
+		 * @return {Array} option objects
+		 */
+>>>>>>> origin/development
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -454,6 +554,16 @@ export default {
 					|| { id, label: String(id) }
 			})
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Persist the register edit form and refresh dashboard data.
+		 *
+		 * @spec exclude UI plumbing — store delegation + dialog result; register CRUD contract owned elsewhere.
+		 * @param {object} formData - edited register fields
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -466,12 +576,24 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+<<<<<<< HEAD
+=======
+		/**
+		 * Open the edit-schema modal for a schema row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} schema - schema row
+		 * @return {void}
+		 */
+>>>>>>> origin/development
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
 		},
 		/**
 		 * Load full schema details from schema IDs
+		 *
+		 * @spec exclude UI plumbing — parallel fetch hydrating local schema cards; schema contract owned elsewhere.
 		 * @return {Promise<void>}
 		 */
 		async loadSchemas() {
@@ -512,6 +634,8 @@ export default {
 		},
 		/**
 		 * Check if this register is managed by a configuration
+		 *
+		 * @spec exclude UI plumbing — scans local configuration list to set a managed badge.
 		 * @return {Promise<void>}
 		 */
 		async checkManagingConfiguration() {

@@ -22,6 +22,7 @@ export const useNavigationStore = defineStore('ui', {
 			searchTrail: true,
 			auditTrail: true,
 			chat: true,
+			entities: false,
 		},
 	}),
 	actions: {
@@ -37,19 +38,31 @@ export const useNavigationStore = defineStore('ui', {
 		setModal(modal) {
 			this.modal = modal
 		},
+		/**
+		 * @spec exclude Pure client UI-state setter — toggles the single active dialog. No backend contract.
+		 */
 		setDialog(dialog) {
 			console.log('NavigationStore - setDialog() called with:', dialog)
 			this.dialog = dialog
 		},
+		/**
+		 * @spec exclude Pure client UI-state setter — stashes cross-component transfer payload. No backend contract.
+		 */
 		setTransferData(data) {
 			console.log('NavigationStore - setTransferData() called with:', data)
 			this.transferData = data
 			console.log('NavigationStore - transferData set to:', this.transferData)
 		},
+		/**
+		 * @spec exclude Pure client UI-state getter — returns the stashed transfer payload. No backend contract.
+		 */
 		getTransferData() {
 			console.log('NavigationStore - getTransferData() called, returning:', this.transferData)
 			return this.transferData
 		},
+		/**
+		 * @spec exclude Pure client UI-state mutator — clears the stashed transfer payload. No backend contract.
+		 */
 		clearTransferData() {
 			console.log('NavigationStore - clearTransferData() called')
 			this.transferData = null

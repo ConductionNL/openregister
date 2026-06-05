@@ -115,9 +115,18 @@ class RenderObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->logger,
             $this->fileService,
+<<<<<<< HEAD
         $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
         $translationHandler,
         $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
+=======
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $translationHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+>>>>>>> origin/development
         );
     }
 
@@ -1560,9 +1569,18 @@ class RenderObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->logger,
             $this->fileService,
+<<<<<<< HEAD
         $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
+=======
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+>>>>>>> origin/development
         );
 
         $ref = new ReflectionClass($handler);
@@ -1592,9 +1610,18 @@ class RenderObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->logger,
             $this->fileService,
+<<<<<<< HEAD
         $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
+=======
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+>>>>>>> origin/development
         );
 
         $ref = new ReflectionClass($handler);
@@ -4589,9 +4616,18 @@ class RenderObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->logger,
             $this->fileService,
+<<<<<<< HEAD
         $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
+=======
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+>>>>>>> origin/development
         );
 
         $ref = new ReflectionClass($handler);
@@ -4954,9 +4990,18 @@ class RenderObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->logger,
             $this->fileService,
+<<<<<<< HEAD
         $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
         $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
+=======
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+>>>>>>> origin/development
         );
 
         $ref = new ReflectionClass($handler);

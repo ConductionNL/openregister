@@ -212,6 +212,42 @@ Before diving into schema examples, let's understand the key components of a pro
 | `default` | Default value if none provided | `"default": "pending"` |
 | `examples` | Sample valid values | `"examples": ["John Smith"]` |
 
+#### OpenRegister-specific property extensions
+
+In addition to the standard JSON Schema fields above, OpenRegister recognises a set of extension fields that opt-in to platform features. None of these are required; they're all additive.
+
+| Extension | Description | Example |
+|-----------|-------------|---------|
+| `$ref` | Reference to another schema (`#/components/schemas/{slug}`). Works for `type: string` (single uuid) and `type: array` (list of uuids). | `"$ref": "#/components/schemas/person"` |
+| `validateReference` | When `true` and `$ref` is set, the save pipeline rejects the object with `ValidationException` (HTTP 422) if the referenced UUID does not resolve to an existing object in the target schema. Skips re-validation on update when the reference value is unchanged. | `"validateReference": true` |
+| `onDelete` | Referential-integrity action when the referenced object is deleted. One of `CASCADE` (delete the referrer too), `RESTRICT` (block the deletion), `SET_NULL` (clear this field), `SET_DEFAULT` (replace with `default`), `NO_ACTION`. | `"onDelete": "RESTRICT"` |
+| `register` | Override the target register for `$ref` lookups. Defaults to the referrer's own register. | `"register": "decidesk"` |
+| `authorization` | Per-property RBAC rules — restricts who can read/manage this specific field. Same `{group, match?}` grammar as schema-level RBAC. Admin always bypasses. | `"authorization": {"read": [{"group": "hr"}]}` |
+| `format: date-time` (with empty-string handling) | Standard JSON-Schema `date-time` format. OpenRegister's normaliser treats `""`, `null`, and whitespace-only strings as `null` rather than auto-populating to "now". | `"format": "date-time"` |
+
+#### Reference example
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "title": {"type": "string", "title": "Title"},
+    "assignee": {
+      "type": "string",
+      "title": "Assignee",
+      "$ref": "#/components/schemas/person",
+      "validateReference": true,
+      "onDelete": "RESTRICT"
+    },
+    "salary": {
+      "type": "number",
+      "title": "Salary (HR-only)",
+      "authorization": {"read": [{"group": "hr"}]}
+    }
+  }
+}
+```
+
 Properties can also have nested objects and arrays with their own validation rules, allowing for complex data structures while maintaining strict validation. See the [Nesting schema's](#nesting-schemas) section below for more details.
 
 ### File Properties

@@ -6,6 +6,12 @@
  * Manages Solr schema operations.
  * Handles field types, field management, and schema synchronization.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -79,6 +85,11 @@ class SolrSchemaManager
      * @param string $collection Collection name
      *
      * @return array Field types indexed by name
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to SolrHttpClient — GETs /schema/fieldtypes and indexes by name
+>>>>>>> origin/development
      */
     public function getFieldTypes(string $collection): array
     {
@@ -126,6 +137,11 @@ class SolrSchemaManager
      * @param array  $fieldType  Field type definition
      *
      * @return bool True if successful
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to SolrHttpClient — POSTs add-field-type command to /schema
+>>>>>>> origin/development
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -183,6 +199,11 @@ class SolrSchemaManager
      * @param string $collection Collection name
      *
      * @return array Fields indexed by name
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to SolrHttpClient — GETs /schema/fields and indexes by name
+>>>>>>> origin/development
      */
     public function getFields(string $collection): array
     {
@@ -230,6 +251,7 @@ class SolrSchemaManager
      * @param bool  $force       Force update if exists
      *
      * @return string Action taken ('created', 'updated', 'skipped', 'failed')
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
@@ -374,6 +396,11 @@ class SolrSchemaManager
      * @param string $collection Collection name
      *
      * @return array Schema configuration
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude thin delegation to SolrHttpClient — GETs /schema and returns its body
+>>>>>>> origin/development
      */
     public function getSchema(string $collection): array
     {

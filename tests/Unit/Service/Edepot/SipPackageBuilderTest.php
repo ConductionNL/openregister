@@ -75,7 +75,15 @@ class SipPackageBuilderTest extends TestCase
         $this->tempManager->method('getTemporaryFile')
             ->willReturn($tempFile);
 
+<<<<<<< HEAD
         $object = $this->createMock(ObjectEntity::class);
+=======
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getUuid'])
+            ->getMock();
+>>>>>>> origin/development
         $object->method('getUuid')->willReturn('obj-uuid-1');
         $object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
 
@@ -104,7 +112,15 @@ class SipPackageBuilderTest extends TestCase
         $this->tempManager->method('getTemporaryFile')
             ->willReturn($tempFile);
 
+<<<<<<< HEAD
         $object = $this->createMock(ObjectEntity::class);
+=======
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getUuid'])
+            ->getMock();
+>>>>>>> origin/development
         $object->method('getUuid')->willReturn('obj-uuid-1');
         $object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
 
@@ -149,7 +165,15 @@ class SipPackageBuilderTest extends TestCase
 
         $objects = [];
         for ($i = 0; $i < 3; $i++) {
+<<<<<<< HEAD
             $obj = $this->createMock(ObjectEntity::class);
+=======
+            $obj = $this->getMockBuilder(ObjectEntity::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['jsonSerialize'])
+                ->addMethods(['getUuid'])
+                ->getMock();
+>>>>>>> origin/development
             $obj->method('getUuid')->willReturn("obj-uuid-{$i}");
             $obj->method('jsonSerialize')->willReturn(['uuid' => "obj-uuid-{$i}"]);
 

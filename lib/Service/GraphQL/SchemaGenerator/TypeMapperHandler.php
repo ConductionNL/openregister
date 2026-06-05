@@ -5,6 +5,7 @@
  *
  * Extracted from SchemaGenerator to reduce class complexity.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL\SchemaGenerator
  * @author   Conduction B.V. <info@conduction.nl>
@@ -12,10 +13,27 @@
  * @link     https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\GraphQL\SchemaGenerator
+ * @author    Conduction B.V. <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+>>>>>>> origin/development
  */
 
 namespace OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
 
+<<<<<<< HEAD
+=======
+use GraphQL\Type\Definition\EnumType;
+>>>>>>> origin/development
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -90,6 +108,41 @@ class TypeMapperHandler
     private ?ObjectType $auditTrailType = null;
 
     /**
+<<<<<<< HEAD
+=======
+     * Shared GroupByInput input type. Backs the optional `groupBy`
+     * argument on every auto-generated list query. See the
+     * `add-time-bucket-aggregation` change for the spec contract.
+     *
+     * @var InputObjectType|null
+     */
+    private ?InputObjectType $groupByInputType = null;
+
+    /**
+     * Shared TimeInterval enum (MINUTE..YEAR). Used inside GroupByInput.
+     *
+     * @var EnumType|null
+     */
+    private ?EnumType $timeIntervalType = null;
+
+    /**
+     * Shared AggregationMetric enum (COUNT|SUM|AVG|MIN|MAX). Used
+     * inside GroupByInput.
+     *
+     * @var EnumType|null
+     */
+    private ?EnumType $aggMetricType = null;
+
+    /**
+     * Shared GroupBucket object type. Element shape of the `groups`
+     * field on every Connection.
+     *
+     * @var ObjectType|null
+     */
+    private ?ObjectType $groupBucketType = null;
+
+    /**
+>>>>>>> origin/development
      * Callback to resolve a $ref string to a RegisterSchema.
      *
      * @var callable(string): ?RegisterSchema
@@ -146,6 +199,7 @@ class TypeMapperHandler
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function resetCache(): void
@@ -166,6 +220,7 @@ class TypeMapperHandler
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function setScalars(array $scalars): void
@@ -181,6 +236,7 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL type
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function mapPropertyToGraphQLType(array $property): Type
@@ -232,6 +288,7 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL input type
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function mapPropertyToInputType(array $property): Type
@@ -278,6 +335,7 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return InputObjectType The filter input type
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     public function getFilterInputType(RegisterSchema $schema): InputObjectType
     {
@@ -338,6 +396,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The create input type
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getCreateInputType(RegisterSchema $schema): InputObjectType
@@ -393,6 +452,7 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return InputObjectType The update input type
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     public function getUpdateInputType(RegisterSchema $schema): InputObjectType
     {
@@ -432,6 +492,7 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, Type|array<string,mixed>> The input fields
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     private function buildInputFields(RegisterSchema $schema): array
     {
@@ -459,6 +520,7 @@ class TypeMapperHandler
      * @param ObjectType     $objectType The object type for the schema
      *
      * @return ObjectType The connection type
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
      */
     public function getConnectionType(RegisterSchema $schema, ObjectType $objectType): ObjectType
     {
@@ -493,6 +555,13 @@ class TypeMapperHandler
                     'totalCount' => Type::nonNull(Type::int()),
                     'facets'     => $this->scalars['JSON'],
                     'facetable'  => Type::listOf(Type::string()),
+<<<<<<< HEAD
+=======
+                    'groups'     => [
+                        'type'        => Type::listOf(Type::nonNull($this->getGroupBucketType())),
+                        'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
+                    ],
+>>>>>>> origin/development
                 ],
             ]
         );
@@ -503,9 +572,160 @@ class TypeMapperHandler
     }//end getConnectionType()
 
     /**
+<<<<<<< HEAD
      * Get the shared PageInfo type.
      *
      * @return ObjectType The PageInfo type
+=======
+     * Get (or lazily build) the shared GroupBucket object type.
+     *
+     * @return ObjectType The GroupBucket type.
+     *
+     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     */
+    public function getGroupBucketType(): ObjectType
+    {
+        if ($this->groupBucketType !== null) {
+            return $this->groupBucketType;
+        }
+
+        $this->groupBucketType = new ObjectType(
+            [
+                'name'        => 'GroupBucket',
+                'description' => 'A single bucket in an ad-hoc aggregation result.',
+                'fields'      => [
+                    'key'   => Type::nonNull(Type::string()),
+                    'value' => Type::nonNull(Type::float()),
+                ],
+            ]
+        );
+
+        return $this->groupBucketType;
+
+    }//end getGroupBucketType()
+
+    /**
+     * Get (or lazily build) the shared TimeInterval enum.
+     *
+     * @return EnumType The TimeInterval enum.
+     *
+     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     */
+    public function getTimeIntervalType(): EnumType
+    {
+        if ($this->timeIntervalType !== null) {
+            return $this->timeIntervalType;
+        }
+
+        $this->timeIntervalType = new EnumType(
+            [
+                'name'        => 'TimeInterval',
+                'description' => 'Bucketing interval for ad-hoc time-bucket aggregations.',
+                'values'      => [
+                    'MINUTE'  => ['value' => 'MINUTE'],
+                    'HOUR'    => ['value' => 'HOUR'],
+                    'DAY'     => ['value' => 'DAY'],
+                    'WEEK'    => ['value' => 'WEEK'],
+                    'MONTH'   => ['value' => 'MONTH'],
+                    'QUARTER' => ['value' => 'QUARTER'],
+                    'YEAR'    => ['value' => 'YEAR'],
+                ],
+            ]
+        );
+
+        return $this->timeIntervalType;
+
+    }//end getTimeIntervalType()
+
+    /**
+     * Get (or lazily build) the shared AggregationMetric enum.
+     *
+     * @return EnumType The AggregationMetric enum.
+     *
+     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     */
+    public function getAggregationMetricType(): EnumType
+    {
+        if ($this->aggMetricType !== null) {
+            return $this->aggMetricType;
+        }
+
+        $this->aggMetricType = new EnumType(
+            [
+                'name'        => 'AggregationMetric',
+                'description' => 'Metric for ad-hoc aggregations.',
+                'values'      => [
+                    'COUNT' => ['value' => 'COUNT'],
+                    'SUM'   => ['value' => 'SUM'],
+                    'AVG'   => ['value' => 'AVG'],
+                    'MIN'   => ['value' => 'MIN'],
+                    'MAX'   => ['value' => 'MAX'],
+                ],
+            ]
+        );
+
+        return $this->aggMetricType;
+
+    }//end getAggregationMetricType()
+
+    /**
+     * Get (or lazily build) the shared GroupByInput input type.
+     *
+     * @return InputObjectType The GroupByInput type.
+     *
+     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     */
+    public function getGroupByInputType(): InputObjectType
+    {
+        if ($this->groupByInputType !== null) {
+            return $this->groupByInputType;
+        }
+
+        $this->groupByInputType = new InputObjectType(
+            [
+                'name'        => 'GroupByInput',
+                'description' => 'Ad-hoc aggregation arg; `interval` set => time-bucketed, otherwise categorical groupBy.',
+                'fields'      => [
+                    'field'       => [
+                        'type'        => Type::nonNull(Type::string()),
+                        'description' => 'Field to group on. Must be a declared schema property or magic metadata column.',
+                    ],
+                    'interval'    => [
+                        'type'        => $this->getTimeIntervalType(),
+                        'description' => 'Optional bucketing interval. When supplied, requires `from` + `to`.',
+                    ],
+                    'from'        => [
+                        'type'        => Type::string(),
+                        'description' => 'ISO-8601 lower bound, inclusive. Required when `interval` is set.',
+                    ],
+                    'to'          => [
+                        'type'        => Type::string(),
+                        'description' => 'ISO-8601 upper bound, exclusive. Required when `interval` is set.',
+                    ],
+                    'metric'      => [
+                        'type'         => $this->getAggregationMetricType(),
+                        'defaultValue' => 'COUNT',
+                        'description'  => 'Aggregation metric. Default COUNT.',
+                    ],
+                    'metricField' => [
+                        'type'        => Type::string(),
+                        'description' => 'Field to aggregate over. Required when metric != COUNT.',
+                    ],
+                ],
+            ]
+        );
+
+        return $this->groupByInputType;
+
+    }//end getGroupByInputType()
+
+    /**
+     * Get the shared PageInfo type.
+     *
+     * @return ObjectType The PageInfo type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
+>>>>>>> origin/development
      */
     private function getPageInfoType(): ObjectType
     {
@@ -534,6 +754,7 @@ class TypeMapperHandler
      *
      * @return ObjectType The AuditTrail type
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function getAuditTrailType(): ObjectType
@@ -570,6 +791,7 @@ class TypeMapperHandler
      *
      * @return array<string, array<string, mixed>> The argument definitions
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function getListArgs(RegisterSchema $schema): array
@@ -587,6 +809,13 @@ class TypeMapperHandler
             'first'      => ['type' => Type::int(), 'defaultValue' => 20, 'description' => 'Number of items to return'],
             'offset'     => ['type' => Type::int(), 'description' => 'Offset for pagination'],
             'after'      => ['type' => Type::string(), 'description' => 'Cursor for forward pagination'],
+<<<<<<< HEAD
+=======
+            'groupBy'    => [
+                'type'        => $this->getGroupByInputType(),
+                'description' => 'Optional ad-hoc aggregation; when supplied, the connection emits a `groups` field.',
+            ],
+>>>>>>> origin/development
         ];
 
     }//end getListArgs()
@@ -595,6 +824,7 @@ class TypeMapperHandler
      * Get the shared sort input type.
      *
      * @return InputObjectType The sort input type
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     private function getSortInputType(): InputObjectType
     {
@@ -624,6 +854,7 @@ class TypeMapperHandler
      * Get the shared self-filter input type for metadata columns.
      *
      * @return InputObjectType The self-filter input type
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     private function getSelfFilterType(): InputObjectType
     {
@@ -655,6 +886,7 @@ class TypeMapperHandler
      *
      * @return array<string, string> Map of property name to auth description
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-6
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getPropertyAuthDescriptions(RegisterSchema $schema): array

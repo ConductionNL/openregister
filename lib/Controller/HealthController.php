@@ -5,6 +5,12 @@
  *
  * Exposes health check endpoint for container orchestration and monitoring.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -63,6 +69,7 @@ class HealthController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Health status
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-18
      */
     public function index(): JSONResponse
     {

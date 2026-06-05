@@ -6,6 +6,12 @@
  * Controller for managing schema operations in the OpenRegister app.
  * Provides endpoints for CRUD operations, schema exploration, caching,
  * import/export, and statistics.
+<<<<<<< HEAD
+=======
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+>>>>>>> origin/development
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -27,7 +33,10 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DownloadService;
+=======
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -45,7 +54,10 @@ use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+=======
+>>>>>>> origin/development
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -68,10 +80,23 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @suppressWarnings(PHPMD.ExcessiveClassLength)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+=======
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting
+ * framework + RBAC + audit + domain services, each used in separate endpoint groups.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+>>>>>>> origin/development
  */
 class SchemasController extends Controller
 {
@@ -86,7 +111,10 @@ class SchemasController extends Controller
      * @param IAppConfig          $config              App configuration for settings
      * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
      * @param MagicMapper         $objectEntityMapper  Object entity mapper for object queries
+<<<<<<< HEAD
      * @param DownloadService     $downloadService     Download service for file downloads
+=======
+>>>>>>> origin/development
      * @param UploadService       $uploadService       Upload service for file uploads
      * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
      * @param OrganisationService $organisationService Organisation service for multi-tenancy
@@ -98,7 +126,11 @@ class SchemasController extends Controller
      *
      * @return void
      *
+<<<<<<< HEAD
      * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+=======
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud AppFramework requires all services to be constructor-injected.
+>>>>>>> origin/development
      */
     public function __construct(
         string $appName,
@@ -106,7 +138,10 @@ class SchemasController extends Controller
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
+<<<<<<< HEAD
         private readonly DownloadService $downloadService,
+=======
+>>>>>>> origin/development
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
@@ -150,8 +185,17 @@ class SchemasController extends Controller
      *     configuration: array|null|string, allOf: array|null,
      *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
      *
+<<<<<<< HEAD
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+=======
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple optional extend/pagination/filter parameters each add one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional extend/pagination/filter parameters each add one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handling pagination + filtering + extend + stats
+     * in one NC controller action is idiomatic; extracting helpers would obscure the flow.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function index(): JSONResponse
     {
@@ -202,6 +246,7 @@ class SchemasController extends Controller
             _multitenancy: false
         );
 
+<<<<<<< HEAD
         // Serialize schemas to arrays.
         $schemasArr = array_map(
             function ($schema) {
@@ -218,6 +263,41 @@ class SchemasController extends Controller
             $schema['@self']['extendedBy'] = $allExtendedBy[$schema['id']] ?? [];
         }
 
+=======
+        // Read-visibility guard: this endpoint is @PublicPage so it stays
+        // reachable when OpenRegister is restricted to a user group. Anonymous
+        // callers may only see PUBLISHED schemas; authenticated users are
+        // unaffected. Visibility is derived from server-side published/
+        // depublished entity state, never from client-supplied parameters.
+        if ($this->isAnonymousRequest() === true) {
+            $schemas = array_values(
+                array_filter(
+                    $schemas,
+                    fn($schema) => $this->isPublishedEntity(
+                        published: $schema->getPublished(),
+                        depublished: $schema->getDepublished()
+                    )
+                )
+            );
+        }
+
+        // Serialize schemas to arrays.
+        $schemasArr = array_map(
+            function ($schema) {
+                return $schema->jsonSerialize();
+            },
+            $schemas
+        );
+
+        // Batch-load all extendedBy relationships in a single query instead of N queries.
+        $allExtendedBy = $this->schemaMapper->findAllExtendedBy();
+        foreach ($schemasArr as &$schema) {
+            // @psalm-suppress InvalidArrayOffset
+            $schema['@self'] = $schema['@self'] ?? [];
+            $schema['@self']['extendedBy'] = $allExtendedBy[$schema['id']] ?? [];
+        }
+
+>>>>>>> origin/development
         unset($schema);
         // Break the reference.
         // If '@self.stats' is requested, attach statistics to each schema.
@@ -262,6 +342,16 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles _extend, _count, RBAC, 404, and several
+     * response-shaping branches; each is a required rendering path that cannot be extracted without
+     * splitting the HTTP contract.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function show($id): JSONResponse
     {
@@ -271,6 +361,7 @@ class SchemasController extends Controller
                 $extend = [$extend];
             }
 
+<<<<<<< HEAD
             $schema    = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
             $schemaArr = $schema->jsonSerialize();
 
@@ -279,6 +370,29 @@ class SchemasController extends Controller
             $schemaArr['@self'] = $schemaArr['@self'] ?? [];
             $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
 
+=======
+            $schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
+
+            // Read-visibility guard (@PublicPage): an anonymous caller may only
+            // view a PUBLISHED schema. Derived from server-side published/
+            // depublished entity state, never from client-supplied parameters.
+            if ($this->isAnonymousRequest() === true
+                && $this->isPublishedEntity(
+                    published: $schema->getPublished(),
+                    depublished: $schema->getDepublished()
+                ) === false
+            ) {
+                return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+            }
+
+            $schemaArr = $schema->jsonSerialize();
+
+            // Add extendedBy property showing UUIDs of schemas that extend this schema.
+            // Note: @psalm-suppress InvalidArrayOffset used here for dynamic array access.
+            $schemaArr['@self'] = $schemaArr['@self'] ?? [];
+            $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
+
+>>>>>>> origin/development
             // Add property source metadata to distinguish native vs inherited properties.
             // This is especially useful for schemas using allOf composition.
             if (($schema->getAllOf() ?? null) !== null && count($schema->getAllOf()) > 0) {
@@ -327,17 +441,42 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @suppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+     * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is
+     * repetitive but intentional; extracting it would not reduce cognitive load.
+>>>>>>> origin/development
      *
      * @return JSONResponse JSON response with created schema or error
      *
      * @psalm-return JSONResponse<201, Schema,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+=======
+     *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function create(): JSONResponse
     {
+        // Authorization: creating a schema defines a new data model and is
+        // restricted to administrators. Reading schema metadata stays open so
+        // frontends can build their UIs; only create/update/delete are gated.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may create schemas'],
+                statusCode: 403
+            );
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -381,6 +520,15 @@ class SchemasController extends Controller
                 }
              */
 
+<<<<<<< HEAD
+=======
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop in-memory + persistent
+            // schema cache for the freshly-created ID so any follow-up read in the same
+            // PHP worker observes the new schema. This is the create-side counterpart
+            // of the invalidations already wired into update() and destroy().
+            $this->schemaCacheService->invalidate(schemaId: $schema->getId());
+
+>>>>>>> origin/development
             return new JSONResponse(data: $schema, statusCode: 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
@@ -444,14 +592,30 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @suppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+=======
+     * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but
+     * intentional; extracting it would not reduce cognitive load.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
+>>>>>>> origin/development
      *
      * @return JSONResponse JSON response with updated schema or error
      *
      * @psalm-return JSONResponse<200, Schema,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+=======
+     *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function update(int $id): JSONResponse
     {
@@ -471,6 +635,7 @@ class SchemasController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+<<<<<<< HEAD
         // Check manage permission if authorization field is being modified.
         $oldSchemaAuth = null;
         if (isset($data['authorization']) === true) {
@@ -493,6 +658,27 @@ class SchemasController extends Controller
             }
         }
 
+=======
+        // Authorization: modifying a schema's definition requires manage
+        // permission. This gates ALL updates, not just authorization changes —
+        // reading schema metadata stays open for frontends.
+        try {
+            $existingSchema = $this->schemaMapper->find($id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+        }
+
+        if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+            return new JSONResponse(
+                data: ['error' => 'User does not have permission to manage this schema'],
+                statusCode: 403
+            );
+        }
+
+        // Capture prior authorization so a change can be audit-logged below.
+        $oldSchemaAuth = $existingSchema->getAuthorization();
+
+>>>>>>> origin/development
         try {
             // Update the schema with the provided data.
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
@@ -512,8 +698,17 @@ class SchemasController extends Controller
                 }
             }
 
+<<<<<<< HEAD
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
             $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
+=======
+            // **CACHE INVALIDATION (runtime-schema-api)**: Clear all schema-related
+            // caches when a schema is updated. `invalidate()` is the runtime-schema-api
+            // entry point — it covers the legacy `invalidateForSchemaChange` cleanup AND
+            // drops the request-scoped find cache on the mapper itself so reads in the
+            // same worker observe the new state.
+            $this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
+>>>>>>> origin/development
             $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $updatedSchema->getId(),
                 operation: 'update'
@@ -587,8 +782,17 @@ class SchemasController extends Controller
      * @return JSONResponse JSON response with patched schema or error
      *
      * @psalm-return JSONResponse<200, Schema,
+<<<<<<< HEAD
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+=======
+     *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
+     *     array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function patch(int $id): JSONResponse
     {
@@ -611,19 +815,90 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Force-flag and orphan-count branches are inherent to a safe delete endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+>>>>>>> origin/development
      */
     public function destroy(int $id): JSONResponse
     {
+        // **DELETE SAFETY (runtime-schema-api)**: Count attached objects FIRST.
+        // If N > 0 and ?force=true is not set, refuse with HTTP 409 so the caller
+        // gets a structured error containing the orphan count and can decide
+        // whether to escalate. A bare DELETE on a schema with objects is the
+        // canonical foot-gun that this guard closes.
+        $forceParam = $this->request->getParam(key: 'force', default: null);
+        $force      = (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+
         try {
+<<<<<<< HEAD
             // Find the schema by ID, delete it, and invalidate caches.
+=======
+            // Find the schema first (also validates existence and access).
+>>>>>>> origin/development
             $schemaToDelete = $this->schemaMapper->find(id: $id);
+
+            // Authorization: deleting a schema requires manage permission.
+            // Reading schema metadata stays open for frontends.
+            if ($this->checkSchemaManagePermission(schema: $schemaToDelete) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: 403
+                );
+            }
+
+            // Count objects still referencing this schema across all registers.
+            // Use getStatistics() (single-axis schemaId path) — countSearchObjects()
+            // only returns a real count when BOTH register AND schema are present
+            // in the @self filter, and silently returns 0 on single-axis queries,
+            // which would let DELETE silently succeed on schemas with objects.
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+            $objectCount = (int) $objectStats['total'];
+
+            if ($objectCount > 0 && $force === false) {
+                // Refuse: structured 409 with the orphan count for the caller.
+                return new JSONResponse(
+                    data: [
+                        'error'       => 'schema-has-objects',
+                        'objectCount' => $objectCount,
+                    ],
+                    statusCode: 409
+                );
+            }
+
+            if ($objectCount > 0 && $force === true) {
+                // Force-delete with audit trail at WARNING level: a misused force flag
+                // orphans every object referencing this schema, so log who did it.
+                $this->logger->warning(
+                    message: '[SchemasController] Force-deleting schema with attached objects',
+                    context: [
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
+                        'schemaId'    => $schemaToDelete->getId(),
+                        'schemaSlug'  => $schemaToDelete->getSlug(),
+                        'objectCount' => $objectCount,
+                    ]
+                );
+            }
+
             $this->schemaMapper->delete($schemaToDelete);
 
+<<<<<<< HEAD
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted.
             $this->schemaCacheService->invalidateForSchemaChange(
                 schemaId: $schemaToDelete->getId(),
                 operation: 'delete'
             );
+=======
+            // **CACHE INVALIDATION (runtime-schema-api)**: invalidate() is the
+            // canonical entry point — covers in-memory, persistent cache table,
+            // AND the request-scoped find cache on the mapper.
+            $this->schemaCacheService->invalidate(schemaId: $schemaToDelete->getId());
+>>>>>>> origin/development
             $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $schemaToDelete->getId(),
                 operation: 'delete'
@@ -656,6 +931,10 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function uploadUpdate(?int $id=null): JSONResponse
     {
@@ -679,10 +958,22 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @suppressWarnings(PHPMD.StaticAccess)          Uuid::v4 and DatabaseConstraintException factory are standard patterns
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+=======
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is a named constructor and
+     * DatabaseConstraintException::fromDatabaseException is a factory — no DI alternatives.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) JSON-upload path merges insert + update branches;
+     * splitting would duplicate error classification.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+>>>>>>> origin/development
      */
     public function upload(?int $id=null): JSONResponse
     {
@@ -692,6 +983,26 @@ class SchemasController extends Controller
         if ($id !== null) {
             // If ID is provided, find the existing schema.
             $schema = $this->schemaMapper->find($id);
+<<<<<<< HEAD
+=======
+        }
+
+        // SECURITY (H3): gate schema uploads on appropriate permissions.
+        // Updating an existing schema requires manage-permission (same as update/destroy).
+        // Creating a new schema requires admin (same as create).
+        if ($id !== null && $this->checkSchemaManagePermission(schema: $schema) === false) {
+            return new JSONResponse(
+                data: ['error' => 'You do not have permission to update this schema'],
+                statusCode: 403
+            );
+        }
+
+        if ($id === null && $this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Admin privileges required to upload new schemas'],
+                statusCode: 403
+            );
+>>>>>>> origin/development
         }
 
         // Get the uploaded JSON data.
@@ -810,13 +1121,22 @@ class SchemasController extends Controller
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Schema not found'}, array<never, never>>
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+>>>>>>> origin/development
      */
     public function download(int $id): JSONResponse
     {
         // Note: Accept header not currently used - always returns JSON.
         try {
-            // Find the schema by ID.
-            $schema = $this->schemaMapper->find($id);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — download
+            // serves the schema definition for export/consumer use.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
         } catch (Exception $e) {
             // Return a 404 error if the schema doesn't exist.
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
@@ -839,6 +1159,13 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with related schemas
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+>>>>>>> origin/development
      */
     public function related(int|string $id): JSONResponse
     {
@@ -848,9 +1175,16 @@ class SchemasController extends Controller
             $incomingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $incomingSchemas);
 
             // Find outgoing references: schemas that this schema refers to.
+<<<<<<< HEAD
             $targetSchema    = $this->schemaMapper->find($id);
+=======
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — related-schema
+            // resolution is a catalog read (no object data exposed).
+            $targetSchema    = $this->schemaMapper->find($id, _multitenancy: false);
+>>>>>>> origin/development
             $properties      = $targetSchema->getProperties() ?? [];
-            $allSchemas      = $this->schemaMapper->findAll();
+            $allSchemas      = $this->schemaMapper->findAll(_multitenancy: false);
             $outgoingSchemas = [];
             foreach ($allSchemas as $schema) {
                 // Skip self.
@@ -900,12 +1234,27 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schema statistics
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+>>>>>>> origin/development
      */
     public function stats(int $id): JSONResponse
     {
         try {
+<<<<<<< HEAD
             // Get the schema.
             $schema = $this->schemaMapper->find($id);
+=======
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — stats over
+            // a schema is a catalog read; the underlying object-row
+            // statistics remain tenant-scoped via MultiTenancyTrait.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
+>>>>>>> origin/development
 
             if ($schema === null) {
                 return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
@@ -956,6 +1305,13 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with exploration results
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+>>>>>>> origin/development
      */
     public function explore(int $id): JSONResponse
     {
@@ -995,12 +1351,20 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated schema
+<<<<<<< HEAD
+=======
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+>>>>>>> origin/development
      */
     public function updateFromExploration(int $id): JSONResponse
     {
         try {
             // Get property updates from request.
             $propertyUpdates = $this->request->getParam(key: 'properties', default: []);
+<<<<<<< HEAD
 
             if (empty($propertyUpdates) === true) {
                 return new JSONResponse(data: ['error' => 'No property updates provided'], statusCode: 400);
@@ -1020,6 +1384,27 @@ class SchemasController extends Controller
             // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);
 
+=======
+
+            if (empty($propertyUpdates) === true) {
+                return new JSONResponse(data: ['error' => 'No property updates provided'], statusCode: 400);
+            }
+
+            $updateCount = count($propertyUpdates);
+            $this->logger->info(
+                message: "[SchemasController] Updating schema {$id} with {$updateCount} property updates",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            $updatedSchema = $this->schemaService->updateSchemaFromExploration(
+                schemaId: $id,
+                propertyUpdates: $propertyUpdates
+            );
+
+            // Clear schema cache to ensure fresh data.
+            $this->schemaCacheService->clearSchemaCache($id);
+
+>>>>>>> origin/development
             $this->logger->info(
                 message: '[SchemasController] Schema '.$id.' successfully updated with exploration results',
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1042,10 +1427,14 @@ class SchemasController extends Controller
     }//end updateFromExploration()
 
     /**
-     * Publish a schema
+     * Whether the current request has no resolved Nextcloud user (anonymous).
      *
-     * This method publishes a schema by setting its publication date to now or a specified date.
+     * Read endpoints are @PublicPage so they survive an app-group restriction;
+     * this lets the read-visibility guard distinguish anonymous callers (who may
+     * only see published resources) from authenticated users (unaffected). The
+     * user session is resolved lazily from the container.
      *
+<<<<<<< HEAD
      * @param int $id The ID of the schema to publish
      *
      * @NoAdminRequired
@@ -1068,10 +1457,14 @@ class SchemasController extends Controller
      *     published?: null|string, depublished?: null|string,
      *     configuration?: array|null|string, allOf?: array|null,
      *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
+=======
+     * @return bool True if no user is signed in.
+>>>>>>> origin/development
      */
-    public function publish(int $id): JSONResponse
+    private function isAnonymousRequest(): bool
     {
         try {
+<<<<<<< HEAD
             // Get the publication date from request if provided, otherwise use now.
             $date = new DateTime();
             if ($this->request->getParam('date') !== null) {
@@ -1125,13 +1518,26 @@ class SchemasController extends Controller
         }//end try
     }//end publish()
 
+=======
+            return $this->container->get(\OCP\IUserSession::class)->getUser() === null;
+        } catch (\Throwable $e) {
+            // If the session service is unavailable, treat the caller as anonymous (fail closed).
+            return true;
+        }
+
+    }//end isAnonymousRequest()
+
+>>>>>>> origin/development
     /**
-     * Depublish a schema
+     * Whether an entity is currently published.
      *
-     * This method depublishes a schema by setting its depublication date to now or a specified date.
+     * A resource is published when its `published` timestamp is set and it has
+     * not since been depublished. Both values come from persisted entity state.
      *
-     * @param int $id The ID of the schema to depublish
+     * @param \DateTime|null $published   The published timestamp, or null.
+     * @param \DateTime|null $depublished The depublished timestamp, or null.
      *
+<<<<<<< HEAD
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -1152,10 +1558,30 @@ class SchemasController extends Controller
      *     published?: null|string, depublished?: null|string,
      *     configuration?: array|null|string, allOf?: array|null,
      *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
+=======
+     * @return bool True if the entity is published and not depublished.
+>>>>>>> origin/development
      */
-    public function depublish(int $id): JSONResponse
+    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
+    {
+        return $published !== null && $depublished === null;
+
+    }//end isPublishedEntity()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * Used to gate schema creation, where there is no existing entity whose
+     * manage-authorization block could be consulted. User session and group
+     * manager are resolved lazily from the container to avoid widening the
+     * constructor signature.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
     {
         try {
+<<<<<<< HEAD
             // Get the depublication date from request if provided, otherwise use now.
             $date = new DateTime();
             if ($this->request->getParam('date') !== null) {
@@ -1207,4 +1633,77 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end depublish()
+=======
+            $user = $this->container->get(\OCP\IUserSession::class)->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            return $this->container->get(\OCP\IGroupManager::class)->isAdmin($user->getUID());
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Check if the current user has 'manage' permission on a schema.
+     *
+     * Default-SECURE: a schema with no `manage` authorization rule can only be
+     * managed by administrators. When manage rules are present, membership of
+     * one of the listed groups grants permission (admins always pass). This is
+     * deliberately NOT PermissionHandler::hasPermission(), which is default-OPEN
+     * for object data RBAC and therefore unsuitable for gating schema-definition
+     * writes. Reading schema metadata is unaffected and stays open.
+     *
+     * @param Schema $schema The schema to check manage permission for.
+     *
+     * @return bool True if the current user may manage this schema.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function checkSchemaManagePermission(Schema $schema): bool
+    {
+        try {
+            $user = $this->container->get(\OCP\IUserSession::class)->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            $groupManager = $this->container->get(\OCP\IGroupManager::class);
+
+            // Admins always pass.
+            if ($groupManager->isAdmin($user->getUID()) === true) {
+                return true;
+            }
+
+            $authorization = $schema->getAuthorization();
+
+            // Default-secure: no manage rule defined → admin-only (already failed above).
+            if (empty($authorization) === true || isset($authorization['manage']) === false) {
+                return false;
+            }
+
+            $userGroups  = $groupManager->getUserGroupIds($user);
+            $manageRules = $authorization['manage'];
+            foreach ($userGroups as $groupId) {
+                foreach ($manageRules as $entry) {
+                    if (is_string($entry) === true && $entry === $groupId) {
+                        return true;
+                    }
+
+                    if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }//end try
+
+        return false;
+
+    }//end checkSchemaManagePermission()
+>>>>>>> origin/development
 }//end class

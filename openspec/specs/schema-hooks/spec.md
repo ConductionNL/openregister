@@ -6,6 +6,11 @@ status: implemented
 
 # Schema Hooks
 ## Purpose
+<<<<<<< HEAD
+=======
+
+@e2e exclude backend webhook/hook delivery — covered by PHPUnit and Newman
+>>>>>>> origin/development
 Schema hooks enable per-schema configuration of workflow callbacks that fire on object lifecycle events, allowing external systems to validate, enrich, transform, or reject data before or after persistence. Hooks use CloudEvents 1.0 structured content mode for payloads, support synchronous (request-response) and asynchronous (fire-and-forget) delivery modes, and provide configurable failure behavior (reject, allow, flag, queue) so administrators can balance data integrity against availability. The hook system is engine-agnostic through the `WorkflowEngineInterface` abstraction, currently supporting n8n and Windmill adapters, and integrates deeply with Nextcloud's PSR-14 event dispatcher via `StoppableEventInterface` for pre-mutation rejection.
 
 ## Requirements

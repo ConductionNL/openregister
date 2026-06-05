@@ -29,6 +29,9 @@
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
@@ -44,6 +47,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -87,6 +94,11 @@ class TextExtractionServiceDeepTest extends TestCase
 
     private MockObject|RiskLevelService $riskLevelService;
 
+<<<<<<< HEAD
+=======
+    private MockObject|EmlParser $emlParser;
+
+>>>>>>> origin/development
 
     /**
      * Set up test fixtures
@@ -108,6 +120,7 @@ class TextExtractionServiceDeepTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->settingsService      = $this->createMock(SettingsService::class);
         $this->riskLevelService     = $this->createMock(RiskLevelService::class);
+<<<<<<< HEAD
 
         $this->service = new TextExtractionService(
             $this->fileMapper,
@@ -123,6 +136,25 @@ class TextExtractionServiceDeepTest extends TestCase
             $this->entityRelationMapper,
             $this->settingsService,
             $this->riskLevelService
+=======
+        $this->emlParser            = $this->createMock(EmlParser::class);
+
+        $this->service = new TextExtractionService(
+            fileMapper: $this->fileMapper,
+            chunkMapper: $this->chunkMapper,
+            rootFolder: $this->rootFolder,
+            db: $this->db,
+            logger: $this->logger,
+            objectEntityMapper: $this->objectMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            entityHandler: $this->entityHandler,
+            entityMapper: $this->entityMapper,
+            entityRelationMapper: $this->entityRelationMapper,
+            settingsService: $this->settingsService,
+            riskLevelService: $this->riskLevelService,
+            emlParser: $this->emlParser,
+>>>>>>> origin/development
         );
 
     }//end setUp()
@@ -851,6 +883,7 @@ class TextExtractionServiceDeepTest extends TestCase
         $this->objectMapper->method('find')
             ->willThrowException(new DoesNotExistException('not found'));
 
+<<<<<<< HEAD
         // Should not throw — gracefully skips.
         $this->service->extractObject(999);
 
@@ -858,6 +891,16 @@ class TextExtractionServiceDeepTest extends TestCase
         $this->logger->expects($this->atLeastOnce())
             ->method('info');
 
+=======
+        // Expect the skip-info log before triggering the call so the
+        // invocation is recorded against the expectation (PHPUnit does not
+        // retroactively match expects() set after the mocked call).
+        $this->logger->expects($this->atLeastOnce())
+            ->method('info');
+
+        // Should not throw — gracefully skips.
+        $this->service->extractObject(999);
+>>>>>>> origin/development
     }//end testExtractObjectDeletedObject()
 
 

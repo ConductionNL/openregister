@@ -14,7 +14,14 @@ use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IRequest;
+=======
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
+>>>>>>> origin/development
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -30,6 +37,11 @@ class ConfigurationControllerTest extends TestCase
     private GitLabHandler&MockObject $gitlabHandler;
     private IAppManager&MockObject $appManager;
     private LoggerInterface&MockObject $logger;
+<<<<<<< HEAD
+=======
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
+>>>>>>> origin/development
 
     protected function setUp(): void
     {
@@ -43,6 +55,11 @@ class ConfigurationControllerTest extends TestCase
         $this->gitlabHandler = $this->createMock(GitLabHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+<<<<<<< HEAD
+=======
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+>>>>>>> origin/development
 
         $this->controller = new ConfigurationController(
             'openregister',
@@ -53,8 +70,23 @@ class ConfigurationControllerTest extends TestCase
             $this->githubHandler,
             $this->gitlabHandler,
             $this->appManager,
+<<<<<<< HEAD
             $this->logger
         );
+=======
+            $this->logger,
+            $this->userSession,
+            $this->groupManager
+        );
+
+        // Default to an admin user so admin-gated endpoints (create, update,
+        // destroy, import, importFrom*, publishToGitHub) are reachable in
+        // existing tests; targeted tests can override this stub.
+        $defaultUser = $this->createMock(IUser::class);
+        $defaultUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($defaultUser);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+>>>>>>> origin/development
     }
 
     private function createRealConfiguration(): Configuration
@@ -207,7 +239,11 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationMapper->method('find')
             ->willThrowException(new DoesNotExistException('not found'));
 
+<<<<<<< HEAD
         $result = $this->controller->checkVersion(999);
+=======
+        $result = $this->controller->versionStatus(999);
+>>>>>>> origin/development
 
         $this->assertEquals(404, $result->getStatus());
     }
@@ -222,7 +258,11 @@ class ConfigurationControllerTest extends TestCase
             'remote' => '1.0.1',
         ]);
 
+<<<<<<< HEAD
         $result = $this->controller->checkVersion(1);
+=======
+        $result = $this->controller->versionStatus(1);
+>>>>>>> origin/development
 
         $this->assertEquals(200, $result->getStatus());
     }
@@ -402,7 +442,11 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationMapper->method('find')->willReturn($config);
         $this->configurationService->method('checkRemoteVersion')->willReturn(null);
 
+<<<<<<< HEAD
         $result = $this->controller->checkVersion(1);
+=======
+        $result = $this->controller->versionStatus(1);
+>>>>>>> origin/development
 
         $this->assertEquals(500, $result->getStatus());
     }
@@ -414,7 +458,11 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationService->method('checkRemoteVersion')
             ->willThrowException(new \Exception('Version check failed'));
 
+<<<<<<< HEAD
         $result = $this->controller->checkVersion(1);
+=======
+        $result = $this->controller->versionStatus(1);
+>>>>>>> origin/development
 
         $this->assertEquals(500, $result->getStatus());
     }

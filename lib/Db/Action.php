@@ -5,6 +5,12 @@
  *
  * First-class entity for workflow automation actions.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -98,6 +104,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDeleted(?DateTime $deleted)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
+<<<<<<< HEAD
+=======
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+>>>>>>> origin/development
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -693,11 +703,20 @@ class Action extends Entity implements JsonSerializable
         }
 
         if (($object['eventType'] ?? null) !== null) {
+<<<<<<< HEAD
             if (is_array($object['eventType']) === true) {
                 $this->setEventType(json_encode(value: $object['eventType']));
             } else {
                 $this->setEventType($object['eventType']);
             }
+=======
+            $eventTypeValue = $object['eventType'];
+            if (is_array($eventTypeValue) === true) {
+                $eventTypeValue = json_encode(value: $eventTypeValue);
+            }
+
+            $this->setEventType($eventTypeValue);
+>>>>>>> origin/development
         }
 
         if (($object['engine'] ?? null) !== null) {
@@ -732,6 +751,7 @@ class Action extends Entity implements JsonSerializable
             $this->setOnEngineDown($object['onEngineDown']);
         }
 
+<<<<<<< HEAD
         if (($object['filterCondition'] ?? null) !== null) {
             if (is_array($object['filterCondition']) === true) {
                 $this->setFilterConditionArray($object['filterCondition']);
@@ -746,12 +766,25 @@ class Action extends Entity implements JsonSerializable
             } else {
                 $this->setConfiguration($object['configuration']);
             }
+=======
+        if (($object['filterCondition'] ?? null) !== null && is_array($object['filterCondition']) === true) {
+            $this->setFilterConditionArray($object['filterCondition']);
+        } else if (($object['filterCondition'] ?? null) !== null) {
+            $this->setFilterCondition($object['filterCondition']);
+        }
+
+        if (($object['configuration'] ?? null) !== null && is_array($object['configuration']) === true) {
+            $this->setConfigurationArray($object['configuration']);
+        } else if (($object['configuration'] ?? null) !== null) {
+            $this->setConfiguration($object['configuration']);
+>>>>>>> origin/development
         }
 
         if (($object['mapping'] ?? null) !== null) {
             $this->setMapping((int) $object['mapping']);
         }
 
+<<<<<<< HEAD
         if (($object['schemas'] ?? null) !== null) {
             if (is_array($object['schemas']) === true) {
                 $this->setSchemasArray($object['schemas']);
@@ -766,6 +799,18 @@ class Action extends Entity implements JsonSerializable
             } else {
                 $this->setRegisters($object['registers']);
             }
+=======
+        if (($object['schemas'] ?? null) !== null && is_array($object['schemas']) === true) {
+            $this->setSchemasArray($object['schemas']);
+        } else if (($object['schemas'] ?? null) !== null) {
+            $this->setSchemas($object['schemas']);
+        }
+
+        if (($object['registers'] ?? null) !== null && is_array($object['registers']) === true) {
+            $this->setRegistersArray($object['registers']);
+        } else if (($object['registers'] ?? null) !== null) {
+            $this->setRegisters($object['registers']);
+>>>>>>> origin/development
         }
 
         if (($object['schedule'] ?? null) !== null) {

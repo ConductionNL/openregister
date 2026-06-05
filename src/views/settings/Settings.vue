@@ -13,8 +13,13 @@
 			:loading="settingsStore.loadingVersionInfo"
 			:is-up-to-date="true"
 			:show-update-button="true"
+<<<<<<< HEAD
 			title="Version Information"
 			description="Information about the current OpenRegister installation">
+=======
+			:title="t('openregister', 'Version Information')"
+			:description="t('openregister', 'Information about the current OpenRegister installation')">
+>>>>>>> origin/development
 			<template #actions>
 				<NcButton
 					type="secondary"
@@ -53,6 +58,12 @@
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
 
+<<<<<<< HEAD
+=======
+		<!-- Push Notifications Status Section -->
+		<PushNotificationsConfiguration :push-status="pushStatus" />
+
+>>>>>>> origin/development
 		<!-- n8n Workflow Configuration Section -->
 		<N8nConfiguration />
 
@@ -86,6 +97,10 @@ import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+<<<<<<< HEAD
+=======
+import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
+>>>>>>> origin/development
 import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
@@ -113,11 +128,26 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+<<<<<<< HEAD
+=======
+		PushNotificationsConfiguration,
+>>>>>>> origin/development
 		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		Dialogs,
+	},
+
+	props: {
+		/**
+		 * Push notification status from PHP initial state.
+		 * One of: 'not_installed' | 'unreachable' | 'active'
+		 */
+		pushStatus: {
+			type: String,
+			default: 'not_installed',
+		},
 	},
 
 	computed: {
@@ -127,6 +157,8 @@ export default {
 	/**
 	 * Component created lifecycle hook
 	 * Initializes the settings store and loads all data
+	 * @spec exclude UI plumbing — view-creation data fetch for display only
+	 * @return {Promise<void>}
 	 */
 	async created() {
 		console.log('🔧 Settings component created - loading data from store')

@@ -27,6 +27,6 @@ jobs:
       enable-frontend: true
       enable-eslint: true
       enable-phpunit: true
-      enable-newman: true
+      enable-newman: false  # Newman runs in its own workflow (api-test-coverage.yml) with the orchestrator + docker-compose stack.
       enable-coverage-guard: true
       enable-sbom: true

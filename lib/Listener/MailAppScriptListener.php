@@ -3,6 +3,12 @@
 /**
  * Listener that injects the mail sidebar script into the Nextcloud Mail app.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -24,6 +30,11 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\App\IAppManager;
+<<<<<<< HEAD
+=======
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
+use OCP\AppFramework\Http\TemplateResponse;
+>>>>>>> origin/development
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -67,15 +78,34 @@ class MailAppScriptListener implements IEventListener
      *
      * @return void
      *
+<<<<<<< HEAD
+=======
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+>>>>>>> origin/development
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
      */
     public function handle(Event $event): void
     {
+<<<<<<< HEAD
         // Only handle BeforeTemplateRenderedEvent from the Mail app.
         // We use string comparison to avoid a hard dependency on the Mail app classes.
         $eventClass = get_class($event);
         if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
+=======
+        // Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
+        if ($event instanceof BeforeTemplateRenderedEvent === false) {
+            return;
+        }
+
+        $response = $event->getResponse();
+        if ($response instanceof TemplateResponse === false) {
+            return;
+        }
+
+        if ($response->getApp() !== 'mail') {
+>>>>>>> origin/development
             return;
         }
 
@@ -94,9 +124,18 @@ class MailAppScriptListener implements IEventListener
             return;
         }
 
+<<<<<<< HEAD
         // Inject the sidebar script.
         Util::addScript('openregister', 'openregister-mail-sidebar');
         Util::addStyle('openregister', 'mail-sidebar');
+=======
+        // Inject the sidebar script (only if compiled JS exists).
+        $jsPath = __DIR__.'/../../js/openregister-mail-sidebar.js';
+        if (file_exists($jsPath) === true) {
+            Util::addScript('openregister', 'openregister-mail-sidebar');
+            Util::addStyle('openregister', 'mail-sidebar');
+        }
+>>>>>>> origin/development
 
         $this->logger->debug(
                 'Mail sidebar script injected for user {user}',

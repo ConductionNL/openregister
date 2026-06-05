@@ -7,6 +7,10 @@
  * @param {string} value - The date string from the backend
  * @param {string} format - Schema format: 'date', 'time', or 'date-time'
  * @return {Date|null}
+<<<<<<< HEAD
+=======
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
+>>>>>>> origin/development
  */
 export function stringToDate(value, format) {
 	if (!value) return null
@@ -40,6 +44,10 @@ export function stringToDate(value, format) {
  * @param {Date} date
  * @param {string} format - Schema format: 'date', 'time', or 'date-time'
  * @return {string}
+<<<<<<< HEAD
+=======
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
+>>>>>>> origin/development
  */
 export function dateToString(date, format) {
 	const yyyy = date.getFullYear().toString().padStart(4, '0')

@@ -6,10 +6,20 @@
  * This file contains the event class dispatched when a view is updated
  * in the OpenRegister application.
  *
+<<<<<<< HEAD
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Event
+ * @package  OCA\OpenRegister\Event
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -50,6 +60,7 @@ class ViewUpdatedEvent extends Event
      * @param View $oldView The view before update.
      *
      * @return void
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-4
      */
     public function __construct(View $newView, View $oldView)
     {

@@ -3,11 +3,23 @@
 /**
  * Consumer Mapper for database operations.
  *
+<<<<<<< HEAD
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
  * @author  Conduction Development Team <dev@conductio.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+>>>>>>> origin/development
  *
  * @link https://OpenRegister.app
  */

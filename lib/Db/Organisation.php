@@ -7,10 +7,13 @@
  * The Organisation entity manages multi-tenancy in OpenRegister by linking users
  * to organisations and providing organisational context for all data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -285,11 +288,64 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $roles = null;
 
     /**
+<<<<<<< HEAD
+=======
+     * Linked mail app data.
+     *
+     * @var array|null
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contacts app data.
+     *
+     * @var array|null
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked notes app data.
+     *
+     * @var array|null
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todos app data.
+     *
+     * @var array|null
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar app data.
+     *
+     * @var array|null
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked talk app data.
+     *
+     * @var array|null
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked deck app data.
+     *
+     * @var array|null
+     */
+    protected ?array $deck = null;
+
+    /**
+>>>>>>> origin/development
      * User count for this organisation (computed property, not stored in database)
      *
      * @var integer|null Number of users in this organisation
      */
     public ?int $userCount = null;
+<<<<<<< HEAD
 
     /**
      * Linked mail entity IDs for this organisation.
@@ -339,6 +395,8 @@ class Organisation extends Entity implements JsonSerializable
      * @var array|null Linked Deck entity IDs
      */
     protected ?array $deck = null;
+=======
+>>>>>>> origin/development
 
     /**
      * Organisation constructor
@@ -755,8 +813,27 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+<<<<<<< HEAD
         $users  = $this->getUserIds();
         $groups = $this->getGroups();
+=======
+        $users           = $this->getUserIds();
+        $groups          = $this->getGroups();
+        $provisionedAt   = null;
+        $suspendedAt     = null;
+        $deprovisionedAt = null;
+        if ($this->provisionedAt instanceof DateTime) {
+            $provisionedAt = $this->provisionedAt->format('c');
+        }
+
+        if ($this->suspendedAt instanceof DateTime) {
+            $suspendedAt = $this->suspendedAt->format('c');
+        }
+
+        if ($this->deprovisionedAt instanceof DateTime) {
+            $deprovisionedAt = $this->deprovisionedAt->format('c');
+        }
+>>>>>>> origin/development
 
         return [
             'id'              => $this->id,
@@ -792,9 +869,15 @@ class Organisation extends Entity implements JsonSerializable
             'authorization'   => $this->authorization ?? $this->getDefaultAuthorization(),
             'status'          => $this->status ?? 'active',
             'environment'     => $this->environment ?? 'production',
+<<<<<<< HEAD
             'provisionedAt'   => $this->provisionedAt instanceof DateTime ? $this->provisionedAt->format('c') : null,
             'suspendedAt'     => $this->suspendedAt instanceof DateTime ? $this->suspendedAt->format('c') : null,
             'deprovisionedAt' => $this->deprovisionedAt instanceof DateTime ? $this->deprovisionedAt->format('c') : null,
+=======
+            'provisionedAt'   => $provisionedAt,
+            'suspendedAt'     => $suspendedAt,
+            'deprovisionedAt' => $deprovisionedAt,
+>>>>>>> origin/development
             'created'         => $this->getCreatedFormatted(),
             'updated'         => $this->getUpdatedFormatted(),
             '_mail'           => $this->mail,

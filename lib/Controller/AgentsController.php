@@ -5,6 +5,9 @@
  *
  * This file contains the controller for managing AI agents.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -16,6 +19,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
  * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
  * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
  */
@@ -55,6 +60,7 @@ use Exception;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class AgentsController extends Controller
 {
@@ -153,6 +159,11 @@ class AgentsController extends Controller
      * @return TemplateResponse Template response for agents SPA
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
+>>>>>>> origin/development
      */
     public function page(): TemplateResponse
     {
@@ -178,6 +189,7 @@ class AgentsController extends Controller
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve agents',
      *     results?: array<Agent>}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function index(): JSONResponse
@@ -263,6 +275,7 @@ class AgentsController extends Controller
      *     array{error: 'Access denied to this agent'|'Agent not found'},
      *     array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function show(int $id): JSONResponse
@@ -313,6 +326,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse JSON response with created agent
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function create(): JSONResponse
@@ -401,6 +415,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse JSON response with updated agent
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function update(int $id): JSONResponse
@@ -484,6 +499,7 @@ class AgentsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function patch(int $id): JSONResponse
@@ -511,6 +527,7 @@ class AgentsController extends Controller
      *     'User not authenticated', message?: 'Agent deleted successfully'},
      *     array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function destroy(int $id): JSONResponse
@@ -577,6 +594,7 @@ class AgentsController extends Controller
      *     array{error?: 'Failed to retrieve statistics', total?: int,
      *     active?: int, inactive?: int}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
      */
     public function stats(): JSONResponse
@@ -624,6 +642,7 @@ class AgentsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve tools', results?: array}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
      */
     public function tools(): JSONResponse

@@ -5,6 +5,12 @@
  *
  * Service for tracking and retrieving operational metrics.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -137,6 +143,13 @@ class MetricsService
      * @throws \Exception If database operation fails (logged but not rethrown)
      *
      * @psalm-suppress PossiblyNullArgument
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy (fail-soft insert of an
+     *       operational metric row — type, entity, status, duration, metadata, error, user, timestamp — that
+     *       never disrupts the calling operation on DB error)
+>>>>>>> origin/development
      */
     public function recordMetric(
         string $metricType,
@@ -196,6 +209,7 @@ class MetricsService
      * @return int[] Array of [date => count]
      *
      * @psalm-return array<int>
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-27
      */
     public function getFilesProcessedPerDay(int $days=30): array
     {
@@ -242,6 +256,7 @@ class MetricsService
      *
      * @psalm-return array{total: int, successful: int, failed: int,
      *               success_rate: float, estimated_cost_usd: float, period_days: int}
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-28
      */
     public function getEmbeddingStats(int $days=30): array
     {
@@ -302,6 +317,7 @@ class MetricsService
      * @return (float|int)[][]
      *
      * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-29
      */
     public function getSearchLatencyStats(int $days=7): array
     {
@@ -374,6 +390,7 @@ class MetricsService
      * @psalm-return array{daily_vectors_added: array<string, int>,
      *     current_storage_bytes: int, current_storage_mb: float,
      *     avg_vectors_per_day: float, period_days: int}
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-30
      */
     public function getStorageGrowth(int $days=30): array
     {
@@ -443,6 +460,7 @@ class MetricsService
      *     storage_growth: array{daily_vectors_added: array<string, int>,
      *     current_storage_bytes: int, current_storage_mb: float,
      *     avg_vectors_per_day: float, period_days: int}}
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-31
      */
     public function getDashboardMetrics(): array
     {
@@ -465,6 +483,12 @@ class MetricsService
      * @return int Number of deleted records
      *
      * @psalm-suppress PossiblyInvalidMethodCall
+<<<<<<< HEAD
+=======
+     *
+     * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy (retention pruning:
+     *       deletes metric rows older than the retention window to bound table growth)
+>>>>>>> origin/development
      */
     public function cleanOldMetrics(int $retentionDays=90): int
     {
@@ -531,6 +555,7 @@ class MetricsService
      * @param int $successful Number of successful operations
      *
      * @return float Success rate as percentage (0-100), rounded to 2 decimal places
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-32
      */
     private function calculateSuccessRate(int $total, int $successful): float
     {
@@ -556,6 +581,7 @@ class MetricsService
      * @return float Rounded average milliseconds (0.0 if invalid or null)
      *
      * @psalm-suppress MixedArgument
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-33
      */
     private function roundAverageMs($avgMs): float
     {
@@ -578,6 +604,7 @@ class MetricsService
      * @param array<string, int> $growthData Growth data array with [date => count] format
      *
      * @return float Average vectors per day, rounded to 2 decimal places
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-34
      */
     private function calculateAverageVectorsPerDay(array $growthData): float
     {

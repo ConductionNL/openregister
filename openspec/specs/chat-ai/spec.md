@@ -6,8 +6,14 @@ retrofit: true
 
 ## Purpose
 
+<<<<<<< HEAD
 Provides a conversational AI interface for OpenRegister users. Users interact with AI agents through persistent conversations that carry a history of messages. Each message exchange retrieves relevant context from registered objects and files (RAG) before querying the configured LLM. Agents are configurable AI personalities that can be scoped to an organisation and optionally restricted to their owner. This capability covers the full lifecycle: agent management, conversation management, message exchange, history retrieval, user feedback, and usage analytics.
 
+=======
+@e2e exclude REST API + LLPhant adapter backend — covered by PHPUnit
+
+Provides a conversational AI interface for OpenRegister users. Users interact with AI agents through persistent conversations that carry a history of messages. Each message exchange retrieves relevant context from registered objects and files (RAG) before querying the configured LLM. Agents are configurable AI personalities that can be scoped to an organisation and optionally restricted to their owner. This capability covers the full lifecycle: agent management, conversation management, message exchange, history retrieval, user feedback, and usage analytics.
+>>>>>>> origin/development
 ## Requirements
 
 ### REQ-001: The system MUST process user messages through an LLM pipeline with RAG context
@@ -131,8 +137,171 @@ An agent is a named AI entity with a prompt persona, model configuration, tool a
 - **WHEN** `sendFeedback` checks conversation ownership
 - **THEN** HTTP 403 MUST be returned without persisting any feedback
 
+<<<<<<< HEAD
+=======
+### REQ-006: The system MUST convert tool definitions to LLPhant FunctionInfo objects for LLM function calling
+
+When an agent has tools configured (via the agent's `tools` field listing tool IDs the agent may invoke), the system MUST translate each tool's array-shaped function definition into a `LLPhant\Chat\FunctionInfo\FunctionInfo` instance that LLPhant accepts via `setTools()`. `ToolManagementHandler::convertFunctionsToFunctionInfo($functions, $tools)` performs this translation, MUST preserve `name` / `description` / parameters / required fields, MUST resolve each function's source `ToolInterface` instance by scanning the supplied tools (so LLPhant can invoke `$toolInstance->{$func['name']}(...)`), and MUST handle nested `object` and `array` parameter types by carrying their `properties` / `items` schemas through to the `Parameter` constructor's `itemsOrProperties` argument.
+
+#### Scenario: Scalar parameter is converted to a Parameter
+
+- **GIVEN** a function definition `{ name: 'searchObjects', description: 'Search', parameters: { properties: { query: { type: 'string', description: 'q' } }, required: ['query'] } }`
+- **AND** a tool instance whose `getFunctions()` returns a function with `name === 'searchObjects'`
+- **WHEN** `convertFunctionsToFunctionInfo($functions, $tools)` is called
+- **THEN** the returned `FunctionInfo` MUST have `name === 'searchObjects'`, `description === 'Search'`, exactly one `Parameter` (`name: 'query'`, `type: 'string'`, `description: 'q'`, `enum: []`, `format: null`), `required === ['query']`
+- **AND** the `FunctionInfo`'s instance target MUST be the supplied tool, so LLPhant can call `$tool->searchObjects(...)` directly
+
+#### Scenario: Object and array parameter types carry their nested schemas
+
+- **GIVEN** a function definition whose `parameters.properties` includes `filters: { type: 'object', properties: { tag: { type: 'string' } } }` and `ids: { type: 'array', items: { type: 'integer' } }`
+- **WHEN** `convertFunctionsToFunctionInfo` is called
+- **THEN** the `filters` `Parameter` MUST be constructed with `itemsOrProperties` equal to the `properties` map `{ tag: { type: 'string' } }`
+- **AND** the `ids` `Parameter` MUST be constructed with `itemsOrProperties` equal to the `items` schema `{ type: 'integer' }`
+- **AND** when an `object` parameter omits `properties`, or an `array` parameter omits `items`, `itemsOrProperties` MUST default to `[]` rather than `null`
+
+#### Scenario: Tool instance bound by name match across all supplied tools
+
+- **GIVEN** three tools are supplied, and only tool B's `getFunctions()` contains a function named `runReport`
+- **WHEN** `convertFunctionsToFunctionInfo` converts a function definition with `name === 'runReport'`
+- **THEN** the produced `FunctionInfo`'s instance target MUST be tool B
+- **AND** if no supplied tool exposes a function with that name, the `FunctionInfo` MUST still be created with a `null` tool instance (LLPhant will surface the resulting invocation failure at call time rather than at conversion time)
+
+### Requirement: The system MUST expose an admin surface for reading and updating LLM provider settings
+
+`LlmSettingsController` MUST provide endpoints to read the current LLM (Large Language Model) configuration and to update it, both as a full update and as a PATCH alias. The settings cover the embedding and chat model configuration for the OpenAI, Ollama, and Fireworks providers. On update, when a provider's `embeddingModel`, `model`, or `chatModel` is supplied as a model *object* (`{id, ...}`) by the frontend dropdown, the controller MUST extract the `id` before persisting so that only the model identifier string is stored. Read MUST delegate to `SettingsService::getLLMSettingsOnly()`; update MUST delegate to `SettingsService::updateLLMSettingsOnly()`. `patchLLMSettings` MUST be a behavioural alias of `updateLLMSettings` (registered separately so the PATCH verb routes correctly).
+
+#### Scenario: Read current LLM settings
+- **GIVEN** an admin requests the LLM settings
+- **WHEN** `getLLMSettings` is called
+- **THEN** the response MUST contain the LLM-only settings returned by `SettingsService::getLLMSettingsOnly()`
+- **AND** on any thrown exception the response MUST be HTTP 500 with `{error}`
+
+#### Scenario: Model object is reduced to its id on update
+- **GIVEN** the frontend submits `fireworksConfig.embeddingModel = {id: "nomic-embed-text", name: "..."}`
+- **WHEN** `updateLLMSettings` processes the payload
+- **THEN** the persisted value of `fireworksConfig.embeddingModel` MUST be the string `"nomic-embed-text"`
+- **AND** the same id-extraction MUST apply to `openaiConfig.model`, `openaiConfig.chatModel`, `ollamaConfig.model`, and `ollamaConfig.chatModel`
+
+#### Scenario: PATCH is an alias of update
+- **GIVEN** a PATCH request to the LLM settings endpoint
+- **WHEN** `patchLLMSettings` is invoked
+- **THEN** it MUST produce the same result as `updateLLMSettings` for the same payload
+
+### Requirement: The system MUST allow testing LLM providers against supplied-but-unsaved configuration
+
+`LlmSettingsController` MUST let an admin verify a provider before saving it. `testEmbedding` MUST accept `provider`, `config`, and optional `testText`, and delegate to `VectorizationService::testEmbedding()`. `testChat` MUST accept `provider`, `config`, and optional `testMessage`, and delegate to the `ChatService::testChat()`. Both MUST reject a missing `provider` or a non-array/empty `config` with HTTP 400, and MUST map the service result's `success` flag to HTTP 200 (true) or HTTP 400 (false). `getOllamaModels` MUST query the configured Ollama instance's `/api/tags` endpoint and return a name-sorted list of `{id, name, description, size, modified}` models, returning `{success: false, models: []}` on connection failure or non-200 upstream status rather than throwing.
+
+#### Scenario: Test embedding requires provider and config
+- **GIVEN** a `testEmbedding` request with an empty `provider`
+- **WHEN** the controller validates input
+- **THEN** the response MUST be HTTP 400 with `{success: false, error: "Missing provider"}`
+- **AND** a request with a non-array or empty `config` MUST return HTTP 400 with `error: "Invalid config"`
+
+#### Scenario: Test result status maps to HTTP code
+- **GIVEN** a valid `testChat` request whose `ChatService::testChat()` returns `{success: false, ...}`
+- **WHEN** the controller builds the response
+- **THEN** the HTTP status MUST be 400
+- **AND** when the service returns `{success: true, ...}` the status MUST be 200
+
+#### Scenario: Ollama model discovery degrades gracefully
+- **GIVEN** the configured Ollama URL is unreachable
+- **WHEN** `getOllamaModels` runs
+- **THEN** the response MUST be `{success: false, error: "Failed to connect to Ollama: ...", models: []}`
+- **AND** no exception MUST propagate to the framework
+
+### Requirement: The system MUST support embedding-store maintenance from the admin surface
+
+`LlmSettingsController` MUST expose embedding-store maintenance operations. `checkEmbeddingModelMismatch` MUST delegate to `VectorizationService::checkEmbeddingModelMismatch()` and report whether stored vectors exist and whether the active embedding model differs from the one that generated them (so the operator can decide whether regeneration is required). `clearAllEmbeddings` MUST delegate to `VectorizationService::clearAllEmbeddings()` and return the deletion result, mapping a `success: false` service result to HTTP 500.
+
+#### Scenario: Detect embedding model mismatch
+- **GIVEN** stored embeddings were generated by a now-changed embedding model
+- **WHEN** `checkEmbeddingModelMismatch` is called
+- **THEN** the response MUST reflect `has_vectors` and `mismatch` as reported by `VectorizationService`
+- **AND** on exception the response MUST be HTTP 500 with `{has_vectors: false, mismatch: false, error}`
+
+#### Scenario: Clear all embeddings
+- **GIVEN** an admin clears the embedding store
+- **WHEN** `clearAllEmbeddings` is called and the service returns `{success: true, deleted: N}`
+- **THEN** the response MUST be HTTP 200 with the deletion result
+- **AND** when the service returns `{success: false}` the response MUST be HTTP 500
+
+### Requirement: Semantic and hybrid vector search endpoints
+The system MUST expose endpoints for semantic (vector-embedding) search and hybrid
+(keyword + vector) search over registered objects. `SolrController::semanticSearch`
+embeds the query and retrieves nearest-neighbour matches; `SolrController::hybridSearch`
+combines Solr keyword scoring with vector similarity under caller-supplied weights.
+`SettingsController::semanticSearch` and `SettingsController::hybridSearch` are facade
+copies of these endpoints that delegate to `VectorizationService`. An empty or
+whitespace-only query MUST return HTTP 400, and both endpoints MUST attach a `timestamp`
+to the response.
+
+#### Scenario: Semantic search rejects empty query
+- **GIVEN** a caller invokes `semanticSearch` with a blank query
+- **WHEN** the controller validates input
+- **THEN** it MUST return HTTP 400 with a "Query parameter is required" message
+
+#### Scenario: Hybrid search combines keyword and vector results
+- **GIVEN** a caller invokes `hybridSearch` with `weights: {solr: 0.5, vector: 0.5}`
+- **WHEN** `VectorizationService::hybridSearch` runs
+- **THEN** the response MUST merge keyword and vector results and include `query` and `timestamp`
+
+### Requirement: Vectorization and embedding operations endpoints
+The system MUST expose admin/operations endpoints for managing object vectorization and
+inspecting embedding state. `SolrController` provides `getVectorStats` and
+`getVectorizationStats` (coverage/health metrics), `testVectorEmbedding` (probes the
+configured embedding provider), `vectorizeObject` (embeds a single object, optional
+provider override), and `bulkVectorizeObjects` (batch embedding).
+
+#### Scenario: Test embedding provider connectivity
+- **WHEN** `testVectorEmbedding` runs
+- **THEN** it MUST probe the configured embedding provider and report whether embeddings can be generated
+
+#### Scenario: Vectorize a single object
+- **GIVEN** an object id and an optional provider override
+- **WHEN** `vectorizeObject` runs
+- **THEN** it MUST generate and store the object's embedding and report the outcome
+
+#### Scenario: Report vectorization coverage
+- **WHEN** `getVectorizationStats` runs
+- **THEN** it MUST return coverage statistics describing how many objects currently carry embeddings
+
+### Requirement: The system MUST convert tool definitions to LLPhant FunctionInfo objects for LLM function calling
+
+When an agent has tools configured (via the agent's `tools` field listing tool IDs the agent may invoke), the system MUST translate each tool's array-shaped function definition into a `LLPhant\Chat\FunctionInfo\FunctionInfo` instance that LLPhant accepts via `setTools()`. `ToolManagementHandler::convertFunctionsToFunctionInfo($functions, $tools)` performs this translation, MUST preserve `name` / `description` / parameters / required fields, MUST resolve each function's source `ToolInterface` instance by scanning the supplied tools (so LLPhant can invoke `$toolInstance->{$func['name']}(...)`), and MUST handle nested `object` and `array` parameter types by carrying their `properties` / `items` schemas through to the `Parameter` constructor's `itemsOrProperties` argument.
+
+#### Scenario: Scalar parameter is converted to a Parameter
+
+- **GIVEN** a function definition `{ name: 'searchObjects', description: 'Search', parameters: { properties: { query: { type: 'string', description: 'q' } }, required: ['query'] } }`
+- **AND** a tool instance whose `getFunctions()` returns a function with `name === 'searchObjects'`
+- **WHEN** `convertFunctionsToFunctionInfo($functions, $tools)` is called
+- **THEN** the returned `FunctionInfo` MUST have `name === 'searchObjects'`, `description === 'Search'`, exactly one `Parameter` (`name: 'query'`, `type: 'string'`, `description: 'q'`, `enum: []`, `format: null`), `required === ['query']`
+- **AND** the `FunctionInfo`'s instance target MUST be the supplied tool, so LLPhant can call `$tool->searchObjects(...)` directly
+
+#### Scenario: Object and array parameter types carry their nested schemas
+
+- **GIVEN** a function definition whose `parameters.properties` includes `filters: { type: 'object', properties: { tag: { type: 'string' } } }` and `ids: { type: 'array', items: { type: 'integer' } }`
+- **WHEN** `convertFunctionsToFunctionInfo` is called
+- **THEN** the `filters` `Parameter` MUST be constructed with `itemsOrProperties` equal to the `properties` map `{ tag: { type: 'string' } }`
+- **AND** the `ids` `Parameter` MUST be constructed with `itemsOrProperties` equal to the `items` schema `{ type: 'integer' }`
+- **AND** when an `object` parameter omits `properties`, or an `array` parameter omits `items`, `itemsOrProperties` MUST default to `[]` rather than `null`
+
+#### Scenario: Tool instance bound by name match across all supplied tools
+
+- **GIVEN** three tools are supplied, and only tool B's `getFunctions()` contains a function named `runReport`
+- **WHEN** `convertFunctionsToFunctionInfo` converts a function definition with `name === 'runReport'`
+- **THEN** the produced `FunctionInfo`'s instance target MUST be tool B
+- **AND** if no supplied tool exposes a function with that name, the `FunctionInfo` MUST still be created with a `null` tool instance (LLPhant will surface the resulting invocation failure at call time rather than at conversion time)
+
+>>>>>>> origin/development
 ## Notes
 
 - `ChatController::getChatStats` queries all rows globally (no user/org filter). This may expose aggregate counts across organisations in a multi-tenant deployment. Worth reviewing against ADR-022 (OpenRegister RBAC on data).
 - `ChatService::testChat` is a stub returning a static success message. The real implementation was preserved in `ChatService_ORIGINAL_2156.php` backup. This method is not covered by these REQs until the stub is replaced.
 - `ConversationController::destroyPermanent` does not delete feedback (only messages + conversation), while the two-stage `destroy` path does delete feedback on the second call. This asymmetry may be unintentional.
+<<<<<<< HEAD
+=======
+- REQ-006: the optional `format` field on a function-parameter definition is passed through verbatim to the `Parameter` constructor (e.g. OpenAI's `format: 'date-time'`); default `null`. `enum` is passed through verbatim; default `[]`. `required` defaults to `[]` when absent. The method is annotated `@SuppressWarnings(PHPMD.CyclomaticComplexity)` / `(NPathComplexity)` because the parameter-type fan-out is irreducible without restructuring LLPhant's `Parameter` API.
+- `ChatController::page` returns a `TemplateResponse` for the chat SPA but is NOT registered in `appinfo/routes.php` and is unreachable. Surfaced by a 2026-05-24 Bucket 2a scan; should be deleted in a cleanup change rather than retrofit-specced.
+- The following methods were surfaced by the 2026-05-24 Bucket 2a scan but are covered by class-level `@spec` annotations pointing to the in-flight `ai-chat-companion-orchestrator` (`health-probe-endpoint`, `sse-streaming-endpoint`) and `ai-chat-companion-streaming` (token, tool-call, heartbeat events) changes: `ChatHealthController::health`; all `ChatStreamController` helpers (`clearOutputBuffers`, `emitSseHeaders`, `emitAndExit`, `safeShutdown`, `emitSseEvent`, `now`, `forwardWithHeartbeat`, `pickFallbackAgentForUser`); all `StreamYieldChannel::on*` and `emit*` methods. Their REQs land in this spec when those changes archive.
+- Vue UI helpers (`ChatSideBar::isActive`, `ChatIndex::showAgentSelector`) are out of scope for backend spec retrofit — they are presentational logic (CSS class binding, dialog open-toggle) with no server-observable behaviour.
+>>>>>>> origin/development

@@ -539,6 +539,7 @@ All three enforcement points route conditional match evaluation through the shar
 
 A schema authored with `{ "read": [{ "group": "public", "match": { "publishDate": { "$lte": "$now" } } }] }` returns the same object set from `GET /api/objects/{register}/{schema}` (list) and `GET /api/objects/{register}/{schema}/{id}` (find). List-vs-find drift caused by differing grammar is no longer possible.
 
+<<<<<<< HEAD
 ### Disabling public-group inheritance for authenticated users (`inheritFromPublic`)
 
 By default, authenticated users qualify for any rule that targets the `public`
@@ -657,6 +658,8 @@ logged-in user, independent of the flag. If you want "any logged-in user,
 no group filtering, regardless of `inheritFromPublic`", use
 `{ "read": ["authenticated"] }` rather than relying on public-inheritance.
 
+=======
+>>>>>>> origin/development
 ### Property-Level Authorization
 
 In addition to the schema- and object-level rules above, individual properties can carry their own `authorization` block with conditional rules. This is covered in depth in [Property Authorization](./property-authorization.md); this section is a short map into that feature.
@@ -849,6 +852,21 @@ ORDER BY priority DESC;
 5. **Unauthenticated Access**
    - Unauthenticated users only see objects with 'public' in read permissions
    - Fallback to published object filtering can be enabled (currently disabled)
+
+## Restricting OpenRegister to a user group
+
+Nextcloud administrators can limit OpenRegister to specific groups via **Apps → OpenRegister → Limit to groups** (or `occ app:enable openregister --groups <group>`). Because Nextcloud gates app routes by `IAppManager::isEnabledForUser()`, this blocks **every non-public route** for any user outside those groups — including admins who are not members, and other apps calling OpenRegister on a user's behalf. Only routes marked `#[PublicPage]` bypass the restriction.
+
+OpenRegister is a data platform whose register, schema, and object **read** endpoints are consumed by other apps for all users. To keep those reachable while limiting **management** to the restriction group, the read surface is public-by-route and write/management endpoints are not:
+
+| Operation | Route visibility | Behaviour under app-group restriction |
+|-----------|------------------|----------------------------------------|
+| Read registers / schemas / objects (`index`, `show`) | `#[PublicPage]` | Reachable by all users (and consuming apps), in or out of the group |
+| Create / update / delete registers & schemas | not public | Blocked for users outside the group (and additionally gated to admin / manage-permission) |
+
+**Anonymous access to the public read endpoints is limited to *published* resources.** A register or schema is only returned to an unauthenticated caller when its `published` field is set and it has not been depublished; an anonymous request for an unpublished register/schema returns `401`. Authenticated users are unaffected and continue to receive results scoped by the RBAC rules described above. Object reads remain governed by `ObjectService` / `PermissionHandler` regardless of the resolved identity.
+
+Net effect: group-restricting OpenRegister hides the management UI and write operations from non-group users while leaving the consumed read APIs (and published catalogue data) available. See also the register/schema write-authorization rules below and in `RegistersController` / `SchemasController`.
 
 ## Authorization Exceptions
 

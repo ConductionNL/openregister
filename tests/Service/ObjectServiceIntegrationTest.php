@@ -6,9 +6,16 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
  *
+<<<<<<< HEAD
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -1619,6 +1626,7 @@ class ObjectServiceIntegrationTest extends TestCase
         $this->service->getVectorizationCount();
     }
 
+<<<<<<< HEAD
     /**
      * Test exportObjects throws disabled exception
      *
@@ -1664,6 +1672,8 @@ class ObjectServiceIntegrationTest extends TestCase
         $this->service->downloadObjectFiles('some-object-id');
     }
 
+=======
+>>>>>>> origin/development
     // =========================================================================
     // CRUD convenience method tests
     // =========================================================================

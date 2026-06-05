@@ -1,10 +1,14 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<SettingsSection
 		id="api-tokens"
-		name="API Token Configuration"
-		description="Configure API tokens for external service integrations"
+		:name="t('openregister', 'API Token Configuration')"
+		:description="t('openregister', 'Configure API tokens for external service integrations')"
 		:loading="loading"
-		loading-message="Loading API tokens...">
+		:loading-message="t('openregister', 'Loading API tokens...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -22,7 +26,7 @@
 
 		<!-- Required Scopes Info -->
 		<SettingsCard
-			title="Required Token Scopes"
+			:title="t('openregister', 'Required Token Scopes')"
 			icon="📋"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -84,7 +88,7 @@
 
 		<!-- GitHub Token Configuration -->
 		<SettingsCard
-			title="GitHub Personal Access Token"
+			:title="t('openregister', 'GitHub Personal Access Token')"
 			icon="🔐"
 			:collapsible="false">
 			<template #icon>
@@ -157,7 +161,7 @@
 
 		<!-- GitLab Token Configuration -->
 		<SettingsCard
-			title="GitLab Personal Access Token"
+			:title="t('openregister', 'GitLab Personal Access Token')"
 			icon="🔐"
 			:collapsible="false">
 			<template #icon>
@@ -348,6 +352,7 @@ export default {
 		/**
 		 * Load existing API tokens from the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
 		 * @return {Promise<void>}
 		 */
 		async loadTokens() {
@@ -371,6 +376,7 @@ export default {
 		/**
 		 * Update GitHub token value
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New token value
 		 * @return {void}
 		 */
@@ -381,6 +387,7 @@ export default {
 		/**
 		 * Update GitLab token value
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New token value
 		 * @return {void}
 		 */
@@ -391,6 +398,7 @@ export default {
 		/**
 		 * Update GitLab URL value
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New URL value
 		 * @return {void}
 		 */
@@ -401,6 +409,7 @@ export default {
 		/**
 		 * Save GitHub token to the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveGitHubToken() {
@@ -422,6 +431,7 @@ export default {
 		/**
 		 * Save GitLab token to the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveGitLabToken() {
@@ -443,6 +453,7 @@ export default {
 		/**
 		 * Save GitLab URL to the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveGitLabUrl() {
@@ -464,6 +475,7 @@ export default {
 		/**
 		 * Clear GitHub token
 		 *
+		 * @spec exclude UI plumbing — resets field then delegates to saveGitHubToken.
 		 * @return {Promise<void>}
 		 */
 		async clearGitHubToken() {
@@ -474,6 +486,7 @@ export default {
 		/**
 		 * Clear GitLab token
 		 *
+		 * @spec exclude UI plumbing — resets field then delegates to saveGitLabToken.
 		 * @return {Promise<void>}
 		 */
 		async clearGitLabToken() {
@@ -484,6 +497,7 @@ export default {
 		/**
 		 * Show save message
 		 *
+		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
 		 * @param {string} message - The message to show
 		 * @param {string} type - The type of message ('success' or 'error')
 		 * @return {void}
@@ -499,6 +513,7 @@ export default {
 		/**
 		 * Test GitHub token validity
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
 		 * @return {Promise<void>}
 		 */
 		async testGitHubToken() {
@@ -536,6 +551,7 @@ export default {
 		/**
 		 * Test GitLab token validity
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
 		 * @return {Promise<void>}
 		 */
 		async testGitLabToken() {

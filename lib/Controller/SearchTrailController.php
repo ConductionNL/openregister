@@ -6,10 +6,13 @@
  * Controller for managing search trail operations and analytics in the OpenRegister app.
  * Provides functionality to retrieve search statistics, popular search terms, and search logs.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,6 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
  */
 
@@ -27,7 +31,9 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Class SearchTrailController
@@ -46,14 +52,53 @@ class SearchTrailController extends Controller
      * @param string             $appName            The name of the app
      * @param IRequest           $request            The request object
      * @param SearchTrailService $searchTrailService The search trail service
+     * @param IUserSession       $userSession        Active user session for caller identity
+     * @param IGroupManager      $groupManager       Group manager for admin / role checks
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly SearchTrailService $searchTrailService
+        private readonly SearchTrailService $searchTrailService,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Gate sensitive search-trail read operations on admin membership.
+     *
+     * SECURITY: search-trail rows record per-search IP address, user
+     * ID, user-agent and full query string for every search across
+     * every register/schema. Returning them to non-admin callers leaks
+     * PII (GDPR) and gives any authenticated user — including users
+     * restricted to a single app group — a recon view of what every
+     * other tenant is searching for (wave-3 C7). Surface stays
+     * admin-only at both the framework level (no `@NoAdminRequired`)
+     * and the body level (defence-in-depth).
+     *
+     * @return JSONResponse|null 401/403 response when blocked, null when allowed.
+     */
+    private function requireAdmin(): ?JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: this search-trail operation is admin-only'],
+                statusCode: 403
+            );
+        }
+
+        return null;
+
+    }//end requireAdmin()
 
     /**
      * Extract pagination, filter, and search parameters from request
@@ -63,6 +108,12 @@ class SearchTrailController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by
+     *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
+>>>>>>> origin/development
      */
     private function extractRequestParameters(): array
     {
@@ -208,6 +259,12 @@ class SearchTrailController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+<<<<<<< HEAD
+=======
+     *
+     * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by
+     *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
+>>>>>>> origin/development
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -296,14 +353,25 @@ class SearchTrailController extends Controller
     /**
      * Get all search trail logs
      *
+<<<<<<< HEAD
      * @NoAdminRequired
+=======
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth — wave-3 C7.
+>>>>>>> origin/development
      *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search trail logs
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function index(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             // Get raw request parameters (this is what the service expects).
             $rawParams = $this->request->getParams();
@@ -342,16 +410,35 @@ class SearchTrailController extends Controller
     /**
      * Get a specific search trail log by ID
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth — wave-3 C7. IDs
+     * are sequential so without the gate any authed caller could
+     * enumerate every tenant's recorded searches (IP, user ID,
+     * user-agent, query string).
+     *
      * @param int $id The search trail ID
      *
+<<<<<<< HEAD
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search trail data
+=======
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with search trail data
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
+>>>>>>> origin/development
      */
     public function show(int $id): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             $log = $this->searchTrailService->getSearchTrail($id);
             return new JSONResponse(data: $log);
@@ -374,6 +461,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search statistics
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function statistics(): JSONResponse
     {
@@ -401,6 +489,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with popular search terms
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function popularTerms(): JSONResponse
     {
@@ -452,6 +541,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search activity data
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function activity(): JSONResponse
     {
@@ -480,6 +570,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with register schema statistics
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -531,6 +622,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with user agent statistics
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function userAgentStats(): JSONResponse
     {
@@ -631,6 +723,7 @@ class SearchTrailController extends Controller
      *     },
      *     array<never, never>
      * >
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function cleanup(): JSONResponse
     {
@@ -663,6 +756,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with export data
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function export(): JSONResponse
     {
@@ -765,6 +859,7 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function destroy(int $id): JSONResponse
     {
@@ -806,6 +901,7 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion result
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
      */
     public function destroyMultiple(): JSONResponse
@@ -875,6 +971,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function clearAll(): JSONResponse
     {

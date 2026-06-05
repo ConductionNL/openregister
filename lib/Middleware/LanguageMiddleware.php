@@ -7,6 +7,12 @@
  * and store the preferred language in the LanguageService. Also checks for
  * the _translations=all query parameter.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware
  *
@@ -47,6 +53,7 @@ class LanguageMiddleware extends Middleware
      * @param IRequest        $request         The incoming request
      * @param LanguageService $languageService The request-scoped language service
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function __construct(
@@ -68,6 +75,7 @@ class LanguageMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function beforeController($controller, $methodName): void
@@ -106,6 +114,7 @@ class LanguageMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function afterController($controller, $methodName, Response $response): Response

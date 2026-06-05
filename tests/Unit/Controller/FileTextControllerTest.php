@@ -6,6 +6,10 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\File\ManualEntityService;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -13,12 +17,17 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+<<<<<<< HEAD
+=======
+use OCP\IUserSession;
+>>>>>>> origin/development
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class FileTextControllerTest extends TestCase
 {
+<<<<<<< HEAD
     private FileTextController $controller;
     private IRequest&MockObject $request;
     private TextExtractionService&MockObject $textExtractor;
@@ -28,10 +37,34 @@ class FileTextControllerTest extends TestCase
     private LoggerInterface&MockObject $logger;
     private IAppConfig&MockObject $config;
 
+=======
+
+    private FileTextController $controller;
+
+    private IRequest&MockObject $request;
+
+    private TextExtractionService&MockObject $textExtractor;
+
+    private IndexService&MockObject $indexService;
+
+    private FileService&MockObject $fileService;
+
+    private EntityRelationMapper&MockObject $entityRelationMapper;
+
+    private LoggerInterface&MockObject $logger;
+
+    private IAppConfig&MockObject $config;
+
+    private ManualEntityService&MockObject $manualEntityService;
+
+    private IUserSession&MockObject $userSession;
+
+>>>>>>> origin/development
     protected function setUp(): void
     {
         parent::setUp();
 
+<<<<<<< HEAD
         $this->request = $this->createMock(IRequest::class);
         $this->textExtractor = $this->createMock(TextExtractionService::class);
         $this->indexService = $this->createMock(IndexService::class);
@@ -39,6 +72,17 @@ class FileTextControllerTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->config = $this->createMock(IAppConfig::class);
+=======
+        $this->request       = $this->createMock(IRequest::class);
+        $this->textExtractor = $this->createMock(TextExtractionService::class);
+        $this->indexService  = $this->createMock(IndexService::class);
+        $this->fileService   = $this->createMock(FileService::class);
+        $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->config = $this->createMock(IAppConfig::class);
+        $this->manualEntityService = $this->createMock(ManualEntityService::class);
+        $this->userSession         = $this->createMock(IUserSession::class);
+>>>>>>> origin/development
 
         $this->controller = new FileTextController(
             'openregister',
@@ -48,14 +92,25 @@ class FileTextControllerTest extends TestCase
             $this->fileService,
             $this->entityRelationMapper,
             $this->logger,
+<<<<<<< HEAD
             $this->config
         );
     }
+=======
+            $this->config,
+            $this->manualEntityService,
+            $this->userSession
+        );
+    }//end setUp()
+>>>>>>> origin/development
 
     // =========================================================================
     // getFileText
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testGetFileTextReturnsDeprecated(): void
     {
         $result = $this->controller->getFileText(1);
@@ -66,7 +121,11 @@ class FileTextControllerTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('deprecated', $data['message']);
         $this->assertEquals(1, $data['file_id']);
+<<<<<<< HEAD
     }
+=======
+    }//end testGetFileTextReturnsDeprecated()
+>>>>>>> origin/development
 
     public function testGetFileTextReturnsDeprecatedWithDifferentFileId(): void
     {
@@ -77,12 +136,19 @@ class FileTextControllerTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertEquals(42, $data['file_id']);
         $this->assertStringContainsString('chunk-based endpoints', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testGetFileTextReturnsDeprecatedWithDifferentFileId()
+>>>>>>> origin/development
 
     // =========================================================================
     // extractFileText
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testExtractFileTextDisabledWhenNoConfig(): void
     {
         $this->config->method('hasKey')->willReturn(false);
@@ -94,14 +160,28 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('disabled', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testExtractFileTextDisabledWhenNoConfig()
+>>>>>>> origin/development
 
     public function testExtractFileTextDisabledWhenScopeIsNone(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(json_encode([
             'extractionScope' => 'none',
         ]));
+=======
+        $this->config->method('getValueString')->willReturn(
+                json_encode(
+                [
+                    'extractionScope' => 'none',
+                ]
+                )
+                );
+>>>>>>> origin/development
 
         $this->logger->expects($this->once())
             ->method('info');
@@ -112,14 +192,28 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('disabled', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testExtractFileTextDisabledWhenScopeIsNone()
+>>>>>>> origin/development
 
     public function testExtractFileTextSuccess(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(json_encode([
             'extractionScope' => 'all',
         ]));
+=======
+        $this->config->method('getValueString')->willReturn(
+                json_encode(
+                [
+                    'extractionScope' => 'all',
+                ]
+                )
+                );
+>>>>>>> origin/development
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -131,14 +225,28 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertStringContainsString('successfully', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testExtractFileTextSuccess()
+>>>>>>> origin/development
 
     public function testExtractFileTextSuccessWithDifferentFileId(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(json_encode([
             'extractionScope' => 'all',
         ]));
+=======
+        $this->config->method('getValueString')->willReturn(
+                json_encode(
+                [
+                    'extractionScope' => 'all',
+                ]
+                )
+                );
+>>>>>>> origin/development
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -149,14 +257,28 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+<<<<<<< HEAD
     }
+=======
+    }//end testExtractFileTextSuccessWithDifferentFileId()
+>>>>>>> origin/development
 
     public function testExtractFileTextException(): void
     {
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(json_encode([
             'extractionScope' => 'all',
         ]));
+=======
+        $this->config->method('getValueString')->willReturn(
+                json_encode(
+                [
+                    'extractionScope' => 'all',
+                ]
+                )
+                );
+>>>>>>> origin/development
         $this->textExtractor->method('extractFile')
             ->willThrowException(new \Exception('Extract error'));
 
@@ -169,15 +291,29 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Extract error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testExtractFileTextException()
+>>>>>>> origin/development
 
     public function testExtractFileTextWithNullExtractionScope(): void
     {
         // Config has key but extractionScope is not set (null fallback).
         $this->config->method('hasKey')->willReturn(true);
+<<<<<<< HEAD
         $this->config->method('getValueString')->willReturn(json_encode([
             'someOtherKey' => 'value',
         ]));
+=======
+        $this->config->method('getValueString')->willReturn(
+                json_encode(
+                [
+                    'someOtherKey' => 'value',
+                ]
+                )
+                );
+>>>>>>> origin/development
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -188,11 +324,16 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+<<<<<<< HEAD
     }
+=======
+    }//end testExtractFileTextWithNullExtractionScope()
+>>>>>>> origin/development
 
     // =========================================================================
     // bulkExtract
     // =========================================================================
+<<<<<<< HEAD
 
     public function testBulkExtractSuccess(): void
     {
@@ -200,6 +341,16 @@ class FileTextControllerTest extends TestCase
             ->willReturnMap([
                 ['limit', 100, '50'],
             ]);
+=======
+    public function testBulkExtractSuccess(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap(
+                    [
+                        ['limit', 100, '50'],
+                    ]
+                    );
+>>>>>>> origin/development
         $this->textExtractor->method('extractPendingFiles')
             ->with(50)
             ->willReturn(['processed' => 10, 'failed' => 0, 'total' => 10]);
@@ -212,14 +363,26 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(10, $data['processed']);
         $this->assertEquals(0, $data['failed']);
         $this->assertEquals(10, $data['total']);
+<<<<<<< HEAD
     }
+=======
+    }//end testBulkExtractSuccess()
+>>>>>>> origin/development
 
     public function testBulkExtractCapsLimitAt500(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['limit', 100, '999'],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['limit', 100, '999'],
+                    ]
+                    );
+>>>>>>> origin/development
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(500)
@@ -231,14 +394,26 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals(500, $data['processed']);
+<<<<<<< HEAD
     }
+=======
+    }//end testBulkExtractCapsLimitAt500()
+>>>>>>> origin/development
 
     public function testBulkExtractUsesDefaultLimit(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['limit', 100, 100],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['limit', 100, 100],
+                    ]
+                    );
+>>>>>>> origin/development
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(100)
@@ -251,14 +426,26 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(5, $data['processed']);
         $this->assertEquals(1, $data['failed']);
         $this->assertEquals(6, $data['total']);
+<<<<<<< HEAD
     }
+=======
+    }//end testBulkExtractUsesDefaultLimit()
+>>>>>>> origin/development
 
     public function testBulkExtractException(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['limit', 100, '50'],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['limit', 100, '50'],
+                    ]
+                    );
+>>>>>>> origin/development
         $this->textExtractor->method('extractPendingFiles')
             ->willThrowException(new \Exception('Bulk error'));
 
@@ -271,12 +458,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Bulk error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testBulkExtractException()
+>>>>>>> origin/development
 
     // =========================================================================
     // getStats
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testGetStatsSuccess(): void
     {
         $statsData = ['totalFiles' => 100, 'extracted' => 80, 'pending' => 20];
@@ -288,7 +482,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals($statsData, $data['stats']);
+<<<<<<< HEAD
     }
+=======
+    }//end testGetStatsSuccess()
+>>>>>>> origin/development
 
     public function testGetStatsException(): void
     {
@@ -304,12 +502,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Stats error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testGetStatsException()
+>>>>>>> origin/development
 
     // =========================================================================
     // deleteFileText
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testDeleteFileTextNotImplemented(): void
     {
         $result = $this->controller->deleteFileText(1);
@@ -318,7 +523,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('not yet implemented', strtolower($data['message']));
+<<<<<<< HEAD
     }
+=======
+    }//end testDeleteFileTextNotImplemented()
+>>>>>>> origin/development
 
     public function testDeleteFileTextNotImplementedWithDifferentId(): void
     {
@@ -328,12 +537,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('chunk-based endpoints', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testDeleteFileTextNotImplementedWithDifferentId()
+>>>>>>> origin/development
 
     // =========================================================================
     // processAndIndexExtracted
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testProcessAndIndexExtractedSuccess(): void
     {
         $expectedResult = ['processed' => 5, 'indexed' => 5];
@@ -345,7 +561,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexExtractedSuccess()
+>>>>>>> origin/development
 
     public function testProcessAndIndexExtractedWithLimit(): void
     {
@@ -359,7 +579,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexExtractedWithLimit()
+>>>>>>> origin/development
 
     public function testProcessAndIndexExtractedWithChunkSize(): void
     {
@@ -371,7 +595,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexExtractedWithChunkSize()
+>>>>>>> origin/development
 
     public function testProcessAndIndexExtractedWithChunkOverlap(): void
     {
@@ -383,7 +611,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexExtractedWithChunkOverlap()
+>>>>>>> origin/development
 
     public function testProcessAndIndexExtractedWithAllParams(): void
     {
@@ -397,7 +629,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexExtractedWithAllParams()
+>>>>>>> origin/development
 
     public function testProcessAndIndexExtractedException(): void
     {
@@ -413,12 +649,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Index error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexExtractedException()
+>>>>>>> origin/development
 
     // =========================================================================
     // processAndIndexFile
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testProcessAndIndexFileSuccess(): void
     {
         $expectedResult = ['processed' => 1];
@@ -429,7 +672,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexFileSuccess()
+>>>>>>> origin/development
 
     public function testProcessAndIndexFileWithChunkSize(): void
     {
@@ -441,7 +688,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexFileWithChunkSize()
+>>>>>>> origin/development
 
     public function testProcessAndIndexFileWithChunkOverlap(): void
     {
@@ -453,7 +704,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexFileWithChunkOverlap()
+>>>>>>> origin/development
 
     public function testProcessAndIndexFileWithAllParams(): void
     {
@@ -466,7 +721,11 @@ class FileTextControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertEquals($expectedResult, $result->getData());
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexFileWithAllParams()
+>>>>>>> origin/development
 
     public function testProcessAndIndexFileException(): void
     {
@@ -482,12 +741,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('File index error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testProcessAndIndexFileException()
+>>>>>>> origin/development
 
     // =========================================================================
     // getChunkingStats
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testGetChunkingStatsSuccess(): void
     {
         $statsData = ['total' => 100, 'indexed' => 90, 'pending' => 10];
@@ -500,7 +766,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals($statsData, $data['stats']);
+<<<<<<< HEAD
     }
+=======
+    }//end testGetChunkingStatsSuccess()
+>>>>>>> origin/development
 
     public function testGetChunkingStatsException(): void
     {
@@ -516,12 +786,19 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Chunking stats error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testGetChunkingStatsException()
+>>>>>>> origin/development
 
     // =========================================================================
     // anonymizeFile
     // =========================================================================
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
     public function testAnonymizeFileNotFound(): void
     {
         $this->fileService->method('getFileById')->willReturn(null);
@@ -532,7 +809,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('not found', strtolower($data['message']));
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileNotFound()
+>>>>>>> origin/development
 
     public function testAnonymizeFileAlreadyAnonymized(): void
     {
@@ -546,7 +827,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('already anonymized', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileAlreadyAnonymized()
+>>>>>>> origin/development
 
     public function testAnonymizeFileAlreadyAnonymizedMidName(): void
     {
@@ -557,14 +842,22 @@ class FileTextControllerTest extends TestCase
         $result = $this->controller->anonymizeFile(1);
 
         $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileAlreadyAnonymizedMidName()
+>>>>>>> origin/development
 
     public function testAnonymizeFileNoEntities(): void
     {
         $fileNode = $this->createMock(\OCP\Files\File::class);
         $fileNode->method('getName')->willReturn('test.pdf');
         $this->fileService->method('getFileById')->willReturn($fileNode);
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForFile')->willReturn([]);
+=======
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')->willReturn([]);
+>>>>>>> origin/development
 
         $result = $this->controller->anonymizeFile(1);
 
@@ -572,7 +865,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('No entities', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileNoEntities()
+>>>>>>> origin/development
 
     public function testAnonymizeFileSuccess(): void
     {
@@ -590,7 +887,11 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'SSN',
             ],
         ];
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForFile')
+=======
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
+>>>>>>> origin/development
             ->with(10)
             ->willReturn($entityData);
 
@@ -600,6 +901,7 @@ class FileTextControllerTest extends TestCase
 
         $this->fileService->expects($this->once())
             ->method('anonymizeDocument')
+<<<<<<< HEAD
             ->with($fileNode, $this->callback(function ($entities) {
                 return count($entities) === 2
                     && $entities[0]['text'] === 'John Doe'
@@ -613,6 +915,31 @@ class FileTextControllerTest extends TestCase
         $this->entityRelationMapper->expects($this->once())
             ->method('markAsAnonymized')
             ->with(10, $this->stringStartsWith('anonymized_'));
+=======
+            ->with(
+                    $fileNode,
+                    $this->callback(
+                    function ($entities) {
+                        return count($entities) === 2
+                        && $entities[0]['text'] === 'John Doe'
+                        && $entities[0]['entityType'] === 'PERSON'
+                        && strlen($entities[0]['key']) === 8
+                        && $entities[1]['text'] === '123-45-6789'
+                        && $entities[1]['entityType'] === 'SSN';
+                    }
+                    )
+                    )
+            ->willReturn($anonymizedFileNode);
+
+        // Per PR #1503 review: the controller MUST NOT call
+        // markAsAnonymized — it's the redaction path's responsibility
+        // (DocumentProcessingHandler::anonymizeDocument, which is mocked
+        // here via $this->fileService). A controller-side mark would
+        // race the redaction-path mark on this same fileId and clobber
+        // the per-entity placeholder values.
+        $this->entityRelationMapper->expects($this->never())
+            ->method('markAsAnonymized');
+>>>>>>> origin/development
 
         $result = $this->controller->anonymizeFile(10);
 
@@ -624,7 +951,11 @@ class FileTextControllerTest extends TestCase
         $this->assertEquals(20, $data['anonymized_file_id']);
         $this->assertEquals('/files/admin/contract_anonymized.pdf', $data['anonymized_path']);
         $this->assertEquals(2, $data['entities_replaced']);
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileSuccess()
+>>>>>>> origin/development
 
     public function testAnonymizeFileDeduplicatesEntities(): void
     {
@@ -647,7 +978,11 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'ORGANIZATION',
             ],
         ];
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForFile')
+=======
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
+>>>>>>> origin/development
             ->willReturn($entityData);
 
         $anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
@@ -656,6 +991,7 @@ class FileTextControllerTest extends TestCase
 
         $this->fileService->expects($this->once())
             ->method('anonymizeDocument')
+<<<<<<< HEAD
             ->with($fileNode, $this->callback(function ($entities) {
                 // Should be deduplicated: 2 unique entities, not 3.
                 return count($entities) === 2;
@@ -663,6 +999,22 @@ class FileTextControllerTest extends TestCase
             ->willReturn($anonymizedFileNode);
 
         $this->entityRelationMapper->expects($this->once())
+=======
+            ->with(
+                    $fileNode,
+                    $this->callback(
+                    function ($entities) {
+                        // Should be deduplicated: 2 unique entities, not 3.
+                        return count($entities) === 2;
+                    }
+                    )
+                    )
+            ->willReturn($anonymizedFileNode);
+
+        // Same as above: marking ownership belongs to the redaction
+        // path (mocked via $this->fileService), not the controller.
+        $this->entityRelationMapper->expects($this->never())
+>>>>>>> origin/development
             ->method('markAsAnonymized');
 
         $result = $this->controller->anonymizeFile(5);
@@ -671,7 +1023,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals(2, $data['entities_replaced']);
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileDeduplicatesEntities()
+>>>>>>> origin/development
 
     public function testAnonymizeFileException(): void
     {
@@ -687,7 +1043,11 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('File error', $data['message']);
+<<<<<<< HEAD
     }
+=======
+    }//end testAnonymizeFileException()
+>>>>>>> origin/development
 
     public function testAnonymizeFileExceptionDuringAnonymization(): void
     {
@@ -701,7 +1061,11 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'PERSON',
             ],
         ];
+<<<<<<< HEAD
         $this->entityRelationMapper->method('findEntitiesForFile')
+=======
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
+>>>>>>> origin/development
             ->willReturn($entityData);
 
         $this->fileService->method('anonymizeDocument')
@@ -713,5 +1077,10 @@ class FileTextControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Anonymization failed', $data['message']);
+<<<<<<< HEAD
     }
 }
+=======
+    }//end testAnonymizeFileExceptionDuringAnonymization()
+}//end class
+>>>>>>> origin/development

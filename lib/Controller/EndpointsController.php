@@ -5,6 +5,12 @@
  *
  * Controller for handling endpoint management operations.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -30,7 +36,13 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+<<<<<<< HEAD
 use OCP\IRequest;
+=======
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUserSession;
+>>>>>>> origin/development
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,6 +63,18 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+<<<<<<< HEAD
+=======
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per endpoint route.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ *
+ * The resource-CRUD verbs (index/show/create/update/patch/destroy) are governed by task-1.
+ * The test/logs/logStats/allLogs methods are a production-observability cross-cut (endpoint
+ * call logging) and are intentionally NOT annotated here — they belong to the
+ * production-observability capability.
+>>>>>>> origin/development
  */
 class EndpointsController extends Controller
 {
@@ -92,6 +116,23 @@ class EndpointsController extends Controller
     private readonly LoggerInterface $logger;
 
     /**
+<<<<<<< HEAD
+=======
+     * User session for authentication checks.
+     *
+     * @var IUserSession User session instance
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Group manager for admin-role checks.
+     *
+     * @var IGroupManager Group manager instance
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
+>>>>>>> origin/development
      * Constructor
      *
      * Initializes controller with required dependencies for endpoint management.
@@ -103,6 +144,11 @@ class EndpointsController extends Controller
      * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
      * @param EndpointService   $endpointService   Endpoint service for business logic
      * @param LoggerInterface   $logger            Logger for error tracking
+<<<<<<< HEAD
+=======
+     * @param IUserSession      $userSession       User session for auth checks
+     * @param IGroupManager     $groupManager      Group manager for admin checks
+>>>>>>> origin/development
      *
      * @return void
      */
@@ -112,7 +158,13 @@ class EndpointsController extends Controller
         EndpointMapper $endpointMapper,
         EndpointLogMapper $endpointLogMapper,
         EndpointService $endpointService,
+<<<<<<< HEAD
         LoggerInterface $logger
+=======
+        LoggerInterface $logger,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+>>>>>>> origin/development
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -122,9 +174,32 @@ class EndpointsController extends Controller
         $this->endpointLogMapper = $endpointLogMapper;
         $this->endpointService   = $endpointService;
         $this->logger            = $logger;
+<<<<<<< HEAD
     }//end __construct()
 
     /**
+=======
+        $this->userSession       = $userSession;
+        $this->groupManager      = $groupManager;
+    }//end __construct()
+
+    /**
+     * Determine whether the current user is a Nextcloud admin.
+     *
+     * @return bool True when the active session user belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    /**
+>>>>>>> origin/development
      * List all endpoints
      *
      * Retrieves all configured endpoints from the database and returns them
@@ -140,6 +215,7 @@ class EndpointsController extends Controller
      *     array{error?: 'Failed to list endpoints',
      *     results?: array<\OCA\OpenRegister\Db\Endpoint>, total?: int<0, max>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -196,6 +272,7 @@ class EndpointsController extends Controller
      *     array<never, never>>|JSONResponse<404|500,
      *     array{error: 'Endpoint not found'|'Failed to retrieve endpoint'},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -253,11 +330,20 @@ class EndpointsController extends Controller
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint,
      *     array<never, never>>|JSONResponse<400|500, array{error: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
+<<<<<<< HEAD
+=======
+        // SECURITY (H7): endpoint writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
+>>>>>>> origin/development
         try {
             // Get endpoint data from request parameters.
             $data = $this->request->getParams();
@@ -329,11 +415,20 @@ class EndpointsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint,
      *     array<never, never>>|JSONResponse<404|500, array{error: string},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
+<<<<<<< HEAD
+=======
+        // SECURITY (H7): endpoint writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
+>>>>>>> origin/development
         try {
             // Get update data from request parameters.
             $data = $this->request->getParams();
@@ -408,10 +503,56 @@ class EndpointsController extends Controller
      *     array{error: 'Endpoint not found'|'Failed to delete endpoint'},
      *     array<never, never>>
      */
+<<<<<<< HEAD
+=======
+
+    /**
+     * Partially update an endpoint by ID.
+     *
+     * The route `endpoints#patch` (`PATCH /api/endpoints/{id}`) delegates to
+     * the same body as `update()` because Nextcloud routes PATCH and PUT to
+     * separate methods even when the handler is identical. Mirrors the same
+     * shape used on `ApplicationsController::patch`.
+     *
+     * @param int $id The ID of the endpoint to patch.
+     *
+     * @return JSONResponse JSON response containing patched endpoint.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update(id: $id);
+
+    }//end patch()
+
+    /**
+     * Delete an endpoint by ID.
+     *
+     * @param int $id The endpoint ID to delete.
+     *
+     * @return JSONResponse Empty response on success or error response on failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     */
+>>>>>>> origin/development
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
+<<<<<<< HEAD
+=======
+        // SECURITY (H7): endpoint writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
+>>>>>>> origin/development
         try {
             // Find endpoint by ID to ensure it exists before deletion.
             $endpoint = $this->endpointMapper->find($id);
@@ -477,6 +618,14 @@ class EndpointsController extends Controller
      *
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
+<<<<<<< HEAD
+=======
+     * @psalm-suppress InvalidTemplateParam The status code is the int echoed back from the
+     *     tested endpoint's response (`$result['statusCode']`), so it is genuinely the
+     *     full HTTP range — narrowing it would be a lie. The narrow-or-baseline
+     *     guidance from #1960 lands here on the "baseline" side; we use a focused
+     *     `@psalm-suppress` annotation to keep the noise scoped to this one method.
+>>>>>>> origin/development
      *
      * @return JSONResponse JSON response with test result or error
      *
@@ -484,6 +633,7 @@ class EndpointsController extends Controller
      *     array{error?: string, success?: bool, message?: string,
      *     statusCode?: int, response?: mixed},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -569,6 +719,7 @@ class EndpointsController extends Controller
      *     array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs',
      *     results?: list<\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -642,6 +793,7 @@ class EndpointsController extends Controller
      *     array{error?: 'Endpoint not found'|
      *     'Failed to retrieve endpoint log statistics', total?: int,
      *     success?: int, failed?: int}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -705,6 +857,7 @@ class EndpointsController extends Controller
      *     array{error?: string, results?: array<\OCA\OpenRegister\Db\EndpointLog>,
      *     total?: int<0, max>},
      *     array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

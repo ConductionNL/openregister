@@ -40,7 +40,11 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
+<<<<<<< HEAD
     <version>0.2.13-unstable.78</version>
+=======
+    <version>0.2.13-unstable.86</version>
+>>>>>>> origin/development
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -62,7 +66,7 @@ Vrij en open source onder de EUPL-licentie.
     </documentation>
 
     <dependencies>
-        <php min-version="8.0" min-int-size="64"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
@@ -72,9 +76,18 @@ Vrij en open source onder de EUPL-licentie.
 	<repair-steps>
 		<post-migration>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+<<<<<<< HEAD
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+=======
+			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
+		</post-migration>
+		<install>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+>>>>>>> origin/development
 		</install>
 	</repair-steps>
 
@@ -90,11 +103,23 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
+<<<<<<< HEAD
+=======
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
+>>>>>>> origin/development
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
+<<<<<<< HEAD
+=======
+		<job>OCA\OpenRegister\BackgroundJob\RealtimeEventRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BatchNotificationJob</job>
+		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
+>>>>>>> origin/development
 	</background-jobs>
 
     <navigations>
@@ -109,14 +134,27 @@ Vrij en open source onder de EUPL-licentie.
 
 	<settings>
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
+		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 
 	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
 	<commands>
+<<<<<<< HEAD
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
 		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
+=======
+		<!-- Solr / migrate-storage commands trigger circular DI during occ
+		     bootstrap (SettingsService → IndexService → many other services).
+		     Disabled until that's untangled. -->
+		<!-- <command>OCA\OpenRegister\Command\SolrDebugCommand</command> -->
+		<!-- <command>OCA\OpenRegister\Command\SolrManagementCommand</command> -->
+		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
+		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
+		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+>>>>>>> origin/development
 	</commands>
 	-->
 

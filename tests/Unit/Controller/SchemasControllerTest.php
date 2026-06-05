@@ -10,7 +10,10 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+<<<<<<< HEAD
 use OCA\OpenRegister\Service\DownloadService;
+=======
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -28,7 +31,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+<<<<<<< HEAD
 /**
+=======
+/*
+>>>>>>> origin/development
  * Unit tests for SchemasController
  *
  * @package Unit\Controller
@@ -37,6 +44,7 @@ use Psr\Container\ContainerInterface;
 
 class SchemasControllerTest extends TestCase
 {
+<<<<<<< HEAD
     private SchemasController $controller;
     private IRequest&MockObject $request;
     private IAppConfig&MockObject $config;
@@ -51,10 +59,48 @@ class SchemasControllerTest extends TestCase
     private SchemaService&MockObject $schemaService;
     private LoggerInterface&MockObject $logger;
 
+=======
+
+    private SchemasController $controller;
+
+    private IRequest&MockObject $request;
+
+    private IAppConfig&MockObject $config;
+
+    private SchemaMapper&MockObject $schemaMapper;
+
+    private MagicMapper&MockObject $objectMapper;
+
+    private UploadService&MockObject $uploadService;
+
+    private AuditTrailMapper&MockObject $auditTrailMapper;
+
+    private OrganisationService&MockObject $organisationService;
+
+    private SchemaCacheHandler&MockObject $schemaCacheService;
+
+    private FacetCacheHandler&MockObject $facetCacheSvc;
+
+    private SchemaService&MockObject $schemaService;
+
+    private LoggerInterface&MockObject $logger;
+
+    private \Psr\Container\ContainerInterface&MockObject $container;
+
+    /**
+     * The user the mocked session resolves to. SchemasController resolves the
+     * session + group manager lazily via the container, so the container's
+     * get() returns mocks driven by this property. Defaults to an admin so
+     * write and authenticated-read tests pass; anonymous-read tests set it null.
+     */
+    private ?\OCP\IUser $currentUser = null;
+
+>>>>>>> origin/development
     protected function setUp(): void
     {
         parent::setUp();
 
+<<<<<<< HEAD
         $this->request = $this->createMock(IRequest::class);
         $this->config = $this->createMock(IAppConfig::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -68,13 +114,57 @@ class SchemasControllerTest extends TestCase
         $this->schemaService = $this->createMock(SchemaService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+=======
+        $this->request          = $this->createMock(IRequest::class);
+        $this->config           = $this->createMock(IAppConfig::class);
+        $this->schemaMapper     = $this->createMock(SchemaMapper::class);
+        $this->objectMapper     = $this->createMock(MagicMapper::class);
+        $this->uploadService    = $this->createMock(UploadService::class);
+        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+        $this->organisationService = $this->createMock(OrganisationService::class);
+        $this->schemaCacheService  = $this->createMock(SchemaCacheHandler::class);
+        $this->facetCacheSvc       = $this->createMock(FacetCacheHandler::class);
+        $this->schemaService       = $this->createMock(SchemaService::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+
+        // SchemasController resolves IUserSession + IGroupManager lazily via the
+        // container (isCurrentUserAdmin / checkSchemaManagePermission / the
+        // read-visibility guard). Default to an authenticated admin; anonymous-read
+        // tests set $this->currentUser = null.
+        $this->currentUser = $this->createMock(\OCP\IUser::class);
+        $this->currentUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturnCallback(fn() => $this->currentUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturnCallback(fn() => $this->currentUser !== null);
+        $groupManager->method('getUserGroupIds')->willReturn(['admin']);
+
+        $this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $this->container->method('get')->willReturnCallback(
+                function ($id) use ($userSession, $groupManager) {
+                    if ($id === \OCP\IUserSession::class) {
+                        return $userSession;
+                    }
+
+                    if ($id === \OCP\IGroupManager::class) {
+                        return $groupManager;
+                    }
+
+                    return null;
+                }
+                );
+
+>>>>>>> origin/development
         $this->controller = new SchemasController(
             'openregister',
             $this->request,
             $this->config,
             $this->schemaMapper,
             $this->objectMapper,
+<<<<<<< HEAD
             $this->downloadService,
+=======
+>>>>>>> origin/development
             $this->uploadService,
             $this->auditTrailMapper,
             $this->organisationService,
@@ -82,9 +172,15 @@ class SchemasControllerTest extends TestCase
             $this->facetCacheSvc,
             $this->schemaService,
             $this->logger,
+<<<<<<< HEAD
             $this->createMock(\Psr\Container\ContainerInterface::class)
         );
     }
+=======
+            $this->container
+        );
+    }//end setUp()
+>>>>>>> origin/development
 
     public function testIndexReturnsSchemas(): void
     {
@@ -98,6 +194,7 @@ class SchemasControllerTest extends TestCase
 
         $this->assertInstanceOf(JSONResponse::class, $result);
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
 
     public function testIndexWithPagination(): void
@@ -106,12 +203,28 @@ class SchemasControllerTest extends TestCase
             '_limit' => '5',
             '_offset' => '10',
         ]);
+=======
+    }//end testIndexReturnsSchemas()
+
+    public function testIndexWithPagination(): void
+    {
+        $this->request->method('getParams')->willReturn(
+                [
+                    '_limit'  => '5',
+                    '_offset' => '10',
+                ]
+                );
+>>>>>>> origin/development
         $this->schemaMapper->method('findAll')->willReturn([]);
 
         $result = $this->controller->index();
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testIndexWithPagination()
+>>>>>>> origin/development
 
     public function testShowReturnsSchema(): void
     {
@@ -124,12 +237,81 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->show(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
 
     public function testCreateReturnsCreatedSchema(): void
     {
         $schema = $this->createMock(Schema::class);
         $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'New Schema']);
+=======
+    }//end testShowReturnsSchema()
+
+    public function testShowAnonymousUnpublishedSchemaReturns401(): void
+    {
+        // Anonymous (no user) + unpublished schema → 401 (read-visibility guard).
+        $this->currentUser = null;
+        $schema            = $this->createMock(Schema::class);
+        $schema->method('getPublished')->willReturn(null);
+        $schema->method('getDepublished')->willReturn(null);
+
+        $this->request->method('getParam')->willReturn([]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->controller->show(1);
+
+        $this->assertSame(401, $result->getStatus());
+    }//end testShowAnonymousUnpublishedSchemaReturns401()
+
+    public function testShowAnonymousPublishedSchemaReturns200(): void
+    {
+        // Anonymous + published schema → 200.
+        $this->currentUser = null;
+        $schema            = $this->createMock(Schema::class);
+        $schema->method('getPublished')->willReturn(new \DateTime());
+        $schema->method('getDepublished')->willReturn(null);
+        $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+        $this->schemaMapper->method('findExtendedBy')->willReturn([]);
+
+        $this->request->method('getParam')->willReturn([]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->controller->show(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }//end testShowAnonymousPublishedSchemaReturns200()
+
+    public function testIndexAnonymousFiltersUnpublishedSchemas(): void
+    {
+        // Anonymous list returns only published schemas.
+        $this->currentUser = null;
+        $published         = $this->createMock(Schema::class);
+        $published->method('getPublished')->willReturn(new \DateTime());
+        $published->method('getDepublished')->willReturn(null);
+        $published->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Published']);
+
+        $unpublished = $this->createMock(Schema::class);
+        $unpublished->method('getPublished')->willReturn(null);
+        $unpublished->method('getDepublished')->willReturn(null);
+        $unpublished->method('jsonSerialize')->willReturn(['id' => 2, 'title' => 'Unpublished']);
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->schemaMapper->method('findAll')->willReturn([$published, $unpublished]);
+        $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
+
+        $result = $this->controller->index();
+        $data   = $result->getData();
+
+        $this->assertSame(200, $result->getStatus());
+        $ids = array_map(fn($s) => $s['id'], $data['results']);
+        $this->assertContains(1, $ids);
+        $this->assertNotContains(2, $ids);
+    }//end testIndexAnonymousFiltersUnpublishedSchemas()
+
+    public function testCreateReturnsCreatedSchema(): void
+    {
+        $schema = $this->createRealSchema(1, 'New Schema');
+>>>>>>> origin/development
 
         $this->request->method('getParams')->willReturn(['title' => 'New Schema']);
         $this->schemaMapper->method('createFromArray')->willReturn($schema);
@@ -137,6 +319,7 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(201, $result->getStatus());
+<<<<<<< HEAD
     }
 
     public function testCreateRemovesInternalParams(): void
@@ -158,6 +341,34 @@ class SchemasControllerTest extends TestCase
 
         $this->controller->create();
     }
+=======
+    }//end testCreateReturnsCreatedSchema()
+
+    public function testCreateRemovesInternalParams(): void
+    {
+        $schema = $this->createRealSchema(1, 'Test');
+
+        $this->request->method('getParams')->willReturn(
+                [
+                    '_route' => 'test',
+                    'id'     => 5,
+                    'title'  => 'Test',
+                ]
+                );
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->with(
+                    $this->callback(
+                    function ($data) {
+                        return !isset($data['_route']) && !isset($data['id']) && isset($data['title']);
+                    }
+                    )
+                    )
+            ->willReturn($schema);
+
+        $this->controller->create();
+    }//end testCreateRemovesInternalParams()
+>>>>>>> origin/development
 
     public function testCreateReturns500OnException(): void
     {
@@ -168,6 +379,7 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
 
     private function createRealSchema(int $id = 1, string $title = 'Test'): Schema
@@ -175,11 +387,24 @@ class SchemasControllerTest extends TestCase
         $schema = new Schema();
         $ref = new \ReflectionClass($schema);
         $prop = $ref->getProperty('id');
+=======
+    }//end testCreateReturns500OnException()
+
+    private function createRealSchema(int $id=1, string $title='Test'): Schema
+    {
+        $schema = new Schema();
+        $ref    = new \ReflectionClass($schema);
+        $prop   = $ref->getProperty('id');
+>>>>>>> origin/development
         $prop->setAccessible(true);
         $prop->setValue($schema, $id);
         $schema->setTitle($title);
         return $schema;
+<<<<<<< HEAD
     }
+=======
+    }//end createRealSchema()
+>>>>>>> origin/development
 
     public function testUpdateReturnsUpdatedSchema(): void
     {
@@ -191,7 +416,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateReturnsUpdatedSchema()
+>>>>>>> origin/development
 
     public function testPatchDelegatesToUpdate(): void
     {
@@ -203,17 +432,29 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->patch(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testPatchDelegatesToUpdate()
+>>>>>>> origin/development
 
     public function testDestroyReturnsEmptyOnSuccess(): void
     {
         $schema = $this->createRealSchema(1, 'Test');
         $this->schemaMapper->method('find')->willReturn($schema);
+<<<<<<< HEAD
+=======
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+>>>>>>> origin/development
 
         $result = $this->controller->destroy(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDestroyReturnsEmptyOnSuccess()
+>>>>>>> origin/development
 
     public function testDestroyReturns500WhenNotFound(): void
     {
@@ -225,7 +466,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->destroy(999);
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDestroyReturns500WhenNotFound()
+>>>>>>> origin/development
 
     public function testDownloadReturnsSchema(): void
     {
@@ -235,7 +480,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->download(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDownloadReturnsSchema()
+>>>>>>> origin/development
 
     public function testDownloadReturns404WhenNotFound(): void
     {
@@ -246,7 +495,11 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(404, $result->getStatus());
         $this->assertSame('Schema not found', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testDownloadReturns404WhenNotFound()
+>>>>>>> origin/development
 
     public function testRelatedReturnsRelationships(): void
     {
@@ -265,7 +518,11 @@ class SchemasControllerTest extends TestCase
         $this->assertArrayHasKey('incoming', $data);
         $this->assertArrayHasKey('outgoing', $data);
         $this->assertArrayHasKey('total', $data);
+<<<<<<< HEAD
     }
+=======
+    }//end testRelatedReturnsRelationships()
+>>>>>>> origin/development
 
     public function testRelatedReturns404WhenSchemaNotFound(): void
     {
@@ -275,7 +532,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->related(999);
 
         $this->assertSame(404, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testRelatedReturns404WhenSchemaNotFound()
+>>>>>>> origin/development
 
     public function testRelatedReturns500OnGenericException(): void
     {
@@ -285,13 +546,18 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->related(1);
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testRelatedReturns500OnGenericException()
+>>>>>>> origin/development
 
     public function testStatsReturnsSchemaStatistics(): void
     {
         $schema = $this->createRealSchema(1, 'Stats Schema');
         $this->schemaMapper->method('find')->willReturn($schema);
 
+<<<<<<< HEAD
         $this->objectMapper->method('getStatistics')->willReturn([
             'total' => 50,
             'invalid' => 3,
@@ -308,6 +574,30 @@ class SchemasControllerTest extends TestCase
         $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([
             1 => 3,
         ]);
+=======
+        $this->objectMapper->method('getStatistics')->willReturn(
+                [
+                    'total'     => 50,
+                    'invalid'   => 3,
+                    'deleted'   => 5,
+                    'published' => 42,
+                    'locked'    => 1,
+                    'size'      => 10000,
+                ]
+                );
+
+        $this->auditTrailMapper->method('getStatistics')->willReturn(
+                [
+                    'total' => 100,
+                ]
+                );
+
+        $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn(
+                [
+                    1 => 3,
+                ]
+                );
+>>>>>>> origin/development
 
         $result = $this->controller->stats(1);
 
@@ -316,7 +606,11 @@ class SchemasControllerTest extends TestCase
         $this->assertSame(50, $data['objectCount']);
         $this->assertArrayHasKey('objects', $data);
         $this->assertArrayHasKey('logs', $data);
+<<<<<<< HEAD
     }
+=======
+    }//end testStatsReturnsSchemaStatistics()
+>>>>>>> origin/development
 
     public function testStatsReturns404WhenSchemaNotFound(): void
     {
@@ -326,6 +620,7 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->stats(999);
 
         $this->assertSame(404, $result->getStatus());
+<<<<<<< HEAD
     }
 
     public function testExploreReturnsExplorationResults(): void
@@ -334,11 +629,27 @@ class SchemasControllerTest extends TestCase
             'newProperties' => ['field1' => ['type' => 'string']],
             'objectsScanned' => 100,
         ]);
+=======
+    }//end testStatsReturns404WhenSchemaNotFound()
+
+    public function testExploreReturnsExplorationResults(): void
+    {
+        $this->schemaService->method('exploreSchemaProperties')->willReturn(
+                [
+                    'newProperties'  => ['field1' => ['type' => 'string']],
+                    'objectsScanned' => 100,
+                ]
+                );
+>>>>>>> origin/development
 
         $result = $this->controller->explore(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testExploreReturnsExplorationResults()
+>>>>>>> origin/development
 
     public function testExploreReturns500OnException(): void
     {
@@ -348,7 +659,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->explore(1);
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testExploreReturns500OnException()
+>>>>>>> origin/development
 
     public function testUpdateFromExplorationReturns400WhenNoProperties(): void
     {
@@ -357,32 +672,59 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->updateFromExploration(1);
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateFromExplorationReturns400WhenNoProperties()
+>>>>>>> origin/development
 
     public function testUpdateFromExplorationSuccess(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['properties', [], ['field1' => ['type' => 'string']]],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['properties', [], ['field1' => ['type' => 'string']]],
+                    ]
+                    );
+>>>>>>> origin/development
 
         $updatedSchema = $this->createRealSchema(1, 'Updated');
         $this->schemaService->method('updateSchemaFromExploration')->willReturn($updatedSchema);
         // clearSchemaCache() returns void, no need to mock return value
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/development
         $result = $this->controller->updateFromExploration(1);
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateFromExplorationSuccess()
+>>>>>>> origin/development
 
     public function testUpdateFromExplorationReturns500OnException(): void
     {
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['properties', [], ['field1' => ['type' => 'string']]],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['properties', [], ['field1' => ['type' => 'string']]],
+                    ]
+                    );
+>>>>>>> origin/development
 
         $this->schemaService->method('updateSchemaFromExploration')
             ->willThrowException(new Exception('Update error'));
@@ -390,7 +732,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->updateFromExploration(1);
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateFromExplorationReturns500OnException()
+>>>>>>> origin/development
 
     public function testPublishSetsPublicationDate(): void
     {
@@ -402,7 +748,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->publish(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testPublishSetsPublicationDate()
+>>>>>>> origin/development
 
     public function testPublishReturns404WhenSchemaNotFound(): void
     {
@@ -413,7 +763,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->publish(999);
 
         $this->assertSame(404, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testPublishReturns404WhenSchemaNotFound()
+>>>>>>> origin/development
 
     public function testDepublishSetsDepublicationDate(): void
     {
@@ -425,7 +779,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->depublish(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDepublishSetsDepublicationDate()
+>>>>>>> origin/development
 
     public function testDepublishReturns404WhenSchemaNotFound(): void
     {
@@ -436,12 +794,17 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->depublish(999);
 
         $this->assertSame(404, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDepublishReturns404WhenSchemaNotFound()
+>>>>>>> origin/development
 
     public function testUpdateRemovesImmutableFields(): void
     {
         $schema = $this->createRealSchema(1, 'Updated');
 
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([
             'id' => 1,
             'organisation' => 'org1',
@@ -449,10 +812,22 @@ class SchemasControllerTest extends TestCase
             'created' => '2024-01-01',
             'title' => 'Updated',
         ]);
+=======
+        $this->request->method('getParams')->willReturn(
+                [
+                    'id'           => 1,
+                    'organisation' => 'org1',
+                    'owner'        => 'user1',
+                    'created'      => '2024-01-01',
+                    'title'        => 'Updated',
+                ]
+                );
+>>>>>>> origin/development
         $this->schemaMapper->expects($this->once())
             ->method('updateFromArray')
             ->with(
                 $this->equalTo(1),
+<<<<<<< HEAD
                 $this->callback(function ($data) {
                     return !isset($data['id'])
                         && !isset($data['organisation'])
@@ -460,11 +835,26 @@ class SchemasControllerTest extends TestCase
                         && !isset($data['created'])
                         && isset($data['title']);
                 })
+=======
+                $this->callback(
+                        function ($data) {
+                            return !isset($data['id'])
+                            && !isset($data['organisation'])
+                            && !isset($data['owner'])
+                            && !isset($data['created'])
+                            && isset($data['title']);
+                        }
+                        )
+>>>>>>> origin/development
             )
             ->willReturn($schema);
 
         $this->controller->update(1);
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateRemovesImmutableFields()
+>>>>>>> origin/development
 
     public function testUpdateReturns500OnException(): void
     {
@@ -475,19 +865,34 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
 
     // ── index() branch coverage ──
 
+=======
+    }//end testUpdateReturns500OnException()
+
+    // ── index() branch coverage ──
+>>>>>>> origin/development
     public function testIndexWithPageBasedPagination(): void
     {
         $schema = $this->createMock(Schema::class);
         $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
 
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([
             '_limit' => '10',
             '_page' => '3',
         ]);
+=======
+        $this->request->method('getParams')->willReturn(
+                [
+                    '_limit' => '10',
+                    '_page'  => '3',
+                ]
+                );
+>>>>>>> origin/development
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
         $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
 
@@ -496,13 +901,18 @@ class SchemasControllerTest extends TestCase
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('results', $data);
+<<<<<<< HEAD
     }
+=======
+    }//end testIndexWithPageBasedPagination()
+>>>>>>> origin/development
 
     public function testIndexWithExtendStats(): void
     {
         $schema = $this->createMock(Schema::class);
         $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
 
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([
             '_extend' => '@self.stats',
         ]);
@@ -515,6 +925,26 @@ class SchemasControllerTest extends TestCase
         $this->auditTrailMapper->method('getStatisticsGroupedBySchema')->willReturn([
             1 => ['total' => 20, 'size' => 100],
         ]);
+=======
+        $this->request->method('getParams')->willReturn(
+                [
+                    '_extend' => '@self.stats',
+                ]
+                );
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
+        $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 2]);
+        $this->objectMapper->method('getStatisticsGroupedBySchema')->willReturn(
+                [
+                    1 => ['total' => 10, 'size' => 500, 'invalid' => 1, 'deleted' => 0, 'locked' => 0, 'published' => 9],
+                ]
+                );
+        $this->auditTrailMapper->method('getStatisticsGroupedBySchema')->willReturn(
+                [
+                    1 => ['total' => 20, 'size' => 100],
+                ]
+                );
+>>>>>>> origin/development
 
         $result = $this->controller->index();
 
@@ -523,16 +953,28 @@ class SchemasControllerTest extends TestCase
         $this->assertArrayHasKey('stats', $data['results'][0]);
         $this->assertSame(10, $data['results'][0]['stats']['objects']['total']);
         $this->assertSame(2, $data['results'][0]['stats']['registers']);
+<<<<<<< HEAD
     }
+=======
+    }//end testIndexWithExtendStats()
+>>>>>>> origin/development
 
     public function testIndexWithExtendStatsDefaultsForMissingSchema(): void
     {
         $schema = $this->createMock(Schema::class);
         $schema->method('jsonSerialize')->willReturn(['id' => 99, 'title' => 'Orphan']);
 
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([
             '_extend' => ['@self.stats'],
         ]);
+=======
+        $this->request->method('getParams')->willReturn(
+                [
+                    '_extend' => ['@self.stats'],
+                ]
+                );
+>>>>>>> origin/development
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
         $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
         $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([]);
@@ -545,6 +987,7 @@ class SchemasControllerTest extends TestCase
         $stats = $result->getData()['results'][0]['stats'];
         $this->assertSame(0, $stats['objects']['total']);
         $this->assertSame(0, $stats['registers']);
+<<<<<<< HEAD
     }
 
     public function testIndexWithFilters(): void
@@ -552,13 +995,28 @@ class SchemasControllerTest extends TestCase
         $this->request->method('getParams')->willReturn([
             'filters' => ['title' => 'Test'],
         ]);
+=======
+    }//end testIndexWithExtendStatsDefaultsForMissingSchema()
+
+    public function testIndexWithFilters(): void
+    {
+        $this->request->method('getParams')->willReturn(
+                [
+                    'filters' => ['title' => 'Test'],
+                ]
+                );
+>>>>>>> origin/development
         $this->schemaMapper->method('findAll')->willReturn([]);
         $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
 
         $result = $this->controller->index();
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testIndexWithFilters()
+>>>>>>> origin/development
 
     public function testIndexExtendedByPopulated(): void
     {
@@ -567,18 +1025,32 @@ class SchemasControllerTest extends TestCase
 
         $this->request->method('getParams')->willReturn([]);
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
+<<<<<<< HEAD
         $this->schemaMapper->method('findAllExtendedBy')->willReturn([
             1 => ['uuid-child-1', 'uuid-child-2'],
         ]);
+=======
+        $this->schemaMapper->method('findAllExtendedBy')->willReturn(
+                [
+                    1 => ['uuid-child-1', 'uuid-child-2'],
+                ]
+                );
+>>>>>>> origin/development
 
         $result = $this->controller->index();
 
         $data = $result->getData();
         $this->assertSame(['uuid-child-1', 'uuid-child-2'], $data['results'][0]['@self']['extendedBy']);
+<<<<<<< HEAD
     }
 
     // ── show() branch coverage ──
 
+=======
+    }//end testIndexExtendedByPopulated()
+
+    // ── show() branch coverage ──
+>>>>>>> origin/development
     public function testShowReturns404OnDoesNotExistException(): void
     {
         $this->request->method('getParam')->willReturn([]);
@@ -589,7 +1061,11 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(404, $result->getStatus());
         $this->assertSame('Schema not found', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testShowReturns404OnDoesNotExistException()
+>>>>>>> origin/development
 
     public function testShowReturns404OnValidationException(): void
     {
@@ -600,7 +1076,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->show(999);
 
         $this->assertSame(404, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testShowReturns404OnValidationException()
+>>>>>>> origin/development
 
     public function testShowReturns500OnGenericException(): void
     {
@@ -612,13 +1092,18 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(500, $result->getStatus());
         $this->assertSame('Unexpected error', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testShowReturns500OnGenericException()
+>>>>>>> origin/development
 
     public function testShowWithExtendStats(): void
     {
         $schema = $this->createRealSchema(1, 'Stats Schema');
 
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['_extend', [], ['@self.stats']],
             ]);
@@ -629,6 +1114,26 @@ class SchemasControllerTest extends TestCase
             'total' => 25, 'invalid' => 0, 'deleted' => 0,
             'published' => 25, 'locked' => 0, 'size' => 5000,
         ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['_extend', [], ['@self.stats']],
+                    ]
+                    );
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->schemaMapper->method('findExtendedBy')->willReturn([]);
+        $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 5]);
+        $this->objectMapper->method('getStatistics')->willReturn(
+                [
+                    'total'     => 25,
+                    'invalid'   => 0,
+                    'deleted'   => 0,
+                    'published' => 25,
+                    'locked'    => 0,
+                    'size'      => 5000,
+                ]
+                );
+>>>>>>> origin/development
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 50, 'size' => 200]);
 
         $result = $this->controller->show(1);
@@ -637,7 +1142,11 @@ class SchemasControllerTest extends TestCase
         $data = $result->getData();
         $this->assertArrayHasKey('stats', $data);
         $this->assertSame(5, $data['stats']['registers']);
+<<<<<<< HEAD
     }
+=======
+    }//end testShowWithExtendStats()
+>>>>>>> origin/development
 
     public function testShowWithAllOfAddsPropertyMetadata(): void
     {
@@ -647,22 +1156,35 @@ class SchemasControllerTest extends TestCase
         $this->request->method('getParam')->willReturn([]);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->schemaMapper->method('findExtendedBy')->willReturn([]);
+<<<<<<< HEAD
         $this->schemaMapper->method('getPropertySourceMetadata')->willReturn([
             'field1' => ['source' => 'native'],
         ]);
+=======
+        $this->schemaMapper->method('getPropertySourceMetadata')->willReturn(
+                [
+                    'field1' => ['source' => 'native'],
+                ]
+                );
+>>>>>>> origin/development
 
         $result = $this->controller->show(1);
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('propertyMetadata', $data['@self']);
+<<<<<<< HEAD
     }
+=======
+    }//end testShowWithAllOfAddsPropertyMetadata()
+>>>>>>> origin/development
 
     public function testShowWithExtendAsString(): void
     {
         $schema = $this->createRealSchema(1, 'Test');
 
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['_extend', [], '@self.stats'],
             ]);
@@ -673,16 +1195,42 @@ class SchemasControllerTest extends TestCase
             'total' => 0, 'invalid' => 0, 'deleted' => 0,
             'published' => 0, 'locked' => 0, 'size' => 0,
         ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['_extend', [], '@self.stats'],
+                    ]
+                    );
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->schemaMapper->method('findExtendedBy')->willReturn([]);
+        $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([]);
+        $this->objectMapper->method('getStatistics')->willReturn(
+                [
+                    'total'     => 0,
+                    'invalid'   => 0,
+                    'deleted'   => 0,
+                    'published' => 0,
+                    'locked'    => 0,
+                    'size'      => 0,
+                ]
+                );
+>>>>>>> origin/development
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 0, 'size' => 0]);
 
         $result = $this->controller->show(1);
 
         $this->assertSame(200, $result->getStatus());
         $this->assertArrayHasKey('stats', $result->getData());
+<<<<<<< HEAD
     }
 
     // ── create() branch coverage ──
 
+=======
+    }//end testShowWithExtendAsString()
+
+    // ── create() branch coverage ──
+>>>>>>> origin/development
     public function testCreateReturnsErrorOnDBException(): void
     {
         $this->request->method('getParams')->willReturn(['title' => 'Test']);
@@ -692,7 +1240,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturnsErrorOnDBException()
+>>>>>>> origin/development
 
     public function testCreateReturnsErrorOnDatabaseConstraintException(): void
     {
@@ -704,7 +1256,11 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(409, $result->getStatus());
         $this->assertSame('Constraint error', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturnsErrorOnDatabaseConstraintException()
+>>>>>>> origin/development
 
     public function testCreateReturns400OnValidationError(): void
     {
@@ -716,7 +1272,11 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(400, $result->getStatus());
         $this->assertStringContainsString('Invalid', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns400OnValidationError()
+>>>>>>> origin/development
 
     public function testCreateReturns400OnMustBeError(): void
     {
@@ -727,7 +1287,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns400OnMustBeError()
+>>>>>>> origin/development
 
     public function testCreateReturns400OnRequiredError(): void
     {
@@ -738,7 +1302,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns400OnRequiredError()
+>>>>>>> origin/development
 
     public function testCreateReturns400OnFormatError(): void
     {
@@ -749,7 +1317,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns400OnFormatError()
+>>>>>>> origin/development
 
     public function testCreateReturns400OnPropertyAtError(): void
     {
@@ -760,7 +1332,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns400OnPropertyAtError()
+>>>>>>> origin/development
 
     public function testCreateReturns400OnAuthorizationError(): void
     {
@@ -771,7 +1347,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns400OnAuthorizationError()
+>>>>>>> origin/development
 
     public function testCreateReturns409OnConstraintError(): void
     {
@@ -782,7 +1362,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testCreateReturns409OnConstraintError()
+>>>>>>> origin/development
 
     public function testCreateReturns409OnDuplicateError(): void
     {
@@ -793,10 +1377,16 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->create();
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
 
     // ── update() branch coverage ──
 
+=======
+    }//end testCreateReturns409OnDuplicateError()
+
+    // ── update() branch coverage ──
+>>>>>>> origin/development
     public function testUpdateInvalidatesCaches(): void
     {
         $schema = $this->createRealSchema(1, 'Updated');
@@ -804,9 +1394,18 @@ class SchemasControllerTest extends TestCase
         $this->request->method('getParams')->willReturn(['title' => 'Updated']);
         $this->schemaMapper->method('updateFromArray')->willReturn($schema);
 
+<<<<<<< HEAD
         $this->schemaCacheService->expects($this->once())
             ->method('invalidateForSchemaChange')
             ->with(1, 'update');
+=======
+        // runtime-schema-api: update() now routes schema-cache cleanup through the
+        // canonical invalidate() entry point (which itself covers the legacy
+        // invalidateForSchemaChange cleanup plus the request-scoped mapper cache).
+        $this->schemaCacheService->expects($this->once())
+            ->method('invalidate')
+            ->with(1);
+>>>>>>> origin/development
         $this->facetCacheSvc->expects($this->once())
             ->method('invalidateForSchemaChange')
             ->with(1, 'update');
@@ -814,7 +1413,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateInvalidatesCaches()
+>>>>>>> origin/development
 
     public function testUpdateReturnsErrorOnDBException(): void
     {
@@ -825,7 +1428,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateReturnsErrorOnDBException()
+>>>>>>> origin/development
 
     public function testUpdateReturnsErrorOnDatabaseConstraintException(): void
     {
@@ -836,7 +1443,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateReturnsErrorOnDatabaseConstraintException()
+>>>>>>> origin/development
 
     public function testUpdateReturns400OnValidationError(): void
     {
@@ -847,7 +1458,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateReturns400OnValidationError()
+>>>>>>> origin/development
 
     public function testUpdateReturns409OnConstraintError(): void
     {
@@ -858,42 +1473,82 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->update(1);
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUpdateReturns409OnConstraintError()
+>>>>>>> origin/development
 
     public function testUpdateRemovesUnderscoreParams(): void
     {
         $schema = $this->createRealSchema(1, 'Updated');
 
+<<<<<<< HEAD
         $this->request->method('getParams')->willReturn([
             '_route' => 'test',
             '_limit' => '10',
             'title' => 'Updated',
         ]);
+=======
+        $this->request->method('getParams')->willReturn(
+                [
+                    '_route' => 'test',
+                    '_limit' => '10',
+                    'title'  => 'Updated',
+                ]
+                );
+>>>>>>> origin/development
         $this->schemaMapper->expects($this->once())
             ->method('updateFromArray')
             ->with(
                 $this->equalTo(1),
+<<<<<<< HEAD
                 $this->callback(function ($data) {
                     return !isset($data['_route'])
                         && !isset($data['_limit'])
                         && isset($data['title']);
                 })
+=======
+                $this->callback(
+                        function ($data) {
+                            return !isset($data['_route'])
+                            && !isset($data['_limit'])
+                            && isset($data['title']);
+                        }
+                        )
+>>>>>>> origin/development
             )
             ->willReturn($schema);
 
         $this->controller->update(1);
+<<<<<<< HEAD
     }
 
     // ── destroy() branch coverage ──
 
+=======
+    }//end testUpdateRemovesUnderscoreParams()
+
+    // ── destroy() branch coverage ──
+>>>>>>> origin/development
     public function testDestroyInvalidatesCaches(): void
     {
         $schema = $this->createRealSchema(1, 'Deletable');
         $this->schemaMapper->method('find')->willReturn($schema);
+<<<<<<< HEAD
 
         $this->schemaCacheService->expects($this->once())
             ->method('invalidateForSchemaChange')
             ->with(1, 'delete');
+=======
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+
+        // runtime-schema-api: destroy() now routes schema-cache cleanup through the
+        // canonical invalidate() entry point.
+        $this->schemaCacheService->expects($this->once())
+            ->method('invalidate')
+            ->with(1);
+>>>>>>> origin/development
         $this->facetCacheSvc->expects($this->once())
             ->method('invalidateForSchemaChange')
             ->with(1, 'delete');
@@ -901,7 +1556,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->destroy(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDestroyInvalidatesCaches()
+>>>>>>> origin/development
 
     public function testDestroyReturns409OnValidationException(): void
     {
@@ -912,10 +1571,16 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(409, $result->getStatus());
         $this->assertStringContainsString('Objects still attached', $result->getData()['error']);
+<<<<<<< HEAD
     }
 
     // ── stats() branch coverage ──
 
+=======
+    }//end testDestroyReturns409OnValidationException()
+
+    // ── stats() branch coverage ──
+>>>>>>> origin/development
     public function testStatsReturns500OnGenericException(): void
     {
         $this->schemaMapper->method('find')
@@ -925,25 +1590,43 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(500, $result->getStatus());
         $this->assertSame('Database connection lost', $result->getData()['error']);
+<<<<<<< HEAD
     }
 
     // ── publish() branch coverage ──
 
+=======
+    }//end testStatsReturns500OnGenericException()
+
+    // ── publish() branch coverage ──
+>>>>>>> origin/development
     public function testPublishWithCustomDate(): void
     {
         $schema = $this->createRealSchema(1, 'Publishable');
 
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['date', null, '2025-06-15'],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['date', null, '2025-06-15'],
+                    ]
+                    );
+>>>>>>> origin/development
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->schemaMapper->method('update')->willReturn($schema);
 
         $result = $this->controller->publish(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testPublishWithCustomDate()
+>>>>>>> origin/development
 
     public function testPublishReturns400OnGenericException(): void
     {
@@ -955,7 +1638,11 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(400, $result->getStatus());
         $this->assertSame('Unexpected error', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testPublishReturns400OnGenericException()
+>>>>>>> origin/development
 
     public function testPublishInvalidatesCaches(): void
     {
@@ -973,25 +1660,43 @@ class SchemasControllerTest extends TestCase
             ->with(1, 'publish');
 
         $this->controller->publish(1);
+<<<<<<< HEAD
     }
 
     // ── depublish() branch coverage ──
 
+=======
+    }//end testPublishInvalidatesCaches()
+
+    // ── depublish() branch coverage ──
+>>>>>>> origin/development
     public function testDepublishWithCustomDate(): void
     {
         $schema = $this->createRealSchema(1, 'Depublishable');
 
         $this->request->method('getParam')
+<<<<<<< HEAD
             ->willReturnMap([
                 ['date', null, '2025-12-31'],
             ]);
+=======
+            ->willReturnMap(
+                    [
+                        ['date', null, '2025-12-31'],
+                    ]
+                    );
+>>>>>>> origin/development
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->schemaMapper->method('update')->willReturn($schema);
 
         $result = $this->controller->depublish(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testDepublishWithCustomDate()
+>>>>>>> origin/development
 
     public function testDepublishReturns400OnGenericException(): void
     {
@@ -1003,7 +1708,11 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(400, $result->getStatus());
         $this->assertSame('Update failed', $result->getData()['error']);
+<<<<<<< HEAD
     }
+=======
+    }//end testDepublishReturns400OnGenericException()
+>>>>>>> origin/development
 
     public function testDepublishInvalidatesCaches(): void
     {
@@ -1021,10 +1730,16 @@ class SchemasControllerTest extends TestCase
             ->with(1, 'depublish');
 
         $this->controller->depublish(1);
+<<<<<<< HEAD
     }
 
     // ── upload() / uploadUpdate() coverage ──
 
+=======
+    }//end testDepublishInvalidatesCaches()
+
+    // ── upload() / uploadUpdate() coverage ──
+>>>>>>> origin/development
     public function testUploadUpdateDelegatesToUpload(): void
     {
         $schema = $this->createRealSchema(1, 'Existing');
@@ -1037,7 +1752,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->uploadUpdate(1);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadUpdateDelegatesToUpload()
+>>>>>>> origin/development
 
     public function testUploadNewSchemaWithoutId(): void
     {
@@ -1052,7 +1771,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadNewSchemaWithoutId()
+>>>>>>> origin/development
 
     public function testUploadReturnsErrorResponseFromUploadService(): void
     {
@@ -1064,7 +1787,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadReturnsErrorResponseFromUploadService()
+>>>>>>> origin/development
 
     public function testUploadNewSchemaWithEmptyTitle(): void
     {
@@ -1079,7 +1806,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadNewSchemaWithEmptyTitle()
+>>>>>>> origin/development
 
     public function testUploadExistingSchemaById(): void
     {
@@ -1093,7 +1824,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(5);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadExistingSchemaById()
+>>>>>>> origin/development
 
     public function testUploadReturns500OnGenericException(): void
     {
@@ -1105,7 +1840,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(500, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadReturns500OnGenericException()
+>>>>>>> origin/development
 
     public function testUploadReturns400OnValidationException(): void
     {
@@ -1117,7 +1856,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(400, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadReturns400OnValidationException()
+>>>>>>> origin/development
 
     public function testUploadReturns409OnConstraintException(): void
     {
@@ -1129,7 +1872,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadReturns409OnConstraintException()
+>>>>>>> origin/development
 
     public function testUploadReturnsErrorOnDBException(): void
     {
@@ -1141,7 +1888,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadReturnsErrorOnDBException()
+>>>>>>> origin/development
 
     public function testUploadReturnsErrorOnDatabaseConstraintException(): void
     {
@@ -1153,7 +1904,11 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(409, $result->getStatus());
+<<<<<<< HEAD
     }
+=======
+    }//end testUploadReturnsErrorOnDatabaseConstraintException()
+>>>>>>> origin/development
 
     public function testUploadNewSchemaWithOrganisationAlreadySet(): void
     {
@@ -1172,6 +1927,7 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->upload(null);
 
         $this->assertSame(200, $result->getStatus());
+<<<<<<< HEAD
     }
 
     // ── related() additional coverage ──
@@ -1182,6 +1938,19 @@ class SchemasControllerTest extends TestCase
         $schema1->setProperties([
             'ref_field' => ['$ref' => '#/schemas/2'],
         ]);
+=======
+    }//end testUploadNewSchemaWithOrganisationAlreadySet()
+
+    // ── related() additional coverage ──
+    public function testRelatedWithOutgoingReferences(): void
+    {
+        $schema1 = $this->createRealSchema(1, 'Source');
+        $schema1->setProperties(
+                [
+                    'ref_field' => ['$ref' => '#/schemas/2'],
+                ]
+                );
+>>>>>>> origin/development
 
         $schema2 = $this->createRealSchema(2, 'Target');
         $schema2->setUuid('target-uuid');
@@ -1191,9 +1960,17 @@ class SchemasControllerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema1);
         $this->schemaMapper->method('findAll')->willReturn([$schema1, $schema2]);
         $this->schemaMapper->method('hasReferenceToSchema')
+<<<<<<< HEAD
             ->willReturnCallback(function ($properties, $targetSchemaId) {
                 return $targetSchemaId === '2';
             });
+=======
+            ->willReturnCallback(
+                    function ($properties, $targetSchemaId) {
+                        return $targetSchemaId === '2';
+                    }
+                    );
+>>>>>>> origin/development
 
         $result = $this->controller->related(1);
 
@@ -1201,5 +1978,194 @@ class SchemasControllerTest extends TestCase
         $data = $result->getData();
         $this->assertCount(1, $data['outgoing']);
         $this->assertSame(1, $data['total']);
+<<<<<<< HEAD
     }
 }
+=======
+    }//end testRelatedWithOutgoingReferences()
+
+    // ---------------------------------------------------------------------
+    // Metadata-read bypass policy — auth-system requirement
+    // "Schema and register METADATA-READ lookups MUST bypass multi-tenancy;
+    // metadata WRITE lookups MUST enforce it".
+    //
+    // The five read-path methods below MUST pass `_multitenancy: false` to
+    // SchemaMapper::find / findAll. The three mutation-path methods after
+    // them MUST keep the safe default (`_multitenancy: true`).
+    //
+    // openspec/changes/aggregation-runner-multitenancy-policy/specs/auth-system/spec.md
+    // ---------------------------------------------------------------------
+
+    /**
+     * SchemaMapper::find positional signature is
+     * (id, _extend=[], published=null, _rbac=true, _multitenancy=true).
+     * These matchers pin the 5th arg.
+     */
+    private function readBypassWithMatchers(string|int $id): array
+    {
+        return [
+            $this->equalTo($id),
+            $this->anything(),
+            $this->anything(),
+            $this->anything(),
+            $this->isFalse(),
+        ];
+    }//end readBypassWithMatchers()
+
+    private function mutationDefaultWithMatchers(string|int $id): array
+    {
+        return [
+            $this->equalTo($id),
+            $this->anything(),
+            $this->anything(),
+            $this->anything(),
+            $this->isTrue(),
+        ];
+    }//end mutationDefaultWithMatchers()
+
+    public function testDownloadPassesMultitenancyFalseToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'Downloadable');
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->readBypassWithMatchers(1))
+            ->willReturn($schema);
+
+        $this->controller->download(1);
+    }//end testDownloadPassesMultitenancyFalseToFind()
+
+    public function testRelatedPassesMultitenancyFalseToFindAndFindAll(): void
+    {
+        $target = $this->createRealSchema(1, 'Target');
+        $target->setProperties([]);
+        $this->schemaMapper->method('getRelated')->willReturn([]);
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->readBypassWithMatchers(1))
+            ->willReturn($target);
+        // SchemaMapper::findAll signature:
+        // (limit, offset, filters, searchConditions, searchParams, _extend,
+        //  published, _rbac, _multitenancy).
+        // _multitenancy is the 9th positional arg, not the 7th.
+        $this->schemaMapper->expects($this->once())
+            ->method('findAll')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->isFalse()
+            )
+            ->willReturn([]);
+
+        $this->controller->related(1);
+    }//end testRelatedPassesMultitenancyFalseToFindAndFindAll()
+
+    public function testStatsPassesMultitenancyFalseToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'StatsSchema');
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->readBypassWithMatchers(1))
+            ->willReturn($schema);
+        // stats() does follow-up work that may throw on missing fixtures;
+        // the assertion on the find() mock fires before that, which is all
+        // we care about for the policy lock-in.
+        try {
+            $this->controller->stats(1);
+        } catch (\Throwable $ignored) {
+            // Intentional — see comment above.
+        }
+    }//end testStatsPassesMultitenancyFalseToFind()
+
+    public function testPublishPassesMultitenancyFalseToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'Publishable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->readBypassWithMatchers(1))
+            ->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        try {
+            $this->controller->publish(1);
+        } catch (\Throwable $ignored) {
+            // see testStatsPassesMultitenancyFalseToFind
+        }
+    }//end testPublishPassesMultitenancyFalseToFind()
+
+    public function testDepublishPassesMultitenancyFalseToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'Depublishable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->readBypassWithMatchers(1))
+            ->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        try {
+            $this->controller->depublish(1);
+        } catch (\Throwable $ignored) {
+            // see testStatsPassesMultitenancyFalseToFind
+        }
+    }//end testDepublishPassesMultitenancyFalseToFind()
+
+    public function testUpdatePassesMultitenancyDefaultTrueToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'Updatable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->request->method('getParams')->willReturn(['id' => 1]);
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->mutationDefaultWithMatchers(1))
+            ->willReturn($schema);
+
+        try {
+            $this->controller->update(1);
+        } catch (\Throwable $ignored) {
+            // see testStatsPassesMultitenancyFalseToFind — assertion on find()
+            // happens before the mutation logic that needs richer fixtures.
+        }
+    }//end testUpdatePassesMultitenancyDefaultTrueToFind()
+
+    public function testDestroyPassesMultitenancyDefaultTrueToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'Deletable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->mutationDefaultWithMatchers(1))
+            ->willReturn($schema);
+
+        try {
+            $this->controller->destroy(1);
+        } catch (\Throwable $ignored) {
+            // see testStatsPassesMultitenancyFalseToFind
+        }
+    }//end testDestroyPassesMultitenancyDefaultTrueToFind()
+
+    public function testUploadPassesMultitenancyDefaultTrueToFind(): void
+    {
+        $schema = $this->createRealSchema(1, 'Uploadable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->request->method('getParams')->willReturn(['id' => 1]);
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(...$this->mutationDefaultWithMatchers(1))
+            ->willReturn($schema);
+        $this->uploadService->method('getUploadedJson')->willReturn(['title' => 'X']);
+
+        try {
+            $this->controller->upload(1);
+        } catch (\Throwable $ignored) {
+            // see testStatsPassesMultitenancyFalseToFind
+        }
+    }//end testUploadPassesMultitenancyDefaultTrueToFind()
+}//end class
+>>>>>>> origin/development

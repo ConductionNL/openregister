@@ -22,6 +22,12 @@
  * - Optimized INSERT...ON DUPLICATE KEY UPDATE queries
  * - Reduced SQL overhead compared to generic table operations
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -130,11 +136,29 @@ class MagicBulkHandler
 
             // Map metadata to prefixed columns with proper fallbacks.
             $uuid = $selfData['uuid'] ?? $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
+<<<<<<< HEAD
             $preparedObject['_uuid']         = $uuid;
             $preparedObject['_register']     = $register->getId();
             $preparedObject['_schema']       = $schema->getId();
             $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
             $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
+=======
+            $preparedObject['_uuid']     = $uuid;
+            $preparedObject['_register'] = $register->getId();
+            $preparedObject['_schema']   = $schema->getId();
+
+            // SECURITY (wave-11 SB2 — defense-in-depth layer 2): _owner and _organisation
+            // MUST already have been stamped with authoritative values by SaveObjects::
+            // prepareSingleSchemaObject() (the first strip layer).  This second strip
+            // ensures that any future code path that calls prepareObjectsForDynamicTable()
+            // directly (e.g. ImportService) cannot slip client-supplied values through.
+            // $selfData['owner'] and $selfData['organisation'] were already overwritten with
+            // the session-user and active-organisation values before this point.
+            // We do NOT fall back to $object['owner'] / $object['organisation'] here because
+            // those keys come from raw client JSON and must not be trusted.
+            $preparedObject['_owner']        = $selfData['owner'] ?? null;
+            $preparedObject['_organisation'] = $selfData['organisation'] ?? null;
+>>>>>>> origin/development
 
             // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s).
             $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');

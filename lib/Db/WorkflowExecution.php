@@ -3,10 +3,20 @@
 /**
  * OpenRegister WorkflowExecution Entity
  *
+<<<<<<< HEAD
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+>>>>>>> origin/development
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -231,6 +241,24 @@ class WorkflowExecution extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+<<<<<<< HEAD
+=======
+        $errors = null;
+        if ($this->errors !== null) {
+            $errors = json_decode(json: $this->errors, associative: true);
+        }
+
+        $metadata = null;
+        if ($this->metadata !== null) {
+            $metadata = json_decode(json: $this->metadata, associative: true);
+        }
+
+        $payload = null;
+        if ($this->payload !== null) {
+            $payload = json_decode(json: $this->payload, associative: true);
+        }
+
+>>>>>>> origin/development
         return [
             'id'         => $this->id,
             'uuid'       => $this->uuid,
@@ -244,9 +272,15 @@ class WorkflowExecution extends Entity implements JsonSerializable
             'mode'       => $this->mode,
             'status'     => $this->status,
             'durationMs' => $this->durationMs,
+<<<<<<< HEAD
             'errors'     => $this->errors !== null ? json_decode($this->errors, true) : null,
             'metadata'   => $this->metadata !== null ? json_decode($this->metadata, true) : null,
             'payload'    => $this->payload !== null ? json_decode($this->payload, true) : null,
+=======
+            'errors'     => $errors,
+            'metadata'   => $metadata,
+            'payload'    => $payload,
+>>>>>>> origin/development
             'executedAt' => $this->executedAt?->format('c'),
         ];
     }//end jsonSerialize()

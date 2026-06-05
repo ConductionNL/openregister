@@ -6,6 +6,12 @@
  * Handles the MCP (Model Context Protocol) standard JSON-RPC 2.0 endpoint
  * for the OpenRegister MCP server. Provides Streamable HTTP transport.
  *
+<<<<<<< HEAD
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+>>>>>>> origin/development
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -17,6 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-54
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-54
  */
 
@@ -122,6 +129,7 @@ class McpServerController extends Controller
      *
      * @return Response JSON-RPC response or HTTP 202 for notifications
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-54
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-54
      */
     public function handle(): Response

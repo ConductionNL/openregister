@@ -3,6 +3,7 @@
 /**
  * LinkedEntityController
  *
+<<<<<<< HEAD
  * @category Controller
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -13,6 +14,22 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Controller
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+>>>>>>> origin/development
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -36,6 +53,7 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
  */
 class LinkedEntityController extends Controller
 {
@@ -69,6 +87,7 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
      */
     #[NoAdminRequired]
@@ -110,6 +129,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
      */
@@ -143,6 +164,7 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -176,6 +198,7 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -210,6 +233,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
      */

@@ -1,3 +1,36 @@
-# Coverage baseline — only updated automatically by CI.
-# Manual changes require explicit approval from maintainers.
-.coverage-baseline @ConductionNL/developers
+# CODEOWNERS — auto-request reviewers based on path domain.
+# Last-match-wins; broad rules first, specific overrides below.
+# Created 2026-05-03 from the OR-abstraction audit follow-up.
+
+# Default: every named codeowner reviews unmatched paths.
+*                       @rubenvdlinde @rjzondervan @Rem-Dam @remko48 @WilcoLouwerse @bbrands02 @SudoThijn
+
+# Backend (PHP) — services, controllers, mappers, db, migration, etc.
+lib/                    @bbrands02 @rjzondervan @WilcoLouwerse
+appinfo/                @bbrands02 @rjzondervan @WilcoLouwerse
+**/*.php                @bbrands02 @rjzondervan @WilcoLouwerse
+phpcs.xml               @bbrands02 @rjzondervan @WilcoLouwerse
+phpmd.xml               @bbrands02 @rjzondervan @WilcoLouwerse
+phpstan.neon            @bbrands02 @rjzondervan @WilcoLouwerse
+phpstan-baseline.neon   @bbrands02 @rjzondervan @WilcoLouwerse
+phpmd.baseline.xml      @bbrands02 @rjzondervan @WilcoLouwerse
+composer.json           @bbrands02 @rjzondervan @WilcoLouwerse
+composer.lock           @bbrands02 @rjzondervan @WilcoLouwerse
+
+# Frontend (Vue / TS / JS) — components, stores, pages, build config.
+src/                    @SudoThijn @remko48
+**/*.vue                @SudoThijn @remko48
+**/*.ts                 @SudoThijn @remko48
+**/*.js                 @SudoThijn @remko48
+package.json            @SudoThijn @remko48
+package-lock.json       @SudoThijn @remko48
+jest.config.js          @SudoThijn @remko48
+playwright.config.ts    @SudoThijn @remko48
+webpack.config.js       @SudoThijn @remko48
+babel.config.js         @SudoThijn @remko48
+
+# Specs / docs / ADRs / openspec.
+openspec/               @rubenvdlinde @Rem-Dam
+docs/                   @rubenvdlinde @Rem-Dam
+**/*.md                 @rubenvdlinde @Rem-Dam
+README.md               @rubenvdlinde @Rem-Dam

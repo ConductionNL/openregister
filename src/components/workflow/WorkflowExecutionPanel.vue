@@ -49,6 +49,7 @@
 
 <script>
 /**
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
  */
 import { NcButton } from '@nextcloud/vue'
@@ -77,6 +78,7 @@ export default {
 	},
 	methods: {
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
 		 */
 		async fetchExecutions() {
@@ -95,6 +97,7 @@ export default {
 			}
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
 		 */
 		formatDate(dateStr) {
@@ -102,6 +105,7 @@ export default {
 			return new Date(dateStr).toLocaleString()
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
 		 */
 		prevPage() {
@@ -109,6 +113,7 @@ export default {
 			this.fetchExecutions()
 		},
 		/**
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
 		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
 		 */
 		nextPage() {

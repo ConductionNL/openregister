@@ -53,6 +53,15 @@ export default {
 			canChangePassword: true,
 		}
 	},
+<<<<<<< HEAD
+=======
+	/**
+	 * Detect whether the auth backend supports password changes.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook toggling form visibility; password change contract owned by account-self-service.
+	 * @return {Promise<void>}
+	 */
+>>>>>>> origin/development
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me'))
@@ -63,6 +72,16 @@ export default {
 	},
 	methods: {
 		t,
+<<<<<<< HEAD
+=======
+		/**
+		 * Submit the current password + new password to the API and surface the result
+		 * inline. Does not sign the user out of other sessions.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-4
+		 * @return {Promise<void>}
+		 */
+>>>>>>> origin/development
 		async changePassword() {
 			this.loading = true
 			this.message = ''

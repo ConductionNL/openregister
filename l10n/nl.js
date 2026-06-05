@@ -1,6 +1,13 @@
 OC.L10N.register(
     "openregister",
     {
+<<<<<<< HEAD
+=======
+    "Object \"%1$s\" created in register \"%2$s\"" : "Object \"%1$s\" aangemaakt in register \"%2$s\"",
+    "Object \"%1$s\" updated in register \"%2$s\"" : "Object \"%1$s\" bijgewerkt in register \"%2$s\"",
+    "Object \"%1$s\" assigned to you in register \"%2$s\"" : "Object \"%1$s\" aan je toegewezen in register \"%2$s\"",
+    "object" : "object",
+>>>>>>> origin/development
     "📄 Object Serialization" : "📄 Objectserialisatie",
     "🔢 Vectorization Settings" : "🔢 Vectorisatie-instellingen",
     "💰 View Selection (Cost Optimization)" : "💰 Weergaveselectie (kostenoptimalisatie)",
@@ -1346,7 +1353,21 @@ OC.L10N.register(
     "Text chunks" : "Tekstfragmenten",
     "Unknown error" : "Onbekende fout",
     "Very high" : "Zeer hoog",
+<<<<<<< HEAD
     "{title} in {register} / {schema}" : "{title} in {register} / {schema}"
+=======
+    "{title} in {register} / {schema}" : "{title} in {register} / {schema}",
+    "Push Notifications" : "Pushmeldingen",
+    "Real-time push notification status via notify_push" : "Realtime pushmeldingstatus via notify_push",
+    "Realtime push not available — the notify_push app is not installed" : "Realtime push niet beschikbaar — de app notify_push is niet geïnstalleerd",
+    "Install the notify_push app from the Nextcloud App Store to enable real-time updates." : "Installeer de app notify_push via de Nextcloud App Store om realtime updates in te schakelen.",
+    "Open Nextcloud App Store" : "Nextcloud App Store openen",
+    "notify_push is installed but not yet active" : "notify_push is geïnstalleerd maar nog niet actief",
+    "notify_push is installed but OpenRegister has not yet confirmed a successful push. Trigger an object save to activate, or check your notify_push configuration." : "notify_push is geïnstalleerd, maar OpenRegister heeft nog geen succesvolle push bevestigd. Sla een object op om te activeren, of controleer uw notify_push-configuratie.",
+    "notify_push configuration guide" : "Configuratiegids notify_push",
+    "Realtime push active" : "Realtime push actief",
+    "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted." : "Realtime pushmeldingen zijn actief. Verbonden clients ontvangen onmiddellijke updates wanneer objecten worden aangemaakt, bijgewerkt of verwijderd."
+>>>>>>> origin/development
 },
 "nplurals=2; plural=(n != 1);"
 );

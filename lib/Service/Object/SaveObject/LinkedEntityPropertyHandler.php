@@ -5,6 +5,7 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+<<<<<<< HEAD
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -12,6 +13,19 @@
  * @link     https://github.com/ConductionNL/openregister
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+=======
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+>>>>>>> origin/development
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -68,6 +82,7 @@ class LinkedEntityPropertyHandler
      *
      * @param LoggerInterface $logger Logger for logging operations
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function __construct(
@@ -88,6 +103,7 @@ class LinkedEntityPropertyHandler
      *
      * @return ObjectEntity The updated object entity
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
      */
     public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity
@@ -131,7 +147,13 @@ class LinkedEntityPropertyHandler
      *
      * @return void
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+=======
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+>>>>>>> origin/development
      */
     private function extractFromProperty(
         string $propertyName,
@@ -179,6 +201,7 @@ class LinkedEntityPropertyHandler
      *
      * @return string|null The extracted ID or null
      *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractIdFromEnvelope(mixed $value): ?string
@@ -209,6 +232,7 @@ class LinkedEntityPropertyHandler
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
      */
     private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void

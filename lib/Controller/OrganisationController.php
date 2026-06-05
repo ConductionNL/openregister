@@ -7,10 +7,13 @@
  * Provides API endpoints for organisation management, user-organisation relationships,
  * and session management for active organisations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -18,6 +21,10 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-73
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-72
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-73
@@ -36,7 +43,10 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Exception;
 
@@ -51,8 +61,17 @@ use Exception;
  *
  * @psalm-suppress UnusedClass
  *
+<<<<<<< HEAD
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+=======
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.LongVariable)
+>>>>>>> origin/development
  */
 class OrganisationController extends Controller
 {
@@ -91,6 +110,23 @@ class OrganisationController extends Controller
      * @var TenantUsageMapper
      */
     private TenantUsageMapper $tenantUsageMapper;
+<<<<<<< HEAD
+=======
+
+    /**
+     * User session for authorization checks
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for admin/group membership checks
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+>>>>>>> origin/development
 
     /**
      * OrganisationController constructor
@@ -102,8 +138,15 @@ class OrganisationController extends Controller
      * @param LoggerInterface        $logger                 Logger service
      * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
      * @param TenantUsageMapper      $tenantUsageMapper      Usage mapper
+<<<<<<< HEAD
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+=======
+     * @param IUserSession           $userSession            User session for authorization checks
+     * @param IGroupManager          $groupManager           Group manager for admin checks
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+>>>>>>> origin/development
      */
     public function __construct(
         string $appName,
@@ -112,7 +155,13 @@ class OrganisationController extends Controller
         OrganisationMapper $organisationMapper,
         LoggerInterface $logger,
         TenantLifecycleService $tenantLifecycleService,
+<<<<<<< HEAD
         TenantUsageMapper $tenantUsageMapper
+=======
+        TenantUsageMapper $tenantUsageMapper,
+        IUserSession $userSession,
+        IGroupManager $groupManager
+>>>>>>> origin/development
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->organisationService = $organisationService;
@@ -120,7 +169,69 @@ class OrganisationController extends Controller
         $this->logger = $logger;
         $this->tenantLifecycleService = $tenantLifecycleService;
         $this->tenantUsageMapper      = $tenantUsageMapper;
+<<<<<<< HEAD
+=======
+        $this->userSession            = $userSession;
+        $this->groupManager           = $groupManager;
+>>>>>>> origin/development
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Check whether the current user may manage another user's membership in
+     * the given organisation.
+     *
+     * A caller may modify another user's membership only when they are:
+     *  - a Nextcloud administrator, OR
+     *  - the owner of the organisation (see `Organisation::getOwner()`).
+     *
+     * Self-service (target user === current user) is handled at the call site
+     * and not gated here.
+     *
+     * @param string $organisationUuid Organisation UUID being modified.
+     *
+     * @return bool True if the current user may manage other users in this org.
+     */
+    private function canManageOrganisationMembers(string $organisationUuid): bool
+    {
+        if ($this->isCurrentUserAdmin() === true) {
+            return true;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        try {
+            $organisation = $this->organisationMapper->findByUuid(uuid: $organisationUuid);
+        } catch (DoesNotExistException $e) {
+            return false;
+        }
+
+        $owner = $organisation->getOwner();
+        if ($owner === null || $owner === '') {
+            return false;
+        }
+
+        return $owner === $user->getUID();
+
+    }//end canManageOrganisationMembers()
 
     /**
      * Get user's organisations and active organisation
@@ -131,6 +242,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with organisations or error
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function index(): JSONResponse
@@ -182,6 +294,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}|null}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function setActive(string $uuid): JSONResponse
@@ -252,6 +365,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}|null}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function getActive(): JSONResponse
@@ -313,6 +427,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function create(string $name, string $description=''): JSONResponse
@@ -377,11 +492,15 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<200|400,
      *     array{error?: string, message?: 'Successfully joined organisation'},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+=======
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+>>>>>>> origin/development
      */
     public function join(string $uuid): JSONResponse
     {
@@ -390,11 +509,41 @@ class OrganisationController extends Controller
             $requestData = $this->request->getParams();
             $userId      = $requestData['userId'] ?? null;
 
+<<<<<<< HEAD
             // Join organisation with optional userId parameter.
             $success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 
             if ($success === true) {
                 return new JSONResponse(
+=======
+            // Authorization: enrolling another user is privileged. A caller may
+            // only enroll themselves; admins or organisation owners may enroll
+            // arbitrary users. This blocks the cross-user enroll vector where
+            // any authenticated user could otherwise add anyone (incl. admins)
+            // to an organisation whose UUID they know.
+            $currentUser = $this->userSession->getUser();
+            if ($currentUser === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Not authenticated'],
+                    statusCode: Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            if ($userId !== null && $userId !== $currentUser->getUID()
+                && $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
+            ) {
+                return new JSONResponse(
+                    data: ['error' => 'Only admins or organisation owners may enroll other users'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Join organisation with optional userId parameter.
+            $success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
+
+            if ($success === true) {
+                return new JSONResponse(
+>>>>>>> origin/development
                     data: [
                         'message' => 'Successfully joined organisation',
                     ],
@@ -440,12 +589,16 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @psalm-return JSONResponse<200|400,
      *     array{error?: string,
      *     message?: 'Successfully left organisation'|
      *     'Successfully removed user from organisation'}, array<never, never>>
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+=======
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+>>>>>>> origin/development
      */
     public function leave(string $uuid): JSONResponse
     {
@@ -453,6 +606,40 @@ class OrganisationController extends Controller
             // Check if a specific userId is provided in the request body.
             $data   = $this->request->getParams();
             $userId = $data['userId'] ?? null;
+
+<<<<<<< HEAD
+            $success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
+
+            if ($success === true) {
+                $message = "Successfully left organisation";
+                if ($userId !== null) {
+                    $message = "Successfully removed user from organisation";
+                }
+
+                return new JSONResponse(
+=======
+            // Authorization: removing another user from an organisation is
+            // privileged. A caller may only remove themselves; admins or
+            // organisation owners may remove arbitrary users. This blocks the
+            // cross-user removal vector where any authenticated user could
+            // otherwise kick anyone (incl. admins) out of an organisation
+            // whose UUID they know.
+            $currentUser = $this->userSession->getUser();
+            if ($currentUser === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Not authenticated'],
+                    statusCode: Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            if ($userId !== null && $userId !== $currentUser->getUID()
+                && $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
+            ) {
+                return new JSONResponse(
+                    data: ['error' => 'Only admins or organisation owners may remove other users'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
 
             $success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 
@@ -463,6 +650,7 @@ class OrganisationController extends Controller
                 }
 
                 return new JSONResponse(
+>>>>>>> origin/development
                     data: [
                         'message' => $message,
                     ],
@@ -521,6 +709,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}}, array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function show(string $uuid): JSONResponse
@@ -581,6 +770,7 @@ class OrganisationController extends Controller
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Already decomposed into helper methods
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function update(string $uuid): JSONResponse
@@ -632,6 +822,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with patched organisation or error
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function patch(string $uuid): JSONResponse
@@ -664,6 +855,7 @@ class OrganisationController extends Controller
      *     limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>},
      *     array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function search(string $query=''): JSONResponse
@@ -743,6 +935,7 @@ class OrganisationController extends Controller
      *     array{error?: 'Failed to clear cache', message?: 'Cache cleared successfully'},
      *     array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function clearCache(): JSONResponse
@@ -788,6 +981,7 @@ class OrganisationController extends Controller
      *     array{error?: 'Failed to retrieve statistics', statistics?: array{total: int}},
      *     array<never, never>>
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     public function stats(): JSONResponse
@@ -827,6 +1021,7 @@ class OrganisationController extends Controller
      *
      * @return array<string, mixed> Cleaned request data.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function extractRequestData(): array
@@ -847,6 +1042,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function handleNameAndSlugUpdate(object $organisation, array $data): void
@@ -872,6 +1068,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function handleDescriptionUpdate(object $organisation, array $data): void
@@ -892,6 +1089,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function handleSlugUpdate(object $organisation, array $data): void
@@ -914,6 +1112,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function handleActiveFieldUpdate(object $organisation, array $data): void
@@ -939,6 +1138,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function applySimpleFieldUpdates(object $organisation, array $data): void
@@ -966,6 +1166,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function applyArrayFieldUpdates(object $organisation, array $data): void
@@ -996,6 +1197,7 @@ class OrganisationController extends Controller
      *
      * @psalm-return JSONResponse<400, array{error: string}, array<never, never>>|null
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function handleParentUpdate(object $organisation, array $data, string $uuid): JSONResponse|null
@@ -1047,6 +1249,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse Success response with organisation data.
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function saveAndReturnOrganisation(object $organisation): JSONResponse
@@ -1065,6 +1268,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse Error response with error message
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function handleUpdateError(string $uuid, Exception $exception): JSONResponse
@@ -1093,6 +1297,7 @@ class OrganisationController extends Controller
      *
      * @return string The generated slug
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      */
     private function generateSlug(string $name): string
@@ -1121,6 +1326,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
@@ -1131,6 +1338,7 @@ class OrganisationController extends Controller
             $result       = $this->tenantLifecycleService->suspend($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
+<<<<<<< HEAD
             $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
             return new JSONResponse(
                 data: [
@@ -1144,6 +1352,25 @@ class OrganisationController extends Controller
         }
     }//end suspend()
 
+=======
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            if ($e->getCode() >= 400) {
+                $statusCode = $e->getCode();
+            }
+
+            return new JSONResponse(
+                data: [
+                    'error'            => $e->getMessage(),
+                    'validTransitions' => $this->tenantLifecycleService->getValidTransitions(
+                        $organisation->getStatus() ?? 'unknown'
+                    ),
+                ],
+                statusCode: $statusCode
+            );
+        }
+    }//end suspend()
+
+>>>>>>> origin/development
     /**
      * Activate (reactivate) an organisation.
      *
@@ -1153,6 +1380,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
@@ -1165,6 +1394,7 @@ class OrganisationController extends Controller
             if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
                 $userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
                 $result = $this->tenantLifecycleService->provision($organisation, $userId);
+<<<<<<< HEAD
             } else {
                 $result = $this->tenantLifecycleService->reactivate($organisation);
             }
@@ -1172,11 +1402,28 @@ class OrganisationController extends Controller
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+=======
+                return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+            }
+
+            $result = $this->tenantLifecycleService->reactivate($organisation);
+            return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+        } catch (Exception $e) {
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            if ($e->getCode() >= 400) {
+                $statusCode = $e->getCode();
+            }
+
+>>>>>>> origin/development
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
                 statusCode: $statusCode
             );
+<<<<<<< HEAD
         }
+=======
+        }//end try
+>>>>>>> origin/development
     }//end activate()
 
     /**
@@ -1188,6 +1435,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
      */
@@ -1198,7 +1447,15 @@ class OrganisationController extends Controller
             $result       = $this->tenantLifecycleService->deprovision($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
+<<<<<<< HEAD
             $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+=======
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            if ($e->getCode() >= 400) {
+                $statusCode = $e->getCode();
+            }
+
+>>>>>>> origin/development
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
                 statusCode: $statusCode
@@ -1215,7 +1472,13 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+<<<<<<< HEAD
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+=======
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+>>>>>>> origin/development
      */
     public function usage(string $uuid): JSONResponse
     {
@@ -1229,10 +1492,25 @@ class OrganisationController extends Controller
             $currentBandwidth = 0;
 
             if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
+<<<<<<< HEAD
                 $reqFetched       = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
                 $currentRequests  = ($reqSuccess === true) ? (int) $reqFetched : 0;
                 $bwFetched        = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
                 $currentBandwidth = ($bwSuccess === true) ? (int) $bwFetched : 0;
+=======
+                $reqSuccess = false;
+                $bwSuccess  = false;
+
+                $reqFetched = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
+                if ($reqSuccess === true) {
+                    $currentRequests = (int) $reqFetched;
+                }
+
+                $bwFetched = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
+                if ($bwSuccess === true) {
+                    $currentBandwidth = (int) $bwFetched;
+                }
+>>>>>>> origin/development
             }
 
             // Get historical data (last 30 days).
@@ -1244,6 +1522,19 @@ class OrganisationController extends Controller
             $bandwidthQuota = $organisation->getBandwidthQuota();
             $storageQuota   = $organisation->getStorageQuota();
 
+<<<<<<< HEAD
+=======
+            $requestUtil   = null;
+            $bandwidthUtil = null;
+            if ($requestQuota !== null && $requestQuota > 0) {
+                $requestUtil = round((($currentRequests / $requestQuota) * 100), 1);
+            }
+
+            if ($bandwidthQuota !== null && $bandwidthQuota > 0) {
+                $bandwidthUtil = round((($currentBandwidth / $bandwidthQuota) * 100), 1);
+            }
+
+>>>>>>> origin/development
             return new JSONResponse(
                 data: [
                     'current'     => [
@@ -1257,8 +1548,13 @@ class OrganisationController extends Controller
                         'storage'   => $storageQuota,
                     ],
                     'utilization' => [
+<<<<<<< HEAD
                         'requests'  => $requestQuota !== null && $requestQuota > 0 ? round(($currentRequests / $requestQuota) * 100, 1) : null,
                         'bandwidth' => $bandwidthQuota !== null && $bandwidthQuota > 0 ? round(($currentBandwidth / $bandwidthQuota) * 100, 1) : null,
+=======
+                        'requests'  => $requestUtil,
+                        'bandwidth' => $bandwidthUtil,
+>>>>>>> origin/development
                     ],
                     'history'     => array_map(
                         static function ($record) {
@@ -1284,6 +1580,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-73
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-73
      */
@@ -1322,6 +1620,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-72
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-72
      */
