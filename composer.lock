@@ -5,10 +5,14 @@
         "This file is @generated automatically"
     ],
 <<<<<<< HEAD
+<<<<<<< HEAD
     "content-hash": "acce8d925fb127b55ad671fbd249b6b5",
 =======
     "content-hash": "b3752fb3cd7b3b490ef89f7fe23672b5",
 >>>>>>> origin/development
+=======
+    "content-hash": "2c6832eb86f850439fd7e1d78fb329d3",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -2612,6 +2616,59 @@
                 "source": "https://github.com/PHPOffice/PHPWord/tree/1.4.0"
             },
             "time": "2025-06-05T10:32:36+00:00"
+        },
+        {
+            "name": "pimple/pimple",
+            "version": "v3.6.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/silexphp/Pimple.git",
+                "reference": "8cfe7f74ac22a433d303914eba9ea4c2a834edce"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/silexphp/Pimple/zipball/8cfe7f74ac22a433d303914eba9ea4c2a834edce",
+                "reference": "8cfe7f74ac22a433d303914eba9ea4c2a834edce",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2.5",
+                "psr/container": "^1.1 || ^2.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Pimple": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                }
+            ],
+            "description": "Pimple, a simple Dependency Injection Container",
+            "homepage": "https://pimple.symfony.com",
+            "keywords": [
+                "container",
+                "dependency injection"
+            ],
+            "support": {
+                "source": "https://github.com/silexphp/Pimple/tree/v3.6.2"
+            },
+            "time": "2026-02-26T08:23:44+00:00"
         },
         {
             "name": "psr/cache",
@@ -5574,6 +5631,90 @@
             "time": "2024-09-09T11:45:10+00:00"
         },
         {
+            "name": "symfony/polyfill-iconv",
+            "version": "v1.37.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/polyfill-iconv.git",
+                "reference": "2c5729fd241b4b22f6e4b436bc3354a4f262df57"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/polyfill-iconv/zipball/2c5729fd241b4b22f6e4b436bc3354a4f262df57",
+                "reference": "2c5729fd241b4b22f6e4b436bc3354a4f262df57",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2"
+            },
+            "provide": {
+                "ext-iconv": "*"
+            },
+            "suggest": {
+                "ext-iconv": "For best performance"
+            },
+            "type": "library",
+            "extra": {
+                "thanks": {
+                    "url": "https://github.com/symfony/polyfill",
+                    "name": "symfony/polyfill"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ],
+                "psr-4": {
+                    "Symfony\\Polyfill\\Iconv\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nicolas Grekas",
+                    "email": "p@tchwork.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Symfony polyfill for the Iconv extension",
+            "homepage": "https://symfony.com",
+            "keywords": [
+                "compatibility",
+                "iconv",
+                "polyfill",
+                "portable",
+                "shim"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/polyfill-iconv/tree/v1.37.0"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2026-04-10T16:19:22+00:00"
+        },
+        {
             "name": "symfony/polyfill-intl-grapheme",
             "version": "v1.33.0",
             "source": {
@@ -7839,6 +7980,7 @@
             ],
             "time": "2026-04-24T13:49:35+00:00"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         },
         {
@@ -7868,6 +8010,35 @@
                 "monolog/monolog": "^2|^3",
                 "phpstan/phpstan": "*",
                 "phpunit/phpunit": "^9.6"
+=======
+        },
+        {
+            "name": "zbateson/mail-mime-parser",
+            "version": "2.4.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/zbateson/mail-mime-parser.git",
+                "reference": "ff49e02f6489b38f7cc3d1bd3971adc0f872569c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/zbateson/mail-mime-parser/zipball/ff49e02f6489b38f7cc3d1bd3971adc0f872569c",
+                "reference": "ff49e02f6489b38f7cc3d1bd3971adc0f872569c",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/psr7": "^1.7.0|^2.0",
+                "php": ">=7.1",
+                "pimple/pimple": "^3.0",
+                "zbateson/mb-wrapper": "^1.0.1",
+                "zbateson/stream-decorators": "^1.0.6"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "*",
+                "mikey179/vfsstream": "^1.6.0",
+                "phpstan/phpstan": "*",
+                "phpunit/phpunit": "<10"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             "suggest": {
                 "ext-iconv": "For best support/performance",
@@ -7915,6 +8086,7 @@
                     "type": "github"
                 }
             ],
+<<<<<<< HEAD
             "time": "2025-12-02T00:29:16+00:00"
         },
         {
@@ -7933,13 +8105,37 @@
             },
             "require": {
                 "php": ">=8.0",
+=======
+            "time": "2024-04-28T00:58:54+00:00"
+        },
+        {
+            "name": "zbateson/mb-wrapper",
+            "version": "1.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/zbateson/mb-wrapper.git",
+                "reference": "09a8b77eb94af3823a9a6623dcc94f8d988da67f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/zbateson/mb-wrapper/zipball/09a8b77eb94af3823a9a6623dcc94f8d988da67f",
+                "reference": "09a8b77eb94af3823a9a6623dcc94f8d988da67f",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1",
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 "symfony/polyfill-iconv": "^1.9",
                 "symfony/polyfill-mbstring": "^1.9"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "*",
                 "phpstan/phpstan": "*",
+<<<<<<< HEAD
                 "phpunit/phpunit": "^9.6|^10.0"
+=======
+                "phpunit/phpunit": "<10.0"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             "suggest": {
                 "ext-iconv": "For best support/performance",
@@ -7976,7 +8172,11 @@
             ],
             "support": {
                 "issues": "https://github.com/zbateson/mb-wrapper/issues",
+<<<<<<< HEAD
                 "source": "https://github.com/zbateson/mb-wrapper/tree/2.0.1"
+=======
+                "source": "https://github.com/zbateson/mb-wrapper/tree/1.2.1"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             "funding": [
                 {
@@ -7984,6 +8184,7 @@
                     "type": "github"
                 }
             ],
+<<<<<<< HEAD
             "time": "2024-12-20T22:05:33+00:00"
         },
         {
@@ -8004,11 +8205,37 @@
                 "guzzlehttp/psr7": "^2.5",
                 "php": ">=8.0",
                 "zbateson/mb-wrapper": "^2.0"
+=======
+            "time": "2024-03-18T04:31:04+00:00"
+        },
+        {
+            "name": "zbateson/stream-decorators",
+            "version": "1.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/zbateson/stream-decorators.git",
+                "reference": "783b034024fda8eafa19675fb2552f8654d3a3e9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/zbateson/stream-decorators/zipball/783b034024fda8eafa19675fb2552f8654d3a3e9",
+                "reference": "783b034024fda8eafa19675fb2552f8654d3a3e9",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/psr7": "^1.9 | ^2.0",
+                "php": ">=7.2",
+                "zbateson/mb-wrapper": "^1.0.0"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "*",
                 "phpstan/phpstan": "*",
+<<<<<<< HEAD
                 "phpunit/phpunit": "^9.6|^10.0"
+=======
+                "phpunit/phpunit": "<10.0"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             "type": "library",
             "autoload": {
@@ -8039,7 +8266,11 @@
             ],
             "support": {
                 "issues": "https://github.com/zbateson/stream-decorators/issues",
+<<<<<<< HEAD
                 "source": "https://github.com/zbateson/stream-decorators/tree/2.1.1"
+=======
+                "source": "https://github.com/zbateson/stream-decorators/tree/1.2.1"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             },
             "funding": [
                 {
@@ -8047,8 +8278,12 @@
                     "type": "github"
                 }
             ],
+<<<<<<< HEAD
             "time": "2024-04-29T21:42:39+00:00"
 >>>>>>> origin/development
+=======
+            "time": "2023-05-30T22:51:52+00:00"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         }
     ],
     "packages-dev": [

@@ -63,8 +63,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymizedValue(?string $anonymizedValue)
  * @method array|null getBases()
  * @method void setBases(?array $bases)
+<<<<<<< HEAD
  * @method bool getSkipAnonymization()
  * @method void setSkipAnonymization(bool $skipAnonymization)
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -203,6 +206,7 @@ class EntityRelation extends Entity implements JsonSerializable
 
     /**
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
      * Legal bases (grondslagen) under which the entity is being redacted.
      *
@@ -212,12 +216,20 @@ class EntityRelation extends Entity implements JsonSerializable
      * does NOT validate that the UUIDs resolve — vocabulary ownership lies
      * with the consumer app. Set via `EntityRelationMapper::updateDecisionMetadata`
      * (and its HTTP surface `PATCH /api/entity-relations/{id}`); audit-traced.
+=======
+     * Legal bases (grondslagen) for the anonymisation decision.
+     *
+     * JSON array of UUID-shaped strings referencing base objects in the consumer
+     * app's register. OpenRegister stores the values verbatim; UUID validation is
+     * the consumer app's responsibility.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @var array|null
      */
     protected ?array $bases = null;
 
     /**
+<<<<<<< HEAD
      * Operator decision: skip this occurrence from the anonymise pass.
      *
      * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
@@ -231,6 +243,8 @@ class EntityRelation extends Entity implements JsonSerializable
 
     /**
 >>>>>>> origin/development
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * Created at timestamp.
      *
      * @var DateTime|null
@@ -262,10 +276,14 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'anonymized', type: 'boolean');
         $this->addType(fieldName: 'anonymizedValue', type: 'string');
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         $this->addType(fieldName: 'bases', type: 'json');
         $this->addType(fieldName: 'skipAnonymization', type: 'boolean');
 >>>>>>> origin/development
+=======
+        $this->addType(fieldName: 'bases', type: 'json');
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->addType(fieldName: 'createdAt', type: 'datetime');
     }//end __construct()
 
@@ -273,13 +291,18 @@ class EntityRelation extends Entity implements JsonSerializable
      * JSON serialization.
      *
 <<<<<<< HEAD
+<<<<<<< HEAD
      * @return (null|scalar)[]
+=======
+     * @return (array|null|scalar)[]
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
      *     role: null|string, fileId: int|null, objectId: int|null,
      *     emailId: int|null, positionStart: int, positionEnd: int,
      *     confidence: float, detectionMethod: null|string,
      *     context: null|string, anonymized: bool,
+<<<<<<< HEAD
      *     anonymizedValue: null|string, createdAt: null|string}
 =======
      * @return array<string, mixed>
@@ -293,6 +316,10 @@ class EntityRelation extends Entity implements JsonSerializable
      *     anonymizedValue: null|string, bases: array|null,
      *     skipAnonymization: bool, createdAt: null|string}
 >>>>>>> origin/development
+=======
+     *     anonymizedValue: null|string, bases: array|null,
+     *     createdAt: null|string}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      */
     public function jsonSerialize(): array
     {
@@ -312,6 +339,7 @@ class EntityRelation extends Entity implements JsonSerializable
             'context'         => $this->context,
             'anonymized'      => $this->anonymized,
             'anonymizedValue' => $this->anonymizedValue,
+            'bases'           => $this->bases,
             'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
 =======
             'id'                => $this->id,

@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 >>>>>>> origin/development
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -195,6 +196,7 @@ class ChatService
      * Main orchestration method that coordinates all handlers.
      *
 <<<<<<< HEAD
+<<<<<<< HEAD
      * @param int    $conversationId Conversation ID.
      * @param string $userId         User ID.
      * @param string $userMessage    User message text.
@@ -202,12 +204,15 @@ class ChatService
      * @param array  $selectedTools  Tool UUIDs to use (optional).
      * @param array  $ragSettings    RAG configuration overrides (optional).
 =======
+=======
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      * @param int                     $conversationId Conversation ID.
      * @param string                  $userId         User ID.
      * @param string                  $userMessage    User message text.
      * @param array                   $selectedViews  View filters for multitenancy (optional).
      * @param array                   $selectedTools  Tool UUIDs to use (optional).
      * @param array                   $ragSettings    RAG configuration overrides (optional).
+<<<<<<< HEAD
      * @param array                   $context        CnAiContext snapshot the frontend sent
      *                                                (orchestrator §8). Persisted on the
      *                                                user-authored Message row when non-empty.
@@ -218,18 +223,26 @@ class ChatService
      *                                                for blocking callers (POST /api/chat/send,
      *                                                background workers) — behaviour unchanged.
 >>>>>>> origin/development
+=======
+     * @param StreamYieldChannel|null $channel        Streaming channel; null = blocking response.
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
-     * @return ((array|string)[]|string)[]
+     * @return array
      *
      * @throws \Exception If processing fails
      *
 <<<<<<< HEAD
      * @psalm-return array{message: string, sources: list<array>,
+<<<<<<< HEAD
 =======
      * @psalm-return array{message: string, messageId: string, sources: list<array>,
 >>>>>>> origin/development
      *     timings: array{context: string, history: string, llm: string,
      *     total: string}}
+=======
+     *     timings: array{context: string, history: string, llm: string, total: string},
+     *     messageId: int|null, messageUuid: string|null}
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chat processing involves multiple handler coordination steps
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
@@ -237,6 +250,7 @@ class ChatService
      *
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-3
      */
     public function processMessage(
         int $conversationId,
@@ -245,12 +259,17 @@ class ChatService
         array $selectedViews=[],
         array $selectedTools=[],
 <<<<<<< HEAD
+<<<<<<< HEAD
         array $ragSettings=[]
 =======
         array $ragSettings=[],
         array $context=[],
         ?StreamYieldChannel $channel=null
 >>>>>>> origin/development
+=======
+        array $ragSettings=[],
+        ?StreamYieldChannel $channel=null
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
@@ -323,6 +342,7 @@ class ChatService
             $historyTime      = microtime(true) - $historyStartTime;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             // Generate LLM response.
 =======
             // Generate LLM response. Forward the CnAiContext snapshot so
@@ -330,6 +350,9 @@ class ChatService
             // {app}" — without it the model would default to generic
             // platform-wide phrasing and pick the wrong tool family.
 >>>>>>> origin/development
+=======
+            // Generate LLM response (streaming when channel provided).
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             $llmStartTime = microtime(true);
             $aiResponse   = $this->responseHandler->generateResponse(
                 userMessage: $userMessage,
@@ -337,11 +360,17 @@ class ChatService
                 messageHistory: $messageHistory,
                 agent: $agent,
 <<<<<<< HEAD
+<<<<<<< HEAD
                 selectedTools: $selectedTools
+=======
+                selectedTools: $selectedTools,
+                channel: $channel
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
             );
             $llmTime      = microtime(true) - $llmStartTime;
 
             // Store AI response with sources.
+<<<<<<< HEAD
             $this->historyHandler->storeMessage(
 =======
                 selectedTools: $selectedTools,
@@ -356,6 +385,9 @@ class ChatService
             // uses it as the Vue render key for the assistant bubble).
             $assistantStored = $this->historyHandler->storeMessage(
 >>>>>>> origin/development
+=======
+            $storedMessage = $this->historyHandler->storeMessage(
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                 conversationId: $conversationId,
                 role: Message::ROLE_ASSISTANT,
                 content: $aiResponse,
@@ -388,6 +420,7 @@ class ChatService
 
             return [
 <<<<<<< HEAD
+<<<<<<< HEAD
                 'message' => $aiResponse,
                 'sources' => $context['sources'],
                 'timings' => [
@@ -399,11 +432,18 @@ class ChatService
                 'sources'   => $context['sources'],
                 'timings'   => [
 >>>>>>> origin/development
+=======
+                'message'     => $aiResponse,
+                'sources'     => $context['sources'],
+                'timings'     => [
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
                     'context' => round($contextTime, 2).'s',
                     'history' => round($historyTime, 3).'s',
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
+                'messageId'   => $storedMessage->getId(),
+                'messageUuid' => $storedMessage->getUuid(),
             ];
         } catch (Exception $e) {
             $this->logger->error(

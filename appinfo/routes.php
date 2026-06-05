@@ -985,6 +985,13 @@ return [
 		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+		// Chat streaming — SSE token-by-token endpoint and LLM health check.
+		['name' => 'chatStream#stream', 'url' => '/api/chat/stream', 'verb' => 'POST'],
+		['name' => 'chatStream#health', 'url' => '/api/chat/health', 'verb' => 'GET'],
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 		
 =======
 

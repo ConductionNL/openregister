@@ -18,6 +18,14 @@
 	},
 	"repositories": [
 		{
+			"name": "vcs-llphant",
+			"type": "path",
+			"url": "vendor/theodo-group/llphant",
+			"options": {
+				"symlink": false
+			}
+		},
+		{
 			"type": "vcs",
 			"url": "https://github.com/theodo-group/LLPhant"
 		},
@@ -126,6 +134,7 @@
 <<<<<<< HEAD
 		"twig/twig": "^3.18",
 		"web-token/jwt-framework": "^3",
+<<<<<<< HEAD
 		"webonyx/graphql-php": "^15.0"
 =======
 		"twig/twig": "^3.27.0",
@@ -133,6 +142,10 @@
 		"webonyx/graphql-php": "^15.0",
 		"zbateson/mail-mime-parser": "^3.0"
 >>>>>>> origin/development
+=======
+		"webonyx/graphql-php": "^15.0",
+		"zbateson/mail-mime-parser": "^2.4"
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
 	},
 	"require-dev": {
 		"cyclonedx/cyclonedx-php-composer": "^6.2",

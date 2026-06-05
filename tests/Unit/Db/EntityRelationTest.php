@@ -54,10 +54,14 @@ class EntityRelationTest extends TestCase
         $this->assertSame('boolean', $fieldTypes['anonymized']);
         $this->assertSame('string', $fieldTypes['anonymizedValue']);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         $this->assertSame('json', $fieldTypes['bases']);
         $this->assertSame('boolean', $fieldTypes['skipAnonymization']);
 >>>>>>> origin/development
+=======
+        $this->assertSame('json', $fieldTypes['bases']);
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         $this->assertSame('datetime', $fieldTypes['createdAt']);
     }
 
@@ -76,6 +80,7 @@ class EntityRelationTest extends TestCase
         $this->assertNull($this->relation->getContext());
         $this->assertFalse($this->relation->getAnonymized());
         $this->assertNull($this->relation->getAnonymizedValue());
+<<<<<<< HEAD
 <<<<<<< HEAD
         $this->assertNull($this->relation->getCreatedAt());
     }
@@ -110,6 +115,40 @@ class EntityRelationTest extends TestCase
     }
 
 >>>>>>> origin/development
+=======
+        $this->assertNull($this->relation->getBases());
+        $this->assertNull($this->relation->getCreatedAt());
+    }
+
+    public function testSetAndGetBases(): void
+    {
+        $bases = ['uuid-a', 'uuid-b'];
+        $this->relation->setBases($bases);
+        $this->assertSame($bases, $this->relation->getBases());
+    }
+
+    public function testSetBasesToNull(): void
+    {
+        $this->relation->setBases(['uuid-a']);
+        $this->relation->setBases(null);
+        $this->assertNull($this->relation->getBases());
+    }
+
+    public function testSetBasesToEmptyArrayIsDistinctFromNull(): void
+    {
+        $this->relation->setBases([]);
+        $this->assertSame([], $this->relation->getBases());
+        $this->assertNotNull($this->relation->getBases());
+    }
+
+    public function testBasesAcceptsArbitraryStrings(): void
+    {
+        $bases = ['not-a-uuid', '12345', ''];
+        $this->relation->setBases($bases);
+        $this->assertSame($bases, $this->relation->getBases());
+    }
+
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
     public function testSetAndGetIntegerFields(): void
     {
         $this->relation->setEntityId(1);
@@ -176,10 +215,14 @@ class EntityRelationTest extends TestCase
             'emailId', 'positionStart', 'positionEnd', 'confidence',
             'detectionMethod', 'context', 'anonymized', 'anonymizedValue',
 <<<<<<< HEAD
+<<<<<<< HEAD
             'createdAt',
 =======
             'bases', 'skipAnonymization', 'createdAt',
 >>>>>>> origin/development
+=======
+            'bases', 'createdAt',
+>>>>>>> 23880afe22b6f7f799fd5c26a65e169f6b16c773
         ];
         foreach ($expectedKeys as $key) {
             $this->assertArrayHasKey($key, $json);
@@ -190,6 +233,27 @@ class EntityRelationTest extends TestCase
         $this->assertSame('object', $json['role']);
         $this->assertSame(0.85, $json['confidence']);
         $this->assertFalse($json['anonymized']);
+        $this->assertNull($json['bases']);
+    }
+
+    public function testJsonSerializeWithBases(): void
+    {
+        $bases = ['uuid-a', 'uuid-b'];
+        $this->relation->setBases($bases);
+
+        $json = $this->relation->jsonSerialize();
+
+        $this->assertArrayHasKey('bases', $json);
+        $this->assertSame($bases, $json['bases']);
+    }
+
+    public function testJsonSerializeWithEmptyBases(): void
+    {
+        $this->relation->setBases([]);
+
+        $json = $this->relation->jsonSerialize();
+
+        $this->assertSame([], $json['bases']);
     }
 
     public function testJsonSerializeDateTimeFormatting(): void

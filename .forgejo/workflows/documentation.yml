@@ -1,0 +1,25 @@
+name: Publish docs
+
+on:
+  push:
+    branches: [documentation, main, development]
+  pull_request:
+    branches: [documentation, main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  build:
+    uses: Conduction/.github/.forgejo/workflows/documentation-build.yml@main
+    with:
+      source-folder: docs
+    secrets: inherit
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    uses: Conduction/.github/.forgejo/workflows/documentation-deploy.yml@main
+    with:
+      cf-project-name: openregister-docs
+    secrets: inherit
