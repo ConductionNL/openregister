@@ -3,7 +3,7 @@
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-2b-components. Update Purpose after archive.
 ## Requirements
-### Requirement: REQ-001 — Pagination component MUST clamp page-change requests to the valid range
+### Requirement: REQ-001 — Pagination component MUST clamp page-change requests to the valid range @e2e exclude isolated Vue component contract (PaginationComponent props-in / page-changed-event-out gating logic) — covered by Vitest component unit test, not a browser-observable app surface
 
 The reusable pagination component (`src/components/PaginationComponent.vue`) MUST validate every page-change request before emitting it to the parent. The component MUST NOT emit a `page-changed` event when the requested page equals the current page, is less than 1, or is greater than the total page count. Page-change requests originate from First/Previous/Next/Last buttons, ellipsis-aware numbered buttons, and any external caller that mounts the component.
 
@@ -28,7 +28,7 @@ The reusable pagination component (`src/components/PaginationComponent.vue`) MUS
 - **THEN** the component SHALL emit `page-changed` with payload `4`
 - **AND** the parent SHALL update its `currentPage` prop, re-rendering the component on page 4
 
-### Requirement: REQ-002 — ConfigurationCard MUST detect already-imported discovered configurations via backend lookup
+### Requirement: REQ-002 — ConfigurationCard MUST detect already-imported discovered configurations via backend lookup @e2e exclude isolated Vue component contract (ConfigurationCard on-mount backend lookup + presentation switch) — covered by Vitest component unit test with mocked fetch; the configurations list surface itself is driven via manifest-shell.spec.ts
 
 The universal `ConfigurationCard` (`src/components/cards/ConfigurationCard.vue`) renders both locally-imported configurations and remotely-discovered ones (from `ImportConfiguration` flows). For discovered configurations (those with a `config.app` field), the component MUST query the backend on mount to check whether a configuration with the same `app` identifier already exists locally. On a positive match, the card MUST switch from the "Discovered" presentation (Import button) to the "Imported" presentation (View/Edit/Export/Delete actions, status badges) without requiring the user to refresh the page or re-open the discover dialog.
 
@@ -57,7 +57,7 @@ The universal `ConfigurationCard` (`src/components/cards/ConfigurationCard.vue`)
 - **AND** `importedConfigId` SHALL be set to `null` (assume "not imported")
 - **AND** the card SHALL render as Discovered with an Import action
 
-### Requirement: REQ-003 — Collapsible settings card MUST toggle on header click and emit a toggle event
+### Requirement: REQ-003 — Collapsible settings card MUST toggle on header click and emit a toggle event @e2e exclude isolated Vue component contract (SettingsCard collapsible state + toggle event) — covered by Vitest component unit test
 
 The `SettingsCard` component (`src/components/shared/SettingsCard.vue`) MAY be configured as collapsible via the `collapsible` prop. When collapsible, clicks on the header MUST toggle the section's expanded/collapsed state and MUST emit a `toggle` event carrying the new collapsed state (`true` = now collapsed, `false` = now expanded). The default expanded/collapsed state on mount is controlled by the `defaultCollapsed` prop. When `collapsible` is `false`, header clicks SHALL have no effect and no `toggle` event SHALL be emitted.
 
@@ -77,7 +77,7 @@ The `SettingsCard` component (`src/components/shared/SettingsCard.vue`) MAY be c
 - **WHEN** the user clicks the header
 - **THEN** no state change SHALL occur and no `toggle` event SHALL be emitted
 
-### Requirement: REQ-004 — SettingsSection MUST escape HTML in detailed descriptions before rendering
+### Requirement: REQ-004 — SettingsSection MUST escape HTML in detailed descriptions before rendering @e2e exclude isolated Vue component contract (SettingsSection sanitizeHtml escaping of v-html input) — XSS-escaping unit invariant covered by Vitest component unit test
 
 The `SettingsSection` wrapper (`src/components/shared/SettingsSection.vue`) accepts a `detailedDescription` prop that is rendered via `v-html` inside the main description box. To prevent XSS, the component MUST escape the supplied string before rendering. The `sanitizeHtml` method MUST guarantee that no HTML tags or attributes from the input are interpreted by the browser as markup — the visible output SHALL be the input rendered as plain text (special characters replaced by their HTML entity equivalents).
 
