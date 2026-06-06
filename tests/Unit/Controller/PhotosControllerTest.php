@@ -15,16 +15,18 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Controller;
+namespace Unit\Controller;
 
+use Exception;
 use OCA\OpenRegister\Controller\PhotosController;
+use OCA\OpenRegister\Db\FileLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PhotoService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\Files\File;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,20 +39,12 @@ class PhotosControllerTest extends TestCase
 {
 
     private PhotosController $controller;
-
     private IRequest&MockObject $request;
-
     private PhotoService&MockObject $photoService;
-
     private ObjectService&MockObject $objectService;
-
     private IUserSession&MockObject $userSession;
-
     private LoggerInterface&MockObject $logger;
 
-    /**
-     * Set up mocks and controller under test.
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +54,10 @@ class PhotosControllerTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession   = $this->createMock(IUserSession::class);
         $this->logger        = $this->createMock(LoggerInterface::class);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
 
         $this->controller = new PhotosController(
             appName: 'openregister',
@@ -71,105 +69,133 @@ class PhotosControllerTest extends TestCase
         );
     }//end setUp()
 
-    /**
-     * Test index returns 404 when object does not exist.
-     */
     public function testIndexReturns404WhenObjectNotFound(): void
     {
         $this->objectService->method('getObject')->willReturn(null);
 
-        $result = $this->controller->index(register: 'reg', schema: 'sch', id: 'uuid-123');
+        $response = $this->controller->index('reg', 'sch', 'missing-uuid');
 
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(404, $response->getStatus());
     }//end testIndexReturns404WhenObjectNotFound()
 
-    /**
-     * Test index returns list of photos when object exists.
-     */
     public function testIndexReturnsPhotoList(): void
     {
-        $object = $this->createMock(ObjectEntity::class);
+        $object = $this->buildObject('obj-uuid');
         $this->objectService->method('getObject')->willReturn($object);
 
-        $file = $this->createMock(File::class);
-        $file->method('getId')->willReturn(10);
-        $file->method('getName')->willReturn('test.jpg');
-        $file->method('getMimeType')->willReturn('image/jpeg');
-        $file->method('getSize')->willReturn(512);
-        $file->method('getMTime')->willReturn(1717600000);
-        $file->method('getEtag')->willReturn('etag1');
+        $link = new FileLink();
+        $link->setObjectUuid('obj-uuid');
+        $link->setMimeType('image/jpeg');
 
-        $this->photoService->method('getPhotos')->willReturn([$file]);
-        $this->photoService->method('formatPhoto')->willReturn([
-            'id' => 10, 'name' => 'test.jpg', 'mimeType' => 'image/jpeg',
-            'size' => 512, 'mtime' => 1717600000, 'etag' => 'etag1', 'exif' => null,
-        ]);
+        $this->photoService->method('getPhotos')->with('obj-uuid')->willReturn([$link]);
 
-        $result = $this->controller->index(register: 'reg', schema: 'sch', id: 'uuid-123');
+        $response = $this->controller->index('reg', 'sch', 'obj-uuid');
 
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(Http::STATUS_OK, $result->getStatus());
-
-        $data = $result->getData();
-        $this->assertArrayHasKey('results', $data);
-        $this->assertCount(1, $data['results']);
-        $this->assertSame(1, $data['count']);
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertCount(1, $data);
+        $this->assertSame('image/jpeg', $data[0]['mimeType']);
     }//end testIndexReturnsPhotoList()
 
-    /**
-     * Test show returns 404 when photo is not found.
-     */
     public function testShowReturns404WhenPhotoNotFound(): void
     {
-        $object = $this->createMock(ObjectEntity::class);
+        $object = $this->buildObject('obj-uuid');
         $this->objectService->method('getObject')->willReturn($object);
-        $this->photoService->method('getPhotoWithExif')->willReturn(null);
+        $this->photoService->method('getPhoto')->willReturn(null);
 
-        $result = $this->controller->show(
-            register: 'reg',
-            schema: 'sch',
-            id: 'uuid-123',
-            fileId: 999
-        );
+        $response = $this->controller->show('reg', 'sch', 'obj-uuid', 99);
 
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+        $this->assertSame(404, $response->getStatus());
     }//end testShowReturns404WhenPhotoNotFound()
 
-    /**
-     * Test show returns photo with EXIF when found.
-     */
     public function testShowReturnsPhotoWithExif(): void
     {
-        $object = $this->createMock(ObjectEntity::class);
+        $object = $this->buildObject('obj-uuid');
         $this->objectService->method('getObject')->willReturn($object);
 
-        $photoData = [
-            'id'       => 10,
-            'name'     => 'photo.jpg',
-            'mimeType' => 'image/jpeg',
-            'size'     => 1024,
-            'mtime'    => 1717600000,
-            'etag'     => 'abc',
-            'exif'     => ['Make' => 'Canon', 'DateTime' => '2026:06:05 12:00:00'],
-        ];
+        $link = new FileLink();
+        $link->setObjectUuid('obj-uuid');
+        $link->setMimeType('image/png');
+        $link->setExifMetadata('{"Make":"Canon"}');
 
-        $this->photoService->method('getPhotoWithExif')->willReturn($photoData);
+        $this->photoService->method('getPhoto')->with('obj-uuid', 5)->willReturn($link);
 
-        $result = $this->controller->show(
-            register: 'reg',
-            schema: 'sch',
-            id: 'uuid-123',
-            fileId: 10
-        );
+        $response = $this->controller->show('reg', 'sch', 'obj-uuid', 5);
 
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(Http::STATUS_OK, $result->getStatus());
-
-        $data = $result->getData();
-        $this->assertSame(10, $data['id']);
-        $this->assertArrayHasKey('exif', $data);
-        $this->assertSame('Canon', $data['exif']['Make']);
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertSame('Canon', $data['exifMetadata']['Make']);
     }//end testShowReturnsPhotoWithExif()
+
+    public function testCreateReturns400WhenFileIdMissing(): void
+    {
+        $object = $this->buildObject('obj-uuid');
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->request->method('getParams')->willReturn([]);
+
+        $response = $this->controller->create('reg', 'sch', 'obj-uuid');
+
+        $this->assertSame(400, $response->getStatus());
+    }//end testCreateReturns400WhenFileIdMissing()
+
+    public function testCreateReturns201OnSuccess(): void
+    {
+        $object = $this->buildObject('obj-uuid');
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->request->method('getParams')->willReturn(['fileId' => 42]);
+
+        $link = new FileLink();
+        $link->setObjectUuid('obj-uuid');
+        $link->setFileId(42);
+        $link->setMimeType('image/jpeg');
+
+        $this->photoService->method('linkPhoto')->with('obj-uuid', 42)->willReturn($link);
+
+        $response = $this->controller->create('reg', 'sch', 'obj-uuid');
+
+        $this->assertSame(201, $response->getStatus());
+    }//end testCreateReturns201OnSuccess()
+
+    public function testDeleteReturns404WhenPhotoNotFound(): void
+    {
+        $object = $this->buildObject('obj-uuid');
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->photoService->method('unlinkPhoto')->willReturn(false);
+
+        $response = $this->controller->delete('reg', 'sch', 'obj-uuid', 10);
+
+        $this->assertSame(404, $response->getStatus());
+    }//end testDeleteReturns404WhenPhotoNotFound()
+
+    public function testDeleteReturns200OnSuccess(): void
+    {
+        $object = $this->buildObject('obj-uuid');
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->photoService->method('unlinkPhoto')->willReturn(true);
+
+        $response = $this->controller->delete('reg', 'sch', 'obj-uuid', 10);
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertTrue($response->getData()['success']);
+    }//end testDeleteReturns200OnSuccess()
+
+    public function testGpsStripSettingReturnsCurrentValue(): void
+    {
+        $this->request->method('getMethod')->willReturn('GET');
+        $this->photoService->method('isGpsStripEnabled')->willReturn(false);
+
+        $response = $this->controller->gpsStripSetting();
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertFalse($response->getData()['stripGps']);
+    }//end testGpsStripSettingReturnsCurrentValue()
+
+    private function buildObject(string $uuid): ObjectEntity&MockObject
+    {
+        $object = $this->createMock(ObjectEntity::class);
+        $object->method('getUuid')->willReturn($uuid);
+
+        return $object;
+    }//end buildObject()
 }//end class

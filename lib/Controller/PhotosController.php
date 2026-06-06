@@ -1,11 +1,10 @@
 <?php
 
 /**
- * PhotosController — REST controller for the Photos integration.
+ * PhotosController — REST endpoints for the Photos integration.
  *
- * Provides sub-resource endpoints under /api/objects/{register}/{schema}/{id}/photos.
- * Photos are a filtered view of Files (image MIME types only), enriched with
- * lazy-extracted EXIF metadata per the integration-photos spec.
+ * Sub-resource under objects: list, get (with EXIF), link, unlink.
+ * Reuses the openregister_file_links table filtered to image/* MIME types.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -27,8 +26,8 @@ use Exception;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PhotoService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -36,10 +35,12 @@ use Psr\Log\LoggerInterface;
 /**
  * Controller for photo sub-resource operations on objects.
  *
- * All endpoints live under /apps/openregister/api/objects/{register}/{schema}/{id}/photos.
- * Photo access inherits Nextcloud file permissions (requiresPermission() === null).
+ * List/show are @PublicPage — inheriting NC file permissions (requiresPermission() === null).
+ * Mutating endpoints (link/unlink) require authentication via OCSForbiddenException guard.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class PhotosController extends Controller
 {
@@ -50,7 +51,7 @@ class PhotosController extends Controller
      * @param IRequest        $request       HTTP request.
      * @param PhotoService    $photoService  Photo service.
      * @param ObjectService   $objectService Object service.
-     * @param IUserSession    $userSession   Nextcloud user session.
+     * @param IUserSession    $userSession   Nextcloud user session for auth guards.
      * @param LoggerInterface $logger        Logger.
      */
     public function __construct(
@@ -65,15 +66,14 @@ class PhotosController extends Controller
     }//end __construct()
 
     /**
-     * List all photos attached to an object (images filtered from files).
+     * List all photos attached to an object (image/* MIME filter).
      *
      * @param string $register Register slug.
      * @param string $schema   Schema slug.
-     * @param string $id       Object ID.
+     * @param string $id       Object UUID.
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
      *
@@ -92,42 +92,34 @@ class PhotosController extends Controller
                 return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
             }
 
-            $photos = $this->photoService->getPhotos(object: $object);
+            $photos = $this->photoService->getPhotos(objectUuid: $object->getUuid());
 
-            $results = [];
-            foreach ($photos as $photo) {
-                $results[] = $this->photoService->formatPhoto(file: $photo);
-            }
-
-            return new JSONResponse(data: ['results' => $results, 'count' => count($results)]);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: array_map(static fn($p) => $p->jsonSerialize(), $photos));
         } catch (Exception $e) {
-            $this->logError(message: 'index', exception: $e);
+            $this->logger->error(
+                message: 'PhotosController::index',
+                context: ['exception' => $e->getMessage()]
+            );
             return new JSONResponse(data: ['error' => 'Operation failed'], statusCode: 500);
         }//end try
     }//end index()
 
     /**
-     * Get a specific photo with EXIF metadata.
-     *
-     * Returns the photo file metadata enriched with lazily-extracted EXIF data
-     * (AD-2: EXIF is extracted on first view per file and cached).
+     * Get a specific photo with lazily-extracted EXIF metadata.
      *
      * @param string $register Register slug.
      * @param string $schema   Schema slug.
-     * @param string $id       Object ID.
-     * @param int    $fileId   Nextcloud file ID.
+     * @param string $id       Object UUID.
+     * @param int    $photoId  FileLink row ID.
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
      *
      * @spec openspec/changes/integration-photos/tasks.md#task-3
      */
-    public function show(string $register, string $schema, string $id, int $fileId): JSONResponse
+    public function show(string $register, string $schema, string $id, int $photoId): JSONResponse
     {
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
@@ -140,34 +132,147 @@ class PhotosController extends Controller
                 return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
             }
 
-            $photo = $this->photoService->getPhotoWithExif(object: $object, fileId: $fileId);
+            $photo = $this->photoService->getPhoto(objectUuid: $object->getUuid(), linkId: $photoId);
 
             if ($photo === null) {
                 return new JSONResponse(data: ['error' => 'Photo not found'], statusCode: 404);
             }
 
-            return new JSONResponse(data: $photo);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: $photo->jsonSerialize());
         } catch (Exception $e) {
-            $this->logError(message: 'show', exception: $e);
+            $this->logger->error(
+                message: 'PhotosController::show',
+                context: ['exception' => $e->getMessage()]
+            );
             return new JSONResponse(data: ['error' => 'Operation failed'], statusCode: 500);
         }//end try
     }//end show()
 
     /**
-     * Log a controller error without exposing internals to the response.
+     * Link a Nextcloud file to an object as a photo.
      *
-     * @param string    $message   Action name for the log entry.
-     * @param Exception $exception The caught exception.
+     * Expects JSON body: { "fileId": <int> }
+     * Per-object guard: throws OCSForbiddenException when caller is unauthenticated.
      *
-     * @return void
+     * @param string $register Register slug.
+     * @param string $schema   Schema slug.
+     * @param string $id       Object UUID.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @throws OCSForbiddenException When the caller is not authenticated.
      */
-    private function logError(string $message, Exception $exception): void
+    public function create(string $register, string $schema, string $id): JSONResponse
     {
-        $this->logger->error(
-            message: 'PhotosController::'.$message,
-            context: ['exception' => $exception->getMessage()]
-        );
-    }//end logError()
+        if ($this->userSession->getUser() === null) {
+            throw new OCSForbiddenException('Authentication required');
+        }
+
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            }
+
+            $data   = $this->request->getParams();
+            $fileId = array_key_exists('fileId', $data) === true ? (int) $data['fileId'] : null;
+
+            if ($fileId === null || $fileId <= 0) {
+                return new JSONResponse(data: ['error' => 'fileId is required'], statusCode: 400);
+            }
+
+            $link = $this->photoService->linkPhoto(objectUuid: $object->getUuid(), fileId: $fileId);
+
+            return new JSONResponse(data: $link->jsonSerialize(), statusCode: 201);
+        } catch (OCSForbiddenException $e) {
+            throw $e;
+        } catch (Exception $e) {
+            $status = str_contains($e->getMessage(), 'not an image') === true ? 400 : 500;
+
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
+        }//end try
+    }//end create()
+
+    /**
+     * Unlink a photo from an object (removes the link row, not the file).
+     *
+     * Per-object guard: throws OCSForbiddenException when caller is unauthenticated.
+     *
+     * @param string $register Register slug.
+     * @param string $schema   Schema slug.
+     * @param string $id       Object UUID.
+     * @param int    $photoId  FileLink row ID.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @throws OCSForbiddenException When the caller is not authenticated.
+     */
+    public function delete(string $register, string $schema, string $id, int $photoId): JSONResponse
+    {
+        if ($this->userSession->getUser() === null) {
+            throw new OCSForbiddenException('Authentication required');
+        }
+
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+
+            if ($object === null) {
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            }
+
+            $success = $this->photoService->unlinkPhoto(
+                objectUuid: $object->getUuid(),
+                linkId: $photoId
+            );
+
+            if ($success === false) {
+                return new JSONResponse(data: ['error' => 'Photo not found'], statusCode: 404);
+            }
+
+            return new JSONResponse(data: ['success' => true]);
+        } catch (OCSForbiddenException $e) {
+            throw $e;
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
+    }//end delete()
+
+    /**
+     * Get/update GPS-strip admin setting.
+     *
+     * GET returns current value; PUT updates it.
+     *
+     * @return JSONResponse
+     *
+     * @NoCSRFRequired
+     */
+    public function gpsStripSetting(): JSONResponse
+    {
+        try {
+            if ($this->request->getMethod() === 'PUT') {
+                $data    = $this->request->getParams();
+                $enabled = filter_var($data['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $this->photoService->setGpsStripEnabled(enabled: $enabled);
+            }
+
+            return new JSONResponse(data: ['stripGps' => $this->photoService->isGpsStripEnabled()]);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
+    }//end gpsStripSetting()
 }//end class
