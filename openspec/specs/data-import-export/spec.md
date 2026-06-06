@@ -574,7 +574,7 @@ register portability" requirement and are not redefined here.
 - **THEN** the response MUST list the configuration files in that repository
 - **AND** repositories or files the caller cannot access MUST NOT be returned
 
-### Requirement: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources
+### Requirement: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources @e2e exclude backend remote discovery/publish (Git provider HTTP integration) — covered by Newman/PHPUnit
 
 `ConfigurationController` MUST support a remote configuration-package
 portability surface that complements the local OpenAPI 3.0.0 export/import:
@@ -622,7 +622,7 @@ configuration with the resulting GitHub source information.
 - **WHEN** `extractGitHubPublishParams()` returns an error
 - **THEN** the response MUST be HTTP 400 with the error message
 
-### Requirement: The system MUST support bulk delete of objects scoped by register and schema
+### Requirement: The system MUST support bulk delete of objects scoped by register and schema @e2e exclude backend bulk-delete REST endpoint + id resolution — covered by Newman
 
 `BulkController` MUST expose mass-delete operations scoped by register and/or
 schema: `deleteSchema()` and `deleteSchemaObjects()` delete all objects for a
@@ -654,7 +654,7 @@ unresolvable register/schema MUST return HTTP 404; failures MUST return HTTP 500
 - **WHEN** `resolveRegisterSchemaIds()` throws
 - **THEN** the response MUST be HTTP 404 with the error message
 
-### Requirement: ConfigurationService MUST provide the public facade over the configuration import/export handlers
+### Requirement: ConfigurationService MUST provide the public facade over the configuration import/export handlers @e2e exclude backend service facade (upload resolution, app import/export) — covered by PHPUnit
 
 `ConfigurationService` MUST expose the public entry points for register
 configuration portability, delegating to the dedicated handlers (which own the
@@ -685,7 +685,7 @@ configuration import/export.
 - **THEN** it MUST delegate to `Configuration/UploadHandler::getUploadedJson()` which resolves the payload in that precedence order
 - **AND** return either the parsed array or a `JSONResponse` error
 
-### Requirement: ConfigurationService MUST track and compare imported-configuration versions
+### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 
 The system MUST support remote-version awareness for imported configurations.
 `checkRemoteVersion()` MUST fetch a remote-sourced configuration, extract its
