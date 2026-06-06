@@ -8,5 +8,16 @@
   ],
   "issue": "https://codeberg.org/Conduction/openregister/issues/1326",
   "pipeline": {},
-  "cycles": []
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-06T03:44:57Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
 }
