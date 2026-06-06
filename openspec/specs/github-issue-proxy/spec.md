@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-github-issue-proxy. Update Purpose after archive.
+
+@e2e exclude Pure backend REST proxy (GET/POST /api/github/issues): server-side GitHub fetch, OR-label merge, PAT authorship fallback, rate-limiting, APCu/distributed caching, audit emission, and parameter validation. No user-facing OpenRegister UI surface — exercised via PHPUnit (handler/controller units) and Newman (HTTP contract). Covered by Newman/PHPUnit.
+
 ## Requirements
 ### Requirement: Issues list endpoint
 

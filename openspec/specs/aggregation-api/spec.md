@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-time-bucket-aggregation. Update Purpose after archive.
+
+@e2e exclude Backend aggregation primitive over REST + GraphQL (groupBy, time-bucketing, metric, per-engine SQL dialect generation, validation, multi-tenant filtering, ad-hoc cache eviction). No OpenRegister UI surface — the aggregation result feeds dashboards but the primitive itself is a data-layer/HTTP contract exercised via PHPUnit (dialect/validator units) and Newman (REST/GraphQL contract). Covered by Newman/PHPUnit.
+
 ## Requirements
 ### Requirement: The system SHALL expose an ad-hoc aggregation primitive over REST and GraphQL
 
