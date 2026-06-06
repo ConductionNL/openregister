@@ -209,8 +209,34 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 		// destination (Configurations) are both reachable from the rendered nav.
 		const navText = (await nav.innerText()).toLowerCase()
 		expect(navText).toContain('registers')
-		// Settings cluster destination — Configurations lives in section:"settings".
-		expect(navText).toMatch(/configuration/)
+
+		// Settings cluster destination — Configurations lives in
+		// section:"settings", which the CnAppRoot / NcAppNavigation
+		// shell renders inside a collapsible "Settings" footer control
+		// at the bottom of the nav. Its child destinations are NOT in
+		// the DOM until that control is expanded, so reading
+		// nav.innerText() alone never surfaces "Configurations".
+		// Expand the Settings control first, then assert the cluster
+		// destination is reachable.
+		const settingsToggle = nav
+			.locator('button:has-text("Settings"), [class*="settings"] button')
+			.first()
+		if (await settingsToggle.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			await settingsToggle.click()
+			// The expanded settings drawer renders its destination list.
+			await page
+				.locator('text=/configuration/i')
+				.first()
+				.waitFor({ state: 'visible', timeout: 10_000 })
+				.catch(() => {})
+		}
+
+		// Either the settings cluster expanded and now exposes the
+		// Configurations destination, or it is already visible somewhere
+		// in the document. Assert on the page, not just the collapsed nav.
+		await expect(page.locator('text=/configuration/i').first()).toBeVisible({
+			timeout: 10_000,
+		})
 	})
 
 	// @e2e openregister-app-manifest::menu-order-is-monotonic-per-section

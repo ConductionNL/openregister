@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-16T14:53:32.208Z",
+  "generated": "2026-06-06T09:19:05.881Z",
   "baseUrl": "http://localhost:8080",
   "objectTriple": {
     "register": "21",
@@ -7,17 +7,17 @@
     "objectId": "25706ca9-c989-4d6b-9f7b-98cf1cc70639"
   },
   "providerCount": 24,
-  "passCount": 24,
-  "failCount": 0,
+  "passCount": 22,
+  "failCount": 2,
   "providers": [
     {
       "id": "activity",
-      "timestamp": "2026-05-16T14:53:30.957Z",
+      "timestamp": "2026-06-06T09:19:04.954Z",
       "metadata": {
         "label": "Activity",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "activity",
         "storageStrategy": "query-time",
         "surfaces": [
           "user-dashboard",
@@ -34,21 +34,39 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/activity",
         "status": 200,
-        "latencyMs": 103,
+        "latencyMs": 428,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": "207935",
+          "title": "Probe object created [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+          "subject": "Probe object created [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+          "type": "object_created",
+          "timestamp": 1779004210,
+          "affecteduser": "admin",
+          "actor_id": "admin",
+          "object_id": "1",
+          "url": "/index.php/apps/activity/207935",
+          "data": {
+            "activity_id": 207935,
+            "subject": "Probe object created [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+            "type": "object_created",
+            "affecteduser": "admin",
+            "timestamp": 1779004210,
+            "object_id": 1
+          }
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "analytics",
-      "timestamp": "2026-05-16T14:53:31.058Z",
+      "timestamp": "2026-06-06T09:19:05.032Z",
       "metadata": {
         "label": "Analytics",
         "group": "workflow",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "analytics",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -57,15 +75,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Analytics app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/analytics",
         "status": 200,
-        "latencyMs": 101,
+        "latencyMs": 78,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -74,7 +92,7 @@
     },
     {
       "id": "audit-trail",
-      "timestamp": "2026-05-16T14:53:26.869Z",
+      "timestamp": "2026-06-06T09:19:04.037Z",
       "metadata": {
         "label": "Audit trail",
         "group": "core",
@@ -96,21 +114,100 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/audit-trail",
         "status": 200,
-        "latencyMs": 102,
+        "latencyMs": 95,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": 593,
+          "uuid": "4804abd9-4d72-4438-a97c-840f68473af0",
+          "schema": 166,
+          "register": 21,
+          "object": 1,
+          "objectUuid": "25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+          "registerUuid": null,
+          "schemaUuid": null,
+          "action": "create",
+          "changed": {
+            "name": {
+              "old": null,
+              "new": "Verification probe object"
+            },
+            "@self": {
+              "old": null,
+              "new": {
+                "id": "25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+                "slug": null,
+                "name": "Verification probe object",
+                "description": 1,
+                "summary": null,
+                "image": null,
+                "uri": "http://localhost:8080/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+                "version": null,
+                "register": "21",
+                "schema": "166",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": "admin",
+                "organisation": "b0f2262e-74cf-4043-9935-d2bcb54eeeea",
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-16T06:29:49+00:00",
+                "created": "2026-05-16T06:29:49+00:00",
+                "deleted": [],
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+              }
+            },
+            "id": {
+              "old": null,
+              "new": "25706ca9-c989-4d6b-9f7b-98cf1cc70639"
+            }
+          },
+          "user": "admin",
+          "userName": "admin",
+          "session": "c16ceea08321591cf547063b8b7bdca9",
+          "request": "c41CBnyu2PtgAm8noKta",
+          "ipAddress": "172.22.0.1",
+          "version": null,
+          "created": "2026-05-16T06:29:49+00:00",
+          "organisationId": null,
+          "organisationIdType": null,
+          "processingActivityId": null,
+          "processingActivityUrl": null,
+          "processingId": null,
+          "confidentiality": null,
+          "retentionPeriod": null,
+          "size": 1031,
+          "expires": "2026-06-15T06:29:49+00:00",
+          "hash": null,
+          "previousHash": null
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "bookmarks",
-      "timestamp": "2026-05-16T14:53:31.159Z",
+      "timestamp": "2026-06-06T09:19:05.108Z",
       "metadata": {
         "label": "Bookmarks",
         "group": "docs",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "bookmarks",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -119,15 +216,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Bookmarks app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/bookmarks",
         "status": 200,
-        "latencyMs": 101,
+        "latencyMs": 76,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -136,12 +233,12 @@
     },
     {
       "id": "calendar",
-      "timestamp": "2026-05-16T14:53:30.036Z",
+      "timestamp": "2026-06-06T09:19:04.282Z",
       "metadata": {
         "label": "Meetings",
         "group": "comms",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "calendar",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -150,29 +247,31 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Calendar app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/calendar",
-        "status": 200,
-        "latencyMs": 104,
-        "responseShape": "list-envelope",
+        "status": 500,
+        "latencyMs": 84,
+        "responseShape": "unknown",
         "sample": null
       },
-      "verdict": "pass",
-      "notes": []
+      "verdict": "fail",
+      "notes": [
+        "HTTP 500 — server error"
+      ]
     },
     {
       "id": "collectives",
-      "timestamp": "2026-05-16T14:53:31.263Z",
+      "timestamp": "2026-06-06T09:19:05.187Z",
       "metadata": {
         "label": "Knowledge",
         "group": "docs",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "collectives",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -181,15 +280,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Knowledge app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/collectives",
         "status": 200,
-        "latencyMs": 103,
+        "latencyMs": 78,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -198,12 +297,12 @@
     },
     {
       "id": "contacts",
-      "timestamp": "2026-05-16T14:53:30.140Z",
+      "timestamp": "2026-06-06T09:19:04.369Z",
       "metadata": {
         "label": "Contacts",
         "group": "comms",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "contacts",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -212,29 +311,46 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Contacts app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/contacts",
         "status": 200,
-        "latencyMs": 102,
+        "latencyMs": 85,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": 1,
+          "objectUuid": "25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+          "registerId": 21,
+          "schemaId": null,
+          "contactUid": "probe-contact-25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+          "addressbookId": 1,
+          "contactUri": "probe.vcf",
+          "displayName": "Probe Contact [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+          "email": "probe@example.local",
+          "phone": null,
+          "org": null,
+          "avatarUrl": null,
+          "role": "owner",
+          "metadata": null,
+          "linkedBy": "admin",
+          "linkedAt": "2026-05-17T16:23:07+00:00"
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "cospend",
-      "timestamp": "2026-05-16T14:53:31.361Z",
+      "timestamp": "2026-06-06T09:19:05.266Z",
       "metadata": {
         "label": "Costs",
         "group": "workflow",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "cospend",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -243,15 +359,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Cospend app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/cospend",
         "status": 200,
-        "latencyMs": 98,
+        "latencyMs": 78,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -260,12 +376,12 @@
     },
     {
       "id": "deck",
-      "timestamp": "2026-05-16T14:53:30.245Z",
+      "timestamp": "2026-06-06T09:19:04.448Z",
       "metadata": {
         "label": "Cards",
         "group": "workflow",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "deck",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -274,29 +390,43 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Deck app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/deck",
         "status": 200,
-        "latencyMs": 105,
+        "latencyMs": 78,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": 1,
+          "objectUuid": "25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+          "registerId": 21,
+          "schemaId": null,
+          "boardId": 2,
+          "stackId": 1,
+          "cardId": 1,
+          "cardTitle": "Probe deck card [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+          "dueDate": null,
+          "labels": [],
+          "assignees": [],
+          "linkedBy": "admin",
+          "linkedAt": "2026-05-17T16:23:07+00:00"
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "email",
-      "timestamp": "2026-05-16T14:53:30.853Z",
+      "timestamp": "2026-06-06T09:19:04.525Z",
       "metadata": {
         "label": "Emails",
         "group": "comms",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "mail",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -305,24 +435,38 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Mail app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/email",
         "status": 200,
-        "latencyMs": 608,
+        "latencyMs": 76,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": 1,
+          "objectUuid": "25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+          "registerId": 21,
+          "schemaId": null,
+          "mailAccountId": 1,
+          "mailMessageId": 1,
+          "mailMessageUid": null,
+          "subject": "Probe email [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+          "sender": "admin@example.local",
+          "mailDate": "2026-05-17T16:23:07+00:00",
+          "metadata": null,
+          "linkedBy": "admin",
+          "linkedAt": "2026-05-17T16:23:07+00:00"
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "files",
-      "timestamp": "2026-05-16T14:53:26.449Z",
+      "timestamp": "2026-06-06T09:19:03.666Z",
       "metadata": {
         "label": "Files",
         "group": "core",
@@ -344,21 +488,28 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/files",
         "status": 200,
-        "latencyMs": 148,
+        "latencyMs": 145,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": 689,
+          "name": "verification-probe.md",
+          "path": "/admin/files/Open Registers/Integration Verification Register/25706ca9-c989-4d6b-9f7b-98cf1cc70639/verification-probe.md",
+          "mimetype": "text/markdown",
+          "size": 119,
+          "mTime": 1779035965
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "flow",
-      "timestamp": "2026-05-16T14:53:31.463Z",
+      "timestamp": "2026-06-06T09:19:05.341Z",
       "metadata": {
         "label": "Automation",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "workflowengine",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -375,7 +526,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/flow",
         "status": 200,
-        "latencyMs": 101,
+        "latencyMs": 75,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -384,12 +535,12 @@
     },
     {
       "id": "forms",
-      "timestamp": "2026-05-16T14:53:31.563Z",
+      "timestamp": "2026-06-06T09:19:05.418Z",
       "metadata": {
         "label": "Forms",
         "group": "workflow",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "forms",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -398,15 +549,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Forms app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/forms",
         "status": 200,
-        "latencyMs": 99,
+        "latencyMs": 77,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -415,12 +566,12 @@
     },
     {
       "id": "maps",
-      "timestamp": "2026-05-16T14:53:31.695Z",
+      "timestamp": "2026-06-06T09:19:05.494Z",
       "metadata": {
-        "label": "Location",
+        "label": "Locations",
         "group": "docs",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "maps",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -429,15 +580,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Location app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/maps",
         "status": 200,
-        "latencyMs": 130,
+        "latencyMs": 75,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -446,7 +597,7 @@
     },
     {
       "id": "notes",
-      "timestamp": "2026-05-16T14:53:26.554Z",
+      "timestamp": "2026-06-06T09:19:03.752Z",
       "metadata": {
         "label": "Notes",
         "group": "core",
@@ -468,21 +619,29 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/notes",
         "status": 200,
-        "latencyMs": 105,
+        "latencyMs": 86,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": 142,
+          "message": "Verification probe note [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639] — this note is linked to the OR object via the Notes provider.",
+          "actorType": "users",
+          "actorId": "admin",
+          "actorDisplayName": "admin",
+          "createdAt": "2026-05-17T07:58:36+00:00",
+          "isCurrentUser": true
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "openproject",
-      "timestamp": "2026-05-16T14:53:29.932Z",
+      "timestamp": "2026-06-06T09:19:04.198Z",
       "metadata": {
         "label": "Projects",
         "group": "external",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "openconnector",
         "storageStrategy": "external",
         "surfaces": [
           "user-dashboard",
@@ -491,29 +650,31 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
-          "authStatus": "configured",
-          "message": null
+          "status": "unavailable",
+          "authStatus": "missing",
+          "message": "OpenConnector app is not installed or enabled."
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/openproject",
-        "status": 200,
-        "latencyMs": 123,
-        "responseShape": "list-envelope",
+        "status": 503,
+        "latencyMs": 79,
+        "responseShape": "error-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": []
+      "notes": [
+        "degraded source (expected for unconfigured external)"
+      ]
     },
     {
       "id": "photos",
-      "timestamp": "2026-05-16T14:53:31.797Z",
+      "timestamp": "2026-06-06T09:19:05.571Z",
       "metadata": {
         "label": "Photos",
         "group": "docs",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "photos",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -530,21 +691,31 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/photos",
         "status": 200,
-        "latencyMs": 101,
+        "latencyMs": 77,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": "1",
+          "title": "OR sandbox album [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+          "url": "/index.php/apps/photos/albums/1",
+          "data": {
+            "album_id": 1,
+            "name": "OR sandbox album [or:25706ca9-c989-4d6b-9f7b-98cf1cc70639]",
+            "user": "admin",
+            "created": 1779004210
+          }
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "polls",
-      "timestamp": "2026-05-16T14:53:31.900Z",
+      "timestamp": "2026-06-06T09:19:05.647Z",
       "metadata": {
         "label": "Polls",
         "group": "workflow",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "polls",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -553,15 +724,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Polls app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/polls",
         "status": 200,
-        "latencyMs": 103,
+        "latencyMs": 75,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -570,7 +741,7 @@
     },
     {
       "id": "shares",
-      "timestamp": "2026-05-16T14:53:32.005Z",
+      "timestamp": "2026-06-06T09:19:05.728Z",
       "metadata": {
         "label": "Shares",
         "group": "core",
@@ -592,7 +763,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/shares",
         "status": 200,
-        "latencyMs": 104,
+        "latencyMs": 81,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -601,7 +772,7 @@
     },
     {
       "id": "tags",
-      "timestamp": "2026-05-16T14:53:26.765Z",
+      "timestamp": "2026-06-06T09:19:03.942Z",
       "metadata": {
         "label": "Tags",
         "group": "core",
@@ -623,21 +794,26 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tags",
         "status": 200,
-        "latencyMs": 103,
+        "latencyMs": 109,
         "responseShape": "list-envelope",
-        "sample": null
+        "sample": {
+          "id": "13",
+          "name": "or-probe-tag-25706ca9-c989-4d6b-9f7b-98cf1cc70639",
+          "visibility": true,
+          "assignable": true
+        }
       },
       "verdict": "pass",
       "notes": []
     },
     {
       "id": "talk",
-      "timestamp": "2026-05-16T14:53:32.106Z",
+      "timestamp": "2026-06-06T09:19:05.805Z",
       "metadata": {
         "label": "Chat",
         "group": "comms",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "spreed",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -646,15 +822,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC Talk (spreed) is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/talk",
         "status": 200,
-        "latencyMs": 101,
+        "latencyMs": 77,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -663,7 +839,7 @@
     },
     {
       "id": "tasks",
-      "timestamp": "2026-05-16T14:53:26.662Z",
+      "timestamp": "2026-06-06T09:19:03.832Z",
       "metadata": {
         "label": "Tasks",
         "group": "core",
@@ -684,22 +860,24 @@
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tasks",
-        "status": 200,
-        "latencyMs": 108,
-        "responseShape": "list-envelope",
+        "status": 500,
+        "latencyMs": 80,
+        "responseShape": "unknown",
         "sample": null
       },
-      "verdict": "pass",
-      "notes": []
+      "verdict": "fail",
+      "notes": [
+        "HTTP 500 — server error"
+      ]
     },
     {
       "id": "time-tracker",
-      "timestamp": "2026-05-16T14:53:32.208Z",
+      "timestamp": "2026-06-06T09:19:05.881Z",
       "metadata": {
-        "label": "Time",
+        "label": "Time tracker",
         "group": "workflow",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "timemanager",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -708,15 +886,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
+          "status": "unavailable",
           "authStatus": "configured",
-          "message": null
+          "message": "NC TimeManager app is not installed"
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/time-tracker",
         "status": 200,
-        "latencyMs": 102,
+        "latencyMs": 76,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -725,12 +903,12 @@
     },
     {
       "id": "xwiki",
-      "timestamp": "2026-05-16T14:53:29.809Z",
+      "timestamp": "2026-06-06T09:19:04.117Z",
       "metadata": {
         "label": "Articles",
         "group": "external",
-        "enabled": true,
-        "requiredApp": null,
+        "enabled": false,
+        "requiredApp": "openconnector",
         "storageStrategy": "external",
         "surfaces": [
           "user-dashboard",
@@ -739,15 +917,15 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "ok",
-          "authStatus": "configured",
-          "message": null
+          "status": "unavailable",
+          "authStatus": "missing",
+          "message": "OpenConnector app is not installed or enabled."
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/xwiki",
         "status": 200,
-        "latencyMs": 2940,
+        "latencyMs": 80,
         "responseShape": "list-envelope",
         "sample": null
       },
