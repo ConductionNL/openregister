@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -106,6 +107,13 @@ class RegisterService
     private readonly OrganisationService $organisationService;
 
     /**
+     * Register serializer for _extend processing.
+     *
+     * @var RegisterSerializer
+     */
+    private readonly RegisterSerializer $registerSerializer;
+
+    /**
      * Logger
      *
      * Used for logging register operations and errors.
@@ -125,6 +133,7 @@ class RegisterService
      * @param FileService         $fileService         File service for file operations
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param RegisterSerializer  $registerSerializer  Serializer for _extend post-processing
      *
      * @return void
      */
@@ -134,7 +143,8 @@ class RegisterService
         IDBConnection $db,
         FileService $fileService,
         OrganisationService $organisationService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        RegisterSerializer $registerSerializer
     ) {
         $this->logger = $logger;
         $this->logger->debug(
@@ -147,6 +157,7 @@ class RegisterService
         $this->db          = $db;
         $this->fileService = $fileService;
         $this->organisationService = $organisationService;
+        $this->registerSerializer  = $registerSerializer;
         $this->logger->debug(
             message: '[RegisterService] RegisterService constructor completed.',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -173,7 +184,8 @@ class RegisterService
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
-        return $this->registerMapper->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+        // _extend is declared for signature compatibility; honors only via findSerialized().
+        return $this->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
     }//end find()
 
     /**
@@ -209,17 +221,130 @@ class RegisterService
         ?array $_extend=[],
         bool $_multitenancy=true
     ): array {
-        // Find all registers with optional filtering, pagination, and extensions.
+        // _extend is declared for signature compatibility; honored only via findAllSerialized().
         return $this->registerMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $_extend,
             _multitenancy: $_multitenancy
         );
     }//end findAll()
+
+    /**
+     * Find a register by ID and return a serialized array with _extend applied.
+     *
+     * Calls the existing find() to retrieve the entity, then delegates to
+     * RegisterSerializer::serialize() so both HTTP and DI callers receive
+     * identical expanded data. Pre-computes schema object counts when both
+     * 'schemas' and '@self.stats' are requested.
+     *
+     * @param int|string $id            The ID of the register.
+     * @param array      $_extend       Extension keys ('schemas', '@self.stats').
+     * @param bool       $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array Serialized register array with extensions applied.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/tasks.md#task-2.1
+     */
+    public function findSerialized(int|string $id, array $_extend=[], bool $_multitenancy=true): array
+    {
+        $register = $this->find(id: $id, _extend: [], _multitenancy: $_multitenancy);
+
+        $schemaStats = null;
+        if (in_array(needle: '@self.stats', haystack: $_extend, strict: true) === true
+            && in_array(needle: 'schemas', haystack: $_extend, strict: true) === true
+        ) {
+            $rawSchemas  = array_map(
+                static fn($s) => ['id' => $s],
+                $register->getSchemas()
+            );
+            $schemaStats = $this->getSchemaObjectCounts(
+                registerId: (int) $register->getId(),
+                schemas: $rawSchemas
+            );
+        }
+
+        return $this->registerSerializer->serialize(
+            register: $register,
+            extend: $_extend,
+            schemaStats: $schemaStats
+        );
+    }//end findSerialized()
+
+    /**
+     * Find all registers and return serialized arrays with _extend applied.
+     *
+     * Calls the existing findAll() to retrieve entities, pre-computes per-register
+     * schema object counts when '@self.stats' + 'schemas' are requested, then
+     * delegates to RegisterSerializer::serializeMany(). Both HTTP and DI callers
+     * receive identical expanded data from this method.
+     *
+     * The entity-returning findAll() / find() methods keep their current signatures
+     * and entity return types; _extend has no effect when called through them.
+     *
+     * @param int|null   $limit            Maximum results (null = no limit).
+     * @param int|null   $offset           Results to skip for pagination.
+     * @param array|null $filters          Filters to apply.
+     * @param array|null $searchConditions Search conditions.
+     * @param array|null $searchParams     Search parameters.
+     * @param array      $_extend          Extension keys ('schemas', '@self.stats').
+     * @param bool       $_multitenancy    Whether to apply multitenancy filtering.
+     *
+     * @return array[] Array of serialized register arrays with extensions applied.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional flag for multi-tenancy
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple optional filter parameters
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/tasks.md#task-2.2
+     */
+    public function findAllSerialized(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $_extend=[],
+        bool $_multitenancy=true
+    ): array {
+        $registers = $this->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            _multitenancy: $_multitenancy
+        );
+
+        $withStats = in_array(needle: '@self.stats', haystack: $_extend, strict: true)
+            && in_array(needle: 'schemas', haystack: $_extend, strict: true);
+
+        $schemaStatsByRegisterId = null;
+
+        if ($withStats === true) {
+            $schemaStatsByRegisterId = [];
+            foreach ($registers as $register) {
+                $registerId = (int) $register->getId();
+                $rawSchemas = array_map(
+                    static fn($s) => ['id' => $s],
+                    $register->getSchemas()
+                );
+                $schemaStatsByRegisterId[$registerId] = $this->getSchemaObjectCounts(
+                    registerId: $registerId,
+                    schemas: $rawSchemas
+                );
+            }
+        }
+
+        return $this->registerSerializer->serializeMany(
+            registers: $registers,
+            extend: $_extend,
+            schemaStatsByRegisterId: $schemaStatsByRegisterId
+        );
+    }//end findAllSerialized()
 
     /**
      * Create a new register from array data.
