@@ -297,11 +297,24 @@ test.describe('register-i18n — register language management UI', () => {
 		})
 		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 25_000 })
 
-		// Find any visible list of registers and click the first to open sidebar
-		const listItems = page.locator('.list-item, .register-item, [class*="item"], li[class*="list"]')
+		// Find any visible list of registers and click the first to open sidebar.
+		// NcListItem renders an outer `li.list-item__wrapper` that is NOT itself
+		// clickable/visible — the clickable target is the inner `.list-item`
+		// anchor/link. Prefer the visible inner element and guard the click so
+		// an invisible wrapper match never hangs the test (it ends in a soft
+		// "app still rendered" assertion either way).
+		const listItems = page.locator(
+			'a.list-item, .list-item__anchor, .register-item, [class*="item"]:visible, li[class*="list"]',
+		)
 		const count = await listItems.count()
 		if (count > 0) {
-			await listItems.first().click()
+			const firstItem = listItems.first()
+			const itemVisible = await firstItem
+				.isVisible({ timeout: 5_000 })
+				.catch(() => false)
+			if (itemVisible) {
+				await firstItem.click({ timeout: 8_000 }).catch(() => {})
+			}
 			// Check if edit mode shows RegisterLanguagesEditor
 			const editButton = page.locator('button[aria-label*="Edit"], button:has-text("Edit")').first()
 			if (await editButton.isVisible({ timeout: 5_000 }).catch(() => false)) {

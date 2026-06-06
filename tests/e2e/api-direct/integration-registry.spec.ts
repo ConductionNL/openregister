@@ -225,10 +225,17 @@ test.describe('Integration registry — sub-resource', () => {
 				headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
 			})
 
-			// Never a 5xx — degraded sources return 503 with a
-			// structured body, missing objects 4xx, normal listings
-			// 2xx. 5xx means the provider crashed.
-			expect(response.status(), `${provider.id} status`).toBeLessThan(500)
+			// Degraded sources return 503 with a structured body,
+			// missing objects 4xx, normal listings 2xx. Any *other*
+			// 5xx means the provider crashed. 503 is an explicitly
+			// acceptable "unavailable but graceful" outcome (e.g. an
+			// external provider whose backing app is not installed),
+			// so it is excluded from the crash check — mirrors the
+			// `excluding 503` rule in leaf-verification.spec.ts.
+			const status = response.status()
+			if (status !== 503) {
+				expect(status, `${provider.id} status`).toBeLessThan(500)
+			}
 
 			if (response.ok()) {
 				const body = await response.json()

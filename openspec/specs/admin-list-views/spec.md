@@ -3,7 +3,7 @@
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-2b-views. Update Purpose after archive.
 ## Requirements
-### Requirement: Admin index views MUST expose a `toggleSelectAll(checked)` bulk-selection action
+### Requirement: Admin index views MUST expose a `toggleSelectAll(checked)` bulk-selection action @e2e exclude isolated Vue component contract (toggleSelectAll populates/clears the selection array keyed off store ids, no API/refresh) — covered by Vitest component unit test. The index views themselves render via manifest-shell.spec.ts
 
 Every admin index view (`AgentsIndex`, `ApplicationsIndex`, `ConfigurationsIndex`, `EntitiesIndex`, `SourcesIndex`) MUST expose a `toggleSelectAll(checked: boolean)` method bound to the column-header checkbox. When invoked with `checked === true`, the method MUST populate the view's `selected*` array with every record `id` currently in the corresponding store's list (e.g. `selectedAgents = agentStore.agentList.map(a => a.id)`). When invoked with `checked === false`, the method MUST replace the array with an empty array. The method MUST NOT mutate the underlying store list, MUST NOT trigger a refresh, and MUST NOT call the API.
 
@@ -26,7 +26,7 @@ Every admin index view (`AgentsIndex`, `ApplicationsIndex`, `ConfigurationsIndex
 - **WHEN** the header checkbox emits `toggleSelectAll(true)` then a single per-row checkbox emits `toggleEntitySelection(7, false)`
 - **THEN** the resulting `selectedEntities` array MUST contain every entity id from the list except `7`
 
-### Requirement: Admin index views with a detail sidebar MUST expose a `toggleSidebar()` method bound to `NcAppContent.show-details`
+### Requirement: Admin index views with a detail sidebar MUST expose a `toggleSidebar()` method bound to `NcAppContent.show-details` @e2e exclude isolated Vue component contract (toggleSidebar flips visibility, routes NcAppContent close event, independent of bulk selection) — covered by Vitest component unit test
 
 Admin index views that include a detail sidebar (`EntitiesIndex`, `TemplatesIndex`, `WebhooksIndex`) MUST expose a `toggleSidebar()` method that flips the local `sidebarOpen` boolean. The view's `<NcAppContent>` element MUST bind `:show-details="sidebarOpen"` and `@update:showDetails="toggleSidebar"`, so that both an explicit user click on the sidebar-toggle button and Nextcloud's internal `update:showDetails` event route through the same method. `toggleSidebar()` MUST NOT fetch data and MUST NOT clear or mutate the selection set.
 
@@ -48,7 +48,7 @@ Admin index views that include a detail sidebar (`EntitiesIndex`, `TemplatesInde
 - **THEN** `sidebarOpen` MUST be `false` again
 - **AND** `selectedEntities` MUST still be `[1, 2, 3]`
 
-### Requirement: Admin index views MUST soft-refresh their list on mount via the owning store
+### Requirement: Admin index views MUST soft-refresh their list on mount via the owning store @e2e exclude isolated Vue component contract (on-mount store soft-refresh dispatch, render-before-resolve) — covered by Vitest component unit test with mocked store
 
 On `mounted()`, each admin index view MUST invoke its owning store's `refresh*List(null, true)` action with the soft-reload flag set to `true`. The soft-reload flag MUST suppress the loading spinner because the data is already hot-loaded at app startup; the second arg `true` is the contract for "do not toggle the loading UI." The mount-time refresh MUST NOT block render — it is a fire-and-forget async call, and the view MUST render with whatever list state the store currently holds.
 

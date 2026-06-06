@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-saas-multi-tenant. Update Purpose after archive.
+
+@e2e exclude Backend per-tenant HMAC key lifecycle (single-active-row lookup, bootstrap/rotation inserts, encryption-failure abort, DI constructability, no-plaintext-key-over-REST invariant). Data-layer service with no user-facing OpenRegister UI surface — exercised via PHPUnit (mapper/service units). Covered by PHPUnit.
+
 ## Requirements
 ### Requirement: Per-tenant active HMAC key MUST be a single most-recent row
 

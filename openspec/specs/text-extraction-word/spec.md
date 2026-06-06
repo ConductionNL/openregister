@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change text-extraction-word-completeness. Update Purpose after archive.
+
+@e2e exclude Backend PHP text-extraction service (PhpWord element walker for DOCX/DOC/ODT tables, headers, footers, foot/endnotes, reader selection, failure logging). Pure server-side document processing with no user-facing OpenRegister UI surface — exercised via PHPUnit fixture-document units. Covered by PHPUnit.
+
 ## Requirements
 ### Requirement: Word extraction MUST capture table cell text including nested tables
 

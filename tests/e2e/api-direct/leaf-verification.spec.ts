@@ -47,7 +47,9 @@ interface ProviderReport {
 	notes: string[]
 }
 
-const REPORT_PATH = path.resolve(__dirname, 'leaf-verification.json')
+// Report stays at the canonical tests/e2e/ location even though this API-direct
+// harness now lives under tests/e2e/api-direct/ (gate-19 anti-pattern relocation).
+const REPORT_PATH = path.resolve(__dirname, '..', 'leaf-verification.json')
 
 async function fetchProviders(request: APIRequestContext): Promise<Array<Record<string, unknown>>> {
 	const response = await request.get('/ocs/v2.php/cloud/capabilities?format=json', {

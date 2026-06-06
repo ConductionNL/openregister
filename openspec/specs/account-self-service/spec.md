@@ -3,7 +3,7 @@
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-2b-views. Update Purpose after archive.
 ## Requirements
-### Requirement: The account page MUST provide self-service password and deactivation flows
+### Requirement: The account page MUST provide self-service password and deactivation flows @e2e exclude isolated Vue component contract (PasswordSection.changePassword / AccountSection.requestDeactivation API call shape, inline feedback, form clearing, soft-state mutation) — covered by Vitest component unit tests with mocked fetch; the underlying password/deactivate endpoints are covered by Newman
 
 The `/account` page MUST expose a `PasswordSection` and an `AccountSection`. `PasswordSection` MUST accept the user's current password and a new password, MUST issue `PUT /apps/openregister/api/user/me/password` with `{currentPassword, newPassword}`, and MUST surface success or failure as inline section feedback (no toast). `AccountSection.requestDeactivation()` MUST issue `POST /apps/openregister/api/user/me/deactivate` with an optional `reason` field, and on success MUST set the local status to `pending`, stamp `requestedAt` to the current ISO timestamp, and close the confirmation modal. Neither action MUST sign the user out or invalidate the current session immediately — the deactivation is a request, not an effect.
 
@@ -30,7 +30,7 @@ The `/account` page MUST expose a `PasswordSection` and an `AccountSection`. `Pa
 - **AND** the section MUST display "Deactivation request submitted"
 - **AND** the user's session MUST remain active until an admin acts on the request (separate flow, out of this spec)
 
-### Requirement: The account page MUST list and manage the signed-in user's personal API tokens and avatar
+### Requirement: The account page MUST list and manage the signed-in user's personal API tokens and avatar @e2e exclude isolated Vue component contract (TokensSection.loadTokens silent population/error-swallow, AvatarSection.triggerUpload ref-click) — covered by Vitest component unit tests with mocked fetch/refs; the tokens endpoint is covered by Newman
 
 The `TokensSection` MUST issue `GET /apps/openregister/api/user/me/tokens` on `loadTokens()` and bind the response array to `tokens`. The list MUST refresh after any create/delete action on the same section. `AvatarSection.triggerUpload()` MUST programmatically click the hidden file input (`this.$refs.fileInput.click()`) so that the file-picker dialog opens; the section's "Upload" button is the only entry point — there MUST NOT be a drag-target zone. Avatar upload itself (the eventual `POST .../avatar`) is initiated by the file-input's `change` handler, not by `triggerUpload()`. `loadTokens()` MUST swallow errors during initial load (tokens may legitimately not yet be set for a new user) and MUST NOT show a global error.
 

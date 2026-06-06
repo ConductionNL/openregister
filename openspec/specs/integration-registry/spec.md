@@ -3,7 +3,7 @@
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-b-svc-report-import-link. Update Purpose after archive.
 ## Requirements
-### Requirement: Legacy Deck and Note link services MUST preserve their non-provider behavior
+### Requirement: Legacy Deck and Note link services MUST preserve their non-provider behavior @e2e exclude backend Deck/Note link services (enrichment, reverse-lookup, cascade cleanup, author guard) via NC app APIs — covered by PHPUnit
 
 The system MUST retain, for the migration to the `deck` and `notes`
 `IntegrationProvider`s, the behavior of the legacy flat services. `DeckCardService`
@@ -43,7 +43,7 @@ note updates while allowing cleanup-time bulk deletion.
 - **WHEN** `NoteService::deleteNotesForObject($uuid)` runs
 - **THEN** every comment for that object MUST be deleted via `ICommentsManager::deleteCommentsAtObject`
 
-### Requirement: The legacy CalDAV task link service MUST preserve VTODO linking semantics
+### Requirement: The legacy CalDAV task link service MUST preserve VTODO linking semantics @e2e exclude backend CalDAV/VTODO task link service (calendar resolution, cross-calendar listing, typed errors) — covered by PHPUnit
 
 `TaskService` MUST link Nextcloud CalDAV VTODO items to OpenRegister objects for
 the migration to the `tasks` `IntegrationProvider`. It MUST create VTODOs

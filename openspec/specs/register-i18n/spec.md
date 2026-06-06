@@ -521,7 +521,7 @@ Properties that use `$ref` to reference other objects SHALL NOT be translatable 
 - **THEN** the 2 translated categories SHALL show English names
 - **AND** the 1 untranslated category SHALL show the Dutch fallback name
 
-### Requirement: The translations sidecar MUST expose a REST surface for search, per-object retrieval, status promotion, and bulk machine-translation
+### Requirement: The translations sidecar MUST expose a REST surface for search, per-object retrieval, status promotion, and bulk machine-translation @e2e exclude backend REST sidecar surface — covered by Newman/PHPUnit
 
 `TranslationController` MUST provide the HTTP surface over the translation sidecar (the `register-i18n` storage layer covers the data model; this requirement covers the API).
 
@@ -553,7 +553,7 @@ Properties that use `$ref` to reference other objects SHALL NOT be translatable 
 - **AND** a request for a non-existent object uuid MUST return HTTP 404 with `{error: "object not found", uuid}`
 - **AND** a valid request MUST return `{uuid, from, to, translated, skipped}`
 
-### Requirement: The system MUST project translatable content into the sidecar on object lifecycle events
+### Requirement: The system MUST project translatable content into the sidecar on object lifecycle events @e2e exclude backend lifecycle projection (create/update/transition/delete listeners) — covered by PHPUnit
 
 The system MUST keep the `openregister_translations` sidecar in sync with translatable object content by reacting to object lifecycle events. `TranslationProjectionListener` MUST subscribe to `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, and `ObjectTransitionedEvent`. On create, update, and transition it MUST project the object's translatable content into the sidecar via `TranslationProjectionService::project($object)`; on delete it MUST remove the object's sidecar rows via `TranslationProjectionService::purge($object)`.
 
@@ -586,7 +586,7 @@ The system MUST keep the `openregister_translations` sidecar in sync with transl
 #### Notes
 - The projection sidecar (`openregister_translations`) and `TranslationProjectionService` are introduced by the in-flight `i18n-source-of-truth` / `i18n-api-language-negotiation` changes; this listener is the reactive write-side that those changes rely on.
 
-### Requirement: A translation sidecar MUST be projected from the authoritative object JSONB
+### Requirement: A translation sidecar MUST be projected from the authoritative object JSONB @e2e exclude backend sidecar projection from JSONB — covered by PHPUnit
 
 The authoritative store for translatable property values MUST remain the language-keyed JSONB on the object. The system MUST maintain a derived `openregister_translations` sidecar — one row per `(object uuid, property, language)` — kept in sync by `TranslationProjectionService`, optimized for per-language search, completeness queries, and workflow status tracking. The projection MUST NOT become a second source of truth.
 
@@ -624,7 +624,7 @@ The authoritative store for translatable property values MUST remain the languag
 - **THEN** it MUST delete all sidecar rows for the object uuid via `TranslationMapper::deleteByObject()`
 - **AND** a failure MUST be caught and logged as a warning, never blocking the deletion
 
-### Requirement: Translation workflow status and completeness MUST be queryable through the sidecar
+### Requirement: Translation workflow status and completeness MUST be queryable through the sidecar @e2e exclude backend sidecar status/completeness queries — covered by Newman/PHPUnit
 
 `TranslationStatusService` MUST expose the public API over the translation sidecar: promoting a slot's workflow status, computing per-object completeness, searching translation rows, and discovering objects that lack a given language.
 
@@ -654,7 +654,7 @@ The authoritative store for translatable property values MUST remain the languag
 - **THEN** it MUST return the matching rows as `jsonSerialize()` arrays
 - **AND** `findObjectsMissingLanguage()` MUST return the subset of candidate uuids missing at least one translatable-property value in the requested language
 
-### Requirement: Machine translation MUST fill empty slots through a pluggable provider
+### Requirement: Machine translation MUST fill empty slots through a pluggable provider @e2e exclude backend pluggable MT provider strategy — covered by PHPUnit
 
 `BulkTranslationService` MUST translate an object's translatable properties from a source to a target language using a configured `TranslationProviderInterface`, filling only target-language slots that are currently empty. A default `IdentityTranslationProvider` MUST ship so the flow is testable without external API keys.
 
@@ -681,7 +681,7 @@ The authoritative store for translatable property values MUST remain the languag
 - **AND** `getIdentifier()` MUST return a stable slug used for `provider:{identifier}` status attribution
 - **AND** `IdentityTranslationProvider::translate()` MUST return the source text verbatim and `getIdentifier()` MUST return `identity`
 
-### Requirement: CSV import/export MUST round-trip translations via field-language columns
+### Requirement: CSV import/export MUST round-trip translations via field-language columns @e2e exclude backend CSV flatten/unflatten round-trip — covered by PHPUnit
 
 `TranslationCsvCodec` MUST convert between the nested `{lang: value}` JSON shape and the flat `field_lang` column shape used by CSV/Excel, preserving language variants in both directions.
 
