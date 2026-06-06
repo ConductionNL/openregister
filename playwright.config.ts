@@ -60,7 +60,16 @@ export default defineConfig({
 		// PR pipelines don't reshoot screenshots on every push.
 		{
 			name: 'chromium',
-			testIgnore: ['**/docs-screenshots.spec.ts'],
+			// NOTE: a project-level testIgnore REPLACES the top-level
+			// testIgnore for this project (Playwright does not merge them),
+			// so the api-direct exclusion must be repeated here. These
+			// specs are API/contract assertions covered by the Newman suite
+			// (tests/integration/*.postman_collection.json), not UI tests —
+			// gate-19: API-direct → Newman.
+			testIgnore: [
+				'**/docs-screenshots.spec.ts',
+				'**/api-direct/**',
+			],
 			use: { ...devices['Desktop Chrome'] },
 		},
 		// Documentation capture project (ADR-030 / journeydoc). Opt-in:
