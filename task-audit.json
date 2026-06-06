@@ -1,0 +1,48 @@
+{
+  "spec": "openspec/changes/integration-talk",
+  "verified": [
+    {
+      "task": "backend-1",
+      "file": "lib/Service/Integration/Providers/TalkProvider.php",
+      "ok": true
+    },
+    {
+      "task": "backend-1-base",
+      "file": "lib/Service/Integration/IntegrationProvider.php",
+      "ok": true
+    },
+    {
+      "task": "backend-1-entity",
+      "file": "lib/Db/TalkLink.php",
+      "ok": true
+    },
+    {
+      "task": "backend-1-mapper",
+      "file": "lib/Db/TalkLinkMapper.php",
+      "ok": true
+    },
+    {
+      "task": "backend-2",
+      "file": "lib/AppInfo/Application.php",
+      "ok": true
+    },
+    {
+      "task": "backend-3",
+      "file": "tests/Unit/Service/Integration/Providers/TalkProviderTest.php",
+      "ok": true
+    },
+    {
+      "task": "registration-1",
+      "file": "src/integrations/builtin/talk.js",
+      "ok": true
+    },
+    {
+      "task": "registration-2",
+      "file": "src/integrations/index.js",
+      "ok": true
+    }
+  ],
+  "stubs": [],
+  "missing_routes": [],
+  "notes": "Frontend tab (CnTalkTab.vue) and widget (CnTalkCard.vue) are out of scope per the design cross-repo note — they land in a separate @conduction/nextcloud-vue PR."
+}
