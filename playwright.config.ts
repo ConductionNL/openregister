@@ -82,5 +82,9 @@ export default defineConfig({
 		'**/node_modules/**',
 		'**/custom_apps/**',
 		'**/.claude/**',
+		// API-direct specs are API/contract assertions (Newman-equivalent),
+		// not real UI-driving Playwright tests. They live here for reference
+		// but are excluded from the UI test run (gate-19: API-direct → Newman).
+		'**/api-direct/**',
 	],
 })
