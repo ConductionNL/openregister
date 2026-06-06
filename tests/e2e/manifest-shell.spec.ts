@@ -92,11 +92,37 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openregister-app-manifest::dashboard-dispatches-via-custom-registry
-	test('/ dispatches to the Dashboard component', async ({ page }) => {
+	test('/ dispatches to the Dashboard component and renders its KPI / widgets', async ({
+		page,
+	}) => {
 		requireAuth()
 		await gotoRoute(page, '/')
-		// Dashboard renders its content shell inside the app-content.
-		await expect(page.locator('main, .app-content').first()).toBeVisible()
+
+		// The scenario requires "/" to render "the OR dashboard with all its KPI /
+		// chart widgets" — so we assert the actual rendered widget DOM, not just the
+		// app-content shell. DashboardIndex.vue paints four KPI count-cards
+		// (.kpi-card → .kpi-value / .kpi-label) plus list widgets that render either
+		// a .stats-table or a .widget-empty placeholder.
+
+		// At least one KPI count-card frame must render.
+		const kpiCard = page.locator('.kpi-card').first()
+		await expect(kpiCard).toBeVisible({ timeout: 25_000 })
+
+		// The KPI card surfaces a value and a label.
+		await expect(kpiCard.locator('.kpi-value')).toBeVisible()
+		await expect(kpiCard.locator('.kpi-label')).toBeVisible()
+
+		// All four count-card slots (searches / success-rate / avg-time /
+		// unique-terms) render their frames — KPI values default to 0 / 0.0% so the
+		// cards paint even on a fresh instance with no search-trail data.
+		await expect(page.locator('.kpi-card')).toHaveCount(4, { timeout: 15_000 })
+
+		// A list widget renders either its data table or its empty-state placeholder
+		// (the dashboard always paints the widget body for popular-terms /
+		// objects-by-register / objects-by-schema, regardless of data presence).
+		await expect(
+			page.locator('.list-widget-content .stats-table, .list-widget-content .widget-empty').first(),
+		).toBeVisible({ timeout: 15_000 })
 	})
 
 	// @e2e openregister-app-manifest::index-style-routes-dispatch-via-custom-registry
