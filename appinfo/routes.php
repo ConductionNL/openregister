@@ -313,7 +313,11 @@ return [
 
         // Photos operations under objects (filtered image view with EXIF).
         ['name' => 'photos#index', 'url' => '/api/objects/{register}/{schema}/{id}/photos', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'photos#show', 'url' => '/api/objects/{register}/{schema}/{id}/photos/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'photos#create', 'url' => '/api/objects/{register}/{schema}/{id}/photos', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'photos#show', 'url' => '/api/objects/{register}/{schema}/{id}/photos/{photoId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'photoId' => '\d+']],
+        ['name' => 'photos#delete', 'url' => '/api/objects/{register}/{schema}/{id}/photos/{photoId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'photoId' => '\d+']],
+        ['name' => 'photos#gpsStripSetting', 'url' => '/api/settings/photos/strip-gps', 'verb' => 'GET'],
+        ['name' => 'photos#gpsStripSetting', 'url' => '/api/settings/photos/strip-gps', 'verb' => 'PUT'],
 
         // Photos admin settings.
         ['name' => 'Settings\PhotoSettings#getPhotoSettings', 'url' => '/api/settings/photos', 'verb' => 'GET'],
