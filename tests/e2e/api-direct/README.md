@@ -39,6 +39,7 @@ collections via `tests/integration/` (`npm test` there).
 | `configurations-endpoints` | configurations, endpoints, OAS, workflow | crud |
 | `entities-sources` | entities, sources, actions, relations | crud + referential-integrity |
 | `advanced-features` | URN addressing, lock/publish, webhooks, retention | crud + referential-integrity |
+| `core-crud-lifecycle` | object POST/PUT/GET/DELETE lifecycle (REQ-001..003) | crud |
 | `audit-content-versioning` | audit trail, versioning, deletion audit | crud |
 | `search-views` | search/filter, faceting, saved views | crud |
 | `files-templates` | file actions, risk classification, schema introspection | files-domain |
