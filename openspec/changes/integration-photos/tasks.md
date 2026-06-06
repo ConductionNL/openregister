@@ -25,11 +25,11 @@
 
 ## Registration
 
-- [ ] `src/integrations/builtin/photos.js` — register with `referenceType: 'photos'`
+- [x] `src/integrations/builtin/photos.js` — register with `referenceType: 'photos'`
 
 ## Quality
 
-- [ ] Parity gate; nl+en; strict; ESLint
+- [x] Parity gate; nl+en; strict; ESLint
 
 ## Acceptance verification
 
