@@ -1,13 +1,13 @@
 name: Publish docs
 
+# Docs deploy ONLY from the dedicated `documentation` branch — decoupled from main/development
+# so doc edits never trigger releases and code releases never trigger doc builds. No cron.
 on:
   push:
-    branches: [documentation, main, development]
+    branches: [documentation]
   pull_request:
-    branches: [documentation, main]
+    branches: [documentation]
   workflow_dispatch:
-  schedule:
-    - cron: "0 4 * * *"
 
 jobs:
   build:
