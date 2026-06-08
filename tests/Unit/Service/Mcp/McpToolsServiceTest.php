@@ -247,6 +247,107 @@ class McpToolsServiceTest extends TestCase
     }//end testCallToolFirstMatchingProviderWins()
 
 
+    /**
+     * Build a descriptor whose namespaced `id` differs from its short `name`.
+     *
+     * The standard {@see descriptor()} helper sets `name === id` and so
+     * doesn't exercise the short-name resolution branch — this helper is
+     * for the spec-compliant case where the MCP client invokes the tool
+     * by its short `name` ("registers") rather than its namespaced `id`
+     * ("foo.registers").
+     *
+     * @param string $id        Namespaced descriptor id (e.g. "foo.registers")
+     * @param string $shortName Short MCP name (e.g. "registers")
+     *
+     * @return array<string, mixed>
+     */
+    private function namedDescriptor(string $id, string $shortName): array
+    {
+        return [
+            'id'          => $id,
+            'name'        => $shortName,
+            'description' => 'desc for '.$id,
+            'inputSchema' => ['type' => 'object', 'properties' => [], 'required' => []],
+        ];
+
+    }//end namedDescriptor()
+
+
+    public function testCallToolResolvesByShortNameAndForwardsNamespacedIdToProvider(): void
+    {
+        // MCP-spec-compliant client sends the short `name` ("registers"),
+        // but the provider's invokeTool() must still receive the namespaced
+        // `id` ("foo.registers") so any provider that multiplexes on
+        // $toolId sees the canonical form.
+        $provider = $this->createMock(IMcpToolProvider::class);
+        $provider->method('getAppId')->willReturn('foo');
+        $provider->method('getTools')->willReturn([$this->namedDescriptor('foo.registers', 'registers')]);
+        $provider->expects($this->once())
+            ->method('invokeTool')
+            ->with('foo.registers', ['action' => 'list'])
+            ->willReturn(['count' => 3]);
+
+        $service = new McpToolsService([$provider], $this->logger);
+        $result  = $service->callTool('registers', ['action' => 'list']);
+
+        $this->assertFalse($result['isError']);
+        $this->assertSame(['count' => 3], json_decode($result['content'][0]['text'], true));
+
+    }//end testCallToolResolvesByShortNameAndForwardsNamespacedIdToProvider()
+
+
+    public function testCallToolLogsWarningOnShortNameCollisionAcrossProviders(): void
+    {
+        // Two providers each expose a tool with the same short name "registers".
+        // First-wins: only $a->invokeTool() runs; $b->invokeTool() must not be
+        // called. A single warning surfaces in the application log so the
+        // ambiguity isn't silent.
+        $a = $this->createMock(IMcpToolProvider::class);
+        $a->method('getAppId')->willReturn('foo');
+        $a->method('getTools')->willReturn([$this->namedDescriptor('foo.registers', 'registers')]);
+        $a->expects($this->once())->method('invokeTool')->willReturn(['from' => 'foo']);
+
+        $b = $this->createMock(IMcpToolProvider::class);
+        $b->method('getAppId')->willReturn('bar');
+        $b->method('getTools')->willReturn([$this->namedDescriptor('bar.registers', 'registers')]);
+        $b->expects($this->never())->method('invokeTool');
+
+        $this->logger->expects($this->once())
+            ->method('warning')
+            ->with(
+                $this->stringContains('Short-name tool collision'),
+                $this->callback(static function (array $context): bool {
+                    return $context['tool'] === 'registers'
+                        && $context['winningAppId'] === 'foo'
+                        && $context['collisionCount'] === 1;
+                })
+            );
+
+        $service = new McpToolsService([$a, $b], $this->logger);
+        $result  = $service->callTool('registers', []);
+
+        $this->assertSame(['from' => 'foo'], json_decode($result['content'][0]['text'], true));
+
+    }//end testCallToolLogsWarningOnShortNameCollisionAcrossProviders()
+
+
+    public function testCallToolNamespacedIdLookupSkipsCollisionScan(): void
+    {
+        // When the client uses the canonical "foo.registers" form, no
+        // collision check is needed — listTools() already enforces
+        // namespace-prefix uniqueness. No warning should fire even when
+        // another provider exposes the same short name.
+        $a = $this->stubProvider('foo', [$this->namedDescriptor('foo.registers', 'registers')], ['from' => 'foo']);
+        $b = $this->stubProvider('bar', [$this->namedDescriptor('bar.registers', 'registers')]);
+
+        $this->logger->expects($this->never())->method('warning');
+
+        $service = new McpToolsService([$a, $b], $this->logger);
+        $service->callTool('foo.registers', []);
+
+    }//end testCallToolNamespacedIdLookupSkipsCollisionScan()
+
+
     // ── invokeTool() (flat envelope used by ChatStreamController) ───
 
 
