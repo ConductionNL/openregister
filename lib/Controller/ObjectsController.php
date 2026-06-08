@@ -2572,6 +2572,28 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors and object not found).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+        } catch (\Throwable $throwable) {
+            // Safety net for fatal errors (\Error/\TypeError) that do NOT extend
+            // \Exception and would otherwise escape as an HTML 500 fatal-error page
+            // to API clients. Log the full trace and return a clean JSON 500 so the
+            // contract is always machine-readable. \Throwable MUST be caught last so
+            // the specific catches above keep their dedicated status codes.
+            $this->logger?->error(
+                message: '[ObjectsController] Unexpected fatal error while deleting object',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'register'  => $register,
+                    'schema'    => $schema,
+                    'id'        => $id,
+                    'exception' => $throwable->getMessage(),
+                    'trace'     => $throwable->getTraceAsString(),
+                ]
+            );
+            return new JSONResponse(
+                data: ['error' => 'An unexpected error occurred while deleting the object'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
     }//end destroy()
 
