@@ -176,10 +176,19 @@ class DeleteObject
     {
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
+        // NOTE: the ObjectEntity branch MUST be evaluated first. Reading $object['id']
+        // on an ObjectEntity raises a fatal \Error ("Cannot use object of type ... as
+        // array") because ObjectEntity does not implement ArrayAccess; that \Error is
+        // not an \Exception and previously escaped every catch up the stack, surfacing
+        // as an HTML 500 to API clients (DELETE on magic-table objects).
         // @psalm-suppress UndefinedInterfaceMethod.
-        $identifier = $object['id'];
+        $identifier = null;
         if ($object instanceof ObjectEntity) {
             $identifier = $object->getUuid();
+        }
+
+        if (is_array($object) === true) {
+            $identifier = $object['id'];
         }
 
         $includeDeleted = ($object instanceof ObjectEntity);
