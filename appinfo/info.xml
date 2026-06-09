@@ -6,7 +6,9 @@
     <name lang="nl">Open Register</name>
     <summary lang="en">Build structured data registers with schemas, RBAC, and full-text search</summary>
     <summary lang="nl">Bouw gestructureerde dataregisters met schema's, RBAC en full-text zoeken</summary>
-    <description lang="en"><![CDATA[Open Register is the foundation for structured data management in Nextcloud. Define your data models with JSON Schema, store objects in high-performance registers, and let your other apps build on top of a solid, standards-based data layer.
+    <description lang="en"><![CDATA[> ⚠️ **Active development — not for production use yet.** This app is under active development. Although it may carry a stable release status, **please do not use it in production environments before 12 June 2026.** See the [app page on conduction.nl](https://conduction.nl/apps/openregister) for release planning and what this app does.
+
+Open Register is the foundation for structured data management in Nextcloud. Define your data models with JSON Schema, store objects in high-performance registers, and let your other apps build on top of a solid, standards-based data layer.
 
 **Key Features**
 
@@ -23,7 +25,9 @@ Open Register powers apps like OpenCatalogi, Procest, Pipelinq, and Software Cat
 
 Free and open source under the EUPL license.
     ]]></description>
-    <description lang="nl"><![CDATA[Open Register is de basis voor gestructureerd databeheer in Nextcloud. Definieer je datamodellen met JSON Schema, sla objecten op in krachtige registers en laat je andere apps bouwen op een solide, op standaarden gebaseerde datalaag.
+    <description lang="nl"><![CDATA[> ⚠️ **In actieve ontwikkeling — nog niet voor productiegebruik.** Deze app is volop in ontwikkeling. Hoewel de app een stabiele release-status kan hebben, **gebruik deze nog niet in productieomgevingen vóór 12 juni 2026.** Zie de [app-pagina op conduction.nl](https://conduction.nl/apps/openregister) voor release-planning en het doel van deze app.
+
+Open Register is de basis voor gestructureerd databeheer in Nextcloud. Definieer je datamodellen met JSON Schema, sla objecten op in krachtige registers en laat je andere apps bouwen op een solide, op standaarden gebaseerde datalaag.
 
 **Belangrijkste functies**
 
