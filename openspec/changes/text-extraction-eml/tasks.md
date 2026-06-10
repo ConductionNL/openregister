@@ -29,7 +29,7 @@
 
 > DEFERRED — requires a live Nextcloud instance (IRootFolder-backed Files storage + NC Files upload) which is not available in the worktree-isolated build environment. The unit suite mocks `\OCP\Files\File` to exercise the cascade branch and the structured-parse path; the live-stack `extractFile($fileId)` + `parseEmlStructured` end-to-end assertions are filed for the Docker/CI manual smoke. Per the design's Migration Plan: existing EML records with null extracted text are not re-extracted automatically; re-extraction is opt-in via the existing `forceReExtract` parameter.
 
-- [ ] 6.1 (deferred — live NC) Newman / Postman or PHPUnit functional: upload a real-world-ish EML, trigger `extractFile`, verify the persisted extracted-text is populated; upload an EML with a PDF attachment and verify the extracted text contains both the email body AND the PDF's text under the attachment marker (depends on 3.4 follow-up); call `parseEmlStructured` from a test consumer and verify the returned structure matches the fixture's headers, body, and attachments.
+- [~] 6.1 (deferred — live NC) Newman / Postman or PHPUnit functional: upload a real-world-ish EML, trigger `extractFile`, verify the persisted extracted-text is populated; upload an EML with a PDF attachment and verify the extracted text contains both the email body AND the PDF's text under the attachment marker (depends on 3.4 follow-up); call `parseEmlStructured` from a test consumer and verify the returned structure matches the fixture's headers, body, and attachments.
 
 ## 7. Cross-app coordination + documentation
 
