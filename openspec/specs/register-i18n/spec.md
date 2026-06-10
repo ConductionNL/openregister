@@ -713,10 +713,21 @@ The authoritative store for translatable property values MUST remain the languag
 - `SaveObject` calls `TranslationHandler::normalizeTranslationsForSave()` during object persistence.
 - `Application` registers `LanguageService` as a singleton and `LanguageMiddleware` as middleware.
 
+**Capabilities shipped via companion changes** (`i18n-source-of-truth` + `i18n-api-language-negotiation`):
+
+- Schema-property `sourceLanguage` modifier + object-level `_translationMeta.<prop>.sourceLanguage` override (per `i18n-source-of-truth`).
+- `openregister_translations.source_language` column + back-fill migration + `occ openregister:translations:backfill-source-language` command (per `i18n-source-of-truth`).
+- Automatic `outdated` flip on source-value change via `TranslationStatusService::markDerivedTranslationsOutdated` wired into `SaveObject` (per `i18n-source-of-truth`).
+- Translation query filters `?sourceLanguage=`, `?isOutOfDate=true`, `?compareToSource=true` on `GET /api/translations/search` (per `i18n-source-of-truth`).
+- `?_translationMeta=true` opt-in `_meta.languageMeta` render envelope on object responses (per `i18n-source-of-truth`).
+- `X-Source-Language` response header on object content (per `i18n-source-of-truth`).
+- `?_lang=<bcp47>` + `?language=<bcp47>` query parameters with priority over `Accept-Language` (per `i18n-api-language-negotiation`).
+- Write-side `X-Translation-Target-Language` header for scalar-body PATCH/PUT/POST (per `i18n-api-language-negotiation`).
+- `TranslationTargetConflictException` → `400` on conflicting language-keyed body + target-language header (per `i18n-api-language-negotiation`).
+
 **Not yet implemented:**
 - UI language tabs and translation editor in the object edit form
-- Translation workflow statuses (draft, needs_review, approved, outdated)
-- Translation completeness tracking and dashboard
+- Translation completeness tracking dashboard
 - Bulk translation operations
 - Import/export with translation-aware column handling (CSV `_nl` / `_en` suffixes)
 - Language-specific search indexing and cross-language search
