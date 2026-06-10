@@ -2201,4 +2201,98 @@ class SettingsService
             ];
         }//end try
     }//end rebase()
+
+    // ============================================
+    // INTEGRATION DEFAULTS (Deck — schema-level sticky board+stack).
+    // ============================================
+    // Persists the {boardId, stackId} pair the first time a user creates
+    // a Deck card for a given schema slug, so subsequent create-card
+    // affordances on objects of that schema pre-select the same target.
+    // See openspec/changes/integration-deck/design.md AD-1.
+
+    /**
+     * Build the IAppConfig storage key for the sticky Deck default.
+     *
+     * @param string $schemaSlug Schema slug or numeric id (caller's choice — only used as opaque key suffix).
+     *
+     * @return string The config key, e.g. `integration.deck.default.case`.
+     */
+    private function buildDeckDefaultKey(string $schemaSlug): string
+    {
+        return 'integration.deck.default.'.$schemaSlug;
+    }//end buildDeckDefaultKey()
+
+
+    /**
+     * Get the persisted Deck default board+stack for a schema (or null).
+     *
+     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
+     *
+     * @return array{boardId:int,stackId:int}|null Default pair, or null when none has been recorded yet.
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
+     */
+    public function getDeckDefault(string $schemaSlug): ?array
+    {
+        $raw = $this->config->getAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), '');
+        if ($raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded) === false) {
+            return null;
+        }
+
+        if (isset($decoded['boardId']) === false || isset($decoded['stackId']) === false) {
+            return null;
+        }
+
+        return [
+            'boardId' => (int) $decoded['boardId'],
+            'stackId' => (int) $decoded['stackId'],
+        ];
+    }//end getDeckDefault()
+
+
+    /**
+     * Persist the Deck default board+stack for a schema. Overwrites any prior value.
+     *
+     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
+     * @param int    $boardId    NC Deck board id.
+     * @param int    $stackId    NC Deck stack id on that board.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
+     */
+    public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void
+    {
+        $payload = json_encode(
+            [
+                'boardId' => $boardId,
+                'stackId' => $stackId,
+            ]
+        );
+        if ($payload === false) {
+            return;
+        }
+
+        $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), $payload);
+    }//end setDeckDefault()
+
+
+    /**
+     * Clear the persisted Deck default for a schema. No-op when none stored.
+     *
+     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
+     *
+     * @return void
+     *
+     * @spec exclude — defensive cleanup helper exercised only by uninstall paths; behaviour proxied to IConfig.
+     */
+    public function clearDeckDefault(string $schemaSlug): void
+    {
+        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug));
+    }//end clearDeckDefault()
 }//end class
