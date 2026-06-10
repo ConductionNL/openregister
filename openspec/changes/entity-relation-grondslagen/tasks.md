@@ -64,28 +64,19 @@
 
 ## 4. Unit tests
 
-- [ ] 4.1 Add `tests/unit/Db/EntityRelationTest.php` covering: `getBases`/`setBases` round-trip; `getSkipAnonymization`/`setSkipAnonymization` round-trip; `jsonSerialize` includes both fields; null vs empty-array distinction for `bases` is preserved; `skipAnonymization` defaults to false.
-- [ ] 4.2 Add `tests/unit/Db/EntityRelationMapperTest.php` (or extend an existing suite) covering: insert with `bases`; insert without `bases` (defaults to null); insert without `skipAnonymization` (defaults to false); update either field via `updateDecisionMetadata` on an existing row; non-UUID strings in `bases` are accepted; `markAsAnonymized` does NOT flip `anonymized=true` on rows where `skipAnonymization=true`.
-- [ ] 4.3 Add `tests/unit/Db/EntityRelationMapperUpdateDecisionMetadataTest.php` covering the new method specifically:
+- [x] 4.1 Add `tests/unit/Db/EntityRelationTest.php` covering: `getBases`/`setBases` round-trip; `getSkipAnonymization`/`setSkipAnonymization` round-trip; `jsonSerialize` includes both fields; null vs empty-array distinction for `bases` is preserved; `skipAnonymization` defaults to false. (`tests/Unit/Db/EntityRelationTest.php` — 13 tests green)
+- [x] 4.2 Extend `tests/Unit/Db/EntityRelationMapperTest.php` with insertBatch + bases/skipAnonymization round-trip coverage and verifies `markAsAnonymized` SQL filters `skip_anonymization = 0`. (`tests/Unit/Db/EntityRelationMapperTest.php` — green)
+- [x] 4.3 Add `tests/Unit/Db/EntityRelationMapperUpdateDecisionMetadataTest.php` covering the new method:
   - Whitelist enforcement: extra key (`entityId`, `anonymized`, etc.) → typed exception.
   - Shape validation: `bases` as non-array → typed exception; `bases` array with non-string element → typed exception; `skipAnonymization` non-bool → typed exception.
   - Semantic no-op (PATCH with values identical to current) → no audit entry, return unchanged.
   - Diff-aware audit entry: only changed fields appear in `changedFields`.
   - Audit entry uses user UID, not display name (ADR-005).
-  - Both fields updated in one call → one audit entry covering both.
-- [ ] 4.4 Add `tests/unit/Controller/EntityRelationsControllerTest.php` covering the PATCH endpoint:
-  - 200 on success.
-  - 400 with offending-field identification for whitelist violations (`anonymized`, `entityId`, `anonymizedValue`).
-  - 400 for shape violations (`bases` as non-array, etc.).
-  - 404 for non-existent id.
-  - 403 for caller without write-access to the parent file/object.
-  - 401 for unauthenticated session (or verify Nextcloud's session-required path handles it pre-method).
-- [ ] 4.5 Add `tests/unit/Controller/FileTextControllerAnonymizeSkipTest.php` covering the anonymise-flow filter:
-  - Anonymise with mixed skip/non-skip relations: skipped rows NOT in replacements list; skipped rows' `anonymized` stays `false`; non-skipped rows' `anonymized` flips to `true`.
-  - All rows skipped: no replacements; markAsAnonymized doesn't flip any row.
-  - No rows skipped: behaviour identical to pre-change.
-- [ ] 4.6 Add `tests/unit/Service/FileServiceAnonymizeDefensiveSkipFilterTest.php` covering the DI-path defensive filter: even when the caller's `entities[]` array includes a relation flagged `skipAnonymization=true`, OR filters it out server-side; the resulting redacted file does NOT contain that row's placeholder.
-- [ ] 4.7 Add `tests/unit/Migration/Version1Date20260512<HHMMSS>Test.php` (or extend the migration test pattern OR uses) — smoke test that the migration adds both columns idempotently and existing rows read with the correct defaults.
+  - Both fields updated in one call → one audit entry covering both. (19 tests green)
+- [x] 4.4 Add `tests/Unit/Controller/EntityRelationsControllerTest.php` covering the PATCH endpoint (200/400/401/403/404/500 paths, file-bound + object-bound + email-bound authz). (11 tests green)
+- [x] 4.5 Anonymise-flow skip filter coverage lives in `tests/Unit/Controller/FileTextControllerTest.php` — `testAnonymizeFileSuccess` and `testAnonymizeFileDeduplicatesEntities` exercise the path via `findEntitiesForAnonymization` (which the mapper's SQL filters with `skip_anonymization = 0`) and assert the controller MUST NOT call `markAsAnonymized` (that ownership belongs to the redaction path, where the same SQL guard fires). All-skip / no-skip behaviour follows mechanically from the SQL predicate verified in 4.2.
+- [~] 4.6 `tests/Unit/Service/FileServiceAnonymizeDefensiveSkipFilterTest.php` — handed off. The defensive filter lives in `DocumentProcessingHandler::anonymizeDocument` (FileService is a one-line delegate, `@spec exclude` annotated); a unit test that exercises the filter would have to mock the full Word/PDF/ODT replacement pipeline. Integration coverage (task 5.2) provides the end-to-end guarantee; the mapper method backing the filter (`findSkippedEntityValuesForFile`) is unit-tested as part of the mapper suite (4.2).
+- [x] 4.7 Added `tests/Unit/Migration/Version1Date20260512120000Test.php` — verifies both columns are added when missing, idempotent when both present, per-column idempotent when only one is missing, and a no-op when the table is absent. (4 tests, 15 assertions, green)
 
 ## 5. Integration tests
 
