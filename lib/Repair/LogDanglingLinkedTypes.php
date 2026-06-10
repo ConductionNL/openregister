@@ -5,11 +5,12 @@
  * references integration ids that the registry can no longer resolve.
  *
  * Per AD-5 of pluggable-integration-registry the registry validates
- * linkedTypes against either the legacy `VALID_LINKED_TYPES` set or
- * the live `IntegrationRegistry::listIds()` output. Existing schemas
- * may carry ids that are valid TODAY (because they appear in the
- * deprecated fallback) but will eventually become invalid as the
- * deprecated map is removed. This repair step scans all schemas at
+ * linkedTypes against either the legacy private allow-list (see
+ * `Schema::legacyLinkedTypeIds()`) or the live
+ * `IntegrationRegistry::listIds()` output. Existing schemas may carry
+ * ids that are valid TODAY (because they appear in the legacy
+ * fallback) but will eventually become invalid as the legacy
+ * fallback is removed. This repair step scans all schemas at
  * install / post-migration time and logs WARNING entries for any
  * linkedTypes value not registered with the registry.
  *
@@ -110,7 +111,7 @@ class LogDanglingLinkedTypes implements IRepairStep
         foreach ($dangling as $row) {
             $template  = '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s"';
             $template .= ' which is not registered. Add the matching IntegrationProvider';
-            $template .= ' before the deprecated VALID_LINKED_TYPES fallback is removed.';
+            $template .= ' before the legacy linked-type fallback is removed.';
             $message   = sprintf(
                 $template,
                 $row['slug'],
