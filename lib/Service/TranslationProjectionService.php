@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
@@ -47,6 +49,7 @@ class TranslationProjectionService
      * @param TranslationMapper  $translationMapper  The translation mapper.
      * @param TranslationHandler $translationHandler The translation handler.
      * @param SchemaMapper       $schemaMapper       The schema mapper.
+     * @param RegisterMapper     $registerMapper     The register mapper.
      * @param IUserSession       $userSession        The user session.
      * @param LoggerInterface    $logger             The logger.
      */
@@ -54,6 +57,7 @@ class TranslationProjectionService
         private readonly TranslationMapper $translationMapper,
         private readonly TranslationHandler $translationHandler,
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {
@@ -117,6 +121,19 @@ class TranslationProjectionService
 
             $data       = (array) ($object->getObject() ?? []);
             $translator = $this->userSession->getUser()?->getUID();
+            $register   = $this->loadRegister(object: $object);
+            $defaultLanguage = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
+
+            // Per-property resolved source language (i18n-source-of-truth).
+            $sourceLanguages = [];
+            foreach ($translatableProps as $property) {
+                $sourceLanguages[$property] = $this->resolveSourceLanguage(
+                    schema: $schema,
+                    object: $object,
+                    property: $property,
+                    registerDefault: $defaultLanguage
+                );
+            }
 
             // Build the desired set of (property, language, value) tuples.
             $desired = [];
@@ -136,17 +153,15 @@ class TranslationProjectionService
                         }
                     }
                 } else if (is_string($value) === true && $value !== '') {
-                    // Legacy single-language shape; credit the register's default language.
-                    // We don't have register here without an extra mapper hop; the projection
-                    // can be re-run after register language config changes if needed.
-                    $defaultLang = 'nl';
-                    $desired[$property][$defaultLang] = $value;
+                    // Legacy single-language shape; credit the resolved source language.
+                    $desired[$property][$sourceLanguages[$property]] = $value;
                 }
             }//end foreach
 
             // Upsert every desired slot.
             $upsertedKeys = [];
             foreach ($desired as $property => $byLang) {
+                $sourceLanguage = $sourceLanguages[$property] ?? $defaultLanguage;
                 foreach ($byLang as $lang => $stringValue) {
                     $this->translationMapper->upsert(
                         objectUuid: $uuid,
@@ -155,7 +170,8 @@ class TranslationProjectionService
                         value: $stringValue,
                         status: null,
                     // Preserve existing or default to draft on insert.
-                        translator: $translator
+                        translator: $translator,
+                        sourceLanguage: $sourceLanguage
                     );
                     $upsertedKeys[] = $property.'|'.$lang;
                 }
@@ -225,6 +241,79 @@ class TranslationProjectionService
             return null;
         }
     }//end loadSchema()
+
+    /**
+     * Resolve a register entity from an object's register reference.
+     *
+     * @param ObjectEntity $object The object whose register reference should be resolved.
+     *
+     * @return Register|null The resolved register, or null when not resolvable.
+     */
+    private function loadRegister(ObjectEntity $object): ?Register
+    {
+        $ref = $object->getRegister();
+        if ($ref === null || $ref === '') {
+            return null;
+        }
+
+        try {
+            return $this->registerMapper->find((string) $ref, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end loadRegister()
+
+    /**
+     * Resolve the source language for a single (object, property) tuple.
+     *
+     * Lookup chain (highest precedence first):
+     *   1. object body `_translationMeta.<property>.sourceLanguage`
+     *   2. schema `properties.<property>.sourceLanguage`
+     *   3. supplied register default
+     *   4. hardcoded `'nl'` fallback
+     *
+     * @param Schema       $schema          The schema declaring the property.
+     * @param ObjectEntity $object          The object body containing optional override.
+     * @param string       $property        The translatable property name.
+     * @param string       $registerDefault Register-level default language.
+     *
+     * @return string The resolved BCP-47 source language for the property.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     */
+    public function resolveSourceLanguage(
+        Schema $schema,
+        ObjectEntity $object,
+        string $property,
+        string $registerDefault
+    ): string {
+        // Step 1 — object-level override.
+        $body = (array) ($object->getObject() ?? []);
+        $meta = $body['_translationMeta'] ?? null;
+        if (is_array($meta) === true
+            && isset($meta[$property])
+            && is_array($meta[$property]) === true
+            && isset($meta[$property]['sourceLanguage'])
+            && is_string($meta[$property]['sourceLanguage']) === true
+            && $meta[$property]['sourceLanguage'] !== ''
+        ) {
+            return (string) $meta[$property]['sourceLanguage'];
+        }
+
+        // Step 2 — schema-property modifier.
+        $properties = $schema->getProperties() ?? [];
+        $definition = $properties[$property] ?? null;
+        if (is_array($definition) === true
+            && isset($definition['sourceLanguage'])
+            && is_string($definition['sourceLanguage']) === true
+            && $definition['sourceLanguage'] !== ''
+        ) {
+            return (string) $definition['sourceLanguage'];
+        }
+
+        // Step 3 — register default; Step 4 — hardcoded fallback.
+        return ($registerDefault !== '') ? $registerDefault : 'nl';
+    }//end resolveSourceLanguage()
 
     /**
      * Coerce a translatable value to a string for storage.
