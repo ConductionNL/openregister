@@ -743,4 +743,101 @@ class SettingsServiceGapTest extends TestCase
 
         $this->assertEquals('test-uuid', $this->service->getDefaultOrganisationUuid());
     }
+
+    // =============================================
+    // Deck sticky default board+stack (integration-deck AD-1)
+    // =============================================
+
+    /**
+     * getDeckDefault returns null when no value persisted.
+     *
+     * @return void
+     */
+    public function testGetDeckDefaultReturnsNullWhenUnset(): void
+    {
+        $this->config
+            ->expects($this->once())
+            ->method('getAppValue')
+            ->with('openregister', 'integration.deck.default.case', '')
+            ->willReturn('');
+
+        $this->assertNull($this->service->getDeckDefault('case'));
+    }
+
+    /**
+     * getDeckDefault returns null on malformed JSON.
+     *
+     * @return void
+     */
+    public function testGetDeckDefaultReturnsNullOnMalformedJson(): void
+    {
+        $this->config
+            ->method('getAppValue')
+            ->willReturn('not-json');
+
+        $this->assertNull($this->service->getDeckDefault('case'));
+    }
+
+    /**
+     * getDeckDefault returns null when JSON misses required keys.
+     *
+     * @return void
+     */
+    public function testGetDeckDefaultReturnsNullWhenKeysMissing(): void
+    {
+        $this->config
+            ->method('getAppValue')
+            ->willReturn(json_encode(['boardId' => 1]));
+
+        $this->assertNull($this->service->getDeckDefault('case'));
+    }
+
+    /**
+     * getDeckDefault returns the persisted pair (cast to int).
+     *
+     * @return void
+     */
+    public function testGetDeckDefaultReturnsPersistedPair(): void
+    {
+        $this->config
+            ->method('getAppValue')
+            ->willReturn(json_encode(['boardId' => '7', 'stackId' => '13']));
+
+        $result = $this->service->getDeckDefault('case');
+        $this->assertSame(['boardId' => 7, 'stackId' => 13], $result);
+    }
+
+    /**
+     * setDeckDefault writes the JSON-encoded pair under the schema-scoped key.
+     *
+     * @return void
+     */
+    public function testSetDeckDefaultPersistsJsonUnderScopedKey(): void
+    {
+        $this->config
+            ->expects($this->once())
+            ->method('setAppValue')
+            ->with(
+                'openregister',
+                'integration.deck.default.case',
+                json_encode(['boardId' => 4, 'stackId' => 5])
+            );
+
+        $this->service->setDeckDefault('case', 4, 5);
+    }
+
+    /**
+     * clearDeckDefault deletes the schema-scoped key.
+     *
+     * @return void
+     */
+    public function testClearDeckDefaultDeletesScopedKey(): void
+    {
+        $this->config
+            ->expects($this->once())
+            ->method('deleteAppValue')
+            ->with('openregister', 'integration.deck.default.case');
+
+        $this->service->clearDeckDefault('case');
+    }
 }
