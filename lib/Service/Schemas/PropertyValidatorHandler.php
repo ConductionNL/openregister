@@ -218,6 +218,28 @@ class PropertyValidatorHandler
             throw new Exception("'hideOnForm' at '$path' must be a boolean");
         }
 
+        // Validate sourceLanguage modifier (i18n-source-of-truth).
+        // Only allowed on translatable properties; rejects on non-translatable.
+        if (array_key_exists('sourceLanguage', $property) === true) {
+            if (($property['translatable'] ?? false) !== true) {
+                $msg = "'sourceLanguage' at '$path' requires translatable: true";
+                throw new Exception($msg);
+            }
+
+            $sourceLanguage = $property['sourceLanguage'];
+            if (is_string($sourceLanguage) === false || $sourceLanguage === '') {
+                throw new Exception("'sourceLanguage' at '$path' must be a non-empty string");
+            }
+
+            // Basic BCP-47 syntax check: 2-3 lowercase letters, optional
+            // region/subtag suffix.
+            if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $sourceLanguage) !== 1) {
+                throw new Exception(
+                    "'sourceLanguage' at '$path' is not a valid BCP-47 language tag: '$sourceLanguage'"
+                );
+            }
+        }
+
         // Validate onDelete property if present.
         if (($property['onDelete'] ?? null) !== null) {
             // OnDelete is only valid on relation properties (those with $ref).
