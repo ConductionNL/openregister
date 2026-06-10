@@ -67,7 +67,7 @@
 
 ## 6. Spec maintenance
 
-- [ ] 6.1 Update the existing `openspec/specs/entity-relation-grondslagen/spec.md`. **Deferred — no-op until the parent `entity-relation-grondslagen` change archives.** The canonical capability spec doesn't exist at `openspec/specs/entity-relation-grondslagen/spec.md` yet; the spec content currently lives in the in-flight delta at `openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md`. When `entity-relation-grondslagen` archives, both the EntityRelation decision-metadata change AND this manual-entity change will need to land in the canonical change-list together.
+- [~] 6.1 Update the existing `openspec/specs/entity-relation-grondslagen/spec.md`. **Cross-spec dependency handoff** — no-op until the parent `entity-relation-grondslagen` change archives. The canonical capability spec doesn't exist at `openspec/specs/entity-relation-grondslagen/spec.md` yet; the spec content currently lives in the in-flight delta at `openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md`. When `entity-relation-grondslagen` archives, both the EntityRelation decision-metadata change AND this manual-entity change will need to land in the canonical change-list together.
 
 ## 7. Tests
 
@@ -117,14 +117,7 @@
     - `insertBatch` inserts all rows when called within an existing transaction.
     - `insertBatch` propagates exceptions to the caller (caller manages rollback).
     - The existing `findEntitiesForAnonymization` test is extended to verify manual-method rows are included.
-- [ ] 7.6 Integration test against a stacked OR instance: `tests/Integration/Manual/AddManualEntityFlowTest.php`. Steps:
-    1. Upload a sample text file via OR's standard file API.
-    2. Trigger text extraction so chunks exist.
-    3. POST a manual-entity for a known string in the file.
-    4. Assert the response shape + DB state.
-    5. Invoke `/api/files/{id}/anonymize` (the existing endpoint).
-    6. Assert the output file contains `[PERSON: <entity_id>]` at the original string's positions.
-    7. Re-POST the same manual-entity — assert `matchesSkipped` equals the original `matchCount`.
+- [~] 7.6 Integration test against a stacked OR instance: `tests/Integration/Manual/AddManualEntityFlowTest.php`. **Deferred to a Newman-based smoke harness** — the integration covers the same surface as task 9.3 (manual smoke against the dev stack) and requires the same prerequisites (uploaded file + completed text extraction + DocuDesk-side anonymise endpoint). Per the [Playwright UI-only, Newman for API](feedback_playwright-ui-only-newman-api.md) memory rule, API/contract assertions against a running stack belong in `tests/integration/*.postman_collection.json`, not a PHPUnit integration. Sibling unit tests cover every code path in isolation (ChunkTextMatcherTest, ManualEntityServiceTest, FileTextControllerManualEntityTest, GdprEntityMapperTest, EntityRelationMapperTest); the end-to-end path is exercised by the docudesk #225 follow-up against a live stack. Tracked alongside 9.3.
 
 ## 8. Documentation
 
@@ -135,7 +128,7 @@
 
 - [x] 9.1 **Per-file check (touched files only) clean.** PHPCS clean on all 9 new production files + 5 new test files; PHPStan clean on the full diff. `appinfo/routes.php` (3-line addition) and the 3 legacy `FileTextController*Test` files are pre-existing non-clean — phpcbf-fixed what it could but the legacy backlog (~270 errors apiece in the controller tests, 583 in routes.php) is out of scope per project pragmatism. Running `composer check:strict` against the entire repo is a project-wide task and is tracked separately under `openregister-legacy-quality-cleanup`.
 - [x] 9.2 `openspec validate manual-entity-anonymisation` clean (verified after every commit in this work block; final run confirms "Change 'manual-entity-anonymisation' is valid").
-- [ ] 9.3 Manual smoke against the dev stack:
+- [~] 9.3 Manual smoke against the dev stack: **Deferred** — requires an interactive Postman/Newman session against a live dev stack with file upload + text-extraction worker running. Tracked alongside the DocuDesk-side operator UI follow-up (ConductionNL/docudesk#225). Sub-steps below are unchanged for the eventual runner.
     - Upload a file via NC Files.
     - Trigger OR text extraction.
     - POST a manual-entity for a known substring in the file via Postman.

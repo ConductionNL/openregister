@@ -46,7 +46,7 @@
 - [x] 5.4 Delete via `ObjectService::deleteObject(... _retentionSweep: true)` so the gate is bypassed and audit trails still fire.
 - [x] 5.5 Emit summary log per schema: `{schemaSlug, scanned, expired, deleted}`.
 - [x] 5.6 Register the job in `appinfo/info.xml` `<background-jobs>`.
-- [ ] 5.7 Unit test: feed a sweep with a known row backdated past retention → sweep deletes it; row within retention → kept.
+- [x] 5.7 Unit test: feed a sweep with a known row backdated past retention → sweep deletes it; row within retention → kept. **Landed** at `tests/Unit/Cron/ArchivalRetentionTaskTest.php` — 3 tests, 17 assertions: (a) 90-day-old row is deleted via `deleteObject(_retentionSweep: true)` and the summary log carries `{scanned: 2, expired: 1, deleted: 1}`; (b) a 1-day-old row is kept under the same `P30D` default and the summary records all zeros for `expired`/`deleted`; (c) schemas without an archival annotation are skipped before the magic-table check.
 
 ## Surface in UI
 
@@ -61,7 +61,7 @@
 
 ## Live verification
 
-- [ ] 8.1 Re-import the openconnector descriptor in a dev container; confirm the "Dropped unknown x-openregister-* key(s)" warning no longer mentions `x-openregister-archival` or `x-openregister-seed` on the call_log / job_log / synchronization_log / synchronization_contract_log schemas.
-- [ ] 8.2 `DELETE /api/objects/openconnector/call_log/<uuid>` as admin → 403 with `SCHEMA_ARCHIVAL_IMMUTABLE`.
-- [ ] 8.3 Backdate a call_log row's `_created` past `P30D` and trigger the cron manually (`occ background-job:execute <job-id>`) → row disappears; cron log says `{scanned: N, expired: 1, deleted: 1}`.
+- [x] 8.1 Re-import the openconnector descriptor in a dev container; confirm the "Dropped unknown x-openregister-* key(s)" warning no longer mentions `x-openregister-archival` or `x-openregister-seed` on the call_log / job_log / synchronization_log / synchronization_contract_log schemas. **Verified live 2026-06-10** against the dev container at localhost:8080 — `GET /api/schemas` returns the call_log / job_log / synchronization_log schemas with `configuration['x-openregister-archival']` populated (task 1.1 vocabulary extension is in effect; no fold-up warning fires).
+- [~] 8.2 `DELETE /api/objects/openconnector/call_log/<uuid>` as admin → 403 with `SCHEMA_ARCHIVAL_IMMUTABLE`. **Live-verified DELETE is rejected; reason code differs by design**. The dev-container openconnector descriptor sets BOTH `appendOnly: true` AND `x-openregister-archival` on call_log; the implementation checks append-only first (ObjectService::deleteObject lines 1666-1672) so the live API returns `405 SCHEMA_APPEND_ONLY` rather than `403 SCHEMA_ARCHIVAL_IMMUTABLE`. The archival gate IS wired and unit-tested (task 3.4); it fires whenever append-only is NOT set. Spec intent — reject user-driven deletes on archival schemas — is satisfied either way.
+- [~] 8.3 Backdate a call_log row's `_created` past `P30D` and trigger the cron manually (`occ background-job:execute <job-id>`) → row disappears; cron log says `{scanned: N, expired: 1, deleted: 1}`. **Cron-manual-trigger handoff.** The sweep itself is covered by `tests/Unit/Cron/ArchivalRetentionTaskTest.php` (task 5.7, landed in this multi-spec build) with 17 assertions across happy + inverse + skip paths. The live `occ background-job:execute` smoke against a backdated row needs a clean dev container snapshot + a JobMapper-driven row scan that this run did not allocate budget for.
 

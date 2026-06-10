@@ -14,7 +14,14 @@
 
 ## Verification
 
-- [ ] On an OpenCatalogi publication detail page (ZERO OpenCatalogi changes):
+- [~] On an OpenCatalogi publication detail page (ZERO OpenCatalogi changes):
       `window.OCA.OpenRegister.integrations` is a real registry (not a stub),
       contains the built-ins + OpenConnector's `sync-contract` leaf, and the
-      "Synced from" tab/widget renders.
+      "Synced from" tab/widget renders. **Browser-side verification handoff.**
+      Bundle confirmed shipped: `js/openregister-integration-global.js`
+      (9.5 MB minified) is built + present on disk in the dev container, and
+      the `IntegrationGlobalScriptListener` wires it on every
+      `BeforeTemplateRenderedEvent`. Final end-user "Synced from" tab render
+      requires a publication with a matching `sync-contract` leaf attached on
+      a live OpenCatalogi instance; tracked alongside the integration-xwiki +
+      manual-entity dev-stack smoke runs.
