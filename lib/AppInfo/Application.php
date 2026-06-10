@@ -282,6 +282,15 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
+ * Public services exposed for consumer apps via Nextcloud DI:
+ * - {@see \OCA\OpenRegister\Service\RegisterService}            CRUD + helpers on Register entities.
+ * - {@see \OCA\OpenRegister\Service\SchemaService}              CRUD + helpers on Schema entities.
+ * - {@see \OCA\OpenRegister\Service\ObjectService}              CRUD + search on registered objects.
+ * - {@see \OCA\OpenRegister\Service\RegisterResolverService}    Resolve `<context>_register` / `<context>_schema`
+ *   IAppConfig keys to slug/UUID strings or hydrated entities; request-scoped cache + tenant aware.
+ * - {@see \OCA\OpenRegister\Service\Serializer\RegisterSerializer} Serialize Register entities with `_extend`
+ *   expansion (schemas, @self.stats) — single source of truth shared between HTTP and DI callers.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Bootstrap class must reference every
  *   service, mapper, event listener, and middleware registered for the entire app; the
  *   coupling is structural and cannot be reduced without breaking the NC bootstrap contract.
