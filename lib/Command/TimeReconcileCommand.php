@@ -67,6 +67,8 @@ class TimeReconcileCommand extends Command
      * Define command name, description, and options.
      *
      * @return void
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md
      */
     protected function configure(): void
     {
@@ -95,6 +97,8 @@ class TimeReconcileCommand extends Command
      * @param OutputInterface $output Console output stream.
      *
      * @return int Symfony command exit code.
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
