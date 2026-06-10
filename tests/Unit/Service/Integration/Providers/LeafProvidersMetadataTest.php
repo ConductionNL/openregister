@@ -222,13 +222,29 @@ class LeafProvidersMetadataTest extends TestCase
             );
         }
 
+        // TimeProvider — (db, appManager, l10n, mapper, config).
+        if ($class === TimeProvider::class) {
+            $config = $this->createMock(\OCP\IConfig::class);
+            $config->method('getAppValue')->willReturnCallback(
+                static function (string $app, string $key, string $default = '') {
+                    return $default;
+                }
+            );
+            return new TimeProvider(
+                db: $db,
+                appManager: $appManager,
+                l10n: $l10n,
+                linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                config: $config,
+            );
+        }
+
         // Providers shaped (db, appManager, l10n, <mapper>).
         $trailingMapper = [
             AnalyticsProvider::class   => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
             CollectivesProvider::class => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
             MapsProvider::class        => \OCA\OpenRegister\Db\MapLinkMapper::class,
             PhotosProvider::class      => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
-            TimeProvider::class        => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
             FormsProvider::class       => \OCA\OpenRegister\Db\FormLinkMapper::class,
         ];
         if (isset($trailingMapper[$class]) === true) {

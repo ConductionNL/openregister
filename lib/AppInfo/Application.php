@@ -1666,6 +1666,7 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                     linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                    config: $container->get('OCP\IConfig'),
                 );
             }
         );
