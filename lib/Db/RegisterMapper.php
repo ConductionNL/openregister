@@ -276,7 +276,13 @@ class RegisterMapper extends QBMapper
         $qb->where($orConditions);
 
         // Check if register exists before applying filters (for debugging).
-        $qbBeforeFilter     = clone $qb;
+        // Cap to a single row + deterministic order so duplicate-slug rows from
+        // env churn cannot raise MultipleObjectsReturnedException out of this
+        // debug-only probe (which previously surfaced as a 500 on slug lookups
+        // — e.g. the object lock path). See the deterministic resolution below.
+        $qbBeforeFilter = clone $qb;
+        $qbBeforeFilter->orderBy('id', 'ASC');
+        $qbBeforeFilter->setMaxResults(1);
         $existsBeforeFilter = false;
         try {
             $testResult         = $this->findEntity(query: $qbBeforeFilter);
@@ -295,10 +301,10 @@ class RegisterMapper extends QBMapper
                     ]
                 );
             }
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+        } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
             if (isset($this->logger) === true) {
                 $this->logger->warning(
-                    message: '[RegisterMapper] Register does not exist in database',
+                    message: '[RegisterMapper] Register does not exist (or is duplicated) before filters',
                     context: [
                         'file'       => __FILE__,
                         'line'       => __LINE__,
@@ -315,6 +321,15 @@ class RegisterMapper extends QBMapper
             allowNullOrg: true,
             multiTenancyEnabled: $_multitenancy
         );
+
+        // Deterministic slug/uuid resolution: env churn can leave multiple rows
+        // sharing a slug, which would make findEntity() raise
+        // MultipleObjectsReturnedException → a 500 fleet-wide. Order by id ASC
+        // and cap to a single row so the oldest (lowest-id) register
+        // deterministically wins. The duplicates are still detectable/mergeable
+        // via the `openregister:registers:dedupe` occ command.
+        $qb->orderBy('id', 'ASC');
+        $qb->setMaxResults(1);
 
         // Just return the entity; do not attach stats here.
         try {

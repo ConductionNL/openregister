@@ -4987,6 +4987,153 @@ class MagicMapper extends AbstractObjectMapper
     }//end findMultipleAcrossAllMagicTables()
 
     /**
+     * Discover every magic table name (oc_openregister_table_<reg>_<schema>).
+     *
+     * @return array<string, array{registerId: int, schemaId: int}> Map of full
+     *         table name to its register/schema ids.
+     */
+    private function discoverMagicTables(): array
+    {
+        $prefix       = 'oc_';
+        $tablePattern = $prefix.'openregister_table_%';
+
+        $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
+        $stmt   = $this->db->prepare($sql);
+        $result = $stmt->execute([$tablePattern]);
+        $tables = $result->fetchAll();
+
+        $map = [];
+        foreach ($tables as $tableRow) {
+            $fullTableName = ($tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null);
+            if ($fullTableName === null) {
+                continue;
+            }
+
+            $bareName = str_replace($prefix, '', $fullTableName);
+            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $bareName, $matches) !== 1) {
+                continue;
+            }
+
+            $map[$fullTableName] = [
+                'registerId' => (int) $matches[1],
+                'schemaId'   => (int) $matches[2],
+            ];
+        }//end foreach
+
+        return $map;
+    }//end discoverMagicTables()
+
+    /**
+     * Find all soft-deleted objects across ALL magic tables.
+     *
+     * Objects live in per-register/schema magic tables, so there is no single
+     * table to query for `/api/deleted`. This scans every magic table for rows
+     * whose `_deleted` marker is set and returns them newest-first. Replaces the
+     * broken register/schema-less `searchObjectsPaginated()` path which always
+     * fell through to an empty result.
+     *
+     * @param int|null $limit  Maximum rows to return.
+     * @param int|null $offset Rows to skip (pagination).
+     *
+     * @return ObjectEntity[] Soft-deleted objects across all magic tables.
+     */
+    public function findDeletedAcrossAllMagicTables(?int $limit=null, ?int $offset=null): array
+    {
+        $deletedCol = self::METADATA_PREFIX.'deleted';
+        $updatedCol = self::METADATA_PREFIX.'updated';
+
+        // Collect (entity, sortKey) pairs so the global newest-first ordering is
+        // driven by the RAW `_updated` column value rather than the hydrated
+        // entity's getUpdated() (which is not always populated and would leave
+        // the merged set ordered only by table-discovery order, pushing freshly
+        // deleted rows in high-id tables past the pagination window).
+        $items = [];
+
+        foreach ($this->discoverMagicTables() as $fullTableName => $info) {
+            $bareTableName = str_replace('oc_', '', $fullTableName);
+            try {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('*')
+                    ->from($bareTableName)
+                    ->where($qb->expr()->isNotNull($deletedCol))
+                    ->orderBy($updatedCol, 'DESC');
+
+                $rows = $qb->executeQuery()->fetchAll();
+                foreach ($rows as $row) {
+                    $row['_register'] = (string) $info['registerId'];
+                    $row['_schema']   = (string) $info['schemaId'];
+                    $entity           = $this->rowToObjectEntity(row: $row);
+                    if ($entity !== null) {
+                        $entity->setSource('orm');
+                        $items[] = [
+                            'entity'  => $entity,
+                            'sortKey' => (string) ($row[$updatedCol] ?? ''),
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->debug(
+                    message: '[MagicMapper] findDeletedAcrossAllMagicTables: skipping table',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'table' => $fullTableName,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                continue;
+            }//end try
+        }//end foreach
+
+        // Newest-first by raw `_updated` value (ISO-ish strings sort lexically).
+        usort(
+            $items,
+            static function (array $first, array $second): int {
+                return strcmp($second['sortKey'], $first['sortKey']);
+            }
+        );
+
+        $found = array_map(static fn(array $item): ObjectEntity => $item['entity'], $items);
+
+        // Apply pagination after the global merge.
+        if ($offset !== null || $limit !== null) {
+            $found = array_slice($found, ($offset ?? 0), $limit);
+        }
+
+        return $found;
+    }//end findDeletedAcrossAllMagicTables()
+
+    /**
+     * Count all soft-deleted objects across ALL magic tables.
+     *
+     * @return int Total soft-deleted object count.
+     */
+    public function countDeletedAcrossAllMagicTables(): int
+    {
+        $deletedCol = self::METADATA_PREFIX.'deleted';
+        $total      = 0;
+
+        foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
+            $bareTableName = str_replace('oc_', '', $fullTableName);
+            try {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select($qb->func()->count('*', 'cnt'))
+                    ->from($bareTableName)
+                    ->where($qb->expr()->isNotNull($deletedCol));
+
+                $res = $qb->executeQuery();
+                $row = $res->fetch();
+                $res->closeCursor();
+                $total += (int) ($row['cnt'] ?? 0);
+            } catch (\Exception $e) {
+                continue;
+            }
+        }//end foreach
+
+        return $total;
+    }//end countDeletedAcrossAllMagicTables()
+
+    /**
      * Find all objects across ALL magic tables that have the given UUID in their relations.
      *
      * This method searches across all magic tables to find objects that reference the given UUID.
@@ -7134,6 +7281,70 @@ class MagicMapper extends AbstractObjectMapper
 
         return true;
     }//end unlockObject()
+
+    /**
+     * Restore a soft-deleted object by clearing its `_deleted` marker.
+     *
+     * Objects live in per-register/schema magic tables (oc_openregister_table_*),
+     * NOT in the legacy generic `openregister_objects` table. A direct
+     * `UPDATE openregister_objects` therefore matches zero rows — which is why
+     * the previous restore reported success but never un-deleted anything. This
+     * resolves the object's owning magic table (including deleted rows) and
+     * sets `_deleted = NULL` on the correct table.
+     *
+     * @param string $uuid The UUID (or id/slug) of the deleted object.
+     *
+     * @return ObjectEntity The restored object.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found.
+     * @throws Exception                                  If register/schema context cannot be resolved.
+     */
+    public function restoreObject(string $uuid): ObjectEntity
+    {
+        $result   = $this->findAcrossAllSources(
+            identifier: $uuid,
+            includeDeleted: true,
+            _rbac: false,
+            _multitenancy: false
+        );
+        $entity   = $result['object'];
+        $register = $result['register'];
+        $schema   = $result['schema'];
+
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot restore object without resolvable register and schema context');
+        }
+
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+        // Clear the soft-delete marker directly on the owning magic table.
+        // A native UPDATE avoids the Entity-layer array->null serialisation
+        // quirk for JSON columns.
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($tableName)
+            ->set(self::METADATA_PREFIX.'deleted', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
+            ->where(
+                $qb->expr()->eq(
+                    self::METADATA_PREFIX.'uuid',
+                    $qb->createNamedParameter($entity->getUuid())
+                )
+            );
+        $qb->executeStatement();
+
+        $entity->setDeleted(null);
+
+        $this->logger->info(
+            message: '[MagicMapper] Restored soft-deleted object in register+schema table',
+            context: [
+                'file'      => __FILE__,
+                'line'      => __LINE__,
+                'uuid'      => $entity->getUuid(),
+                'tableName' => $tableName,
+            ]
+        );
+
+        return $entity;
+    }//end restoreObject()
 
     /**
      * Ultra-fast bulk save operation with automatic routing.

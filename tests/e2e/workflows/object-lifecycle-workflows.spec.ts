@@ -170,12 +170,12 @@ test.describe('workflow: soft-delete then restore', () => {
 		expect(gone.status(), 'deleted object no longer directly retrievable').toBe(404)
 	})
 
-	// BUG-1: the deleted object never surfaces in the Deleted list.
-	test.fixme('BUG-1: the soft-deleted object appears in GET /api/deleted', async ({ request }) => {
-		// Observed: GET /api/deleted => {"results":[],"total":0} even though the
-		// object above was just soft-deleted (its direct GET returns 404), and
-		// GET /api/deleted/statistics => {"totalDeleted":0,...}. The Deleted view
-		// is consequently always empty.
+	// BUG-1 (FIXED): the deleted object now surfaces in the Deleted list.
+	// Root cause: DeletedController.index() called searchObjectsPaginated()
+	// without a register/schema context, which always fell through to an empty
+	// result because objects live in per-register/schema magic tables. Fixed by
+	// scanning every magic table via MagicMapper::findDeletedAcrossAllMagicTables().
+	test('BUG-1: the soft-deleted object appears in GET /api/deleted', async ({ request }) => {
 		const resp = await request.get(`${API}/deleted?_limit=200`, { headers: { Accept: 'application/json' } })
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
@@ -183,12 +183,12 @@ test.describe('workflow: soft-delete then restore', () => {
 		expect(found, 'soft-deleted object should be listed under /api/deleted').toBe(true)
 	})
 
-	// BUG-2: restore reports success but is a no-op.
-	test.fixme('BUG-2: restoring brings the object back into its register/schema', async ({ request }) => {
-		// Observed: POST /api/deleted/{uuid}/restore => 200
-		// {"success":true,"message":"Object restored successfully"} but a
-		// subsequent GET of the object still returns 404 — restore is a silent
-		// no-op.
+	// BUG-2 (FIXED): restore now actually un-deletes the object.
+	// Root cause: restore ran `UPDATE openregister_objects SET deleted=NULL`,
+	// but that legacy generic table is empty — objects live in magic tables, so
+	// the UPDATE matched zero rows. Fixed via MagicMapper::restoreObject(), which
+	// clears `_deleted` on the correct per-register/schema magic table.
+	test('BUG-2: restoring brings the object back into its register/schema', async ({ request }) => {
 		const restore = await request.post(`${API}/deleted/${objectId}/restore`, {
 			headers: { Accept: 'application/json' },
 		})
@@ -200,9 +200,12 @@ test.describe('workflow: soft-delete then restore', () => {
 		expect(back.status(), 'restored object should be retrievable again').toBe(200)
 	})
 
-	// BUG-3: cannot list including deleted.
-	test.fixme('BUG-3: objects list with _includeDeleted=true does not 500', async ({ request }) => {
-		// Observed: GET /api/objects/{register}/{schema}?_includeDeleted=true => HTTP 500.
+	// BUG-3 (FIXED): _includeDeleted=true no longer 500s.
+	// Root cause: the query-string "_includeDeleted=true" arrived as the STRING
+	// "true" and was passed to MagicSearchHandler::applyBasicFilters(bool $...),
+	// raising a TypeError under strict_types. Fixed by coercing the value with
+	// filter_var(..., FILTER_VALIDATE_BOOLEAN) before use.
+	test('BUG-3: objects list with _includeDeleted=true does not 500', async ({ request }) => {
 		const resp = await request.get(
 			`${API}/objects/${register.id}/${schema.id}?_includeDeleted=true&_limit=50`,
 			{ headers: { Accept: 'application/json' } },
@@ -210,10 +213,10 @@ test.describe('workflow: soft-delete then restore', () => {
 		expect(resp.status(), 'including deleted should not 500').toBeLessThan(500)
 	})
 
-	test('UI: the Deleted view renders (shell-level; data assertion blocked by BUG-1)', async ({ page }) => {
+	test('UI: the Deleted view renders', async ({ page }) => {
 		await page.goto(`${APP}/deleted`, { waitUntil: 'domcontentloaded' })
-		// The Deleted view must at least mount. (A data-dependent row assertion
-		// here is blocked by BUG-1, which keeps the list empty — see fixme above.)
+		// The Deleted view must at least mount. (BUG-1 is now fixed, so the list
+		// is populated by GET /api/deleted — asserted at the API level above.)
 		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 30_000 })
 	})
 })

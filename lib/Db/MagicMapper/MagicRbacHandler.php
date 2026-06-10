@@ -163,6 +163,20 @@ class MagicRbacHandler
             return;
         }
 
+        // CLI / no-session system context (occ commands, repair steps, cron
+        // jobs, background calculations) has no user session. These are trusted
+        // system operations and bypass RBAC filtering, mirroring the established
+        // CLI bypass in MultiTenancyTrait::hasRbacPermission(). Without this a
+        // schema with explicit authorization rules would clamp every CLI query
+        // to `1 = 0` and hide all rows from background calcs / list views.
+        if ($user === null && PHP_SAPI === 'cli') {
+            $this->logger->debug(
+                message: '[MagicRbacHandler] CLI/system context — bypassing RBAC filter',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return;
+        }
+
         // Get effective authorization (schema-level, or register cascade).
         $authorization = $this->resolveSchemaAuthorization(schema: $schema);
 

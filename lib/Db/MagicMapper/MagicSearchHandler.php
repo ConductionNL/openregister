@@ -275,8 +275,12 @@ class MagicSearchHandler
     public function buildFilteredQuery(array $query, Schema $schema, string $tableName): IQueryBuilder
     {
         // Extract options from query (prefixed with _).
-        $search         = $query['_search'] ?? null;
-        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $search = $query['_search'] ?? null;
+        // Coerce to bool: query-string params arrive as strings (e.g.
+        // "_includeDeleted=true" → "true"). applyBasicFilters() is bool-typed
+        // under strict_types, so passing the raw string raised a TypeError →
+        // HTTP 500 on any list call with _includeDeleted=true.
+        $includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $ids            = $query['_ids'] ?? null;
         $_rbac          = $query['_rbac'] ?? true;
         $_multitenancy  = $query['_multitenancy'] ?? true;
@@ -376,8 +380,11 @@ class MagicSearchHandler
         $isPostgres = $this->isPostgresPlatform();
 
         // Extract options from query.
-        $search         = $query['_search'] ?? null;
-        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $search = $query['_search'] ?? null;
+        // Coerce to bool: query-string "true"/"false" must not be compared by
+        // identity against the boolean false (a non-empty string is never
+        // === false, which would silently flip the deleted filter).
+        $includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $_rbac          = $query['_rbac'] ?? true;
 
         // 1. Deleted filter.

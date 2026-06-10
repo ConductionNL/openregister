@@ -1029,6 +1029,29 @@ class ImportHandler
             }
         }
 
+        // Guard: a schema fragment MUST carry a non-empty slug. Without it the
+        // later `$this->schemaMapper->find($data['slug'])` lookup receives null
+        // and raises an uncaught \TypeError — which is an \Error, NOT an
+        // \Exception, so the caller's `catch (Exception)` never sees it and the
+        // WHOLE register import aborts on one bad fragment. Fail fast with a
+        // descriptive \RuntimeException (an \Exception) so the caller skips this
+        // fragment and continues importing the rest of the app's data layer.
+        $slug = $data['slug'] ?? null;
+        if (is_string($slug) === false || trim($slug) === '') {
+            $title = (string) ($data['title'] ?? '');
+            $hint  = 'no title';
+            if ($title !== '') {
+                $hint = "title '{$title}'";
+            }
+
+            $msg = "imported schema fragment is missing a 'slug' ({$hint}); skipping fragment";
+            $this->logger->error(
+                message: '[ImportHandler] '.$msg,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            throw new RuntimeException($msg);
+        }
+
         try {
             // Remove id, uuid, and organisation from the data.
             unset($data['id'], $data['uuid'], $data['organisation']);
