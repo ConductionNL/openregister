@@ -92,8 +92,16 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await page.goto('/index.php/login')
 	await page.locator('input[name="user"]').fill(username)
 	await page.locator('input[name="password"]').fill(password)
-	await page.locator('button[type="submit"]').first().click()
-	// Wait for the global header that only renders on authenticated pages.
+	// Submit via the form rather than a themed-button .click(): on NC's
+	// themed login the styled submit button can swallow the click, and
+	// #header is also present on the login page itself, so a plain
+	// waitForSelector('#header') races the post-submit navigation and
+	// flakes. Submit the form and wait for the URL to leave /login.
+	await page.locator('input[name="password"]').evaluate((el: HTMLInputElement) => {
+		el.form?.requestSubmit()
+	})
+	await page.waitForURL((url) => !/\/login(\?|$|\/)/.test(url.toString()), { timeout: 25_000 })
+	// Then confirm an authenticated page rendered (header on a non-login page).
 	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
 	const currentUrl = page.url()
 	if (/\/login(\?|$|\/)/.test(currentUrl)) {
