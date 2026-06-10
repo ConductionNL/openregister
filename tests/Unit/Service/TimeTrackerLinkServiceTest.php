@@ -280,4 +280,29 @@ class TimeTrackerLinkServiceTest extends TestCase
 
         $this->assertSame([], $this->service->getAvailableClients());
     }//end testGetAvailableClientsEmptyWhenNoUser()
+
+    /**
+     * `reconcileAllLinks()` returns a zero-stats record when NC TimeManager
+     * is not available (the upstream fetch path can't run, so reconciling
+     * is a no-op rather than an error).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md
+     */
+    public function testReconcileAllLinksNoopWhenTimeManagerUnavailable(): void
+    {
+        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
+
+        // The mapper must NOT be touched when TimeManager is unavailable —
+        // the early-out short-circuits before any DB read.
+        $this->mapper->expects($this->never())->method('findAll');
+
+        $stats = $this->service->reconcileAllLinks();
+
+        $this->assertSame(
+            ['walked' => 0, 'refreshed' => 0, 'missing' => 0, 'errors' => 0],
+            $stats
+        );
+    }//end testReconcileAllLinksNoopWhenTimeManagerUnavailable()
 }//end class

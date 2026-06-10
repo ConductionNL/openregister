@@ -627,6 +627,139 @@ class TimeTrackerLinkService
     }//end fetchClientRows()
 
     /**
+     * Reconcile every persisted link row's denormalised entry metadata
+     * (name, duration, billable, started_at) against the authoritative
+     * NC TimeManager row.
+     *
+     * Used by the `openregister:time:reconcile` occ command — exposes
+     * the same refresh path the on-read drift-guard uses, but driven
+     * for every link irrespective of staleness so totals can be
+     * recomputed off-line (per the integration-time-tracker spec's
+     * "denormalised totals" requirement).
+     *
+     * Each link is refreshed using its own `linkedBy` user id so the
+     * upstream user-scoped TimeManager lookup stays correct even when
+     * the command runs without an active user session (e.g. cron).
+     *
+     * @param string|null $objectUuid Optional object uuid scope. Null walks every row.
+     * @param bool        $dryRun     When true, no DB writes happen; counts are returned regardless.
+     *
+     * @return array{walked: int, refreshed: int, missing: int, errors: int}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The dry-run toggle is the conventional shape for occ commands.
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md
+     */
+    public function reconcileAllLinks(?string $objectUuid=null, bool $dryRun=false): array
+    {
+        $stats = [
+            'walked'    => 0,
+            'refreshed' => 0,
+            'missing'   => 0,
+            'errors'    => 0,
+        ];
+
+        if ($this->isTimeManagerAvailable() === false) {
+            return $stats;
+        }
+
+        try {
+            $links = $this->timeTrackerLinkMapper->findAll($objectUuid);
+        } catch (Throwable $e) {
+            $this->logger->error('TimeTrackerLinkService::reconcileAllLinks findAll failed: '.$e->getMessage());
+            $stats['errors'] = 1;
+            return $stats;
+        }
+
+        foreach ($links as $link) {
+            $stats['walked']++;
+            $uid = (string) $link->getLinkedBy();
+            if ($uid === '') {
+                $stats['missing']++;
+                continue;
+            }
+
+            $info = $this->fetchEntryInfo(
+                entryType: (string) $link->getEntryType(),
+                id: $this->entryId(link: $link),
+                uid: $uid
+            );
+            if ($info === null) {
+                $stats['missing']++;
+                continue;
+            }
+
+            $changed = $this->applyRefreshedInfo(link: $link, info: $info);
+            if ($changed === false) {
+                continue;
+            }
+
+            $stats['refreshed']++;
+
+            if ($dryRun === true) {
+                continue;
+            }
+
+            $link->setLinkedAt(new DateTime());
+            try {
+                $this->timeTrackerLinkMapper->update($link);
+            } catch (Throwable $e) {
+                $this->logger->error(
+                    'TimeTrackerLinkService::reconcileAllLinks update failed for link id '
+                    .((string) $link->getId()).': '.$e->getMessage()
+                );
+                $stats['errors']++;
+            }
+        }//end foreach
+
+        return $stats;
+    }//end reconcileAllLinks()
+
+    /**
+     * Apply refreshed upstream metadata onto a link row. Returns whether
+     * any of the denormalised fields actually changed (so the reconcile
+     * stats can distinguish "in sync" from "rewritten").
+     *
+     * @param TimeTrackerLink     $link The link row.
+     * @param array<string,mixed> $info Normalised upstream info.
+     *
+     * @return bool
+     */
+    private function applyRefreshedInfo(TimeTrackerLink $link, array $info): bool
+    {
+        $changed = false;
+
+        $name = (string) ($info['name'] ?? '');
+        if ($name !== '' && $name !== (string) $link->getName()) {
+            $link->setName($name);
+            $changed = true;
+        }
+
+        $duration = $info['duration'] ?? null;
+        if ($duration !== null && (int) $duration !== (int) $link->getDuration()) {
+            $link->setDuration((int) $duration);
+            $changed = true;
+        }
+
+        $billable = $info['billable'] ?? null;
+        if ($billable !== null && (bool) $billable !== (bool) $link->getBillable()) {
+            $link->setBillable((bool) $billable);
+            $changed = true;
+        }
+
+        $startedAt = $info['startedAt'] ?? null;
+        if ($startedAt instanceof DateTime
+            && ($link->getStartedAt() === null
+                || $startedAt->getTimestamp() !== $link->getStartedAt()->getTimestamp())
+        ) {
+            $link->setStartedAt($startedAt);
+            $changed = true;
+        }
+
+        return $changed;
+    }//end applyRefreshedInfo()
+
+    /**
      * Whether a link row's cache is older than the stale window.
      *
      * @param TimeTrackerLink $link The link row.

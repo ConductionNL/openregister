@@ -135,6 +135,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
+		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
 	</commands>
 
 	<notification>
