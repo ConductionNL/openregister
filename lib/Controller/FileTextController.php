@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Http;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\ManualEntityException;
+use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
@@ -490,6 +491,7 @@ class FileTextController extends Controller
      * @return JSONResponse JSON response with anonymization result
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {
@@ -605,7 +607,71 @@ class FileTextController extends Controller
                     'entities_replaced'  => count($entities),
                 ]
             );
+        } catch (PdfAnonymisationException $e) {
+            // Map the structured PDF-anonymisation reason to an HTTP status
+            // per the `pdf-anonymisation` spec (REQ:filter-coverage +
+            // REQ:validation-gate + REQ:image-only-defer):
+            //
+            //   - encrypted_pdf       → 422 (caller-correctable)
+            //   - text_layer_missing → 422 (caller MUST route to OCR via
+            //                              the `ocr-document-scanning`
+            //                              capability — the controller
+            //                              surfaces a structured body so
+            //                              the caller can dispatch; v1
+            //                              does not auto-redirect)
+            //   - validation_failed  → 500 (pipeline integrity failure;
+            //                              fail-closed for the strict
+            //                              entity-anonymisation flow)
+            //   - internal_error     → 500 (unexpected pipeline failure)
+            //
+            // Per ADR-005 the response body MUST NOT echo the
+            // operator-supplied entity text — the exception's diagnostic
+            // surface is PII-free by construction (counts + structural
+            // counters only) and is the only thing we forward.
+            $reason     = $e->getReason();
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            switch ($reason) {
+                case PdfAnonymisationException::REASON_ENCRYPTED_PDF:
+                case PdfAnonymisationException::REASON_TEXT_LAYER_MISSING:
+                    $statusCode = Http::STATUS_UNPROCESSABLE_ENTITY;
+                    break;
+                case PdfAnonymisationException::REASON_VALIDATION_FAILED:
+                case PdfAnonymisationException::REASON_INTERNAL_ERROR:
+                default:
+                    $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+                    break;
+            }
+
+            // PII-redacted error log: NEVER include the operator-supplied
+            // entity text (ADR-005). The PdfAnonymisationException
+            // diagnostic surface is constructed to be PII-free; carry
+            // only that + the structured reason + the file id.
+            $this->logger->error(
+                message: '[FileTextController] PDF anonymisation failed',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'file_id'    => $fileId,
+                    'reason'     => $reason,
+                    'diagnostic' => $e->getDiagnostic(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => 'pdf_anonymisation_failed',
+                    'reason'  => $reason,
+                    'details' => $e->getDiagnostic(),
+                ],
+                statusCode: $statusCode
+            );
         } catch (\Exception $e) {
+            // PII-redacted error log: never echo operator-supplied entity
+            // text or the substitution map in error responses or logs
+            // (ADR-005). The exception message + file id are the only
+            // thing safe to surface — the audit trail (ADR-022) keeps
+            // entity values.
             $this->logger->error(
                 message: '[FileTextController] Failed to anonymize file',
                 context: [
@@ -613,7 +679,6 @@ class FileTextController extends Controller
                     'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
-                    'trace'   => $e->getTraceAsString(),
                 ]
             );
 
