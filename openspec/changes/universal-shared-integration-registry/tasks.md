@@ -14,7 +14,7 @@
 
 ## Verification
 
-- [~] On an OpenCatalogi publication detail page (ZERO OpenCatalogi changes): — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [ ] On an OpenCatalogi publication detail page (ZERO OpenCatalogi changes):
       `window.OCA.OpenRegister.integrations` is a real registry (not a stub),
       contains the built-ins + OpenConnector's `sync-contract` leaf, and the
       "Synced from" tab/widget renders.

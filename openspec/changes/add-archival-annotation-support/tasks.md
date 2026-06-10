@@ -46,7 +46,7 @@
 - [x] 5.4 Delete via `ObjectService::deleteObject(... _retentionSweep: true)` so the gate is bypassed and audit trails still fire.
 - [x] 5.5 Emit summary log per schema: `{schemaSlug, scanned, expired, deleted}`.
 - [x] 5.6 Register the job in `appinfo/info.xml` `<background-jobs>`.
-- [~] 5.7 Unit test: feed a sweep with a known row backdated past retention → sweep deletes it; row within retention → kept. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [ ] 5.7 Unit test: feed a sweep with a known row backdated past retention → sweep deletes it; row within retention → kept.
 
 ## Surface in UI
 
@@ -61,7 +61,7 @@
 
 ## Live verification
 
-- [~] 8.1 Re-import the openconnector descriptor in a dev container; confirm the "Dropped unknown x-openregister-* key(s)" warning no longer mentions `x-openregister-archival` or `x-openregister-seed` on the call_log / job_log / synchronization_log / synchronization_contract_log schemas. — deferred to downstream cycle / fleet-wide adoption (handoff)
-- [~] 8.2 `DELETE /api/objects/openconnector/call_log/<uuid>` as admin → 403 with `SCHEMA_ARCHIVAL_IMMUTABLE`. — deferred to downstream cycle / fleet-wide adoption (handoff)
-- [~] 8.3 Backdate a call_log row's `_created` past `P30D` and trigger the cron manually (`occ background-job:execute <job-id>`) → row disappears; cron log says `{scanned: N, expired: 1, deleted: 1}`. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [ ] 8.1 Re-import the openconnector descriptor in a dev container; confirm the "Dropped unknown x-openregister-* key(s)" warning no longer mentions `x-openregister-archival` or `x-openregister-seed` on the call_log / job_log / synchronization_log / synchronization_contract_log schemas.
+- [ ] 8.2 `DELETE /api/objects/openconnector/call_log/<uuid>` as admin → 403 with `SCHEMA_ARCHIVAL_IMMUTABLE`.
+- [ ] 8.3 Backdate a call_log row's `_created` past `P30D` and trigger the cron manually (`occ background-job:execute <job-id>`) → row disappears; cron log says `{scanned: N, expired: 1, deleted: 1}`.
 
