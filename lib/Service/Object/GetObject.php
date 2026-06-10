@@ -215,6 +215,13 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        // Thread the RBAC / multitenancy posture into the filters so the search
+        // handler honours them. These are read from the query array downstream;
+        // passing them only as method arguments left them silently dropped, so
+        // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
+        $filters['_rbac']         = $_rbac;
+        $filters['_multitenancy'] = $_multitenancy;
+
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectMapper->findAll(
             limit: $limit,

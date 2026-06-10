@@ -295,12 +295,20 @@ class MagicSearchHandler
         );
 
         // Extract and clean filters from the query.
+        //
+        // Reserved params (e.g. `register`, `schema`, `registers`, `schemas`,
+        // `extend`) carry query CONTEXT, not object-field filters. They are NOT
+        // underscore-prefixed, so without this guard they leak into
+        // applyObjectFilters(), which treats them as unknown schema properties
+        // and emits a `1 = 0` condition — silently returning ZERO results. This
+        // is why `ObjectService::findAll(['filters' => ['register' => …,
+        // 'schema' => …, …]])` (which always injects register/schema into the
+        // filters) could not surface a just-written object in-request. Mirror
+        // the raw-SQL UNION path, which already excludes getReservedParams().
         $metadataFilters = $query['@self'] ?? [];
         $objectFilters   = array_filter(
             $query,
-            function ($key) {
-                return $key !== '@self' && !str_starts_with($key, '_');
-            },
+            fn ($key): bool => $this->isObjectFieldFilterKey(key: $key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -351,8 +359,53 @@ class MagicSearchHandler
             $this->applyRelationsContainsFilter(qb: $queryBuilder, uuid: $relationsContains);
         }
 
+        // Apply dotted relation-field filters: `_relations.<field>` => <id>.
+        $this->applyRelationFieldFilters(qb: $queryBuilder, query: $query);
+
         return $queryBuilder;
     }//end buildFilteredQuery()
+
+    /**
+     * Decide whether a query key is a genuine object-field filter.
+     *
+     * Excludes the `@self` metadata bag, every underscore-prefixed system
+     * param, and every reserved context param (`register`, `schema`,
+     * `registers`, `schemas`, `extend`). Without the reserved-param exclusion,
+     * context keys leak into applyObjectFilters() and force a `1 = 0` condition
+     * (they are not schema columns), silently returning zero results.
+     *
+     * @param string $key The query key to classify.
+     *
+     * @return bool True when the key is an object-field filter.
+     */
+    private function isObjectFieldFilterKey(string $key): bool
+    {
+        if ($key === '@self' || str_starts_with($key, '_') === true) {
+            return false;
+        }
+
+        return in_array($key, $this->getReservedParams(), true) === false;
+    }//end isObjectFieldFilterKey()
+
+    /**
+     * Apply every dotted relation-field filter (`_relations.<field>` => <id>)
+     * present in the query to the QueryBuilder.
+     *
+     * Each pair matches only objects whose `_relations` references <id> under
+     * the named relation field (honouring the filter VALUE, not merely the
+     * presence of the relation field).
+     *
+     * @param IQueryBuilder       $qb    Query builder to modify.
+     * @param array<string,mixed> $query The full search query.
+     *
+     * @return void
+     */
+    private function applyRelationFieldFilters(IQueryBuilder $qb, array $query): void
+    {
+        foreach ($this->extractRelationFieldFilters(query: $query) as $relField => $relValue) {
+            $this->applyRelationFieldFilter(qb: $qb, field: $relField, value: $relValue);
+        }
+    }//end applyRelationFieldFilters()
 
     /**
      * Build WHERE conditions as raw SQL for use in UNION queries.
@@ -430,6 +483,13 @@ class MagicSearchHandler
             connection: $connection
         );
         $conditions     = array_merge($conditions, $tmloConditions);
+
+        // 7. Dotted relation-field filters (`_relations.<field>` => <id>).
+        $relationConditions = $this->buildRelationFilterConditionsSql(
+            query: $query,
+            connection: $connection
+        );
+        $conditions         = array_merge($conditions, $relationConditions);
 
         return $conditions;
     }//end buildWhereConditionsSql()
@@ -1198,6 +1258,110 @@ class MagicSearchHandler
             )"
         );
     }//end applyRelationsContainsFilter()
+
+    /**
+     * Extract dotted relation-field filters (`_relations.<field>` => <id>) from a query.
+     *
+     * Filters of the form `_relations.<field>` are NOT object-column filters
+     * (they are stripped by the leading-underscore guard everywhere else); they
+     * target the `_relations` JSONB index and must match only objects whose
+     * relation under `<field>` references the supplied id VALUE. Returns a map
+     * of `<field>` => <id> for every such pair with a non-empty value.
+     *
+     * @param array<string,mixed> $query The full search query.
+     *
+     * @return array<string,string> Map of relation field name to referenced id.
+     */
+    private function extractRelationFieldFilters(array $query): array
+    {
+        $filters = [];
+        foreach ($query as $key => $value) {
+            if (str_starts_with($key, '_relations.') === false) {
+                continue;
+            }
+
+            $field = substr($key, strlen('_relations.'));
+            if ($field === '' || is_array($value) === true || $value === null) {
+                continue;
+            }
+
+            $stringValue = (string) $value;
+            if ($stringValue === '') {
+                continue;
+            }
+
+            $filters[$field] = $stringValue;
+        }//end foreach
+
+        return $filters;
+    }//end extractRelationFieldFilters()
+
+    /**
+     * Apply a dotted relation-field filter to a QueryBuilder.
+     *
+     * Matches objects whose `_relations` JSONB references `$value` under the
+     * named `$field`. Honours both the object format (`{"<field>": "<id>", ...}`
+     * — including array-indexed keys such as `<field>.0`) and the legacy array
+     * format (`["<id>", ...]`), so the filter is never silently dropped.
+     *
+     * @param IQueryBuilder $qb    Query builder to modify.
+     * @param string        $field The relation field name (the part after `_relations.`).
+     * @param string        $value The referenced object id the relation must point at.
+     *
+     * @return void
+     */
+    private function applyRelationFieldFilter(IQueryBuilder $qb, string $field, string $value): void
+    {
+        $valueParam = $qb->createNamedParameter($value);
+        $exactKey   = $qb->createNamedParameter($field);
+        // Array-indexed relation keys are stored as `<field>.<n>` (e.g. `keywords.1`).
+        $prefixParam = $qb->createNamedParameter($field.'.%');
+
+        $qb->andWhere(
+            "(
+                (jsonb_typeof(t._relations) = 'object' AND EXISTS (
+                    SELECT 1 FROM jsonb_each_text(t._relations) AS kv
+                    WHERE kv.value = {$valueParam}
+                      AND (kv.key = {$exactKey} OR kv.key LIKE {$prefixParam})
+                ))
+                OR
+                (jsonb_typeof(t._relations) = 'array' AND t._relations @> to_jsonb({$valueParam}::text))
+            )"
+        );
+    }//end applyRelationFieldFilter()
+
+    /**
+     * Build raw-SQL conditions for dotted relation-field filters (UNION path).
+     *
+     * Mirrors {@see applyRelationFieldFilter()} for the inline-quoted UNION
+     * query path used by multi-schema searches and facets.
+     *
+     * @param array<string,mixed> $query      The full search query.
+     * @param object              $connection Database connection for value quoting.
+     *
+     * @return string[] Array of SQL conditions (without leading AND/WHERE).
+     */
+    private function buildRelationFilterConditionsSql(array $query, object $connection): array
+    {
+        $conditions = [];
+        foreach ($this->extractRelationFieldFilters(query: $query) as $field => $value) {
+            $valueQuoted  = $connection->quote($value);
+            $exactQuoted  = $connection->quote($field);
+            $prefixQuoted = $connection->quote($field.'.%');
+
+            $conditions[] = "(
+                (jsonb_typeof(_relations) = 'object' AND EXISTS (
+                    SELECT 1 FROM jsonb_each_text(_relations) AS kv
+                    WHERE kv.value = {$valueQuoted}
+                      AND (kv.key = {$exactQuoted} OR kv.key LIKE {$prefixQuoted})
+                ))
+                OR
+                (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb({$valueQuoted}::text))
+            )";
+        }
+
+        return $conditions;
+    }//end buildRelationFilterConditionsSql()
 
     /**
      * Apply full-text search across relevant columns

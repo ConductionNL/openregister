@@ -7001,6 +7001,20 @@ class MagicMapper extends AbstractObjectMapper
             return [];
         }
 
+        // Thread id and full-text search through to the register+schema search.
+        // Without this, `ids`/`search` passed to findAll() were silently dropped,
+        // so an in-request findAll(['ids' => [<just-written-uuid>]]) returned
+        // nothing even though the object exists. Inject them as the reserved
+        // `_ids`/`_search` query params the search handler understands.
+        $filters = ($filters ?? []);
+        if ($ids !== null && empty($ids) === false) {
+            $filters['_ids'] = $ids;
+        }
+
+        if ($search !== null && trim($search) !== '') {
+            $filters['_search'] = $search;
+        }
+
         $entities = $this->findAllInRegisterSchemaTable(
             register: $register,
             schema: $schema,

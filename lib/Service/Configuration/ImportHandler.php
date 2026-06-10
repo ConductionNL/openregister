@@ -1936,11 +1936,18 @@ class ImportHandler
                         $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
                         // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
                         // This avoids organisation filter issues in find().
+                        // Installer-time seeding runs in the repair/CLI context
+                        // with no user session ('Anonymous'); bypass RBAC and
+                        // multitenancy here as everywhere else in this trusted
+                        // import path, otherwise seed objects on RBAC-guarded
+                        // schemas (e.g. Retainer Drawdown) abort the whole import.
                         $object = $this->objectService->saveObject(
                             object: $objectData,
                             register: $registerObject,
                             schema: $schemaObject,
-                            uuid: $uuid
+                            uuid: $uuid,
+                            _rbac: false,
+                            _multitenancy: false
                         );
                         $result['objects'][] = $object;
                     }
@@ -1966,10 +1973,16 @@ class ImportHandler
                     // Create new object.
                     // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
                     // This avoids organisation filter issues in find().
+                    // Installer-time seeding runs without a user session
+                    // ('Anonymous'); bypass RBAC/multitenancy as in the rest of
+                    // this trusted import path so seed objects on RBAC-guarded
+                    // schemas don't abort the whole import.
                     $object = $this->objectService->saveObject(
                         object: $objectData,
                         register: $registerObject,
-                        schema: $schemaObject
+                        schema: $schemaObject,
+                        _rbac: false,
+                        _multitenancy: false
                     );
                     $result['objects'][] = $object;
                 }//end if
