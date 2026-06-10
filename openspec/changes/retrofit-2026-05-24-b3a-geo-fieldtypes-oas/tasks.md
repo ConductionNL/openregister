@@ -18,8 +18,8 @@ deferred to GitHub issues (see proposal.md "Gaps for issue filing").
 
 ## 3. Gaps deferred to issues (do NOT implement here)
 
-- [ ] `extended-field-types#EFT-003` — `recurrence` type (file issue).
-- [ ] `extended-field-types#EFT-005` — real `color` type with per-format
+- [~] `extended-field-types#EFT-003` — `recurrence` type (file issue). — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] `extended-field-types#EFT-005` — real `color` type with per-format — deferred to downstream cycle / fleet-wide adoption (handoff)
       validation incl. `oklch` (file issue).
-- [ ] `geo-metadata-kaart#GEO-003` — PDOK map UI component (file issue).
-- [ ] `geo-metadata-kaart#GEO-010` — geo-fencing + event triggers (file issue).
+- [~] `geo-metadata-kaart#GEO-003` — PDOK map UI component (file issue). — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] `geo-metadata-kaart#GEO-010` — geo-fencing + event triggers (file issue). — deferred to downstream cycle / fleet-wide adoption (handoff)

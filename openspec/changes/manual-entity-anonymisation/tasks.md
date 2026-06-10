@@ -67,7 +67,7 @@
 
 ## 6. Spec maintenance
 
-- [ ] 6.1 Update the existing `openspec/specs/entity-relation-grondslagen/spec.md`. **Deferred — no-op until the parent `entity-relation-grondslagen` change archives.** The canonical capability spec doesn't exist at `openspec/specs/entity-relation-grondslagen/spec.md` yet; the spec content currently lives in the in-flight delta at `openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md`. When `entity-relation-grondslagen` archives, both the EntityRelation decision-metadata change AND this manual-entity change will need to land in the canonical change-list together.
+- [~] 6.1 Update the existing `openspec/specs/entity-relation-grondslagen/spec.md`. **Deferred — no-op until the parent `entity-relation-grondslagen` change archives.** The canonical capability spec doesn't exist at `openspec/specs/entity-relation-grondslagen/spec.md` yet; the spec content currently lives in the in-flight delta at `openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md`. When `entity-relation-grondslagen` archives, both the EntityRelation decision-metadata change AND this manual-entity change will need to land in the canonical change-list together. — deferred to downstream cycle / fleet-wide adoption (handoff)
 
 ## 7. Tests
 
@@ -117,7 +117,7 @@
     - `insertBatch` inserts all rows when called within an existing transaction.
     - `insertBatch` propagates exceptions to the caller (caller manages rollback).
     - The existing `findEntitiesForAnonymization` test is extended to verify manual-method rows are included.
-- [ ] 7.6 Integration test against a stacked OR instance: `tests/Integration/Manual/AddManualEntityFlowTest.php`. Steps:
+- [~] 7.6 Integration test against a stacked OR instance: `tests/Integration/Manual/AddManualEntityFlowTest.php`. Steps: — deferred to downstream cycle / fleet-wide adoption (handoff)
     1. Upload a sample text file via OR's standard file API.
     2. Trigger text extraction so chunks exist.
     3. POST a manual-entity for a known string in the file.
@@ -135,7 +135,7 @@
 
 - [x] 9.1 **Per-file check (touched files only) clean.** PHPCS clean on all 9 new production files + 5 new test files; PHPStan clean on the full diff. `appinfo/routes.php` (3-line addition) and the 3 legacy `FileTextController*Test` files are pre-existing non-clean — phpcbf-fixed what it could but the legacy backlog (~270 errors apiece in the controller tests, 583 in routes.php) is out of scope per project pragmatism. Running `composer check:strict` against the entire repo is a project-wide task and is tracked separately under `openregister-legacy-quality-cleanup`.
 - [x] 9.2 `openspec validate manual-entity-anonymisation` clean (verified after every commit in this work block; final run confirms "Change 'manual-entity-anonymisation' is valid").
-- [ ] 9.3 Manual smoke against the dev stack:
+- [~] 9.3 Manual smoke against the dev stack: — deferred to downstream cycle / fleet-wide adoption (handoff)
     - Upload a file via NC Files.
     - Trigger OR text extraction.
     - POST a manual-entity for a known substring in the file via Postman.

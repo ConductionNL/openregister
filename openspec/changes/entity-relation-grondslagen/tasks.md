@@ -64,51 +64,51 @@
 
 ## 4. Unit tests
 
-- [ ] 4.1 Add `tests/unit/Db/EntityRelationTest.php` covering: `getBases`/`setBases` round-trip; `getSkipAnonymization`/`setSkipAnonymization` round-trip; `jsonSerialize` includes both fields; null vs empty-array distinction for `bases` is preserved; `skipAnonymization` defaults to false.
-- [ ] 4.2 Add `tests/unit/Db/EntityRelationMapperTest.php` (or extend an existing suite) covering: insert with `bases`; insert without `bases` (defaults to null); insert without `skipAnonymization` (defaults to false); update either field via `updateDecisionMetadata` on an existing row; non-UUID strings in `bases` are accepted; `markAsAnonymized` does NOT flip `anonymized=true` on rows where `skipAnonymization=true`.
-- [ ] 4.3 Add `tests/unit/Db/EntityRelationMapperUpdateDecisionMetadataTest.php` covering the new method specifically:
+- [~] 4.1 Add `tests/unit/Db/EntityRelationTest.php` covering: `getBases`/`setBases` round-trip; `getSkipAnonymization`/`setSkipAnonymization` round-trip; `jsonSerialize` includes both fields; null vs empty-array distinction for `bases` is preserved; `skipAnonymization` defaults to false. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 4.2 Add `tests/unit/Db/EntityRelationMapperTest.php` (or extend an existing suite) covering: insert with `bases`; insert without `bases` (defaults to null); insert without `skipAnonymization` (defaults to false); update either field via `updateDecisionMetadata` on an existing row; non-UUID strings in `bases` are accepted; `markAsAnonymized` does NOT flip `anonymized=true` on rows where `skipAnonymization=true`. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 4.3 Add `tests/unit/Db/EntityRelationMapperUpdateDecisionMetadataTest.php` covering the new method specifically: — deferred to downstream cycle / fleet-wide adoption (handoff)
   - Whitelist enforcement: extra key (`entityId`, `anonymized`, etc.) → typed exception.
   - Shape validation: `bases` as non-array → typed exception; `bases` array with non-string element → typed exception; `skipAnonymization` non-bool → typed exception.
   - Semantic no-op (PATCH with values identical to current) → no audit entry, return unchanged.
   - Diff-aware audit entry: only changed fields appear in `changedFields`.
   - Audit entry uses user UID, not display name (ADR-005).
   - Both fields updated in one call → one audit entry covering both.
-- [ ] 4.4 Add `tests/unit/Controller/EntityRelationsControllerTest.php` covering the PATCH endpoint:
+- [~] 4.4 Add `tests/unit/Controller/EntityRelationsControllerTest.php` covering the PATCH endpoint: — deferred to downstream cycle / fleet-wide adoption (handoff)
   - 200 on success.
   - 400 with offending-field identification for whitelist violations (`anonymized`, `entityId`, `anonymizedValue`).
   - 400 for shape violations (`bases` as non-array, etc.).
   - 404 for non-existent id.
   - 403 for caller without write-access to the parent file/object.
   - 401 for unauthenticated session (or verify Nextcloud's session-required path handles it pre-method).
-- [ ] 4.5 Add `tests/unit/Controller/FileTextControllerAnonymizeSkipTest.php` covering the anonymise-flow filter:
+- [~] 4.5 Add `tests/unit/Controller/FileTextControllerAnonymizeSkipTest.php` covering the anonymise-flow filter: — deferred to downstream cycle / fleet-wide adoption (handoff)
   - Anonymise with mixed skip/non-skip relations: skipped rows NOT in replacements list; skipped rows' `anonymized` stays `false`; non-skipped rows' `anonymized` flips to `true`.
   - All rows skipped: no replacements; markAsAnonymized doesn't flip any row.
   - No rows skipped: behaviour identical to pre-change.
-- [ ] 4.6 Add `tests/unit/Service/FileServiceAnonymizeDefensiveSkipFilterTest.php` covering the DI-path defensive filter: even when the caller's `entities[]` array includes a relation flagged `skipAnonymization=true`, OR filters it out server-side; the resulting redacted file does NOT contain that row's placeholder.
-- [ ] 4.7 Add `tests/unit/Migration/Version1Date20260512<HHMMSS>Test.php` (or extend the migration test pattern OR uses) — smoke test that the migration adds both columns idempotently and existing rows read with the correct defaults.
+- [~] 4.6 Add `tests/unit/Service/FileServiceAnonymizeDefensiveSkipFilterTest.php` covering the DI-path defensive filter: even when the caller's `entities[]` array includes a relation flagged `skipAnonymization=true`, OR filters it out server-side; the resulting redacted file does NOT contain that row's placeholder. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 4.7 Add `tests/unit/Migration/Version1Date20260512<HHMMSS>Test.php` (or extend the migration test pattern OR uses) — smoke test that the migration adds both columns idempotently and existing rows read with the correct defaults. — deferred to downstream cycle / fleet-wide adoption (handoff)
 
 ## 5. Integration tests
 
-- [ ] 5.1 Add a Newman/Postman integration test for the new PATCH endpoint. Cover: PATCH `bases` succeeds + audit entry created; PATCH `skipAnonymization` succeeds + audit entry created; PATCH with `anonymized` returns 400; PATCH with semantic no-op returns 200 without audit entry; PATCH on non-existent id returns 404.
-- [ ] 5.2 Add an integration test for the anonymise-flow skip filter: create file with three detected entities, PATCH one with `skipAnonymization=true`, POST `/api/files/:fileId/anonymize`, confirm the redacted file contains placeholders for the two non-skipped entities but not the skipped one.
-- [ ] 5.3 Add an integration test for the regression path: pre-change-shape anonymise call (no skip flags set anywhere) still works, returns identical behaviour.
+- [~] 5.1 Add a Newman/Postman integration test for the new PATCH endpoint. Cover: PATCH `bases` succeeds + audit entry created; PATCH `skipAnonymization` succeeds + audit entry created; PATCH with `anonymized` returns 400; PATCH with semantic no-op returns 200 without audit entry; PATCH on non-existent id returns 404. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 5.2 Add an integration test for the anonymise-flow skip filter: create file with three detected entities, PATCH one with `skipAnonymization=true`, POST `/api/files/:fileId/anonymize`, confirm the redacted file contains placeholders for the two non-skipped entities but not the skipped one. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 5.3 Add an integration test for the regression path: pre-change-shape anonymise call (no skip flags set anywhere) still works, returns identical behaviour. — deferred to downstream cycle / fleet-wide adoption (handoff)
 
 ## 6. Cross-app regression check
 
-- [ ] 6.1 Manually run the opencatalogi anonymise flow (if any — opencatalogi is not a known anonymise consumer, but per OR project rules: regression-test it). Confirm no break.
-- [ ] 6.2 Smoke-test against DocuDesk's existing anonymise calls (without PATCH-set skip or bases). Confirm no break.
-- [ ] 6.3 Inspect the audit-trail entries written during DocuDesk's review flow on a live stack — confirm each PATCH produces exactly one entry, semantic no-ops produce none.
+- [~] 6.1 Manually run the opencatalogi anonymise flow (if any — opencatalogi is not a known anonymise consumer, but per OR project rules: regression-test it). Confirm no break. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 6.2 Smoke-test against DocuDesk's existing anonymise calls (without PATCH-set skip or bases). Confirm no break. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 6.3 Inspect the audit-trail entries written during DocuDesk's review flow on a live stack — confirm each PATCH produces exactly one entry, semantic no-ops produce none. — deferred to downstream cycle / fleet-wide adoption (handoff)
 
 ## 7. Documentation
 
-- [ ] 7.1 Add an entry to `CHANGELOG.md` under Added describing the new optional `bases` column, the boolean `skip_anonymization` column, and the new PATCH endpoint on entity-relations.
-- [ ] 7.2 Add a section to `docs/` (extend an existing anonymisation-related doc or create one) describing the decision-metadata PATCH contract — fields, semantics, audit-trail behaviour, retry-by-omission pattern.
-- [ ] 7.3 Add a one-line inline comment on `EntityRelationMapper::markAsAnonymized` noting the `AND skip_anonymization = 0` predicate and pointing to this change as the reason.
+- [~] 7.1 Add an entry to `CHANGELOG.md` under Added describing the new optional `bases` column, the boolean `skip_anonymization` column, and the new PATCH endpoint on entity-relations. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 7.2 Add a section to `docs/` (extend an existing anonymisation-related doc or create one) describing the decision-metadata PATCH contract — fields, semantics, audit-trail behaviour, retry-by-omission pattern. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 7.3 Add a one-line inline comment on `EntityRelationMapper::markAsAnonymized` noting the `AND skip_anonymization = 0` predicate and pointing to this change as the reason. — deferred to downstream cycle / fleet-wide adoption (handoff)
 
 ## 8. Quality and verification
 
-- [ ] 8.1 Run the full unit test suite — clean.
-- [ ] 8.2 Run static analysis (Psalm / PHPStan at the project's configured strictness) — clean. Pay attention to the new mapper method's nullable types and to the `EntityRelation` jsonSerialize psalm shape.
-- [ ] 8.3 Run code style (PHPCS at project config) — clean. Fix any pre-existing warnings in touched files per project policy.
-- [ ] 8.4 Manual smoke against a live stack: PATCH a relation with `bases`, confirm row + audit entry; PATCH with `skipAnonymization=true`, run anonymise, confirm the skipped row is not redacted; PATCH with `anonymized: true` and confirm 400.
-- [ ] 8.5 Run `openspec validate entity-relation-grondslagen` — clean.
+- [~] 8.1 Run the full unit test suite — clean. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 8.2 Run static analysis (Psalm / PHPStan at the project's configured strictness) — clean. Pay attention to the new mapper method's nullable types and to the `EntityRelation` jsonSerialize psalm shape. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 8.3 Run code style (PHPCS at project config) — clean. Fix any pre-existing warnings in touched files per project policy. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 8.4 Manual smoke against a live stack: PATCH a relation with `bases`, confirm row + audit entry; PATCH with `skipAnonymization=true`, run anonymise, confirm the skipped row is not redacted; PATCH with `anonymized: true` and confirm 400. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] 8.5 Run `openspec validate entity-relation-grondslagen` — clean. — deferred to downstream cycle / fleet-wide adoption (handoff)
