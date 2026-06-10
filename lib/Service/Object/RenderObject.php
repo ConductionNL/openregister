@@ -42,6 +42,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -51,6 +53,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
@@ -178,6 +181,8 @@ class RenderObject
         private readonly CalculationEvaluator $calculationEvaluator,
         private readonly UrnService $urnService,
         private readonly TranslationStatusService $translationStatusService,
+        private readonly TranslationMapper $translationMapper,
+        private readonly LanguageService $languageService,
         private readonly ?IRequest $request=null,
     ) {
     }//end __construct()
@@ -1457,12 +1462,37 @@ class RenderObject
         // Resolve translatable properties to the requested language.
         $renderSchema   = $this->getSchema(id: $entity->getSchema());
         $renderRegister = $this->getRegister(id: $entity->getRegister());
+        $preResolveData = $objectData;
         if ($renderSchema !== null) {
             $objectData = $this->translationHandler->resolveTranslationsForRender(
                 objectData: $objectData,
                 schema: $renderSchema,
                 register: $renderRegister
             );
+        }
+
+        // i18n-source-of-truth: when `?_translationMeta=true`, attach a
+        // `_meta.languageMeta` envelope describing each translatable
+        // property's served language, source language, isSource flag, and
+        // workflow status. Opt-in to keep payload size flat by default.
+        if ($renderSchema !== null && $this->shouldAttachLanguageMeta() === true) {
+            try {
+                $objectData = $this->attachLanguageMeta(
+                    objectData: $objectData,
+                    preResolveData: $preResolveData,
+                    entity: $entity,
+                    schema: $renderSchema,
+                    register: $renderRegister
+                );
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf(
+                        '[RenderObject] languageMeta attach failed for %s: %s',
+                        (string) $entity->getUuid(),
+                        $e->getMessage()
+                    )
+                );
+            }
         }
 
         // Evaluate virtual calculations (`materialise: false`) when the
@@ -1595,6 +1625,159 @@ class RenderObject
             );
         }//end try
     }//end applyArchivalRetentionBlock()
+
+    /**
+     * Check whether the current request opts in to the `_translationMeta`
+     * envelope.
+     *
+     * @return bool True when `?_translationMeta=true`/`1` was passed.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    private function shouldAttachLanguageMeta(): bool
+    {
+        if ($this->request === null) {
+            return false;
+        }
+
+        $raw = $this->request->getParam('_translationMeta', null);
+        if ($raw === null) {
+            return false;
+        }
+
+        if (is_string($raw) === false) {
+            return ($raw === true || $raw === 1);
+        }
+
+        $normalised = strtolower(trim($raw));
+        return in_array($normalised, ['1', 'true', 'yes', 'on'], true);
+    }//end shouldAttachLanguageMeta()
+
+    /**
+     * Attach the `_meta.languageMeta` envelope describing per-property
+     * language metadata for translatable properties.
+     *
+     * The envelope is OFF by default; this method is only called when
+     * `?_translationMeta=true` is on the request.
+     *
+     * @param array<string, mixed> $objectData     Rendered data (post resolveTranslationsForRender).
+     * @param array<string, mixed> $preResolveData Raw data (pre resolveTranslationsForRender).
+     * @param ObjectEntity         $entity         The entity being rendered.
+     * @param Schema               $schema         The schema for the entity.
+     * @param Register|null        $register       The owning register (for default fallback).
+     *
+     * @return array<string, mixed> Object data with `_meta.languageMeta` attached.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    private function attachLanguageMeta(
+        array $objectData,
+        array $preResolveData,
+        ObjectEntity $entity,
+        Schema $schema,
+        ?Register $register
+    ): array {
+        $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+        if (count($translatableProps) === 0) {
+            return $objectData;
+        }
+
+        $uuid = (string) ($entity->getUuid() ?? '');
+        $registerDefault = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
+        $served          = $this->languageService->getPreferredLanguage();
+
+        $languageMeta = [];
+        foreach ($translatableProps as $property) {
+            // Determine source language from object body override → schema
+            // property modifier → register default.
+            $sourceLanguage = $this->resolveSourceLanguageForProperty(
+                schema: $schema,
+                preResolveData: $preResolveData,
+                property: $property,
+                registerDefault: $registerDefault
+            );
+
+            // Look up status from the sidecar for the served language.
+            $status = 'source';
+            if ($uuid !== '' && $served !== $sourceLanguage) {
+                $row = null;
+                try {
+                    $row = $this->translationMapper->findOne($uuid, $property, $served);
+                } catch (\Throwable $e) {
+                    $row = null;
+                }
+
+                if ($row !== null) {
+                    $status = (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
+                } else {
+                    $status = 'missing';
+                }
+            }
+
+            $languageMeta[$property] = [
+                'served'         => $served,
+                'sourceLanguage' => $sourceLanguage,
+                'isSource'       => ($served === $sourceLanguage),
+                'status'         => $status,
+            ];
+        }
+
+        if (count($languageMeta) === 0) {
+            return $objectData;
+        }
+
+        $existingMeta = $objectData['_meta'] ?? [];
+        if (is_array($existingMeta) === false) {
+            $existingMeta = [];
+        }
+
+        $existingMeta['languageMeta'] = $languageMeta;
+        $objectData['_meta']          = $existingMeta;
+        return $objectData;
+    }//end attachLanguageMeta()
+
+    /**
+     * Resolve the source language for a single property from object override
+     * → schema modifier → register default.
+     *
+     * @param Schema               $schema          The schema for the entity.
+     * @param array<string, mixed> $preResolveData  Raw object data with `_translationMeta` block intact.
+     * @param string               $property        The translatable property name.
+     * @param string               $registerDefault Register-level default.
+     *
+     * @return string Resolved BCP-47 source language.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    private function resolveSourceLanguageForProperty(
+        Schema $schema,
+        array $preResolveData,
+        string $property,
+        string $registerDefault
+    ): string {
+        $meta = $preResolveData['_translationMeta'] ?? null;
+        if (is_array($meta) === true
+            && isset($meta[$property])
+            && is_array($meta[$property]) === true
+            && isset($meta[$property]['sourceLanguage'])
+            && is_string($meta[$property]['sourceLanguage']) === true
+            && $meta[$property]['sourceLanguage'] !== ''
+        ) {
+            return (string) $meta[$property]['sourceLanguage'];
+        }
+
+        $properties = $schema->getProperties() ?? [];
+        $definition = $properties[$property] ?? null;
+        if (is_array($definition) === true
+            && isset($definition['sourceLanguage'])
+            && is_string($definition['sourceLanguage']) === true
+            && $definition['sourceLanguage'] !== ''
+        ) {
+            return (string) $definition['sourceLanguage'];
+        }
+
+        return ($registerDefault !== '') ? $registerDefault : 'nl';
+    }//end resolveSourceLanguageForProperty()
 
     /**
      * Apply virtual (materialise:false) calculations declared on the

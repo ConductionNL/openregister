@@ -50,6 +50,8 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -302,6 +304,8 @@ class SaveObject
         private readonly PropertyRbacHandler $propertyRbacHandler,
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
+        private readonly TranslationProjectionService $translationProjectionService,
+        private readonly TranslationStatusService $translationStatusService,
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
         private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
@@ -4968,6 +4972,24 @@ class SaveObject
             oldEntity: $oldObject
         );
 
+        // i18n-source-of-truth: when a translatable property's source-language
+        // value changes, flip every derived translation row to `outdated` so
+        // editorial tooling surfaces the staleness immediately. Conservative —
+        // only triggers when the source value itself changed; per-language
+        // edits on non-source languages do NOT flip status.
+        try {
+            $this->flagOutdatedDerivedTranslations(
+                schema: $schema,
+                register: $register,
+                oldObject: $oldObject,
+                newObject: $updatedEntity
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[SaveObject] failed to flag outdated translations: '.$e->getMessage()
+            );
+        }
+
         $this->logger->info(
             message: '[SaveObject] Object updated successfully',
             context: [
@@ -5037,6 +5059,113 @@ class SaveObject
 
         return $updatedEntity;
     }//end updateObject()
+
+    /**
+     * Compare old vs new object values for translatable properties and flip
+     * derived-language translation rows to `outdated` when the resolved
+     * source-language value changes.
+     *
+     * Conservative trigger: only fires when the source-language value
+     * itself changed. Edits to other-language values do not flip status.
+     *
+     * @param Schema       $schema    The schema for the object.
+     * @param Register     $register  The owning register (for default language fallback).
+     * @param ObjectEntity $oldObject The pre-persist state.
+     * @param ObjectEntity $newObject The post-persist state.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     */
+    private function flagOutdatedDerivedTranslations(
+        Schema $schema,
+        Register $register,
+        ObjectEntity $oldObject,
+        ObjectEntity $newObject
+    ): void {
+        $uuid = $newObject->getUuid();
+        if ($uuid === null || $uuid === '') {
+            return;
+        }
+
+        $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+        if (count($translatableProps) === 0) {
+            return;
+        }
+
+        $oldData = (array) ($oldObject->getObject() ?? []);
+        $newData = (array) ($newObject->getObject() ?? []);
+
+        $registerDefault = $register->getDefaultLanguage();
+        foreach ($translatableProps as $property) {
+            $sourceLanguage = $this->translationProjectionService->resolveSourceLanguage(
+                schema: $schema,
+                object: $newObject,
+                property: $property,
+                registerDefault: $registerDefault
+            );
+
+            $oldSource = $this->extractLanguageValue(
+                value: $oldData[$property] ?? null,
+                language: $sourceLanguage
+            );
+            $newSource = $this->extractLanguageValue(
+                value: $newData[$property] ?? null,
+                language: $sourceLanguage
+            );
+
+            if ($oldSource === null || $newSource === null) {
+                continue;
+            }
+
+            if ($oldSource === $newSource) {
+                continue;
+            }
+
+            $this->translationStatusService->markDerivedTranslationsOutdated(
+                objectUuid: (string) $uuid,
+                property: (string) $property,
+                sourceLanguage: $sourceLanguage
+            );
+        }
+    }//end flagOutdatedDerivedTranslations()
+
+    /**
+     * Extract the value for a given language out of a translatable property
+     * payload. Accepts both language-keyed objects (`{nl: "x"}`) and scalar
+     * values (interpreted as the source language).
+     *
+     * @param mixed  $value    The raw property value from the object body.
+     * @param string $language The language tag to extract for.
+     *
+     * @return string|null The string value, or null when not present.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     */
+    private function extractLanguageValue(mixed $value, string $language): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value) === true) {
+            // Scalar bodies are treated as the source-language value.
+            return $value;
+        }
+
+        if (is_array($value) === true && isset($value[$language]) === true) {
+            $entry = $value[$language];
+            if (is_string($entry) === true) {
+                return $entry;
+            }
+
+            if (is_scalar($entry) === true) {
+                return (string) $entry;
+            }
+        }
+
+        return null;
+    }//end extractLanguageValue()
 
     /**
      * Check if an object is effectively empty (contains only empty values)
