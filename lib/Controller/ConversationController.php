@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -476,6 +478,8 @@ class ConversationController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function create(): JSONResponse
     {
         try {

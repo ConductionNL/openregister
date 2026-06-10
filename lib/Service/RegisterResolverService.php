@@ -384,6 +384,10 @@ final class RegisterResolverService
      * Clear request-scoped caches. Test hook + defensive tenant-switch path.
      *
      * @return void
+     *
+     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     *   (Requirement: service MUST cache resolved entities at the request scope — clear hook used
+     *   by maybeFlushOnTenantSwitch + by test suites needing a fresh cache between cases.)
      */
     public function clearCache(): void
     {

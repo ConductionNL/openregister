@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -1567,6 +1569,8 @@ class RegistersController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function stats(int $id): JSONResponse
     {
         try {

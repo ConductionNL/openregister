@@ -62,6 +62,9 @@ class ResolverListCommand extends Command
      * Define command name + the required `app-id` argument.
      *
      * @return void
+     *
+     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     *   (Phase 3 — Convention check + diagnostics: console command surface)
      */
     protected function configure(): void
     {
@@ -85,6 +88,9 @@ class ResolverListCommand extends Command
      * @param OutputInterface $output Console output stream.
      *
      * @return int Symfony command exit code.
+     *
+     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     *   (Requirement: enumerateAppConfigs — driven via this CLI for admin diagnostics)
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
