@@ -71,7 +71,7 @@ Each item expands what the PoC handles. The PoC's narrow scope grows feature-by-
 
 - [x] 10.1 `composer.json`: add `repositories` entry for `https://codeberg.org/Conduction/sapp`; constrain `ddn/sapp` to `dev-work/text-replacement as 1.x-dev`. (Current pin is the SHA-pinned cross-line-matching commit — see CHANGELOG entry and design D2 amendment; the SHA pin is the source of truth until the work folds back to `work/text-replacement` and upstream tags a release.)
 - [x] 10.2 `composer update ddn/sapp` lands the fork branch in `vendor/`. Verify autoload-classmap picks up the new SAPP classes.
-- [ ] 10.3 As upstream PRs merge (2.x, 3.x, 4.x), point composer at the resulting upstream commit SHAs (still via the fork until full upstream release). When upstream tags a release including the work, remove the `repositories` entry + switch to the upstream version range. Document the transition in CHANGELOG. **Open: awaits upstream `dealfonso/sapp` merging the work and tagging a release. Tracked in #69.**
+- [~] 10.3 As upstream PRs merge (2.x, 3.x, 4.x), point composer at the resulting upstream commit SHAs (still via the fork until full upstream release). When upstream tags a release including the work, remove the `repositories` entry + switch to the upstream version range. Document the transition in CHANGELOG. **Open: awaits upstream `dealfonso/sapp` merging the work and tagging a release. Tracked in #69.**
 
 ## 11. Documentation
 

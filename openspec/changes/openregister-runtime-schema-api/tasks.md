@@ -2,23 +2,23 @@
 
 - [x] 1.1 Add public `invalidate(int $schemaId): void` to `lib/Service/Schemas/SchemaCacheHandler.php`. Implementation note: the cache handler lives under `lib/Service/Schemas/` (not `lib/Handler/`). Wraps the existing `invalidateForSchemaChange()` and also clears the request-scoped find cache on `SchemaMapper` so reads in the same worker re-fetch from DB.
 - [x] 1.2 Add public `invalidate(int $registerId): void` to a new `lib/Service/Registers/RegisterCacheHandler.php`. Registers do not have a persistent cache table today; the handler clears the request-scoped find cache on `RegisterMapper` via a new `clearFindCache(int)` method.
-- [ ] 1.3 Unit-test both handlers: warm cache, mutate, invalidate, assert next read hits the database. **(Deferred — no unit-test infrastructure for these handlers in the existing suite; integration coverage in 4.4 supersedes.)**
+- [~] 1.3 Unit-test both handlers: warm cache, mutate, invalidate, assert next read hits the database. **(Deferred — no unit-test infrastructure for these handlers in the existing suite; integration coverage in 4.4 supersedes.)**
 
 ## 2. Service-layer wiring
 
 - [x] 2.1 Wire `SchemaCacheHandler::invalidate` into `lib/Controller/SchemasController.php` `create()`, `update()`, and `destroy()` after a successful mapper round-trip and before returning. **Implementation note: `SchemaService.php` is an exploration-only service and does not contain create/update/delete — the canonical write path goes through `SchemasController -> SchemaMapper`. Wiring lives on the controller per OR's existing pattern (see `update()` pre-spec code).**
 - [x] 2.2 Wire `RegisterCacheHandler::invalidate` into `lib/Controller/RegistersController.php` `create()`, `update()`, and `destroy()` similarly. Constructor injected via Nextcloud DI.
-- [ ] 2.3 Compute the metadata-diff for `x-openregister-lifecycle`, `-aggregations`, `-calculations`, `-notifications` and call `reloadForSchema` on each engine whose block changed. **(Deferred — see Section 3 below: the four declarative engines do not exist in `lib/` yet. This wiring is gated on engine implementation.)**
+- [~] 2.3 Compute the metadata-diff for `x-openregister-lifecycle`, `-aggregations`, `-calculations`, `-notifications` and call `reloadForSchema` on each engine whose block changed. **(Deferred — see Section 3 below: the four declarative engines do not exist in `lib/` yet. This wiring is gated on engine implementation.)**
 
 ## 3. Declarative-engine reload hooks
 
 **Deferred — entire section.** The four engines referenced (LifecycleEngine, AggregationEngine, CalculationEngine, NotificationEngine) do not exist anywhere in `lib/` today; no `x-openregister-lifecycle` / `-aggregations` / `-calculations` / `-notifications` block is read or persisted by any current code path. A grep across `lib/` confirms zero references. This section is blocked on a separate spec that introduces the engines themselves; once the engines land, the `reloadForSchema` hook becomes a 4-line addition wired into `SchemaCacheHandler::invalidate()`.
 
-- [ ] 3.1 Add public `reloadForSchema(int $schemaId): void` to `lib/Engine/Lifecycle/LifecycleEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.2 Same on `lib/Engine/Aggregations/AggregationEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.3 Same on `lib/Engine/Calculations/CalculationEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.4 Same on `lib/Engine/Notifications/NotificationEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.5 Unit-test each engine reload. **(Deferred — engines do not exist.)**
+- [~] 3.1 Add public `reloadForSchema(int $schemaId): void` to `lib/Engine/Lifecycle/LifecycleEngine.php`. **(Deferred — engine does not exist.)**
+- [~] 3.2 Same on `lib/Engine/Aggregations/AggregationEngine.php`. **(Deferred — engine does not exist.)**
+- [~] 3.3 Same on `lib/Engine/Calculations/CalculationEngine.php`. **(Deferred — engine does not exist.)**
+- [~] 3.4 Same on `lib/Engine/Notifications/NotificationEngine.php`. **(Deferred — engine does not exist.)**
+- [~] 3.5 Unit-test each engine reload. **(Deferred — engines do not exist.)**
 
 ## 4. DELETE safety and audit on /api/schemas and /api/registers
 
@@ -32,7 +32,7 @@
 - [x] 5.1 In `lib/Service/Configuration/ImportHandler.php::importFromApp`, after Schema rows are persisted, inspect the OAS root: if `x-openregister.type === 'application'`, derive register attributes from `x-openregister.app` (slug), `info.title` (title), `info.description` (description). Implemented via new private helper `autoCreateRegisterIfApplication()`.
 - [x] 5.2 Look up an existing Register via `RegisterMapper::findAll(filters=['slug' => $slug], _multitenancy=true)` (which scopes to the active organisation automatically). If found, update title/description and union the new schema IDs into `schemas[]`; if not, insert a new Register with the schemas attached. **Implementation note: `findOneBy` does not exist on the existing mapper; `findAll` with limit=1 and a slug filter is the existing pattern. Multi-tenancy filtering is delegated to `applyOrganisationFilter` per the spec contract — same path every other find takes.**
 - [x] 5.3 Skip the auto-Register step entirely when `x-openregister.type` is absent or set to a value other than `application`.
-- [ ] 5.4 Integration test: import an `application`-type OAS, assert the Register row exists with correct slug/title/schemas; re-import the same OAS, assert no duplicate row and `schemas[]` unchanged in size; import a `library`-type OAS, assert no Register row appears. **(Unit-level coverage landed in `tests/Unit/Service/Configuration/ImportHandlerApplicationTypeTest.php`; end-to-end Newman/PHPUnit integration of the importFromApp upload path is a follow-up — the smoke-test re-run in task 7.1 will validate runtime behaviour for now.)**
+- [~] 5.4 Integration test: import an `application`-type OAS, assert the Register row exists with correct slug/title/schemas; re-import the same OAS, assert no duplicate row and `schemas[]` unchanged in size; import a `library`-type OAS, assert no Register row appears. **(Unit-level coverage landed in `tests/Unit/Service/Configuration/ImportHandlerApplicationTypeTest.php`; end-to-end Newman/PHPUnit integration of the importFromApp upload path is a follow-up — the smoke-test re-run in task 7.1 will validate runtime behaviour for now.)**
 
 ## 6. ObjectService.searchObjectsBySlug helper
 

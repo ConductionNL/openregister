@@ -81,9 +81,9 @@
 
 > DEFERRED — no anonymisation-log table/entity exists in the current OpenRegister codebase. `DocumentProcessingHandler::anonymizeDocument()` returns a `File` directly; there is no `AnonymizationLog` Db entity or mapper to attach a `sanitization` column to (verified: `lib/Db/` has no anonymisation log, anonymisation is invoked from `FileTextController` → `FileService::anonymizeDocument`). Until an anonymisation-log table lands, the audit report is retained on the handler via `getLastSanitizationReport()` (see 6.x) and logged PII-free. A follow-up migration is filed when the log table is introduced.
 
-- [ ] 5.1 (deferred) Add migration adding a `sanitization` JSON column to the anonymisation log table — no such table exists yet.
-- [ ] 5.2 (deferred) Add `sanitization: ?array` to the anonymisation-log entity — no such entity exists yet.
-- [ ] 5.3 (deferred) Mapper read/write of the JSON column — depends on 5.1/5.2.
+- [~] 5.1 (deferred) Add migration adding a `sanitization` JSON column to the anonymisation log table — no such table exists yet.
+- [~] 5.2 (deferred) Add `sanitization: ?array` to the anonymisation-log entity — no such entity exists yet.
+- [~] 5.3 (deferred) Mapper read/write of the JSON column — depends on 5.1/5.2.
 
 ## 6. DocumentProcessingHandler integration
 
@@ -124,24 +124,24 @@
 
 > DEFERRED — requires a live Nextcloud instance (IRootFolder-backed Files storage) which is not available in the worktree-isolated build environment. The orchestrator test (`OfficeDocumentSanitizerTest`) exercises the IRootFolder dispatch path with mocks and skips cleanly when NC server classes are absent (runs in the Docker test environment). End-to-end NC-Files upload + anonymise assertions are filed for the Docker/CI run. The `sanitization` log-column assertions in 10.1–10.3 additionally depend on the deferred §5 log table.
 
-- [ ] 10.1 (deferred — live NC) End-to-end DOCX anonymise via NC Files; assert output written + original byte-identical.
-- [ ] 10.2 (deferred — live NC) Same flow for ODT.
-- [ ] 10.3 (deferred — live NC) Non-Office (PDF) path produces no sanitisation report.
+- [~] 10.1 (deferred — live NC) End-to-end DOCX anonymise via NC Files; assert output written + original byte-identical.
+- [~] 10.2 (deferred — live NC) Same flow for ODT.
+- [~] 10.3 (deferred — live NC) Non-Office (PDF) path produces no sanitisation report.
 
 ## 11. Manual validation gate (BLOCKING)
 
 > DEFERRED — requires Microsoft Word + LibreOffice desktop readers, unavailable in the headless build environment. The sanitiser is validated by the unit suite (every part — `[Content_Types].xml`, `_rels`, body XML — is reconciled and re-parsed as well-formed XML; orphan-reference removal is asserted). A Word/LibreOffice reopen pass should be run by a human reviewer with the synthesised fixtures before this change is treated as production-validated.
 
-- [ ] 11.1 (deferred — needs Word/LibreOffice) Run the DOCX fixture through `DocxSanitizer`; save output.
-- [ ] 11.2 (deferred — needs Word) Reopen in Microsoft Word; expect no "unreadable content" recovery.
-- [ ] 11.3 (deferred — needs LibreOffice) Reopen in LibreOffice; expect no recovery dialog.
-- [ ] 11.4 (deferred — needs Word/LibreOffice) Same drill for the ODT fixture.
-- [ ] 11.5 (deferred) Record the validation pass in the PR description.
+- [~] 11.1 (deferred — needs Word/LibreOffice) Run the DOCX fixture through `DocxSanitizer`; save output.
+- [~] 11.2 (deferred — needs Word) Reopen in Microsoft Word; expect no "unreadable content" recovery.
+- [~] 11.3 (deferred — needs LibreOffice) Reopen in LibreOffice; expect no recovery dialog.
+- [~] 11.4 (deferred — needs Word/LibreOffice) Same drill for the ODT fixture.
+- [~] 11.5 (deferred) Record the validation pass in the PR description.
 
 ## 12. DocuDesk surface (cross-app coordination)
 
 - [x] 12.1 No DocuDesk-side code change is part of THIS change (confirmed). The sanitisation report is currently surfaced via `DocumentProcessingHandler::getLastSanitizationReport()`; once the §5 anonymisation-log table lands it will be exposed via the log-fetch API for DocuDesk's grondslagen-summary renderer.
-- [ ] 12.2 (deferred — cross-app) Open a DocuDesk tracking issue for the operator-facing sanitisation-summary block. Filed during Hydra coordination, not from this worktree.
+- [~] 12.2 (deferred — cross-app) Open a DocuDesk tracking issue for the operator-facing sanitisation-summary block. Filed during Hydra coordination, not from this worktree.
 
 ## 13. Documentation
 
@@ -153,7 +153,7 @@
 
 - [x] 14.1 `composer check:strict` clean (lint, phpcs, phpmd, psalm, phpstan, tests).
 - [x] 14.2 `openspec validate office-document-sanitization` clean.
-- [ ] 14.3 (deferred — live dev stack) Manual smoke: upload a `.docx` with comments + tracked changes via NC Files; trigger anonymisation; inspect the result in Word/LibreOffice. (No DB log row to inspect — see §5.) Note: this is a pure backend change with no new Vue UI, so no new frontend l10n strings are introduced; the existing nl/en dictionaries are unchanged.
+- [~] 14.3 (deferred — live dev stack) Manual smoke: upload a `.docx` with comments + tracked changes via NC Files; trigger anonymisation; inspect the result in Word/LibreOffice. (No DB log row to inspect — see §5.) Note: this is a pure backend change with no new Vue UI, so no new frontend l10n strings are introduced; the existing nl/en dictionaries are unchanged.
 - [x] 14.4 PHPCS / Conduction custom rules — named parameters where required (per Conduction's custom PHPCS sniff). All new code passes without suppressions.
 
 ## 15. Cross-app spec maintenance
