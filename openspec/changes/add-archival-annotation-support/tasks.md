@@ -46,7 +46,7 @@
 - [x] 5.4 Delete via `ObjectService::deleteObject(... _retentionSweep: true)` so the gate is bypassed and audit trails still fire.
 - [x] 5.5 Emit summary log per schema: `{schemaSlug, scanned, expired, deleted}`.
 - [x] 5.6 Register the job in `appinfo/info.xml` `<background-jobs>`.
-- [ ] 5.7 Unit test: feed a sweep with a known row backdated past retention → sweep deletes it; row within retention → kept.
+- [x] 5.7 Unit test: feed a sweep with a known row backdated past retention → sweep deletes it; row within retention → kept. **Landed** at `tests/Unit/Cron/ArchivalRetentionTaskTest.php` — 3 tests, 17 assertions: (a) 90-day-old row is deleted via `deleteObject(_retentionSweep: true)` and the summary log carries `{scanned: 2, expired: 1, deleted: 1}`; (b) a 1-day-old row is kept under the same `P30D` default and the summary records all zeros for `expired`/`deleted`; (c) schemas without an archival annotation are skipped before the magic-table check.
 
 ## Surface in UI
 
