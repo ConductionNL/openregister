@@ -2,6 +2,7 @@
 
 - [x] 0.1 Reserve the change id `pdf-anonymisation-odt-fallback` so the v1 `pdf-anonymisation` change can reference it as the documented follow-up.
 - [x] 0.2 Capture the contract Path B will need to honour (see `proposal.md`).
+- [x] 0.3 Re-confirm Path A's `PdfAnonymisationException::REASON_VALIDATION_FAILED` is the entry point Path B will hook into. Verified in `lib/Exception/PdfAnonymisationException.php` (line 88) and `lib/Service/File/Pdf/PdfTextReplacer.php::validateOutput()` (lines 243–392). The validation-gate seam the proposal targets is present.
 
 ## 1. Telemetry first
 
