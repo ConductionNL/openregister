@@ -1871,48 +1871,22 @@ class Schema extends Entity implements JsonSerializable
     ];
 
     /**
-     * Valid linked type values for Nextcloud entity integration.
-     *
-     * @deprecated since pluggable-integration-registry — kept as
-     * a backwards-compat fallback so existing schemas with values like
-     * 'mail' / 'calendar' / 'talk' / 'deck' continue to validate
-     * while the matching IntegrationProvider leaves land. Once every
-     * leaf in the umbrella's Wave 1 ships, the registry is the only
-     * authority and this constant is removed by
-     * `cleanup-linked-entity-type-map`. New consumers MUST add a
-     * provider via `IntegrationRegistry::addProvider()` rather than
-     * append to this list.
-     *
-     * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry::listIds()
-     *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-8
-     */
-    private const VALID_LINKED_TYPES = [
-        'files',
-        'mail',
-        'contacts',
-        'notes',
-        'todos',
-        'calendar',
-        'talk',
-        'deck',
-    ];
-
-    /**
      * Validate the linkedTypes configuration value.
      *
      * Registry-driven validation per AD-5 of pluggable-integration-registry:
-     * an id is valid when it appears in EITHER the registry's listIds()
-     * OR the legacy VALID_LINKED_TYPES fallback. The legacy fallback
-     * keeps existing schemas (e.g. linkedTypes=['mail','calendar'])
-     * working while the matching providers ship. New ids (e.g. 'xwiki')
-     * become valid the moment their provider is registered.
+     * an id is valid when it appears in the registry's `listIds()`
+     * output OR in the legacy-id allow-list returned by
+     * `legacyLinkedTypeIds()` (see that method for the rationale — it
+     * preserves backwards-compat for `linkedTypes` values that were
+     * created before the matching provider was renamed/added).
      *
-     * When the integration registry isn't available — i.e. the entity
-     * is constructed outside a request context (unit tests building
-     * Schema instances directly) — validation falls back to
-     * VALID_LINKED_TYPES alone. This preserves the existing test
-     * surface while letting production code benefit from the registry.
+     * When the integration registry isn't reachable (entity built
+     * outside a request context, e.g. unit tests constructing Schema
+     * directly), validation falls back to the legacy allow-list alone.
+     *
+     * Per `cleanup-linked-entity-type-map`, the public linked-types
+     * constant was removed; the surviving allow-list lives inside
+     * `legacyLinkedTypeIds()` as an implementation detail.
      *
      * @param mixed $value The linkedTypes value to validate.
      *
@@ -1921,6 +1895,7 @@ class Schema extends Entity implements JsonSerializable
      * @return void
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
+     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -1933,17 +1908,18 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $registryIds = $this->resolveIntegrationRegistryIds();
+        $legacyIds   = self::legacyLinkedTypeIds();
 
         foreach ($value as $type) {
             if (is_string($type) === false) {
                 throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
             }
 
-            $valid = in_array($type, self::VALID_LINKED_TYPES, true)
+            $valid = in_array($type, $legacyIds, true)
                 || in_array($type, $registryIds, true);
 
             if ($valid === false) {
-                $combined = array_unique(array_merge(self::VALID_LINKED_TYPES, $registryIds));
+                $combined = array_unique(array_merge($legacyIds, $registryIds));
                 sort($combined);
                 throw new InvalidArgumentException(
                     "Invalid linked type '$type'. Valid values: ".implode(', ', $combined)
@@ -1953,13 +1929,48 @@ class Schema extends Entity implements JsonSerializable
     }//end validateLinkedTypesValue()
 
     /**
+     * Legacy linked-type id allow-list — internal implementation detail.
+     *
+     * Returns the set of legacy `linkedTypes` ids that were valid
+     * before the IntegrationRegistry became the authoritative source.
+     * Preserved so existing schemas declaring `linkedTypes: ['mail',
+     * 'todos', ...]` keep validating after the public linked-types
+     * constant was removed by `cleanup-linked-entity-type-map`.
+     * New consumers SHOULD register
+     * a provider via `IntegrationRegistry::addProvider()`; this
+     * allow-list MUST NOT grow.
+     *
+     * NOT exposed as a public constant — the public symbol was the
+     * removal target. Method form keeps the values reachable from
+     * tests and inspectable in PHPStan without making them part of OR's
+     * API surface.
+     *
+     * @return array<int, string>
+     *
+     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     */
+    private static function legacyLinkedTypeIds(): array
+    {
+        return [
+            'files',
+            'mail',
+            'contacts',
+            'notes',
+            'todos',
+            'calendar',
+            'talk',
+            'deck',
+        ];
+    }//end legacyLinkedTypeIds()
+
+    /**
      * Resolve the current set of registered integration ids.
      *
      * Schema is a Nextcloud Entity, not a service — DI doesn't
      * reach it. We pull the registry from the server container at
      * validation time. Failures (tests without a booted container,
      * missing service binding) fall through to an empty list so the
-     * legacy VALID_LINKED_TYPES path keeps working.
+     * legacy allow-list path keeps working.
      *
      * @return array<int,string> Registered integration ids, possibly empty.
      */

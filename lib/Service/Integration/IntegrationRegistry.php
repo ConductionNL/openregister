@@ -168,8 +168,8 @@ class IntegrationRegistry
      * Return the ids of every registered provider.
      *
      * Used by `Schema::validateLinkedTypesValue()` (task 7) as the
-     * authoritative existence check, replacing the hardcoded
-     * `VALID_LINKED_TYPES` constant.
+     * authoritative existence check; replaced the hardcoded public
+     * Schema linked-types constant via `cleanup-linked-entity-type-map`.
      *
      * @return array<int, string>
      *
