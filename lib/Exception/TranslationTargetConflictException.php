@@ -31,8 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Exception;
 
-use Exception;
-
 /**
  * Thrown by `TranslationHandler::normalizeTranslationsForSave` when a
  * language-keyed body collides with an `X-Translation-Target-Language`
@@ -50,7 +48,7 @@ use Exception;
  * }
  * ```
  */
-class TranslationTargetConflictException extends Exception
+class TranslationTargetConflictException extends CustomValidationException
 {
 
     /**
@@ -75,6 +73,11 @@ class TranslationTargetConflictException extends Exception
     /**
      * Construct a target-language conflict exception.
      *
+     * Extends `CustomValidationException` so the existing controller
+     * `catch (ValidationException | CustomValidationException $e)`
+     * blocks pick it up as a `400 Bad Request` without any new
+     * controller code.
+     *
      * @param string $property       The translatable property name.
      * @param string $targetLanguage The BCP-47 target language tag.
      */
@@ -89,7 +92,11 @@ class TranslationTargetConflictException extends Exception
                 $property,
                 $targetLanguage
             ),
-            400
+            [
+                'code'           => self::ERROR_CODE,
+                'property'       => $property,
+                'targetLanguage' => $targetLanguage,
+            ]
         );
     }//end __construct()
 

@@ -65,6 +65,8 @@ class BackfillTranslationSourceLanguageCommand extends Command
      * Configure command name + options.
      *
      * @return void
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
      */
     protected function configure(): void
     {
@@ -94,6 +96,8 @@ class BackfillTranslationSourceLanguageCommand extends Command
      * @param OutputInterface $output Console output.
      *
      * @return int Symfony command exit code.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

@@ -103,11 +103,16 @@ class TranslationHandlerTargetLanguageTest extends TestCase
 
         $this->assertSame('title', $exception->getProperty());
         $this->assertSame('en', $exception->getTargetLanguage());
-        $this->assertSame(400, $exception->getCode());
 
         $body = $exception->toErrorBody();
         $this->assertSame('TRANSLATION_TARGET_CONFLICT', $body['error']['code']);
         $this->assertSame('title', $body['error']['property']);
         $this->assertSame('en', $body['error']['targetLanguage']);
+
+        // CustomValidationException carries structured errors via getErrors().
+        $errors = $exception->getErrors();
+        $this->assertSame('TRANSLATION_TARGET_CONFLICT', $errors['code']);
+        $this->assertSame('title', $errors['property']);
+        $this->assertSame('en', $errors['targetLanguage']);
     }//end testConflictExceptionCarriesPropertyAndTarget()
 }//end class
