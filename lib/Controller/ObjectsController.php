@@ -1988,6 +1988,12 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
                        return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
+        } catch (\OCA\OpenRegister\Exception\TranslationTargetConflictException $exception) {
+            // Conflict between language-keyed body + X-Translation-Target-Language.
+            return new JSONResponse(
+                data: $exception->toErrorBody(),
+                statusCode: 400
+            );
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
             // Handle hook rejection — return 422 with validation errors from the workflow.
             return new JSONResponse(
@@ -2174,6 +2180,12 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\TranslationTargetConflictException $exception) {
+            // Conflict between language-keyed body + X-Translation-Target-Language.
+            return new JSONResponse(
+                data: $exception->toErrorBody(),
+                statusCode: 400
+            );
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
             return new JSONResponse(
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
@@ -2358,6 +2370,12 @@ class ObjectsController extends Controller
                     ]
                     );
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\TranslationTargetConflictException $exception) {
+            // Conflict between language-keyed body + X-Translation-Target-Language.
+            return new JSONResponse(
+                data: $exception->toErrorBody(),
+                statusCode: 400
+            );
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
             return new JSONResponse(
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
