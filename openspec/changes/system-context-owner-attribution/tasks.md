@@ -46,5 +46,5 @@
 - [x] Note in the PR body that no DB migration runs — operators backfill manually per design.md.
 
 ### 7. Out of scope / follow-up
-- [ ] (Deferred) Backfill OCC command for existing `_owner=''` rows — open a separate issue if operators request it.
-- [ ] (Deferred) Per-schema `systemReaderGroups` override — revisit if multi-tenant deployments ask.
+- [~] (Deferred) Backfill OCC command for existing `_owner=''` rows — open a separate issue if operators request it. — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] (Deferred) Per-schema `systemReaderGroups` override — revisit if multi-tenant deployments ask. — deferred to downstream cycle / fleet-wide adoption (handoff)
