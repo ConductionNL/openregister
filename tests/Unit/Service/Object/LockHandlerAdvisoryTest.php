@@ -175,4 +175,51 @@ class LockHandlerAdvisoryTest extends TestCase
         $this->assertSame($identifier, $result['uuid']);
         $this->assertTrue($result['locked']['advisory']);
     }//end testLockOnUnresolvableIdOverwritesExpiredAdvisoryLock()
+
+    public function testUnlockOnUnresolvableIdReleasesAdvisoryLock(): void
+    {
+        $identifier = 'createApp:my-new-app';
+
+        // The id never resolves to a stored object — unlock must take the
+        // advisory-release path rather than 404/throw.
+        $this->magicMapper->method('findAcrossAllSources')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        // A held advisory lock exists under the namespaced key.
+        $this->appConfig->method('getValueString')
+            ->with('openregister', $this->advisoryKey($identifier), '')
+            ->willReturn(
+                json_encode(
+                    [
+                        'advisory'   => true,
+                        'expiration' => (new \DateTime('+1 hour'))->format(\DateTime::ATOM),
+                    ]
+                )
+            );
+
+        // The advisory lock MUST be cleared from app-config.
+        $this->appConfig->expects($this->once())
+            ->method('deleteKey')
+            ->with('openregister', $this->advisoryKey($identifier));
+
+        $this->assertTrue($this->handler->unlock($identifier));
+    }//end testUnlockOnUnresolvableIdReleasesAdvisoryLock()
+
+    public function testUnlockOnUnresolvableIdIsNoOpWhenNoAdvisoryLockHeld(): void
+    {
+        $identifier = 'createApp:never-locked';
+
+        $this->magicMapper->method('findAcrossAllSources')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        // No advisory lock stored — releaseAdvisoryLock() short-circuits and
+        // must NOT issue a delete, yet unlock() still reports success.
+        $this->appConfig->method('getValueString')
+            ->with('openregister', $this->advisoryKey($identifier), '')
+            ->willReturn('');
+
+        $this->appConfig->expects($this->never())->method('deleteKey');
+
+        $this->assertTrue($this->handler->unlock($identifier));
+    }//end testUnlockOnUnresolvableIdIsNoOpWhenNoAdvisoryLockHeld()
 }//end class
