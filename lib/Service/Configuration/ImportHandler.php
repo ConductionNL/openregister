@@ -647,7 +647,6 @@ class ImportHandler
             try {
                 $existingRegister = $this->registerMapper->find(
                     id: strtolower($data['slug']),
-                    _extend: [],
                     published: null,
                     _rbac: false,
                     _multitenancy: false

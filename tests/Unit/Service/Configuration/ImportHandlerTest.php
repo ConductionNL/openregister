@@ -2014,6 +2014,111 @@ class ImportHandlerTest extends TestCase
 
 
     /**
+     * Phase-0 regression: installer-time seed objects MUST be saved with
+     * `_rbac: false` and `_multitenancy: false`. Import runs in the repair/CLI
+     * context with no user session ('Anonymous'); without the bypass, seed
+     * objects on RBAC-guarded schemas abort the whole import.
+     */
+    public function testImportFromJsonSeedsNewObjectWithRbacBypass(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $schema        = $this->makeSchema(10, 'person');
+        $register      = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        // searchObjects must also bypass RBAC/multitenancy so existing seed
+        // objects are found regardless of organisation context. Capture the
+        // resolved positional args and assert _rbac/_multitenancy are false.
+        $searchRbac = null;
+        $searchMt   = null;
+        $this->objectService->expects($this->atLeastOnce())
+            ->method('searchObjects')
+            ->willReturnCallback(
+                function (array $query, bool $_rbac=true, bool $_multitenancy=true) use (&$searchRbac, &$searchMt) {
+                    $searchRbac = $_rbac;
+                    $searchMt   = $_multitenancy;
+                    return [];
+                }
+            );
+
+        $savedObject = new ObjectEntity();
+        $this->setEntityId($savedObject, 100);
+
+        // The seed saveObject() call MUST carry _rbac: false and _multitenancy: false.
+        $saveRbac = null;
+        $saveMt   = null;
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturnCallback(
+                function (
+                    $object,
+                    $extend=[],
+                    $register=null,
+                    $schema=null,
+                    $uuid=null,
+                    bool $_rbac=true,
+                    bool $_multitenancy=true
+                ) use (&$saveRbac, &$saveMt, $savedObject) {
+                    $saveRbac = $_rbac;
+                    $saveMt   = $_multitenancy;
+                    return $savedObject;
+                }
+            );
+
+        $data = [
+            'appId'      => 'myapp',
+            'version'    => '1.0.0',
+            'components' => [
+                'schemas'   => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+                'registers' => [
+                    'registry' => ['slug' => 'registry', 'title' => 'Registry', 'version' => '1.0.0'],
+                ],
+                'objects' => [
+                    [
+                        '@self' => [
+                            'register' => 'registry',
+                            'schema'   => 'person',
+                            'slug'     => 'john-doe',
+                            'version'  => '1.0.0',
+                        ],
+                        'name' => 'John Doe',
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['objects']);
+        $this->assertFalse($saveRbac, 'Seed saveObject() must run with _rbac: false.');
+        $this->assertFalse($saveMt, 'Seed saveObject() must run with _multitenancy: false.');
+        $this->assertFalse($searchRbac, 'Seed searchObjects() must run with _rbac: false.');
+        $this->assertFalse($searchMt, 'Seed searchObjects() must run with _multitenancy: false.');
+
+    }//end testImportFromJsonSeedsNewObjectWithRbacBypass()
+
+
+    /**
      * importFromJson() skips updating an object when imported version is not higher.
      *
      * The existing object has version 2.0.0; the imported object has version 1.0.0,
