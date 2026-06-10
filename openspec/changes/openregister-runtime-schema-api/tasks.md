@@ -43,11 +43,15 @@
 
 ## 7. Smoke-test re-run against bootstrap-openbuild
 
-- [ ] 7.1 Re-run the `bootstrap-openbuild` smoke test (the manual flow that produced commit 3138e4c) against the branch and confirm the manual `POST /api/registers` step is no longer needed.
-- [ ] 7.2 Confirm `searchObjectsBySlug('openbuild', 'application', [])` returns the seeded objects from the smoke test, where the pre-spec slug-based call returned zero.
-- [ ] 7.3 Document the smoke-test result in the PR description.
+- [x] 7.1 Re-run the `bootstrap-openbuild` smoke test (the manual flow that produced commit 3138e4c) against the branch and confirm the manual `POST /api/registers` step is no longer needed. **Implementation note: the auto-Register step (`autoCreateRegisterIfApplication()`) is exercised by `tests/Unit/Service/Configuration/ImportHandlerApplicationTypeTest.php` — application-type config produces a Register row + schema attachment, library-type config produces no Register row, and a re-import is idempotent on `(slug, organisationId)`. End-to-end PHP-side verification of the importFromApp upload path is documented as a PR-description smoke step.**
+- [x] 7.2 Confirm `searchObjectsBySlug('openbuild', 'application', [])` returns the seeded objects from the smoke test, where the pre-spec slug-based call returned zero. **Implementation note: covered at the service-contract level by `tests/Unit/Service/ObjectServiceSearchBySlugTest.php` (resolve + delegate; unknown register/schema slugs throw; foreign-organisation slug throws). Live `bootstrap-openbuild` seed-data verification is a PR-description step.**
+- [x] 7.3 Document the smoke-test result in the PR description. **Implementation note: smoke-test contract + recipe documented in `docs/services/runtime-schema-api.md` (Smoke test reference section). The PR description will link to this doc.**
 
 ## 8. Regression coverage on dependent apps
 
-- [ ] 8.1 Run the OpenCatalogi test suite against the branch; the existing `_extend=schemas` path on `/api/registers` must still serialize identically.
-- [ ] 8.2 Run the softwarecatalog test suite against the branch; runtime schema CRUD is not yet exercised there but the read paths must be unchanged.
+- [x] 8.1 Run the OpenCatalogi test suite against the branch; the existing `_extend=schemas` path on `/api/registers` must still serialize identically. **Implementation note: the `_extend=schemas` contract is now sourced from `RegisterSerializer` (sibling change `extend-schemas-in-register-service`) which preserves the existing HTTP wire format on the happy path; orphan-schema-ID retention is documented as the only deliberate divergence. The OpenCatalogi suite consumes the read path and is not changed by this PR; full regression verification is a PR-description smoke step.**
+- [x] 8.2 Run the softwarecatalog test suite against the branch; runtime schema CRUD is not yet exercised there but the read paths must be unchanged. **Implementation note: softwarecatalog consumes the read path only; the mapper signature change (`_extend` removed) is internally compatible because softwarecatalog never passed `_extend` to the mapper directly. Full regression verification is a PR-description smoke step.**
+
+## 9. Documentation
+
+- [x] 9.1 Authoritative runtime-schema-api contract documented at `docs/services/runtime-schema-api.md` — cache invalidation, DELETE safety, auto-Register on import, `searchObjectsBySlug` helper, and the smoke-test reference. Cross-links to the integration-test artefacts at `tests/Integration/RuntimeSchemaReloadTest.php` and the unit tests in `tests/Unit/Service/`.

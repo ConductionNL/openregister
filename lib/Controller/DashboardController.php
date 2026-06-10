@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Service\DashboardService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -265,6 +267,8 @@ class DashboardController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function index(): JSONResponse
     {
         try {

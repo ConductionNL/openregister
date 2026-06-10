@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -115,6 +116,17 @@ class RegisterService
     private readonly LoggerInterface $logger;
 
     /**
+     * Register serializer
+     *
+     * Applies `_extend` post-processing (`schemas`, `@self.stats`) on
+     * Register entities. Shared between the HTTP controller and DI
+     * consumers via findAllSerialized / findSerialized.
+     *
+     * @var RegisterSerializer
+     */
+    private readonly RegisterSerializer $registerSerializer;
+
+    /**
      * Constructor
      *
      * Initializes service with required dependencies for register operations.
@@ -125,6 +137,7 @@ class RegisterService
      * @param FileService         $fileService         File service for file operations
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param RegisterSerializer  $registerSerializer  Serializer for `_extend` post-processing
      *
      * @return void
      */
@@ -134,7 +147,8 @@ class RegisterService
         IDBConnection $db,
         FileService $fileService,
         OrganisationService $organisationService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        RegisterSerializer $registerSerializer
     ) {
         $this->logger = $logger;
         $this->logger->debug(
@@ -147,6 +161,7 @@ class RegisterService
         $this->db          = $db;
         $this->fileService = $fileService;
         $this->organisationService = $organisationService;
+        $this->registerSerializer  = $registerSerializer;
         $this->logger->debug(
             message: '[RegisterService] RegisterService constructor completed.',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -173,7 +188,12 @@ class RegisterService
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
-        return $this->registerMapper->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+        // NB: `_extend` is declared for signature compatibility with the
+        // pre-spec contract; the mapper no longer accepts it. Use
+        // `findSerialized()` to obtain an array payload with `_extend`
+        // post-processing applied.
+        unset($_extend);
+        return $this->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
     }//end find()
 
     /**
@@ -210,16 +230,149 @@ class RegisterService
         bool $_multitenancy=true
     ): array {
         // Find all registers with optional filtering, pagination, and extensions.
+        // NB: `_extend` is declared for signature compatibility only — the
+        // mapper layer ignores it; honored extensions live on findSerialized
+        // / findAllSerialized which delegate to RegisterSerializer.
         return $this->registerMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $_extend,
             _multitenancy: $_multitenancy
         );
     }//end findAll()
+
+
+    /**
+     * Find a register by ID and serialize it with `_extend` applied
+     *
+     * Combines `find()` with `RegisterSerializer::serialize()`. When
+     * `_extend` requests both `schemas` and `@self.stats`, this method
+     * pre-computes the per-schema counts via `getSchemaObjectCounts()`
+     * and hands them to the serializer so the serializer itself has
+     * no DI back-reference to this service.
+     *
+     * @param int|string $id            The ID of the register to find.
+     * @param array      $_extend       Extension keys to apply (`schemas`, `@self.stats`).
+     * @param bool       $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array Serialized register payload.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
+     */
+    public function findSerialized(int | string $id, array $_extend=[], bool $_multitenancy=true): array
+    {
+        $register = $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+
+        $stats = null;
+        if (in_array('schemas', $_extend, true) === true
+            && in_array('@self.stats', $_extend, true) === true
+        ) {
+            $stats = $this->getSchemaObjectCounts(
+                registerId: (int) $register->getId(),
+                schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+            );
+        }
+
+        return $this->registerSerializer->serialize($register, $_extend, $stats);
+
+    }//end findSerialized()
+
+
+    /**
+     * Find all registers + serialize each with `_extend` applied
+     *
+     * Companion to {@see findAll()} that returns serialized arrays with
+     * `_extend` honored. When `schemas` + `@self.stats` are both
+     * requested, per-register stats are pre-computed and handed to the
+     * serializer via `serializeMany()`.
+     *
+     * @param int|null      $limit            Maximum number of results.
+     * @param int|null      $offset           Pagination offset.
+     * @param array|null    $filters          Mapper filters.
+     * @param array|null    $searchConditions Search conditions.
+     * @param array|null    $searchParams     Search parameters.
+     * @param array<string> $_extend          Extension keys to apply.
+     * @param bool          $_multitenancy    Whether to apply multitenancy filtering.
+     *
+     * @return array<int,array> Array of serialized register payloads.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors findAll() so HTTP and DI
+     *   callers can hand the same parameter set to either method without re-wrangling
+     *   query params.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
+     */
+    public function findAllSerialized(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $_extend=[],
+        bool $_multitenancy=true
+    ): array {
+        $registers = $this->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            _multitenancy: $_multitenancy
+        );
+
+        $statsByRegisterId = null;
+        if (in_array('schemas', $_extend, true) === true
+            && in_array('@self.stats', $_extend, true) === true
+        ) {
+            $statsByRegisterId = [];
+            foreach ($registers as $register) {
+                $statsByRegisterId[(int) $register->getId()] = $this->getSchemaObjectCounts(
+                    registerId: (int) $register->getId(),
+                    schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+                );
+            }
+        }
+
+        return $this->registerSerializer->serializeMany($registers, $_extend, $statsByRegisterId);
+
+    }//end findAllSerialized()
+
+
+    /**
+     * Resolve schema IDs to hydrated objects for stats computation.
+     *
+     * `getSchemaObjectCounts()` reads `tablePrefix` and `slug` off each
+     * schema (used to build the magic-table name). The serializer hands
+     * us bare IDs, so we resolve them here. Orphan IDs are silently
+     * dropped — they cannot produce a stats lookup anyway.
+     *
+     * @param array $schemaIds Schema ID array (int|string).
+     *
+     * @return array<int,\OCA\OpenRegister\Db\Schema> Resolved schema entities for the stats query.
+     */
+    private function resolveSchemasForStats(array $schemaIds): array
+    {
+        $schemas = [];
+        foreach ($schemaIds as $schemaId) {
+            try {
+                $schemas[] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Orphan IDs cannot contribute to stats; skip silently.
+                // The RegisterSerializer logs the orphan when it hits the
+                // same ID during expansion.
+                continue;
+            }
+        }
+
+        return $schemas;
+
+    }//end resolveSchemasForStats()
 
     /**
      * Create a new register from array data.
