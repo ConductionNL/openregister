@@ -87,16 +87,16 @@
 
 ## Backend — Tests
 
-- [ ] `tests/Unit/Service/Integration/IntegrationRegistryTest.php` — registration, lookup, isEnabled filtering, collision detection
-- [ ] `tests/Unit/Service/Integration/CapabilitiesIntegrationTest.php` — OCS block matches registry state
-- [ ] `tests/Unit/Db/SchemaLinkedTypesTest.php` — registry-driven validation, deprecated path still works for one cycle
-- [ ] `tests/Unit/Service/Integration/BuiltinProviders/*Test.php` — one test class per built-in provider
+- [~] `tests/Unit/Service/Integration/IntegrationRegistryTest.php` — registration, lookup, isEnabled filtering, collision detection — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] `tests/Unit/Service/Integration/CapabilitiesIntegrationTest.php` — OCS block matches registry state — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] `tests/Unit/Db/SchemaLinkedTypesTest.php` — registry-driven validation, deprecated path still works for one cycle — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] `tests/Unit/Service/Integration/BuiltinProviders/*Test.php` — one test class per built-in provider — deferred to downstream cycle / fleet-wide adoption (handoff)
 
 ## Quality gates & CI
 
 - [x] Create `scripts/check-integration-parity.js` (matches the repo's Node-script convention rather than `.sh`) — imports `builtinIntegrations`, asserts each descriptor has `id` + `label` + `tab` + `widget`, fails non-zero listing offenders; source-scan fallback — [ConductionNL/nextcloud-vue#211]
 - [x] Wire parity check into CI — added as the "Integration parity gate" step in `.github/workflows/code-quality.yml` (single workflow per the repo convention, not a separate `integration-parity.yml`) — [ConductionNL/nextcloud-vue#211]
-- [ ] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR — **deferred to a follow-up hydra PR**)
+- [~] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR — **deferred to a follow-up hydra PR**) — deferred to downstream cycle / fleet-wide adoption (handoff)
 - [x] Add parity check to local pre-commit hook (`scripts/precommit-regenerate-partials.sh`, runs on `src/integrations/` changes) — [ConductionNL/nextcloud-vue#211]
 
 ## Scaffold script
@@ -106,7 +106,7 @@
 
 ## ADR & docs
 
-- [ ] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR — **deferred to a follow-up hydra PR**)
+- [~] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR — **deferred to a follow-up hydra PR**) — deferred to downstream cycle / fleet-wide adoption (handoff)
 - [x] Create `docs/Integrations/pluggable-integration-registry.md` — "How to add an integration" — full walkthrough using the built-in `files` provider as the worked example, plus the scaffold-script quickstart
 - [x] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
 - [x] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract — [ConductionNL/nextcloud-vue#202/#209]
@@ -117,7 +117,7 @@
 
 ## Acceptance verification
 
-- [ ] An end-to-end test creates a dummy `IntegrationProvider`, registers it backend + frontend, asserts: it appears in `/api/integrations`, in the OCS capabilities response, in `CnObjectSidebar` (when schema allows), in `CnDashboardPage` (across all 4 surfaces), and gets removed cleanly when unregistered
-- [ ] Backwards-compat test: an existing app upgrading nextcloud-vue with zero code changes sees identical sidebar behaviour for the 5 migrated types
-- [ ] Schema-validator backwards-compat: schemas with existing `linkedTypes: ["files", "notes"]` continue to validate without modification
-- [ ] Reference-property test: a schema with `assignedHandler: { type: 'string', referenceType: 'contacts' }` renders the contact's `single-entity` widget in `CnFormDialog`
+- [~] An end-to-end test creates a dummy `IntegrationProvider`, registers it backend + frontend, asserts: it appears in `/api/integrations`, in the OCS capabilities response, in `CnObjectSidebar` (when schema allows), in `CnDashboardPage` (across all 4 surfaces), and gets removed cleanly when unregistered — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] Backwards-compat test: an existing app upgrading nextcloud-vue with zero code changes sees identical sidebar behaviour for the 5 migrated types — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] Schema-validator backwards-compat: schemas with existing `linkedTypes: ["files", "notes"]` continue to validate without modification — deferred to downstream cycle / fleet-wide adoption (handoff)
+- [~] Reference-property test: a schema with `assignedHandler: { type: 'string', referenceType: 'contacts' }` renders the contact's `single-entity` widget in `CnFormDialog` — deferred to downstream cycle / fleet-wide adoption (handoff)
