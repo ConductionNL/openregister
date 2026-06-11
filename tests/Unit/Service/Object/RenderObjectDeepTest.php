@@ -117,7 +117,9 @@ class RenderObjectDeepTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
     }
 
