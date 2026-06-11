@@ -81,9 +81,9 @@
 
 > DEFERRED — no anonymisation-log table/entity exists in the current OpenRegister codebase. `DocumentProcessingHandler::anonymizeDocument()` returns a `File` directly; there is no `AnonymizationLog` Db entity or mapper to attach a `sanitization` column to (verified: `lib/Db/` has no anonymisation log, anonymisation is invoked from `FileTextController` → `FileService::anonymizeDocument`). Until an anonymisation-log table lands, the audit report is retained on the handler via `getLastSanitizationReport()` (see 6.x) and logged PII-free. A follow-up migration is filed when the log table is introduced.
 
-- [~] 5.1 (deferred) Add migration adding a `sanitization` JSON column to the anonymisation log table — no such table exists yet.
-- [~] 5.2 (deferred) Add `sanitization: ?array` to the anonymisation-log entity — no such entity exists yet.
-- [~] 5.3 (deferred) Mapper read/write of the JSON column — depends on 5.1/5.2.
+- [ ] 5.1 (deferred) Add migration adding a `sanitization` JSON column to the anonymisation log table — no such table exists yet.
+- [ ] 5.2 (deferred) Add `sanitization: ?array` to the anonymisation-log entity — no such entity exists yet.
+- [ ] 5.3 (deferred) Mapper read/write of the JSON column — depends on 5.1/5.2.
 
 ## 6. DocumentProcessingHandler integration
 
