@@ -933,8 +933,13 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Only the existing schema should be present
-        $this->assertCount(1, $data['results'][0]['schemas']);
+        // RegisterSerializer::expandSchemas() now RETAINS an orphan schema ID
+        // at its original position when the schema cannot be resolved (rather
+        // than dropping it), so typed JSON clients still see the reference.
+        // Expect both entries: the expanded object (10) and the orphan ID (999).
+        $this->assertCount(2, $data['results'][0]['schemas']);
+        $this->assertSame(['id' => 10, 'title' => 'Schema A'], $data['results'][0]['schemas'][0]);
+        $this->assertSame(999, $data['results'][0]['schemas'][1]);
     }
 
     public function testIndexWithSelfStatsExtend(): void
@@ -1217,7 +1222,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1279,7 +1285,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1312,7 +1319,8 @@ class RegistersControllerTest extends TestCase
         $this->importService->expects($this->once())
             ->method('importFromExcel')
             ->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
