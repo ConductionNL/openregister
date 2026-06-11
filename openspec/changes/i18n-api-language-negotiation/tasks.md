@@ -81,9 +81,10 @@
       curl + axios + Postman invocations for: read in a language,
       write to a target language, edit a translation without
       touching the source.
-- [~] Cross-reference this change from
+- [x] Cross-reference this change from
       `hydra/openspec/architecture/adr-025-i18n-source-of-truth.md`'s
       "Implementation reference" section once shipped (alongside the
-      companion). Deferred — hydra repo lives outside the
-      openregister worktree; follow-up lands as part of the ADR-025
-      ratification batch.
+      companion). **Done 2026-06-11:** ADR-025 now carries an
+      "Implementation reference" section pointing at this change as
+      the canonical implementation of Gap 2 (request-side language
+      negotiation) + companion change `i18n-source-of-truth` as Gap 1.

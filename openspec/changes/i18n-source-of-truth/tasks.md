@@ -103,8 +103,10 @@
 
 - [x] Update `docs/i18n.md` describing the source-of-truth
       model and the `sourceLanguage` schema-property contract.
-- [~] Cross-reference this change from
+- [x] Cross-reference this change from
       `hydra/openspec/architecture/adr-025-i18n-source-of-truth.md`'s
-      "Implementation reference" section once shipped. Deferred —
-      hydra repo lives outside the openregister worktree; follow-up
-      lands as part of the ADR-025 ratification batch.
+      "Implementation reference" section once shipped. **Done
+      2026-06-11:** ADR-025 now carries an "Implementation reference"
+      section pointing at this change as the canonical implementation
+      of Gap 1 (source-of-truth contract) + companion change
+      `i18n-api-language-negotiation` as Gap 2.
