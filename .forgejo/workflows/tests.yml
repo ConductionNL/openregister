@@ -1,0 +1,149 @@
+# tests.yml — reusable feature-test workflow for Conduction NC apps.
+#
+# PHASE-5 CI enforcement: runs the testing layers we built so a PR can't go
+# green while a feature is broken. This is a `workflow_call` reusable: a thin
+# per-app caller (app-tests.yml) invokes it with the app id. Copy the pair
+# (this file + app-tests.yml) into any sibling app to roll the pattern out —
+# the only per-app knob is `app-id`.
+#
+# Layers, and what gates today:
+#   • phpunit-unit  — HARD GATE. tests/Unit + tests/unit via phpunit-unit.xml.
+#                     The bootstrap runs standalone (vendor OCP stubs, no NC),
+#                     so this needs no service container.
+#   • l10n-check    — HARD GATE. tests/l10n/check-l10n.js asserts every
+#                     t('<app>', '...') / n(...) source string is present in
+#                     l10n/en.json (the i18n-extraction-drift guard). Pure
+#                     Node, no NC.
+#   • e2e-deep      — SCAFFOLDED (non-gating). Playwright tests/e2e/workflows/
+#                     need a live, seeded NC. See the TODO in that job.
+#   • newman        — SCAFFOLDED (non-gating). tests/integration Postman
+#                     collections via run-newman.sh need a live NC. See TODO.
+#
+# Runner labels + reusable `uses:` forms follow the fleet convention
+# (codeberg-small / short Conduction/.github@main form). Additive — does not
+# touch pre-merge-check-strict.yaml or any release workflow.
+
+name: tests
+
+on:
+  workflow_call:
+    inputs:
+      app-id:
+        description: "App id (matches package.json name + composer namespace)."
+        required: true
+        type: string
+      php-version:
+        required: false
+        type: string
+        default: "8.3"
+      node-version:
+        required: false
+        type: string
+        default: "20"
+      unit-gating:
+        description: "Fail the workflow on unit-test failures. Set false for apps whose tests/Unit suite is not yet green on baseline (e.g. openregister — see TESTING-CI-ROLLOUT.md)."
+        required: false
+        type: boolean
+        default: true
+      run-e2e:
+        description: "Run the scaffolded deep-e2e job (needs NC service — see TODO)."
+        required: false
+        type: boolean
+        default: false
+      run-newman:
+        description: "Run the scaffolded Newman job (needs NC service — see TODO)."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # HARD GATE 1 — PHPUnit unit suite (no NC needed; vendor OCP stubs).
+  # ---------------------------------------------------------------------------
+  phpunit-unit:
+    name: PHPUnit unit (${{ inputs.app-id }})
+    runs-on: codeberg-small
+    container:
+      image: code.forgejo.org/oci/ci-php:8.3
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Install composer deps
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run unit suite (phpunit-unit.xml)
+        # unit-gating=false reports failures without failing the job, for apps
+        # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
+        continue-on-error: ${{ inputs.unit-gating == false }}
+        run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
+
+  # ---------------------------------------------------------------------------
+  # HARD GATE 2 — l10n extraction-drift check (no NC needed; pure Node).
+  # ---------------------------------------------------------------------------
+  l10n-check:
+    name: l10n extraction check (${{ inputs.app-id }})
+    runs-on: codeberg-small
+    container:
+      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Assert every t() source string is in l10n/en.json
+        run: node tests/l10n/check-l10n.js
+
+  # ---------------------------------------------------------------------------
+  # SCAFFOLD — deep e2e (Playwright tests/e2e/workflows/). Opt-in via run-e2e.
+  #
+  # TODO(nc-in-ci): wire a live Nextcloud before flipping this to gating:
+  #   1. Boot db + NC (openregister ships .github/docker-compose.ci.yml; add a
+  #      sibling compose for feature apps, or reuse the OR stack + enable this
+  #      app + its OR register/schema fixtures).
+  #   2. Deploy the working tree into custom_apps/<app-id> and `occ app:enable`
+  #      <app-id> (+ openregister, the data backend).
+  #   3. Seed the deep-e2e fixtures (tests/e2e/workflows/*fixture*.ts seed the
+  #      OR objects each workflow asserts on).
+  #   4. `npx playwright install --with-deps chromium` then
+  #      `npm run test:e2e -- tests/e2e/workflows`.
+  # Until then this job documents the command and is non-gating.
+  # ---------------------------------------------------------------------------
+  e2e-deep:
+    name: Deep e2e (scaffold — needs NC)
+    if: ${{ inputs.run-e2e }}
+    runs-on: docker
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: TODO — boot seeded NC, then run deep e2e
+        run: |
+          echo "Deep e2e requires a live, seeded Nextcloud (see job header TODO)."
+          echo "Local: npm ci && npm run test:e2e:install && npm run test:e2e -- tests/e2e/workflows"
+          echo "Skipping in CI until the NC service container is wired."
+
+  # ---------------------------------------------------------------------------
+  # SCAFFOLD — Newman API-contract (tests/integration/*.postman_collection.json).
+  # Opt-in via run-newman.
+  #
+  # TODO(nc-in-ci): same live-NC prerequisite as e2e-deep. The runner script
+  # (tests/integration/run-newman.sh) is collection-self-seeding and runnable
+  # locally today: `bash tests/integration/run-newman.sh`. openregister uses
+  # the orchestrator at tests/newman/run-all.sh instead.
+  # ---------------------------------------------------------------------------
+  newman:
+    name: Newman API contract (scaffold — needs NC)
+    if: ${{ inputs.run-newman }}
+    runs-on: docker
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: TODO — boot NC, then run Newman
+        run: |
+          echo "Newman requires a live Nextcloud serving the app (see job header TODO)."
+          echo "Local: bash tests/integration/run-newman.sh   # OR: bash tests/newman/run-all.sh"
+          echo "Skipping in CI until the NC service container is wired."

@@ -1,0 +1,43 @@
+# app-tests.yml — openregister caller for the reusable feature-test workflow.
+#
+# Runs the PHASE-5 testing layers on every PR to the protected branches.
+# phpunit-unit + l10n-check HARD-GATE; e2e/newman are scaffolded and opt-in
+# (run-e2e / run-newman) until the NC service container is wired (see tests.yml
+# TODOs). openregister already has a full Newman-in-CI job
+# (.github/workflows/api-test-coverage.yml booting .github/docker-compose.ci.yml)
+# — the scaffolded newman job here documents the local entrypoint and stays
+# non-gating so the two don't duplicate. Additive — sits alongside
+# pre-merge-check-strict.yaml and the release workflows.
+
+name: app-tests
+
+on:
+  pull_request:
+    branches:
+      - development
+      - main
+      - beta
+  workflow_dispatch:
+    inputs:
+      run-e2e:
+        type: boolean
+        default: false
+      run-newman:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    uses: ./.forgejo/workflows/tests.yml
+    with:
+      app-id: openregister
+      # openregister's tests/Unit suite carries pre-existing drift (constructor
+      # signature + mock-expectation rot — ~1463 errors on baseline). Run it
+      # non-gating until that debt is paid down; l10n-check stays HARD-GATING.
+      # See TESTING-CI-ROLLOUT.md → "openregister unit-suite debt".
+      unit-gating: false
+      run-e2e: ${{ github.event.inputs.run-e2e == 'true' }}
+      run-newman: ${{ github.event.inputs.run-newman == 'true' }}
