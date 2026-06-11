@@ -3075,15 +3075,19 @@ class MagicMapper extends AbstractObjectMapper
         //
         // Fields handled here:
         //
-        // owner        – stripped from client @self to prevent ownership hijacking.
-        // For the internal entity-serialization path the owner was
-        // stamped by SaveObject::applyOwnerAttribution before
-        // jsonSerialize() was called. Stripping it here prevents any
-        // residual client value from persisting. The DB column will
-        // receive the value set by the entity's setter (not @self).
-        // Note: this means that for any path that does NOT go through
-        // applyOwnerAttribution, _owner will be null. That is safer
-        // than persisting an attacker-controlled value.
+        // owner        – the server-stamped owner (a scalar UID string set by
+        // SaveObject::applyOwnerAttribution before jsonSerialize())
+        // MUST be persisted, otherwise rows land with an empty
+        // `_owner` column: the creator can never equal the owner,
+        // so the update lock-guard 403s the owner's own update and
+        // ownership-based RBAC + owner notifications are neutered.
+        // Client-supplied owner injection is already closed upstream
+        // (SaveObject::setSelfMetadata never copies a client `owner`
+        // into the entity — the entity owner is exclusively the
+        // server-stamped value). As defence-in-depth at this DB write
+        // boundary we still REJECT any non-scalar/array owner shape
+        // (the form a forged @self payload would take) and only keep a
+        // plain string UID.
         //
         // authorization – per-object RBAC rules must not be writable by ordinary
         // object-create/update calls. Management of per-object
@@ -3099,7 +3103,13 @@ class MagicMapper extends AbstractObjectMapper
         // version, created, updated, deleted, locked, retention, uuid, slug, uri
         // Those fields must be fixed at the SaveObject/controller level if client
         // injection is possible for any of them.
-        unset($metadata['owner'], $metadata['authorization']);
+        unset($metadata['authorization']);
+
+        // Keep only a scalar string owner (the server-stamped UID); drop any
+        // array/object shape a forged @self payload could carry.
+        if (isset($metadata['owner']) === true && is_string($metadata['owner']) === false) {
+            unset($metadata['owner']);
+        }
 
         // Always force register and schema from the authoritative server parameters —
         // never accept client-supplied values, even when non-empty.
@@ -4532,7 +4542,11 @@ class MagicMapper extends AbstractObjectMapper
         );
 
         $qb = $this->db->getQueryBuilder();
-        $qb->select('*')->from($tableName);
+        // Use the table alias `t` so the shared access-control filters
+        // (which reference t._organisation / t._owner) can be applied — the
+        // single-object read path MUST enforce the same isolation as the list
+        // path (cross-org IDOR fix). See applyAccessControlToQuery() below.
+        $qb->select('*')->from($tableName, 't');
 
         // Build identifier conditions (ID, UUID, slug, or URI).
         $idParam = -1;
@@ -4540,10 +4554,10 @@ class MagicMapper extends AbstractObjectMapper
             $idParam = (int) $identifier;
         }
 
-        $idCol   = self::METADATA_PREFIX.'id';
-        $uuidCol = self::METADATA_PREFIX.'uuid';
-        $slugCol = self::METADATA_PREFIX.'slug';
-        $uriCol  = self::METADATA_PREFIX.'uri';
+        $idCol   = 't.'.self::METADATA_PREFIX.'id';
+        $uuidCol = 't.'.self::METADATA_PREFIX.'uuid';
+        $slugCol = 't.'.self::METADATA_PREFIX.'slug';
+        $uriCol  = 't.'.self::METADATA_PREFIX.'uri';
         $qb->where(
             $qb->expr()->orX(
                 $qb->expr()->eq($idCol, $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
@@ -4555,19 +4569,27 @@ class MagicMapper extends AbstractObjectMapper
 
         // Exclude deleted objects by default (unless includeDeleted is true).
         if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+            $qb->andWhere($qb->expr()->isNull('t.'.self::METADATA_PREFIX.'deleted'));
         }
 
-        // Apply multitenancy filtering if enabled.
-        // Note: For MagicMapper, we rely on the table structure itself for multitenancy,.
-        // as the organisation column is part of the schema. The $_multitenancy parameter.
-        // is primarily used to decide whether to filter at all.
-        // For now, we skip adding explicit organisation filters in MagicMapper.
-        // as that's handled by RBAC and the table structure.
-        // Apply RBAC filtering if enabled.
-        if ($_rbac === true) {
-            // Add RBAC filtering logic here if needed.
-            // Currently skipped as owner/authorization logic is complex.
+        // SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
+        // access-control filters the list/search path uses. Previously the
+        // single-object read skipped org filtering, so a non-admin in org B
+        // could read an org-A object by id. We now delegate to the search
+        // handler's shared logic, which:
+        // - drops the org filter for `public`-read schemas (published reads,
+        // including anonymous, keep working),
+        // - lets admins (rbac/multitenancy disabled by the controller) and
+        // in-org / owner reads through,
+        // - filters out other-org rows → no row → DoesNotExistException → 404
+        // (existence is not leaked).
+        if ($_rbac === true || $_multitenancy === true) {
+            $this->searchHandler->applyAccessControlToQuery(
+                qb: $qb,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
         }
 
         try {
@@ -5458,7 +5480,12 @@ class MagicMapper extends AbstractObjectMapper
             $insertedEntity = $this->findInRegisterSchemaTable(
                 identifier: $uuid,
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                // System re-read of the just-inserted row: bypass access-control
+                // filtering so the writer always gets its freshly-written entity
+                // back (the org/owner context is still being established here).
+                _rbac: false,
+                _multitenancy: false
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Fallback: manually set ID if re-fetch fails.
@@ -5472,7 +5499,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             $insertedEntity = $entity;
-        }
+        }//end try
 
         // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
@@ -5503,7 +5530,12 @@ class MagicMapper extends AbstractObjectMapper
             $oldObject = $this->findInRegisterSchemaTable(
                 identifier: $entity->getUuid(),
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                // Internal pre-update read of the existing row: bypass
+                // access-control filtering (authorization for the update is
+                // enforced upstream by the lock/permission guards).
+                _rbac: false,
+                _multitenancy: false
             );
         }
 
@@ -5570,6 +5602,10 @@ class MagicMapper extends AbstractObjectMapper
                 identifier: $uuid,
                 register: $register,
                 schema: $schema,
+                // System re-read of the just-updated row: bypass access-control
+                // filtering so the writer always gets its fresh entity back.
+                _rbac: false,
+                _multitenancy: false,
                 includeDeleted: true
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

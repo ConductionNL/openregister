@@ -1067,7 +1067,7 @@
           ]
         },
         {
-          "name": "1g. [QUARANTINED OWNER-NOT-STAMPED BUG] e2euser PUT OWN object",
+          "name": "1g. e2euser PUT OWN object -> 200 (owner stamped, can update own)",
           "protocolProfileBehavior": {
             "disableCookies": true
           },
@@ -1131,25 +1131,15 @@
                 "type": "text/javascript",
                 "exec": [
                   "// ====================================================================",
-                  "// PRE-EXISTING BUG (not an IDOR / not a fail-open hole \u2014 fail-CLOSED).",
-                  "// A non-admin object created via the magic-mapper write path is persisted",
-                  "// with an EMPTY `_owner` column (applyOwnerAttribution sets it on the",
-                  "// entity, but it is not persisted to the magic table). Because `_owner`",
-                  "// is empty, the object's owner can never equal the caller, so the update",
-                  "// path's lock-ownership guard rejects the owner's own update with a",
-                  "// misleading 403 'does not have permission to unlock this object'.",
-                  "// Net effect: a user CANNOT update an object they just created. This is a",
-                  "// usability/correctness bug AND it neuters ownership-based RBAC (owner-less",
-                  "// rows are protected only by org filtering, never by ownership).",
-                  "// This test PINS the current behaviour (403) so the regression is tracked.",
-                  "// FIX-ME (openregister): persist `_owner` on the magic-mapper create path;",
-                  "// then flip the assertion to oneOf([200,201]).",
+                  "// FIXED (openregister): `_owner` is now persisted on the magic-mapper",
+                  "// create path (MagicMapper::prepareObjectDataForTable no longer strips the",
+                  "// server-stamped owner). Because the row's `_owner` equals the creating",
+                  "// user, the update lock-ownership guard now allows the owner's own update.",
+                  "// A user CAN update an object they just created, and ownership-based RBAC +",
+                  "// owner notifications work. This test asserts the SECURE/correct behaviour.",
                   "// ====================================================================",
-                  "if (pm.response.code === 403) {",
-                  "  console.warn('OWNER-NOT-STAMPED BUG CONFIRMED: owner cannot update own object (403)');",
-                  "}",
-                  "pm.test('[QUARANTINED] owner update currently 403 (FIX-ME: should be 200)', function () {",
-                  "  pm.expect(pm.response.code, 'documenting current buggy behaviour').to.equal(403);",
+                  "pm.test('owner can update their own object (200)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
                   "});"
                 ]
               }
@@ -1541,7 +1531,7 @@
           ]
         },
         {
-          "name": "3b. [QUARANTINED IDOR HOLE] e2euser single-GET admin cross-org open object Z",
+          "name": "3b. e2euser single-GET admin cross-org open object Z -> 404 (org isolation)",
           "protocolProfileBehavior": {
             "disableCookies": true
           },
@@ -1601,22 +1591,16 @@
                 "type": "text/javascript",
                 "exec": [
                   "// ====================================================================",
-                  "// SECURITY HOLE (cross-org IDOR on the single-object read path).",
-                  "// On a DEFAULT-OPEN schema, the single-object GET (ObjectsController::show",
-                  "// -> ObjectService::find -> PermissionHandler) does NOT compare the object's",
-                  "// organisation against the caller's active organisation. The LIST path DOES",
-                  "// (test 3a passes). Result: a non-admin in org B can read an admin object in",
-                  "// org A by its id, even though it is filtered out of their list.",
-                  "// This test PINS the current insecure behaviour (200) so the regression is",
-                  "// tracked rather than silently green. FIX-ME (openregister): enforce",
-                  "// multitenancy in the single-object read path, then change the assertion to",
-                  "// pm.expect(code).to.be.oneOf([403,404]).",
+                  "// FIXED (openregister): the single-object read path now enforces the SAME",
+                  "// multitenancy + RBAC filtering as the list path. MagicMapper::",
+                  "// findInRegisterSchemaTable delegates to MagicSearchHandler::",
+                  "// applyAccessControlToQuery, so a cross-org object the caller may not see",
+                  "// is filtered out → no row → 404 (existence is NOT leaked, so 404 over 403).",
+                  "// A non-admin in org B can no longer read an admin object in org A by id.",
+                  "// This test asserts the SECURE behaviour.",
                   "// ====================================================================",
-                  "if (pm.response.code === 200) {",
-                  "  console.warn('IDOR-HOLE CONFIRMED: cross-org single-GET returned 200 for object Z');",
-                  "}",
-                  "pm.test('[QUARANTINED] cross-org single-GET currently returns 200 (FIX-ME: should be 403/404)', function () {",
-                  "  pm.expect(pm.response.code, 'documenting current insecure behaviour').to.equal(200);",
+                  "pm.test('cross-org single-GET is denied (404, no existence leak)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([403, 404]);",
                   "});"
                 ]
               }

@@ -256,6 +256,59 @@ class MagicSearchHandler
     }//end searchObjects()
 
     /**
+     * Apply the SAME multitenancy + RBAC access-control filters used by the
+     * list/search path to an arbitrary query builder.
+     *
+     * The single-object read path (MagicMapper::findInRegisterSchemaTable)
+     * historically skipped org/RBAC filtering entirely, creating a cross-org
+     * IDOR: a non-admin in org B could read an org-A object by id even though
+     * the list path correctly hid it. This method exposes the search path's
+     * access-control logic so the single-object read can enforce the exact
+     * same isolation, returning no row (→ 404, no existence leak) for objects
+     * the caller may not see.
+     *
+     * The query builder MUST already use the table alias `t` in its FROM clause,
+     * because the underlying org/RBAC conditions reference `t._organisation`,
+     * `t._owner`, etc.
+     *
+     * Public-published reads are preserved: resolveMultitenancyFlag() drops the
+     * org filter for schemas that grant `public` read, and the RBAC filter then
+     * grants the read — matching the list path exactly.
+     *
+     * @param IQueryBuilder $qb            Query builder (must use FROM alias `t`).
+     * @param Schema        $schema        Schema for access-control rules.
+     * @param bool          $_rbac         Whether to apply RBAC filtering.
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror the search-path posture.
+     */
+    public function applyAccessControlToQuery(
+        IQueryBuilder $qb,
+        Schema $schema,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): void {
+        // Mirror the list path: public schemas bypass multitenancy by default.
+        // No explicit multitenancy request exists on the single-object read path,
+        // so multitenancyExplicit is always false here.
+        $resolvedMultitenancy = $this->resolveMultitenancyFlag(
+            _multitenancy: $_multitenancy,
+            multitenancyExplicit: false,
+            schema: $schema
+        );
+
+        $this->applyAccessControlFilters(
+            qb: $qb,
+            schema: $schema,
+            _rbac: $_rbac,
+            _multitenancy: $resolvedMultitenancy,
+            multitenancyExplicit: false
+        );
+    }//end applyAccessControlToQuery()
+
+    /**
      * Build a filtered query with all WHERE conditions applied.
      *
      * This is the SINGLE SOURCE OF TRUTH for query filtering. Used by:
