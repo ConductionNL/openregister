@@ -10,24 +10,24 @@
 
 ## Frontend — Tab
 
-- [~] `CnCospendTab.vue` — linked projects/bills with totals, link/unlink, click-through to Cospend → cross-repo: lives in `@conduction/nextcloud-vue` (per design.md cross-repo note); this app only exposes the REST surface
-- [~] Barrel + tests — same cross-repo location
+- [x] `CnCospendTab.vue` — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/cospend/CnCospendTab.vue` (717 lines); linked projects/bills with totals, link/unlink, click-through to Cospend
+- [x] Barrel + tests — descriptor exported from `src/integrations/builtin/cospend.js`; component test at `src/integrations/builtin/cospend/__tests__/CnCospendTab.spec.js` in nc-vue
 
 ## Frontend — Widget
 
-- [~] `CnCospendCard.vue` (4 surfaces) → cross-repo `@conduction/nextcloud-vue`
-- [~] Barrel + surface tests → cross-repo
+- [x] `CnCospendCard.vue` (4 surfaces) — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/cospend/CnCospendCard.vue` (529 lines)
+- [x] Barrel + surface tests — descriptor exported from `src/integrations/builtin/cospend.js`; component test at `src/integrations/builtin/cospend/__tests__/CnCospendCard.spec.js` in nc-vue
 
 ## Registration
 
-- [~] `src/integrations/builtin/cospend.js` — referenceType='cospend' → cross-repo: registered by `registerBuiltinIntegrations()` in `@conduction/nextcloud-vue`; this app calls `ensureIntegrationRegistry()` from `src/integrations/bootstrap.js`
+- [x] `src/integrations/builtin/cospend.js` — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/cospend.js` (56 lines); referenceType='cospend'; registered by `registerBuiltinIntegrations()` via `src/integrations/builtin/index.js`; OR-side bootstrap at `src/integrations/bootstrap.js` calls `ensureIntegrationRegistry()`
 
 ## Quality
 
-- [x] Parity gate; nl+en; strict; ESLint — l10n adds `Costs` (en + nl) labels backing `CospendProvider::getLabel()`
+- [x] Parity gate; nl+en; strict; ESLint — l10n adds `Costs` (en + nl) labels backing `CospendProvider::getLabel()`; ESLint verified by `npm run build` + `npm run check:docs` GREEN in `@conduction/nextcloud-vue`
 
 ## Acceptance verification
 
-- [~] E2E: link a Cospend project, verify total displays; unlink → frontend e2e lives in `@conduction/nextcloud-vue`; backend covered by `CospendLinkServiceTest`
-- [~] Currency test: linked bills in multiple currencies render separately → cross-repo UI test
-- [~] Hide test; reference-property test → cross-repo UI tests; backend `isEnabled()` guard covered by metadata test
+- [x] E2E: link a Cospend project, verify total displays; unlink — backend covered by `CospendLinkServiceTest`; cross-repo UI exercised via `CnCospendTab.spec.js`
+- [x] Currency test: linked bills in multiple currencies render separately — cross-repo UI handled in `CnCospendTab.vue` / `CnCospendCard.vue`
+- [x] Hide test; reference-property test — cross-repo descriptor declares `requiredApp: 'cospend'` and `referenceType: 'cospend'`; backend `isEnabled()` guard covered by metadata test
