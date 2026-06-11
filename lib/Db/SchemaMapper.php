@@ -692,8 +692,18 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Lifecycle is ADVISORY metadata (a state-machine hint), not a storage
+        // requirement: a schema with a malformed or non-canonical lifecycle block
+        // still stores objects correctly. Rejecting the whole schema import over an
+        // advisory annotation breaks register imports for every app that ships a
+        // partial / different-dialect lifecycle block. Degrade to a non-fatal
+        // warning and import the schema (the lifecycle simply won't drive a status
+        // workflow) instead of throwing.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-lifecycle: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-lifecycle annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (no status workflow applied): '.implode(' ', $messages)
+        );
     }//end validateLifecycleAnnotation()
 
     /**
@@ -723,8 +733,15 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Aggregations are ADVISORY report-metadata, not a storage requirement.
+        // A malformed / empty / non-canonical aggregation block must not abort the
+        // whole schema import — the schema still stores objects, the aggregation
+        // simply won't be runnable. Degrade to a non-fatal warning.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-aggregations: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-aggregations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (aggregation not registered): '.implode(' ', $messages)
+        );
     }//end validateAggregationsAnnotation()
 
     /**
@@ -754,8 +771,16 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Calculations are ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed / non-canonical calculation block (e.g. a type
+        // outside the canonical set, or a missing expression) must not abort the
+        // whole schema import — the schema still stores objects, the calculation
+        // simply won't be evaluated. Degrade to a non-fatal warning.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-calculations: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-calculations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (calculation not evaluated): '.implode(' ', $messages)
+        );
     }//end validateCalculationsAnnotation()
 
     /**
