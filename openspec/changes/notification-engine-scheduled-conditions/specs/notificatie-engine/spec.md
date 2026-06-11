@@ -19,9 +19,7 @@ the main `notificatie-engine` spec and is NOT modified here.
 
 ### Requirement: Scheduled trigger filters MUST support relative-date and inequality operators
 
-A `scheduled` trigger's `filter` is a flat map of object-data field
-names to conditions, ANDed together. Each condition MUST be accepted in
-two forms:
+A `scheduled` trigger's `filter` MUST be evaluated as a flat map of object-data field names to conditions, ANDed together. Each condition MUST be accepted in two forms:
 
 - **Scalar (v1, unchanged):** `{"status": "open"}` — strict equality
   against the object's field value, byte-for-byte the existing
