@@ -788,6 +788,12 @@ class ObjectService
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
 
+        // A register/schema filter that does not resolve to an existing entity cannot match any
+        // object — return early with an empty result instead of querying. See prepareFindAllConfig().
+        if (($config['_unresolvableFilter'] ?? false) === true) {
+            return [];
+        }
+
         // Delegate the findAll operation to the handler.
         // Pass the resolved register/schema context so MagicMapper::findAll
         // does not bail out with "called without register/schema context".
@@ -838,19 +844,51 @@ class ObjectService
         }
 
         // Set the current register context if a register is provided, it's not an array, and it's not empty.
+        // A list filter referencing a register that does not exist cannot match any object, so we treat the
+        // DoesNotExistException as "no matches" (flagged for findAll to short-circuit) instead of letting it
+        // abort the caller. This keeps consumers working when the referenced register has not been imported
+        // yet — e.g. an opencatalogi config import that fires a notification rule querying the `openconnector`
+        // register, or OpenConnector cron jobs that run before OpenConnector's own configuration is imported.
         if (isset($config['filters']['register']) === true
             && is_array($config['filters']['register']) === false
             && empty($config['filters']['register']) === false
         ) {
-            $this->setRegister(register: $config['filters']['register']);
+            try {
+                $this->setRegister(register: $config['filters']['register']);
+            } catch (OcpDoesNotExistException $e) {
+                $this->currentRegister         = null;
+                $config['_unresolvableFilter'] = true;
+                $this->logger->debug(
+                    message: '[ObjectService] findAll register filter does not resolve; returning empty result',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'register' => $config['filters']['register'],
+                    ]
+                );
+            }
         }
 
         // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
+        // As with the register filter above, a non-existent schema matches nothing rather than erroring.
         if (isset($config['filters']['schema']) === true
             && is_array($config['filters']['schema']) === false
             && empty($config['filters']['schema']) === false
         ) {
-            $this->setSchema(schema: $config['filters']['schema']);
+            try {
+                $this->setSchema(schema: $config['filters']['schema']);
+            } catch (OcpDoesNotExistException $e) {
+                $this->currentSchema           = null;
+                $config['_unresolvableFilter'] = true;
+                $this->logger->debug(
+                    message: '[ObjectService] findAll schema filter does not resolve; returning empty result',
+                    context: [
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
+                        'schema' => $config['filters']['schema'],
+                    ]
+                );
+            }
         }
 
         return $config;
