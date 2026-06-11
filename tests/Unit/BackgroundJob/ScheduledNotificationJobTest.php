@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -242,7 +243,8 @@ class ScheduledNotificationJobTest extends TestCase
             $this->objectMapper,
             $this->dispatcher,
             $this->logger,
-            $this->cacheFactory
+            $this->cacheFactory,
+            new ScheduledFilterEvaluator(logger: $this->logger)
         );
         $reflection = new \ReflectionClass($job);
         $method     = $reflection->getMethod('run');

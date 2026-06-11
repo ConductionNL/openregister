@@ -36,7 +36,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use DateTimeImmutable;
+use DateTimeZone;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\ICache;
@@ -61,12 +64,13 @@ final class ScheduledNotificationJob extends TimedJob
     /**
      * Wire collaborators and configure the timed-job interval.
      *
-     * @param ITimeFactory                     $time         Nextcloud time factory.
-     * @param SchemaMapper                     $schemaMapper Schema lookup mapper.
-     * @param MagicMapper                      $objectMapper Magic object mapper.
-     * @param AnnotationNotificationDispatcher $dispatcher   Notification dispatcher.
-     * @param LoggerInterface                  $logger       PSR logger.
-     * @param ICacheFactory                    $cacheFactory Distributed cache factory.
+     * @param ITimeFactory                     $time             Nextcloud time factory.
+     * @param SchemaMapper                     $schemaMapper     Schema lookup mapper.
+     * @param MagicMapper                      $objectMapper     Magic object mapper.
+     * @param AnnotationNotificationDispatcher $dispatcher       Notification dispatcher.
+     * @param LoggerInterface                  $logger           PSR logger.
+     * @param ICacheFactory                    $cacheFactory     Distributed cache factory.
+     * @param ScheduledFilterEvaluator         $filterEvaluator  Operator-aware filter evaluator.
      *
      * @return void
      */
@@ -76,7 +80,8 @@ final class ScheduledNotificationJob extends TimedJob
         private readonly MagicMapper $objectMapper,
         private readonly AnnotationNotificationDispatcher $dispatcher,
         private readonly LoggerInterface $logger,
-        ICacheFactory $cacheFactory
+        ICacheFactory $cacheFactory,
+        private readonly ScheduledFilterEvaluator $filterEvaluator
     ) {
         parent::__construct(time: $time);
         $this->setInterval(seconds: 60);
@@ -101,7 +106,10 @@ final class ScheduledNotificationJob extends TimedJob
      */
     protected function run($argument): void
     {
-        $now = time();
+        $now   = time();
+        // One logical "now" per scan pass so every entry sees the same window
+        // (Phase 1 — filter operator evaluator).
+        $nowDt = (new DateTimeImmutable('@'.$now))->setTimezone(new DateTimeZone('UTC'));
 
         try {
             $schemas = $this->schemaMapper->findAll();
@@ -117,19 +125,20 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            $this->processSchema(schema: $schema, now: $now);
+            $this->processSchema(schema: $schema, now: $now, nowDt: $nowDt);
         }
     }//end run()
 
     /**
      * Inspect one schema's notification specs and fire those that are due.
      *
-     * @param Schema $schema Schema being inspected.
-     * @param int    $now    Current epoch second.
+     * @param Schema            $schema Schema being inspected.
+     * @param int               $now    Current epoch second.
+     * @param DateTimeImmutable $nowDt  Logical "now" for relative-date filters in this scan pass.
      *
      * @return void
      */
-    private function processSchema(Schema $schema, int $now): void
+    private function processSchema(Schema $schema, int $now, DateTimeImmutable $nowDt): void
     {
         $config        = ($schema->getConfiguration() ?? []);
         $notifications = ($config['x-openregister-notifications'] ?? null);
@@ -162,7 +171,7 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            $this->fire(schema: $schema, notificationName: (string) $name, trigger: $trigger);
+            $this->fire(schema: $schema, notificationName: (string) $name, trigger: $trigger, nowDt: $nowDt);
 
             // Mark as fired regardless of per-object errors; the dispatcher
             // already swallows + logs its own failures.
@@ -243,10 +252,11 @@ final class ScheduledNotificationJob extends TimedJob
      * @param Schema               $schema           Schema whose objects to scan.
      * @param string               $notificationName Notification key in the schema config.
      * @param array<string, mixed> $trigger          Trigger configuration including filters.
+     * @param DateTimeImmutable    $nowDt            Logical "now" used for relative-date operators.
      *
      * @return void
      */
-    private function fire(Schema $schema, string $notificationName, array $trigger): void
+    private function fire(Schema $schema, string $notificationName, array $trigger, DateTimeImmutable $nowDt): void
     {
         try {
             $filter  = (array) ($trigger['filter'] ?? []);
@@ -269,7 +279,8 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            if ($this->matchesFilter(object: $object, filter: $filter) === false) {
+            $objectData = (array) ($object->getObject() ?? []);
+            if ($this->filterEvaluator->matches(objectData: $objectData, filter: $filter, now: $nowDt) === false) {
                 continue;
             }
 
@@ -302,30 +313,4 @@ final class ScheduledNotificationJob extends TimedJob
         );
     }//end fire()
 
-    /**
-     * Simple equality match against object data fields.
-     * For v1 we only support flat `{ field: value }` filters; richer
-     * shapes (operators, nested paths) are a v1.1 extension.
-     *
-     * @param ObjectEntity         $object Object instance whose data is being inspected.
-     * @param array<string, mixed> $filter Flat key/value equality filter.
-     *
-     * @return bool True when every filter entry matches, false otherwise.
-     */
-    private function matchesFilter(ObjectEntity $object, array $filter): bool
-    {
-        if (count($filter) === 0) {
-            return true;
-        }
-
-        $data = (array) ($object->getObject() ?? []);
-        foreach ($filter as $key => $expected) {
-            $actual = ($data[$key] ?? null);
-            if ($actual !== $expected) {
-                return false;
-            }
-        }
-
-        return true;
-    }//end matchesFilter()
 }//end class
