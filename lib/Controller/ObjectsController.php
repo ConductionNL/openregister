@@ -1851,6 +1851,13 @@ class ObjectsController extends Controller
             return new JSONResponse(data: $renderedData);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        } catch (NotAuthorizedException $exception) {
+            // RBAC denied the read. Return 404 (not 500, and not 403) so an
+            // unauthorized caller cannot distinguish "exists but forbidden"
+            // from "does not exist" — avoids leaking object existence while
+            // still denying access. Previously this exception escaped the
+            // handler and surfaced as an HTTP 500.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
     }//end show()
 

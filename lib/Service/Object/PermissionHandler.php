@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IUserSession;
 use OCP\IUserManager;
@@ -685,7 +686,12 @@ class PermissionHandler
                 $userName = $user->getDisplayName();
             }
 
-            throw new Exception(
+            // Use NotAuthorizedException (HTTP 403) rather than a generic
+            // Exception so controllers map an RBAC denial to a 403 Forbidden
+            // response instead of leaking a 500 Internal Server Error. The
+            // class extends \Exception, so any existing `catch (Exception)`
+            // call sites remain backward-compatible.
+            throw new NotAuthorizedException(
                 "User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'"
             );
         }
