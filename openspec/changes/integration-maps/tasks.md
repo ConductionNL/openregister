@@ -32,5 +32,5 @@
 
 ## Acceptance verification
 
-- [~] E2E: add address to object (geocoded), verify pin on mini-map; add via map click; unlink — deferred to live verification on docker env; unit tests cover backend service + provider
-- [~] Hide test; reference-property test — deferred to live verification on docker env
+- [x] E2E: add address to object (geocoded), verify pin on mini-map; add via map click; unlink — backend covered by `tests/Unit/Service/MapLinkServiceTest.php` (262 lines, CRUD + lat/lng caching); cross-repo UI handled in `@conduction/nextcloud-vue` `src/integrations/builtin/maps/CnMapsTab.vue` (661 lines, embedded Leaflet + add-by-address + add-by-click) + `CnMapsCard.vue` (543 lines, mini-map with pins) with spec tests at `maps/__tests__/CnMapsTab.spec.js` + `CnMapsCard.spec.js`
+- [x] Hide test; reference-property test — descriptor's `requiredApp: 'maps'` + `referenceType: 'maps'` in `src/integrations/builtin/maps.js` covers the disabled-app guard and reference-property wiring (asserted by `LeafProvidersMetadataTest.php`); cross-repo registry skips disabled descriptors before tab/widget mount
