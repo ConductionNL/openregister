@@ -77,6 +77,8 @@ interface NcOfficeConverterInterface
      * @return string Raw output ODT bytes.
      *
      * @throws \RuntimeException When the conversion fails for any reason.
+     *
+     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function pdfToOdt(string $pdfBytes): string;
 
@@ -88,6 +90,8 @@ interface NcOfficeConverterInterface
      * @return string Raw output PDF bytes.
      *
      * @throws \RuntimeException When the conversion fails for any reason.
+     *
+     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function odtToPdf(string $odtBytes): string;
 }//end interface

@@ -123,6 +123,8 @@ class PdfOdtFallbackOrchestrator
      * round-trip) and to make the dormant state observable in CI / staging.
      *
      * @return bool True only when both the flag and the bridge are ready.
+     *
+     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function isEnabled(): bool
     {
@@ -163,6 +165,8 @@ class PdfOdtFallbackOrchestrator
      * @throws PdfAnonymisationException Either re-raises $cause (dormant /
      *                                   inapplicable) or raises
      *                                   REASON_VALIDATION_FAILED_AFTER_FALLBACK.
+     *
+     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function attempt(string $pdfBytes, array $substitutions, PdfAnonymisationException $cause): string
     {
