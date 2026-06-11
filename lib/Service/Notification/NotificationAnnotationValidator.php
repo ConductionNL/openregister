@@ -132,7 +132,70 @@ final class NotificationAnnotationValidator
                         ),
                     ];
                 }
-            }
+
+                // Validate filter operator grammar (Phase 2 — save-time grammar validation).
+                // Scalar entries always pass; operator objects must declare a known operator,
+                // a present `value`, and an ISO-8601 DateInterval-parseable duration for
+                // withinNext / olderThan. See notification-engine-scheduled-conditions.
+                if (is_array($trigger) === true && isset($trigger['filter']) === true) {
+                    $filter = $trigger['filter'];
+                    if (is_array($filter) === false) {
+                        $errors[] = [
+                            'code'    => 'notification-scheduled-bad-filter',
+                            'ruleKey' => $name,
+                            'field'   => 'trigger.filter',
+                            'value'   => $filter,
+                            'message' => sprintf(
+                                'Notification "%s" trigger.filter must be an object/map.',
+                                $name
+                            ),
+                        ];
+                    } else {
+                        foreach ($filter as $fieldKey => $filterSpec) {
+                            $entryErrors = $this->validateScheduledFilterEntry(
+                                ruleKey: $name,
+                                field: (string) $fieldKey,
+                                spec: $filterSpec
+                            );
+                            foreach ($entryErrors as $entryError) {
+                                $errors[] = $entryError;
+                            }
+                        }
+                    }
+                }
+
+                if (is_array($trigger) === true && isset($trigger['dedupeFields']) === true) {
+                    $dedupeFields = $trigger['dedupeFields'];
+                    if (is_array($dedupeFields) === false || $dedupeFields === []) {
+                        $errors[] = [
+                            'code'    => 'notification-scheduled-bad-dedupe-fields',
+                            'ruleKey' => $name,
+                            'field'   => 'trigger.dedupeFields',
+                            'value'   => $dedupeFields,
+                            'message' => sprintf(
+                                'Notification "%s" trigger.dedupeFields must be a non-empty array of strings.',
+                                $name
+                            ),
+                        ];
+                    } else {
+                        foreach ($dedupeFields as $idx => $field) {
+                            if (is_string($field) === false || $field === '') {
+                                $errors[] = [
+                                    'code'    => 'notification-scheduled-bad-dedupe-fields',
+                                    'ruleKey' => $name,
+                                    'field'   => sprintf('trigger.dedupeFields[%d]', (int) $idx),
+                                    'value'   => $field,
+                                    'message' => sprintf(
+                                        'Notification "%s" trigger.dedupeFields entries must be non-empty strings.',
+                                        $name
+                                    ),
+                                ];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }//end scheduled
 
             if ($triggerType === 'threshold') {
                 $aggregation = '';
@@ -538,4 +601,110 @@ final class NotificationAnnotationValidator
         ];
 
     }//end validateOrganisationGate()
+
+
+    /**
+     * Validate a single scheduled-trigger filter entry.
+     *
+     * Scalar entries always pass (legacy v1 byte-for-byte equality).
+     * Operator-object entries must declare:
+     *   - a recognised operator (equals | notEquals | withinNext | olderThan);
+     *   - a `value` key (even if null) — for equals/notEquals;
+     *   - an ISO-8601 DateInterval-parseable string `value` for withinNext / olderThan.
+     *
+     * @param string $ruleKey The notification rule key for diagnostics.
+     * @param string $field   The filter field name being inspected.
+     * @param mixed  $spec    The raw filter entry value (scalar or operator object).
+     *
+     * @return array<int, array{code: string, ruleKey: string, field: string, value: mixed, message: string}>
+     */
+    private function validateScheduledFilterEntry(string $ruleKey, string $field, $spec): array
+    {
+        // Scalar shortcut: always accepted (legacy v1 strict equality).
+        if (is_array($spec) === false || array_key_exists('operator', $spec) === false) {
+            return [];
+        }
+
+        $validOperators = ['equals', 'notEquals', 'withinNext', 'olderThan'];
+        $operator       = (string) ($spec['operator'] ?? '');
+
+        if (in_array($operator, $validOperators, true) === false) {
+            return [
+                [
+                    'code'    => 'notification-scheduled-bad-filter-operator',
+                    'ruleKey' => $ruleKey,
+                    'field'   => sprintf('trigger.filter.%s.operator', $field),
+                    'value'   => $operator,
+                    'message' => sprintf(
+                        'Notification "%s" trigger.filter.%s.operator must be one of [%s]; got "%s".',
+                        $ruleKey,
+                        $field,
+                        implode(', ', $validOperators),
+                        $operator
+                    ),
+                ],
+            ];
+        }
+
+        if (array_key_exists('value', $spec) === false) {
+            return [
+                [
+                    'code'    => 'notification-scheduled-bad-filter-missing-value',
+                    'ruleKey' => $ruleKey,
+                    'field'   => sprintf('trigger.filter.%s.value', $field),
+                    'value'   => null,
+                    'message' => sprintf(
+                        'Notification "%s" trigger.filter.%s requires a "value" key.',
+                        $ruleKey,
+                        $field
+                    ),
+                ],
+            ];
+        }
+
+        if ($operator === 'withinNext' || $operator === 'olderThan') {
+            $duration = $spec['value'];
+            if (is_string($duration) === false || $duration === '') {
+                return [
+                    [
+                        'code'    => 'notification-scheduled-bad-filter-duration',
+                        'ruleKey' => $ruleKey,
+                        'field'   => sprintf('trigger.filter.%s.value', $field),
+                        'value'   => $duration,
+                        'message' => sprintf(
+                            'Notification "%s" trigger.filter.%s.value must be an ISO-8601 DateInterval string for "%s".',
+                            $ruleKey,
+                            $field,
+                            $operator
+                        ),
+                    ],
+                ];
+            }
+
+            try {
+                new \DateInterval($duration);
+            } catch (\Exception $e) {
+                return [
+                    [
+                        'code'    => 'notification-scheduled-bad-filter-duration',
+                        'ruleKey' => $ruleKey,
+                        'field'   => sprintf('trigger.filter.%s.value', $field),
+                        'value'   => $duration,
+                        'message' => sprintf(
+                            'Notification "%s" trigger.filter.%s.value "%s" is not a valid ISO-8601 DateInterval for "%s".',
+                            $ruleKey,
+                            $field,
+                            $duration,
+                            $operator
+                        ),
+                    ],
+                ];
+            }
+        }
+
+        return [];
+
+    }//end validateScheduledFilterEntry()
+
+
 }//end class
