@@ -34,7 +34,9 @@ class WorkflowEngineControllerTest extends TestCase
             $this->request,
             $this->registry,
             $this->logger,
-            $this->createMock(IL10N::class)
+            $this->createMock(IL10N::class),
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class)
         );
     }
 

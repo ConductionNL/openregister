@@ -115,7 +115,8 @@ class RegisterServiceTest extends TestCase
             db: $this->db,
             fileService: $this->fileService,
             organisationService: $this->organisationService,
-            logger: $this->logger
+            logger: $this->logger,
+            registerSerializer: $this->createMock(\OCA\OpenRegister\Service\Serializer\RegisterSerializer::class)
         );
     }
 

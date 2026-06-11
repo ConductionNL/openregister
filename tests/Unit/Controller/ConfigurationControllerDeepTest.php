@@ -53,7 +53,9 @@ class ConfigurationControllerDeepTest extends TestCase
             $this->gitHubHandler,
             $this->gitLabHandler,
             $this->appManager,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class)
         );
     }
 

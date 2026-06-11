@@ -44,7 +44,10 @@ class SourcesControllerTest extends TestCase
             $this->request,
             $this->config,
             $this->sourceMapper,
-            $l10n
+            $l10n,
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class),
+            $this->createMock(\OCP\Security\ICrypto::class)
         );
     }
 

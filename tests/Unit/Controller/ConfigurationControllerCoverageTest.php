@@ -56,7 +56,9 @@ class ConfigurationControllerCoverageTest extends TestCase
             $this->githubHandler,
             $this->gitlabHandler,
             $this->appManager,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class)
         );
     }
 

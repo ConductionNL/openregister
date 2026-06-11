@@ -209,7 +209,7 @@ class AggregationCacheTest extends TestCase
         $factory->method('createDistributed')->willThrowException(new \RuntimeException('no cache'));
         $this->logger->expects($this->once())->method('warning');
 
-        $cache = new AggregationCache($factory, $this->userSession, $this->logger);
+        $cache = new AggregationCache($factory, $this->userSession, $this->logger, $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class));
         // get/set/evict must all be no-ops when the backend is unavailable.
         $this->assertNull($cache->get('reg', 'sch', 'agg', []));
         $cache->set('reg', 'sch', 'agg', [], ['value' => 1]);
@@ -345,6 +345,6 @@ class AggregationCacheTest extends TestCase
 
     private function makeCache(): AggregationCache
     {
-        return new AggregationCache($this->cacheFactory, $this->userSession, $this->logger);
+        return new AggregationCache($this->cacheFactory, $this->userSession, $this->logger, $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class));
     }
 }

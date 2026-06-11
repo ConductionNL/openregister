@@ -36,7 +36,9 @@ class ConfigurationsControllerTest extends TestCase
             $this->configurationMapper,
             $this->configurationService,
             $this->uploadService,
-            'admin'
+            'admin',
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class)
         );
     }
 

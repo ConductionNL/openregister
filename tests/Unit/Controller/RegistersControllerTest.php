@@ -125,7 +125,8 @@ class RegistersControllerTest extends TestCase
             $this->oasService,
             $this->container,
             $this->groupManager,
-            $this->createMock(RegisterCacheHandler::class)
+            $this->createMock(RegisterCacheHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Serializer\RegisterSerializer::class)
         );
     }
 

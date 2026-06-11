@@ -179,7 +179,9 @@ class ActiveOrganisationManagementTest extends TestCase
             organisationMapper: $this->organisationMapper,
             logger: $this->logger,
             tenantLifecycleService: $this->createMock(TenantLifecycleService::class),
-            tenantUsageMapper: $this->createMock(TenantUsageMapper::class)
+            tenantUsageMapper: $this->createMock(TenantUsageMapper::class),
+            userSession: $this->userSession,
+            groupManager: $this->groupManager
         );
     }
 

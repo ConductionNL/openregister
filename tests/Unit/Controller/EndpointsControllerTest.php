@@ -42,7 +42,9 @@ class EndpointsControllerTest extends TestCase
             $this->endpointMapper,
             $this->endpointLogMapper,
             $this->endpointService,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class)
         );
     }
 
