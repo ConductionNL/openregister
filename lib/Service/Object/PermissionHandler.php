@@ -41,6 +41,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -84,6 +85,13 @@ class PermissionHandler
      * @var array<int, array|null>
      */
     private array $cachedRegisterAuth = [];
+
+    /**
+     * Per-request cache of the resolved inheritFromPublic value, keyed by schema id.
+     *
+     * @var array<int, bool>
+     */
+    private array $cachedInheritFromPublic = [];
 
     /**
      * Per-request cache for register configuration (roles).
@@ -170,6 +178,7 @@ class PermissionHandler
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
         private readonly ConditionMatcher $conditionMatcher,
+        private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
         private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null
@@ -486,8 +495,13 @@ class PermissionHandler
             }
         }//end foreach
 
-        // Logged-in users should also have at least the same rights as 'public' users.
-        if ($this->hasGroupPermission(
+        // Logged-in users normally also inherit at least the same rights as
+        // 'public' users — unless the schema/register/tenant disabled public
+        // inheritance for authenticated users (inheritFromPublic = false). The
+        // flag only governs this authenticated-inherits-public step; anonymous
+        // users are handled earlier and are never affected.
+        if ($this->resolveInheritFromPublic(schema: $schema) === true
+            && $this->hasGroupPermission(
                 authorization: $authorization,
                 groupId: 'public',
                 action: $action,
@@ -1280,6 +1294,93 @@ class PermissionHandler
 
         return null;
     }//end resolveAuthorization()
+
+    /**
+     * Resolve whether authenticated users inherit `public` group rights for a schema.
+     *
+     * Cascade (first explicit boolean wins): schema authorization →
+     * register authorization → tenant-wide IAppConfig
+     * `openregister.rbac.inherit_from_public_default` → hard-coded `true`.
+     * A `null` (or any non-boolean) value at a level is treated as "unset" so
+     * the cascade falls through. Anonymous users are never affected by this flag.
+     *
+     * @param Schema $schema The schema being evaluated.
+     *
+     * @return bool True when authenticated users inherit `public` rights.
+     *
+     * @spec openspec/changes/rbac-disable-public-inheritance/tasks.md
+     */
+    public function resolveInheritFromPublic(Schema $schema): bool
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId !== null && array_key_exists($schemaId, $this->cachedInheritFromPublic) === true) {
+            return $this->cachedInheritFromPublic[$schemaId];
+        }
+
+        $resolved = null;
+
+        // Step 1: schema-level authorization (strict boolean; non-bool = unset).
+        $auth = $schema->getAuthorization();
+        if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
+            $resolved = $this->coerceStrictBoolOrLog(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId);
+        }
+
+        // Step 2: register-level authorization.
+        if ($resolved === null) {
+            $register = $this->getRegisterForSchema(schema: $schema);
+            if ($register !== null) {
+                $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
+                if (is_array($registerAuth) === true && array_key_exists('inheritFromPublic', $registerAuth) === true) {
+                    $resolved = $this->coerceStrictBoolOrLog(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId);
+                }
+            }
+        }
+
+        // Step 3: tenant-wide IAppConfig default (IAppConfig tolerates string forms here).
+        if ($resolved === null) {
+            $resolved = $this->appConfig->getValueBool(app: 'openregister', key: 'rbac.inherit_from_public_default', default: true);
+        }
+
+        if ($schemaId !== null) {
+            $this->cachedInheritFromPublic[$schemaId] = $resolved;
+        }
+
+        return $resolved;
+    }//end resolveInheritFromPublic()
+
+    /**
+     * Strictly coerce an inheritFromPublic cascade value to bool, or null when unset.
+     *
+     * Only a literal `true`/`false` counts. Anything else (string "false",
+     * int 0, etc.) is treated as "unset" and logged — PHP's loose `(bool)
+     * "false" === true` would otherwise silently invert the gate on a
+     * seed/migration/CLI write that bypasses the schema validator.
+     *
+     * @param mixed    $value    The stored value.
+     * @param string   $level    The cascade level ('schema' | 'register'), for logging.
+     * @param int|null $schemaId The schema id, for logging.
+     *
+     * @return bool|null The boolean value, or null when the value is not a real boolean.
+     */
+    private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool
+    {
+        if ($value === true || $value === false) {
+            return $value;
+        }
+
+        if ($value !== null) {
+            $this->logger->warning(
+                message: '[PermissionHandler] Non-boolean inheritFromPublic value ignored; treating as unset',
+                context: [
+                    'level'    => $level,
+                    'schemaId' => $schemaId,
+                    'type'     => get_debug_type($value),
+                ]
+            );
+        }
+
+        return null;
+    }//end coerceStrictBoolOrLog()
 
     /**
      * Get the parent register for a schema.
