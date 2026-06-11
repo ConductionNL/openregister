@@ -29,14 +29,22 @@ class WorkflowEngineControllerTest extends TestCase
         $this->registry = $this->createMock(WorkflowEngineRegistry::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // Write endpoints are admin-gated; simulate an authenticated admin.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($adminUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new WorkflowEngineController(
             'openregister',
             $this->request,
             $this->registry,
             $this->logger,
             $this->createMock(IL10N::class),
-            $this->createMock(\OCP\IUserSession::class),
-            $this->createMock(\OCP\IGroupManager::class)
+            $userSession,
+            $groupManager
         );
     }
 

@@ -180,7 +180,6 @@ class AggregationRunnerTest extends TestCase
                 $this->equalTo('zaken'),
                 $this->anything(),
                 $this->anything(),
-                $this->anything(),
                 $this->isFalse()
             )
             ->willReturn($register);
