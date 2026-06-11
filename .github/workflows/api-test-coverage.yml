@@ -98,6 +98,32 @@ jobs:
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
 
+      - name: PHPUnit unit suite (in-container, HARD GATE)
+        # The unit suite requires the full Nextcloud runtime — the OCP stubs
+        # reference Doctrine\DBAL\* and OC\* internals that only resolve once
+        # lib/base.php is bootstrapped, so it CANNOT run in a bare PHP CI
+        # container (see tests/bootstrap.php + TESTING-CI-ROLLOUT.md). Run it
+        # here, inside the booted NC stack, after the app is deployed/enabled.
+        #
+        # Copy the app OUT of /var/www/html first: when phpunit runs from
+        # inside custom_apps, NC's autoloader (already loaded by base.php)
+        # hijacks the bootstrap. A unique COMPOSER_AUTOLOADER_SUFFIX avoids the
+        # ComposerAutoloaderInit redeclaration between the live and copied vendor.
+        run: |
+          docker exec -u www-data nextcloud bash -lc '
+            set -e
+            rm -rf /tmp/ortest
+            cp -r /var/www/html/custom_apps/openregister /tmp/ortest
+            cd /tmp/ortest
+            # The deployed vendor is production-only (--no-dev) so it lacks
+            # phpunit. Install dev deps + a unique autoloader suffix in the copy
+            # (the suffix avoids the ComposerAutoloaderInit redeclaration against
+            # the live app vendor already loaded by base.php).
+            php -r "\$j=json_decode(file_get_contents(\"composer.json\"),true); \$j[\"config\"][\"autoloader-suffix\"]=\"OrTestCI\"; file_put_contents(\"composer.json\", json_encode(\$j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));"
+            php composer.phar install --no-interaction --no-progress --prefer-dist
+            OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit.xml --no-coverage --colors=never tests/Unit
+          '
+
       - name: Wait for openregister API to respond
         run: |
           # app:enable returns before the magic-mapping repair step + PHP-FPM
