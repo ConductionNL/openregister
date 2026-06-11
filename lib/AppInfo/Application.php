@@ -373,6 +373,18 @@ class Application extends App implements IBootstrap
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
 
+        // Bind the dormant Path B PDF anonymisation fallback bridge to its
+        // null implementation. Tenants enabling Path B replace this binding
+        // with a concrete NcOfficeConverterInterface implementation that
+        // talks to Collabora Online / Code (per the
+        // `pdf-anonymisation-odt-fallback` scaffold).
+        $context->registerService(
+            \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
+            function () {
+                return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);

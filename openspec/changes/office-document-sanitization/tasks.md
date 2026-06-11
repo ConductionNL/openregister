@@ -79,11 +79,12 @@
 
 ## 5. AnonymizationLog persistence
 
-> DEFERRED — no anonymisation-log table/entity exists in the current OpenRegister codebase. `DocumentProcessingHandler::anonymizeDocument()` returns a `File` directly; there is no `AnonymizationLog` Db entity or mapper to attach a `sanitization` column to (verified: `lib/Db/` has no anonymisation log, anonymisation is invoked from `FileTextController` → `FileService::anonymizeDocument`). Until an anonymisation-log table lands, the audit report is retained on the handler via `getLastSanitizationReport()` (see 6.x) and logged PII-free. A follow-up migration is filed when the log table is introduced.
+The anonymisation log lands in this change: a new `openregister_anonymisation_log` table records every anonymisation run with the sanitisation report on the `sanitization` column (JSON; nullable; `null` for non-Office runs per the spec). `DocumentProcessingHandler::anonymizeDocument()` writes a row at the end of every run.
 
-- [ ] 5.1 (deferred) Add migration adding a `sanitization` JSON column to the anonymisation log table — no such table exists yet.
-- [ ] 5.2 (deferred) Add `sanitization: ?array` to the anonymisation-log entity — no such entity exists yet.
-- [ ] 5.3 (deferred) Mapper read/write of the JSON column — depends on 5.1/5.2.
+- [x] 5.1 Migration `lib/Migration/Version1Date20260611000000.php` creates `openregister_anonymisation_log` (idempotent — `hasTable` guard). Columns: id, file_id (indexed), object_uuid (nullable, indexed), register_id (nullable, indexed), schema_id (nullable, indexed), mime_type, engine, status (default `success`), reason (nullable), `sanitization` TEXT (nullable — JSON payload), replacements (default 0), duration_ms (nullable), created.
+- [x] 5.2 Entity `lib/Db/AnonymisationLog.php` with `STATUS_SUCCESS` / `STATUS_FAILURE` constants, `getSanitizationArray()` JSON decode helper, and `jsonSerialize()` matching the column order. `sanitization` is `?string` to honour the nullable column.
+- [x] 5.3 Mapper `lib/Db/AnonymisationLogMapper.php` (QBMapper) with `find()`, `findByFileId()`, `findByObjectUuid()`, `findLatestSuccessForFile()`. `insert()` stamps `created` server-side.
+- [x] 5.4 `DocumentProcessingHandler` accepts an optional `AnonymisationLogMapper` constructor parameter (nullable so tests stay construct-safe). At the tail of `anonymizeDocument()` the handler builds an `AnonymisationLog` row carrying the JSON-serialised `SanitizationReport` (or `null` for non-Office runs), `file_id`, `mime_type`, `engine` (`OfficeDocumentSanitizer` / `PdfTextReplacer` / `TextReplacer`), and the replacement count. Persistence failures are best-effort: a DB-side error is logged PII-free and swallowed (does NOT mask the successful redaction).
 
 ## 6. DocumentProcessingHandler integration
 
@@ -122,11 +123,12 @@
 
 ## 10. Integration tests
 
-> DEFERRED — requires a live Nextcloud instance (IRootFolder-backed Files storage) which is not available in the worktree-isolated build environment. The orchestrator test (`OfficeDocumentSanitizerTest`) exercises the IRootFolder dispatch path with mocks and skips cleanly when NC server classes are absent (runs in the Docker test environment). End-to-end NC-Files upload + anonymise assertions are filed for the Docker/CI run. The `sanitization` log-column assertions in 10.1–10.3 additionally depend on the deferred §5 log table.
+The §5 log table now exists, so the assertions can compose the sanitiser + mapper chain against synthetic fixtures without a live NC instance. End-to-end PDF / DOCX upload + anonymise via the REST surface still runs in the Docker test environment, but the per-format sanitiser + log-row JSON shape is exercised directly here.
 
-- [~] 10.1 (deferred — live NC) End-to-end DOCX anonymise via NC Files; assert output written + original byte-identical.
-- [~] 10.2 (deferred — live NC) Same flow for ODT.
-- [~] 10.3 (deferred — live NC) Non-Office (PDF) path produces no sanitisation report.
+- [x] 10.1 `tests/Integration/OfficeDocumentSanitizationIntegrationTest::testDocxRunWritesReportToAnonymisationLog` — synthesised DOCX → orchestrator dispatch → mock `AnonymisationLogMapper` captures the row; asserts original-byte-identical, `engine = OfficeDocumentSanitizer`, decoded `sanitization` carries every spec key.
+- [x] 10.2 `testOdtRunWritesReportToAnonymisationLog` — parity for ODT.
+- [x] 10.3 `testPdfRunLeavesSanitizationColumnNull` — PDF row asserts `sanitization` decodes to `null`, `engine = PdfTextReplacer` (spec scenario "PDF anonymisation leaves sanitization column null").
+- [x] 10.4 `testJsonShapeMatchesSanitizationReport` — extra invariant check that the JSON keys match the spec list verbatim.
 
 ## 11. Manual validation gate (BLOCKING)
 

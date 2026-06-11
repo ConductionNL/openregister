@@ -36,6 +36,18 @@ Hyperlinks are flattened to their visible text; the URL (which often carries PII
 
 Each sanitisation produces a `SanitizationReport` with per-category counts (comments removed, tracked changes accepted/dropped, revision attributes stripped, hyperlinks flattened, metadata fields scrubbed, custom XML parts dropped, field codes stripped, sentinel applied). The report is PII-free (counts only — never document content) and is retained on `DocumentProcessingHandler::getLastSanitizationReport()`. Logging follows ADR-005: only file ID, MIME type, strategy class and counts are logged.
 
+### Anonymisation log persistence
+
+Per-run rows land in the new `openregister_anonymisation_log` table. Each row captures the file id, originating object UUID / register / schema (when applicable), MIME type, engine label, status, structured failure reason, replacement count, wall-clock duration, and — for Office documents — the JSON-serialised `SanitizationReport` on the nullable `sanitization` column. The column is `null` for non-Office runs (PDF, plain text) and pre-sanitisation legacy rows. Consumers (DocuDesk's grondslagen-summary renderer) treat `null` as "no sanitisation data; not applicable" and do not raise an error.
+
+The entity / mapper live at:
+
+- `lib/Db/AnonymisationLog.php` — entity with `STATUS_SUCCESS` / `STATUS_FAILURE` constants and a `getSanitizationArray()` decode helper.
+- `lib/Db/AnonymisationLogMapper.php` — `findByFileId()`, `findByObjectUuid()`, `findLatestSuccessForFile()`.
+- `lib/Migration/Version1Date20260611000000.php` — idempotent create-if-missing migration.
+
+Persistence is best-effort — a DB-side failure is logged PII-free and swallowed so a successful redaction is never masked.
+
 ## Encrypted documents
 
 Password-protected `.docx`/`.odt` cannot be sanitised without the password. The sanitiser raises a typed `SanitizationException` (reason `encrypted`); the anonymisation flow surfaces this as a caller-correctable "Cannot anonymise an encrypted document" error.
