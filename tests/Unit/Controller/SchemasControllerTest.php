@@ -516,51 +516,11 @@ class SchemasControllerTest extends TestCase
         $this->assertSame(500, $result->getStatus());
     }//end testUpdateFromExplorationReturns500OnException()
 
-    public function testPublishSetsPublicationDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testPublishSetsPublicationDate()
-
-    public function testPublishReturns404WhenSchemaNotFound(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }//end testPublishReturns404WhenSchemaNotFound()
-
-    public function testDepublishSetsDepublicationDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testDepublishSetsDepublicationDate()
-
-    public function testDepublishReturns404WhenSchemaNotFound(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }//end testDepublishReturns404WhenSchemaNotFound()
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // SchemasController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H2). Publication state is now derived
+    // server-side from the schema's published/depublished timestamps;
+    // there is no controller method to drive directly.
 
     public function testUpdateRemovesImmutableFields(): void
     {
@@ -1091,103 +1051,8 @@ class SchemasControllerTest extends TestCase
         $this->assertSame('Database connection lost', $result->getData()['error']);
     }//end testStatsReturns500OnGenericException()
 
-    // ── publish() branch coverage ──
-    public function testPublishWithCustomDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-
-        $this->request->method('getParam')
-            ->willReturnMap(
-                    [
-                        ['date', null, '2025-06-15'],
-                    ]
-                    );
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testPublishWithCustomDate()
-
-    public function testPublishReturns400OnGenericException(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new Exception('Unexpected error'));
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('Unexpected error', $result->getData()['error']);
-    }//end testPublishReturns400OnGenericException()
-
-    public function testPublishInvalidatesCaches(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $this->schemaCacheService->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'publish');
-        $this->facetCacheSvc->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'publish');
-
-        $this->controller->publish(1);
-    }//end testPublishInvalidatesCaches()
-
-    // ── depublish() branch coverage ──
-    public function testDepublishWithCustomDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-
-        $this->request->method('getParam')
-            ->willReturnMap(
-                    [
-                        ['date', null, '2025-12-31'],
-                    ]
-                    );
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testDepublishWithCustomDate()
-
-    public function testDepublishReturns400OnGenericException(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new Exception('Update failed'));
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('Update failed', $result->getData()['error']);
-    }//end testDepublishReturns400OnGenericException()
-
-    public function testDepublishInvalidatesCaches(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $this->schemaCacheService->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'depublish');
-        $this->facetCacheSvc->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'depublish');
-
-        $this->controller->depublish(1);
-    }//end testDepublishInvalidatesCaches()
+    // NOTE: publish()/depublish() branch-coverage tests removed — endpoints
+    // retired for security (commit 29b1de3af, H2).
 
     // ── upload() / uploadUpdate() coverage ──
     public function testUploadUpdateDelegatesToUpload(): void
@@ -1469,39 +1334,8 @@ class SchemasControllerTest extends TestCase
         }
     }//end testStatsPassesMultitenancyFalseToFind()
 
-    public function testPublishPassesMultitenancyFalseToFind(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->expects($this->once())
-            ->method('find')
-            ->with(...$this->readBypassWithMatchers(1))
-            ->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        try {
-            $this->controller->publish(1);
-        } catch (\Throwable $ignored) {
-            // see testStatsPassesMultitenancyFalseToFind
-        }
-    }//end testPublishPassesMultitenancyFalseToFind()
-
-    public function testDepublishPassesMultitenancyFalseToFind(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->expects($this->once())
-            ->method('find')
-            ->with(...$this->readBypassWithMatchers(1))
-            ->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        try {
-            $this->controller->depublish(1);
-        } catch (\Throwable $ignored) {
-            // see testStatsPassesMultitenancyFalseToFind
-        }
-    }//end testDepublishPassesMultitenancyFalseToFind()
+    // NOTE: publish()/depublish() multitenancy tests removed — endpoints
+    // retired for security (commit 29b1de3af, H2).
 
     public function testUpdatePassesMultitenancyDefaultTrueToFind(): void
     {
