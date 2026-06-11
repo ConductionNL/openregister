@@ -66,6 +66,14 @@ class PdfMetadataSanitizerTest extends TestCase
     {
         parent::setUp();
 
+        // The PDF sanitiser is backed by the optional `ddn/sapp` library
+        // (fetched from a Codeberg VCS repo). Some deploy/CI containers
+        // ship without it; skip rather than error so the gateable subset
+        // stays honest where the dependency is absent.
+        if (class_exists(PDFDoc::class) === false) {
+            $this->markTestSkipped('ddn/sapp (PDFDoc) is not installed in this environment.');
+        }
+
         $this->logger    = $this->createMock(originalClassName: LoggerInterface::class);
         $this->sanitizer = new PdfMetadataSanitizer(logger: $this->logger);
     }//end setUp()

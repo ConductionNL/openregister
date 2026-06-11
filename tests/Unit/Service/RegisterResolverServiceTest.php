@@ -255,10 +255,13 @@ class RegisterResolverServiceTest extends TestCase
             ->method('find')
             ->willReturn($register);
 
-        $orgA = $this->createMock(Organisation::class);
-        $orgA->method('getUuid')->willReturn('org-a');
-        $orgB = $this->createMock(Organisation::class);
-        $orgB->method('getUuid')->willReturn('org-b');
+        // getUuid()/setUuid() are magic methods on the Entity (resolved via
+        // __call), so they cannot be configured on a PHPUnit mock. Use real
+        // Organisation instances and seed the uuid via setUuid().
+        $orgA = new Organisation();
+        $orgA->setUuid('org-a');
+        $orgB = new Organisation();
+        $orgB->setUuid('org-b');
 
         $this->organisationService->method('getActiveOrganisation')
             ->willReturnOnConsecutiveCalls($orgA, $orgB);

@@ -76,6 +76,7 @@ class TimeTrackerLinkServiceTest extends TestCase
                         'findByObjectUuid',
                         'findByObjectAndEntry',
                         'deleteByObjectAndEntryId',
+                        'findAll',
                         'insert',
                         'update',
                     ]

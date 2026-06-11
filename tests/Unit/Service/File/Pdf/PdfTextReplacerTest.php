@@ -66,6 +66,14 @@ class PdfTextReplacerTest extends TestCase
     {
         parent::setUp();
 
+        // PdfTextReplacer is backed by the optional `ddn/sapp` library
+        // (fetched from a Codeberg VCS repo). Some deploy/CI containers
+        // ship without it; skip rather than error so the gateable subset
+        // stays honest where the dependency is absent.
+        if (class_exists(\ddn\sapp\PDFDoc::class) === false) {
+            $this->markTestSkipped('ddn/sapp (PDFDoc) is not installed in this environment.');
+        }
+
         $this->logger   = $this->createMock(originalClassName: LoggerInterface::class);
         $this->replacer = new PdfTextReplacer(logger: $this->logger);
     }//end setUp()

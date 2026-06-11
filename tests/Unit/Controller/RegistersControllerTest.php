@@ -652,49 +652,10 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(400, $result->getStatus());
     }
 
-    public function testPublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testPublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Publish error'));
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
-
-    public function testDepublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testDepublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Depublish error'));
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // RegistersController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H1). publishToGitHub() (tested below)
+    // is a separate, still-supported method.
 
     public function testPatchThrowsWhenNotFound(): void
     {
@@ -744,53 +705,8 @@ class RegistersControllerTest extends TestCase
         $this->assertStringContainsString('schema', $result->getData()['error']);
     }
 
-    // ── Publish/depublish success tests ────────────────────────────────
-
-    public function testPublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testPublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() success tests removed — endpoints retired
+    // for security (commit 29b1de3af, H1).
 
     // ── PublishToGitHub success test ───────────────────────────────────
 
