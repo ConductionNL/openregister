@@ -46,5 +46,5 @@
 - [x] Note in the PR body that no DB migration runs — operators backfill manually per design.md.
 
 ### 7. Out of scope / follow-up
-- [ ] (Out of scope) Backfill OCC command for existing `_owner=''` rows — open a separate issue if operators request it. **Out of scope handoff.** The spec itself marks this as opt-in based on operator need; no operator request received yet. Per design.md, operators backfill manually with a one-liner UPDATE on each magic table.
-- [ ] (Out of scope) Per-schema `systemReaderGroups` override — revisit if multi-tenant deployments ask. **Out of scope handoff.** The spec itself marks this as opt-in based on multi-tenant deployment need; the global `openregister.systemReaderGroups` config key is sufficient for the current single-tenant deployments.
+- [~] (Out of scope) Backfill OCC command for existing `_owner=''` rows — open a separate issue if operators request it. **Out of scope handoff.** The spec itself marks this as opt-in based on operator need; no operator request received yet. Per design.md, operators backfill manually with a one-liner UPDATE on each magic table.
+- [~] (Out of scope) Per-schema `systemReaderGroups` override — revisit if multi-tenant deployments ask. **Out of scope handoff.** The spec itself marks this as opt-in based on multi-tenant deployment need; the global `openregister.systemReaderGroups` config key is sufficient for the current single-tenant deployments.
