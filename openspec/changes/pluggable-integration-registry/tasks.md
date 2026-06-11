@@ -96,7 +96,7 @@
 
 - [x] Create `scripts/check-integration-parity.js` (matches the repo's Node-script convention rather than `.sh`) — imports `builtinIntegrations`, asserts each descriptor has `id` + `label` + `tab` + `widget`, fails non-zero listing offenders; source-scan fallback — [ConductionNL/nextcloud-vue#211]
 - [x] Wire parity check into CI — added as the "Integration parity gate" step in `.github/workflows/code-quality.yml` (single workflow per the repo convention, not a separate `integration-parity.yml`) — [ConductionNL/nextcloud-vue#211]
-- [~] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR — **deferred to a follow-up hydra PR**, tracked in hydra#TBD; in-app parity check + CI workflow already cover the build-time signal, so the orchestrator gate is an additional safety net rather than a blocker)
+- [x] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR). **Done 2026-06-11:** wired into `hydra/scripts/run-hydra-gates.sh` as **gate-24** (`integration-parity`). The gate looks for `scripts/check-integration-parity.sh` in the app dir, invokes it (which in turn locates the canonical `@conduction/nextcloud-vue/scripts/check-integration-parity.js`), and falls through quietly on apps that don't ship integration descriptors. Validated against the openregister worktree (gate runs + passes).
 - [x] Add parity check to local pre-commit hook (`scripts/precommit-regenerate-partials.sh`, runs on `src/integrations/` changes) — [ConductionNL/nextcloud-vue#211]
 
 ## Scaffold script
@@ -106,7 +106,7 @@
 
 ## ADR & docs
 
-- [~] Author `hydra/openspec/architecture/adr-019-integration-registry.md` — **deferred to a follow-up hydra-repo PR** (lives outside the openregister tree; the design narrative is fully captured in `openspec/changes/pluggable-integration-registry/design.md` + `proposal.md` until it's ported to the canonical ADR location)
+- [x] Author `hydra/openspec/architecture/adr-019-integration-registry.md`. **Done — verified 2026-06-11:** ADR-019 already exists at `hydra/openspec/architecture/adr-019-integration-registry.md` in **Accepted** status (accepted 2026-05-25). The canonical ADR carries the two-sided registry pattern, the 22 delivered providers, the OCS capabilities discovery contract, and the parity invariant (every provider declares both `tab` and `widget` registrations). The design narrative referenced in proposal.md + design.md is fully ported.
 - [x] Create `docs/Integrations/pluggable-integration-registry.md` — "How to add an integration" — full walkthrough using the built-in `files` provider as the worked example, plus the scaffold-script quickstart
 - [x] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
 - [x] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract — [ConductionNL/nextcloud-vue#202/#209]

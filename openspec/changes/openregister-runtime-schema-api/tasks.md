@@ -12,13 +12,13 @@
 
 ## 3. Declarative-engine reload hooks
 
-**Deferred — entire section.** The four engines referenced (LifecycleEngine, AggregationEngine, CalculationEngine, NotificationEngine) do not exist anywhere in `lib/` today; no `x-openregister-lifecycle` / `-aggregations` / `-calculations` / `-notifications` block is read or persisted by any current code path. A grep across `lib/` confirms zero references. This section is blocked on a separate spec that introduces the engines themselves; once the engines land, the `reloadForSchema` hook becomes a 4-line addition wired into `SchemaCacheHandler::invalidate()`.
+**Deferred — entire section, revised 2026-06-11.** Three of the four declarative engines now ship in `lib/` (lifecycle: `Service/Lifecycle/TransitionEngine.php` + `LifecycleAnnotationValidator.php` + `LifecycleGuardRegistry.php`; aggregations: `Service/Aggregation/AggregationRunner.php` + `AggregationCache.php` + `AggregationAnnotationValidator.php`; notifications: `BackgroundJob/ScheduledNotificationJob.php` + `Controller/NotificationPreferencesController.php`). Calculations is still pending (no `Service/Calculation/` directory). However, the existing engines expose **orthogonal cache-eviction APIs** (e.g. `AggregationCache::evictForSchema(string $registerSlug, string $schemaSlug)`; no public reload method on `TransitionEngine`) rather than the normalised `reloadForSchema(int $schemaId)` contract this spec assumed. This section is therefore blocked on a separate "engine reload contract" change that (a) decides the canonical signature, (b) lifts it into a `ReloadableEngineInterface`, and (c) wires the metadata diff into `SchemaCacheHandler::invalidate()`. Once that contract lands, the reload hooks become a ~10-line addition.
 
-- [ ] 3.1 Add public `reloadForSchema(int $schemaId): void` to `lib/Engine/Lifecycle/LifecycleEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.2 Same on `lib/Engine/Aggregations/AggregationEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.3 Same on `lib/Engine/Calculations/CalculationEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.4 Same on `lib/Engine/Notifications/NotificationEngine.php`. **(Deferred — engine does not exist.)**
-- [ ] 3.5 Unit-test each engine reload. **(Deferred — engines do not exist.)**
+- [ ] 3.1 Add public `reloadForSchema(int $schemaId): void` to lifecycle engine (currently `lib/Service/Lifecycle/TransitionEngine.php`). **(Deferred — engine exists but uses orthogonal eviction surface; gated on the contract-normalisation change.)**
+- [ ] 3.2 Same on aggregations engine (currently `lib/Service/Aggregation/AggregationRunner.php` + `AggregationCache.php`). **(Deferred — `AggregationCache::evictForSchema(slug,slug)` exists but signature differs; gated on the contract-normalisation change.)**
+- [ ] 3.3 Same on calculations engine (`lib/Engine/Calculations/CalculationEngine.php`). **(Deferred — engine does not exist.)**
+- [ ] 3.4 Same on notifications engine (currently `lib/BackgroundJob/ScheduledNotificationJob.php`). **(Deferred — engine exists but is job-shaped not service-shaped; gated on the contract-normalisation change.)**
+- [ ] 3.5 Unit-test each engine reload. **(Deferred — engines exist but contract-normalisation change must land first.)**
 
 ## 4. DELETE safety and audit on /api/schemas and /api/registers
 
