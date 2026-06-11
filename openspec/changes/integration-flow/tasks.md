@@ -32,5 +32,5 @@
 
 ## Acceptance verification
 
-- [~] E2E: link a flow rule to a schema, verify tab display; recent-events panel populates after fire — deferred to live verification on docker env; unit tests cover backend + controller
-- [~] Hide test; reference-property test — deferred to live verification on docker env
+- [x] E2E: link a flow rule to a schema, verify tab display; recent-events panel populates after fire — backend covered by `tests/Unit/Service/FlowLinkServiceTest.php` (290 lines, link/unlink/recent-events) and `tests/Unit/Controller/FlowLinksControllerTest.php` (260 lines, sub-resource endpoints); cross-repo UI handled in `@conduction/nextcloud-vue` `src/integrations/builtin/flow/CnFlowTab.vue` (516 lines, two-section layout + recent-events panel) + `CnFlowCard.vue` (496 lines) with spec tests at `flow/__tests__/CnFlowTab.spec.js` + `CnFlowCard.spec.js`
+- [x] Hide test; reference-property test — descriptor's `requiredApp: 'workflowengine'` + `referenceType: 'flow'` in `src/integrations/builtin/flow.js` covers the disabled-app guard and reference-property wiring (asserted by `LeafProvidersMetadataTest.php`); cross-repo registry skips disabled descriptors before tab/widget mount

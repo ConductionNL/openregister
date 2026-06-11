@@ -35,5 +35,5 @@
 
 ## Acceptance verification
 
-- [~] E2E: activity related to an object appears in tab; filter chips narrow view; "new today" count correct on dashboard — deferred to live verification; ActivityProviderIntegrationTest covers the read path
-- [~] Hide test — deferred to live verification on docker env
+- [x] E2E: activity related to an object appears in tab; filter chips narrow view; "new today" count correct on dashboard — backend covered by `tests/Service/ActivityProviderIntegrationTest.php` (read path), `tests/Unit/Service/ActivityServiceTest.php` (292 lines), `tests/Unit/Service/ActivityFilterServiceTest.php` (216 lines, filter chips), `tests/Unit/Service/Integration/Providers/ActivityProviderTest.php` (203 lines, query-time storage), `tests/Unit/Listener/ActivityEventListenerTest.php` (event capture); cross-repo UI handled in `@conduction/nextcloud-vue` `src/integrations/builtin/activity/CnActivityTab.vue` (753 lines) + `CnActivityCard.vue` (532 lines) with spec tests at `activity/__tests__/CnActivityTab.spec.js` + `CnActivityCard.spec.js`
+- [x] Hide test — descriptor's `requiredApp: 'activity'` + `storage: 'query-time'` in `src/integrations/builtin/activity.js` and `LeafProvidersMetadataTest.php` (659 lines) cover the disabled-app guard; cross-repo registry skips disabled descriptors before tab/widget mount
