@@ -2,7 +2,7 @@
 
 ## Backend
 
-- [~] Migration: add `exif_metadata` JSON column to `openregister_file_links` → superseded: photos use the dedicated `openregister_photo_links` table (`lib/Migration/Version1Date20260525170000.php`) keyed on `album_id`, not the generic file-links table; per-photo EXIF is a lazy on-demand fetch from NC Photos owned by `PhotoLinkService` (see AD-2 of design.md) — separate JSON column not required at the album-link grain
+- [x] Migration: add `exif_metadata` JSON column to `openregister_file_links` → **superseded:** photos use the dedicated `openregister_photo_links` table (`lib/Migration/Version1Date20260525170000.php`) keyed on `album_id`, not the generic file-links table; per-photo EXIF is a lazy on-demand fetch from NC Photos owned by `PhotoLinkService` (see AD-2 of design.md) — separate JSON column not required at the album-link grain. Original task obsolete; replacement migration shipped.
 - [x] `PhotoService` — filter to images, lazy EXIF extraction — `lib/Service/PhotoLinkService.php` (album link CRUD + cached album metadata; live cover/count from `photos_albums`)
 - [x] `PhotosController` — sub-resource endpoints (list, get with EXIF, link, unlink) — `lib/Controller/PhotoLinksController.php` (index/link/createAndLink/destroy/available)
 - [x] `PhotosProvider` — id='photos', label='Photos', icon='Image', group='docs', requiredApp='photos', storage='link-table' — `lib/Service/Integration/Providers/PhotosProvider.php`
