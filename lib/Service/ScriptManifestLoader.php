@@ -74,7 +74,7 @@ class ScriptManifestLoader
      */
     public static function addEntryScripts(string $appId, string $entry, string $fallbackScript): void
     {
-        $chunks = self::resolveChunks(appId: $appId, entry: $entry);
+        $chunks = self::resolveEntryScripts(appId: $appId, entry: $entry);
 
         if ($chunks === null) {
             Util::addScript($appId, $fallbackScript);
@@ -90,15 +90,21 @@ class ScriptManifestLoader
     /**
      * Resolve the ordered chunk names (without '.js') for an entry.
      *
-     * @param string $appId The Nextcloud app id.
-     * @param string $entry The webpack entry name.
+     * Returns null when the manifest is missing, malformed, or does not list the
+     * requested entry; callers treat null as "fall back to the legacy script".
+     *
+     * @param string      $appId       The Nextcloud app id.
+     * @param string      $entry       The webpack entry name.
+     * @param string|null $jsDirectory Override for the directory containing the
+     *                                 manifest. Defaults to the app's js/ folder;
+     *                                 primarily a seam for testing.
      *
      * @return string[]|null Ordered chunk names, or null when the entry cannot
      *                       be resolved from a manifest.
      */
-    private static function resolveChunks(string $appId, string $entry): ?array
+    public static function resolveEntryScripts(string $appId, string $entry, ?string $jsDirectory=null): ?array
     {
-        $manifest = self::loadManifest(appId: $appId);
+        $manifest = self::loadManifest(appId: $appId, jsDirectory: $jsDirectory);
 
         if ($manifest === null || isset($manifest[$entry]) === false) {
             return null;
@@ -113,19 +119,22 @@ class ScriptManifestLoader
 
         return $chunks;
 
-    }//end resolveChunks()
+    }//end resolveEntryScripts()
 
     /**
      * Load and cache the entrypoints manifest for an app.
      *
-     * @param string $appId The Nextcloud app id.
+     * @param string      $appId       The Nextcloud app id.
+     * @param string|null $jsDirectory Override for the directory containing the
+     *                                 manifest. Defaults to the app's js/ folder.
      *
      * @return array<string, string[]>|null The decoded manifest, or null when
      *                                       it is missing or invalid.
      */
-    private static function loadManifest(string $appId): ?array
+    private static function loadManifest(string $appId, ?string $jsDirectory=null): ?array
     {
-        $path = __DIR__.'/../../js/'.$appId.'-entrypoints.json';
+        $directory = ($jsDirectory ?? __DIR__.'/../../js');
+        $path      = $directory.'/'.$appId.'-entrypoints.json';
 
         if (array_key_exists($path, self::$manifestCache) === true) {
             return self::$manifestCache[$path];

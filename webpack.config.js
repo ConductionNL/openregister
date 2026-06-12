@@ -24,9 +24,13 @@ if (!isDev) {
 	webpackConfig.optimization.minimizer = [
 		new TerserPlugin({
 			minify: TerserPlugin.esbuildMinify,
-			// esbuild minify options (NOT terserOptions); strips comments by default.
+			// esbuild minify options (NOT terserOptions). Keep legal/license
+			// comments at end-of-file so MIT/AGPL attribution required by our
+			// deps survives minification. (esbuild's sidecar-emitting 'linked'
+			// mode is unavailable here — terser-webpack-plugin drives esbuild via
+			// its transform API, which rejects 'linked'/'external'.)
 			terserOptions: {
-				legalComments: 'none',
+				legalComments: 'eof',
 			},
 		}),
 	]
