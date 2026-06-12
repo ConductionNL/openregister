@@ -24,6 +24,10 @@ if (!isDev) {
 	webpackConfig.optimization.minimizer = [
 		new TerserPlugin({
 			minify: TerserPlugin.esbuildMinify,
+			// esbuild parallelizes internally (in Go), so terser-webpack-plugin's
+			// default `cpus-1` Node worker processes only add memory overhead.
+			// Disabling them lowers peak build RAM with no real speed cost.
+			parallel: false,
 			// esbuild minify options (NOT terserOptions). Keep legal/license
 			// comments at end-of-file so MIT/AGPL attribution required by our
 			// deps survives minification. (esbuild's sidecar-emitting 'linked'
