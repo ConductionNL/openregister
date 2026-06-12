@@ -620,7 +620,7 @@ import { translate as t } from '@nextcloud/l10n'
 									:placeholder="t('openregister', 'Filter fields...')"
 									class="field-filter">
 								<NcSelect
-						input-label="Field Type Filter"
+									input-label="Field Type Filter"
 									v-model="fieldTypeFilter"
 									:options="fieldTypeOptions"
 									:placeholder="t('openregister', 'Filter by type')"
@@ -1205,19 +1205,19 @@ export default {
 			schemasLoading: false,
 			// Game-style loading
 			loadingTips: [
-				'🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...',
-				'🌐 In distributed mode, SOLR uses ZooKeeper for cluster coordination...',
-				'📦 ConfigSets contain the schema and configuration files for your search index...',
-				'⚡ SOLR can handle millions of documents with sub-second search response times...',
-				'🔄 Replication ensures your search index is available even if nodes fail...',
-				'🎯 Faceted search allows users to drill down into results by categories...',
-				'📊 SOLR provides rich analytics and statistics about search performance...',
-				'🛡️ Security features include authentication, authorization, and SSL encryption...',
-				'🚀 Auto-scaling can dynamically add or remove nodes based on load...',
-				'💡 Did you know? SOLR powers search for Netflix, Apple, and many other major sites!',
+				t('openregister', '🔍 SOLR is a powerful enterprise search platform built on Apache Lucene...'),
+				t('openregister', '🌐 In distributed mode, SOLR uses ZooKeeper for cluster coordination...'),
+				t('openregister', '📦 ConfigSets contain the schema and configuration files for your search index...'),
+				t('openregister', '⚡ SOLR can handle millions of documents with sub-second search response times...'),
+				t('openregister', '🔄 Replication ensures your search index is available even if nodes fail...'),
+				t('openregister', '🎯 Faceted search allows users to drill down into results by categories...'),
+				t('openregister', '📊 SOLR provides rich analytics and statistics about search performance...'),
+				t('openregister', '🛡️ Security features include authentication, authorization, and SSL encryption...'),
+				t('openregister', '🚀 Auto-scaling can dynamically add or remove nodes based on load...'),
+				t('openregister', '💡 Did you know? SOLR powers search for Netflix, Apple, and many other major sites!'),
 			],
 			visibleTips: [],
-			currentLoadingMessage: 'Initializing SOLR setup...',
+			currentLoadingMessage: t('openregister', 'Initializing SOLR setup...'),
 			loadingInterval: null,
 			tipIndex: 0,
 			// Facet configuration
@@ -1565,6 +1565,16 @@ export default {
 		}
 	},
 
+	/**
+	 * Clean up the loading-tip interval so it cannot leak after the
+	 * component is unmounted.
+	 *
+	 * @return {void}
+	 */
+	beforeDestroy() {
+		this.stopGameLoading()
+	},
+
 	methods: {
 		/**
 		 * Smooth-scroll to the field-mismatches section.
@@ -1601,11 +1611,16 @@ export default {
 			// Start the game-style loading
 			this.startGameLoading()
 
-			// Actually start the SOLR setup process
-			await this.settingsStore.setupSolr()
-
-			// Stop the game-style loading
-			this.stopGameLoading()
+			try {
+				// Actually start the SOLR setup process
+				await this.settingsStore.setupSolr()
+			} catch (error) {
+				console.error('SOLR setup failed:', error)
+				showError(t('openregister', 'SOLR setup failed. Please check the configuration and try again.'))
+			} finally {
+				// Always stop the game-style loading, even on failure
+				this.stopGameLoading()
+			}
 		},
 
 		/**
@@ -1617,7 +1632,7 @@ export default {
 		startGameLoading() {
 			this.visibleTips = []
 			this.tipIndex = 0
-			this.currentLoadingMessage = 'Initializing SOLR setup...'
+			this.currentLoadingMessage = t('openregister', 'Initializing SOLR setup...')
 
 			// Show first tip immediately
 			this.showNextTip()
@@ -1671,14 +1686,14 @@ export default {
 		 */
 		updateLoadingMessage() {
 			const messages = [
-				'Connecting to SOLR cluster...',
-				'Verifying server connectivity...',
-				'Uploading configuration sets...',
-				'Waiting for cluster synchronization...',
-				'Creating search collections...',
-				'Configuring field mappings...',
-				'Optimizing search performance...',
-				'Finalizing setup...',
+				t('openregister', 'Connecting to SOLR cluster...'),
+				t('openregister', 'Verifying server connectivity...'),
+				t('openregister', 'Uploading configuration sets...'),
+				t('openregister', 'Waiting for cluster synchronization...'),
+				t('openregister', 'Creating search collections...'),
+				t('openregister', 'Configuring field mappings...'),
+				t('openregister', 'Optimizing search performance...'),
+				t('openregister', 'Finalizing setup...'),
 			]
 
 			const randomMessage = messages[Math.floor(Math.random() * messages.length)]

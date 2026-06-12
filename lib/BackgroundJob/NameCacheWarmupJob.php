@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
@@ -65,6 +66,8 @@ class NameCacheWarmupJob extends TimedJob
     {
         parent::__construct(time: $time);
         $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+        // Warmup is not time-critical: let NC defer it to a low-load window (OPS-13).
+        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
     }//end __construct()
 
     /**

@@ -579,7 +579,13 @@ class RegisterService
             $unionQueries = [];
 
             foreach ($schemas as $schema) {
-                $schemaId = $schema['id'] ?? null;
+                // Callers pass hydrated Schema entities (resolveSchemasForStats,
+                // RegistersController); legacy callers may pass arrays.
+                if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                    $schemaId = $schema->getId();
+                } else {
+                    $schemaId = $schema['id'] ?? null;
+                }
                 if ($schemaId === null) {
                     $this->logger->warning(
                         message: '[RegisterService] Schema without ID found, skipping',

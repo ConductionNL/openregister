@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -127,6 +128,7 @@ class DeleteObject
      * @param LoggerInterface             $logger             Logger for error handling
      * @param ReferentialIntegrityService $integrityService   Referential integrity service
      * @param IDBConnection               $db                 Database connection for transactions
+     * @param FileService|null            $fileService        File service for cleaning up object folders on delete
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
@@ -138,7 +140,8 @@ class DeleteObject
         SettingsService $settingsService,
         LoggerInterface $logger,
         ReferentialIntegrityService $integrityService,
-        IDBConnection $db
+        IDBConnection $db,
+        private readonly ?FileService $fileService=null
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
         $this->settingsService  = $settingsService;
@@ -188,7 +191,14 @@ class DeleteObject
         }
 
         if (is_array($object) === true) {
-            $identifier = $object['id'];
+            // BUG-OBJ-11: do not assume an 'id' key exists. Fall back to the
+            // canonical identifier shapes and fail with a clear exception rather
+            // than emitting an undefined-array-key warning and a null lookup.
+            $identifier = ($object['id'] ?? $object['@self']['id'] ?? $object['uuid'] ?? null);
+        }
+
+        if ($identifier === null) {
+            throw new Exception('Cannot delete object: no identifier (id/@self.id/uuid) found in the supplied data.');
         }
 
         $includeDeleted = ($object instanceof ObjectEntity);
@@ -216,6 +226,14 @@ class DeleteObject
                     'uuid' => $objectEntity->getUuid(),
                 ]
             );
+
+            // BUG-OBJ-2: permanent deletion must also destroy the Nextcloud folder/files
+            // bound to the object. Without this every permanently-deleted object leaks its
+            // NC folder forever (storage bloat) and — for the archival `vernietigd`
+            // destruction workflow — the file contents survive on disk, which is a
+            // compliance issue. Folder cleanup runs BEFORE the DB record is removed so the
+            // object still resolves its folder binding.
+            $this->deleteObjectFolder(objectEntity: $objectEntity);
 
             $this->objectEntityMapper->deleteObjectEntity(
                 entity: $objectEntity,
@@ -280,6 +298,11 @@ class DeleteObject
         ];
 
         $objectEntity->setDeleted($deletionData);
+
+        // BUG-OBJ-2: soft delete intentionally LEAVES the bound Nextcloud folder/files
+        // in place so the object (and its attachments) can be restored. The folder is
+        // only destroyed on permanent delete (above). TODO: if product wants soft-deleted
+        // attachments moved to the trash for recoverability, trash the folder here.
 
         /*
          * Update the object in database (soft delete - keeps record with deleted metadata).
@@ -361,6 +384,63 @@ class DeleteObject
 
         return $result;
     }//end delete()
+
+    /**
+     * Delete the Nextcloud folder bound to an object (BUG-OBJ-2).
+     *
+     * Resolves the object's bound folder via FileService and removes it, destroying
+     * any attached file contents. No-op when FileService is unavailable (e.g. unit
+     * tests), the object has no bound folder, or the folder can no longer be resolved.
+     * Failures are logged and swallowed so a missing/legacy folder never blocks the
+     * deletion of the database record.
+     *
+     * @param ObjectEntity $objectEntity The object whose folder must be removed
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function deleteObjectFolder(ObjectEntity $objectEntity): void
+    {
+        if ($this->fileService === null) {
+            return;
+        }
+
+        // Skip objects that never had a folder bound (nothing to clean up).
+        $folderBinding = $objectEntity->getFolder();
+        if ($folderBinding === null || $folderBinding === '') {
+            return;
+        }
+
+        try {
+            $folder = $this->fileService->getObjectFolder(objectEntity: $objectEntity);
+            if ($folder === null) {
+                return;
+            }
+
+            $folder->delete();
+
+            $this->logger->info(
+                message: '[DeleteObject] Removed Nextcloud folder for permanently deleted object',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'uuid' => $objectEntity->getUuid(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            // A missing or legacy folder must not abort the permanent delete.
+            $this->logger->warning(
+                message: '[DeleteObject] Failed to remove Nextcloud folder during permanent delete',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'uuid'  => $objectEntity->getUuid(),
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end deleteObjectFolder()
 
     /**
      * Perform pre-flight deletion analysis for an object.

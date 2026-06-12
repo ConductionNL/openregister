@@ -58,6 +58,18 @@ final class ScheduledNotificationJob extends TimedJob
 {
 
     /**
+     * Hard upper bound on the number of objects scanned per (schema, notification)
+     * fire. Acts as a memory/time guard so a single huge schema cannot OOM or stall
+     * the cron run (OPS-6 / PERF-3). When the cap is hit a warning is logged.
+     *
+     * TODO(PERF-3): push the trigger `filter` into SQL (a paged findBySchema with
+     * _filter+_limit in lib/Db/MagicMapper) and add a per-schema watermark for
+     * delta scans, so we no longer load the whole table into PHP and filter
+     * in-memory. Until then this cap bounds the blast radius.
+     */
+    private const MAX_OBJECTS_PER_FIRE = 5000;
+
+    /**
      * Distributed cache holding last-fire timestamps per (schema, notification).
      *
      * @var ICache|null
@@ -313,6 +325,23 @@ final class ScheduledNotificationJob extends TimedJob
                 )
             );
             return;
+        }
+
+        // Bound the in-memory scan so a pathologically large schema cannot OOM or
+        // stall the cron run (OPS-6 / PERF-3). Excess objects are deferred to the
+        // next run rather than processed all at once.
+        if (count($objects) > self::MAX_OBJECTS_PER_FIRE) {
+            $this->logger->warning(
+                sprintf(
+                    '[ScheduledNotificationJob] schema %d / "%s" returned %d objects; '
+                    .'capping this run at %d (PERF-3 SQL filter pushdown pending)',
+                    $schema->getId(),
+                    $notificationName,
+                    count($objects),
+                    self::MAX_OBJECTS_PER_FIRE
+                )
+            );
+            $objects = array_slice($objects, 0, self::MAX_OBJECTS_PER_FIRE);
         }
 
         $watchedFields = $this->resolveWatchedFields(trigger: $trigger);

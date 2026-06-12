@@ -1,0 +1,10 @@
+{
+  "spec_slug": "apphost-observability-engine",
+  "title": "AppHost: Declarative Observability Engine",
+  "app": "openregister",
+  "repo": "https://codeberg.org/Conduction/openregister",
+  "depends_on": [
+    "adr-040-declarative-observability"
+  ],
+  "issue": null
+}

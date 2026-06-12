@@ -36,7 +36,7 @@
  * ```js
  * // Check if an app is installed:
  * const isInstalled = await service.isAppInstalled('files')
- * console.log(`"files" is installed:`, isInstalled)
+ * // isInstalled now holds whether "files" is installed
  *
  * // Install an app if it's not already installed:
  * try {
@@ -136,13 +136,13 @@
  * try {
  *   const installResponse = await appInstallService.installApp(appsToInstall)
  *   if (installResponse) {
- *     console.log('Apps installed:', installResponse)
+ *     // Apps installed: installResponse holds the result
  *   } else {
- *     console.log('All requested apps were already installed.')
+ *     // All requested apps were already installed.
  *   }
  * } catch (err) {
  *   if (err.status === 403 && err.data?.message === 'Password confirmation is required') {
- *     console.log('Password confirmation needed before installing apps')
+ *     // Password confirmation needed before installing apps
  *   } else {
  *     console.error('Failed to install apps:', err)
  *   }
