@@ -1,0 +1,25 @@
+{
+  "change": "workflow-operations",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1058,
+  "parent_issue": 1005,
+  "tasks": [
+    {"id": "1.1", "title": "Create WorkflowExecution entity and mapper", "github_issue": 1064, "status": "todo"},
+    {"id": "1.2", "title": "Create database migration for workflow_executions table", "github_issue": 1065, "status": "todo"},
+    {"id": "1.3", "title": "Modify HookExecutor to persist execution history", "github_issue": 1066, "status": "todo"},
+    {"id": "1.4", "title": "Create WorkflowExecutionController", "github_issue": 1067, "status": "todo"},
+    {"id": "2.1", "title": "Create ScheduledWorkflow entity and mapper", "github_issue": 1068, "status": "todo"},
+    {"id": "2.2", "title": "Create database migration for scheduled_workflows table", "github_issue": 1069, "status": "todo"},
+    {"id": "2.3", "title": "Create ScheduledWorkflowJob TimedJob", "github_issue": 1070, "status": "todo"},
+    {"id": "2.4", "title": "Create ScheduledWorkflowController", "github_issue": 1072, "status": "todo"},
+    {"id": "2.5", "title": "Register ScheduledWorkflowJob in Application.php", "github_issue": 1073, "status": "todo"},
+    {"id": "3.1", "title": "Create ApprovalChain entity and mapper", "github_issue": 1074, "status": "todo"},
+    {"id": "3.2", "title": "Create ApprovalStep entity and mapper", "github_issue": 1075, "status": "todo"},
+    {"id": "3.3", "title": "Create database migration for approval tables", "github_issue": 1076, "status": "todo"},
+    {"id": "3.4", "title": "Create ApprovalService", "github_issue": 1077, "status": "todo"},
+    {"id": "3.5", "title": "Create ApprovalController", "github_issue": 1078, "status": "todo"},
+    {"id": "4.1", "title": "Add testHook endpoint to WorkflowEngineController", "github_issue": 1080, "status": "todo"},
+    {"id": "5.1", "title": "Create Vue workflow UI components", "github_issue": 1081, "status": "todo"},
+    {"id": "6.1", "title": "Create ExecutionHistoryCleanupJob", "github_issue": 1082, "status": "todo"}
+  ]
+}
