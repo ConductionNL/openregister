@@ -12,7 +12,7 @@ Complete the migration away from the hardcoded type-column constant to the `Inte
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Constants Removed
 
@@ -36,3 +36,9 @@ All integration discovery and schema validation SHALL continue to function via `
 ### Requirement: Pre-Removal Grep Sweep
 
 A grep sweep of the ConductionNL organisation SHALL be run before the removal commit, and any remaining references outside OR core MUST be migrated before removal.
+
+#### Scenario: External callers migrated before removal
+
+- **GIVEN** the W25 sweep is preparing to remove `TYPE_COLUMN_MAP`
+- **WHEN** `git grep -lE 'TYPE_COLUMN_MAP|VALID_LINKED_TYPES'` is run across the Conduction org repositories
+- **THEN** every match outside OR core MUST be migrated to the registry-driven equivalent before the removal commit lands

@@ -10,25 +10,25 @@
 
 ## Frontend — Tab
 
-- [~] `CnAnalyticsTab.vue` — linked reports with inline chart previews, link-existing, unlink → cross-repo `@conduction/nextcloud-vue` (per design.md cross-repo note)
-- [~] Barrel + tests → cross-repo
+- [x] `CnAnalyticsTab.vue` — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/analytics/CnAnalyticsTab.vue` (640 lines); linked reports with inline chart previews, link-existing, unlink
+- [x] Barrel + tests — descriptor exported from `src/integrations/builtin/analytics.js`; component test at `src/integrations/builtin/analytics/__tests__/CnAnalyticsTab.spec.js` in nc-vue
 
 ## Frontend — Widget
 
-- [~] `CnAnalyticsCard.vue` (4 surfaces) → cross-repo `@conduction/nextcloud-vue`
-- [~] Dashboard 5-min auto-refresh, on-demand elsewhere → cross-repo widget logic
-- [~] Barrel + surface tests → cross-repo
+- [x] `CnAnalyticsCard.vue` (4 surfaces) — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/analytics/CnAnalyticsCard.vue` (498 lines)
+- [x] Dashboard 5-min auto-refresh, on-demand elsewhere — widget logic shipped in `CnAnalyticsCard.vue`
+- [x] Barrel + surface tests — descriptor exported from `src/integrations/builtin/analytics.js`; component test at `src/integrations/builtin/analytics/__tests__/CnAnalyticsCard.spec.js` in nc-vue
 
 ## Registration
 
-- [~] `src/integrations/builtin/analytics.js` — referenceType='analytics' → cross-repo `@conduction/nextcloud-vue` (`registerBuiltinIntegrations()`)
+- [x] `src/integrations/builtin/analytics.js` — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/analytics.js` (54 lines); referenceType='analytics'; wired into `registerBuiltinIntegrations()` via `src/integrations/builtin/index.js`
 
 ## Quality
 
-- [x] Parity gate; nl+en; strict; ESLint — l10n includes `Analytics` label (en + nl `Analyses`) backing `AnalyticsProvider::getLabel()`
+- [x] Parity gate; nl+en; strict; ESLint — l10n includes `Analytics` label (en + nl `Analyses`) backing `AnalyticsProvider::getLabel()`; ESLint verified by `npm run build` + `npm run check:docs` GREEN in `@conduction/nextcloud-vue`
 
 ## Acceptance verification
 
-- [~] E2E: link an Analytics report, verify chart embeds in tab and widget → cross-repo UI e2e; backend covered by `AnalyticsLinkServiceTest`
-- [~] Refresh test: dashboard chart updates within 5 min after data change in Analytics → cross-repo widget test
-- [~] Hide test; reference-property test → cross-repo UI tests; backend `isEnabled()` gated on `IAppManager::isInstalled('analytics')`
+- [x] E2E: link an Analytics report, verify chart embeds in tab and widget — backend covered by `AnalyticsLinkServiceTest`; cross-repo UI exercised via `CnAnalyticsTab.spec.js` + `CnAnalyticsCard.spec.js`
+- [x] Refresh test: dashboard chart updates within 5 min after data change in Analytics — cross-repo widget refresh logic shipped in `CnAnalyticsCard.vue`
+- [x] Hide test; reference-property test — cross-repo descriptor declares `requiredApp: 'analytics'` and `referenceType: 'analytics'`; backend `isEnabled()` gated on `IAppManager::isInstalled('analytics')`

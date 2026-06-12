@@ -1,7 +1,18 @@
 # Proposal: add-features-roadmap-menu
 
 `kind: feature` per ADR-032 — new shared Vue component family +
-new build-tool package + new Docusaurus package + OpenRegister pilot wiring.
+in-repo manifest-builder script (copied per-app) + per-site Docusaurus page
+template + OpenRegister pilot wiring.
+
+> **Scope note 2026-06-12 (W33 honest-handoffs).** This proposal originally
+> planned two new npm packages (`@conduction/openspec-manifest`,
+> `@conduction/docusaurus-features`). After review the build-tool surface was
+> rescoped to a single in-repo script (`scripts/build-features-manifest.js`)
+> that adopting apps copy verbatim, and the Docusaurus surface was rescoped to
+> a ~30-LOC per-site `src/pages/features.js` page template. Rationale in
+> §Design and §Tasks (~600 LOC of npm release plumbing per package for a
+> 222-line script + a 30-line page is gold-plating per ADR-022). The
+> component-family addition to `@conduction/nextcloud-vue` is unchanged.
 
 ## Summary
 
@@ -39,17 +50,27 @@ their PAT is configured and via the server PAT with attribution otherwise.
   `SuggestFeatureModal`, `useSpecRef`, `useSuggestFeatureAction`,
   `SAFE_MARKDOWN_DOMPURIFY_CONFIG`, `ROADMAP_LABEL_BLOCKLIST`), nl + en i18n,
   Jest tests, Storybook stories, README, version bump.
-- [x] Project: `@conduction/openspec-manifest` (new npm package) — CLI
-  `openspec-manifest build` walking `openspec/specs/*/spec.md`, emitting
-  `docs/features.json`, with `gray-matter` parsing, default-branch
-  `docsUrl` resolution, and Jest fixtures.
-- [x] Project: `@conduction/docusaurus-features` (new npm package) —
-  React `<FeaturesPage />` rendering `docs/features.json` on each app's
-  Docusaurus site.
+- [x] In-repo build tooling: `openregister/scripts/build-features-manifest.js`
+  (222 LOC) — walks `openspec/specs/*/spec.md`, emits `docs/features.json`,
+  with `gray-matter` parsing and default-branch `docsUrl` resolution
+  (github.com + codeberg.org). Adopting apps copy the script verbatim into
+  their own `scripts/` tree; **no separate npm package is published**.
+  Originally scoped as `@conduction/openspec-manifest` — rescoped 2026-06-12
+  per the W33 honest-handoffs review. The OR `manifest:check` CI step
+  exercises the contract end-to-end against a real spec corpus on every CI
+  run, replacing the originally-scoped Jest fixture suite.
+- [x] Docusaurus features page: a per-site `src/pages/features.js` template
+  (~30 LOC) that imports `docs/features.json` and renders the
+  alphabetically-sorted list as a public `/features` page. Adopting apps
+  copy the template into their own Docusaurus tree; **no separate npm
+  package is published**. Originally scoped as
+  `@conduction/docusaurus-features` — rescoped 2026-06-12 per the W33
+  honest-handoffs review.
 - [x] Project: openregister — adopts the prebuild step, mounts the link
-  + route, tags 2-3 widgets/pages with `specRef`, installs the Docusaurus
-  package, ships the Playwright smoke + Newman API collections; depends on
-  `add-github-issue-proxy` for the backend.
+  + route, tags 2-3 widgets/pages with `specRef`, ships the Playwright
+  smoke + Newman API collections; depends on `add-github-issue-proxy` for
+  the backend. The Docusaurus page template lands in the OR docs site as
+  the reference implementation.
 - [ ] Other Conduction apps — fleet adoption deferred to a future
   hydra ADR-019 + rollout plan; explicitly NOT in this change.
 
@@ -58,7 +79,9 @@ their PAT is configured and via the server PAT with attribution otherwise.
 ### In Scope
 
 - One new capability spec (`features-roadmap-menu`) — see `specs/`.
-- Two new npm packages (`@conduction/openspec-manifest`, `@conduction/docusaurus-features`).
+- One in-repo build script (`scripts/build-features-manifest.js`) copied per
+  adopting app + one per-site `src/pages/features.js` Docusaurus page
+  template. No new npm packages are published.
 - Component family additions to `@conduction/nextcloud-vue` with strict
   `marked` + `DOMPurify` markdown rendering, label blocklist, opt-out
   prop, full-route UX (not panel/modal), nl + en chrome.
@@ -68,8 +91,9 @@ their PAT is configured and via the server PAT with attribution otherwise.
   ADR-008 `@spec` PHPDoc annotations.
 - Pilot integration on OpenRegister: prebuild step, `/features-roadmap`
   route, mounted link, devDep + dep bumps, Playwright + Newman tests,
-  Docusaurus plugin install.
-- Manifest-freshness CI snippet recommended in the package README AND
+  reference Docusaurus features page in the OR docs site.
+- Manifest-freshness CI snippet (`node scripts/build-features-manifest.js
+  --check`) documented in the OR README + this change's tasks file AND
   added to OpenRegister's existing workflow.
 - Admin opt-out wiring through to the bundle (IAppConfig flag becomes a
   prop on the link / a guard on the route).
@@ -84,6 +108,9 @@ their PAT is configured and via the server PAT with attribution otherwise.
   zaakafhandelapp, procest, pipelinq, softwarecatalog, larpingapp,
   decidesk, nldesign — separate ADR-019 + per-app PRs.
 - Webpack-plugin wrapper for the manifest generator.
+- Publishing the extractor or Docusaurus page as standalone npm packages —
+  explicitly rescoped 2026-06-12 to the copy-pattern documented in §Tasks
+  §2 and §3.
 
 ## Impact
 
@@ -91,8 +118,12 @@ their PAT is configured and via the server PAT with attribution otherwise.
   `@conduction/nextcloud-vue` today exports only `CnSettingsCard` /
   `CnSettingsSection`. The new family sets the pattern for future
   "cross-app surfaces" additions (help, support, feedback).
-- **First shared Docusaurus component from Conduction.** Visual parity
-  with the in-app component within Docusaurus theming constraints.
+- **First Conduction Docusaurus features page.** A per-site
+  `src/pages/features.js` template that renders `docs/features.json`. Visual
+  approximation of the in-app component within Docusaurus theming
+  constraints; Vue components cannot be reused inside Docusaurus's React
+  runtime, so per-site copies are honest about that constraint and avoid an
+  npm-package release path that would cost more than the code it ships.
 - **i18n.** Component ships with Dutch + English strings for all chrome
   (route title, tab labels, modal fields, empty states, toasts, errors).
   Feature titles + summaries pass through unchanged — specs are SoT.

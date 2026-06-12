@@ -32,5 +32,5 @@
 
 ## Acceptance verification
 
-- [~] E2E: link an existing Collectives page, verify markdown renders in tab; detail-page inline render — deferred to live verification on docker env; unit tests cover backend
-- [~] Hide test; reference-property test — deferred to live verification on docker env
+- [x] E2E: link an existing Collectives page, verify markdown renders in tab; detail-page inline render — backend covered by `tests/Unit/Service/CollectiveLinkServiceTest.php` (293 lines, link/unlink/list); cross-repo UI handled in `@conduction/nextcloud-vue` `src/integrations/builtin/collectives/CnCollectivesTab.vue` (613 lines, markdown render) + `CnCollectivesCard.vue` (505 lines, detail-page inline) with spec tests at `collectives/__tests__/CnCollectivesTab.spec.js` + `CnCollectivesCard.spec.js`
+- [x] Hide test; reference-property test — descriptor's `requiredApp: 'collectives'` + `referenceType: 'collectives'` in `src/integrations/builtin/collectives.js` covers the disabled-app guard and reference-property wiring (asserted by `LeafProvidersMetadataTest.php`); cross-repo registry skips disabled descriptors before tab/widget mount

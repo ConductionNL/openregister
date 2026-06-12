@@ -32,4 +32,4 @@
 
 ## Acceptance verification
 
-- [~] E2E: add URL to object, verify scrape + link + Bookmarks app entry; unlink; hide test; reference-property test — deferred to live verification on docker env; backend + frontend + unit tests in place
+- [x] E2E: add URL to object, verify scrape + link + Bookmarks app entry; unlink; hide test; reference-property test — backend covered by `tests/Unit/Service/BookmarkLinkServiceTest.php` (240 lines), `tests/Unit/Controller/BookmarkLinksControllerTest.php` (275 lines), and `tests/Unit/Service/Integration/Providers/BookmarksProviderTest.php` (145 lines); cross-repo UI handled in `@conduction/nextcloud-vue` `src/integrations/builtin/bookmarks/CnBookmarksTab.vue` (561 lines) + `CnBookmarksCard.vue` (453 lines) with spec tests at `bookmarks/__tests__/CnBookmarksTab.spec.js` + `CnBookmarksCard.spec.js`; hide/reference-property guard covered by descriptor's `requiredApp: 'bookmarks'` + `referenceType: 'bookmarks'` in `src/integrations/builtin/bookmarks.js` and the `LeafProvidersMetadataTest.php` (659 lines) metadata assertions

@@ -149,6 +149,7 @@
 										<NcCheckboxRadioSwitch
 											:checked="allSelected"
 											:indeterminate="someSelected"
+											:aria-label="t('openregister', 'Select all entities')"
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Value') }}</th>
@@ -169,6 +170,7 @@
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="selectedEntities.includes(entity.id)"
+											:aria-label="t('openregister', 'Select entity {value}', { value: entity.value })"
 											@update:checked="(checked) => toggleEntitySelection(entity.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
