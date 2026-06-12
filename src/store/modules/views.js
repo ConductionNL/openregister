@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 /**
@@ -98,24 +97,28 @@ export const useViewsStore = defineStore('views', {
 		 * Set the active view
 		 * @param {object|null} view - The view to set as active
 		 * @return {void}
+		 *
+		 * @spec exclude Pure client UI-state setter — active saved view. No backend contract.
 		 */
 		setActiveView(view) {
 			this.activeView = view
-			console.info('Active view set:', view)
 		},
 
 		/**
 		 * Clear the active view
 		 * @return {void}
+		 *
+		 * @spec exclude Pure client UI-state mutator — clears the active saved view. No backend contract.
 		 */
 		clearActiveView() {
 			this.activeView = null
-			console.info('Active view cleared')
 		},
 
 		/**
 		 * Fetch all views from the API
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/views list; observable contract owned by zoeken-filteren.
 		 */
 		async fetchViews() {
 			this.loading = true
@@ -135,8 +138,6 @@ export const useViewsStore = defineStore('views', {
 
 				const data = await response.json()
 				this.viewsList = data.results || []
-
-				console.info('Views fetched successfully:', this.viewsList.length, 'views')
 			} catch (error) {
 				console.error('Error fetching views:', error)
 				this.error = error.message
@@ -150,6 +151,8 @@ export const useViewsStore = defineStore('views', {
 		 * Fetch a specific view by ID
 		 * @param {string} id - The view ID
 		 * @return {Promise<object>}
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/views/{id}; observable contract owned by zoeken-filteren.
 		 */
 		async fetchView(id) {
 			this.loading = true
@@ -172,7 +175,6 @@ export const useViewsStore = defineStore('views', {
 				// API returns { view: {...} }, so unwrap it
 				const view = data.view || data
 
-				console.info('View fetched successfully:', view)
 				return view
 			} catch (error) {
 				console.error('Error fetching view:', error)
@@ -187,6 +189,8 @@ export const useViewsStore = defineStore('views', {
 		 * Create a new view
 		 * @param {object} viewData - The view data
 		 * @return {Promise<object>}
+		 *
+		 * @spec exclude Thin API passthrough — POST /api/views; observable contract owned by zoeken-filteren.
 		 */
 		async createView(viewData) {
 			this.loading = true
@@ -213,7 +217,6 @@ export const useViewsStore = defineStore('views', {
 				// Add to views list
 				this.viewsList.push(newView)
 
-				console.info('View created successfully:', newView)
 				return newView
 			} catch (error) {
 				console.error('Error creating view:', error)
@@ -229,6 +232,8 @@ export const useViewsStore = defineStore('views', {
 		 * @param {string} id - The view ID
 		 * @param {object} viewData - The updated view data
 		 * @return {Promise<object>}
+		 *
+		 * @spec exclude Thin API passthrough — PUT /api/views/{id}; observable contract owned by zoeken-filteren.
 		 */
 		async updateView(id, viewData) {
 			this.loading = true
@@ -266,7 +271,6 @@ export const useViewsStore = defineStore('views', {
 					this.activeView = updatedView
 				}
 
-				console.info('View updated successfully:', updatedView)
 				return updatedView
 			} catch (error) {
 				console.error('Error updating view:', error)
@@ -281,6 +285,8 @@ export const useViewsStore = defineStore('views', {
 		 * Clean view data for saving - remove read-only fields
 		 * @param {object} viewData - The view data to clean
 		 * @return {object} Cleaned view data
+		 *
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanViewForSave(viewData) {
 			const cleaned = { ...viewData }
@@ -298,6 +304,8 @@ export const useViewsStore = defineStore('views', {
 		 * Delete a view
 		 * @param {string} id - The view ID
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin API passthrough — DELETE /api/views/{id}; observable contract owned by zoeken-filteren.
 		 */
 		async deleteView(id) {
 			this.loading = true
@@ -322,8 +330,6 @@ export const useViewsStore = defineStore('views', {
 				if (this.activeView && (this.activeView.id === id || this.activeView.uuid === id)) {
 					this.activeView = null
 				}
-
-				console.info('View deleted successfully')
 			} catch (error) {
 				console.error('Error deleting view:', error)
 				this.error = error.message
@@ -338,10 +344,11 @@ export const useViewsStore = defineStore('views', {
 		 * @param {object} view - The view to apply
 		 * @param {object} searchStore - The search store instance
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-2/tasks.md#task-2
 		 */
 		applyView(view, searchStore) {
 			if (!view || !view.configuration) {
-				console.warn('Invalid view provided to applyView')
 				return
 			}
 
@@ -396,8 +403,6 @@ export const useViewsStore = defineStore('views', {
 			}
 
 			this.setActiveView(view)
-
-			console.info('View applied successfully:', view.name)
 		},
 
 		/**
@@ -408,6 +413,8 @@ export const useViewsStore = defineStore('views', {
 		 * @param {boolean} isDefault - Whether this should be the default view
 		 * @param {boolean} isPublic - Whether this view should be public
 		 * @return {object} The view configuration
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-2/tasks.md#task-3
 		 */
 		createViewFromSearchState(searchStore, name, description = '', isDefault = false, isPublic = false) {
 			return {

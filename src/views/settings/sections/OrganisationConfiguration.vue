@@ -1,7 +1,7 @@
 <template>
 	<NcSettingsSection
-		name="Organisation Configuration"
-		description="Configure default organisation and organisation-related settings">
+		:name="t('openregister', 'Organisation Configuration')"
+		:description="t('openregister', 'Configure default organisation and organisation-related settings')">
 		<NcNoteCard v-if="saveSuccess" type="success">
 			{{ t('openregister', 'Organisation settings saved successfully') }}
 		</NcNoteCard>
@@ -27,7 +27,7 @@
 					:placeholder="t('openregister', 'Select default organisation')"
 					:clearable="false"
 					label-outside
-					input-label="Default Organisation"
+					:input-label="t('openregister', 'Default Organisation')"
 					@input="handleDefaultOrganisationChange">
 					<template #option="{ name, users, owner }">
 						<div class="organisation-option">
@@ -155,6 +155,7 @@ import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 
@@ -215,6 +216,7 @@ export default {
 		/**
 		 * Format organisations for NcSelect
 		 *
+		 * @spec exclude settings-section select-option formatting helper (computed)
 		 * @return {Array} Formatted organisation options
 		 */
 		organisationOptions() {
@@ -228,6 +230,7 @@ export default {
 		/**
 		 * Check if there are unsaved changes
 		 *
+		 * @spec exclude settings-section dirty-state detection helper (computed)
 		 * @return {boolean} True if there are changes
 		 */
 		hasChanges() {
@@ -245,6 +248,7 @@ export default {
 		/**
 		 * Load all data
 		 *
+		 * @spec exclude settings-section aggregate-load plumbing (tenant-lifecycle contract)
 		 * @return {Promise<void>}
 		 */
 		async loadData() {
@@ -258,6 +262,7 @@ export default {
 		/**
 		 * Load organisations list
 		 *
+		 * @spec exclude settings-section API fetch plumbing for organisations
 		 * @return {Promise<void>}
 		 */
 		async loadOrganisations() {
@@ -281,6 +286,7 @@ export default {
 		/**
 		 * Load current settings
 		 *
+		 * @spec exclude settings-section API fetch plumbing for current settings
 		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
@@ -317,6 +323,7 @@ export default {
 		/**
 		 * Load organisation statistics
 		 *
+		 * @spec exclude settings-section API fetch plumbing for non-critical statistics
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -342,6 +349,7 @@ export default {
 		/**
 		 * Handle default organisation change
 		 *
+		 * @spec exclude settings-section select-change state plumbing
 		 * @param {object} organisation - Selected organisation
 		 * @return {void}
 		 */
@@ -354,6 +362,7 @@ export default {
 		/**
 		 * Handle auto-create default change
 		 *
+		 * @spec exclude settings-section toggle-change state plumbing
 		 * @param {boolean} value - New value
 		 * @return {void}
 		 */
@@ -366,6 +375,7 @@ export default {
 		/**
 		 * Save settings
 		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
 		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
@@ -404,6 +414,7 @@ export default {
 		/**
 		 * Reset changes to original values
 		 *
+		 * @spec exclude settings-section reset-to-original state plumbing
 		 * @return {void}
 		 */
 		resetSettings() {
@@ -416,6 +427,7 @@ export default {
 		/**
 		 * Refresh all data
 		 *
+		 * @spec exclude settings-section manual refresh plumbing
 		 * @return {Promise<void>}
 		 */
 		async refreshData() {

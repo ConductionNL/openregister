@@ -154,6 +154,7 @@ export default {
 		/**
 		 * Get current page size option object
 		 * @return {object} Current page size option object
+		 * @spec exclude computed lookup of current page-size option, UI plumbing
 		 */
 		currentPageSizeOption() {
 			return this.pageSizeOptions.find(option => option.value === this.currentPageSize) || this.pageSizeOptions[1]
@@ -161,6 +162,7 @@ export default {
 		/**
 		 * Calculate visible page numbers for pagination
 		 * @return {Array} Array of page numbers and ellipsis
+		 * @spec exclude computed ellipsis-aware page-number list for display, UI plumbing
 		 */
 		visiblePages() {
 			const current = this.currentPage
@@ -208,6 +210,7 @@ export default {
 		 * Change to a specific page
 		 * @param {number} page - The page number to change to
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-1
 		 */
 		changePage(page) {
 			if (page !== this.currentPage && page >= 1 && page <= this.totalPages) {
@@ -223,6 +226,7 @@ export default {
 		 * Change page size
 		 * @param {object} option - Selected page size option
 		 * @return {void}
+		 * @spec exclude emit page-size-changed UI plumbing
 		 */
 		changePageSize(option) {
 			if (option.value !== this.currentPageSize) {

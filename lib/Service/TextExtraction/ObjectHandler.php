@@ -5,6 +5,9 @@
  *
  * Handles text extraction from OpenRegister objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -13,6 +16,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -88,9 +93,12 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @throws Exception When extraction fails.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force parameter follows interface contract
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object extraction requires multiple field checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths with optional data
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object extraction requires multiple field checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field extraction paths with optional data
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $sourceMeta and $force kept to honour interface contract
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-2
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -213,6 +221,8 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @return bool True if extraction is needed.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -242,6 +252,8 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @psalm-return array{id: int, uuid: null|string, schema: null|string,
      *     register: null|string, version: null|string, organization: mixed,
      *     owner: null|string, updated: \DateTime|null}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -265,6 +277,8 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @param int $sourceId Object ID.
      *
      * @return int Unix timestamp.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
      */
     public function getSourceTimestamp(int $sourceId): int
     {
@@ -300,10 +314,9 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
         foreach ($data as $key => $value) {
             // Build context path.
-            if (($prefix !== null && $prefix !== '')) {
+            $contextKey = (string) $key;
+            if ($prefix !== null && $prefix !== '') {
                 $contextKey = "{$prefix}.{$key}";
-            } else {
-                $contextKey = (string) $key;
             }
 
             // Handle different value types.
@@ -312,10 +325,9 @@ class ObjectHandler implements TextExtractionHandlerInterface
             } else if (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_bool($value) === true) {
+                $boolStr = 'false';
                 if ($value === true) {
                     $boolStr = 'true';
-                } else {
-                    $boolStr = 'false';
                 }
 
                 $textParts[] = "{$contextKey}: {$boolStr}";

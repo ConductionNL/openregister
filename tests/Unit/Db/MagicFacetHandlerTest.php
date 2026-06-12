@@ -241,4 +241,57 @@ class MagicFacetHandlerTest extends TestCase
             $this->invokeDetermineFacetTypeFromProperty($handler, $property)
         );
     }//end testExplicitFacetableTypeOverrideIsRespected()
+
+    // -------------------------------------------------------------------------
+    // getDateBoundsForBucket() — week ISO bounds (regression for the
+    // strtotime() bug where '2025-12' parsed as "December 2025" instead of
+    // ISO week 12 of 2025).
+    // -------------------------------------------------------------------------
+    private function invokeGetDateBoundsForBucket(MagicFacetHandler $handler, string $dateKey, string $interval): ?array
+    {
+        $method = new ReflectionMethod(MagicFacetHandler::class, 'getDateBoundsForBucket');
+        $method->setAccessible(true);
+        return $method->invoke($handler, $dateKey, $interval);
+    }//end invokeGetDateBoundsForBucket()
+
+    public function testWeekBoundsUseIsoWeekNotMonth(): void
+    {
+        // Regression: '2025-12' under the old strtotime() implementation
+        // parsed as "December 2025" and returned bounds in December. The
+        // correct ISO interpretation is week 12 of 2025 (17-23 March).
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertSame(
+            ['from' => '2025-03-17', 'to' => '2025-03-23'],
+            $this->invokeGetDateBoundsForBucket($handler, '2025-12', 'week')
+        );
+    }//end testWeekBoundsUseIsoWeekNotMonth()
+
+    public function testWeekBoundsForFirstIsoWeekOfYear(): void
+    {
+        // ISO week 01 of 2024 starts Monday 2024-01-01 and ends Sunday
+        // 2024-01-07.
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertSame(
+            ['from' => '2024-01-01', 'to' => '2024-01-07'],
+            $this->invokeGetDateBoundsForBucket($handler, '2024-01', 'week')
+        );
+    }//end testWeekBoundsForFirstIsoWeekOfYear()
+
+    public function testWeekBoundsForIsoWeek52OfPreviousYearAtBoundary(): void
+    {
+        // 2023-01-01 is a Sunday and lands in ISO week 52 of 2022. The
+        // bucket key '2022-52' must yield Monday 2022-12-26 → Sunday
+        // 2023-01-01 (cross-year ISO week).
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertSame(
+            ['from' => '2022-12-26', 'to' => '2023-01-01'],
+            $this->invokeGetDateBoundsForBucket($handler, '2022-52', 'week')
+        );
+    }//end testWeekBoundsForIsoWeek52OfPreviousYearAtBoundary()
+
+    public function testWeekBoundsRejectMalformedKey(): void
+    {
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertNull($this->invokeGetDateBoundsForBucket($handler, 'not-a-date', 'week'));
+    }//end testWeekBoundsRejectMalformedKey()
 }//end class

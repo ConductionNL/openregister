@@ -30,13 +30,25 @@ class ConfigurationsControllerTest extends TestCase
         $this->configurationService = $this->createMock(ConfigurationService::class);
         $this->uploadService = $this->createMock(UploadService::class);
 
+        // Write endpoints are admin-gated (isCurrentUserAdmin -> groupManager
+        // ->isAdmin). Simulate an authenticated admin so CRUD tests exercise
+        // the happy path rather than the 403 guard.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($adminUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new ConfigurationsController(
             'openregister',
             $this->request,
             $this->configurationMapper,
             $this->configurationService,
             $this->uploadService,
-            'admin'
+            'admin',
+            $userSession,
+            $groupManager
         );
     }
 

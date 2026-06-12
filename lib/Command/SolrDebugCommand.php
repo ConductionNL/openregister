@@ -5,6 +5,9 @@
  *
  * SOLR Debug Command for testing SOLR functionality step by step.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *
@@ -40,6 +43,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SolrDebugCommand extends Command
 {
@@ -54,7 +59,7 @@ class SolrDebugCommand extends Command
      * @param IClientService  $clientService   HTTP client service (unused)
      * @param IndexService    $indexService    SOLR/OpenSearch index service
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -76,7 +81,7 @@ class SolrDebugCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     protected function configure(): void
     {
@@ -126,7 +131,7 @@ class SolrDebugCommand extends Command
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -174,7 +179,7 @@ class SolrDebugCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     private function showTenantInfo(OutputInterface $output): void
     {
@@ -217,7 +222,7 @@ class SolrDebugCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     private function testSetup(OutputInterface $output): void
     {
@@ -259,7 +264,7 @@ class SolrDebugCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     private function testConnection(OutputInterface $output): void
     {
@@ -307,7 +312,7 @@ class SolrDebugCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     private function checkCores(OutputInterface $output): void
     {
@@ -341,7 +346,7 @@ class SolrDebugCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     private function testSolrAdminAPI(OutputInterface $output, array $solrSettings): void
     {

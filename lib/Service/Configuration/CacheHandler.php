@@ -6,10 +6,13 @@
  * This file contains the handler for caching configurations in the user session
  * to avoid excessive database queries when checking if entities are managed by configurations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -35,7 +38,7 @@ use OCP\ISession;
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -107,7 +110,7 @@ class CacheHandler
      *
      * @return Configuration[] Array of configuration entities for active organisation
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-31
      */
     public function getConfigurationsForActiveOrganisation(): array
     {
@@ -127,7 +130,13 @@ class CacheHandler
         $cachedData = $this->session->get($sessionKey);
         if ($cachedData !== null) {
             // Configurations are cached - unserialize and return.
-            return unserialize($cachedData);
+            // SEC-SVC-10: restrict unserialize to the expected entity/value
+            // classes so a tampered session blob cannot instantiate arbitrary
+            // objects (PHP object injection).
+            return unserialize(
+                $cachedData,
+                ['allowed_classes' => [Configuration::class, \DateTime::class]]
+            );
         }
 
         // Step 4: Not cached - fetch configurations from database.

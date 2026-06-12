@@ -8,7 +8,7 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure Large Language Model (LLM) providers for AI-powered features including semantic search, embeddings, and chat.') }}
+					{{ t('openregister', 'Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.') }}
 				</p>
 			</div>
 
@@ -78,6 +78,7 @@
 				<div class="form-group">
 					<label for="openai-model">{{ t('openregister', 'Embedding Model') }}</label>
 					<NcSelect
+						input-label="Openai Config Model"
 						v-model="openaiConfig.model"
 						:options="openaiModelOptions"
 						label="name"
@@ -113,7 +114,7 @@
 						id="ollama-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -121,6 +122,7 @@
 				<div class="form-group">
 					<label for="ollama-model">{{ t('openregister', 'Model Name') }}</label>
 					<NcSelect
+						input-label="Ollama Config Model"
 						id="ollama-model"
 						v-model="ollamaConfig.model"
 						:options="ollamaModelOptions"
@@ -158,6 +160,7 @@
 				<div class="form-group">
 					<label for="fireworks-embedding-model">{{ t('openregister', 'Embedding Model') }}</label>
 					<NcSelect
+						input-label="Fireworks Config Embedding Model"
 						v-model="fireworksConfig.embeddingModel"
 						:options="fireworksEmbeddingModelOptions"
 						label="name"
@@ -178,7 +181,7 @@
 						id="fireworks-base-url"
 						v-model="fireworksConfig.baseUrl"
 						type="text"
-						:placeholder="t('openregister', 'https://api.fireworks.ai/inference/v1')"
+						placeholder="https://api.fireworks.ai/inference/v1"
 						class="input-field">
 					<small>{{ t('openregister', 'Custom API endpoint if using a different region') }}</small>
 				</div>
@@ -203,6 +206,7 @@
 				<div class="form-group">
 					<label for="openai-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
+						input-label="Openai Config Chat Model"
 						v-model="openaiConfig.chatModel"
 						:options="openaiChatModelOptions"
 						label="name"
@@ -236,6 +240,7 @@
 				<div class="form-group">
 					<label for="fireworks-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
+						input-label="Fireworks Config Chat Model"
 						v-model="fireworksConfig.chatModel"
 						:options="fireworksChatModelOptions"
 						label="name"
@@ -261,7 +266,7 @@
 						id="ollama-chat-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -269,6 +274,7 @@
 				<div class="form-group">
 					<label for="ollama-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
+						input-label="Ollama Config Chat Model"
 						id="ollama-chat-model"
 						v-model="ollamaConfig.chatModel"
 						:options="ollamaModelOptions"
@@ -298,6 +304,7 @@
 				<div class="form-group">
 					<label for="vector-backend">{{ t('openregister', 'Search Method') }}</label>
 					<NcSelect
+						input-label="Selected Vector Backend"
 						v-model="selectedVectorBackend"
 						:options="vectorBackendOptions"
 						label="name"
@@ -325,7 +332,7 @@
 				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
 					<div class="info-box">
 						<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
-						<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
+						<p>{{ t('openregister', 'Files → filecollection, objects → objectcollection') }}</p>
 						<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
 					</div>
 				</div>
@@ -554,6 +561,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude UI state helper — enables the embedding test when its provider is configured.
+		 */
 		canTestEmbedding() {
 			const provider = this.selectedEmbeddingProvider?.id
 			if (!provider) return false
@@ -568,6 +578,9 @@ export default {
 			return false
 		},
 
+		/**
+		 * @spec exclude UI state helper — enables the chat test when its provider is configured.
+		 */
 		canTestChat() {
 			const provider = this.selectedChatProvider?.id
 			if (!provider) return false
@@ -585,11 +598,17 @@ export default {
 
 	watch: {
 		// Fetch Ollama models when Ollama is selected
+		/**
+		 * @spec exclude UI watcher — fetches Ollama models when the embedding provider is Ollama.
+		 */
 		selectedEmbeddingProvider(newVal) {
 			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
 				this.fetchOllamaModels()
 			}
 		},
+		/**
+		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
+		 */
 		selectedChatProvider(newVal) {
 			if (newVal?.id === 'ollama' && this.ollamaConfig.url) {
 				this.fetchOllamaModels()
@@ -603,12 +622,18 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook — loads LLM config and available backends on mount.
+	 */
 	mounted() {
 		this.loadConfiguration()
 		this.loadAvailableBackends()
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async loadConfiguration() {
 			this.loading = true
 
@@ -687,8 +712,6 @@ export default {
 					})
 				}
 
-				console.info('LLM configuration loaded', llmSettings)
-
 				// Fetch Ollama models if Ollama is selected
 				if ((this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama') && this.ollamaConfig.url) {
 					this.fetchOllamaModels()
@@ -701,10 +724,16 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI event handler — clears the embedding test result on provider change.
+		 */
 		handleEmbeddingProviderChange() {
 			this.embeddingTestResult = null
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — tests the embedding provider connection.
+		 */
 		async testEmbeddingConnection() {
 			this.testingEmbedding = true
 			this.embeddingTestResult = null
@@ -753,6 +782,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — tests the chat provider connection.
+		 */
 		async testChatConnection() {
 			this.testingChat = true
 			this.chatTestResult = null
@@ -801,6 +833,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal save plumbing — posts LLM configuration to the settings endpoint.
+		 */
 		async saveConfiguration() {
 			this.saving = true
 
@@ -847,6 +882,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches available Ollama models for the picker.
+		 */
 		async fetchOllamaModels() {
 			if (!this.ollamaConfig.url || this.loadingOllamaModels) {
 				return
@@ -874,6 +912,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI event handler — prompts before clearing all embeddings.
+		 */
 		confirmClearEmbeddings() {
 			// Use native browser confirm to avoid focus-trap conflicts with nested modals
 			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
@@ -883,6 +924,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — clears all stored embeddings via the API.
+		 */
 		async clearAllEmbeddings() {
 			this.clearingEmbeddings = true
 
@@ -906,6 +950,9 @@ export default {
 
 		/**
 		 * Load available vector search backends
+		 */
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches available LLM backends for the pickers.
 		 */
 		async loadAvailableBackends() {
 			this.loadingBackends = true

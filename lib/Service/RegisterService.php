@@ -8,6 +8,9 @@
  * This service acts as a facade for register operations,
  * coordinating between RegisterMapper and FileService.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -28,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -50,7 +54,9 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $_multitenancy boolean flag is part of the public API
+ * contract shared with RegisterMapper::findAll/find; the method signature must match callers that
+ * explicitly pass `false` to bypass multitenancy for admin/repair contexts.
  */
 class RegisterService
 {
@@ -110,6 +116,17 @@ class RegisterService
     private readonly LoggerInterface $logger;
 
     /**
+     * Register serializer
+     *
+     * Applies `_extend` post-processing (`schemas`, `@self.stats`) on
+     * Register entities. Shared between the HTTP controller and DI
+     * consumers via findAllSerialized / findSerialized.
+     *
+     * @var RegisterSerializer
+     */
+    private readonly RegisterSerializer $registerSerializer;
+
+    /**
      * Constructor
      *
      * Initializes service with required dependencies for register operations.
@@ -120,6 +137,7 @@ class RegisterService
      * @param FileService         $fileService         File service for file operations
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param RegisterSerializer  $registerSerializer  Serializer for `_extend` post-processing
      *
      * @return void
      */
@@ -129,7 +147,8 @@ class RegisterService
         IDBConnection $db,
         FileService $fileService,
         OrganisationService $organisationService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        RegisterSerializer $registerSerializer
     ) {
         $this->logger = $logger;
         $this->logger->debug(
@@ -142,6 +161,7 @@ class RegisterService
         $this->db          = $db;
         $this->fileService = $fileService;
         $this->organisationService = $organisationService;
+        $this->registerSerializer  = $registerSerializer;
         $this->logger->debug(
             message: '[RegisterService] RegisterService constructor completed.',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -163,10 +183,17 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
+     *
+     * @spec exclude Pure pass-through to RegisterMapper::find; no business logic.
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
-        return $this->registerMapper->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+        // NB: `_extend` is declared for signature compatibility with the
+        // pre-spec contract; the mapper no longer accepts it. Use
+        // `findSerialized()` to obtain an array payload with `_extend`
+        // post-processing applied.
+        unset($_extend);
+        return $this->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
     }//end find()
 
     /**
@@ -190,6 +217,8 @@ class RegisterService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional parameters use null defaults for flexibility
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple optional filter parameters for flexibility
+     *
+     * @spec exclude Pure pass-through to RegisterMapper::findAll; no business logic.
      */
     public function findAll(
         ?int $limit=null,
@@ -201,16 +230,149 @@ class RegisterService
         bool $_multitenancy=true
     ): array {
         // Find all registers with optional filtering, pagination, and extensions.
+        // NB: `_extend` is declared for signature compatibility only — the
+        // mapper layer ignores it; honored extensions live on findSerialized
+        // / findAllSerialized which delegate to RegisterSerializer.
         return $this->registerMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $_extend,
             _multitenancy: $_multitenancy
         );
     }//end findAll()
+
+
+    /**
+     * Find a register by ID and serialize it with `_extend` applied
+     *
+     * Combines `find()` with `RegisterSerializer::serialize()`. When
+     * `_extend` requests both `schemas` and `@self.stats`, this method
+     * pre-computes the per-schema counts via `getSchemaObjectCounts()`
+     * and hands them to the serializer so the serializer itself has
+     * no DI back-reference to this service.
+     *
+     * @param int|string $id            The ID of the register to find.
+     * @param array      $_extend       Extension keys to apply (`schemas`, `@self.stats`).
+     * @param bool       $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array Serialized register payload.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
+     */
+    public function findSerialized(int | string $id, array $_extend=[], bool $_multitenancy=true): array
+    {
+        $register = $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+
+        $stats = null;
+        if (in_array('schemas', $_extend, true) === true
+            && in_array('@self.stats', $_extend, true) === true
+        ) {
+            $stats = $this->getSchemaObjectCounts(
+                registerId: (int) $register->getId(),
+                schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+            );
+        }
+
+        return $this->registerSerializer->serialize($register, $_extend, $stats);
+
+    }//end findSerialized()
+
+
+    /**
+     * Find all registers + serialize each with `_extend` applied
+     *
+     * Companion to {@see findAll()} that returns serialized arrays with
+     * `_extend` honored. When `schemas` + `@self.stats` are both
+     * requested, per-register stats are pre-computed and handed to the
+     * serializer via `serializeMany()`.
+     *
+     * @param int|null      $limit            Maximum number of results.
+     * @param int|null      $offset           Pagination offset.
+     * @param array|null    $filters          Mapper filters.
+     * @param array|null    $searchConditions Search conditions.
+     * @param array|null    $searchParams     Search parameters.
+     * @param array<string> $_extend          Extension keys to apply.
+     * @param bool          $_multitenancy    Whether to apply multitenancy filtering.
+     *
+     * @return array<int,array> Array of serialized register payloads.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors findAll() so HTTP and DI
+     *   callers can hand the same parameter set to either method without re-wrangling
+     *   query params.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
+     */
+    public function findAllSerialized(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $_extend=[],
+        bool $_multitenancy=true
+    ): array {
+        $registers = $this->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            _multitenancy: $_multitenancy
+        );
+
+        $statsByRegisterId = null;
+        if (in_array('schemas', $_extend, true) === true
+            && in_array('@self.stats', $_extend, true) === true
+        ) {
+            $statsByRegisterId = [];
+            foreach ($registers as $register) {
+                $statsByRegisterId[(int) $register->getId()] = $this->getSchemaObjectCounts(
+                    registerId: (int) $register->getId(),
+                    schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+                );
+            }
+        }
+
+        return $this->registerSerializer->serializeMany($registers, $_extend, $statsByRegisterId);
+
+    }//end findAllSerialized()
+
+
+    /**
+     * Resolve schema IDs to hydrated objects for stats computation.
+     *
+     * `getSchemaObjectCounts()` reads `tablePrefix` and `slug` off each
+     * schema (used to build the magic-table name). The serializer hands
+     * us bare IDs, so we resolve them here. Orphan IDs are silently
+     * dropped — they cannot produce a stats lookup anyway.
+     *
+     * @param array $schemaIds Schema ID array (int|string).
+     *
+     * @return array<int,\OCA\OpenRegister\Db\Schema> Resolved schema entities for the stats query.
+     */
+    private function resolveSchemasForStats(array $schemaIds): array
+    {
+        $schemas = [];
+        foreach ($schemaIds as $schemaId) {
+            try {
+                $schemas[] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Orphan IDs cannot contribute to stats; skip silently.
+                // The RegisterSerializer logs the orphan when it hits the
+                // same ID during expansion.
+                continue;
+            }
+        }
+
+        return $schemas;
+
+    }//end resolveSchemasForStats()
 
     /**
      * Create a new register from array data.
@@ -220,6 +382,10 @@ class RegisterService
      * @return Register The created register
      *
      * @throws Exception If register creation fails
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (after mapper create, assigns the active/default organisation for multi-tenancy
+     *   and provisions the register's backing folder)
      */
     public function createFromArray(array $data): Register
     {
@@ -277,6 +443,10 @@ class RegisterService
      * @return Register The updated register
      *
      * @throws Exception If register update fails
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (after mapper update, ensures the register's backing folder exists,
+     *   healing legacy null/string folder properties)
      */
     public function updateFromArray(int $id, array $data): Register
     {
@@ -299,6 +469,8 @@ class RegisterService
      * @throws Exception If register has attached objects or deletion fails
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @spec exclude Pure pass-through to RegisterMapper::delete; no business logic.
      */
     public function delete(Register $register): Register
     {
@@ -373,6 +545,13 @@ class RegisterService
      * @return array<int, array{total: int}> Associative array mapping schema IDs to counts
      *
      * @psalm-return array<int, array{total: int}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getSchemaObjectCounts() builds a UNION SQL query
+     * across N schema magic-tables with platform-specific CAST syntax (Postgres vs MariaDB/MySQL),
+     * processes the result set, and backfills zero-stats for missing tables in one pass; splitting
+     * would require multiple DB round-trips or passing the DB connection to sub-helpers.
      */
     public function getSchemaObjectCounts(int $registerId, array $schemas): array
     {
@@ -391,10 +570,27 @@ class RegisterService
             );
 
             // Build UNION queries for each schema's magic table.
+            // Cast syntax differs across platforms — PostgreSQL uses `::text`
+            // while MariaDB/MySQL require CAST AS CHAR (mirrors lib/Db/MagicMapper.php:1346-1349).
+            // get_debug_type() is null-safe (a mocked IDBConnection returns null here in unit tests).
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
+
             $unionQueries = [];
 
             foreach ($schemas as $schema) {
-                $schemaId = $schema['id'] ?? null;
+                // $schemas may arrive as hydrated Schema objects (the
+                // `_extend[]=schemas` + `@self.stats` path via
+                // resolveSchemasForStats()/schemaMapper->find()), as plain
+                // arrays, or as scalar ids — resolve the id from any shape.
+                if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                    $schemaId = $schema->getId();
+                } else if (is_array($schema) === true) {
+                    $schemaId = $schema['id'] ?? null;
+                } else {
+                    $schemaId = is_numeric($schema) === true ? (int) $schema : null;
+                }
+
                 if ($schemaId === null) {
                     $this->logger->warning(
                         message: '[RegisterService] Schema without ID found, skipping',
@@ -413,9 +609,14 @@ class RegisterService
                 }
 
                 $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                $unionQueries[]  = "
+                $schemaIdExpr    = "CAST({$schemaId} AS CHAR)";
+                if ($isPostgres === true) {
+                    $schemaIdExpr = "{$schemaId}::text";
+                }
+
+                $unionQueries[] = "
                     SELECT
-                        CAST({$schemaId} AS VARCHAR) as schema_id,
+                        {$schemaIdExpr} as schema_id,
                         COUNT(*) as total,
                         COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
                         0 as invalid,
@@ -438,7 +639,8 @@ class RegisterService
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // Execute the query.
+            // Raw SQL: QueryBuilder cannot compose a UNION ALL across an arbitrary
+            // number of dynamically-named magic tables (one per schema/register pair).
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
 

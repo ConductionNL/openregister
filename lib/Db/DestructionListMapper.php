@@ -5,10 +5,13 @@
  *
  * Handles database operations for destruction list entities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -21,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -150,8 +154,8 @@ class DestructionListMapper extends QBMapper
             $entity->setStatus(DestructionList::STATUS_PENDING_REVIEW);
         }
 
-        $entity->setCreated(new \DateTime());
-        $entity->setUpdated(new \DateTime());
+        $entity->setCreated(new DateTime());
+        $entity->setUpdated(new DateTime());
 
         return $this->insert(entity: $entity);
     }//end createEntry()
@@ -165,7 +169,7 @@ class DestructionListMapper extends QBMapper
      */
     public function updateEntry(DestructionList $entity): DestructionList
     {
-        $entity->setUpdated(new \DateTime());
+        $entity->setUpdated(new DateTime());
 
         return $this->update(objectId: $entity);
     }//end updateEntry()

@@ -5,10 +5,13 @@
  *
  * This file contains the exception class for validation errors.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -32,7 +35,7 @@ use Throwable;
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -67,7 +70,7 @@ class ValidationException extends Exception
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      */
     public function __construct(
         string $message,
@@ -91,7 +94,7 @@ class ValidationException extends Exception
      *
      * @return ValidationError|null The validation errors object or null if not available
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      */
     public function getErrors(): ?ValidationError
     {

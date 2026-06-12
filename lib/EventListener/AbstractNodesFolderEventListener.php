@@ -6,10 +6,13 @@
  * This file contains the event listener for node folder events
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category EventListener
  * @package  OCA\OpenRegister\EventListener
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -45,7 +48,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -60,7 +63,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function handle(Event $event): void
     {
@@ -91,7 +94,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
@@ -107,7 +110,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {

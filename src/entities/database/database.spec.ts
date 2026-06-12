@@ -10,7 +10,7 @@ describe('Database Entity', () => {
 		expect(database.validate().success).toBe(true)
 	})
 
-	it('should create a Database entity with partial data', () => {
+	it('should create a Database entity with partial data; validation requires id', () => {
 		const partialData = {
 			name: 'Partial Database',
 			url: 'mysql://user:pass@localhost:3306/partial_db',
@@ -21,7 +21,10 @@ describe('Database Entity', () => {
 		expect(database.id).toBe('')
 		expect(database.name).toBe(partialData.name)
 		expect(database.tablePrefix).toBe('')
-		expect(database.validate().success).toBe(true)
+		// Validation requires non-empty id; partial-data construction
+		// is allowed for in-memory shaping but not yet a valid persisted
+		// entity. Asserting failure documents the contract.
+		expect(database.validate().success).toBe(false)
 	})
 
 	it('should fail validation with invalid data', () => {

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -214,11 +215,29 @@ class MagicMapperTest extends TestCase
         $this->mockSchema->setVersion('1.0');
         $this->mockSchema->testConfiguration = [];
 
-        // Reset static construct counter to avoid circular dependency guard.
-        $ref = new \ReflectionClass(MagicMapper::class);
-        $prop = $ref->getProperty('constructCount');
-        $prop->setAccessible(true);
-        $prop->setValue(null, 0);
+        // Build a container mock that returns the DateTimeNormalizer when asked
+        // — MagicMapper resolves it lazily from the container to construct
+        // MagicBulkHandler, and the typed parameter rejects null.
+        $dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
+        $container           = $this->createMock(ContainerInterface::class);
+        $conditionMatcher    = $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class);
+        $schemaTypeConverter = $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class);
+        $container->method('get')->willReturnCallback(
+            function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
+                if ($id === DateTimeNormalizer::class
+                    || $id === \OCA\OpenRegister\Service\DateTimeNormalizer::class
+                ) {
+                    return $dateTimeNormalizer;
+                }
+                if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
+                    return $conditionMatcher;
+                }
+                if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+                    return $schemaTypeConverter;
+                }
+                return null;
+            }
+        );
 
         // Create MagicMapper instance with all required dependencies.
         $this->magicMapper = new MagicMapper(
@@ -233,7 +252,7 @@ class MagicMapperTest extends TestCase
             $this->mockAppConfig,
             $this->mockLogger,
             $this->createMock(SettingsService::class),
-            $this->createMock(ContainerInterface::class)
+            $container
         );
 
     }//end setUp()
@@ -552,7 +571,9 @@ class MagicMapperTest extends TestCase
             ],
             'object_property' => [
                 'propertyConfig' => ['type' => 'object'],
-                'expectedColumn' => ['type' => 'json', 'nullable' => true]
+                // Object-typed properties use json_ordered to preserve
+                // JSON key order on writes (see #1720 / commit 11576838a).
+                'expectedColumn' => ['type' => 'json_ordered', 'nullable' => true]
             ]
         ];
 
@@ -567,23 +588,32 @@ class MagicMapperTest extends TestCase
     public function testObjectDataPreparationForTable(): void
     {
         $schema = new TestableSchema();
+        $schema->setId(42);
         $schema->testProperties = [
-            'name' => ['type' => 'string'],
-            'age' => ['type' => 'integer'],
-            'settings' => ['type' => 'object']
+            'name'     => ['type' => 'string'],
+            'age'      => ['type' => 'integer'],
+            'settings' => ['type' => 'object'],
         ];
 
         $objectData = [
             '@self' => [
-                'uuid' => 'test-uuid-123',
-                'register' => 'test-register',
-                'schema' => 'test-schema',
-                'owner' => 'testuser',
-                'organisation' => 'test-org'
+                'uuid'         => 'test-uuid-123',
+                // register and schema are intentionally supplied with wrong values to
+                // verify that the security fix forces them from the authoritative
+                // $register/$schema parameters instead (wave-7 CRITICAL C2).
+                'register'     => 'client-supplied-register',
+                'schema'       => 'client-supplied-schema',
+                // owner reaches this layer ONLY as the server-stamped UID string set by
+                // SaveObject::applyOwnerAttribution (client `owner` is stripped upstream in
+                // SaveObject::setSelfMetadata, never copied onto the entity). A scalar
+                // string owner MUST be persisted so the creator owns their object; a
+                // non-string (forged-array) owner is still dropped (asserted below).
+                'owner'        => 'server-stamped-owner-uid',
+                'organisation' => 'test-org',
             ],
-            'name' => 'John Doe',
-            'age' => 30,
-            'settings' => ['theme' => 'dark', 'language' => 'en']
+            'name'     => 'John Doe',
+            'age'      => 30,
+            'settings' => ['theme' => 'dark', 'language' => 'en'],
         ];
 
         $reflection = new \ReflectionClass($this->magicMapper);
@@ -594,10 +624,27 @@ class MagicMapperTest extends TestCase
 
         // Verify metadata fields are prefixed.
         $this->assertEquals('test-uuid-123', $result['_uuid']);
-        $this->assertEquals('test-register', $result['_register']);
-        $this->assertEquals('test-schema', $result['_schema']);
-        $this->assertEquals('testuser', $result['_owner']);
+
+        // SECURITY (wave-7 C2): register and schema must come from the authoritative
+        // method parameters, NOT from client-supplied @self values.
+        $this->assertEquals(1, $result['_register']);
+        $this->assertEquals(42, $result['_schema']);
+
+        // OWNERSHIP FIX: a scalar string owner (the server-stamped UID produced by
+        // SaveObject::applyOwnerAttribution) MUST be persisted to `_owner`. Previously
+        // it was unconditionally stripped, leaving an empty `_owner` so the creator
+        // could not update their own object and ownership-based RBAC was neutered.
+        $this->assertEquals('server-stamped-owner-uid', $result['_owner']);
+
         $this->assertEquals('test-org', $result['_organisation']);
+
+        // SECURITY (defence-in-depth): a non-string (forged-array) owner shape — which a
+        // raw @self injection payload would take — is still dropped at this DB-write
+        // boundary, so it can never persist as ownership.
+        $forgedData            = $objectData;
+        $forgedData['@self']['owner'] = ['group' => 'admin'];
+        $forgedResult          = $method->invoke($this->magicMapper, $forgedData, $this->mockRegister, $schema);
+        $this->assertNull($forgedResult['_owner']);
 
         // Verify schema properties are included.
         $this->assertEquals('John Doe', $result['name']);

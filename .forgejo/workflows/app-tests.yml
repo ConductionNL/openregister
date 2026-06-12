@@ -1,0 +1,49 @@
+# app-tests.yml — openregister caller for the reusable feature-test workflow.
+#
+# Runs the PHASE-5 testing layers on every PR to the protected branches.
+# phpunit-unit + l10n-check HARD-GATE; e2e/newman are scaffolded and opt-in
+# (run-e2e / run-newman) until the NC service container is wired (see tests.yml
+# TODOs). openregister already has a full Newman-in-CI job
+# (.github/workflows/api-test-coverage.yml booting .github/docker-compose.ci.yml)
+# — the scaffolded newman job here documents the local entrypoint and stays
+# non-gating so the two don't duplicate. Additive — sits alongside
+# pre-merge-check-strict.yaml and the release workflows.
+
+name: app-tests
+
+on:
+  pull_request:
+    branches:
+      - development
+      - main
+      - beta
+  workflow_dispatch:
+    inputs:
+      run-e2e:
+        type: boolean
+        default: false
+      run-newman:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    uses: ./.forgejo/workflows/tests.yml
+    with:
+      app-id: openregister
+      # The reusable tests.yml phpunit-unit job runs in a BARE PHP container
+      # (no Nextcloud). openregister's unit suite cannot run there: its classes
+      # touch IQueryBuilder/RootFolder/Hooks, whose OCP stubs reference
+      # Doctrine\DBAL\* and OC\* internals that only resolve once lib/base.php
+      # is bootstrapped (~2900 structural "Class not found" errors otherwise).
+      # So this job stays non-gating; the unit suite is HARD-GATED in-container
+      # instead — see .github/workflows/api-test-coverage.yml → "PHPUnit unit
+      # suite (in-container, HARD GATE)". The suite itself is GREEN there
+      # (0 errors / 0 failures; the prior ~1463-error baseline was harness
+      # drift — see TESTING-CI-ROLLOUT.md → "openregister unit-suite").
+      unit-gating: false
+      run-e2e: ${{ github.event.inputs.run-e2e == 'true' }}
+      run-newman: ${{ github.event.inputs.run-newman == 'true' }}

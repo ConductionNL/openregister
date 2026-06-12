@@ -3,21 +3,26 @@
 /**
  * LinkedEntityController
  *
- * @category Controller
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+ * @category  Controller
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
  */
 
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -36,6 +41,8 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
  */
 class LinkedEntityController extends Controller
 {
@@ -67,12 +74,12 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
+    // SEC-CTRL-8: CSRF protection retained — this is an SPA-called authenticated write
+    // (axios sends the CSRF token); #[NoCSRFRequired] removed.
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function addObjectLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -86,6 +93,9 @@ class LinkedEntityController extends Controller
             $result = $this->linkedEntityService->addLink($uuid, $type, (string) $entityId);
 
             return new JSONResponse(['_'.$type => $result]);
+        } catch (NotAuthorizedException $e) {
+            // SEC-CTRL-4: write-permission denial maps to 403.
+            return new JSONResponse(['error' => $e->getMessage()], 403);
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] addObjectLink failed',
@@ -108,19 +118,21 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function removeObjectLink(string $uuid, string $type, string $entityId): JSONResponse
     {
         try {
             $result = $this->linkedEntityService->removeLink($uuid, $type, $entityId);
 
             return new JSONResponse(['_'.$type => $result]);
+        } catch (NotAuthorizedException $e) {
+            // SEC-CTRL-4: write-permission denial maps to 403.
+            return new JSONResponse(['error' => $e->getMessage()], 403);
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] removeObjectLink failed',
@@ -142,10 +154,11 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function addRegisterLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -175,10 +188,11 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function addSchemaLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -210,8 +224,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

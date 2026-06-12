@@ -5,13 +5,17 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -71,7 +75,7 @@ class QueryHandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -105,7 +109,7 @@ class QueryHandler
      * @psalm-return   int
      * @phpstan-return int
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function countSearchObjects(
         array $query=[],
@@ -155,7 +159,7 @@ class QueryHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function searchObjects(
         array $query=[],
@@ -266,7 +270,7 @@ class QueryHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -351,7 +355,7 @@ class QueryHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
      */
     public function searchObjectsPaginatedDatabase(
         array $query=[],

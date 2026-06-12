@@ -1,0 +1,15 @@
+{
+  "name": "Citizen developer adds a stat-counter widget to the dashboard",
+  "persona": "You are a citizen developer using OpenBuild. You have OpenBuild MCP tools. ALWAYS use the tools to perform actions; never just describe steps. Once the action succeeds, briefly confirm and stop.",
+  "goal": "Add a 'stat-counter' widget to the Dashboard page of OpenBuild virtual app 'persona-test-tracker2'. The widget should count records in register 'openbuild-persona-test-tracker2-development', schema 'note', and use the label 'Total notes'. Use the development version.",
+  "max_turns": 6,
+  "ollama_model": "qwen3.5-optimized:latest",
+  "pre_sql": [
+    "UPDATE oc_openregister_table_10_167 SET manifest = jsonb_set(manifest, '{pages}', (SELECT COALESCE(jsonb_agg(CASE WHEN p->>'id'='Dashboard' THEN jsonb_set(p, '{config,widgets}', '[]'::jsonb) ELSE p END), '[]'::jsonb) FROM jsonb_array_elements(COALESCE(manifest->'pages','[]'::jsonb)) p)) WHERE slug = 'development' AND application IN (SELECT _uuid FROM oc_openregister_table_10_28 WHERE slug='persona-test-tracker2')"
+  ],
+  "asserts": [
+    { "type": "tool_succeeded", "tool": "openbuild.addWidget", "min_calls": 1 },
+    { "type": "db_row_exists", "table": "oc_openregister_table_10_167",
+      "where": "slug = 'development' AND application IN (SELECT _uuid FROM oc_openregister_table_10_28 WHERE slug='persona-test-tracker2') AND manifest::text LIKE '%stat-counter%' AND manifest::text LIKE '%Total notes%'" }
+  ]
+}

@@ -3,7 +3,7 @@
 		name="Text Extraction"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		loading-message="Loading text extraction settings...">
+		:loading-message="t('openregister', 'Loading text extraction settings...')">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
@@ -70,7 +70,7 @@
 
 		<!-- Text Extraction Settings -->
 		<SettingsCard
-			title="Text Extraction"
+			:title="t('openregister', 'Text Extraction')"
 			icon="📄"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -79,7 +79,7 @@
 					<label for="extraction-scope">Extract Text From</label>
 					<NcSelect v-model="fileSettings.extractionScope"
 						input-id="extraction-scope"
-						input-label="Extraction Scope"
+						:input-label="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
 						@input="saveSettings">
 						<template #option="{ label, description }">
@@ -98,7 +98,7 @@
 					<label for="text-extractor">Text Extractor</label>
 					<NcSelect v-model="fileSettings.textExtractor"
 						input-id="text-extractor"
-						input-label="Text Extraction Engine"
+						:input-label="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
 						@input="saveSettings">
@@ -122,7 +122,7 @@
 							<label for="dolphin-endpoint">Dolphin API Endpoint</label>
 							<NcTextField id="dolphin-endpoint"
 								v-model="fileSettings.dolphinApiEndpoint"
-								placeholder="https://api.your-dolphin-instance.com"
+								:placeholder="t('openregister', 'https://api.your-dolphin-instance.com')"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
@@ -138,7 +138,7 @@
 							<NcTextField id="dolphin-key"
 								v-model="fileSettings.dolphinApiKey"
 								type="password"
-								placeholder="Enter your API key"
+								:placeholder="t('openregister', 'Enter your API key')"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<KeyIcon :size="20" />
@@ -165,7 +165,7 @@
 					<label for="extraction-mode">Extraction Mode</label>
 					<NcSelect v-model="fileSettings.extractionMode"
 						input-id="extraction-mode"
-						input-label="Extraction Mode"
+						:input-label="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
 						@input="saveSettings">
@@ -284,7 +284,7 @@
 
 		<!-- Object Text Extraction Settings -->
 		<SettingsCard
-			title="Object Text Extraction"
+			:title="t('openregister', 'Object Text Extraction')"
 			icon="📦"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -293,7 +293,7 @@
 					<label for="object-extraction-mode">Extraction Mode</label>
 					<NcSelect v-model="objectSettings.extractionMode"
 						input-id="object-extraction-mode"
-						input-label="Object Extraction Mode"
+						:input-label="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
 						@input="saveObjectSettings">
 						<template #option="{ label, description }">
@@ -312,7 +312,7 @@
 
 		<!-- Entity Recognition Settings -->
 		<SettingsCard
-			title="Entity Recognition"
+			:title="t('openregister', 'Entity Recognition')"
 			icon="🔍"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -335,7 +335,7 @@
 					<label for="entity-recognition-method">Detection Method</label>
 					<NcSelect v-model="fileSettings.entityRecognitionMethod"
 						input-id="entity-recognition-method"
-						input-label="Entity Recognition Method"
+						:input-label="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
 						@input="saveSettings">
 						<template #option="{ label, description, icon }">
@@ -358,7 +358,7 @@
 							<label for="presidio-endpoint">Presidio API Endpoint</label>
 							<NcTextField id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
-								placeholder="http://openregister-presidio-analyzer:3000"
+								:placeholder="'http://openregister-presidio-analyzer:3000'"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
@@ -417,7 +417,7 @@
 
 		<!-- Supported File Types -->
 		<SettingsCard
-			title="Supported File Types"
+			:title="t('openregister', 'Supported File Types')"
 			icon="📎"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -449,12 +449,12 @@
 							<span class="file-type-extension">(.{{ fileType.extension }})</span>
 							<span v-if="fileType.llphantSupport === 'none'"
 								class="support-indicator dolphin-required"
-								title="Requires Dolphin AI for OCR text extraction">
-								(Dolphin required)
+								:title="t('openregister', 'Requires Dolphin AI for OCR text extraction')">
+								{{ t('openregister', '(Dolphin required)') }}
 							</span>
 							<span v-else-if="fileType.dolphinOcr && fileSettings.textExtractor.id === 'dolphin'"
 								class="support-indicator ocr"
-								title="Dolphin OCR enabled">
+								:title="t('openregister', 'Dolphin OCR enabled')">
 								📷 OCR
 							</span>
 						</span>
@@ -545,6 +545,7 @@
 
 <script>
 import { mapStores } from 'pinia'
+import { translate as t } from '@nextcloud/l10n'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
@@ -757,6 +758,8 @@ export default {
 
 		/**
 		 * Check if any file operation is currently running
+		 *
+		 * @spec exclude UI plumbing — derived busy-state for disabling buttons.
 		 */
 		isProcessing() {
 			return this.discoveringFiles || this.extractingFiles || this.retryingFiles
@@ -764,6 +767,8 @@ export default {
 
 		/**
 		 * Show Presidio config when presidio or hybrid is selected
+		 *
+		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
 		 */
 		showPresidioConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -772,6 +777,8 @@ export default {
 
 		/**
 		 * Show OpenAnonymiser config when openanonymiser is selected
+		 *
+		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
 		 */
 		showOpenAnonymiserConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -779,6 +786,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load settings and extraction stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		await this.loadSettings()
 		await this.loadExtractionStats()
@@ -787,6 +800,8 @@ export default {
 	methods: {
 		/**
 		 * Load file configuration settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
 		 */
 		async loadSettings() {
 			try {
@@ -857,6 +872,8 @@ export default {
 
 		/**
 		 * Load object text extraction settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
 		 */
 		async loadObjectSettings() {
 			try {
@@ -875,6 +892,8 @@ export default {
 
 		/**
 		 * Save file configuration settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
 		 */
 		async saveSettings() {
 			try {
@@ -908,6 +927,8 @@ export default {
 
 		/**
 		 * Save object text extraction settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
 		 */
 		async saveObjectSettings() {
 			try {
@@ -924,6 +945,8 @@ export default {
 
 		/**
 		 * Test Dolphin API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testDolphinConnection() {
 			try {
@@ -957,6 +980,8 @@ export default {
 
 		/**
 		 * Test Presidio API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testPresidioConnection() {
 			try {
@@ -991,6 +1016,8 @@ export default {
 
 		/**
 		 * Test OpenAnonymiser API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testOpenAnonymiserConnection() {
 			try {
@@ -1025,6 +1052,8 @@ export default {
 
 		/**
 		 * Load extraction statistics
+		 *
+		 * @spec exclude UI plumbing — admin-settings stats load hydrating local display state.
 		 */
 		async loadExtractionStats() {
 			try {
@@ -1048,6 +1077,8 @@ export default {
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async discoverFiles() {
 			this.discoveringFiles = true
@@ -1076,6 +1107,8 @@ export default {
 
 		/**
 		 * Extract pending files (files already staged with status='pending')
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async extractAllPendingFiles() {
 			this.extractingFiles = true
@@ -1104,6 +1137,8 @@ export default {
 
 		/**
 		 * Retry failed file extractions
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async reprocessFailedFiles() {
 			this.retryingFiles = true
@@ -1132,6 +1167,8 @@ export default {
 
 		/**
 		 * Show save message
+		 *
+		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
 		 * @param {string} message - The message to show
 		 * @param {string} type - The type of message to show
 		 */
@@ -1145,6 +1182,8 @@ export default {
 
 		/**
 		 * Format number with thousands separator
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {number} num - The number to format
 		 */
 		formatNumber(num) {

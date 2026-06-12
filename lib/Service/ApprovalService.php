@@ -3,6 +3,9 @@
 /**
  * OpenRegister ApprovalService
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -13,6 +16,9 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -26,6 +32,11 @@ use OCA\OpenRegister\Db\ApprovalChainMapper;
 use OCA\OpenRegister\Db\ApprovalStep;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\WorkflowExecutionMapper;
+use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
+use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
+use OCA\OpenRegister\Event\ApprovalStepInitiatedEvent;
+use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 
@@ -44,13 +55,15 @@ class ApprovalService
      * @param WorkflowExecutionMapper $executionMapper Execution history mapper
      * @param IGroupManager           $groupManager    Group manager for role checks
      * @param LoggerInterface         $logger          Logger
+     * @param IEventDispatcher        $eventDispatcher Event dispatcher for approval step events
      */
     public function __construct(
         private readonly ApprovalChainMapper $chainMapper,
         private readonly ApprovalStepMapper $stepMapper,
         private readonly WorkflowExecutionMapper $executionMapper,
         private readonly IGroupManager $groupManager,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
     }//end __construct()
 
@@ -64,6 +77,9 @@ class ApprovalService
      * @param string        $objectUuid The object's UUID
      *
      * @return array<int, ApprovalStep> Created steps
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-4
+     * @spec openspec/changes/add-approval-step-events/tasks.md#task-3
      */
     public function initializeChain(ApprovalChain $chain, string $objectUuid): array
     {
@@ -71,7 +87,10 @@ class ApprovalService
         $createdSteps = [];
 
         foreach ($steps as $index => $stepDef) {
-            $status = ($index === 0) ? 'pending' : 'waiting';
+            $status = 'waiting';
+            if ($index === 0) {
+                $status = 'pending';
+            }
 
             $step = $this->stepMapper->createFromArray(
                     [
@@ -84,7 +103,14 @@ class ApprovalService
                     );
 
             $createdSteps[] = $step;
-        }
+
+            // Dispatch initiated event for the first step (now `pending`).
+            if ($index === 0) {
+                $this->eventDispatcher->dispatchTyped(
+                    new ApprovalStepInitiatedEvent(chain: $chain, step: $step, objectUuid: $objectUuid)
+                );
+            }
+        }//end foreach
 
         return $createdSteps;
     }//end initializeChain()
@@ -101,6 +127,9 @@ class ApprovalService
      * @return array{step: ApprovalStep, nextStep: ApprovalStep|null, statusOnApprove: string}
      *
      * @throws Exception If user is not authorised or step is not pending
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/changes/add-approval-step-events/tasks.md#task-4
      */
     public function approveStep(int $stepId, string $userId, string $comment=''): array
     {
@@ -148,6 +177,37 @@ class ApprovalService
         // Persist execution history.
         $this->persistApprovalExecution(chain: $chain, step: $step, status: 'approved');
 
+        // Dispatch the approved event.
+        $this->eventDispatcher->dispatchTyped(
+            new ApprovalStepApprovedEvent(
+                chain: $chain,
+                step: $step,
+                userId: $userId,
+                statusOnApprove: $statusOnApprove,
+                nextStep: $nextStep
+            )
+        );
+
+        // Dispatch follow-up: either initiate the next step or complete the chain.
+        if ($nextStep !== null) {
+            $this->eventDispatcher->dispatchTyped(
+                new ApprovalStepInitiatedEvent(
+                    chain: $chain,
+                    step: $nextStep,
+                    objectUuid: $step->getObjectUuid()
+                )
+            );
+        } else {
+            $this->eventDispatcher->dispatchTyped(
+                new ApprovalStepCompletedEvent(
+                    chain: $chain,
+                    finalStep: $step,
+                    userId: $userId,
+                    statusOnApprove: $statusOnApprove
+                )
+            );
+        }
+
         return [
             'step'            => $step,
             'nextStep'        => $nextStep,
@@ -166,6 +226,9 @@ class ApprovalService
      * @return array{step: ApprovalStep, statusOnReject: string}
      *
      * @throws Exception If user is not authorised or step is not pending
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/changes/add-approval-step-events/tasks.md#task-5
      */
     public function rejectStep(int $stepId, string $userId, string $comment=''): array
     {
@@ -201,6 +264,16 @@ class ApprovalService
         // Persist execution history.
         $this->persistApprovalExecution(chain: $chain, step: $step, status: 'rejected');
 
+        // Dispatch the rejected event — chain is terminated; no next-step event.
+        $this->eventDispatcher->dispatchTyped(
+            new ApprovalStepRejectedEvent(
+                chain: $chain,
+                step: $step,
+                userId: $userId,
+                statusOnReject: $statusOnReject
+            )
+        );
+
         return [
             'step'           => $step,
             'statusOnReject' => $statusOnReject,
@@ -217,6 +290,8 @@ class ApprovalService
      * @return void
      *
      * @throws Exception If user is not in the required group
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
      */
     private function verifyRole(string $userId, string $role): void
     {
@@ -233,6 +308,8 @@ class ApprovalService
      * @param string        $status The approval status
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
      */
     private function persistApprovalExecution(
         ApprovalChain $chain,

@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -18,6 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -50,13 +55,15 @@ class DeleteFileHandler
      * @param FileValidationHandler $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler  $fileOwnershipHandler File ownership handler.
      * @param LoggerInterface       $logger               Logger for logging operations.
+     * @param FileLockHandler       $fileLockHandler      Lock handler used to release / verify file locks on delete.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly ReadFileHandler $readFileHandler,
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FileLockHandler $fileLockHandler
     ) {
     }//end __construct()
 
@@ -75,11 +82,16 @@ class DeleteFileHandler
      * @throws Exception If deleting the file is not permitted or file operations fail.
      *
      * @psalm-param Node|string|int $file
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
         // Determine file name for error logging.
-        $fileName = ($file instanceof Node === true) ? $file->getName() : (string) $file;
+        $fileName = (string) $file;
+        if ($file instanceof Node === true) {
+            $fileName = $file->getName();
+        }
 
         if ($file instanceof Node === false) {
             $file = $this->readFileHandler->getFile(object: $object, file: $file);
@@ -100,6 +112,9 @@ class DeleteFileHandler
             );
             return false;
         }
+
+        // Reject when the file is locked by someone else.
+        $this->fileLockHandler->assertCanModify($file->getId());
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->fileValidHandler->checkOwnership($file);
@@ -126,6 +141,8 @@ class DeleteFileHandler
      * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
      *
      * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

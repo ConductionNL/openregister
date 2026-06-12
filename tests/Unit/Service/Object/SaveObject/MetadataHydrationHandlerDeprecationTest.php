@@ -10,7 +10,7 @@ declare(strict_types=1);
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject
- * @author   Conduction Development Team <dev@conductio.nl>
+ * @author   Conduction Development Team <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
@@ -167,7 +167,7 @@ class MetadataHydrationHandlerDeprecationTest extends TestCase
         $this->logger->expects($this->atLeastOnce())
             ->method('warning')
             ->with(
-                $this->stringContains('RBAC authorization rules with $now'),
+                $this->stringContains('RBAC $now rules'),
                 $this->anything()
             );
 
@@ -197,7 +197,10 @@ class MetadataHydrationHandlerDeprecationTest extends TestCase
      */
     private function createMockSchema(array $config): Schema
     {
-        $schema = $this->createMock(Schema::class);
+        $schema = $this->getMockBuilder(Schema::class)
+            ->onlyMethods(['getConfiguration', 'getProperties'])
+            ->addMethods(['getId'])
+            ->getMock();
         $schema->method('getConfiguration')->willReturn($config);
         $schema->method('getId')->willReturn(1);
         $schema->method('getProperties')->willReturn([]);

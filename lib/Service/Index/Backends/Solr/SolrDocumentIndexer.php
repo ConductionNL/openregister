@@ -6,6 +6,9 @@
  * Handles document indexing operations to Solr.
  * Manages single and bulk indexing, deletions, and commits.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -96,6 +99,8 @@ class SolrDocumentIndexer
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude thin delegation to SolrHttpClient — builds Solr update doc and POSTs it
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -114,10 +119,9 @@ class SolrDocumentIndexer
             $document = $this->documentBuilder->createDocument($object);
 
             // Index the document.
+            $commitValue = 'false';
             if ($commit === true) {
                 $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
             }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
@@ -160,6 +164,8 @@ class SolrDocumentIndexer
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -198,11 +204,10 @@ class SolrDocumentIndexer
 
         if (empty($documents) === false) {
             try {
+                $commitValue = 'false';
                 if ($commit === true) {
                     $commitValue = 'true';
-                } else {
-                    $commitValue = 'false';
-                }
+                }//end if
 
                 $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
                 $this->httpClient->post($url, $documents);
@@ -252,6 +257,9 @@ class SolrDocumentIndexer
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function indexDocuments(array $documents, bool $commit=false): bool
     {
@@ -266,10 +274,9 @@ class SolrDocumentIndexer
         }
 
         try {
+            $commitValue = 'false';
             if ($commit === true) {
                 $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
             }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
@@ -308,6 +315,8 @@ class SolrDocumentIndexer
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -322,10 +331,9 @@ class SolrDocumentIndexer
         }
 
         try {
+            $commitValue = 'false';
             if ($commit === true) {
                 $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
             }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
@@ -375,6 +383,8 @@ class SolrDocumentIndexer
      * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -389,10 +399,9 @@ class SolrDocumentIndexer
         }
 
         try {
+            $commitValue = 'false';
             if ($commit === true) {
                 $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
             }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
@@ -450,6 +459,8 @@ class SolrDocumentIndexer
      * Commit changes to Solr.
      *
      * @return bool True if successful
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function commit(): bool
     {
@@ -494,6 +505,8 @@ class SolrDocumentIndexer
      * @return (bool|string)[]
      *
      * @psalm-return array{success: bool, message: string, collection?: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -548,6 +561,8 @@ class SolrDocumentIndexer
      * Optimize the Solr index.
      *
      * @return bool True if successful
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function optimize(): bool
     {
@@ -593,6 +608,8 @@ class SolrDocumentIndexer
      * Get document count in the index.
      *
      * @return int Document count
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function getDocumentCount(): int
     {

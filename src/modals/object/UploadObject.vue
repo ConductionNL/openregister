@@ -68,7 +68,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 			<div v-if="!registers?.value?.id">
 				<NcSelect v-bind="registers"
 					v-model="registers.value"
-					input-label="Register"
+					:input-label="t('openregister', 'Register')"
 					:loading="registersLoading"
 					:disabled="loading" />
 			</div>
@@ -77,7 +77,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 			<div v-if="registers?.value?.id && !schemas?.value?.id">
 				<NcSelect v-bind="schemas"
 					v-model="schemas.value"
-					input-label="Schemas"
+					:input-label="t('openregister', 'Schemas')"
 					:loading="schemasLoading"
 					:disabled="loading" />
 			</div>
@@ -86,18 +86,18 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 			<div v-if="registers.value?.id && schemas.value?.id">
 				<NcSelect v-bind="mappings"
 					v-model="mappings.value"
-					input-label="Mappings"
+					:input-label="t('openregister', 'Mappings')"
 					:loading="mappingsLoading"
 					:disabled="loading || !mappings.options?.length" />
 
 				<div :class="`codeMirrorContainer ${getTheme()}`">
-					<p>Object</p>
+					<p>{{ t('openregister', 'Object') }}</p>
 					<CodeMirror v-model="object"
 						:basic="true"
 						:dark="getTheme() === 'dark'"
 						:lang="json()"
 						:linter="jsonParseLinter()"
-						placeholder="Enter your object here..." />
+						:placeholder="t('openregister', 'Enter your object here...')" />
 
 					<NcButton class="prettifyButton" @click="prettifyJson">
 						<template #icon>
@@ -155,12 +155,18 @@ export default {
 			hasUpdated: false,
 		}
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook initializing modal data
+	 */
 	mounted() {
 		this.initializeMappings()
 		this.initializeSchemas()
 		this.initializeRegisters()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 */
 		initializeMappings() {
 			this.mappingsLoading = true
 
@@ -180,6 +186,9 @@ export default {
 					this.mappingsLoading = false
 				})
 		},
+		/**
+		 * @spec exclude form-state loader populating schema select options
+		 */
 		initializeSchemas() {
 			this.schemasLoading = true
 
@@ -199,6 +208,9 @@ export default {
 					this.schemasLoading = false
 				})
 		},
+		/**
+		 * @spec exclude form-state loader populating register select options
+		 */
 		initializeRegisters() {
 			this.registersLoading = true
 
@@ -218,6 +230,9 @@ export default {
 					this.registersLoading = false
 				})
 		},
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.success = null
@@ -229,6 +244,9 @@ export default {
 				url: '',
 			}
 		},
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async uploadObject() {
 			this.loading = true
 
@@ -254,9 +272,15 @@ export default {
 					this.loading = false
 				})
 		},
+		/**
+		 * @spec exclude JSON formatting UI helper
+		 */
 		prettifyJson() {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
+		/**
+		 * @spec exclude client-side JSON validation helper
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

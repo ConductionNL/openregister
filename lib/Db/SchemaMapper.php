@@ -6,10 +6,13 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -41,7 +44,14 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
+use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
+use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -169,6 +179,7 @@ class SchemaMapper extends QBMapper
      * @param IUserSession             $userSession        User session for current user context
      * @param IGroupManager            $groupManager       Group manager for RBAC checks
      * @param IAppConfig               $appConfig          App configuration for multitenancy settings
+     * @param LoggerInterface          $logger             Structured logger (R07: surfaces unknown annotation keys).
      *
      * @return void
      */
@@ -179,7 +190,8 @@ class SchemaMapper extends QBMapper
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        IAppConfig $appConfig
+        IAppConfig $appConfig,
+        private readonly LoggerInterface $logger
     ) {
         // Initialize parent mapper with table name and entity class.
         parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -224,19 +236,28 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
+        $rbacFlag = '0';
         if ($_rbac === true) {
             $rbacFlag = '1';
-        } else {
-            $rbacFlag = '0';
         }
 
+        $mtFlag = '0';
         if ($_multitenancy === true) {
             $mtFlag = '1';
-        } else {
-            $mtFlag = '0';
         }
 
-        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
+        // BUG-DB-10: $published changes which rows are visible, so it MUST be part
+        // of the cache key; otherwise a published-only lookup could return a
+        // result cached from an unfiltered lookup (or vice versa).
+        $publishedFlag = 'n';
+        if ($published === true) {
+            $publishedFlag = '1';
+        } else if ($published === false) {
+            $publishedFlag = '0';
+        }
+
+        $cacheSuffix = ':'.$rbacFlag.':'.$mtFlag.':'.$publishedFlag;
+        $cacheKey    = strtolower((string) $id).$cacheSuffix;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
         }
@@ -265,12 +286,26 @@ class SchemaMapper extends QBMapper
         );
 
         if (is_numeric($id) === true) {
+            $idParam = $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT);
             $orConditions->add(
-                $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT))
+                $qb->expr()->eq('id', $idParam)
             );
         }
 
         $qb->where($orConditions);
+
+        // BUG-DB-10: when the identifier is numeric it is ambiguous (it could be a
+        // primary key id OR a numeric uuid/slug). Prefer the exact primary-key
+        // match by ordering an `id = ?` hit first, so a row whose slug happens to
+        // be "5" never shadows the row with id 5.
+        if (is_numeric($id) === true) {
+            $qb->addOrderBy(
+                $qb->createFunction(
+                    'CASE WHEN id = '.$idParam.' THEN 0 ELSE 1 END'
+                ),
+                'ASC'
+            );
+        }
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
@@ -305,28 +340,47 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        if ($_rbac === true) {
-            $rbacChar = '1';
-        } else {
-            $rbacChar = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtChar = '1';
-        } else {
-            $mtChar = '0';
-        }
-
-        $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
+        // BUG-DB-10: reuse the exact same suffix (rbac + multitenancy + published)
+        // as the read-side key so cache writes and reads stay consistent.
         $this->findCache[$cacheKey] = $schema;
-        $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
-        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix] = $schema;
+        $this->findCache[(string) $schema->getId().$cacheSuffix] = $schema;
+
+        // BUG-DB-10: guard against a null uuid before strtolower().
+        $schemaUuid = $schema->getUuid();
+        if ($schemaUuid !== null) {
+            $this->findCache[strtolower($schemaUuid).$cacheSuffix] = $schema;
+        }
+
         if ($schema->getSlug() !== null) {
-            $this->findCache[strtolower($schema->getSlug()).$rbacSuffix] = $schema;
+            $this->findCache[strtolower($schema->getSlug()).$cacheSuffix] = $schema;
         }
 
         return $schema;
     }//end find()
+
+    /**
+     * Clear the request-scoped find cache for a specific schema
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given schema (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $schemaId The schema ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $schemaId): void
+    {
+        // Find every cache key whose value points at this schema ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Schema && $cached->getId() === $schemaId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
 
     /**
      * Finds multiple schemas by id
@@ -591,7 +645,263 @@ class SchemaMapper extends QBMapper
         $this->validateConfigurationFields(schema: $schema);
         $this->buildRequiredFieldsArray(schema: $schema);
         $this->autoPopulateConfigurationFields(schema: $schema);
+        $this->validateLifecycleAnnotation(schema: $schema);
+        $this->validateAggregationsAnnotation(schema: $schema);
+        $this->validateCalculationsAnnotation(schema: $schema);
+        $this->validateNotificationsAnnotation(schema: $schema);
+        $this->validateWidgetsAnnotation(schema: $schema);
+        $this->validateArchivalAnnotation(schema: $schema);
+        $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
+
+    /**
+     * R07: surface dropped `x-openregister-*` keys via the structured
+     * logger. Schema::validateConfigurationArray accumulates unknown
+     * keys on the entity (no DI surface for a logger inside the
+     * entity); we drain the buffer here at save time so admins see a
+     * single warning per save call rather than nothing at all.
+     *
+     * @param Schema $schema Schema being saved.
+     *
+     * @return void
+     */
+    private function logDroppedAnnotationKeys(Schema $schema): void
+    {
+        $dropped = $schema->consumeDroppedAnnotationKeys();
+        if (count($dropped) === 0) {
+            return;
+        }
+
+        $message  = sprintf(
+            '[OpenRegister.SchemaMapper] Dropped %d unknown x-openregister-* key(s) on schema "%s": %s.',
+            count($dropped),
+            (string) ($schema->getSlug() ?? ''),
+            implode(', ', $dropped)
+        );
+        $message .= ' Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.';
+        $this->logger->warning($message);
+    }//end logDroppedAnnotationKeys()
+
+    /**
+     * Validate the optional `x-openregister-lifecycle` annotation.
+     *
+     * The annotation is stored under `configuration['x-openregister-lifecycle']`.
+     * Errors are aggregated by LifecycleAnnotationValidator and thrown here as
+     * a single message so callers see a clear schema-save failure.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateLifecycleAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-lifecycle'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        // Validator expects the annotation at top-level alongside `properties`.
+        $shape = [
+            'properties'               => ($schema->getProperties() ?? []),
+            'x-openregister-lifecycle' => $annotation,
+        ];
+
+        $errors = (new LifecycleAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Lifecycle is ADVISORY metadata (a state-machine hint), not a storage
+        // requirement: a schema with a malformed or non-canonical lifecycle block
+        // still stores objects correctly. Rejecting the whole schema import over an
+        // advisory annotation breaks register imports for every app that ships a
+        // partial / different-dialect lifecycle block. Degrade to a non-fatal
+        // warning and import the schema (the lifecycle simply won't drive a status
+        // workflow) instead of throwing.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-lifecycle annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (no status workflow applied): '.implode(' ', $messages)
+        );
+    }//end validateLifecycleAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-aggregations` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateAggregationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-aggregations'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-aggregations' => $annotation,
+        ];
+
+        $errors = (new AggregationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Aggregations are ADVISORY report-metadata, not a storage requirement.
+        // A malformed / empty / non-canonical aggregation block must not abort the
+        // whole schema import — the schema still stores objects, the aggregation
+        // simply won't be runnable. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-aggregations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (aggregation not registered): '.implode(' ', $messages)
+        );
+    }//end validateAggregationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-calculations` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateCalculationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-calculations'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-calculations' => $annotation,
+        ];
+
+        $errors = (new CalculationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Calculations are ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed / non-canonical calculation block (e.g. a type
+        // outside the canonical set, or a missing expression) must not abort the
+        // whole schema import — the schema still stores objects, the calculation
+        // simply won't be evaluated. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-calculations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (calculation not evaluated): '.implode(' ', $messages)
+        );
+    }//end validateCalculationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-notifications` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateNotificationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-notifications'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                   => ($schema->getProperties() ?? []),
+            'x-openregister-notifications' => $annotation,
+        ];
+
+        $errors = (new NotificationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-notifications: '.implode(' ', $messages));
+    }//end validateNotificationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-widgets` annotation.
+     *
+     * Schemas that pre-declare widgets (e.g. the `dashboard` schema in
+     * the `reports` register) carry the array under
+     * `configuration['x-openregister-widgets']`. Operators see shape
+     * errors at schema-save time rather than at first render.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateWidgetsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-widgets'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = ['x-openregister-widgets' => $annotation];
+
+        $errors = (new WidgetAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-widgets: '.implode(' ', $messages));
+    }//end validateWidgetsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-archival` annotation.
+     *
+     * The annotation is stored under `configuration['x-openregister-archival']`.
+     * Errors are aggregated by ArchivalAnnotationValidator and thrown here as
+     * a single message so callers see a clear schema-save failure.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
+     */
+    private function validateArchivalAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-archival'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = ['x-openregister-archival' => $annotation];
+
+        $errors = (new ArchivalAnnotationValidator())->validate(schema: $shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-archival: '.implode(' ', $messages));
+    }//end validateArchivalAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings
@@ -889,7 +1199,7 @@ class SchemaMapper extends QBMapper
                     $property['$ref'] = $property['$ref']->id;
                 } else if (is_int($property['$ref']) === true) {
                 } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
-                    $refValue = print_r($property['$ref'], true);
+                    $refValue = json_encode($property['$ref']);
                     $msg      = "Schema property '$key' has a \$ref that is not a string or empty: ".$refValue;
                     throw new Exception($msg);
                 }

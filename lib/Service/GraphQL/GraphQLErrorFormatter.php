@@ -5,10 +5,13 @@
  *
  * Formats GraphQL errors into structured responses with extension codes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -35,6 +38,8 @@ class GraphQLErrorFormatter
      * @param Error $error The GraphQL error
      *
      * @return array<string, mixed> The formatted error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-8
      */
     public function format(Error $error): array
     {
@@ -66,7 +71,7 @@ class GraphQLErrorFormatter
      *
      * @return Error The GraphQL error
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public static function fieldForbidden(string $field, array $path): Error
     {
@@ -90,7 +95,7 @@ class GraphQLErrorFormatter
      *
      * @return Error The GraphQL error
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public static function notFound(string $type, string $id): Error
     {

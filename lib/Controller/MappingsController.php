@@ -6,6 +6,9 @@
  * Controller for managing mapping operations in the OpenRegister app.
  * Provides endpoints for CRUD operations on mappings used for data transformation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -53,6 +56,8 @@ use Psr\Log\LoggerInterface;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class MappingsController extends Controller
 {
@@ -94,6 +99,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with array of mappings
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function index(): JSONResponse
     {
@@ -148,6 +155,8 @@ class MappingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function show(int|string $id): JSONResponse
     {
@@ -171,6 +180,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function create(): JSONResponse
     {
@@ -221,6 +232,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function update(int $id): JSONResponse
     {
@@ -267,6 +280,31 @@ class MappingsController extends Controller
      *
      * Deletes a mapping based on its ID.
      *
+     * Partially update a mapping by ID.
+     *
+     * The route `mappings#patch` (`PATCH /api/mappings/{id}`) delegates to
+     * the same body as `update()` because Nextcloud routes PATCH and PUT to
+     * separate methods even when the handler is identical. Mirrors the same
+     * shape used on `ApplicationsController::patch`.
+     *
+     * @param int $id The ID of the mapping to patch.
+     *
+     * @return JSONResponse JSON response containing patched mapping.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update(id: $id);
+
+    }//end patch()
+
+    /**
+     * Delete a mapping by ID.
+     *
      * @param int $id The ID of the mapping to delete
      *
      * @NoAdminRequired
@@ -274,6 +312,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Empty JSON response on success
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function destroy(int $id): JSONResponse
     {
@@ -302,6 +342,8 @@ class MappingsController extends Controller
      * @return JSONResponse JSON response with test results
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function test(): JSONResponse
     {

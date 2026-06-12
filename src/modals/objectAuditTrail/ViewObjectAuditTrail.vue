@@ -44,9 +44,9 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 					<h4>Linked Items:</h4>
 					<div class="audit-trail-linked-items-container">
 						<div>
-							<p><b>Schema:</b> {{ schemaLoading ? 'Loading...' : schemaItem?.title }}</p>
+							<p><b>{{ t('openregister', 'Schema:') }}</b> {{ schemaLoading ? t('openregister', 'Loading...') : schemaItem?.title }}</p>
 							<NcButton type="tertiary"
-								aria-label="Go to linked Schema"
+								:aria-label="t('openregister', 'Go to linked Schema')"
 								@click="goToSchema">
 								<template #icon>
 									<NcLoadingIcon v-if="schemaLoading" />
@@ -56,9 +56,9 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 						</div>
 
 						<div>
-							<p><b>Register:</b> {{ registerLoading ? 'Loading...' : registerItem?.title }}</p>
+							<p><b>{{ t('openregister', 'Register:') }}</b> {{ registerLoading ? t('openregister', 'Loading...') : registerItem?.title }}</p>
 							<NcButton type="tertiary"
-								aria-label="Go to linked Register"
+								:aria-label="t('openregister', 'Go to linked Register')"
 								@click="goToRegister">
 								<template #icon>
 									<NcLoadingIcon v-if="registerLoading" />
@@ -82,7 +82,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  */
 import {
 	NcModal,
@@ -109,6 +109,9 @@ export default {
 			auditTrail: {}, // Initialize with an empty object
 		}
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — hydrates the audit-trail view modal on mount.
+	 */
 	mounted() {
 		// Assuming objectStore.auditTrailItem is a single audit trail object
 		this.auditTrail = objectStore.auditTrailItem || {}
@@ -117,14 +120,14 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		closeDialog() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		formatValue(value) {
 			if (value === null || value === undefined) {
@@ -137,7 +140,7 @@ export default {
 			return value // Return the value as is for other types
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		fetchSchema() {
 			this.schemaLoading = true
@@ -148,7 +151,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		fetchRegister() {
 			this.registerLoading = true
@@ -159,7 +162,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		goToSchema() {
 			navigationStore.setModal(null)
@@ -168,7 +171,7 @@ export default {
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		goToRegister() {
 			navigationStore.setModal(null)

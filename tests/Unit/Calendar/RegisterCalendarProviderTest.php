@@ -6,7 +6,7 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Calendar
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -57,12 +57,14 @@ class RegisterCalendarProviderTest extends TestCase
 
     public function testGetCalendarsReturnsCalendarsForEnabledSchemas(): void
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(42);
-        $schema->method('getCalendarProviderConfig')->willReturn([
-            'enabled'       => true,
-            'dtstart'       => 'startdatum',
-            'titleTemplate' => '{naam}',
+        $schema = new Schema();
+        $schema->setId(42);
+        $schema->setConfiguration([
+            'calendarProvider' => [
+                'enabled'       => true,
+                'dtstart'       => 'startdatum',
+                'titleTemplate' => '{naam}',
+            ],
         ]);
 
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
@@ -75,20 +77,24 @@ class RegisterCalendarProviderTest extends TestCase
 
     public function testGetCalendarsWithUriFilterReturnsOnlyMatchingCalendars(): void
     {
-        $schema1 = $this->createMock(Schema::class);
-        $schema1->method('getId')->willReturn(1);
-        $schema1->method('getCalendarProviderConfig')->willReturn([
-            'enabled'       => true,
-            'dtstart'       => 'datum',
-            'titleTemplate' => '{naam}',
+        $schema1 = new Schema();
+        $schema1->setId(1);
+        $schema1->setConfiguration([
+            'calendarProvider' => [
+                'enabled'       => true,
+                'dtstart'       => 'datum',
+                'titleTemplate' => '{naam}',
+            ],
         ]);
 
-        $schema2 = $this->createMock(Schema::class);
-        $schema2->method('getId')->willReturn(2);
-        $schema2->method('getCalendarProviderConfig')->willReturn([
-            'enabled'       => true,
-            'dtstart'       => 'datum',
-            'titleTemplate' => '{naam}',
+        $schema2 = new Schema();
+        $schema2->setId(2);
+        $schema2->setConfiguration([
+            'calendarProvider' => [
+                'enabled'       => true,
+                'dtstart'       => 'datum',
+                'titleTemplate' => '{naam}',
+            ],
         ]);
 
         $this->schemaMapper->method('findAll')->willReturn([$schema1, $schema2]);
@@ -104,8 +110,8 @@ class RegisterCalendarProviderTest extends TestCase
 
     public function testGetCalendarsReturnsEmptyWhenNoSchemasEnabled(): void
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getCalendarProviderConfig')->willReturn(null);
+        $schema = new Schema();
+        // No configuration set, so getCalendarProviderConfig() returns null.
 
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
 
@@ -136,12 +142,14 @@ class RegisterCalendarProviderTest extends TestCase
 
     public function testGetCalendarsCachesEnabledSchemas(): void
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn(1);
-        $schema->method('getCalendarProviderConfig')->willReturn([
-            'enabled'       => true,
-            'dtstart'       => 'datum',
-            'titleTemplate' => '{t}',
+        $schema = new Schema();
+        $schema->setId(1);
+        $schema->setConfiguration([
+            'calendarProvider' => [
+                'enabled'       => true,
+                'dtstart'       => 'datum',
+                'titleTemplate' => '{t}',
+            ],
         ]);
 
         // findAll should be called only once due to caching.

@@ -13,8 +13,8 @@
 			:loading="settingsStore.loadingVersionInfo"
 			:is-up-to-date="true"
 			:show-update-button="true"
-			title="Version Information"
-			description="Information about the current OpenRegister installation">
+			:title="t('openregister', 'Version Information')"
+			:description="t('openregister', 'Information about the current OpenRegister installation')">
 			<template #actions>
 				<NcButton
 					type="secondary"
@@ -53,6 +53,9 @@
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
 
+		<!-- Push Notifications Status Section -->
+		<PushNotificationsConfiguration :push-status="pushStatus" />
+
 		<!-- n8n Workflow Configuration Section -->
 		<N8nConfiguration />
 
@@ -71,7 +74,6 @@
 </template>
 
 <script>
-/* eslint-disable no-console */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
@@ -86,6 +88,7 @@ import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
@@ -113,11 +116,23 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+		PushNotificationsConfiguration,
 		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		Dialogs,
+	},
+
+	props: {
+		/**
+		 * Push notification status from PHP initial state.
+		 * One of: 'not_installed' | 'unreachable' | 'active'
+		 */
+		pushStatus: {
+			type: String,
+			default: 'not_installed',
+		},
 	},
 
 	computed: {
@@ -127,10 +142,10 @@ export default {
 	/**
 	 * Component created lifecycle hook
 	 * Initializes the settings store and loads all data
+	 * @spec exclude UI plumbing — view-creation data fetch for display only
+	 * @return {Promise<void>}
 	 */
 	async created() {
-		console.log('🔧 Settings component created - loading data from store')
-
 		try {
 			// Load all settings data through the store
 			await this.settingsStore.loadSettings()
@@ -140,8 +155,6 @@ export default {
 				this.settingsStore.loadStats(),
 				this.settingsStore.loadCacheStats(),
 			])
-
-			console.log('✅ Settings data loaded successfully')
 		} catch (error) {
 			console.error('❌ Failed to load settings data:', error)
 		}

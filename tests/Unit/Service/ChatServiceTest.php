@@ -13,6 +13,7 @@ use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\ChatService;
 use PHPUnit\Framework\TestCase;
@@ -322,5 +323,116 @@ class ChatServiceTest extends TestCase
         $result = $this->service->testChat('ollama', ['model' => 'llama2'], 'Custom test');
 
         $this->assertTrue($result['success']);
+    }
+
+    // --- processMessage channel forwarding (regression guard for ai-chat-companion-streaming §3.3) ---
+
+    /**
+     * Regression guard for the streaming follow-up: when processMessage is
+     * called with a StreamYieldChannel, the same channel instance MUST be
+     * forwarded into ResponseGenerationHandler::generateResponse. The default
+     * (no channel) path keeps the legacy non-streaming behaviour.
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-3-3
+     */
+    public function testProcessMessageForwardsChannelToResponseHandler(): void
+    {
+        $conversation = new Conversation();
+        $reflection   = new \ReflectionClass($conversation);
+        $idProp       = $reflection->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($conversation, 1);
+        $conversation->setUserId('user1');
+        $conversation->setTitle('Existing Title');
+
+        $this->conversationMapper
+            ->expects($this->once())
+            ->method('find')
+            ->with(1)
+            ->willReturn($conversation);
+
+        $this->contextHandler
+            ->method('retrieveContext')
+            ->willReturn(['sources' => [], 'context' => '']);
+
+        $this->historyHandler
+            ->method('buildMessageHistory')
+            ->willReturn([]);
+
+        $this->messageMapper
+            ->method('countByConversation')
+            ->willReturn(5);
+
+        $channel = new StreamYieldChannel();
+
+        $capturedChannel = null;
+        $this->responseHandler
+            ->expects($this->once())
+            ->method('generateResponse')
+            ->willReturnCallback(function (
+                string $userMessage,
+                array $context,
+                array $messageHistory,
+                $agent,
+                array $selectedTools,
+                ?StreamYieldChannel $channelArg = null,
+                array $cnAiContext = []
+            ) use (&$capturedChannel): string {
+                $capturedChannel = $channelArg;
+                return 'AI says hello';
+            });
+
+        $this->service->processMessage(
+            conversationId: 1,
+            userId: 'user1',
+            userMessage: 'Hello',
+            channel: $channel
+        );
+
+        $this->assertSame($channel, $capturedChannel, 'ChatService must forward the exact StreamYieldChannel instance to ResponseGenerationHandler::generateResponse.');
+    }
+
+    /**
+     * Inverse of the above — calling processMessage without a channel results
+     * in `null` reaching the response handler (the default non-streaming
+     * branch on POST /api/chat/send).
+     *
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-3-3
+     */
+    public function testProcessMessageDefaultsToNullChannel(): void
+    {
+        $conversation = new Conversation();
+        $reflection   = new \ReflectionClass($conversation);
+        $idProp       = $reflection->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($conversation, 1);
+        $conversation->setUserId('user1');
+        $conversation->setTitle('Existing Title');
+
+        $this->conversationMapper->method('find')->willReturn($conversation);
+        $this->contextHandler->method('retrieveContext')->willReturn(['sources' => [], 'context' => '']);
+        $this->historyHandler->method('buildMessageHistory')->willReturn([]);
+        $this->messageMapper->method('countByConversation')->willReturn(5);
+
+        $capturedChannel = 'unset';
+        $this->responseHandler
+            ->expects($this->once())
+            ->method('generateResponse')
+            ->willReturnCallback(function (
+                string $userMessage,
+                array $context,
+                array $messageHistory,
+                $agent,
+                array $selectedTools,
+                ?StreamYieldChannel $channelArg = null,
+                array $cnAiContext = []
+            ) use (&$capturedChannel): string {
+                $capturedChannel = $channelArg;
+                return 'response';
+            });
+
+        $this->service->processMessage(1, 'user1', 'Hello');
+
+        $this->assertNull($capturedChannel, 'Default processMessage call must pass null to generateResponse.');
     }
 }

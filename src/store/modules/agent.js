@@ -8,7 +8,6 @@
  * @version  1.0.0
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Agent } from '../../entities/index.js'
 
@@ -36,22 +35,22 @@ export const useAgentStore = defineStore('agent', {
 		 * Set the view mode (cards or table)
 		 *
 		 * @param {string} mode - The view mode
+		 * @spec exclude store setter (local view-mode state)
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
 		/**
 		 * Set the current agent item
 		 *
 		 * @param {object|null} agentItem - The agent item to set
+		 * @spec exclude store setter (wraps Agent entity construction)
 		 */
 		setAgentItem(agentItem) {
 			try {
 				this.loading = true
 				this.error = null
 				this.agentItem = agentItem ? new Agent(agentItem) : null
-				console.log('Active agent item set to ' + (agentItem?.name || 'null'))
 			} catch (error) {
 				console.error('Error setting agent item:', error)
 				this.error = error.message
@@ -63,31 +62,31 @@ export const useAgentStore = defineStore('agent', {
 		 * Set the agent list
 		 *
 		 * @param {Array} agentList - Array of agent objects
+		 * @spec exclude store setter (maps to Agent entities)
 		 */
 		setAgentList(agentList) {
 			this.agentList = agentList.map(
 				(agentItem) => new Agent(agentItem),
 			)
-			console.log('Agent list set to ' + agentList.length + ' items')
 		},
 		/**
 		 * Set pagination details
 		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
+		 * @spec exclude store setter (local pagination state)
 		 */
 		setPagination(page, limit = 20) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for agent list
 		 *
 		 * @param {object} filters - The filter criteria to apply to the agent list
+		 * @spec exclude store setter (local filter state)
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters)
 		},
 		/**
 		 * Refresh the agent list from the API
@@ -95,11 +94,10 @@ export const useAgentStore = defineStore('agent', {
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with response and data
+		 * @spec exclude API passthrough to GET /api/agents (list)
 		 */
 		/* istanbul ignore next */
 		async refreshAgentList(search = null, soft = false) {
-			console.log('AgentStore: Starting refreshAgentList (soft=' + soft + ')')
-
 			// Only set loading state for hard reloads
 			if (!soft) {
 				this.loading = true
@@ -121,13 +119,11 @@ export const useAgentStore = defineStore('agent', {
 				}
 
 				const responseData = await response.json()
-				console.log('AgentStore: API response type:', Array.isArray(responseData) ? 'array' : 'object', responseData)
 
 				// API returns array directly, not wrapped in 'results'
 				const data = Array.isArray(responseData) ? responseData : (responseData.results || [])
 
 				this.setAgentList(data)
-				console.log('AgentStore: refreshAgentList completed, got', data.length, 'agents', 'agentList now has', this.agentList.length, 'items')
 
 				return { response, data }
 			} catch (error) {
@@ -145,6 +141,7 @@ export const useAgentStore = defineStore('agent', {
 		 *
 		 * @param {number} id - Agent ID
 		 * @return {Promise} Promise with agent data
+		 * @spec exclude API passthrough to GET /api/agents/{id}
 		 */
 		async getAgent(id) {
 			const endpoint = `/index.php/apps/openregister/api/agents/${id}`
@@ -174,13 +171,13 @@ export const useAgentStore = defineStore('agent', {
 		 *
 		 * @param {object} agentItem - The agent to delete
 		 * @return {Promise} Promise with response
+		 * @spec exclude API passthrough to DELETE /api/agents/{id}
 		 */
 		async deleteAgent(agentItem) {
 			if (!agentItem.id) {
 				throw new Error('No agent to delete')
 			}
 
-			console.log('Deleting agent...')
 			this.loading = true
 
 			const endpoint = `/index.php/apps/openregister/api/agents/${agentItem.id}`
@@ -211,13 +208,13 @@ export const useAgentStore = defineStore('agent', {
 		 *
 		 * @param {object} agentItem - The agent to save
 		 * @return {Promise} Promise with response and data
+		 * @spec exclude API passthrough to POST/PUT /api/agents
 		 */
 		async saveAgent(agentItem) {
 			if (!agentItem) {
 				throw new Error('No agent to save')
 			}
 
-			console.log('Saving agent...')
 			this.loading = true
 
 			const isNewAgent = !agentItem.id
@@ -269,6 +266,7 @@ export const useAgentStore = defineStore('agent', {
 		 * Get agent statistics
 		 *
 		 * @return {Promise} Promise with statistics data
+		 * @spec exclude API passthrough to GET /api/agents/stats
 		 */
 		async getStats() {
 			const endpoint = '/index.php/apps/openregister/api/agents/stats'

@@ -7,6 +7,9 @@
  * This job is scheduled automatically after import operations complete to
  * ensure optimal search performance without slowing down the import process.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -18,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-31
+ * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-31
  */
 
 declare(strict_types=1);
@@ -98,6 +101,8 @@ class SolrWarmupJob extends QueuedJob
      * @throws \Exception If warmup fails critically (job will be marked as failed)
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-9
      */
     protected function run($argument): void
     {

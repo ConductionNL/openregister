@@ -3,7 +3,7 @@
 		name="LLM Configuration"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
-		loading-message="Loading LLM configuration...">
+		:loading-message="t('openregister', 'Loading LLM configuration...')">
 		<template #actions>
 			<!-- LLM Actions Menu -->
 			<NcActions
@@ -93,7 +93,7 @@
 				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM Configuration button above.') }}
+				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM configuration button above.') }}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>
@@ -423,6 +423,8 @@ export default {
 
 		/**
 		 * Get connection status CSS class
+		 * @spec exclude UI plumbing — derived status-styling helper
+		 * @return {string}
 		 */
 		connectionStatusClass() {
 			if (this.llmConnectionStatus === 'Connected' || this.llmConnectionStatus.includes('✓')) {
@@ -435,6 +437,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Lifecycle hook: load LLM settings and all statistics on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		await this.loadSettings()
 		await this.loadAllStats()
@@ -443,6 +451,8 @@ export default {
 	methods: {
 		/**
 		 * Load LLM configuration settings
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
 			try {
@@ -479,6 +489,7 @@ export default {
 		/**
 		 * Get display name for provider.
 		 * @param {string} providerId - The ID of the provider.
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} The display name for the provider.
 		 */
 		getProviderDisplayName(providerId) {
@@ -492,6 +503,8 @@ export default {
 
 		/**
 		 * Load all statistics (chat, vector, etc.)
+		 * @spec exclude UI plumbing — fans out to other store-backed loaders
+		 * @return {Promise<void>}
 		 */
 		async loadAllStats() {
 			await Promise.all([
@@ -504,6 +517,8 @@ export default {
 
 		/**
 		 * Load chat and agent statistics
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async loadChatStats() {
 			try {
@@ -523,6 +538,8 @@ export default {
 
 		/**
 		 * Refresh database information (force re-query)
+		 * @spec exclude UI plumbing — delegates to the database refresh API
+		 * @return {Promise<void>}
 		 */
 		async refreshDatabaseInfo() {
 			this.refreshingDatabase = true
@@ -541,6 +558,7 @@ export default {
 		/**
 		 * Format date for display
 		 * @param {string} dateString - ISO date string
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted date
 		 */
 		formatDate(dateString) {
@@ -551,6 +569,8 @@ export default {
 
 		/**
 		 * Load database information
+		 * @spec exclude UI plumbing — fetches database info for display
+		 * @return {Promise<void>}
 		 */
 		async loadDatabaseInfo() {
 			try {
@@ -610,6 +630,8 @@ export default {
 
 		/**
 		 * Retry connection - tests LLM connectivity
+		 * @spec exclude UI plumbing — reloads stats and updates status display
+		 * @return {Promise<void>}
 		 */
 		async retryConnection() {
 			this.loadingStats = true
@@ -630,6 +652,8 @@ export default {
 
 		/**
 		 * Handle LLM Config Modal closing - reload stats to show updated backend
+		 * @spec exclude UI plumbing — modal-close callback reloads stats
+		 * @return {void}
 		 */
 		onLLMConfigClosed() {
 			this.showLLMConfigDialog = false
@@ -639,6 +663,8 @@ export default {
 
 		/**
 		 * Save LLM configuration settings
+		 * @spec exclude UI plumbing — save action delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
 			this.saving = true
@@ -653,6 +679,8 @@ export default {
 
 		/**
 		 * Handle LLM enabled toggle change
+		 * @spec exclude UI plumbing — toggle delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async onLlmEnabledChange() {
 			// Only send the enabled field via PATCH
@@ -664,6 +692,8 @@ export default {
 
 		/**
 		 * Load vector statistics
+		 * @spec exclude UI plumbing — fetches vector stats for display
+		 * @return {Promise<void>}
 		 */
 		async loadVectorStats() {
 			if (!this.llmSettings.enabled) return
@@ -717,6 +747,8 @@ export default {
 		/**
 		 * Format number with thousands separator
 		 * @param {number} num - The number to format
+		 * @spec exclude UI plumbing — pure presentation helper
+		 * @return {string}
 		 */
 		formatNumber(num) {
 			return new Intl.NumberFormat().format(num)
@@ -724,6 +756,8 @@ export default {
 
 		/**
 		 * Show object vectorization modal
+		 * @spec exclude UI plumbing — modal visibility toggle
+		 * @return {void}
 		 */
 		showVectorizeObjectsDialog() {
 			this.showObjectVectorizationModal = true
@@ -731,6 +765,8 @@ export default {
 
 		/**
 		 * Show dialog to vectorize all files
+		 * @spec exclude UI plumbing — modal visibility toggle
+		 * @return {void}
 		 */
 		showVectorizeFilesDialog() {
 			this.showFileVectorizationModal = true
@@ -738,6 +774,8 @@ export default {
 
 		/**
 		 * Vectorize all files
+		 * @spec exclude UI plumbing — starts a background vectorize job via API
+		 * @return {Promise<void>}
 		 */
 		async vectorizeAllFiles() {
 			this.vectorizing = true

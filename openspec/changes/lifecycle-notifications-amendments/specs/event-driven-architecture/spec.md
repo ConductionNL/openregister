@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: draft
 ---
 # Event-driven architecture (delta — lifecycle + transition surface)
 

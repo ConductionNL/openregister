@@ -23,6 +23,9 @@
  * - Cardinality estimation for facet optimization
  * - Multi-level aggregations and drill-down support
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -39,11 +42,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
+use LogicException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -185,6 +190,7 @@ class MagicFacetHandler
      * @param ICacheFactory|null                                 $cacheFactory  Cache factory for distributed caching
      * @param MagicSearchHandler|null                            $searchHandler Search handler for shared query building
      * @param ContainerInterface|null                            $container     Container for lazy resolution
+     * @param IConfig|null                                       $config        Nextcloud config for reading the table prefix
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -192,7 +198,8 @@ class MagicFacetHandler
         ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler=null,
         ?ICacheFactory $cacheFactory=null,
         ?MagicSearchHandler $searchHandler=null,
-        ?ContainerInterface $container=null
+        ?ContainerInterface $container=null,
+        private readonly ?IConfig $config=null
     ) {
         $this->cacheHandler  = $cacheHandler;
         $this->cacheFactory  = $cacheFactory;
@@ -211,6 +218,24 @@ class MagicFacetHandler
             }
         }
     }//end __construct()
+
+    /**
+     * Get the configured database table prefix.
+     *
+     * Uses the injected Nextcloud config so raw-SQL paths work on installs
+     * with a custom `dbtableprefix`, falling back to `oc_` when config is
+     * unavailable (BUG-DB-3).
+     *
+     * @return string The configured table prefix (e.g. `oc_`).
+     */
+    private function getTablePrefix(): string
+    {
+        if ($this->config === null) {
+            return 'oc_';
+        }
+
+        return (string) $this->config->getSystemValue('dbtableprefix', 'oc_');
+    }//end getTablePrefix()
 
     /**
      * Lazily resolve CacheHandler and ICacheFactory from container.
@@ -572,11 +597,26 @@ class MagicFacetHandler
             return ['type' => 'terms', 'buckets' => []];
         }
 
+        // BUG-DB-2: $field is interpolated raw into the SQL below (CAST/WHERE/GROUP BY).
+        // For @self metadata facets it is built straight from request facet keys
+        // ("_".$rawKey) without going through sanitizeColumnName, so a crafted key
+        // could inject arbitrary SQL. Validate it is a safe column identifier and
+        // matches its own sanitized form before using it; otherwise skip the facet
+        // (empty buckets), mirroring the columnExists guard the other facet paths use.
+        $safeField = $this->sanitizeColumnName(name: $field);
+        if ($safeField !== $field || preg_match('/^[a-z_][a-z0-9_]*$/', $field) !== 1) {
+            $this->logger->warning(
+                message: '[MagicFacetHandler] Rejected unsafe terms-facet field name',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
+            );
+            return ['type' => 'terms', 'buckets' => []];
+        }
+
         // Build UNION ALL query with simple GROUP BY.
         // Array values will come as JSON strings like '["uuid1", "uuid2"]'
         // and will be post-processed in PHP.
         $unionParts = [];
-        $prefix     = 'oc_';
+        $prefix     = $this->getTablePrefix();
 
         // Cast field to text for consistent types in UNION ALL queries.
         // Different magic tables may have the same field name but different types
@@ -591,6 +631,12 @@ class MagicFacetHandler
             $tableName     = $tc['tableName'];
             $fullTableName = $prefix.$tableName;
             $tcSchema      = $tc['schema'];
+
+            // Defence in depth: skip tables that do not actually have this column
+            // (mirrors getDateHistogramFacetUnion's columnExists guard).
+            if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
+                continue;
+            }
 
             // Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
             $subSql = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
@@ -814,7 +860,7 @@ class MagicFacetHandler
         }
 
         $unionParts = [];
-        $prefix     = 'oc_';
+        $prefix     = $this->getTablePrefix();
 
         foreach ($tableConfigs as $tc) {
             $tableName     = $tc['tableName'];
@@ -1315,52 +1361,37 @@ class MagicFacetHandler
             ];
         }
 
-        // Build date histogram query based on interval. The date-key SQL
-        // expression is platform-specific (TO_CHAR on PostgreSQL, DATE_FORMAT
-        // on MariaDB/MySQL); buildDateKeyExpr() encapsulates the branch.
-        $dateKeyExpr = $this->buildDateKeyExpr(field: $field, interval: $interval);
+        // Build the filtered query via MagicSearchHandler (single source of truth
+        // for filter SQL). Both private callers (getMagicTableFacets and
+        // getMagicTableFacetsUnion) always pass a non-null Schema, and the
+        // constructor in MagicMapper always wires a non-null searchHandler, so
+        // these are real preconditions — fail loudly if they ever drift. The
+        // previously-present "manual fallback" block on this method was dead
+        // code: it was unconditionally overwritten by the searchHandler branch
+        // and produced unfiltered counts that no caller could reach.
+        if ($this->searchHandler === null || $schema === null) {
+            $msg = 'MagicFacetHandler::getDateHistogramFacet requires a wired searchHandler and a non-null schema.';
+            throw new LogicException($msg);
+        }
 
-        // Fallback: Build query manually (legacy behavior).
-        $queryBuilder = $this->db->getQueryBuilder();
-
-        $queryBuilder->selectAlias(
-            $queryBuilder->createFunction($dateKeyExpr),
-            'date_key'
-        )
-            ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
-            ->from($tableName)
-            ->where($queryBuilder->expr()->isNotNull($field))
-            ->groupBy('date_key')
-            ->orderBy('date_key', 'ASC');
-
-        // Apply base filters (including object field filters for facet filtering).
-        $this->applyBaseFilters(
-            queryBuilder: $queryBuilder,
-            baseQuery: $baseQuery,
-            tableName: $tableName,
-            schema: $schema
+        $queryBuilder = $this->searchHandler->buildFilteredQuery(
+            query: $baseQuery,
+            schema: $schema,
+            tableName: $tableName
         );
 
-        // Use shared query builder from MagicSearchHandler (single source of truth for filters).
-        if ($this->searchHandler !== null && $schema !== null) {
-            $queryBuilder = $this->searchHandler->buildFilteredQuery(
-                query: $baseQuery,
-                schema: $schema,
-                tableName: $tableName
-            );
-
-            // Add date histogram-specific SELECT and GROUP BY.
-            // Note: buildFilteredQuery uses alias 't' for table.
-            $tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$field}", interval: $interval);
-            $queryBuilder->selectAlias(
-                $queryBuilder->createFunction($tDateKeyExpr),
-                'date_key'
-            )
-                ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-                ->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
-                ->groupBy('date_key')
-                ->orderBy('date_key', 'ASC');
-        }//end if
+        // The date-key SQL expression is platform-specific (TO_CHAR on
+        // PostgreSQL, DATE_FORMAT on MariaDB/MySQL); buildDateKeyExpr()
+        // encapsulates the branch. buildFilteredQuery aliases the table as 't'.
+        $tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$field}", interval: $interval);
+        $queryBuilder->selectAlias(
+            $queryBuilder->createFunction($tDateKeyExpr),
+            'date_key'
+        )
+            ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
+            ->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
+            ->groupBy('date_key')
+            ->orderBy('date_key', 'ASC');
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
@@ -1427,13 +1458,26 @@ class MagicFacetHandler
                     'to'   => date('Y-m-t', $timestamp),
                 ];
             case 'week':
-                $timestamp = strtotime($dateKey);
-                if ($timestamp === false) {
+                // ISO 8601 week buckets are keyed as `<iso-year>-<iso-week>`
+                // (e.g. `2025-12`). PHP's strtotime() parses that string as
+                // "December 2025", not "ISO week 12 of 2025"; we must use
+                // DateTime::setISODate() to get the correct Monday/Sunday
+                // bounds. Matches the implementation in MariaDbFacetHandler
+                // and MetaDataFacetHandler.
+                if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) !== 1) {
                     return null;
                 }
+
+                $isoYear = (int) $matches[1];
+                $isoWeek = (int) $matches[2];
+                $date    = new DateTime();
+                $date->setISODate($isoYear, $isoWeek, 1);
+                $from = $date->format('Y-m-d');
+                $date->setISODate($isoYear, $isoWeek, 7);
+                $to = $date->format('Y-m-d');
                 return [
-                    'from' => date('Y-m-d', $timestamp),
-                    'to'   => date('Y-m-d', strtotime('+6 days', $timestamp)),
+                    'from' => $from,
+                    'to'   => $to,
                 ];
             case 'day':
                 return [
@@ -1461,8 +1505,8 @@ class MagicFacetHandler
     {
         try {
             // The table name passed may or may not include the prefix.
-            // Normalize to always have the 'oc_' prefix for information_schema lookup.
-            $prefix        = 'oc_';
+            // Normalize to always have the configured prefix for information_schema lookup.
+            $prefix        = $this->getTablePrefix();
             $fullTableName = $prefix.$tableName;
             if (str_starts_with($tableName, $prefix) === true) {
                 $fullTableName = $tableName;

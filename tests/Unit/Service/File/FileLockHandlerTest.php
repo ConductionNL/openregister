@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use OCA\OpenRegister\Service\File\FileLockHandler;
+use OCP\ICacheFactory;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -15,6 +16,7 @@ use Psr\Log\LoggerInterface;
 class FileLockHandlerTest extends TestCase
 {
     private FileLockHandler $handler;
+    private ICacheFactory&MockObject $cacheFactory;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
     private LoggerInterface&MockObject $logger;
@@ -23,11 +25,18 @@ class FileLockHandlerTest extends TestCase
     {
         parent::setUp();
 
+        // Stub a cache factory that throws on createDistributed so the handler
+        // falls through to its per-instance map. The cross-request behaviour
+        // is exercised separately under tests/Service/.
+        $this->cacheFactory = $this->createMock(ICacheFactory::class);
+        $this->cacheFactory->method('createDistributed')
+            ->willThrowException(new \RuntimeException('no cache backend in unit-test scope'));
         $this->userSession  = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger       = $this->createMock(LoggerInterface::class);
 
         $this->handler = new FileLockHandler(
+            $this->cacheFactory,
             $this->userSession,
             $this->groupManager,
             $this->logger
@@ -69,7 +78,7 @@ class FileLockHandlerTest extends TestCase
         $this->handler->lockFile(42);
 
         // Change user to user-2.
-        $handler2 = new FileLockHandler($this->userSession, $this->groupManager, $this->logger);
+        $handler2 = new FileLockHandler($this->cacheFactory, $this->userSession, $this->groupManager, $this->logger);
 
         // We need a new handler to simulate a different user;
         // but same handler is fine as long as user context changes.
@@ -145,5 +154,120 @@ class FileLockHandlerTest extends TestCase
         $info = $this->handler->getLockInfo(42);
         $this->assertNotNull($info);
         $this->assertEquals('user-1', $info['lockedBy']);
+    }
+
+    /**
+     * Test unlocking by a non-owner without force throws exception.
+     *
+     * Covers tasks.md Phase 5: "Write unit test for unlock by non-owner (403)"
+     * at the handler level (controller-level coverage already exists in
+     * FilesControllerFileActionsTest::testUnlockNonOwner).
+     */
+    public function testUnlockByNonOwnerThrows(): void
+    {
+        // user-1 locks the file.
+        $user1 = $this->createMock(IUser::class);
+        $user1->method('getUID')->willReturn('user-1');
+        $user2 = $this->createMock(IUser::class);
+        $user2->method('getUID')->willReturn('user-2');
+
+        // First call(s) return user-1 (during lockFile), then user-2 (during unlockFile).
+        $this->userSession->method('getUser')->willReturnOnConsecutiveCalls(
+            $user1,
+            $user2,
+            $user2
+        );
+
+        $this->handler->lockFile(99);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Only the lock owner or an admin can unlock this file');
+        $this->handler->unlockFile(99);
+    }
+
+    /**
+     * Test admin force-unlock succeeds even when not the lock owner.
+     *
+     * Covers tasks.md Phase 5: "Write unit test for admin force-unlock".
+     */
+    public function testAdminForceUnlockSucceeds(): void
+    {
+        $owner = $this->createMock(IUser::class);
+        $owner->method('getUID')->willReturn('owner');
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+
+        // owner locks, then admin force-unlocks.
+        $this->userSession->method('getUser')->willReturnOnConsecutiveCalls(
+            $owner,
+            $admin,
+            $admin,
+            $admin
+        );
+
+        // Group manager treats 'admin' as admin user.
+        $this->groupManager->method('isAdmin')->willReturnCallback(
+            static fn (string $uid): bool => ($uid === 'admin')
+        );
+
+        $this->handler->lockFile(123);
+
+        $result = $this->handler->unlockFile(123, true);
+        $this->assertFalse($result['locked']);
+        $this->assertFalse($this->handler->isLocked(123));
+    }
+
+    /**
+     * Test that an expired lock is auto-cleared by getLockInfo (TTL expiry).
+     *
+     * Covers tasks.md Phase 5: "Write unit test for TTL expiry". Since the
+     * handler stores locks in memory and uses DateTime comparisons, we drive
+     * expiry by setting a TTL of 0 minutes which immediately marks the lock
+     * as expired on the next read.
+     */
+    public function testTtlExpiryAutoClears(): void
+    {
+        $this->mockUser('user-1');
+
+        // TTL of 0 minutes — expiresAt is `now`, so the next isLocked()
+        // read passes the `<=` check and auto-clears the lock.
+        $this->handler->lockFile(7, 0);
+
+        // Brief wait equivalent: ensure clock has progressed at least 1us
+        // by re-reading. PHP DateTime comparison is microsecond-aware on
+        // most platforms; the `<=` in getLockInfo is inclusive so even an
+        // identical timestamp triggers expiry.
+        $this->assertFalse($this->handler->isLocked(7));
+        $this->assertNull($this->handler->getLockInfo(7));
+    }
+
+    /**
+     * Test that assertCanModify rejects a write attempt by a non-owner.
+     *
+     * This is the contract that FileService::updateFile() now relies on
+     * to refuse content/tag updates while another user holds the lock.
+     * Covers tasks.md Phase 5 line 72: "Integrate lock checking into
+     * UpdateFileHandler" -- the integration is in FileService::updateFile
+     * (single gateway for content updates) and uses this assertion.
+     */
+    public function testAssertCanModifyByNonOwnerThrows(): void
+    {
+        $owner = $this->createMock(IUser::class);
+        $owner->method('getUID')->willReturn('owner');
+        $other = $this->createMock(IUser::class);
+        $other->method('getUID')->willReturn('other');
+
+        // Owner locks first; subsequent assertCanModify call is from
+        // a different user and must throw.
+        $this->userSession->method('getUser')->willReturnOnConsecutiveCalls(
+            $owner,
+            $other
+        );
+
+        $this->handler->lockFile(55);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('File is locked by owner');
+        $this->handler->assertCanModify(55);
     }
 }

@@ -6,6 +6,9 @@
  * Handles object indexing and search in Solr/Elasticsearch.
  * Reads objects from database and indexes them - does NOT extract text or vectorize.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Index
  *
@@ -80,6 +83,8 @@ class ObjectHandler
      * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
      */
     public function searchObjects(
         array $query=[],
@@ -129,6 +134,8 @@ class ObjectHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple filter conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
      */
     private function buildSolrQuery(array $query, bool $_rbac, bool $_multitenancy, bool $deleted): array
     {
@@ -168,6 +175,8 @@ class ObjectHandler
      * @return (array|int|mixed)[] OpenRegister formatted results
      *
      * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
      */
     private function convertToOpenRegisterFormat(array $solrResults): array
     {
@@ -189,6 +198,8 @@ class ObjectHandler
      * @return bool True if commit succeeded
      *
      * @throws Exception If objectCollection is not configured
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
      */
     public function commit(): bool
     {
@@ -232,6 +243,8 @@ class ObjectHandler
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Reindexing results with statistics.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {

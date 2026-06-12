@@ -3,6 +3,9 @@
 /**
  * EntityRelation links detected entities to specific chunks with context.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -38,6 +41,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setObjectId(?int $objectId)
  * @method int|null getEmailId()
  * @method void setEmailId(?int $emailId)
+ * @method string|null getRegisterId()
+ * @method void setRegisterId(?string $registerId)
+ * @method string|null getSchemaId()
+ * @method void setSchemaId(?string $schemaId)
+ * @method string|null getObjectUuid()
+ * @method void setObjectUuid(?string $objectUuid)
  * @method int getPositionStart()
  * @method void setPositionStart(int $positionStart)
  * @method int getPositionEnd()
@@ -54,10 +63,14 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymizedValue(?string $anonymizedValue)
  * @method array|null getBases()
  * @method void setBases(?array $bases)
+ * @method bool getSkipAnonymization()
+ * @method void setSkipAnonymization(bool $skipAnonymization)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
@@ -103,6 +116,35 @@ class EntityRelation extends Entity implements JsonSerializable
      * @var integer|null
      */
     protected ?int $emailId = null;
+
+    /**
+     * Register identifier (uuid or slug) for object-source relations.
+     *
+     * Disambiguates the magic-table this relation's `object_id`
+     * points at — magic-table id sequences are scoped per-table, so
+     * the int alone can collide. Nullable for backwards compatibility
+     * with relations created before the disambiguation columns landed.
+     *
+     * @var string|null
+     */
+    protected ?string $registerId = null;
+
+    /**
+     * Schema identifier (uuid or slug) for object-source relations.
+     *
+     * @var string|null
+     */
+    protected ?string $schemaId = null;
+
+    /**
+     * Object uuid for object-source relations.
+     *
+     * Globally unique across all magic-tables — preferred over the int
+     * `object_id` for downstream lookups (DSAR, retention enforcement).
+     *
+     * @var string|null
+     */
+    protected ?string $objectUuid = null;
 
     /**
      * Position start.
@@ -154,15 +196,30 @@ class EntityRelation extends Entity implements JsonSerializable
     protected ?string $anonymizedValue = null;
 
     /**
-     * Legal bases (grondslagen) for the anonymisation decision.
+     * Legal bases (grondslagen) under which the entity is being redacted.
      *
-     * JSON array of UUID-shaped strings referencing base objects in the consumer
-     * app's register. OpenRegister stores the values verbatim; UUID validation is
-     * the consumer app's responsibility.
+     * Array of UUID-shaped strings referencing `base` schema objects in a
+     * consumer app's register (DocuDesk's `dossier` register is the first
+     * consumer; see the `entity-relation-grondslagen` change). OpenRegister
+     * does NOT validate that the UUIDs resolve — vocabulary ownership lies
+     * with the consumer app. Set via `EntityRelationMapper::updateDecisionMetadata`
+     * (and its HTTP surface `PATCH /api/entity-relations/{id}`); audit-traced.
      *
      * @var array|null
      */
     protected ?array $bases = null;
+
+    /**
+     * Operator decision: skip this occurrence from the anonymise pass.
+     *
+     * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
+     * from the file-scoped flip, the redaction text-replacement skips it, and
+     * the row retains `anonymized = false`. Set via the same audited
+     * `updateDecisionMetadata` write path as `bases`.
+     *
+     * @var boolean
+     */
+    protected bool $skipAnonymization = false;
 
     /**
      * Created at timestamp.
@@ -182,6 +239,9 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'fileId', type: 'integer');
         $this->addType(fieldName: 'objectId', type: 'integer');
         $this->addType(fieldName: 'emailId', type: 'integer');
+        $this->addType(fieldName: 'registerId', type: 'string');
+        $this->addType(fieldName: 'schemaId', type: 'string');
+        $this->addType(fieldName: 'objectUuid', type: 'string');
         $this->addType(fieldName: 'positionStart', type: 'integer');
         $this->addType(fieldName: 'positionEnd', type: 'integer');
         $this->addType(fieldName: 'confidence', type: 'float');
@@ -190,41 +250,47 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'anonymized', type: 'boolean');
         $this->addType(fieldName: 'anonymizedValue', type: 'string');
         $this->addType(fieldName: 'bases', type: 'json');
+        $this->addType(fieldName: 'skipAnonymization', type: 'boolean');
         $this->addType(fieldName: 'createdAt', type: 'datetime');
     }//end __construct()
 
     /**
      * JSON serialization.
      *
-     * @return (array|null|scalar)[]
+     * @return array<string, mixed>
      *
      * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
      *     role: null|string, fileId: int|null, objectId: int|null,
-     *     emailId: int|null, positionStart: int, positionEnd: int,
+     *     emailId: int|null, registerId: null|string, schemaId: null|string,
+     *     objectUuid: null|string, positionStart: int, positionEnd: int,
      *     confidence: float, detectionMethod: null|string,
      *     context: null|string, anonymized: bool,
      *     anonymizedValue: null|string, bases: array|null,
-     *     createdAt: null|string}
+     *     skipAnonymization: bool, createdAt: null|string}
      */
     public function jsonSerialize(): array
     {
         return [
-            'id'              => $this->id,
-            'entityId'        => $this->entityId,
-            'chunkId'         => $this->chunkId,
-            'role'            => $this->role,
-            'fileId'          => $this->fileId,
-            'objectId'        => $this->objectId,
-            'emailId'         => $this->emailId,
-            'positionStart'   => $this->positionStart,
-            'positionEnd'     => $this->positionEnd,
-            'confidence'      => $this->confidence,
-            'detectionMethod' => $this->detectionMethod,
-            'context'         => $this->context,
-            'anonymized'      => $this->anonymized,
-            'anonymizedValue' => $this->anonymizedValue,
-            'bases'           => $this->bases,
-            'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
+            'id'                => $this->id,
+            'entityId'          => $this->entityId,
+            'chunkId'           => $this->chunkId,
+            'role'              => $this->role,
+            'fileId'            => $this->fileId,
+            'objectId'          => $this->objectId,
+            'emailId'           => $this->emailId,
+            'registerId'        => $this->registerId,
+            'schemaId'          => $this->schemaId,
+            'objectUuid'        => $this->objectUuid,
+            'positionStart'     => $this->positionStart,
+            'positionEnd'       => $this->positionEnd,
+            'confidence'        => $this->confidence,
+            'detectionMethod'   => $this->detectionMethod,
+            'context'           => $this->context,
+            'anonymized'        => $this->anonymized,
+            'anonymizedValue'   => $this->anonymizedValue,
+            'bases'             => $this->bases,
+            'skipAnonymization' => $this->skipAnonymization,
+            'createdAt'         => $this->createdAt?->format(DateTime::ATOM),
         ];
     }//end jsonSerialize()
 }//end class

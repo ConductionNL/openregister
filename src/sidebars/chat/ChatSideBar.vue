@@ -7,9 +7,9 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 		<NcAppSidebar
 			ref="sidebar"
 			v-model="activeTab"
-			name="Conversations"
-			subtitle="Manage your chat conversations"
-			subname="AI Assistant"
+			:name="t('openregister', 'Conversations')"
+			:subtitle="t('openregister', 'Manage your chat conversations')"
+			:subname="t('openregister', 'AI Assistant')"
 			:open="navigationStore.sidebarState.chat"
 			@update:open="(e) => navigationStore.setSidebarState('chat', e)">
 			<!-- Active Conversations Tab -->
@@ -187,6 +187,13 @@ export default {
 		isActive(conversation) {
 			return conversationStore.activeConversation?.uuid === conversation.uuid
 		},
+		/**
+		 * Format a conversation timestamp for compact display in the list row.
+		 *
+		 * @spec exclude Presentation-only relative-date formatter; carries no domain behavior.
+		 * @param {string} dateString - ISO timestamp of the conversation's last update
+		 * @return {string} Localised compact date/time label
+		 */
 		formatDate(dateString) {
 			if (!dateString) return ''
 
@@ -202,11 +209,25 @@ export default {
 				return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 			}
 		},
+		/**
+		 * Start a fresh conversation by clearing the active conversation and messages,
+		 * which surfaces the agent selector.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-4
+		 * @return {void}
+		 */
 		handleNewConversation() {
 			// Clear active conversation to show the agent selector
 			conversationStore.setActiveConversation(null)
 			conversationStore.setActiveMessages([])
 		},
+		/**
+		 * Load and activate the selected conversation (chat-ai conversation read).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-4
+		 * @param {object} conversation - The conversation to load (by uuid)
+		 * @return {Promise<void>}
+		 */
 		async handleSelectConversation(conversation) {
 			try {
 				await conversationStore.loadConversation(conversation.uuid)
@@ -215,6 +236,13 @@ export default {
 				showError(this.t('openregister', 'Failed to load conversation'))
 			}
 		},
+		/**
+		 * Soft-delete (archive) a conversation (chat-ai conversation lifecycle).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-4
+		 * @param {object} conversation - The conversation to archive (by uuid)
+		 * @return {Promise<void>}
+		 */
 		async handleArchiveConversation(conversation) {
 			try {
 				await conversationStore.archiveConversation(conversation.uuid)
@@ -224,6 +252,13 @@ export default {
 				showError(this.t('openregister', 'Failed to archive conversation'))
 			}
 		},
+		/**
+		 * Permanently delete a conversation (chat-ai conversation lifecycle).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-4
+		 * @param {object} conversation - The conversation to delete (by uuid)
+		 * @return {Promise<void>}
+		 */
 		async handleDeleteConversation(conversation) {
 			try {
 				await conversationStore.deleteConversation(conversation.uuid)
@@ -233,6 +268,13 @@ export default {
 				showError(this.t('openregister', 'Failed to delete conversation'))
 			}
 		},
+		/**
+		 * Restore a soft-deleted conversation to the active list (chat-ai lifecycle).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-4
+		 * @param {object} conversation - The conversation to restore (by uuid)
+		 * @return {Promise<void>}
+		 */
 		async handleRestoreConversation(conversation) {
 			try {
 				await conversationStore.restoreConversation(conversation.uuid)

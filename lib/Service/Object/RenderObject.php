@@ -11,6 +11,9 @@
  * - Applying field filtering and selection
  * - Formatting object properties for display
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -29,7 +32,9 @@ use Adbar\Dot;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Service\FileService;
+use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -37,12 +42,19 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -68,6 +80,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class RenderObject
 {
@@ -124,26 +138,61 @@ class RenderObject
     private ?array $batchFileIdsCache = null;
 
     /**
+     * Request-scoped cache of formatted file objects keyed by (string) fileid (PERF-1).
+     *
+     * Populated by renderEntities() (batch) before the per-entity loop so that
+     * renderFileProperties()/getFileObject() do not issue one FileMapper query per
+     * file per row. getFileObject() also back-fills this cache on the single-object
+     * path. Reset after the page loop.
+     *
+     * @var array<string, array|null>
+     */
+    private array $fileObjectCache = [];
+
+    /**
+     * Request-scoped cache of file tag-name lists keyed by (string) fileid (PERF-1).
+     *
+     * @var array<string, array<int, string>>
+     */
+    private array $fileTagsCache = [];
+
+    /**
+     * Whether a full page render is in progress (PERF-8).
+     *
+     * Set by renderEntities() around its per-entity loop. When true, extendObject()
+     * skips its per-entity preloadObjects() call and relies on the warm page-level
+     * batch preload already populated into $objectsCache — avoiding duplicate
+     * UUID collection + preload work for every row.
+     *
+     * @var bool
+     */
+    private bool $pageRenderActive = false;
+
+    /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper           File mapper for database operations.
-     * @param MagicMapper            $objectEntityMapper   Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper       Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper         Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager     System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper      System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler         Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService   Object cache service for optimized loading.
-     * @param PropertyRbacHandler    $propertyRbacHandler  Property-level RBAC handler.
-     * @param LoggerInterface        $logger               Logger for performance monitoring.
-     * @param FileService            $fileService          File service for file operations.
-     * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
-     * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
-     * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
+     * @param FileMapper               $fileMapper               File mapper for database operations.
+     * @param MagicMapper              $objectEntityMapper       Object entity mapper for database operations.
+     * @param RegisterMapper           $registerMapper           Register mapper for database operations.
+     * @param SchemaMapper             $schemaMapper             Schema mapper for database operations.
+     * @param ISystemTagManager        $systemTagManager         System tag manager for file tags.
+     * @param ISystemTagObjectMapper   $systemTagMapper          System tag object mapper for file tags.
+     * @param CacheHandler             $cacheHandler             Cache service for performance optimization.
+     * @param CacheHandler             $objectCacheService       Object cache service for optimized loading.
+     * @param PropertyRbacHandler      $propertyRbacHandler      Property-level RBAC handler.
+     * @param LoggerInterface          $logger                   Logger for performance monitoring.
+     * @param FileService              $fileService              File service for file operations.
+     * @param ComputedFieldHandler     $computedFieldHandler     Handler for computed field evaluation.
+     * @param TranslationHandler       $translationHandler       Handler for translatable property resolution.
+     * @param LinkedEntityEnricher     $linkedEntityEnricher     Enricher for linked entity metadata.
+     * @param CalculationEvaluator     $calculationEvaluator     Evaluator for derived/computed properties.
+     * @param UrnService               $urnService               URN resolver for register/schema/object identifiers.
+     * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
+     * @param IRequest|null            $request                  Current request, used to read `?recurrenceOccurrences=N`.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -160,6 +209,12 @@ class RenderObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
+        private readonly CalculationEvaluator $calculationEvaluator,
+        private readonly UrnService $urnService,
+        private readonly TranslationStatusService $translationStatusService,
+        private readonly TranslationMapper $translationMapper,
+        private readonly LanguageService $languageService,
+        private readonly ?IRequest $request=null,
     ) {
     }//end __construct()
 
@@ -177,7 +232,7 @@ class RenderObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function setUltraPreloadCache(array $ultraPreloadCache): void
     {
@@ -199,7 +254,7 @@ class RenderObject
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function getUltraCacheSize(): int
     {
@@ -213,7 +268,7 @@ class RenderObject
      *
      * @return Register|null The register or null if not found
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getRegister(int | string $id): ?Register
     {
@@ -239,7 +294,7 @@ class RenderObject
      *
      * @return Schema|null The schema or null if not found
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getSchema(int | string $id): ?Schema
     {
@@ -261,6 +316,95 @@ class RenderObject
     }//end getSchema()
 
     /**
+     * Enrich `recurrence`-typed properties with their upcoming occurrences.
+     *
+     * For every property declared as `type: recurrence` whose value is a non-empty
+     * RRULE string, this attaches a sibling virtual field `_occurrences` listing
+     * the next N occurrences (ISO 8601). N defaults to 5 and may be overridden per
+     * request via `?recurrenceOccurrences=N` (clamped to 1..100). The RRULE string
+     * itself is preserved unchanged for round-trip integrity. When the object
+     * declares exactly one recurrence property, `_occurrences` is attached at the
+     * object root; with multiple, each is keyed as `<prop>_occurrences` to avoid
+     * collisions.
+     *
+     * @param array  $objectData The object data being rendered.
+     * @param Schema $schema     The schema for the object.
+     *
+     * @return array The object data, possibly enriched with occurrence lists.
+     *
+     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+     */
+    private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array
+    {
+        $properties = $schema->getProperties() ?? [];
+
+        // Collect recurrence properties present in the object with a string value.
+        $recurrenceProps = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            $type = null;
+            if (is_array($propertyConfig) === true) {
+                $type = ($propertyConfig['type'] ?? null);
+            } else if (is_object($propertyConfig) === true) {
+                $type = ($propertyConfig->type ?? null);
+            }
+
+            if ($type !== 'recurrence') {
+                continue;
+            }
+
+            $value = ($objectData[$propertyName] ?? null);
+            if (is_string($value) === true && $value !== '') {
+                $recurrenceProps[$propertyName] = $value;
+            }
+        }//end foreach
+
+        if (empty($recurrenceProps) === true) {
+            return $objectData;
+        }
+
+        $count     = $this->resolveOccurrenceCount();
+        $validator = new ExtendedFieldTypeValidator();
+        $single    = (count($recurrenceProps) === 1);
+
+        foreach ($recurrenceProps as $propertyName => $rrule) {
+            $occurrences = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
+            $key         = $propertyName.'_occurrences';
+            if ($single === true) {
+                $key = '_occurrences';
+            }
+
+            $objectData[$key] = $occurrences;
+        }
+
+        return $objectData;
+    }//end enrichRecurrenceOccurrences()
+
+    /**
+     * Resolve the requested number of recurrence occurrences from the request.
+     *
+     * Reads the `recurrenceOccurrences` query parameter (default 5, clamped to
+     * 1..100 by the validator). Falls back to the default when no request is
+     * available (e.g. in unit-test construction without an injected IRequest).
+     *
+     * @return int The requested occurrence count.
+     *
+     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+     */
+    private function resolveOccurrenceCount(): int
+    {
+        if ($this->request === null) {
+            return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+        }
+
+        $raw = $this->request->getParam('recurrenceOccurrences', null);
+        if ($raw === null || is_numeric($raw) === false) {
+            return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+        }
+
+        return (int) $raw;
+    }//end resolveOccurrenceCount()
+
+    /**
      * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
      *
      * This allows non-RFC 4122 compliant UUIDs like those from GEMMA ArchiMate exports
@@ -270,7 +414,7 @@ class RenderObject
      *
      * @return bool True if the string matches UUID format
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isUuidLike(string $value): bool
     {
@@ -284,7 +428,7 @@ class RenderObject
      *
      * @return ObjectEntity|null The object or null if not found
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getObject(int | string $id): ?ObjectEntity
     {
@@ -318,7 +462,7 @@ class RenderObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function clearCache(): void
     {
@@ -335,7 +479,7 @@ class RenderObject
      *
      * @return array<string, array> Objects indexed by UUID, serialized as arrays
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function getObjectsCache(): array
     {
@@ -374,6 +518,8 @@ class RenderObject
      *
      * Caller must not call this when rows already have full file metadata from
      * renderEntities() — this method overwrites with IDs.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-15
      */
     public function attachLightweightFilesToRows(array &$rows): void
     {
@@ -395,7 +541,11 @@ class RenderObject
 
         foreach ($rows as $index => &$row) {
             $uuid = $uuidByIndex[$index] ?? null;
-            $ids  = ($uuid !== null) ? ($idsByUuid[$uuid] ?? []) : [];
+            $ids  = [];
+            if ($uuid !== null) {
+                $ids = ($idsByUuid[$uuid] ?? []);
+            }
+
             self::writeFilesToRow(row: $row, ids: $ids);
         }
 
@@ -541,7 +691,7 @@ class RenderObject
      *
      * @throws \RuntimeException If multiple nodes are found for the object's uuid
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function renderFiles(ObjectEntity $object): ObjectEntity
     {
@@ -632,10 +782,15 @@ class RenderObject
      *
      * @return array List of file tags
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getFileTags(string $fileId): array
     {
+        // PERF-1: serve from the request-scoped batch cache when present (page render).
+        if (array_key_exists($fileId, $this->fileTagsCache) === true) {
+            return $this->fileTagsCache[$fileId];
+        }
+
         // File tag type constant (same as in FileService).
         $fileTagType = 'files';
 
@@ -647,6 +802,7 @@ class RenderObject
 
         // Check if file has any tags.
         if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+            $this->fileTagsCache[$fileId] = [];
             return [];
         }
 
@@ -667,8 +823,10 @@ class RenderObject
             }
         );
 
-        // Return array of filtered tag names.
-        return array_values($tagNames);
+        // Return array of filtered tag names (PERF-1: back-fill request cache).
+        $result = array_values($tagNames);
+        $this->fileTagsCache[$fileId] = $result;
+        return $result;
     }//end getFileTags()
 
     /**
@@ -692,7 +850,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File property handling requires multiple type checks
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function renderFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -766,7 +924,7 @@ class RenderObject
      * @psalm-return   bool
      * @phpstan-return bool
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isFilePropertyConfig(array $propertyConfig): bool
     {
@@ -811,7 +969,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName)
     {
@@ -825,6 +983,14 @@ class RenderObject
         }
 
         $returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
+
+        // PERF-11: never embed base64 file content on a list/collection (page) render —
+        // reading whole files into memory per file per row blows up peak memory. On a
+        // page render, fall back to the lightweight file reference instead; the full
+        // base64 content is still produced on single-object GETs (size-capped below).
+        if ($returnBase64 === true && $this->pageRenderActive === true) {
+            $returnBase64 = false;
+        }
 
         if ($isArrayProperty === true) {
             // Handle array of files.
@@ -874,7 +1040,7 @@ class RenderObject
      *
      * @return string|null The base64 data URI or null if file not found.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getFileAsBase64($fileId): ?string
     {
@@ -889,6 +1055,33 @@ class RenderObject
             $file = $this->fileService->getFileById($fileIdInt);
             if ($file === null) {
                 return null;
+            }
+
+            // PERF-11: cap the size of files we are willing to base64-embed even on the
+            // single-object path, so a single oversized attachment cannot exhaust memory.
+            // Oversized files return null (the caller still has the file reference via the
+            // non-base64 path / @self.files).
+            $maxBase64Bytes = (10 * 1024 * 1024);
+            try {
+                $fileSize = (int) $file->getSize();
+                if ($fileSize > $maxBase64Bytes) {
+                    $this->logger->warning(
+                        message: '[RenderObject] Refusing to base64-embed oversized file',
+                        context: [
+                            'file'   => __FILE__,
+                            'line'   => __LINE__,
+                            'fileId' => $fileIdInt,
+                            'size'   => $fileSize,
+                            'cap'    => $maxBase64Bytes,
+                        ]
+                    );
+                    return null;
+                }
+            } catch (\Throwable $sizeError) {
+                // If size can't be determined, fall through and let getContent() decide.
+                $this->logger->debug(
+                    '[RenderObject] Could not determine file size for base64 cap: '.$sizeError->getMessage()
+                );
             }
 
             // Get file content.
@@ -919,7 +1112,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Metadata extraction requires multiple conditional checks
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -970,7 +1163,7 @@ class RenderObject
      *
      * @return mixed|null The value at the path or null if not found.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getValueFromPath(array $data, string $path)
     {
@@ -1005,7 +1198,7 @@ class RenderObject
      *     modified: int|null, labels: list<string>}|null
      * @phpstan-return array<string, mixed>|null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getFileObject($fileId): array|null
     {
@@ -1020,35 +1213,65 @@ class RenderObject
                 return null;
             }
 
+            $cacheKey = (string) $fileIdStr;
+
+            // PERF-1: serve from the request-scoped batch cache when present.
+            if (array_key_exists($cacheKey, $this->fileObjectCache) === true) {
+                return $this->fileObjectCache[$cacheKey];
+            }
+
             // Use FileMapper to get file information directly.
             $fileRecord = $this->fileMapper->getFile((int) $fileIdStr);
 
             if (empty($fileRecord) === true) {
+                $this->fileObjectCache[$cacheKey] = null;
                 return null;
             }
 
-            // Get file tags.
-            $labels = $this->getFileTags(fileId: (string) $fileRecord['fileid']);
+            $formatted = $this->formatFileRecord(fileRecord: $fileRecord);
 
-            // Format the file object (same structure as renderFiles method).
-            return [
-                'id'          => (string) $fileRecord['fileid'],
-                'path'        => $fileRecord['path'],
-                'title'       => $fileRecord['name'],
-                'accessUrl'   => $fileRecord['accessUrl'] ?? null,
-                'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
-                'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
-                'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
-                'size'        => (int) $fileRecord['size'],
-                'hash'        => $fileRecord['etag'] ?? '',
-                'published'   => $fileRecord['published'] ?? null,
-                'modified'    => $fileRecord['mtime'] ?? null,
-                'labels'      => $labels,
-            ];
+            // PERF-1: back-fill the request cache so repeated refs reuse it.
+            $this->fileObjectCache[$cacheKey] = $formatted;
+
+            return $formatted;
         } catch (Exception $e) {
             return null;
         }//end try
     }//end getFileObject()
+
+    /**
+     * Format a raw FileMapper file record into the rendered file object shape (PERF-1).
+     *
+     * Shared by getFileObject() and the page-level batch prefetch so both paths emit
+     * an identical structure.
+     *
+     * @param array $fileRecord The raw file record from FileMapper
+     *
+     * @return array The formatted file object (same structure as renderFiles()).
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function formatFileRecord(array $fileRecord): array
+    {
+        // Get file tags (request-cached).
+        $labels = $this->getFileTags(fileId: (string) $fileRecord['fileid']);
+
+        // Format the file object (same structure as renderFiles method).
+        return [
+            'id'          => (string) $fileRecord['fileid'],
+            'path'        => $fileRecord['path'],
+            'title'       => $fileRecord['name'],
+            'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+            'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+            'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+            'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+            'size'        => (int) $fileRecord['size'],
+            'hash'        => $fileRecord['etag'] ?? '',
+            'published'   => $fileRecord['published'] ?? null,
+            'modified'    => $fileRecord['mtime'] ?? null,
+            'labels'      => $labels,
+        ];
+    }//end formatFileRecord()
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -1080,7 +1303,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive rendering requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -1133,7 +1356,9 @@ class RenderObject
         // Both extend spellings are equivalent (see normalizeMap below).
         if (self::shouldExtendFiles(extend: $_extend) === true) {
             $entity = $this->renderFiles(object: $entity);
-        } else {
+        }
+
+        if (self::shouldExtendFiles(extend: $_extend) === false) {
             $entity = $this->setLightweightFileIds(entity: $entity);
         }
 
@@ -1194,11 +1419,13 @@ class RenderObject
                 // These are the properties that need inverse lookups to populate their data.
                 $inversePropertyNames = array_keys($inversedProperties);
 
-                // Normalize extend to array.
-                if (is_array($_extend) === true) {
-                    $extendArray = $_extend;
-                } else {
-                    $extendArray = explode(',', $_extend);
+                // Normalize extend to array. $_extend may already be an array
+                // (CnPageRenderer config-path) or a comma-separated string
+                // (legacy query-string path) — explode only when it's a string,
+                // otherwise PHP 8 throws TypeError on array input.
+                $extendArray = $_extend;
+                if (is_array($_extend) === false) {
+                    $extendArray = explode(',', (string) $_extend);
                 }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
@@ -1279,7 +1506,7 @@ class RenderObject
                 $serialized = $entity->jsonSerialize();
                 $enriched   = $this->linkedEntityEnricher->enrich($serialized, $linkedExtend);
                 // Update the linked type values on the entity.
-                foreach ($linkedExtend as $key => $unused) {
+                foreach (array_keys($linkedExtend) as $key) {
                     if (isset($enriched[$key]) === true) {
                         $setter = 'set'.ucfirst(ltrim($key, '_'));
                         $entity->$setter($enriched[$key]);
@@ -1297,6 +1524,13 @@ class RenderObject
                 schema: $readSchema,
                 evaluateOn: 'read'
             );
+            $entity->setObject($objectData);
+        }
+
+        // Enrich `recurrence` properties with upcoming occurrences under `_occurrences`.
+        // The base RRULE string is preserved unchanged for round-trip integrity.
+        if ($readSchema !== null) {
+            $objectData = $this->enrichRecurrenceOccurrences(objectData: $objectData, schema: $readSchema);
             $entity->setObject($objectData);
         }
 
@@ -1332,6 +1566,7 @@ class RenderObject
         // Resolve translatable properties to the requested language.
         $renderSchema   = $this->getSchema(id: $entity->getSchema());
         $renderRegister = $this->getRegister(id: $entity->getRegister());
+        $preResolveData = $objectData;
         if ($renderSchema !== null) {
             $objectData = $this->translationHandler->resolveTranslationsForRender(
                 objectData: $objectData,
@@ -1340,10 +1575,387 @@ class RenderObject
             );
         }
 
+        // i18n-source-of-truth: when `?_translationMeta=true`, attach a
+        // `_meta.languageMeta` envelope describing each translatable
+        // property's served language, source language, isSource flag, and
+        // workflow status. Opt-in to keep payload size flat by default.
+        if ($renderSchema !== null && $this->shouldAttachLanguageMeta() === true) {
+            try {
+                $objectData = $this->attachLanguageMeta(
+                    objectData: $objectData,
+                    preResolveData: $preResolveData,
+                    entity: $entity,
+                    schema: $renderSchema,
+                    register: $renderRegister
+                );
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf(
+                        '[RenderObject] languageMeta attach failed for %s: %s',
+                        (string) $entity->getUuid(),
+                        $e->getMessage()
+                    )
+                );
+            }
+        }
+
+        // Evaluate virtual calculations (`materialise: false`) when the
+        // caller asks for them via _extend. Materialised calcs are
+        // already in $objectData (set by CalculationOnSaveListener).
+        $extendArr = [$_extend];
+        if (is_array($_extend) === true) {
+            $extendArr = $_extend;
+        } else if ($_extend === null) {
+            $extendArr = [];
+        }
+
+        if (in_array('calculations', $extendArr, true) === true) {
+            $objectData = $this->applyVirtualCalculations(
+                entity: $entity,
+                schema: $renderSchema,
+                data: $objectData
+            );
+        }
+
         $entity->setObject($objectData);
+
+        // Compute the RFC 8141 URN once per render. UrnService resolves
+        // the entity's register/schema references to slugs and builds
+        // the canonical urn:nl-or:{instance}:{register-slug}:{schema-slug}:{uuid}
+        // identifier, which then surfaces in @self.urn via getObjectArray.
+        try {
+            $entity->setUrn($this->urnService->buildForObject($entity));
+        } catch (\Throwable $e) {
+            // URN derivation MUST NOT break rendering; log + skip on failure.
+            $this->logger->debug(
+                sprintf('[RenderObject] URN derivation failed for object %s: %s', (string) $entity->getUuid(), $e->getMessage())
+            );
+        }
+
+        // Per-language translation completeness (Decision 4 from
+        // register-i18n). Compute-on-read against the translations
+        // sidecar; skipped when the schema has no translatable
+        // properties (returns []).
+        try {
+            if ($renderSchema !== null && $entity->getUuid() !== null) {
+                $completeness = $this->translationStatusService->completenessForObject(
+                    (string) $entity->getUuid(),
+                    $renderSchema
+                );
+                if (count($completeness) > 0) {
+                    $entity->setTranslationCompleteness($completeness);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] translation completeness lookup failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }
+
+        // Annotation-driven retention block.
+        // When the schema declares `x-openregister-archival`, compute the
+        // effective retention for this row from the annotation's default +
+        // condition rules and merge it under `retention.annotation` so the
+        // records-management retention surface and the annotation surface
+        // never collide. See add-archival-annotation-support design R3 + D7.
+        $this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
 
         return $entity;
     }//end renderEntity()
+
+    /**
+     * Compute + attach the annotation-driven `_retention.annotation` block.
+     *
+     * Stateless w.r.t. the row's persisted columns; pulls the annotation off
+     * the schema's `configuration` and asks `RetentionEvaluator` to produce
+     * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
+     * current row + `_created` timestamp.
+     *
+     * Failures are logged + swallowed: a malformed annotation must NEVER
+     * break object rendering.
+     *
+     * @param ObjectEntity $entity The entity being rendered.
+     * @param Schema|null  $schema The resolved schema (may be null).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-6
+     */
+    private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void
+    {
+        if ($schema === null) {
+            return;
+        }
+
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-archival'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        try {
+            $createdAt = $entity->getCreated();
+            if ($createdAt === null) {
+                return;
+            }
+
+            $objectData = $entity->getObject();
+            if (is_array($objectData) === false) {
+                $objectData = [];
+            }
+
+            $row       = $objectData;
+            $evaluator = new RetentionEvaluator(logger: $this->logger);
+            $annotationBlock = $evaluator->evaluate(
+                annotation: $annotation,
+                row: $row,
+                createdAt: $createdAt
+            );
+
+            $existing = ($entity->getRetention() ?? []);
+            $existing['annotation'] = $annotationBlock;
+            $entity->setRetention($existing);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] archival retention compute failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }//end try
+    }//end applyArchivalRetentionBlock()
+
+    /**
+     * Check whether the current request opts in to the `_translationMeta`
+     * envelope.
+     *
+     * @return bool True when `?_translationMeta=true`/`1` was passed.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    private function shouldAttachLanguageMeta(): bool
+    {
+        if ($this->request === null) {
+            return false;
+        }
+
+        $raw = $this->request->getParam('_translationMeta', null);
+        if ($raw === null) {
+            return false;
+        }
+
+        if (is_string($raw) === false) {
+            return ($raw === true || $raw === 1);
+        }
+
+        $normalised = strtolower(trim($raw));
+        return in_array($normalised, ['1', 'true', 'yes', 'on'], true);
+    }//end shouldAttachLanguageMeta()
+
+    /**
+     * Attach the `_meta.languageMeta` envelope describing per-property
+     * language metadata for translatable properties.
+     *
+     * The envelope is OFF by default; this method is only called when
+     * `?_translationMeta=true` is on the request.
+     *
+     * @param array<string, mixed> $objectData     Rendered data (post resolveTranslationsForRender).
+     * @param array<string, mixed> $preResolveData Raw data (pre resolveTranslationsForRender).
+     * @param ObjectEntity         $entity         The entity being rendered.
+     * @param Schema               $schema         The schema for the entity.
+     * @param Register|null        $register       The owning register (for default fallback).
+     *
+     * @return array<string, mixed> Object data with `_meta.languageMeta` attached.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    private function attachLanguageMeta(
+        array $objectData,
+        array $preResolveData,
+        ObjectEntity $entity,
+        Schema $schema,
+        ?Register $register
+    ): array {
+        $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+        if (count($translatableProps) === 0) {
+            return $objectData;
+        }
+
+        $uuid = (string) ($entity->getUuid() ?? '');
+        $registerDefault = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
+        $served          = $this->languageService->getPreferredLanguage();
+
+        $languageMeta = [];
+        foreach ($translatableProps as $property) {
+            // Determine source language from object body override → schema
+            // property modifier → register default.
+            $sourceLanguage = $this->resolveSourceLanguageForProperty(
+                schema: $schema,
+                preResolveData: $preResolveData,
+                property: $property,
+                registerDefault: $registerDefault
+            );
+
+            // Look up status from the sidecar for the served language.
+            $status = 'source';
+            if ($uuid !== '' && $served !== $sourceLanguage) {
+                $row = null;
+                try {
+                    $row = $this->translationMapper->findOne($uuid, $property, $served);
+                } catch (\Throwable $e) {
+                    $row = null;
+                }
+
+                if ($row !== null) {
+                    $status = (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
+                } else {
+                    $status = 'missing';
+                }
+            }
+
+            $languageMeta[$property] = [
+                'served'         => $served,
+                'sourceLanguage' => $sourceLanguage,
+                'isSource'       => ($served === $sourceLanguage),
+                'status'         => $status,
+            ];
+        }
+
+        if (count($languageMeta) === 0) {
+            return $objectData;
+        }
+
+        $existingMeta = $objectData['_meta'] ?? [];
+        if (is_array($existingMeta) === false) {
+            $existingMeta = [];
+        }
+
+        $existingMeta['languageMeta'] = $languageMeta;
+        $objectData['_meta']          = $existingMeta;
+        return $objectData;
+    }//end attachLanguageMeta()
+
+    /**
+     * Resolve the source language for a single property from object override
+     * → schema modifier → register default.
+     *
+     * @param Schema               $schema          The schema for the entity.
+     * @param array<string, mixed> $preResolveData  Raw object data with `_translationMeta` block intact.
+     * @param string               $property        The translatable property name.
+     * @param string               $registerDefault Register-level default.
+     *
+     * @return string Resolved BCP-47 source language.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    private function resolveSourceLanguageForProperty(
+        Schema $schema,
+        array $preResolveData,
+        string $property,
+        string $registerDefault
+    ): string {
+        $meta = $preResolveData['_translationMeta'] ?? null;
+        if (is_array($meta) === true
+            && isset($meta[$property])
+            && is_array($meta[$property]) === true
+            && isset($meta[$property]['sourceLanguage'])
+            && is_string($meta[$property]['sourceLanguage']) === true
+            && $meta[$property]['sourceLanguage'] !== ''
+        ) {
+            return (string) $meta[$property]['sourceLanguage'];
+        }
+
+        $properties = $schema->getProperties() ?? [];
+        $definition = $properties[$property] ?? null;
+        if (is_array($definition) === true
+            && isset($definition['sourceLanguage'])
+            && is_string($definition['sourceLanguage']) === true
+            && $definition['sourceLanguage'] !== ''
+        ) {
+            return (string) $definition['sourceLanguage'];
+        }
+
+        return ($registerDefault !== '') ? $registerDefault : 'nl';
+    }//end resolveSourceLanguageForProperty()
+
+    /**
+     * Apply virtual (materialise:false) calculations declared on the
+     * schema to the given data array. Materialised calculations are
+     * persisted on save and skipped here.
+     *
+     * @param ObjectEntity         $entity The object being rendered (used for @self.* refs).
+     * @param Schema|null          $schema The schema definition (may be null).
+     * @param array<string, mixed> $data   The current rendered data array.
+     *
+     * @return array<string, mixed>
+     */
+    private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array
+    {
+        if ($schema === null) {
+            return $data;
+        }
+
+        $config = ($schema->getConfiguration() ?? []);
+        $calcs  = ($config['x-openregister-calculations'] ?? null);
+        if (is_array($calcs) === false || count($calcs) === 0) {
+            return $data;
+        }
+
+        $created = $entity->getCreated();
+        $updated = $entity->getUpdated();
+
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(\DateTimeInterface::ATOM);
+        }
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
+        }
+
+        $payload          = $data;
+        $payload['@self'] = [
+            'id'       => $entity->getUuid(),
+            'uuid'     => $entity->getUuid(),
+            'register' => $entity->getRegister(),
+            'schema'   => $entity->getSchema(),
+            'owner'    => $entity->getOwner(),
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
+        ];
+
+        foreach ($calcs as $name => $spec) {
+            if (is_array($spec) === false) {
+                continue;
+            }
+
+            // Skip materialised — already in $data from save-time listener.
+            if (($spec['materialise'] ?? false) === true) {
+                continue;
+            }
+
+            try {
+                $value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
+                if ($value instanceof \DateTimeInterface) {
+                    $value = $value->format(\DateTimeInterface::ATOM);
+                }
+
+                $data[(string) $name] = $value;
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string) $name, $e->getMessage())
+                );
+            }
+        }//end foreach
+
+        return $data;
+    }//end applyVirtualCalculations()
 
     /**
      * Handle extends containing a wildcard ($)
@@ -1354,7 +1966,7 @@ class RenderObject
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array
     {
@@ -1421,7 +2033,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dot notation handling requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleExtendDot(
         array $data,
@@ -1617,7 +2229,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extendObject(
         ObjectEntity $entity,
@@ -1653,7 +2265,16 @@ class RenderObject
         // **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
         // This collects all UUIDs from the properties that will be extended and loads
         // them in a SINGLE database query, instead of one query per UUID.
-        $uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
+        // PERF-8: during a full page render renderEntities() has already batch-preloaded
+        // every extend UUID for the whole page into $objectsCache, so re-collecting and
+        // re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
+        // active; nested (depth > 0) extends still preload their own children.
+        $skipPreload = ($this->pageRenderActive === true && $depth === 0);
+        $uuidsToPreload = [];
+        if ($skipPreload === false) {
+            $uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
+        }
+
         if (empty($uuidsToPreload) === false) {
             $preloadedObjects = $this->objectCacheService->preloadObjects($uuidsToPreload);
             // Add preloaded objects to local cache for immediate access.
@@ -1695,7 +2316,7 @@ class RenderObject
      *
      * @return array Array of UUIDs to preload
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function collectUuidsForExtend(array $objectData, array $extend): array
     {
@@ -1756,7 +2377,7 @@ class RenderObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function preloadInverseRelationships(array $entities, array $extend): void
     {
@@ -1825,7 +2446,7 @@ class RenderObject
      *
      * @return array Filtered array of inverse properties that are being extended
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function filterExtendedInverseProperties(array $inversedProperties, array $extend): array
     {
@@ -1846,7 +2467,7 @@ class RenderObject
      *
      * @return array Array of UUID strings
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function collectEntityUuids(array $entities): array
     {
@@ -1869,7 +2490,7 @@ class RenderObject
      *
      * @return array|null Array with keys 'targetSchemaRef' and 'inversedByFields', or null if invalid
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extractInverseConfig(array $propConfig): ?array
     {
@@ -1883,10 +2504,9 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
+        $inversedByFields = [$inversedByField];
         if (is_array($inversedByField) === true) {
             $inversedByFields = $inversedByField;
-        } else {
-            $inversedByFields = [$inversedByField];
         }
 
         return [
@@ -1908,7 +2528,7 @@ class RenderObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function preloadSingleInverseProperty(
         string $propName,
@@ -1994,7 +2614,7 @@ class RenderObject
      *
      * @return array Array of ObjectEntity instances that reference the given UUIDs
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function batchLoadReferencingObjects(
         array $entityUuids,
@@ -2014,10 +2634,9 @@ class RenderObject
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
+        $additionalFields = [];
         if (count($inversedByFields) > 1) {
             $additionalFields = array_slice($inversedByFields, 1);
-        } else {
-            $additionalFields = [];
         }
 
         $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -2042,7 +2661,7 @@ class RenderObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function initializeInverseCacheEntries(array $entityUuids, string $propName): void
     {
@@ -2067,7 +2686,7 @@ class RenderObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function indexReferencingObjects(
         array $referencingObjects,
@@ -2114,7 +2733,7 @@ class RenderObject
      *
      * @return array Array of UUID strings (may contain nulls which should be filtered by caller)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveReferencedUuids(array $refData, string $field): array
     {
@@ -2142,7 +2761,7 @@ class RenderObject
      *
      * @return array Array of property names that have inversedBy configurations
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getInversedProperties(Schema $schema): array
     {
@@ -2185,7 +2804,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleInversedProperties(
         ObjectEntity $entity,
@@ -2329,10 +2948,9 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
+            $inversedByProperties = [$inversedByProperty];
             if (is_array($inversedByProperty) === true) {
                 $inversedByProperties = $inversedByProperty;
-            } else {
-                $inversedByProperties = [$inversedByProperty];
             }
 
             // Resolve schema reference to actual schema ID.
@@ -2350,11 +2968,12 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
+                $defaultValue = null;
                 if ($isArray === true) {
-                    $objectData[$targetProperty] = [];
-                } else {
-                    $objectData[$targetProperty] = null;
+                    $defaultValue = [];
                 }
+
+                $objectData[$targetProperty] = $defaultValue;
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.
@@ -2446,7 +3065,7 @@ class RenderObject
      *
      * @return array The updated object data with inversed properties populated
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleInversedPropertiesFromCache(
         ObjectEntity $entity,
@@ -2507,10 +3126,9 @@ class RenderObject
             }
 
             if ($isArray === false) {
+                $objectData[$targetProperty] = null;
                 if (empty($renderedObjects) === false) {
                     $objectData[$targetProperty] = end($renderedObjects);
-                } else {
-                    $objectData[$targetProperty] = null;
                 }
             }
         }//end foreach
@@ -2525,7 +3143,7 @@ class RenderObject
      *
      * @return string The resolved schema ID
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveSchemaReference(string $schemaRef): string
     {
@@ -2587,7 +3205,7 @@ class RenderObject
      *
      * @return string The reference string without query parameters
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -2619,7 +3237,7 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function renderEntities(
         array $entities,
@@ -2742,7 +3360,17 @@ class RenderObject
             }
         }
 
+        // PERF-1: batch-prefetch full file objects + tags for every file-typed property
+        // value across the whole page, so renderFileProperties()/getFileObject() do not
+        // issue 1+ queries per file per row. This turns a 20-row x 3-file page from ~120
+        // queries into ~3 (one IN(...) files query + one batched tag-id query + one tag
+        // resolve). Caches are request-scoped and cleared in the finally below.
+        $this->batchPreloadFileObjects(entities: $entities);
+
         $renderedEntities = [];
+
+        // PERF-8: mark a page render so extendObject() skips per-row re-preloading.
+        $this->pageRenderActive = true;
 
         try {
             // Render each entity (now using warm cache for forward relations).
@@ -2767,8 +3395,162 @@ class RenderObject
             }
         } finally {
             $this->batchFileIdsCache = null;
+            // PERF-1: drop request-scoped file caches after the page render.
+            $this->fileObjectCache = [];
+            $this->fileTagsCache   = [];
+            // PERF-8: clear the page-render flag.
+            $this->pageRenderActive = false;
         }//end try
 
         return $renderedEntities;
     }//end renderEntities()
+
+    /**
+     * Batch-preload formatted file objects + tags for an entire page of entities (PERF-1).
+     *
+     * Collects every file id referenced by a file-typed property across all entities,
+     * loads them in a single FileMapper::getFilesByIds() call and resolves their tags in
+     * one batched ISystemTagManager call, then populates the request-scoped
+     * $fileObjectCache / $fileTagsCache so per-row getFileObject()/getFileTags() are
+     * cache hits.
+     *
+     * @param array $entities The page of ObjectEntity instances about to be rendered
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function batchPreloadFileObjects(array $entities): void
+    {
+        if (empty($entities) === true) {
+            return;
+        }
+
+        // 1) Collect all file ids referenced by file-typed properties across the page.
+        $allFileIds = [];
+        foreach ($entities as $entity) {
+            if ($entity instanceof ObjectEntity === false) {
+                continue;
+            }
+
+            $schema = $this->getSchema(id: $entity->getSchema());
+            if ($schema === null) {
+                continue;
+            }
+
+            $schemaProperties = $schema->getProperties() ?? [];
+            $objectData       = $entity->getObject();
+            if (is_array($objectData) === false) {
+                continue;
+            }
+
+            foreach ($schemaProperties as $propertyName => $propertyConfig) {
+                if (is_array($propertyConfig) === false
+                    || $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === false
+                ) {
+                    continue;
+                }
+
+                $value = ($objectData[$propertyName] ?? null);
+                if ($value === null) {
+                    continue;
+                }
+
+                // base64-format properties read content, not the formatted file
+                // object/tags, so they are not part of this prefetch.
+                $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+                $fileConfig      = $propertyConfig;
+                if ($isArrayProperty === true) {
+                    $fileConfig = ($propertyConfig['items'] ?? []);
+                }
+
+                if (($fileConfig['format'] ?? '') === 'base64') {
+                    continue;
+                }
+
+                $candidates = $value;
+                if (is_array($value) === false) {
+                    $candidates = [$value];
+                }
+
+                foreach ($candidates as $candidate) {
+                    if (is_numeric($candidate) === true
+                        || (is_string($candidate) === true && ctype_digit($candidate) === true)
+                    ) {
+                        $allFileIds[(int) $candidate] = (int) $candidate;
+                    }
+                }
+            }//end foreach
+        }//end foreach
+
+        if (empty($allFileIds) === true) {
+            return;
+        }
+
+        $fileIds = array_values($allFileIds);
+
+        try {
+            // 2) Batch-load all files in one query.
+            $filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
+
+            // 3) Batch-load all tag ids for all files in one query.
+            $stringFileIds    = array_map(static fn($id) => (string) $id, $fileIds);
+            $allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
+                objIds: $stringFileIds,
+                objectType: 'files'
+            );
+
+            // Resolve all unique tag ids to names in one call.
+            $uniqueTagIds = [];
+            foreach ($allTagIdsPerFile as $fileTagIds) {
+                foreach ($fileTagIds as $tagId) {
+                    $uniqueTagIds[$tagId] = true;
+                }
+            }
+
+            $tagNameMap = [];
+            if (empty($uniqueTagIds) === false) {
+                $tags = $this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds));
+                foreach ($tags as $tag) {
+                    $name = $tag->getName();
+                    if (str_starts_with($name, 'object:') === false) {
+                        $tagNameMap[$tag->getId()] = $name;
+                    }
+                }
+            }
+
+            // 4) Populate the request-scoped tag cache for every requested file id.
+            foreach ($stringFileIds as $fileIdStr) {
+                $labels = [];
+                foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
+                    if (isset($tagNameMap[$tagId]) === true) {
+                        $labels[] = $tagNameMap[$tagId];
+                    }
+                }
+
+                $this->fileTagsCache[$fileIdStr] = $labels;
+            }
+
+            // 5) Populate the request-scoped file-object cache (null for missing files).
+            foreach ($fileIds as $fileId) {
+                $fileIdStr = (string) $fileId;
+                $record    = ($filesById[$fileIdStr] ?? null);
+                if ($record === null) {
+                    $this->fileObjectCache[$fileIdStr] = null;
+                    continue;
+                }
+
+                $this->fileObjectCache[$fileIdStr] = $this->formatFileRecord(fileRecord: $record);
+            }
+        } catch (Exception $e) {
+            // A prefetch failure must never break rendering — per-row paths will simply
+            // fall back to individual lookups (the pre-PERF-1 behaviour).
+            $this->logger->warning(
+                message: '[RenderObject] Batch file prefetch failed; falling back to per-row lookups',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }//end try
+    }//end batchPreloadFileObjects()
 }//end class

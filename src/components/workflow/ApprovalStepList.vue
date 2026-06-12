@@ -1,21 +1,28 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+import { NcButton } from '@nextcloud/vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+</script>
+
 <template>
 	<div class="approval-step-list">
-		<h4>Approval Progress</h4>
+		<h4>{{ t('openregister', 'Approval Progress') }}</h4>
 		<div v-if="steps.length === 0">
-			<p>No approval steps for this object.</p>
+			<p>{{ t('openregister', 'No approval steps for this object.') }}</p>
 		</div>
 		<div v-for="step in steps" :key="step.id" class="step-row">
-			<span class="step-order">Step {{ step.stepOrder }}</span>
-			<span class="step-role">{{ step.role }}</span>
-			<span :class="['status-badge', `status-${step.status}`]">{{ step.status }}</span>
-			<span v-if="step.decidedBy" class="decided-by">by {{ step.decidedBy }}</span>
+			<span class="step-order">{{ t('openregister', 'Step') }} {{ step.stepOrder }}</span>
+			<span class="step-role">{{ t('openregister', step.role) }}</span>
+			<span :class="['status-badge', `status-${step.status}`]">{{ t('openregister', step.status) }}</span>
+			<span v-if="step.decidedBy" class="decided-by">{{ t('openregister', 'by') }} {{ step.decidedBy }}</span>
 			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
-				<input v-model="comments[step.id]" type="text" placeholder="Comment...">
+				<input v-model="comments[step.id]" type="text" :placeholder="t('openregister', 'Comment...')">
 				<NcButton type="success" @click="approve(step)">
-					Approve
+					{{ t('openregister', 'Approve') }}
 				</NcButton>
 				<NcButton type="error" @click="reject(step)">
-					Reject
+					{{ t('openregister', 'Reject') }}
 				</NcButton>
 			</div>
 		</div>
@@ -23,10 +30,9 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-
+/**
+ * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+ */
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },
@@ -43,6 +49,9 @@ export default {
 		this.fetchSteps()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+		 */
 		async fetchSteps() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')
@@ -52,9 +61,15 @@ export default {
 				console.error('Failed to fetch steps:', error)
 			}
 		},
+		/**
+		 * @spec exclude computed decide-permission display flag (stub returns true), UI plumbing
+		 */
 		canDecide() {
 			return true
 		},
+		/**
+		 * @spec exclude API passthrough approving step + refetch; approval contract owned by approval-workflow capability
+		 */
 		async approve(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/approve`)
@@ -64,6 +79,9 @@ export default {
 				console.error('Failed to approve:', error)
 			}
 		},
+		/**
+		 * @spec exclude API passthrough rejecting step + refetch; approval contract owned by approval-workflow capability
+		 */
 		async reject(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/reject`)

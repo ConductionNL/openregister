@@ -1,7 +1,3 @@
-## Status
-
-status: pr-created
-
 ## Context
 
 `TextExtractionService` (in `lib/Service/`) is OpenRegister's text-from-files extractor. The current cascade in `extractSourceText` covers PDF (smalot/pdfparser), Word documents (PhpWord), spreadsheets (PhpSpreadsheet), and plain-text MIMEs. EML files (`message/rfc822`) fall off the end — the cascade returns null. Downstream entity-recognition produces nothing for emails.

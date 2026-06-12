@@ -47,6 +47,15 @@ class ConfigurationControllerCoverageTest extends TestCase
         $this->appManager = $this->createMock(IAppManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // SEC-CTRL-3: show/preview/export now require an admin (403 otherwise).
+        // Wire an admin session so the happy-path coverage tests still hold.
+        $user = $this->createMock(\OCP\IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($user);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new ConfigurationController(
             'openregister',
             $this->request,
@@ -56,12 +65,14 @@ class ConfigurationControllerCoverageTest extends TestCase
             $this->githubHandler,
             $this->gitlabHandler,
             $this->appManager,
-            $this->logger
+            $this->logger,
+            $userSession,
+            $groupManager
         );
     }
 
     // =========================================================================
-    // checkVersion — remote version null path
+    // versionStatus — remote version null path
     // =========================================================================
 
     public function testCheckVersionRemoteVersionNull(): void
@@ -70,7 +81,7 @@ class ConfigurationControllerCoverageTest extends TestCase
         $this->configurationMapper->method('find')->with(1)->willReturn($config);
         $this->configurationService->method('checkRemoteVersion')->willReturn(null);
 
-        $result = $this->controller->checkVersion(1);
+        $result = $this->controller->versionStatus(1);
 
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();
@@ -84,7 +95,7 @@ class ConfigurationControllerCoverageTest extends TestCase
         $this->configurationService->method('checkRemoteVersion')
             ->willThrowException(new \Exception('Unknown error'));
 
-        $result = $this->controller->checkVersion(1);
+        $result = $this->controller->versionStatus(1);
 
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();

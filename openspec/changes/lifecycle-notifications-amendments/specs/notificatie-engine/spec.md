@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: draft
 ---
 # Notificatie-engine (delta — `x-openregister-notifications` annotation surface)
 

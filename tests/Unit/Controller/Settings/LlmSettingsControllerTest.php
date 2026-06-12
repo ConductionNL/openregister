@@ -443,14 +443,11 @@ class LlmSettingsControllerTest extends TestCase
 
     public function testGetVectorStatsContainsTimestamp(): void
     {
-        $this->vectorizationService->method('getVectorStats')
-            ->willReturn(['total' => 100, 'by_schema' => []]);
-
-        $result = $this->controller->getVectorStats();
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertArrayHasKey('timestamp', $result->getData());
-        $this->assertIsString($result->getData()['timestamp']);
+        $this->markTestSkipped(
+            'LlmSettingsController::getVectorStats() was removed; '
+            .'vector stats now live on a dedicated endpoint. Test kept '
+            .'as a marker until the replacement controller is finalised.'
+        );
     }
 
     public function testPatchLLMSettingsWithAllModelConfigs(): void
@@ -521,25 +518,12 @@ class LlmSettingsControllerTest extends TestCase
 
     public function testGetVectorStatsSuccess(): void
     {
-        $stats = ['total_vectors' => 500];
-        $this->vectorizationService->method('getVectorStats')->willReturn($stats);
-
-        $result = $this->controller->getVectorStats();
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertTrue($result->getData()['success']);
-        $this->assertEquals($stats, $result->getData()['stats']);
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
     }
 
     public function testGetVectorStatsException(): void
     {
-        $this->vectorizationService->method('getVectorStats')
-            ->willThrowException(new \Exception('Failed'));
-
-        $result = $this->controller->getVectorStats();
-
-        $this->assertEquals(500, $result->getStatus());
-        $this->assertFalse($result->getData()['success']);
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
     }
 
     // =========================================================================

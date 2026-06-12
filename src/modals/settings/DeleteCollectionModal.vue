@@ -1,15 +1,19 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcModal
 		v-if="show"
-		name="Delete SOLR Collection"
+		:name="t('openregister', 'Delete SOLR Collection')"
 		:can-close="!deleting"
 		@close="$emit('close')">
 		<div class="delete-collection-modal">
 			<!-- Loading State -->
 			<div v-if="deleting" class="loading-section">
 				<NcLoadingIcon :size="40" />
-				<h3>Deleting SOLR Collection...</h3>
-				<p>Please wait while we permanently delete the SOLR collection. This may take a few moments.</p>
+				<h3>{{ t('openregister', 'Deleting SOLR Collection...') }}</h3>
+				<p>{{ t('openregister', 'Please wait while we permanently delete the SOLR collection. This may take a few moments.') }}</p>
 			</div>
 
 			<!-- Confirmation State -->
@@ -65,13 +69,13 @@
 
 					<div class="confirmation-input">
 						<label for="confirmationText">
-							<strong>Type "DELETE COLLECTION" to confirm:</strong>
+							<strong>{{ t('openregister', 'Type "DELETE COLLECTION" to confirm:') }}</strong>
 						</label>
 						<input
 							id="confirmationText"
 							v-model="confirmationText"
 							type="text"
-							placeholder="DELETE COLLECTION"
+							:placeholder="t('openregister', 'DELETE COLLECTION')"
 							class="confirmation-field"
 							:class="{ 'valid': isConfirmationValid }"
 							@keyup.enter="isConfirmationValid && handleConfirm()">
@@ -132,7 +136,7 @@
 				<NcButton
 					v-if="!deleting && !completed"
 					@click="$emit('close')">
-					Cancel
+					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!deleting && !completed"
@@ -142,12 +146,12 @@
 					<template #icon>
 						<Delete :size="20" />
 					</template>
-					Delete Collection
+					{{ t('openregister', 'Delete Collection') }}
 				</NcButton>
 				<NcButton
 					v-if="completed"
 					@click="$emit('close')">
-					Close
+					{{ t('openregister', 'Close') }}
 				</NcButton>
 				<NcButton
 					v-if="completed && !results.success"
@@ -156,7 +160,7 @@
 					<template #icon>
 						<Refresh :size="20" />
 					</template>
-					Retry
+					{{ t('openregister', 'Retry') }}
 				</NcButton>
 			</div>
 		</div>
@@ -207,6 +211,9 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @spec exclude Watcher resetting modal state when the show prop opens; UI reactivity plumbing.
+		 */
 		show(newValue) {
 			if (newValue) {
 				// Reset state when modal is opened
@@ -219,6 +226,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async handleConfirm() {
 			if (!this.isConfirmationValid) {
 				return
@@ -228,19 +238,17 @@ export default {
 
 			try {
 				const url = generateUrl('/apps/openregister/api/solr/collection/delete')
-				console.info('Deleting SOLR collection via:', url)
 
 				const response = await axios.delete(url)
-				console.info('Delete collection response:', response.data)
 
 				this.results = response.data
 				this.completed = true
 
 				if (response.data.success) {
-					showSuccess('SOLR collection deleted successfully')
+					showSuccess(t('openregister', 'SOLR collection deleted successfully'))
 					this.$emit('deleted', response.data)
 				} else {
-					showError('Failed to delete SOLR collection: ' + response.data.message)
+					showError(t('openregister', 'Failed to delete SOLR collection: {error}', { error: response.data.message }))
 				}
 			} catch (error) {
 				console.error('Delete collection failed:', error)
@@ -253,12 +261,15 @@ export default {
 				}
 				this.completed = true
 
-				showError('Failed to delete SOLR collection: ' + this.results.message)
+				showError(t('openregister', 'Failed to delete SOLR collection: {error}', { error: this.results.message }))
 			} finally {
 				this.deleting = false
 			}
 		},
 
+		/**
+		 * @spec exclude Resets the modal to the confirmation step after a failed attempt; UI plumbing.
+		 */
 		handleRetry() {
 			// Reset to confirmation state for retry
 			this.completed = false

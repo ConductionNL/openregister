@@ -5,6 +5,9 @@
  *
  * Service class for handling audit trail logs in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -136,6 +139,8 @@ class LogService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
      */
     public function getLogs(string $register, string $schema, string $id, array $config=[]): array
     {
@@ -203,6 +208,8 @@ class LogService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      *
      * @psalm-return int<0, max>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
      */
     public function count(string $register, string $schema, string $id): int
     {
@@ -258,6 +265,8 @@ class LogService
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail entries
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+     *
+     * @spec exclude Thin delegation to AuditTrailMapper::findAll with default pagination/sort; no business logic.
      */
     public function getAllLogs(array $config=[]): array
     {
@@ -278,6 +287,8 @@ class LogService
      * @return int Number of audit trail entries
      *
      * @psalm-return int<0, max>
+     *
+     * @spec exclude Thin delegation to AuditTrailMapper::findAll + count(); no business logic.
      */
     public function countAllLogs(array $filters=[]): int
     {
@@ -316,6 +327,8 @@ class LogService
      * @throws \InvalidArgumentException If unsupported format is specified
      *
      * @psalm-return array{content: bool|string, filename: string, contentType: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
      */
     public function exportLogs(string $format, array $config=[]): array
     {
@@ -352,6 +365,8 @@ class LogService
      * @return true True if deletion was successful
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If audit trail not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
      */
     public function deleteLog(int $id): bool
     {
@@ -379,6 +394,8 @@ class LogService
      * @throws \Exception If mass deletion fails
      *
      * @psalm-return array{deleted: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
      */
     public function deleteLogs(array $config=[]): array
     {

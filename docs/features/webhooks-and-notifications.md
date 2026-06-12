@@ -109,32 +109,142 @@ OpenRegister integrates with Nextcloud's `INotificationManager` for user-facing 
 
 | Channel | Description |
 |---------|-------------|
-| In-app | Nextcloud notification bell (via `INotificationManager`) |
-| Webhook | Delegates to existing webhook delivery pipeline |
-| Email | Via Nextcloud mail system (being replaced by n8n) |
+| `nc-notification` | Nextcloud notification bell (via `INotificationManager`) |
+| `email` | Via `IMailer` (being replaced by n8n) |
+| `activity` | Activity stream entry per recipient |
+| `webhook` | Inline POST per dispatch; with `webhook.persistent: true` an auto-managed `Webhook` entity routes through the standard retry / HMAC / dead-letter pipeline |
+| `talk` | Posts a chat message to the configured Spreed room (one-shot per dispatch, recipients are not @-mentioned) |
 
 ### Notification Rules
 
-Notification rules are configured per schema:
+Rules live on the schema under `configuration['x-openregister-notifications']`. Each entry has `trigger`, `recipients`, `channels`, and a `subject` template (supports `{{prop}}` interpolation).
+
+#### Triggers
+
+| `trigger.type` | Fires when |
+|----------------|-----------|
+| `created` | Object created. |
+| `updated` | Object updated. |
+| `transition` | Object transitioned via the lifecycle state machine. Optional `trigger.action` filters to a specific action. |
+| `scheduled` | Periodic. Requires `trigger.intervalSec >= 60`. The 60s `ScheduledNotificationJob` iterates the schema, optionally narrowed by `trigger.filter` (flat equality, relative-date and inequality operators — see below), and dispatches **at most once per object per dedup fingerprint** until the watched fields change (see *Scheduled trigger filters & per-object dedup* below). |
+| `threshold` | Aggregation crossed a threshold. Requires `trigger.aggregation` (declared on the same schema), `trigger.op` ∈ `[gt, gte, lt, lte, eq, ne]`, and `trigger.value`. `AggregationThresholdListener` re-runs the aggregation on object-write events and dispatches once per below→above transition. |
+
+#### Recipient kinds
+
+| `kind` | Resolution |
+|--------|------------|
+| `users` | Literal list (`recipient.users: [uid, …]`). |
+| `field` | Reads `recipient.field` from the object data, treats the value as a uid. |
+| `groups` | Members of `recipient.groups`. |
+| `relation` | Resolves a typed `x-openregister-relations` field; reads either a uid string, an array of uids, or an array of objects with `userId`. |
+| `object-acl` | ACL holders of the object for the configured `recipient.permission` ∈ `[read, manage]`. |
+| `expression` | Arbitrary resolver class (DI tag in `recipient.resolver`). Must implement `RecipientResolverInterface::resolve(ObjectEntity $object, array $context): string[]`. |
+
+#### Example
 
 ```json
 {
-  "notifications": [
-    {
-      "trigger": "object.created",
-      "recipient": "$owner",
-      "subject": "Nieuwe melding aangemaakt",
-      "template": "melding-aangemaakt"
+  "x-openregister-notifications": {
+    "meetingReminderDaily": {
+      "trigger": {"type": "scheduled", "intervalSec": 86400, "filter": {"lifecycle": "scheduled"}},
+      "recipients": [{"kind": "field", "field": "chair"}],
+      "channels": ["nc-notification", "email"],
+      "subject": "Reminder: {{title}} starts soon"
     },
-    {
-      "trigger": "object.status_changed",
-      "condition": { "field": "status", "value": "afgehandeld" },
-      "recipient": "$owner",
-      "subject": "Uw melding is afgehandeld"
+    "tooManyOverdue": {
+      "trigger": {"type": "threshold", "aggregation": "totalOverdue", "op": "gt", "value": 10},
+      "recipients": [{"kind": "groups", "groups": ["admin"]}],
+      "channels": ["nc-notification", "talk"],
+      "talk": {"token": "abc123def"},
+      "subject": "Action items overdue: {{value}}"
+    },
+    "meetingClosed": {
+      "trigger": {"type": "transition", "action": "close"},
+      "recipients": [{"kind": "object-acl", "permission": "manage"}],
+      "channels": ["webhook"],
+      "webhook": {
+        "persistent": true,
+        "url": "https://example.com/hooks/closed",
+        "events": ["ObjectTransitionedEvent"],
+        "secret": "..."
+      },
+      "subject": "Meeting closed"
     }
-  ]
+  }
 }
 ```
+
+#### Scheduled trigger filters & per-object dedup
+
+The `scheduled` trigger's `filter` is a flat `field => spec` map ANDed together. Each entry accepts either a **scalar** (strict equality, v1 behaviour) or an **operator object**:
+
+| Operator | Value form | Meaning |
+|----------|------------|---------|
+| `equals` | scalar | Strict equality. Same as the scalar shorthand. |
+| `notEquals` | scalar | Strict inequality. A missing/`null` field satisfies `notEquals` for any non-null value. |
+| `withinNext` | ISO-8601 duration (e.g. `PT24H`, `P7D`) | Field is a date or date-time in the half-open window `(now, now + duration]`. |
+| `olderThan` | ISO-8601 duration | Field is a date or date-time strictly before `now − duration`. |
+
+Relative-date operators **fail closed**: unparsable values do not match, and the engine logs at debug only. All entries must hold for the object to match (AND semantics). The annotation validator rejects unknown operators, missing values, and malformed durations with HTTP 422.
+
+**Per-object dedup.** A scheduled rule dispatches at most once per `(schema, rule key, object, watched-field fingerprint)`. The fingerprint is a SHA-1 over the object's current values of the rule's **watched fields**:
+
+- By default, the watched fields are the filter fields that use a relative-date operator (`withinNext` / `olderThan`).
+- Override with `trigger.dedupeFields: ["field1", "field2", …]` — a non-empty array of field names. Validated at save time on the same 422 contract as the operator grammar.
+- When there are neither relative-date operators nor `dedupeFields`, the fingerprint is constant — the rule fires exactly once per object until pruned.
+
+Dedup state lives in `oc_openregister_notification_dedupe` (durable across cache flushes and worker restarts) and is pruned automatically when:
+
+- the object is deleted (`ObjectDeletedEvent` → `NotificationDedupePruneListener`);
+- a rule key is removed/renamed in the schema annotation (`SchemaCreatedEvent`/`SchemaUpdatedEvent` → `NotificationDedupeAnnotationSyncListener`);
+- a state row has not been re-evaluated for `notification_dedupe_retention_days` (default 90), reclaimed by the retention sweep that runs inside the scheduled job.
+
+The per-rule `intervalSec` throttle is unchanged: it bounds **scan frequency**, not delivery count.
+
+##### Worked example — `taskDueSoon`
+
+```json
+{
+  "x-openregister-notifications": {
+    "taskDueSoon": {
+      "trigger": {
+        "type": "scheduled",
+        "intervalSec": 3600,
+        "filter": {
+          "dueDate": {"operator": "withinNext", "value": "PT24H"},
+          "status":  {"operator": "notEquals",  "value": "done"}
+        }
+      },
+      "recipients": [{"kind": "field", "field": "assignee"}],
+      "channels":   ["nc-notification", "email"],
+      "subject":    "Task '{{title}}' is due within 24h"
+    }
+  }
+}
+```
+
+- The job re-evaluates every hour. Tasks whose `dueDate` is within the next 24h **and** `status` is anything other than `done` match.
+- The watched-field set is `["dueDate"]` (the only relative-date field). Each matching task dispatches exactly once for a given `dueDate`. Reschedule a task → new fingerprint → exactly one new reminder. Mark it `done` → no more matches; sweep eventually reclaims the dedup row.
+- To re-arm whenever the assignee changes too, add `"dedupeFields": ["dueDate", "assignee"]` to the `trigger`.
+
+The `updated` trigger's field-change `only_if_changed` filter — documented earlier in this page — is independent of scheduled dedup; both pipelines stay decoupled.
+
+#### Rendering
+
+In-app subjects are rendered by `AnnotationNotifier` (`object_created` / `object_updated` / `object_transitioned`), localised nl/en, with a primary action linking to the object detail view. A schema's per-locale `subject` wins; otherwise a canonical localised string is used. `Notifier` keeps `configuration_update_available` — the two notifiers are mutually exclusive by subject. Push needs no extra code: `notify_push` auto-intercepts the same `INotificationManager::notify()` call.
+
+### User Notification Preferences
+
+Notification **rules** live ONLY in the schema annotation (no rule table) — the dispatcher evaluates them from the already-loaded schema at dispatch time. Per-user **preferences** are stored as **override-only** values in Nextcloud per-user app config under the `openregister` app, keyed `notification_pref/<schema>/<notification>`. An override only flips the schema-declared default (on/off, optionally narrowing channels) for one `(schema, notification)` pair; when a user has no override the schema default applies. This gives a **zero-migration** property: adding a schema — or a notification to an existing schema — works immediately with no per-user backfill.
+
+Before delivering the in-app/push channel, the dispatcher resolves `schema-default ⊕ user-override` **per recipient** and skips recipients whose effective value is off (one user's override never affects another's delivery).
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/notification-preferences` | Effective notifications for the current user (every notification their accessible schemas declare, merged with their overrides, each tagged `schema-default` or `user-override`). |
+| `PUT /api/notification-preferences` | Record (`{schema, notification, enabled, channels?}`) or clear (`{schema, notification, reset: true}`) a single override for the current user only. |
+
+> The earlier per-`(register, schema)` `NotificationSubscription` table + controller are **deprecated**; existing rows are migrated to user-config overrides by a one-shot repair step and the table is scheduled for removal.
 
 ### VNG Notificaties API Compliance
 

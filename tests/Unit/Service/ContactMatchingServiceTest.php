@@ -57,6 +57,16 @@ class ContactMatchingServiceTest extends TestCase
             ->with('openregister_contacts')
             ->willReturn($this->cache);
 
+        // The service short-circuits matchByEmail/Name/Organization
+        // unless at least one schema declares `linkedTypes: ["contact"]`
+        // (a perf gate added after these tests were written). Stub
+        // findAll to return a Schema mock whose getLinkedTypes()
+        // returns ['contact'] so the searchAndFilter path runs.
+        $contactLinkedSchema = $this->createMock(Schema::class);
+        $contactLinkedSchema->method('getLinkedTypes')->willReturn(['contact']);
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$contactLinkedSchema]);
+
         $this->service = new ContactMatchingService(
             $this->objectService,
             $this->schemaMapper,

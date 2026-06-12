@@ -5,11 +5,11 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editSource'"
-		:name="sourceStore.sourceItem?.id ? 'Edit Source' : 'Add Source'"
+		:name="sourceStore.sourceItem?.id ? t('openregister', 'Edit Source') : t('openregister', 'Add Source')"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Source successfully updated</p>
+			<p>{{ t('openregister', 'Source successfully updated') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -17,17 +17,17 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
-				label="Title *"
+				:label="t('openregister', 'Title *')"
 				:value.sync="sourceItem.title" />
 			<NcTextArea :disabled="loading"
-				label="Description"
+				:label="t('openregister', 'Description')"
 				:value.sync="sourceItem.description" />
 			<NcTextField :disabled="loading"
-				label="Database URL"
+				:label="t('openregister', 'Database URL')"
 				:value.sync="sourceItem.databaseUrl" />
 			<NcSelect v-bind="typeOptions"
 				v-model="typeOptions.value"
-				input-label="Type"
+				:input-label="t('openregister', 'Type')"
 				:disabled="loading" />
 		</div>
 
@@ -36,7 +36,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Close' : 'Cancel' }}
+				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !sourceItem.title"
@@ -47,7 +47,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<ContentSaveOutline v-if="!loading && sourceStore.sourceItem?.id" :size="20" />
 					<Plus v-if="!loading && !sourceStore.sourceItem?.id" :size="20" />
 				</template>
-				{{ sourceStore.sourceItem?.id ? 'Save' : 'Create' }}
+				{{ sourceStore.sourceItem?.id ? t('openregister', 'Save') : t('openregister', 'Create') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -108,6 +108,9 @@ export default {
 	mounted() {
 		this.initializeSourceItem()
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — initializes the source form once when the modal opens.
+	 */
 	updated() {
 		if (navigationStore.modal === 'editSource' && !this.hasUpdated) {
 			this.initializeSourceItem()
@@ -115,6 +118,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		initializeSourceItem() {
 			if (sourceStore.sourceItem?.id) {
 				this.sourceItem = {
@@ -125,6 +131,9 @@ export default {
 				this.typeOptions.value = this.typeOptions.options.find(option => option.id === this.sourceItem.type)
 			}
 		},
+		/**
+		 * @spec exclude Modal close plumbing — resets the source form and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -141,6 +150,9 @@ export default {
 			// reset typeOptions to the internal option
 			this.typeOptions.value = this.typeOptions.options.find(option => option.id === 'internal')
 		},
+		/**
+		 * @spec exclude Modal save plumbing — delegates source persistence to sourceStore.saveSource.
+		 */
 		async editSource() {
 			this.loading = true
 

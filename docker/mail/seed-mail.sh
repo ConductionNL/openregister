@@ -291,6 +291,60 @@ Conduction B.V." \
     "coordinator@test.local"
 
 echo ""
+echo "--- Email with attachments (for drag-drop demo) ---"
+
+# This email has 3 real attachments (2 PDFs + 1 PNG). Used to demo dragging
+# attachments from the Mail app onto linked OpenRegister cases.
+python3 - <<PYEOF
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
+
+msg = MIMEMultipart()
+msg['From'] = 'burger@test.local'
+msg['To'] = 'behandelaar@test.local'
+msg['Subject'] = 'Bijlagen bij aanvraag omgevingsvergunning - ZK-2026-0142 (dakkapel Kerkstraat 42)'
+msg['Date'] = 'Wed, 19 Mar 2026 10:00:00 +0100'
+msg['Message-ID'] = '<attach-0142@test.local>'
+
+body = """Geachte heer/mevrouw,
+
+In aanvulling op mijn eerdere aanvraag voor een omgevingsvergunning (zaaknummer ZK-2026-0142) stuur ik u hierbij de aanvullende stukken:
+
+- Bouwtekening dakkapel (PDF)
+- Situatieschets perceel (PDF)
+- Foto bestaande situatie (PNG)
+
+Met vriendelijke groet,
+Jan de Vries
+Kerkstraat 42, 5038 AB Tilburg
+"""
+msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+for (name, payload) in [
+    ('bouwtekening-dakkapel.pdf', b'%PDF-1.4\nFake bouwtekening for demo\n'),
+    ('situatieschets.pdf', b'%PDF-1.4\nFake situatieschets\n'),
+]:
+    att = MIMEApplication(payload, _subtype='pdf')
+    att.add_header('Content-Disposition', 'attachment', filename=name)
+    msg.attach(att)
+
+png_bytes = bytes.fromhex('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154785e63f8ffff3f000005fe02fea7dfd2a30000000049454e44ae426082')
+att = MIMEBase('image', 'png')
+att.set_payload(png_bytes)
+encoders.encode_base64(att)
+att.add_header('Content-Disposition', 'attachment', filename='foto-bestaand.png')
+msg.attach(att)
+
+with smtplib.SMTP('$SMTP_HOST', $SMTP_PORT) as s:
+    s.sendmail(msg['From'], [msg['To']], msg.as_string())
+print('  Sent: Bijlagen (3 files) -> behandelaar@test.local')
+PYEOF
+
+echo ""
 echo "=== Mail seeding complete ==="
 echo ""
 echo "Accounts created (login = email address, password = email address):"

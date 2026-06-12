@@ -2875,4 +2875,108 @@ class OasServiceTest extends TestCase
         $this->assertArrayHasKey('components', $result);
         $this->assertSame('3.1.0', $result['openapi']);
     }
+
+    // ========================================================================
+    // applyRbacToOperation: per-operation `security` block emission
+    //
+    // The rbac-scopes spec (OAS Scope Generation from RBAC Configuration
+    // requirement) mandates that every RBAC-protected operation carries a
+    // machine-readable `security` block enumerating the oauth2 scopes alongside
+    // basicAuth as fallback. These tests pin that contract.
+    // ========================================================================
+
+    public function testApplyRbacToOperationEmitsOauth2SecurityBlock(): void
+    {
+        $operation = [
+            'description' => 'List items',
+            'responses'   => [],
+        ];
+
+        $this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['behandelaars', 'redacteuren']]);
+
+        $this->assertArrayHasKey('security', $operation);
+        $this->assertCount(
+            2,
+            $operation['security'],
+            'security MUST contain two alternatives: oauth2 and basicAuth (OR semantics)'
+        );
+
+        $this->assertArrayHasKey('oauth2', $operation['security'][0]);
+        $oauth2Scopes = $operation['security'][0]['oauth2'];
+        $this->assertContains('admin', $oauth2Scopes, 'admin MUST always be included');
+        $this->assertContains('behandelaars', $oauth2Scopes);
+        $this->assertContains('redacteuren', $oauth2Scopes);
+
+        $this->assertArrayHasKey('basicAuth', $operation['security'][1]);
+        $this->assertSame([], $operation['security'][1]['basicAuth']);
+    }
+
+    public function testApplyRbacToOperationSecurityIncludesAdminWhenGroupsEmpty(): void
+    {
+        $operation = [
+            'description' => 'Get item',
+            'responses'   => [],
+        ];
+
+        $this->invokePrivateMethod('applyRbacToOperation', [&$operation, []]);
+
+        $this->assertSame(['admin'], $operation['security'][0]['oauth2']);
+        $this->assertSame([], $operation['security'][1]['basicAuth']);
+    }
+
+    public function testApplyRbacToOperationSecurityDeduplicatesAdmin(): void
+    {
+        $operation = [
+            'description' => 'Update item',
+            'responses'   => [],
+        ];
+
+        $this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['admin', 'admin', 'redacteuren']]);
+
+        $oauth2Scopes  = $operation['security'][0]['oauth2'];
+        $adminCount    = count(array_filter($oauth2Scopes, static fn(string $g): bool => $g === 'admin'));
+
+        $this->assertSame(1, $adminCount, 'admin MUST appear exactly once in the oauth2 scope list');
+        $this->assertContains('redacteuren', $oauth2Scopes);
+    }
+
+    public function testApplyRbacToOperationSecurityAdminFirst(): void
+    {
+        $operation = [
+            'description' => 'Delete item',
+            'responses'   => [],
+        ];
+
+        $this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['behandelaars']]);
+
+        $this->assertSame(
+            'admin',
+            $operation['security'][0]['oauth2'][0],
+            'admin MUST be first in the oauth2 scope list (consistent with description rendering)'
+        );
+        $this->assertSame('behandelaars', $operation['security'][0]['oauth2'][1]);
+    }
+
+    public function testApplyRbacToOperationDoesNotMutateUnrelatedKeys(): void
+    {
+        $operation = [
+            'description' => 'Get item',
+            'responses'   => ['200' => ['description' => 'OK']],
+            'parameters'  => [['name' => 'id', 'in' => 'path']],
+            'tags'        => ['Items'],
+        ];
+
+        $this->invokePrivateMethod('applyRbacToOperation', [&$operation, ['viewers']]);
+
+        // Existing 200 response is preserved.
+        $this->assertArrayHasKey('200', $operation['responses']);
+        $this->assertArrayHasKey('403', $operation['responses']);
+
+        // parameters and tags untouched.
+        $this->assertSame([['name' => 'id', 'in' => 'path']], $operation['parameters']);
+        $this->assertSame(['Items'], $operation['tags']);
+
+        // security freshly added.
+        $this->assertArrayHasKey('security', $operation);
+    }
 }

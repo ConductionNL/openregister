@@ -1,0 +1,103 @@
+{
+	"info": {
+		"_postman_id": "or-error-matrix-2026-05-02",
+		"name": "OpenRegister HTTP Error Matrix",
+		"description": "Exercises canonical HTTP error codes (404/422) against representative OR endpoints. Closes api-test-coverage item: Error response testing for all HTTP error codes. The 401/403/409/500 tests live in the auth-matrix and locking collections; this collection focuses on the not-found + validation paths.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{username}}", "type": "string" },
+			{ "key": "password", "value": "{{password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost", "type": "string" },
+		{ "key": "username", "value": "admin", "type": "string" },
+		{ "key": "password", "value": "admin", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "404 — Not Found",
+			"item": [
+				{
+					"name": "GET non-existent register → 404",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/__no_such_register__/__no_such_schema__", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","__no_such_register__","__no_such_schema__"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('non-existent register returns 404', () => pm.response.to.have.status(404));",
+									"pm.test('error body has a message field', () => {",
+									"  const body = pm.response.json();",
+									"  pm.expect(body, 'error body').to.satisfy(b => 'message' in b || 'error' in b || 'detail' in b || 'title' in b);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "422 — geo filter validation",
+			"item": [
+				{
+					"name": "GET listing with malformed bbox → graceful error envelope",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/1/1?geo.bbox=foo,bar", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","1","1"], "query": [ { "key": "geo.bbox", "value": "foo,bar" } ] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('malformed bbox does not 5xx', () => {",
+									"  pm.expect(pm.response.code).to.be.below(500);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "POST /geo-search with missing geometry → 422",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/1/1/geo-search", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","1","1","geo-search"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('empty geo-search body is rejected', () => {",
+									"  pm.expect([400, 422]).to.include(pm.response.code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

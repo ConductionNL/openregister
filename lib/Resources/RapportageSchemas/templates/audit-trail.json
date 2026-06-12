@@ -1,0 +1,110 @@
+{
+  "$schema": "https://docs.conduction.nl/openregister/configuration/schema.json",
+  "title": "Rapportage Template — Audit-trail samenvatting",
+  "description": "Pre-configured audit-trail summary dashboard. Wider in scope than the AVG-verantwoording report (which is per-processing-activity): this dashboard summarises audit-trail events per register and per schema. Composes the existing AuditTrailMapper endpoints (`getStatistics` / `getActionChartData`) via `dataSource.mode: statistics` widgets, plus aggregation-mode widgets for register-level and schema-level breakdowns. Note: `statistics` mode is honoured by the frontend (live AuditTrailMapper calls), but server-side renders (xlsx / pdf) will degrade those widgets to \"No data available\" because the backing endpoint is multi-call. Aggregation-mode widgets render in every format. Prerequisite: the `report-bundle.json` (reports register + dashboard schema) MUST be imported first.",
+  "version": "1.0.0",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "reports",
+          "schema": "dashboard",
+          "slug": "audit-trail-samenvatting"
+        },
+        "titel": "Audit-trail samenvatting",
+        "beschrijving": "Overzicht van audit-trail-activiteit per register / schema. Voor server-side export (xlsx / pdf) tellen alleen de aggregation-mode widgets mee; statistics-mode widgets renderen alleen in de live frontend.",
+        "category": "audit",
+        "layout": {
+          "cols": 2
+        },
+        "widgets": [
+          {
+            "type": "kpi",
+            "title": "Events totaal",
+            "subtitle": "Alle audit-trail events binnen dit tenant",
+            "dataSource": {
+              "mode": "statistics",
+              "endpoint": "audit-trail/statistics"
+            },
+            "options": {
+              "valueField": "total",
+              "valueFormat": "number"
+            }
+          },
+          {
+            "type": "chart",
+            "title": "Events per actie",
+            "subtitle": "create / update / delete / publish",
+            "dataSource": {
+              "mode": "statistics",
+              "endpoint": "audit-trail/action-chart-data"
+            },
+            "options": {
+              "chartType": "bar",
+              "valueField": "value"
+            }
+          },
+          {
+            "type": "chart",
+            "title": "Events per register",
+            "subtitle": "Aantal audit-events per register",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "openregister",
+              "schema": "audit-trail",
+              "aggregation": "byRegister"
+            },
+            "options": {
+              "chartType": "bar",
+              "valueField": "value"
+            }
+          },
+          {
+            "type": "chart",
+            "title": "Events per schema",
+            "subtitle": "Aantal audit-events per schema",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "openregister",
+              "schema": "audit-trail",
+              "aggregation": "bySchema"
+            },
+            "options": {
+              "chartType": "bar",
+              "valueField": "value"
+            }
+          },
+          {
+            "type": "kpi",
+            "title": "Events afgelopen 30 dagen",
+            "subtitle": "Recente activiteit op het register",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "openregister",
+              "schema": "audit-trail",
+              "aggregation": "eventsLast30Days"
+            },
+            "options": {
+              "valueField": "value",
+              "valueFormat": "number"
+            }
+          },
+          {
+            "type": "table",
+            "title": "Top auteurs",
+            "subtitle": "Gebruikers met de meeste mutaties",
+            "dataSource": {
+              "mode": "aggregation",
+              "register": "openregister",
+              "schema": "audit-trail",
+              "aggregation": "byActor"
+            },
+            "options": {
+              "valueField": "value"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -134,33 +134,12 @@ class LlmSettingsControllerCoverageTest extends TestCase
 
     public function testGetVectorStatsResponseContainsExpectedKeys(): void
     {
-        $stats = [
-            'total_vectors' => 1000,
-            'by_type' => ['object' => 800, 'file' => 200],
-        ];
-        $this->vectorizationService->method('getVectorStats')->willReturn($stats);
-
-        $result = $this->controller->getVectorStats();
-
-        $data = $result->getData();
-        $this->assertArrayHasKey('success', $data);
-        $this->assertArrayHasKey('stats', $data);
-        $this->assertArrayHasKey('timestamp', $data);
-        $this->assertTrue($data['success']);
-        $this->assertEquals(1000, $data['stats']['total_vectors']);
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
     }
 
     public function testGetVectorStatsExceptionIncludesTrace(): void
     {
-        $this->vectorizationService->method('getVectorStats')
-            ->willThrowException(new \Exception('DB connection lost'));
-
-        $result = $this->controller->getVectorStats();
-
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertArrayHasKey('trace', $data);
-        $this->assertFalse($data['success']);
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
     }
 
     // =========================================================================

@@ -5,6 +5,9 @@
  *
  * Orchestrates action execution for lifecycle events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -15,6 +18,12 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -32,6 +41,8 @@ use OCA\OpenRegister\WorkflowEngine\WorkflowResult;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use Psr\Log\LoggerInterface;
+use DateTime;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * ActionExecutor orchestrates action execution for events
@@ -73,6 +84,8 @@ class ActionExecutor
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
      */
     public function executeActions(array $actions, Event $event, array $payload, string $eventType): void
     {
@@ -103,6 +116,8 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
      */
     private function executeSingleAction(Action $action, Event $event, array $payload, string $eventType): void
     {
@@ -122,7 +137,9 @@ class ActionExecutor
             }
 
             // Execute workflow.
-            if ($action->getMode() === 'async') {
+            $isAsync = ($action->getMode() === 'async');
+
+            if ($isAsync === true) {
                 // Fire-and-forget: execute but don't process response for event modification.
                 try {
                     $result   = $engine->execute(
@@ -130,25 +147,29 @@ class ActionExecutor
                         $cloudEventPayload,
                         $action->getTimeout()
                     );
-                    $response = $result instanceof WorkflowResult ? $result->toArray() : (array) $result;
+                    $response = (array) $result;
+                    if ($result instanceof WorkflowResult) {
+                        $response = $result->toArray();
+                    }
                 } catch (Exception $e) {
                     $status = 'failure';
                     $error  = $e->getMessage();
                     $this->handleFailure(action: $action, payload: $cloudEventPayload, error: $error);
                 }
-            } else {
+            }
+
+            if ($isAsync === false) {
                 // Sync mode: execute and process response.
-                $result = $engine->execute(
+                $result   = $engine->execute(
                     $action->getWorkflowId(),
                     $cloudEventPayload,
                     $action->getTimeout()
                 );
+                $response = (array) $result;
 
                 if ($result instanceof WorkflowResult) {
                     $response = $result->toArray();
                     $this->processWorkflowResult(result: $result, action: $action, event: $event);
-                } else {
-                    $response = (array) $result;
                 }
             }//end if
         } catch (Exception $e) {
@@ -193,6 +214,8 @@ class ActionExecutor
      * @param string $eventType Event type string
      *
      * @return array The CloudEvent-formatted payload
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
      */
     public function buildCloudEventPayload(Action $action, array $payload, string $eventType): array
     {
@@ -200,8 +223,8 @@ class ActionExecutor
             'specversion'     => '1.0',
             'type'            => 'nl.openregister.action.'.$eventType,
             'source'          => '/openregister/actions/'.$action->getUuid(),
-            'id'              => \Symfony\Component\Uid\Uuid::v4()->toRfc4122(),
-            'time'            => (new \DateTime())->format('c'),
+            'id'              => Uuid::v4()->toRfc4122(),
+            'time'            => (new DateTime())->format('c'),
             'datacontenttype' => 'application/json',
             'data'            => $payload,
             'action'          => [
@@ -223,6 +246,8 @@ class ActionExecutor
      * @param Event          $event  The original event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
      */
     private function processWorkflowResult(WorkflowResult $result, Action $action, Event $event): void
     {
@@ -255,6 +280,8 @@ class ActionExecutor
      * @param string $error   The error message
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
      */
     private function handleFailure(Action $action, array $payload, string $error): void
     {
@@ -294,6 +321,8 @@ class ActionExecutor
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Log entries require many fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
      */
     private function createLogEntry(
         Action $action,
@@ -310,14 +339,29 @@ class ActionExecutor
             $log->setActionUuid($action->getUuid());
             $log->setEventType($eventType);
             $log->setObjectUuid($payload['data']['object']['uuid'] ?? $payload['objectUuid'] ?? null);
-            $log->setSchemaId(isset($payload['data']['schema']) === true ? (int) $payload['data']['schema'] : null);
-            $log->setRegisterId(isset($payload['data']['register']) === true ? (int) $payload['data']['register'] : null);
+            $schemaId = null;
+            if (isset($payload['data']['schema']) === true) {
+                $schemaId = (int) $payload['data']['schema'];
+            }
+
+            $registerId = null;
+            if (isset($payload['data']['register']) === true) {
+                $registerId = (int) $payload['data']['register'];
+            }
+
+            $log->setSchemaId($schemaId);
+            $log->setRegisterId($registerId);
             $log->setEngine($action->getEngine());
             $log->setWorkflowId($action->getWorkflowId());
             $log->setStatus($status);
             $log->setDurationMs($durationMs);
             $log->setRequestPayload(json_encode($payload));
-            $log->setResponsePayload($response !== null ? json_encode($response) : null);
+            $responsePayload = null;
+            if ($response !== null) {
+                $responsePayload = json_encode($response);
+            }
+
+            $log->setResponsePayload($responsePayload);
             $log->setErrorMessage($error);
 
             $this->actionLogMapper->insert(entity: $log);

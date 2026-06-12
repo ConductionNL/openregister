@@ -5,6 +5,9 @@
  *
  * Transmits SIP packages to e-Depot systems via REST API.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-33
  */
 
 declare(strict_types=1);
@@ -58,8 +61,10 @@ class RestApiTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-33
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-33
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -166,7 +171,7 @@ class RestApiTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function testConnection(array $config): bool
     {
@@ -197,7 +202,7 @@ class RestApiTransport implements TransportInterface
      *
      * @return string The transport name.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getName(): string
     {
@@ -213,7 +218,7 @@ class RestApiTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     private function validateConfig(array $config): void
     {
@@ -229,7 +234,7 @@ class RestApiTransport implements TransportInterface
      *
      * @return array<string,string> The auth headers.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     private function buildAuthHeaders(array $config): array
     {

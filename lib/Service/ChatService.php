@@ -6,6 +6,9 @@
  * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
  * This is a thin facade that orchestrates specialized handlers.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -17,7 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service;
@@ -34,8 +38,8 @@ use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
-use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -58,7 +62,12 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  testChat() declares ($provider, $config, $_testMessage)
+ * matching the public contract expected by callers and the backup implementation; the simplified stub
+ * body doesn't use all three but changing the signature would break callers.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies
+ * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
+ * separate concern extracted per SOLID, and removing any would lose a capability.
  */
 class ChatService
 {
@@ -180,22 +189,29 @@ class ChatService
      * @param array                   $selectedViews  View filters for multitenancy (optional).
      * @param array                   $selectedTools  Tool UUIDs to use (optional).
      * @param array                   $ragSettings    RAG configuration overrides (optional).
-     * @param StreamYieldChannel|null $channel        Streaming channel; null = blocking response.
+     * @param array                   $context        CnAiContext snapshot the frontend sent
+     *                                                (orchestrator §8). Persisted on the
+     *                                                user-authored Message row when non-empty.
+     * @param StreamYieldChannel|null $channel        Streaming channel forwarded to the response
+     *                                                handler so SSE consumers (ChatStreamController)
+     *                                                can interleave `token` / `tool_call` /
+     *                                                `tool_result` frames as the LLM yields. Null
+     *                                                for blocking callers (POST /api/chat/send,
+     *                                                background workers) — behaviour unchanged.
      *
-     * @return array
+     * @return ((array|string)[]|string)[]
      *
      * @throws \Exception If processing fails
      *
-     * @psalm-return array{message: string, sources: list<array>,
-     *     timings: array{context: string, history: string, llm: string, total: string},
-     *     messageId: int|null, messageUuid: string|null}
+     * @psalm-return array{message: string, messageId: string, sources: list<array>,
+     *     timings: array{context: string, history: string, llm: string,
+     *     total: string}}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chat processing involves multiple handler coordination steps
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
-     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
      */
     public function processMessage(
         int $conversationId,
@@ -204,6 +220,7 @@ class ChatService
         array $selectedViews=[],
         array $selectedTools=[],
         array $ragSettings=[],
+        array $context=[],
         ?StreamYieldChannel $channel=null
     ): array {
         $this->logger->info(
@@ -230,17 +247,26 @@ class ChatService
                 $agent = $this->agentMapper->find($conversation->getAgentId());
             }
 
-            // Store user message.
+            // Capture the CnAiContext snapshot under its own name before
+            // the retrieveContext() call below reuses `$context` for the
+            // RAG context object. Without this rename the snapshot would
+            // be silently overwritten and the LLM would never see it.
+            $cnAiContext = $context;
+
+            // Store user message with the CnAiContext snapshot.
             $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_USER,
-                content: $userMessage
+                content: $userMessage,
+                sources: null,
+                context: $cnAiContext
             );
 
             // Check if conversation needs summarization.
             $this->conversationHandler->checkAndSummarize($conversation);
 
-            // Retrieve RAG context.
+            // Retrieve RAG context. Note: `$context` is now the RAG
+            // context shape `{text, sources}`, distinct from `$cnAiContext`.
             $contextStartTime = microtime(true);
             $context          = $this->contextHandler->retrieveContext(
                 query: $userMessage,
@@ -255,7 +281,10 @@ class ChatService
             $messageHistory   = $this->historyHandler->buildMessageHistory($conversationId);
             $historyTime      = microtime(true) - $historyStartTime;
 
-            // Generate LLM response (streaming when channel provided).
+            // Generate LLM response. Forward the CnAiContext snapshot so
+            // the system prompt can include "the user is currently in
+            // {app}" — without it the model would default to generic
+            // platform-wide phrasing and pick the wrong tool family.
             $llmStartTime = microtime(true);
             $aiResponse   = $this->responseHandler->generateResponse(
                 userMessage: $userMessage,
@@ -263,12 +292,16 @@ class ChatService
                 messageHistory: $messageHistory,
                 agent: $agent,
                 selectedTools: $selectedTools,
-                channel: $channel
+                channel: $channel,
+                cnAiContext: $cnAiContext
             );
             $llmTime      = microtime(true) - $llmStartTime;
 
-            // Store AI response with sources.
-            $storedMessage = $this->historyHandler->storeMessage(
+            // Store AI response with sources. Capture the return so we can surface
+            // the persisted assistant message's id to the caller (ChatStreamController
+            // needs it to populate the SSE `final` event's messageId field; the widget
+            // uses it as the Vue render key for the assistant bubble).
+            $assistantStored = $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_ASSISTANT,
                 content: $aiResponse,
@@ -300,16 +333,17 @@ class ChatService
             $totalTime = $contextTime + $historyTime + $llmTime;
 
             return [
-                'message'     => $aiResponse,
-                'sources'     => $context['sources'],
-                'timings'     => [
+                'message'   => $aiResponse,
+                // Surface the persisted assistant message id for SSE consumers
+                // (ChatStreamController + the nc-vue widget render key).
+                'messageId' => (string) ($assistantStored->getId() ?? ''),
+                'sources'   => $context['sources'],
+                'timings'   => [
                     'context' => round($contextTime, 2).'s',
                     'history' => round($historyTime, 3).'s',
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
-                'messageId'   => $storedMessage->getId(),
-                'messageUuid' => $storedMessage->getUuid(),
             ];
         } catch (Exception $e) {
             $this->logger->error(
@@ -332,6 +366,8 @@ class ChatService
      * @param string $firstMessage First user message.
      *
      * @return string Generated title
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -348,6 +384,8 @@ class ChatService
      * @param int    $agentId   Agent ID.
      *
      * @return string Unique title
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
@@ -369,6 +407,9 @@ class ChatService
      * @param string $_testMessage Optional test message to send.
      *
      * @return array Test result with success status, message, and optional error.
+     *
+     * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through
+     *       ResponseGenerationHandler (chat-ai). No standalone contract.
      */
     public function testChat(
         string $provider,

@@ -11,7 +11,10 @@ use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -22,6 +25,8 @@ class AuditTrailControllerTest extends TestCase
     private LogService&MockObject $logService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private AuditHashService&MockObject $auditHashService;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -31,13 +36,25 @@ class AuditTrailControllerTest extends TestCase
         $this->logService       = $this->createMock(LogService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->auditHashService = $this->createMock(AuditHashService::class);
+        $this->userSession      = $this->createMock(IUserSession::class);
+        $this->groupManager     = $this->createMock(IGroupManager::class);
+
+        // Default: an authenticated admin so the requireAdmin() gate on
+        // export()/clearAll() lets the happy-path assertions through. Tests
+        // that exercise non-admin rejection can override these expectations.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
         $this->controller = new AuditTrailController(
             'openregister',
             $this->request,
             $this->logService,
             $this->auditTrailMapper,
-            $this->auditHashService
+            $this->auditHashService,
+            $this->userSession,
+            $this->groupManager
         );
     }
 
@@ -445,40 +462,31 @@ class AuditTrailControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
     }
 
-    public function testDestroyMultipleSuccess(): void
+    public function testDestroyMultipleAlwaysReturns405Immutable(): void
     {
+        // Audit trails are immutable: bulk-delete endpoint must return
+        // 405 regardless of input. Replaces the legacy success/exception
+        // tests that asserted 200/500 — production was changed to enforce
+        // immutability per retrofit-annotate-openregister-2026-04-23 task 8.
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', null, '1,2,3'],
             ]);
 
-        $this->logService->method('deleteLogs')->willReturn([
-            'deleted' => 3,
-            'failed' => 0,
-        ]);
-
         $result = $this->controller->destroyMultiple();
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
+        $this->assertEquals(405, $result->getStatus());
+        $this->assertArrayHasKey('error', $result->getData());
     }
 
     public function testDestroyMultipleException(): void
     {
-        $this->request->method('getParams')->willReturn([]);
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['ids', null, null],
-            ]);
-
-        $this->logService->method('deleteLogs')
-            ->willThrowException(new \Exception('Deletion failed'));
-
-        $result = $this->controller->destroyMultiple();
-
-        $this->assertEquals(500, $result->getStatus());
+        $this->markTestSkipped(
+            'Production destroyMultiple() always returns 405 (audit trails '
+            .'immutable); no exception path remains. Covered by '
+            .'testDestroyMultipleAlwaysReturns405Immutable.'
+        );
     }
 
     public function testClearAllSuccess(): void
@@ -517,20 +525,103 @@ class AuditTrailControllerTest extends TestCase
 
     public function testDestroyMultipleWithArrayIds(): void
     {
+        // Same immutability semantics — array form ids[] also gets 405.
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', null, ['1', '2', '3']],
             ]);
 
-        $this->logService->method('deleteLogs')->willReturn([
-            'deleted' => 3,
-            'failed'  => 0,
-        ]);
-
         $result = $this->controller->destroyMultiple();
 
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertTrue($result->getData()['success']);
+        $this->assertEquals(405, $result->getStatus());
+    }
+
+    // ── Wave-3 C6 admin-only gate (cross-tenant audit-trail leak) ──
+
+    /**
+     * Build a fresh controller with a non-admin user for gate tests.
+     *
+     * The shared `setUp()` wires an admin user so the rest of the suite
+     * exercises the happy path. C6 tests need a non-admin (or anon)
+     * user, so we rebuild the controller with overridden mocks rather
+     * than fight the sticky `willReturn` already wired in setUp().
+     *
+     * @param IUser|null $user The user the session returns; null => anon.
+     * @param bool       $isAdmin Whether $user is in the admin group.
+     */
+    private function makeControllerWithUser(?IUser $user, bool $isAdmin): AuditTrailController
+    {
+        $session     = $this->createMock(IUserSession::class);
+        $groupMgr    = $this->createMock(IGroupManager::class);
+        $session->method('getUser')->willReturn($user);
+        if ($user !== null) {
+            $groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
+        }
+
+        return new AuditTrailController(
+            'openregister',
+            $this->request,
+            $this->logService,
+            $this->auditTrailMapper,
+            $this->auditHashService,
+            $session,
+            $groupMgr
+        );
+    }
+
+    public function testIndexReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->index();
+
+        $this->assertEquals(401, $result->getStatus());
+        $this->assertEquals('Authentication required', $result->getData()['error']);
+    }
+
+    public function testIndexReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->index();
+
+        $this->assertEquals(403, $result->getStatus());
+        $this->assertStringContainsString('admin-only', $result->getData()['error']);
+    }
+
+    public function testShowReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->show(1);
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testShowReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->show(42);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testShowDoesNotInvokeServiceWhenForbidden(): void
+    {
+        // Defence-in-depth check: a non-admin call must short-circuit
+        // before the service is touched (no DB hit, no log read).
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->logService->expects($this->never())->method('getLog');
+
+        $controller->show(42);
     }
 }

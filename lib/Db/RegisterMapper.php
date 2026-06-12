@@ -6,10 +6,13 @@
  * This file contains the class for handling register mapper related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -191,7 +194,6 @@ class RegisterMapper extends QBMapper
      * Includes RBAC and organisation filtering for multi-tenancy.
      *
      * @param int|string $id            The ID of the register to find
-     * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
@@ -200,7 +202,6 @@ class RegisterMapper extends QBMapper
      *
      * @throws \Exception If RBAC permission check fails
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      * @SuppressWarnings(PHPMD.NPathComplexity)       Find operation requires multiple lookup strategies
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -208,22 +209,19 @@ class RegisterMapper extends QBMapper
      */
     public function find(
         string|int $id,
-        ?array $_extend=[],
         ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
+        $rbacFlag = '0';
+        $mtFlag   = '0';
         if ($_rbac === true) {
             $rbacFlag = '1';
-        } else {
-            $rbacFlag = '0';
         }
 
         if ($_multitenancy === true) {
             $mtFlag = '1';
-        } else {
-            $mtFlag = '0';
         }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
@@ -275,7 +273,13 @@ class RegisterMapper extends QBMapper
         $qb->where($orConditions);
 
         // Check if register exists before applying filters (for debugging).
-        $qbBeforeFilter     = clone $qb;
+        // Cap to a single row + deterministic order so duplicate-slug rows from
+        // env churn cannot raise MultipleObjectsReturnedException out of this
+        // debug-only probe (which previously surfaced as a 500 on slug lookups
+        // — e.g. the object lock path). See the deterministic resolution below.
+        $qbBeforeFilter = clone $qb;
+        $qbBeforeFilter->orderBy('id', 'ASC');
+        $qbBeforeFilter->setMaxResults(1);
         $existsBeforeFilter = false;
         try {
             $testResult         = $this->findEntity(query: $qbBeforeFilter);
@@ -294,10 +298,10 @@ class RegisterMapper extends QBMapper
                     ]
                 );
             }
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+        } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
             if (isset($this->logger) === true) {
                 $this->logger->warning(
-                    message: '[RegisterMapper] Register does not exist in database',
+                    message: '[RegisterMapper] Register does not exist (or is duplicated) before filters',
                     context: [
                         'file'       => __FILE__,
                         'line'       => __LINE__,
@@ -315,27 +319,40 @@ class RegisterMapper extends QBMapper
             multiTenancyEnabled: $_multitenancy
         );
 
+        // Deterministic slug/uuid resolution: env churn can leave multiple rows
+        // sharing a slug, which would make findEntity() raise
+        // MultipleObjectsReturnedException → a 500 fleet-wide. Order by id ASC
+        // and cap to a single row so the oldest (lowest-id) register
+        // deterministically wins. The duplicates are still detectable/mergeable
+        // via the `openregister:registers:dedupe` occ command.
+        $qb->orderBy('id', 'ASC');
+        $qb->setMaxResults(1);
+
         // Just return the entity; do not attach stats here.
         try {
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+            $rbacChar = '0';
+            $mtChar   = '0';
             if ($_rbac === true) {
                 $rbacChar = '1';
-            } else {
-                $rbacChar = '0';
             }
 
             if ($_multitenancy === true) {
                 $mtChar = '1';
-            } else {
-                $mtChar = '0';
             }
 
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
-            $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;
-            $this->findCache[strtolower($register->getUuid()).$rbacSuffix] = $register;
+            $this->findCache[(string) $register->getId().$rbacSuffix] = $register;
+
+            // BUG-DB-10: guard against a null uuid before strtolower().
+            $registerUuid = $register->getUuid();
+            if ($registerUuid !== null) {
+                $this->findCache[strtolower($registerUuid).$rbacSuffix] = $register;
+            }
+
             if ($register->getSlug() !== null) {
                 $this->findCache[strtolower($register->getSlug()).$rbacSuffix] = $register;
             }
@@ -361,6 +378,30 @@ class RegisterMapper extends QBMapper
             throw $e;
         }//end try
     }//end find()
+
+    /**
+     * Clear the request-scoped find cache for a specific register
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given register (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $registerId The register ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $registerId): void
+    {
+        // Find every cache key whose value points at this register ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Register && $cached->getId() === $registerId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
 
     /**
      * Finds multiple registers by id
@@ -443,16 +484,14 @@ class RegisterMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Register[]
      *
-     * @psalm-return                                  list<OCA\OpenRegister\Db\Register>
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @psalm-return                                list<OCA\OpenRegister\Db\Register>
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,
@@ -460,7 +499,6 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $_extend=[],
         ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
@@ -657,9 +695,7 @@ class RegisterMapper extends QBMapper
         // Set or update the version.
         if (isset($object['version']) === false) {
             $currentVersion = $register->getVersion() ?? '0.0.0';
-            $version        = explode('.', $currentVersion);
-            $version[2]     = ((int) $version[2] + 1);
-            $register->setVersion(implode('.', $version));
+            $register->setVersion($this->bumpPatchVersion($currentVersion));
         }
 
         $register->hydrate(object: $object);
@@ -671,6 +707,34 @@ class RegisterMapper extends QBMapper
 
         return $register;
     }//end updateFromArray()
+
+    /**
+     * Increment the patch component of a semantic version string.
+     *
+     * BUG-DB-12: the previous naive `explode('.')` + `(int)` bump turned a
+     * pre-release like `1.0.0-beta` into `1.0.1`, silently dropping the
+     * `-beta` suffix. This parser preserves any pre-release/build suffix and
+     * pads missing segments so a bare `1` or `1.2` still bumps cleanly.
+     *
+     * @param string $version The current version string (e.g. `1.0.0-beta`).
+     *
+     * @return string The version with its patch component incremented.
+     */
+    private function bumpPatchVersion(string $version): string
+    {
+        // Capture: major.minor.patch followed by an optional -prerelease/+build suffix.
+        if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) === 1) {
+            $major  = (int) $matches[1];
+            $minor  = (int) ($matches[2] ?? 0);
+            $patch  = (int) ($matches[3] ?? 0);
+            $suffix = $matches[4] ?? '';
+
+            return $major.'.'.$minor.'.'.($patch + 1).$suffix;
+        }
+
+        // Fall back to a safe default when the version is unparsable.
+        return '0.0.1';
+    }//end bumpPatchVersion()
 
     /**
      * Delete a register only if no objects are attached
@@ -733,7 +797,6 @@ class RegisterMapper extends QBMapper
     ): array {
         $register  = $this->find(
             id: $registerId,
-            _extend: [],
             published: $published,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
@@ -771,25 +834,88 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
+        $matches = $this->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+        return ($matches[0] ?? null);
+    }//end getFirstRegisterWithSchema()
+
+    /**
+     * Retrieves the IDs of all registers that include the given schema ID.
+     *
+     * A schema may be referenced by more than one register. Callers that make a
+     * security decision off register-level configuration (e.g. the
+     * inheritFromPublic cascade) must consider every register rather than an
+     * arbitrary first match, so the verdict is deterministic across nodes and
+     * restores. IDs are returned in ascending order for stability.
+     *
+     * @param int $schemaId The ID of the schema to search for.
+     *
+     * @return int[] The IDs of all matching registers (empty when none found).
+     */
+    public function getAllRegisterIdsWithSchema(int $schemaId): array
+    {
+        // Three platforms in production: SQLite (no REGEXP function),
+        // MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
+        // but stores the `schemas` column as `json`, which doesn't
+        // even cast cleanly to text for a LIKE prefilter without an
+        // explicit `::text` cast). The intersection of "portable" and
+        // "works regardless of `schemas` column type" is "fetch every
+        // register row and decode in PHP".
+        //
+        // Registers are O(10s) per install, so the cost is trivial.
+        // The previous MySQL-only REGEXP query (with `[[:<:]]N[[:>:]]`
+        // word-boundary syntax) is replaced wholesale — see #50.
         $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
 
-        // REGEXP: match number with optional whitespace and newlines.
-        $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
+        $candidates = $qb->executeQuery()->fetchAllAssociative();
+        $needle     = (string) $schemaId;
+        $matches    = [];
 
-        $qb->select('id')
-            ->from('openregister_registers')
-            ->where('`schemas` REGEXP :pattern')
-            ->setParameter('pattern', $pattern)
-            ->setMaxResults(1);
-
-        $result = $qb->executeQuery()->fetchOne();
-
-        if ($result !== false) {
-            return (int) $result;
+        foreach ($candidates as $row) {
+            $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
+            foreach ($schemas as $candidate) {
+                if ((string) $candidate === $needle) {
+                    $matches[] = (int) $row['id'];
+                    break;
+                }
+            }
         }
 
-        return null;
-    }//end getFirstRegisterWithSchema()
+        sort($matches);
+
+        return $matches;
+    }//end getAllRegisterIdsWithSchema()
+
+    /**
+     * Decode the persisted `schemas` column into a flat ID list.
+     *
+     * Accepts the column's raw value (typically a JSON array) and
+     * returns the contained schema IDs. Tolerates legacy shapes
+     * (comma-separated string) and unexpected types by returning [].
+     *
+     * @param mixed $raw The raw column value
+     *
+     * @return array<int,int|string>
+     */
+    private function decodeSchemasField(mixed $raw): array
+    {
+        if (is_array($raw) === true) {
+            return $raw;
+        }
+
+        if (is_string($raw) === true && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            // Legacy comma-separated fallback.
+            return array_filter(array_map('trim', explode(',', $raw)));
+        }
+
+        return [];
+    }//end decodeSchemasField()
 
     /**
      * Check if a register has a schema with a specific title

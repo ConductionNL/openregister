@@ -27,7 +27,7 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
-					{{ t('openregister', 'Extract Now') }}
+					{{ t('openregister', 'Extract now') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -130,7 +130,7 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
-					{{ t('openregister', 'Extract Now') }}
+					{{ t('openregister', 'Extract now') }}
 				</NcButton>
 			</div>
 		</div>
@@ -192,6 +192,7 @@ export default {
 		 * Human-readable extraction status label.
 		 *
 		 * @return {string}
+		 * @spec exclude computed status-label display helper, UI plumbing
 		 */
 		statusLabel() {
 			const labels = {
@@ -208,6 +209,7 @@ export default {
 		 * Human-readable risk level label.
 		 *
 		 * @return {string}
+		 * @spec exclude computed risk-label display helper, UI plumbing
 		 */
 		riskLabel() {
 			const labels = {
@@ -224,6 +226,7 @@ export default {
 		 * CSS class for risk level badge.
 		 *
 		 * @return {string}
+		 * @spec exclude computed risk-badge CSS-class display helper, UI plumbing
 		 */
 		riskBadgeClass() {
 			const classes = {
@@ -240,6 +243,7 @@ export default {
 		 * Formatted extraction date.
 		 *
 		 * @return {string}
+		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formattedDate() {
 			if (!this.status.extractedAt) {
@@ -255,6 +259,9 @@ export default {
 
 	watch: {
 		fileId: {
+			/**
+			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.fetchExtractionStatus()
@@ -269,6 +276,7 @@ export default {
 
 		/**
 		 * Fetch extraction status from the API.
+		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
 		 */
 		async fetchExtractionStatus() {
 			this.loading = true
@@ -298,6 +306,7 @@ export default {
 
 		/**
 		 * Trigger text extraction for this file.
+		 * @spec exclude API passthrough triggering extraction + refresh; extraction contract owned by text-extraction capability
 		 */
 		async triggerExtraction() {
 			this.extracting = true

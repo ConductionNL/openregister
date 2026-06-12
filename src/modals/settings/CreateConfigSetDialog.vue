@@ -5,7 +5,7 @@
 		:size="'normal'"
 		@closing="closeDialog">
 		<div class="create-configset-dialog">
-			<p>{{ t('openregister', 'Create a new ConfigSet based on the _default template') }}</p>
+			<p>{{ t('openregister', 'Create a new configset based on the _default template') }}</p>
 
 			<div class="form-group">
 				<label>{{ t('openregister', 'ConfigSet Name') }}*</label>
@@ -16,7 +16,7 @@
 					class="configset-name-input"
 					@keyup.enter="!creating && configSetName && createConfigSet()">
 				<p class="form-hint">
-					{{ t('openregister', 'This will copy the _default ConfigSet with the new name') }}
+					{{ t('openregister', 'This will copy the _default configset with the new name') }}
 				</p>
 			</div>
 
@@ -65,28 +65,19 @@ export default {
 		}
 	},
 
-	watch: {
-		'navigationStore.dialog': {
-			handler(newValue) {
-				console.info('👁️ CreateConfigSetDialog - navigationStore.dialog changed to:', newValue)
-				console.info('👁️ Should show?', newValue === 'createConfigSet')
-			},
-			immediate: true,
-		},
-	},
-
-	mounted() {
-		console.info('✅ CreateConfigSetDialog mounted')
-		console.info('✅ navigationStore.dialog:', navigationStore.dialog)
-	},
-
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.configSetName = ''
 			this.creating = false
 		},
 
+		/**
+		 * @spec exclude Create-button handler posting a new Solr configset to the admin endpoint; platform-admin orchestration plumbing.
+		 */
 		async createConfigSet() {
 			if (!this.configSetName) return
 

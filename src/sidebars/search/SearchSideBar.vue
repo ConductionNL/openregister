@@ -8,8 +8,8 @@
 			:open="navigationStore.sidebarState.search"
 			:active-filters="objectStore.searchParams.filters"
 			:facet-data="objectStore.searchFacets"
-			search-tab-label="Search"
-			search-placeholder="Type to search..."
+			:search-tab-label="t('openregister', 'Search')"
+			:search-placeholder="t('openregister', 'Type to search...')"
 			@update:open="(e) => navigationStore.setSidebarState('search', e)"
 			@search="onSearchInput"
 			@filter-change="onFilterChange"
@@ -119,7 +119,7 @@
 							:input-label="t('openregister', 'Registers')"
 							:multiple="true"
 							:close-on-select="false"
-							placeholder="Select one or more registers"
+							:placeholder="t('openregister', 'Select one or more registers')"
 							@update:model-value="handleRegisterChange">
 							<template #option="{ title, description }">
 								<div class="option-content">
@@ -142,7 +142,7 @@
 							:input-label="t('openregister', 'Schemas')"
 							:multiple="true"
 							:close-on-select="false"
-							placeholder="Select one or more schemas"
+							:placeholder="t('openregister', 'Select one or more schemas')"
 							@update:model-value="handleSchemaChange">
 							<template #option="{ title, description }">
 								<div class="option-content">
@@ -324,7 +324,7 @@
 
 						<div v-else-if="filteredViews.length === 0" class="noViews">
 							<NcNoteCard type="info">
-								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
+								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. create one in the search tab!') }}
 							</NcNoteCard>
 						</div>
 
@@ -499,10 +499,19 @@ export default {
 		}
 	},
 	computed: {
-		/** Search string for CnIndexSidebar; synced to store and used for fetch. */
+		/**
+		 * Search string for CnIndexSidebar; synced to store and used for fetch.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {string} Current search string
+		 */
 		searchValueForSidebar() {
 			return objectStore.searchParams.search || ''
 		},
+		/**
+		 * Build the register dropdown options (multi-select) for the search sidebar.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -519,6 +528,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Build the schema dropdown options (multi-select) for the selected registers.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			// Get all schemas from selected registers
 			if (this.selectedRegisters.length === 0) return { options: [] }
@@ -548,6 +562,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Map saved views into NcSelect options for the view picker.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {Array} View options
+		 */
 		viewOptions() {
 			return viewsStore.getAllViews.map(view => ({
 				value: view.id || view.uuid,
@@ -557,6 +576,11 @@ export default {
 				isPublic: view.isPublic,
 			}))
 		},
+		/**
+		 * Resolve the active saved view into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {object|null} Active view option, or null
+		 */
 		selectedViewValue() {
 			if (!viewsStore.activeView) return null
 			const view = viewsStore.activeView
@@ -566,6 +590,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Filter the saved-view list by search query and sort favorites first.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @return {Array} Filtered, favorite-sorted views
+		 */
 		filteredViews() {
 			// Filter views based on search query
 			let views = viewsStore.getAllViews
@@ -590,20 +619,40 @@ export default {
 			})
 		},
 
+		/**
+		 * Whether a search can run (requires at least one register and one schema).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {boolean}
+		 */
 		canSearch() {
 			// Allow search if at least one register and one schema are selected
 			return this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0
 		},
+		/**
+		 * Whether the current search configuration can be saved as a view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {boolean}
+		 */
 		canSaveView() {
 			// Can save view if we have search configuration
 			return this.canSearch
 		},
+		/**
+		 * Placeholder text for the search input, varying by current term state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {string}
+		 */
 		searchPlaceholder() {
 			return this.searchTerms.length > 0 ? 'Add more search terms...' : 'Type to search...'
 		},
 		hasEnabledFacets() {
 			return Object.values(this.enabledFacets).some(enabled => enabled)
 		},
+		/**
+		 * Flatten the object metadata map into column descriptors for display.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} Metadata column descriptors
+		 */
 		metadataColumns() {
 			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
 				id,
@@ -615,6 +664,7 @@ export default {
 		 *
 		 * Returns an array of objects containing schema info and properties
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @return {Array} Array of schema data with properties
 		 */
 		selectedSchemasWithProperties() {
@@ -641,16 +691,41 @@ export default {
 	watch: {
 		// React to query param changes as single source of truth (only on /tables)
 		'$route.query': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /tables.
+			 */
 			handler() {
 				if (this.$route.path !== '/tables') return
 				this.applyQueryParamsFromRoute()
 			},
 			deep: true,
 		},
+		// Re-apply the query params once the register list arrives. The mount-
+		// time `applyQueryParamsFromRoute()` retry loop (10 × 200ms) is shorter
+		// than the actual `_extend=schemas&stats` register-list response on
+		// busy dev envs (~5s observed), so deep-links with ?register=… stayed
+		// empty and downstream tables never populated. Reacting to the list
+		// transition closes that race without polling. See the e2e investigation
+		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
+		'$root.registerStore.registerList': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
+			 */
+			handler(newList) {
+				if (this.$route.path !== '/tables') return
+				if (Array.isArray(newList) === false || newList.length === 0) return
+				if (this.$route.query.register === undefined) return
+				if (this.selectedRegisters.length > 0) return
+				this.applyQueryParamsFromRoute()
+			},
+		},
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
+			 */
 			handler(newSchema) {
 				if (newSchema) {
 					objectStore.initializeProperties(newSchema)
@@ -663,6 +738,9 @@ export default {
 		},
 		// Watch for selected schemas changes to auto-expand new schemas
 		selectedSchemas: {
+			/**
+			 * @spec exclude Vue watch handler plumbing; auto-expands newly selected schema groups in the UI.
+			 */
 			handler(newSchemas, oldSchemas) {
 				// Auto-expand newly selected schemas
 				if (newSchemas && newSchemas.length > 0) {
@@ -680,6 +758,9 @@ export default {
 		},
 		// Watch for active view changes to sync the name input
 		'viewsStore.activeView': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; mirrors the active view's name into the editable name input.
+			 */
 			handler(newView) {
 				if (newView && newView.name) {
 					this.activeViewName = newView.name
@@ -690,6 +771,9 @@ export default {
 			deep: true,
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; fetches views/lists, applies the default view, and seeds state from the route via already-annotated methods.
+	 */
 	mounted() {
 		// objectStore.initializeColumnFilters()
 		this.registerLoading = true
@@ -733,6 +817,7 @@ export default {
 		t,
 		/**
 		 * CnIndexSidebar @search: update store, keep searchTerms in sync for URL, and refetch.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param value
 		 */
 		onSearchInput(value) {
@@ -743,6 +828,7 @@ export default {
 		},
 		/**
 		 * CnIndexSidebar @filter-change: update store filters, keep facetFilters in sync, and refetch.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param root0
 		 * @param root0.key
 		 * @param root0.values
@@ -755,12 +841,17 @@ export default {
 		},
 		/**
 		 * CnIndexSidebar @columns-change: persist visible columns.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param columns
 		 */
 		onColumnsChange(columns) {
 			objectStore.setSearchVisibleColumns(columns)
 		},
-		// Build query params from current sidebar state
+		/**
+		 * Build URL query params from current sidebar state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {object} Query object
+		 */
 		buildQueryFromState() {
 			const query = {}
 			if (this.selectedRegisters.length > 0) {
@@ -774,7 +865,13 @@ export default {
 			}
 			return query
 		},
-		// Compare two query objects for equality (shallow, keys/values as strings)
+		/**
+		 * Shallow-compare two query objects (keys/values as strings).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @param {object} a - First query object
+		 * @param {object} b - Second query object
+		 * @return {boolean} Whether the queries are equal
+		 */
 		queriesEqual(a, b) {
 			const ka = Object.keys(a).sort()
 			const kb = Object.keys(b).sort()
@@ -785,7 +882,11 @@ export default {
 			}
 			return true
 		},
-		// Write current state to URL query (only on /tables)
+		/**
+		 * Write current sidebar state to the URL query (only on /tables).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		updateRouteQueryFromState() {
 			if (this.$route.path !== '/tables') return
 			const nextQuery = this.buildQueryFromState()
@@ -795,7 +896,11 @@ export default {
 				query: nextQuery,
 			})
 		},
-		// Apply URL query params into component/store state
+		/**
+		 * Apply URL query params into component/store state and run the initial search.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/tables') return
 			const { register, schema, q } = this.$route.query || {}
@@ -840,10 +945,14 @@ export default {
 			}
 			tryApply()
 		},
+		/**
+		 * Apply a multi-select register change, prune now-invalid schemas, and sync the route.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {Array|number} options - Selected register ids
+		 * @return {void}
+		 */
 		handleRegisterChange(options) {
 			// Handle multi-select - options is an array of values
-			console.info('Register change - raw options:', options)
-
 			// NcSelect with reduce returns the reduced values directly
 			// For multi-select, it's an array of the reduced values (IDs)
 			if (!options || options.length === 0) {
@@ -855,8 +964,6 @@ export default {
 				// Fallback for single value
 				this.selectedRegisters = [options]
 			}
-
-			console.info('Selected registers after processing:', this.selectedRegisters)
 
 			// Clear schemas that are no longer valid for selected registers
 			const validSchemaIds = new Set()
@@ -875,6 +982,12 @@ export default {
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
+		/**
+		 * Apply a multi-select schema change and sync the route.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {Array|number} options - Selected schema ids
+		 * @return {Promise<void>}
+		 */
 		async handleSchemaChange(options) {
 			// Handle multi-select - options is an array of values
 			if (!options || options.length === 0) {
@@ -892,7 +1005,12 @@ export default {
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
-		/** Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets register/schema context for dialogs and discoverFacets. */
+		/**
+		 * Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets
+		 * register/schema context for dialogs and discoverFacets.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {void}
+		 */
 		syncSearchParamsAndRefetch() {
 			const registerId = this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
 			const schemaId = this.selectedSchemas.length > 0 ? this.selectedSchemas[0] : null
@@ -918,6 +1036,11 @@ export default {
 			})
 			objectStore.refetchSearchCollection()
 		},
+		/**
+		 * Parse the search input into de-duplicated search terms.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {void}
+		 */
 		handleSearchInput() {
 			// Parse search terms from input (support comma and space separation)
 			const inputTerms = this.searchQuery
@@ -933,6 +1056,11 @@ export default {
 				this.searchTerms = [...this.searchTerms, ...newTerms]
 			}
 		},
+		/**
+		 * Commit input terms to the search-term set, clear the input, and sync the route.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {void}
+		 */
 		addSearchTerms() {
 			// This method adds terms from the input to the existing search terms
 			this.handleSearchInput()
@@ -941,6 +1069,12 @@ export default {
 			// Reflect change in URL
 			this.updateRouteQueryFromState()
 		},
+		/**
+		 * Remove a search term, re-run the search if possible, and sync the route.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @param {number} index - Index of the term to remove
+		 * @return {Promise<void>}
+		 */
 		async removeSearchTerm(index) {
 			this.searchTerms.splice(index, 1)
 			this.searchQuery = this.searchTerms.join(', ')
@@ -954,6 +1088,11 @@ export default {
 			// Reflect change in URL
 			this.updateRouteQueryFromState()
 		},
+		/**
+		 * Run the object search for the current configuration and record timing stats.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @return {Promise<void>}
+		 */
 		async performSearch() {
 			if (!this.canSearch) return
 
@@ -999,6 +1138,7 @@ export default {
 		/**
 		 * Merge inherited properties from allOf parent schemas into the given schema's own properties.
 		 * Own properties take precedence over inherited ones.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param {object} schema - Schema object with optional allOf and properties
 		 * @return {object} Merged properties object
 		 */
@@ -1017,7 +1157,11 @@ export default {
 			return { ...inherited, ...(schema?.properties || {}) }
 		},
 
-		/** Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets. */
+		/**
+		 * Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {Promise<void>}
+		 */
 		async discoverFacets() {
 			if (!objectStore.searchParams.register || !objectStore.searchParams.schema) return
 			try {
@@ -1038,7 +1182,13 @@ export default {
 			}
 		},
 
-		// Toggle individual facet on/off
+		/**
+		 * Toggle an individual facet on/off, clearing its filter when disabled.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {string} fieldName - Facet field name
+		 * @param {object} _fieldInfo - Unused field metadata
+		 * @return {void}
+		 */
 		toggleFacet(fieldName, _fieldInfo) {
 			// When toggling facet, clear any existing data for that field
 			if (this.enabledFacets[fieldName]) {
@@ -1049,7 +1199,11 @@ export default {
 			// The v-model will handle the enabledFacets update
 		},
 
-		// Build facet configuration from enabled facets
+		/**
+		 * Build the `_facets` request configuration from the enabled facets.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {object} Facet request configuration
+		 */
 		buildFacetConfiguration() {
 			const config = {}
 
@@ -1084,7 +1238,11 @@ export default {
 			return { _facets: config }
 		},
 
-		/** Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared. */
+		/**
+		 * Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {void}
+		 */
 		resetFacets() {
 			this.enabledFacets = {}
 			this.facetFilters = {}
@@ -1096,6 +1254,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Run a faceted search by syncing params and refetching, then mirror store facets locally.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {Promise<void>}
+		 */
 		async performSearchWithFacets() {
 			if (!this.canSearch) return
 			try {
@@ -1110,6 +1273,14 @@ export default {
 			}
 		},
 
+		/**
+		 * Resolve a human-readable label for a facet field.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {string} field - Facet field name
+		 * @param {object} facet - Facet data
+		 * @param {boolean} isMetadata - Whether the facet is a @self metadata facet
+		 * @return {string} Display label
+		 */
 		getFacetLabel(field, facet, isMetadata) {
 			// Get human-readable label for facet
 			if (isMetadata) {
@@ -1121,6 +1292,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Normalise a facet (terms/range/date_histogram, new or legacy shape) into select options.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {object} facet - Facet data
+		 * @return {Array} Select options for the facet
+		 */
 		getFacetOptions(facet) {
 			// CnIndexSidebar / package store format: { values: [{ value, count }] }
 			if (facet?.values?.length) {
@@ -1186,6 +1363,11 @@ export default {
 			return []
 		},
 
+		/**
+		 * @spec exclude Presentation-only helper; humanises a camelCase facet field name for the label.
+		 * @param {string} fieldName - Raw field name
+		 * @return {string} Humanised label
+		 */
 		capitalizeFieldName(fieldName) {
 			// Convert field names like 'tooiCategorieNaam' to 'Tooi Categorie Naam'
 			return fieldName
@@ -1196,6 +1378,7 @@ export default {
 		/**
 		 * Toggle schema group expanded/collapsed state
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
 		 * @param {number} schemaId - The schema ID
 		 * @return {void}
 		 */
@@ -1207,7 +1390,12 @@ export default {
 			}
 		},
 
-		// View Management Methods
+		/**
+		 * Activate a selected saved view by fetching it and applying its configuration.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @param {object|null} option - Selected view option (or null to clear)
+		 * @return {Promise<void>}
+		 */
 		async handleViewChange(option) {
 			if (!option) {
 				viewsStore.clearActiveView()
@@ -1225,6 +1413,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Apply a saved view's stored query config to the live search state and re-run search.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @param {object} view - The saved view (with query/configuration block)
+		 * @return {void}
+		 */
 		applyViewConfiguration(view) {
 			if (!view) return
 
@@ -1266,6 +1460,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Persist the current search configuration as a new saved view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {Promise<void>}
+		 */
 		async saveView() {
 			if (!this.viewName.trim()) return
 
@@ -1311,6 +1510,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Reset and hide the save-view form without persisting.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {void}
+		 */
 		cancelSaveView() {
 			// Reset form and hide it
 			this.viewName = ''
@@ -1319,6 +1523,11 @@ export default {
 			this.showSaveForm = false
 		},
 
+		/**
+		 * Persist the current search configuration onto the active saved view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {Promise<void>}
+		 */
 		async updateActiveView() {
 			if (!viewsStore.activeView || !this.activeViewName.trim()) return
 
@@ -1355,17 +1564,33 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the view-edit dialog for the currently active view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {void}
+		 */
 		openEditDialogForActiveView() {
 			if (!viewsStore.activeView) return
 			this.openEditDialog(viewsStore.activeView)
 		},
 
+		/**
+		 * Stage the active view for deletion and open the confirm dialog.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {void}
+		 */
 		confirmDeleteActiveView() {
 			if (!viewsStore.activeView) return
 			this.viewToDelete = viewsStore.activeView
 			this.showDeleteDialog = true
 		},
 
+		/**
+		 * Fetch and activate a saved view, apply its config, and switch to the search tab.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @param {object} view - The view to load
+		 * @return {Promise<void>}
+		 */
 		async loadView(view) {
 			try {
 				// Fetch the full view details
@@ -1386,11 +1611,23 @@ export default {
 			}
 		},
 
+		/**
+		 * Stage a view for deletion and open the confirm dialog.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @param {object} view - The view to delete
+		 * @return {void}
+		 */
 		confirmDeleteView(view) {
 			this.viewToDelete = view
 			this.showDeleteDialog = true
 		},
 
+		/**
+		 * Whether the given view is the currently active view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @param {object} view - The view to test
+		 * @return {boolean}
+		 */
 		isActiveView(view) {
 			if (!viewsStore.activeView) return false
 			const activeId = viewsStore.activeView.id || viewsStore.activeView.uuid
@@ -1398,6 +1635,12 @@ export default {
 			return activeId === viewId
 		},
 
+		/**
+		 * Whether the current user has favorited the given view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @param {object} view - The view to test
+		 * @return {boolean}
+		 */
 		isFavorited(view) {
 			// Check if current user has favorited this view
 			// TODO: Remove this once we have a proper user store
@@ -1407,6 +1650,12 @@ export default {
 			return view.favoredBy.includes(currentUser)
 		},
 
+		/**
+		 * Add or remove the current user from a view's favoredBy via PATCH, then refresh.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @param {object} view - The view to favorite/unfavorite
+		 * @return {Promise<void>}
+		 */
 		async toggleFavorite(view) {
 			try {
 				// TODO: Remove this once we have a proper user store
@@ -1455,16 +1704,32 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the view-edit dialog for a given view.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @param {object} view - The view to edit
+		 * @return {void}
+		 */
 		openEditDialog(view) {
 			this.editingView = view
 			this.showEditDialog = true
 		},
 
+		/**
+		 * Close the view-edit dialog without saving.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {void}
+		 */
 		cancelEditView() {
 			this.showEditDialog = false
 			this.editingView = null
 		},
 
+		/**
+		 * After a delete dialog closes, refresh the view list and clear the active view if deleted.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @return {Promise<void>}
+		 */
 		async handleDeleteClose() {
 			const wasActiveView = this.viewToDelete && viewsStore.activeView
 				&& (this.viewToDelete.id === viewsStore.activeView.id || this.viewToDelete.uuid === viewsStore.activeView.uuid)
@@ -1482,6 +1747,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Update a single facet filter's selected values and re-run the faceted search.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @param {string} field - Facet field name
+		 * @param {Array} selectedValues - Selected facet values
+		 * @return {void}
+		 */
 		updateFacetFilter(field, selectedValues) {
 			// Update facet filter and refresh search
 			this.facetFilters = {
@@ -1493,7 +1765,11 @@ export default {
 			this.applyFacetFilters()
 		},
 
-		/** Sync facet filters into search params (used before refetch when custom facet UI changes). */
+		/**
+		 * Sync facet filters into search params (used before refetch when custom facet UI changes).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {void}
+		 */
 		applyFiltersToObjectStore() {
 			const activeFilters = {}
 			Object.entries(this.facetFilters).forEach(([field, values]) => {
@@ -1508,6 +1784,11 @@ export default {
 			})
 		},
 
+		/**
+		 * Apply facet filters and refresh the faceted search, managing the loading state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-7
+		 * @return {Promise<void>}
+		 */
 		async applyFacetFilters() {
 			// Apply facet filters and refresh search with facets
 			// Note: performSearchWithFacets manages its own searchLoading state

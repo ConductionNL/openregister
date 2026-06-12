@@ -5,6 +5,9 @@
  *
  * This file contains the service class for handling settings in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -408,6 +411,8 @@ class SettingsService
      * Get search backend configuration
      *
      * @return array Search backend configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSearchBackendConfig(): array
     {
@@ -423,7 +428,21 @@ class SettingsService
                 ];
             }
 
-            return json_decode($backendConfig, true);
+            $decoded = json_decode($backendConfig, true);
+
+            // BUG-SVC-6: a corrupt/non-object JSON value (e.g. "not-json" or a
+            // bare scalar) decodes to null/scalar. Returning that from an
+            // `: array` method throws a TypeError that the `catch (\Exception)`
+            // below would NOT catch, so guard the shape explicitly and fall
+            // back to the default configuration.
+            if (is_array($decoded) === false) {
+                return [
+                    'active'    => 'solr',
+                    'available' => ['solr', 'elasticsearch'],
+                ];
+            }
+
+            return $decoded;
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[SettingsService] Failed to retrieve search backend configuration: '.$e->getMessage(),
@@ -442,6 +461,8 @@ class SettingsService
      * @param array $data Search backend configuration data
      *
      * @return array Updated configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateSearchBackendConfig(array $data): array
     {
@@ -456,6 +477,8 @@ class SettingsService
      * Get LLM settings only
      *
      * @return array LLM settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getLLMSettingsOnly(): array
     {
@@ -468,6 +491,8 @@ class SettingsService
      * @param array $data LLM settings data
      *
      * @return array Updated LLM settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateLLMSettingsOnly(array $data): array
     {
@@ -480,6 +505,8 @@ class SettingsService
      * Get file settings only
      *
      * @return array File settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getFileSettingsOnly(): array
     {
@@ -492,6 +519,8 @@ class SettingsService
      * @param array $data File settings data
      *
      * @return array Updated file settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateFileSettingsOnly(array $data): array
     {
@@ -504,6 +533,8 @@ class SettingsService
      * Get object settings only
      *
      * @return array Object settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getObjectSettingsOnly(): array
     {
@@ -516,6 +547,8 @@ class SettingsService
      * @param array $data Object settings data
      *
      * @return array Updated object settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateObjectSettingsOnly(array $data): array
     {
@@ -526,6 +559,8 @@ class SettingsService
      * Get retention settings only
      *
      * @return array Retention settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -538,6 +573,8 @@ class SettingsService
      * @param array $data Retention settings data
      *
      * @return array Updated retention settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateRetentionSettingsOnly(array $data): array
     {
@@ -548,6 +585,8 @@ class SettingsService
      * Get archival settings only
      *
      * @return array Archival settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getArchivalSettingsOnly(): array
     {
@@ -560,6 +599,8 @@ class SettingsService
      * @param array $data Archival settings data
      *
      * @return array Updated archival settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateArchivalSettingsOnly(array $data): array
     {
@@ -572,6 +613,8 @@ class SettingsService
      * Get cache statistics
      *
      * @return array Cache statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
      */
     public function getCacheStats(): array
     {
@@ -584,6 +627,8 @@ class SettingsService
      * @param string|null $cacheType Type of cache to clear
      *
      * @return array Clear cache result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
      */
     public function clearCache(?string $cacheType=null): array
     {
@@ -594,6 +639,8 @@ class SettingsService
      * Warmup names cache
      *
      * @return array Warmup result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
      */
     public function warmupNamesCache(): array
     {
@@ -606,6 +653,8 @@ class SettingsService
      * Get SOLR settings
      *
      * @return array SOLR settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getSolrSettings(): array
     {
@@ -616,6 +665,8 @@ class SettingsService
      * Get SOLR settings only
      *
      * @return array SOLR settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getSolrSettingsOnly(): array
     {
@@ -628,6 +679,8 @@ class SettingsService
      * @param array $data SOLR settings data
      *
      * @return array Updated SOLR settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateSolrSettingsOnly(array $data): array
     {
@@ -638,6 +691,8 @@ class SettingsService
      * Get SOLR dashboard statistics
      *
      * @return array SOLR dashboard stats
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function getSolrDashboardStats(): array
     {
@@ -648,6 +703,8 @@ class SettingsService
      * Get SOLR facet configuration
      *
      * @return array Facet configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function getSolrFacetConfiguration(): array
     {
@@ -660,6 +717,8 @@ class SettingsService
      * @param array $data Facet configuration data
      *
      * @return array Updated facet configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function updateSolrFacetConfiguration(array $data): array
     {
@@ -678,7 +737,11 @@ class SettingsService
      *
      * @return never Warmup result
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for error collection behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Public facade signature kept while the deprecated
+     *     delegate is refactored — see the warmupSolrIndex TODO comment
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
      */
     public function warmupSolrIndex(
         array $schemas=[],
@@ -699,6 +762,8 @@ class SettingsService
      * Get settings
      *
      * @return array Settings configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getSettings(): array
     {
@@ -711,6 +776,8 @@ class SettingsService
      * @param array $data Settings data
      *
      * @return array Updated settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateSettings(array $data): array
     {
@@ -726,6 +793,8 @@ class SettingsService
      *
      * @psalm-return array{use_old_style_publishing_view?: bool,
      *               auto_publish_objects?: bool, auto_publish_attachments?: bool}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updatePublishingOptions(array $data): array
     {
@@ -736,6 +805,8 @@ class SettingsService
      * Check if multi-tenancy is enabled
      *
      * @return bool True if enabled
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function isMultiTenancyEnabled(): bool
     {
@@ -746,6 +817,8 @@ class SettingsService
      * Get RBAC settings only
      *
      * @return array RBAC settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getRbacSettingsOnly(): array
     {
@@ -758,6 +831,8 @@ class SettingsService
      * @param array $data RBAC settings data
      *
      * @return array Updated RBAC settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateRbacSettingsOnly(array $data): array
     {
@@ -771,6 +846,8 @@ class SettingsService
      *
      * @psalm-return array{organisation: array{default_organisation: mixed|null,
      *               auto_create_default_organisation: mixed|true}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -786,6 +863,8 @@ class SettingsService
      *
      * @psalm-return array{organisation: array{default_organisation: mixed|null,
      *               auto_create_default_organisation: mixed|true}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateOrganisationSettingsOnly(array $data): array
     {
@@ -796,6 +875,8 @@ class SettingsService
      * Get default organisation UUID
      *
      * @return string|null Organisation UUID
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -808,6 +889,8 @@ class SettingsService
      * @param string|null $uuid Organisation UUID
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
@@ -818,6 +901,8 @@ class SettingsService
      * Get tenant ID
      *
      * @return string|null Tenant ID
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getTenantId(): ?string
     {
@@ -828,6 +913,8 @@ class SettingsService
      * Get organisation ID
      *
      * @return string|null Organisation ID
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationId(): ?string
     {
@@ -842,6 +929,8 @@ class SettingsService
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -854,6 +943,8 @@ class SettingsService
      * @param array $data Multitenancy settings data
      *
      * @return array Updated multitenancy settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateMultitenancySettingsOnly(array $data): array
     {
@@ -864,6 +955,8 @@ class SettingsService
      * Get version info only
      *
      * @return array Version information
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function getVersionInfoOnly(): array
     {
@@ -877,6 +970,8 @@ class SettingsService
      * Returns null if no cached data is available.
      *
      * @return array|null Database information or null if not cached
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function getDatabaseInfo(): ?array
     {
@@ -899,6 +994,8 @@ class SettingsService
      * @param string $extensionName The name of the extension to check (e.g., 'vector', 'pg_trgm')
      *
      * @return bool True if the extension is installed, false otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function hasPostgresExtension(string $extensionName): bool
     {
@@ -921,6 +1018,8 @@ class SettingsService
      * Get list of installed PostgreSQL extensions
      *
      * @return array List of extension names, empty array if not PostgreSQL or no extensions
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function getPostgresExtensions(): array
     {
@@ -941,6 +1040,8 @@ class SettingsService
      * @return array Validation results
      *
      * @throws Exception If validation operation fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     public function validateAllObjects(): array
     {
@@ -966,6 +1067,8 @@ class SettingsService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple validation paths and error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation paths and error handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     public function massValidateObjects(
         int $maxObjects=0,
@@ -1174,6 +1277,8 @@ class SettingsService
      * @return int[][] Array of batch job definitions.
      *
      * @psalm-return list<array{batchNumber: int<1, max>, limit: int, offset: int}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     private function createBatchJobs(int $totalObjects, int $batchSize): array
     {
@@ -1206,6 +1311,8 @@ class SettingsService
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing requires comprehensive logic
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     private function processJobsSerial(
         array $batchJobs,
@@ -1347,6 +1454,8 @@ class SettingsService
      * @param int                              $parallelBatches Number of parallel batches.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     private function processJobsParallel(
         array $batchJobs,
@@ -1427,6 +1536,8 @@ class SettingsService
      *     failed: int<0, max>, errors: list<array{batch_mode: 'parallel_optimized',
      *     error: string, object_id: null|string, object_name: null|string,
      *     register: null|string, schema: null|string}>, duration: float}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
      */
     private function processBatchDirectly(
         \OCA\OpenRegister\Db\MagicMapper $objectMapper,
@@ -1518,6 +1629,8 @@ class SettingsService
      * @param int $precision Decimal precision.
      *
      * @return string Formatted string.
+     *
+     * @spec exclude Pure byte-to-human-readable formatting helper; no orchestration or persisted state.
      */
     public function formatBytes(int $bytes, int $precision=2): string
     {
@@ -1541,6 +1654,8 @@ class SettingsService
      * @param string $memoryLimit Memory limit string (e.g., '128M', '1G').
      *
      * @return int Memory limit in bytes.
+     *
+     * @spec exclude Pure memory-limit-string-to-bytes parsing helper; no orchestration or persisted state.
      */
     public function convertToBytes(string $memoryLimit): int
     {
@@ -1570,6 +1685,8 @@ class SettingsService
      * @param string $token The token to mask.
      *
      * @return string The masked token.
+     *
+     * @spec exclude Pure display helper masking the middle of a token; no orchestration or persisted state.
      */
     public function maskToken(string $token): string
     {
@@ -1594,6 +1711,8 @@ class SettingsService
      * @param \OCA\OpenRegister\Service\IndexService $solrSchemaService Index service for field analysis.
      *
      * @return array Expected field configuration.
+     *
+     * @spec exclude Assembles the expected Solr field set from core metadata + schema fields for diffing; admin-tooling helper.
      */
     public function getExpectedSchemaFields(
         \OCA\OpenRegister\Db\SchemaMapper $schemaMapper,
@@ -1650,6 +1769,8 @@ class SettingsService
      * @return array Field comparison results
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field comparison paths
+     *
+     * @spec exclude Pure diff helper categorising missing/extra/mismatched Solr fields; admin-tooling computation.
      */
     public function compareFields(array $actualFields, array $expectedFields): array
     {
@@ -1790,6 +1911,8 @@ class SettingsService
      *         max_execution_time: string
      *     }
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function getStats(): array
     {
@@ -1897,14 +2020,13 @@ class SettingsService
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+            $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
+                   WHERE table_schema = DATABASE()
+                   AND table_name LIKE 'oc_openregister_table_%'";
             if ($isPostgres === true) {
                 $tablesQuery = "SELECT tablename FROM pg_tables
                    WHERE schemaname = 'public'
                    AND tablename LIKE 'oc_openregister_table_%'";
-            } else {
-                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
-                   WHERE table_schema = DATABASE()
-                   AND table_name LIKE 'oc_openregister_table_%'";
             }
 
             $tablesResult = $this->db->executeQuery($tablesQuery);
@@ -1964,10 +2086,9 @@ class SettingsService
         }
 
         // Build query for sources count based on table existence.
+        $sourcesCountQuery = '0';
         if ($sourcesTableExists === true) {
             $sourcesCountQuery = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
-        } else {
-            $sourcesCountQuery = '0';
         }
 
         // Build a single query that gets all other counts at once using subqueries.
@@ -2041,6 +2162,8 @@ class SettingsService
      *     message: 'Solr configuration rebased'}, cache?: array{success: true,
      *     message: 'Cache cleared and ready for rebuild'}},
      *     timestamp?: int<1, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-5
      */
     public function rebase(array $options=[]): array
     {
@@ -2092,4 +2215,98 @@ class SettingsService
             ];
         }//end try
     }//end rebase()
+
+    // ============================================
+    // INTEGRATION DEFAULTS (Deck — schema-level sticky board+stack).
+    // ============================================
+    // Persists the {boardId, stackId} pair the first time a user creates
+    // a Deck card for a given schema slug, so subsequent create-card
+    // affordances on objects of that schema pre-select the same target.
+    // See openspec/changes/integration-deck/design.md AD-1.
+
+    /**
+     * Build the IAppConfig storage key for the sticky Deck default.
+     *
+     * @param string $schemaSlug Schema slug or numeric id (caller's choice — only used as opaque key suffix).
+     *
+     * @return string The config key, e.g. `integration.deck.default.case`.
+     */
+    private function buildDeckDefaultKey(string $schemaSlug): string
+    {
+        return 'integration.deck.default.'.$schemaSlug;
+    }//end buildDeckDefaultKey()
+
+
+    /**
+     * Get the persisted Deck default board+stack for a schema (or null).
+     *
+     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
+     *
+     * @return array{boardId:int,stackId:int}|null Default pair, or null when none has been recorded yet.
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
+     */
+    public function getDeckDefault(string $schemaSlug): ?array
+    {
+        $raw = $this->config->getAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), '');
+        if ($raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded) === false) {
+            return null;
+        }
+
+        if (isset($decoded['boardId']) === false || isset($decoded['stackId']) === false) {
+            return null;
+        }
+
+        return [
+            'boardId' => (int) $decoded['boardId'],
+            'stackId' => (int) $decoded['stackId'],
+        ];
+    }//end getDeckDefault()
+
+
+    /**
+     * Persist the Deck default board+stack for a schema. Overwrites any prior value.
+     *
+     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
+     * @param int    $boardId    NC Deck board id.
+     * @param int    $stackId    NC Deck stack id on that board.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
+     */
+    public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void
+    {
+        $payload = json_encode(
+            [
+                'boardId' => $boardId,
+                'stackId' => $stackId,
+            ]
+        );
+        if ($payload === false) {
+            return;
+        }
+
+        $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), $payload);
+    }//end setDeckDefault()
+
+
+    /**
+     * Clear the persisted Deck default for a schema. No-op when none stored.
+     *
+     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
+     *
+     * @return void
+     *
+     * @spec exclude — defensive cleanup helper exercised only by uninstall paths; behaviour proxied to IConfig.
+     */
+    public function clearDeckDefault(string $schemaSlug): void
+    {
+        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug));
+    }//end clearDeckDefault()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * OpenRegister Object and Retention Settings Handler
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -14,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
  */
 
 namespace OCA\OpenRegister\Service\Settings;
@@ -79,7 +82,7 @@ class ObjectRetentionHandler
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     public function getObjectSettingsOnly(): array
     {
@@ -134,7 +137,7 @@ class ObjectRetentionHandler
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     public function updateObjectSettingsOnly(array $objectData): array
     {
@@ -174,7 +177,7 @@ class ObjectRetentionHandler
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
      *     searchTrailsEnabled: bool}
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -238,7 +241,7 @@ class ObjectRetentionHandler
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
      *     searchTrailsEnabled: mixed|true}
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     public function updateRetentionSettingsOnly(array $retentionData): array
     {
@@ -269,7 +272,7 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If archival settings retrieval fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     public function getArchivalSettingsOnly(): array
     {
@@ -306,7 +309,7 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If archival settings update fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     public function updateArchivalSettingsOnly(array $archivalData): array
     {
@@ -335,7 +338,7 @@ class ObjectRetentionHandler
      *
      * @return array Default archival configuration
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
      */
     private function getArchivalDefaults(): array
     {
@@ -360,6 +363,8 @@ class ObjectRetentionHandler
      * @throws \RuntimeException If version information retrieval fails
      *
      * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
      */
     public function getVersionInfoOnly(): array
     {
@@ -379,6 +384,8 @@ class ObjectRetentionHandler
      * @param mixed $value The value to convert to boolean
      *
      * @return bool The boolean representation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
      */
     private function convertToBoolean($value): bool
     {

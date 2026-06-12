@@ -115,7 +115,8 @@ class RegisterServiceTest extends TestCase
             db: $this->db,
             fileService: $this->fileService,
             organisationService: $this->organisationService,
-            logger: $this->logger
+            logger: $this->logger,
+            registerSerializer: new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
         );
     }
 

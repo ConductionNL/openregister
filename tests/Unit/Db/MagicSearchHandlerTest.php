@@ -68,15 +68,19 @@ class MagicSearchHandlerTest extends TestCase
      *
      * @return string[] Generated SQL condition strings.
      */
-    private function invokeMethod(array $query, array $properties, object $connection): array
-    {
+    private function invokeMethod(
+        array $query,
+        array $properties,
+        object $connection,
+        bool $isPostgres=true
+    ): array {
         $schema = $this->createMock(Schema::class);
         $schema->method('getProperties')->willReturn($properties);
 
         $method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
         $method->setAccessible(true);
 
-        return $method->invoke($this->handler, $query, $schema, $connection);
+        return $method->invoke($this->handler, $query, $schema, $connection, $isPostgres);
     }//end invokeMethod()
 
     /**
@@ -101,7 +105,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("publicatiedatum >= '2025-12-31T23:59:59Z'", $conditions[0]);
+        $this->assertSame("\"publicatiedatum\" >= '2025-12-31T23:59:59Z'", $conditions[0]);
     }//end testGteProducesGreaterThanOrEqualCondition()
 
     public function testLteProducesLessThanOrEqualCondition(): void
@@ -113,7 +117,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("publicatiedatum <= '2027-01-01T00:00:00Z'", $conditions[0]);
+        $this->assertSame("\"publicatiedatum\" <= '2027-01-01T00:00:00Z'", $conditions[0]);
     }//end testLteProducesLessThanOrEqualCondition()
 
     public function testGteAndLteTogetherProduceTwoRangeConditions(): void
@@ -125,8 +129,8 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(2, $conditions);
-        $this->assertSame("publicatiedatum >= '2025-12-31T23:59:59Z'", $conditions[0]);
-        $this->assertSame("publicatiedatum <= '2027-01-01T00:00:00Z'", $conditions[1]);
+        $this->assertSame("\"publicatiedatum\" >= '2025-12-31T23:59:59Z'", $conditions[0]);
+        $this->assertSame("\"publicatiedatum\" <= '2027-01-01T00:00:00Z'", $conditions[1]);
     }//end testGteAndLteTogetherProduceTwoRangeConditions()
 
     // -------------------------------------------------------------------------
@@ -141,7 +145,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("bedrag > '100'", $conditions[0]);
+        $this->assertSame("\"bedrag\" > '100'", $conditions[0]);
     }//end testGtProducesStrictGreaterThanCondition()
 
     public function testLtProducesStrictLessThanCondition(): void
@@ -153,7 +157,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("bedrag < '500'", $conditions[0]);
+        $this->assertSame("\"bedrag\" < '500'", $conditions[0]);
     }//end testLtProducesStrictLessThanCondition()
 
     // -------------------------------------------------------------------------
@@ -168,7 +172,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status IN ('open', 'pending')", $conditions[0]);
+        $this->assertSame("\"status\" IN ('open', 'pending')", $conditions[0]);
     }//end testInOperatorKeyProducesInClause()
 
     public function testInOperatorKeyWithSingleStringValueProducesInClause(): void
@@ -180,7 +184,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status IN ('open')", $conditions[0]);
+        $this->assertSame("\"status\" IN ('open')", $conditions[0]);
     }//end testInOperatorKeyWithSingleStringValueProducesInClause()
 
     // -------------------------------------------------------------------------
@@ -195,7 +199,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status IN ('open', 'closed')", $conditions[0]);
+        $this->assertSame("\"status\" IN ('open', 'closed')", $conditions[0]);
     }//end testPlainArrayValueStillProducesInClause()
 
     // -------------------------------------------------------------------------
@@ -210,8 +214,83 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status = 'open'", $conditions[0]);
+        $this->assertSame("\"status\" = 'open'", $conditions[0]);
     }//end testScalarValueProducesEqualityCondition()
+
+    // -------------------------------------------------------------------------
+    // Reserved-word property names must be quoted in filter conditions —
+    // regression guard for the bug reported in #1956 part (b): a schema
+    // property named 'status'/'case'/'order'/'group' produced a SQL syntax
+    // error because the column name was interpolated raw.
+    // -------------------------------------------------------------------------
+    public function testReservedWordPropertyIsQuotedOnPostgresForEqualityFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['case' => 'open'],
+            properties: ['case' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertSame("\"case\" = 'open'", $conditions[0]);
+    }//end testReservedWordPropertyIsQuotedOnPostgresForEqualityFilter()
+
+    public function testReservedWordPropertyIsQuotedOnMySqlForEqualityFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['case' => 'open'],
+            properties: ['case' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: false
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertSame("`case` = 'open'", $conditions[0]);
+    }//end testReservedWordPropertyIsQuotedOnMySqlForEqualityFilter()
+
+    public function testReservedWordPropertyIsQuotedForRangeFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['order' => ['gte' => '5', 'lte' => '10']],
+            properties: ['order' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(2, $conditions);
+        $this->assertSame("\"order\" >= '5'", $conditions[0]);
+        $this->assertSame("\"order\" <= '10'", $conditions[1]);
+    }//end testReservedWordPropertyIsQuotedForRangeFilter()
+
+    public function testReservedWordPropertyIsQuotedForInFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['group' => ['admin', 'user']],
+            properties: ['group' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertSame("\"group\" IN ('admin', 'user')", $conditions[0]);
+    }//end testReservedWordPropertyIsQuotedForInFilter()
+
+    public function testReservedWordArrayPropertyIsQuotedForJsonbContainment(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['key' => 'foo'],
+            properties: ['key' => ['type' => 'array']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        // Array properties use a JSONB containment template; the column identifier
+        // must appear quoted so the reserved word doesn't break the COALESCE expression.
+        $this->assertStringContainsString('"key"', $conditions[0]);
+        $this->assertStringNotContainsString("COALESCE(key,", $conditions[0]);
+    }//end testReservedWordArrayPropertyIsQuotedForJsonbContainment()
 
     // -------------------------------------------------------------------------
     // Unknown property must still produce the 1=0 guard condition
@@ -227,4 +306,88 @@ class MagicSearchHandlerTest extends TestCase
         $this->assertCount(1, $conditions);
         $this->assertSame('1=0', $conditions[0]);
     }//end testUnknownPropertyProducesImpossibleCondition()
+
+    // -------------------------------------------------------------------------
+    // buildSearchConditionSql: reserved-word property names must be quoted so
+    // PostgreSQL doesn't choke on `case::text ILIKE …` and MySQL doesn't choke
+    // on `` `case` LIKE … ``. Regression guard for the Newman failure that
+    // motivated PR #1437.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Invoke the private buildSearchConditionSql() method via reflection.
+     *
+     * @param string $search     Free-text search term.
+     * @param array  $properties Schema properties (field => ['type' => ...]).
+     * @param bool   $isPostgres Whether to render the PostgreSQL or MySQL flavour.
+     *
+     * @return string|null Generated SQL condition string (or null when empty).
+     */
+    private function invokeBuildSearchConditionSql(
+        string $search,
+        array $properties,
+        bool $isPostgres
+    ): ?string {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn($properties);
+
+        $method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
+        $method->setAccessible(true);
+
+        return $method->invoke(
+            $this->handler,
+            $search,
+            $schema,
+            [],
+            $this->makeConnection(),
+            $isPostgres,
+            null
+        );
+    }//end invokeBuildSearchConditionSql()
+
+    public function testBuildSearchConditionSqlQuotesReservedWordOnPostgres(): void
+    {
+        $sql = $this->invokeBuildSearchConditionSql(
+            search: 'foo',
+            properties: ['case' => ['type' => 'string']],
+            isPostgres: true
+        );
+
+        $this->assertNotNull($sql);
+        $this->assertStringContainsString('"case"::text ILIKE', $sql);
+        // Unquoted form must not appear — `"case"::text` has a quote between
+        // `case` and `::text`, so the bare `case::text` substring should be absent.
+        $this->assertStringNotContainsString('case::text', $sql);
+    }//end testBuildSearchConditionSqlQuotesReservedWordOnPostgres()
+
+    public function testBuildSearchConditionSqlQuotesReservedWordOnMySql(): void
+    {
+        $sql = $this->invokeBuildSearchConditionSql(
+            search: 'foo',
+            properties: ['case' => ['type' => 'string']],
+            isPostgres: false
+        );
+
+        $this->assertNotNull($sql);
+        $this->assertStringContainsString('LOWER(CAST(`case` AS CHAR)) LIKE LOWER(', $sql);
+    }//end testBuildSearchConditionSqlQuotesReservedWordOnMySql()
+
+    public function testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres(): void
+    {
+        $sql = $this->invokeBuildSearchConditionSql(
+            search: 'foo',
+            properties: [
+                'case'     => ['type' => 'string'],
+                'status'   => ['type' => 'string'],
+                'numeric'  => ['type' => 'integer'],
+            ],
+            isPostgres: true
+        );
+
+        $this->assertNotNull($sql);
+        $this->assertStringContainsString('"case"::text ILIKE', $sql);
+        $this->assertStringContainsString('"status"::text ILIKE', $sql);
+        // Non-string properties must not appear in the LIKE chain.
+        $this->assertStringNotContainsString('"numeric"', $sql);
+    }//end testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres()
 }//end class

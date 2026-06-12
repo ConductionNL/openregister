@@ -4,7 +4,7 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
-		loading-message="Loading n8n configuration...">
+		:loading-message="t('openregister', 'Loading n8n configuration...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -195,7 +195,7 @@
 		<!-- Workflow Management -->
 		<SettingsCard
 			v-if="n8nEnabled && connectionStatus && connectionStatus.success && initResult && initResult.success"
-			title="Workflow Management"
+			:title="t('openregister', 'Workflow Management')"
 			icon="⚙️"
 			:collapsible="true"
 			:default-collapsed="false">
@@ -342,6 +342,7 @@ export default {
 		/**
 		 * Check if configuration has unsaved changes.
 		 *
+		 * @spec exclude UI plumbing — dirty-state predicate comparing local fields to snapshot.
 		 * @return {boolean} True if there are unsaved changes.
 		 */
 		hasChanges() {
@@ -362,6 +363,7 @@ export default {
 		/**
 		 * Load n8n configuration from backend.
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
 		 * @return {Promise<void>}
 		 */
 		async loadConfiguration() {
@@ -398,6 +400,7 @@ export default {
 		/**
 		 * Update n8n URL value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New URL value.
 		 * @return {void}
 		 */
@@ -408,6 +411,7 @@ export default {
 		/**
 		 * Update n8n API key value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New API key value.
 		 * @return {void}
 		 */
@@ -418,6 +422,7 @@ export default {
 		/**
 		 * Update n8n project value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New project value.
 		 * @return {void}
 		 */
@@ -428,6 +433,7 @@ export default {
 		/**
 		 * Handle toggle of n8n integration.
 		 *
+		 * @spec exclude UI plumbing — toggle handler delegating to saveConfiguration.
 		 * @param {boolean} checked New enabled state.
 		 * @return {Promise<void>}
 		 */
@@ -442,6 +448,7 @@ export default {
 		/**
 		 * Save n8n configuration to backend.
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveConfiguration() {
@@ -476,6 +483,7 @@ export default {
 		/**
 		 * Test n8n connection.
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display.
 		 * @return {Promise<void>}
 		 */
 		async testConnection() {
@@ -515,6 +523,7 @@ export default {
 		/**
 		 * Initialize n8n project and user.
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display + workflow refresh.
 		 * @return {Promise<void>}
 		 */
 		async initializeN8n() {
@@ -553,6 +562,7 @@ export default {
 		/**
 		 * Load workflows from n8n.
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local workflow list.
 		 * @return {Promise<void>}
 		 */
 		async loadWorkflows() {
@@ -571,11 +581,13 @@ export default {
 		/**
 		 * Open n8n editor in new tab.
 		 *
+		 * @spec exclude UI plumbing — external window.open navigation, no observable contract.
 		 * @return {void}
 		 */
 		openN8nEditor() {
-			if (this.n8nUrl) {
-				window.open(this.n8nUrl, '_blank')
+			// Only open http(s) URLs to prevent javascript:/data: scheme injection
+			if (this.n8nUrl && /^https?:\/\//i.test(this.n8nUrl)) {
+				window.open(this.n8nUrl, '_blank', 'noopener')
 			}
 		},
 	},

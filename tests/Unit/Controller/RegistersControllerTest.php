@@ -18,6 +18,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
@@ -25,6 +26,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -55,6 +57,15 @@ class RegistersControllerTest extends TestCase
     private GitHubHandler&MockObject $githubService;
     private IAppManager&MockObject $appManager;
     private OasService&MockObject $oasService;
+    private IGroupManager&MockObject $groupManager;
+    private \Psr\Container\ContainerInterface&MockObject $container;
+
+    /**
+     * The user the mocked session resolves to. Defaults to an admin so write
+     * and authenticated-read tests pass; tests exercising the @PublicPage
+     * read-visibility guard set this to null to simulate an anonymous caller.
+     */
+    private ?\OCP\IUser $currentUser = null;
 
     protected function setUp(): void
     {
@@ -75,6 +86,25 @@ class RegistersControllerTest extends TestCase
         $this->githubService = $this->createMock(GitHubHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->oasService = $this->createMock(OasService::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        // Default to an authenticated admin so write tests and authenticated-read
+        // tests behave as before. Anonymous-read tests set $this->currentUser = null.
+        $this->currentUser = $this->createMock(\OCP\IUser::class);
+        $this->currentUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturnCallback(fn() => $this->currentUser);
+        $this->groupManager->method('isAdmin')->willReturnCallback(fn() => $this->currentUser !== null);
+        $this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
+
+        // checkRegisterManagePermission() resolves IGroupManager via the container
+        // on its no-authorization (admin-only) branch — return the stubbed one.
+        $this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $this->container->method('get')->willReturnCallback(function ($id) {
+            if ($id === \OCP\IGroupManager::class) {
+                return $this->groupManager;
+            }
+            return null;
+        });
 
         $this->controller = new RegistersController(
             'openregister',
@@ -93,7 +123,10 @@ class RegistersControllerTest extends TestCase
             $this->githubService,
             $this->appManager,
             $this->oasService,
-            $this->createMock(\Psr\Container\ContainerInterface::class)
+            $this->container,
+            $this->groupManager,
+            $this->createMock(RegisterCacheHandler::class),
+            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
         );
     }
 
@@ -129,12 +162,72 @@ class RegistersControllerTest extends TestCase
         $register = $this->createMock(Register::class);
         $register->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
 
+        // Authenticated caller (setUp default) — the read-visibility guard does not apply.
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')->willReturn($register);
 
         $result = $this->controller->show(1);
 
         $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testShowAnonymousUnpublishedRegisterReturns401(): void
+    {
+        // Anonymous (no user) + unpublished register → 401 (read-visibility guard).
+        $this->currentUser = null;
+        $register = $this->createMock(Register::class);
+        $register->method('getPublished')->willReturn(null);
+        $register->method('getDepublished')->willReturn(null);
+
+        $this->request->method('getParam')->willReturn([]);
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->show(1);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testShowAnonymousPublishedRegisterReturns200(): void
+    {
+        // Anonymous + published register → 200.
+        $this->currentUser = null;
+        $register = $this->createMock(Register::class);
+        $register->method('getPublished')->willReturn(new \DateTime());
+        $register->method('getDepublished')->willReturn(null);
+        $register->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+
+        $this->request->method('getParam')->willReturn([]);
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->show(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testIndexAnonymousFiltersUnpublishedRegisters(): void
+    {
+        // Anonymous list returns only published registers.
+        $this->currentUser = null;
+        $published = $this->createMock(Register::class);
+        $published->method('getPublished')->willReturn(new \DateTime());
+        $published->method('getDepublished')->willReturn(null);
+        $published->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Published']);
+
+        $unpublished = $this->createMock(Register::class);
+        $unpublished->method('getPublished')->willReturn(null);
+        $unpublished->method('getDepublished')->willReturn(null);
+        $unpublished->method('jsonSerialize')->willReturn(['id' => 2, 'title' => 'Unpublished']);
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->registerService->method('findAll')->willReturn([$published, $unpublished]);
+
+        $result = $this->controller->index();
+        $data   = $result->getData();
+
+        $this->assertSame(200, $result->getStatus());
+        $ids = array_map(fn($r) => $r['id'], $data['results']);
+        $this->assertContains(1, $ids);
+        $this->assertNotContains(2, $ids);
     }
 
     private function createRealRegister(int $id = 1, string $title = 'Test'): Register
@@ -285,8 +378,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturnsEmptyOnSuccess(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
 
         $result = $this->controller->destroy(1);
 
@@ -306,8 +400,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns409OnValidationException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Objects attached'));
 
@@ -318,8 +413,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnGenericException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new Exception('Delete error'));
 
@@ -556,49 +652,10 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(400, $result->getStatus());
     }
 
-    public function testPublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testPublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Publish error'));
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
-
-    public function testDepublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testDepublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Depublish error'));
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // RegistersController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H1). publishToGitHub() (tested below)
+    // is a separate, still-supported method.
 
     public function testPatchThrowsWhenNotFound(): void
     {
@@ -648,53 +705,8 @@ class RegistersControllerTest extends TestCase
         $this->assertStringContainsString('schema', $result->getData()['error']);
     }
 
-    // ── Publish/depublish success tests ────────────────────────────────
-
-    public function testPublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testPublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() success tests removed — endpoints retired
+    // for security (commit 29b1de3af, H1).
 
     // ── PublishToGitHub success test ───────────────────────────────────
 
@@ -767,8 +779,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnDatabaseConstraintException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new DatabaseConstraintException('Foreign key constraint'));
 
@@ -920,8 +933,13 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Only the existing schema should be present
-        $this->assertCount(1, $data['results'][0]['schemas']);
+        // RegisterSerializer::expandSchemas() now RETAINS an orphan schema ID
+        // at its original position when the schema cannot be resolved (rather
+        // than dropping it), so typed JSON clients still see the reference.
+        // Expect both entries: the expanded object (10) and the orphan ID (999).
+        $this->assertCount(2, $data['results'][0]['schemas']);
+        $this->assertSame(['id' => 10, 'title' => 'Schema A'], $data['results'][0]['schemas'][0]);
+        $this->assertSame(999, $data['results'][0]['schemas'][1]);
     }
 
     public function testIndexWithSelfStatsExtend(): void
@@ -1148,7 +1166,7 @@ class RegistersControllerTest extends TestCase
         $this->registerService->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->exportService->method('exportToCsv')->willReturn('col1,col2\nval1,val2');
-        $this->userSession->method('getUser')->willReturn(null);
+        $this->currentUser = null;
 
         $result = $this->controller->export(1);
 
@@ -1169,7 +1187,7 @@ class RegistersControllerTest extends TestCase
         ]);
         $this->registerService->method('find')->willReturn($register);
         $this->exportService->method('exportToExcel')->willReturn($spreadsheet);
-        $this->userSession->method('getUser')->willReturn(null);
+        $this->currentUser = null;
 
         $result = $this->controller->export(1);
 
@@ -1204,7 +1222,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->userSession->method('getUser')->willReturn(null);
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1266,7 +1285,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->userSession->method('getUser')->willReturn(null);
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1299,7 +1319,8 @@ class RegistersControllerTest extends TestCase
         $this->importService->expects($this->once())
             ->method('importFromExcel')
             ->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
-        $this->userSession->method('getUser')->willReturn(null);
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1774,8 +1795,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyCallsDeleteOnService(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->expects($this->once())
             ->method('delete')
             ->with($this->equalTo($register));

@@ -5,6 +5,9 @@
  *
  * This service generates OpenAPI Specification (OAS) documentation for registers and schemas.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -13,6 +16,16 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-24
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
  */
 
 declare(strict_types=1);
@@ -22,6 +35,9 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -33,10 +49,11 @@ use Psr\Log\LoggerInterface;
  * Creates comprehensive API documentation including endpoints, schemas, parameters,
  * and examples based on register and schema definitions.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OAS generation requires many endpoint and schema methods
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex OpenAPI schema generation logic
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  */
 class OasService
 {
@@ -86,21 +103,63 @@ class OasService
     private readonly IURLGenerator $urlGenerator;
 
     /**
+     * Logger for validation messages (optional).
+     *
+     * @var LoggerInterface|null Logger or null
+     */
+    private readonly ?LoggerInterface $logger;
+
+    /**
+     * Validation report for the most recent createOas() invocation.
+     *
+     * @var OasValidationReport The current report
+     */
+    private OasValidationReport $report;
+
+    /**
+     * NLGov-permitted HTTP methods on documented operations (API-01).
+     */
+    private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'delete', 'parameters'];
+
+    /**
+     * NLGov-permitted HTTP response status codes (API-03).
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
+
+    /**
      * Constructor for OasService
      *
-     * @param RegisterMapper $registerMapper Register mapper for database operations
-     * @param SchemaMapper   $schemaMapper   Schema mapper for database operations
-     * @param IURLGenerator  $urlGenerator   URL generator for absolute URLs
+     * @param RegisterMapper       $registerMapper Register mapper for database operations
+     * @param SchemaMapper         $schemaMapper   Schema mapper for database operations
+     * @param IURLGenerator        $urlGenerator   URL generator for absolute URLs
+     * @param LoggerInterface|null $logger         PSR-3 logger for surfacing validation issues
+     * @param ?OasRequestValidator $metaValidator  Optional validator for the vendored OAS 3.1 meta-schema check.
      */
     public function __construct(
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
-        IURLGenerator $urlGenerator
+        IURLGenerator $urlGenerator,
+        ?LoggerInterface $logger=null,
+        private readonly ?OasRequestValidator $metaValidator=null
     ) {
         $this->registerMapper = $registerMapper;
         $this->schemaMapper   = $schemaMapper;
         $this->urlGenerator   = $urlGenerator;
+        $this->logger         = $logger;
+        $this->report         = new OasValidationReport();
     }//end __construct()
+
+    /**
+     * Returns the validation report from the most recent createOas() call.
+     *
+     * @return OasValidationReport The current report
+     */
+    public function getLastValidationReport(): OasValidationReport
+    {
+        return $this->report;
+    }//end getLastValidationReport()
 
     /**
      * Create OpenAPI Specification for register(s)
@@ -111,18 +170,27 @@ class OasService
      *
      * @param string|null $registerId Optional register ID to generate OAS for specific register.
      *                                If null, generates OAS for all registers.
+     * @param bool        $strict     When true, throws OasValidationException if any validation
+     *                                error is detected. When false (default), errors are auto-
+     *                                corrected where possible and logged via the report.
      *
      * @return array<string, mixed> The complete OpenAPI specification array
      *
-     * @throws \Exception When base OAS file cannot be read or parsed
+     * @throws \Exception                When base OAS file cannot be read or parsed
+     * @throws OasValidationException    In strict mode, when the generated OAS has validation errors
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex OAS generation with multiple schema and path operations
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for register and schema processing
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) OAS generation requires multiple steps: setup, schema loading,
-     *                                               CRUD paths, validation
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
-    public function createOas(?string $registerId=null): array
+    public function createOas(?string $registerId=null, bool $strict=false): array
     {
+        // Reset the validation report at the start of every generation pass.
+        $this->report = new OasValidationReport();
+
         // Step 1: Reset OAS to base state from template file.
         $this->oas = $this->getBaseOas();
 
@@ -277,8 +345,44 @@ class OasService
         // Validate the final OpenAPI specification before returning.
         $this->validateOasIntegrity();
 
+        // Log validation issues so operators see them in the standard logs.
+        $this->logValidationIssues();
+
+        // Strict mode: refuse to return invalid output. The report is still
+        // available via getLastValidationReport() so the caller can render it.
+        if ($strict === true && $this->report->hasErrors() === true) {
+            throw new OasValidationException(
+                message: 'Generated OAS failed strict validation: '.count($this->report->getErrors()).' error(s)',
+                report: $this->report,
+            );
+        }
+
         return $this->oas;
     }//end createOas()
+
+    /**
+     * Log every validation issue once at the appropriate severity level.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+     */
+    private function logValidationIssues(): void
+    {
+        if ($this->logger === null || $this->report->isEmpty() === true) {
+            return;
+        }
+
+        foreach ($this->report->getIssues() as $issue) {
+            $context = ['path' => $issue['path'], 'code' => $issue['code']];
+            if ($issue['severity'] === OasValidationReport::SEVERITY_ERROR) {
+                $this->logger->error('OAS validation: '.$issue['message'], $context);
+                continue;
+            }
+
+            $this->logger->warning('OAS validation: '.$issue['message'], $context);
+        }
+    }//end logValidationIssues()
 
     /**
      * Get the base OAS file as array
@@ -286,6 +390,8 @@ class OasService
      * @return array The base OAS array
      *
      * @throws \Exception When file cannot be read or parsed
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function getBaseOas(): array
     {
@@ -312,6 +418,8 @@ class OasService
      *
      * @return array{createGroups: string[], readGroups: string[], updateGroups: string[], deleteGroups: string[]}
      *               Unique groups per CRUD action
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-12
      */
     private function extractSchemaGroups(object $schema): array
     {
@@ -372,6 +480,8 @@ class OasService
      * @param mixed $rule The authorization rule (string or array)
      *
      * @return string|null The group name, or null if not extractable
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function extractGroupFromRule($rule): ?string
     {
@@ -392,6 +502,8 @@ class OasService
      * @param string $group The Nextcloud group name
      *
      * @return string The scope description
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function getScopeDescription(string $group): string
     {
@@ -407,15 +519,31 @@ class OasService
     }//end getScopeDescription()
 
     /**
-     * Apply RBAC information to an operation by appending group info to description and adding 403 response
+     * Apply RBAC information to an operation
      *
      * Always includes `admin` since admin users have access to all endpoints.
-     * Merges in any schema-specific groups for this CRUD action.
+     * Merges in any schema-specific groups for this CRUD action and:
+     *  - appends a human-readable `**Required scopes:**` block to the operation
+     *    description (Markdown rendered by Swagger UI / Redoc);
+     *  - adds a 403 response definition pointing at the standard Error schema;
+     *  - emits a per-operation OpenAPI 3.0 `security` requirement enumerating
+     *    the groups as OAuth2 scopes alongside `basicAuth` as fallback. This
+     *    makes the OAS a machine-readable access audit (see the Scope Audit
+     *    requirement in the rbac-scopes spec) and lets generated client SDKs
+     *    request the right scope set.
+     *
+     * The `security` block is OR-semantics across alternatives in the array
+     * (per the OpenAPI 3.0 spec), so a caller can either present a Bearer token
+     * with one of the listed oauth2 scopes OR fall back to Basic auth. The
+     * registered Nextcloud OAuth2 scope vocabulary is populated globally from
+     * the union of every schema's groups in createOas().
      *
      * @param array    $operation The operation array (passed by reference)
      * @param string[] $groups    The schema-specific groups that have access to this operation
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function applyRbacToOperation(array &$operation, array $groups): void
     {
@@ -423,6 +551,9 @@ class OasService
         if (in_array('admin', $groups, true) === false) {
             array_unshift($groups, 'admin');
         }
+
+        // Deduplicate while preserving order — admin first, then schema groups.
+        $groups = array_values(array_unique($groups));
 
         // Build scope list as inline code fragments.
         $scopeList = implode(
@@ -445,6 +576,14 @@ class OasService
                     'schema' => ['$ref' => '#/components/schemas/Error'],
                 ],
             ],
+        ];
+
+        // Emit per-operation security requirement: oauth2 with the resolved
+        // scope set, OR basicAuth fallback. Two array entries = OR semantics
+        // in OpenAPI 3.0.
+        $operation['security'] = [
+            ['oauth2' => $groups],
+            ['basicAuth' => []],
         ];
     }//end applyRbacToOperation()
 
@@ -471,6 +610,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array Enriched schema with type, x-tags, and properties.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function enrichSchema(object $schema): array
     {
@@ -719,11 +860,10 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $firstItem = $cleanDef['items'][0] ?? null;
+                $firstItem         = $cleanDef['items'][0] ?? null;
+                $cleanDef['items'] = ['type' => 'string'];
                 if (empty($firstItem) === false) {
                     $cleanDef['items'] = $firstItem;
-                } else {
-                    $cleanDef['items'] = ['type' => 'string'];
                 }
             }
 
@@ -759,21 +899,21 @@ class OasService
      * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
         $registerSlugValue = $register->getSlug();
+        $registerSlug      = $this->slugify(string: $register->getTitle());
         if ($registerSlugValue !== null && $registerSlugValue !== '') {
             $registerSlug = $registerSlugValue;
-        } else {
-            $registerSlug = $this->slugify(string: $register->getTitle());
         }
 
         $schemaSlugValue = $schema->getSlug();
+        $schemaSlug      = $this->slugify(string: $schema->getTitle());
         if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
             $schemaSlug = $schemaSlugValue;
-        } else {
-            $schemaSlug = $this->slugify(string: $schema->getTitle());
         }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
@@ -831,21 +971,21 @@ class OasService
      * @param object $schema   The schema object
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function addExtendedPaths(object $register, object $schema): void
     {
         $registerSlugValue = $register->getSlug();
+        $registerSlug      = $this->slugify(string: $register->getTitle());
         if ($registerSlugValue !== null && $registerSlugValue !== '') {
             $registerSlug = $registerSlugValue;
-        } else {
-            $registerSlug = $this->slugify(string: $register->getTitle());
         }
 
         $schemaSlugValue = $schema->getSlug();
+        $schemaSlug      = $this->slugify(string: $schema->getTitle());
         if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
             $schemaSlug = $schemaSlugValue;
-        } else {
-            $schemaSlug = $this->slugify(string: $schema->getTitle());
         }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
@@ -896,6 +1036,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls collection vs single item parameters
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dynamic parameter generation from schema properties
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
     {
@@ -993,6 +1135,8 @@ class OasService
      * @param mixed $propertyDefinition The property definition from the schema
      *
      * @return string The OpenAPI type for the property
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-17
      */
     private function getPropertyType($propertyDefinition): string
     {
@@ -1034,6 +1178,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for GET collection.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function createGetCollectionOperation(object $schema): array
     {
@@ -1100,6 +1246,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for GET single item.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createGetOperation(object $schema): array
     {
@@ -1160,6 +1308,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for PUT.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function createPutOperation(object $schema): array
     {
@@ -1230,6 +1380,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for POST.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function createPostOperation(object $schema): array
     {
@@ -1284,6 +1436,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for DELETE.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createDeleteOperation(object $schema): array
     {
@@ -1328,6 +1482,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for logs endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createLogsOperation(object $schema): array
     {
@@ -1382,6 +1538,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for get files endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createGetFilesOperation(object $schema): array
     {
@@ -1436,6 +1594,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for post file endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createPostFileOperation(object $schema): array
     {
@@ -1504,6 +1664,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for lock endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createLockOperation(object $schema): array
     {
@@ -1558,6 +1720,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for unlock endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createUnlockOperation(object $schema): array
     {
@@ -1605,6 +1769,8 @@ class OasService
      * @param string $string The string to convert
      *
      * @return string The slugified string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function slugify(string $string): string
     {
@@ -1617,6 +1783,8 @@ class OasService
      * @param string $string The string to convert
      *
      * @return string The PascalCase string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
      */
     private function pascalCase(string $string): string
     {
@@ -1632,6 +1800,8 @@ class OasService
      * @param string|null $title The schema title to sanitize
      *
      * @return string The sanitized schema name
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function sanitizeSchemaName(?string $title): string
     {
@@ -1672,30 +1842,32 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple nested loops and conditional checks for validating
      *                                               paths, responses, and schemas
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
      */
     private function validateOasIntegrity(): void
     {
-        // Check for invalid $ref references in schemas.
+        // Pass 1: $ref / allOf integrity inside component schemas.
         if (isset($this->oas['components']['schemas']) === true) {
             $schemaNames = array_keys($this->oas['components']['schemas']);
             foreach ($schemaNames as $schemaName) {
                 if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
                     $this->validateSchemaReferences(
                         schema: $this->oas['components']['schemas'][$schemaName],
-                        context: $schemaName
+                        context: 'components.schemas.'.$schemaName
                     );
                 }
             }
         }
 
-        // Check for invalid allOf constructs in paths.
+        // Pass 2: $ref integrity inside path response schemas.
         if (isset($this->oas['paths']) === true) {
             $pathNames = array_keys($this->oas['paths']);
             foreach ($pathNames as $pathName) {
                 $methods = array_keys($this->oas['paths'][$pathName]);
                 foreach ($methods as $method) {
                     $operation = &$this->oas['paths'][$pathName][$method];
-                    if (isset($operation['responses']) === true) {
+                    if (is_array($operation) === true && isset($operation['responses']) === true) {
                         $statusCodes = array_keys($operation['responses']);
                         foreach ($statusCodes as $statusCode) {
                             $respContent = ($operation['responses'][$statusCode]['content'] ?? []);
@@ -1703,7 +1875,7 @@ class OasService
                             if ($respSchema !== null) {
                                 $this->validateSchemaReferences(
                                     schema: $respSchema,
-                                    context: "path:{$pathName}:{$method}:response:{$statusCode}"
+                                    context: 'paths.'.$pathName.'.'.$method.'.responses.'.$statusCode
                                 );
                             }
                         }
@@ -1713,7 +1885,283 @@ class OasService
                 }
             }//end foreach
         }//end if
+
+        // Pass 3: server URL must be absolute.
+        $this->validateServerUrls();
+
+        // Pass 4: operationId uniqueness with auto-suffix de-duplication.
+        $this->validateOperationIdUniqueness();
+
+        // Pass 5: tag consistency — referenced tags must be defined; defined tags must be used.
+        $this->validateTagConsistency();
+
+        // Pass 6: NLGov rules — HTTP method whitelist (API-01) and status code whitelist (API-03).
+        $this->validateNlGovRules();
+
+        // Pass 7: Strict-mode meta-schema validation against the
+        // vendored OpenAPI 3.1 meta-schema. Best-effort: missing
+        // validator (DI not wired in older fixtures) or missing meta
+        // file (vendoring not run) silently skips this pass.
+        $this->validateAgainstMetaSchema();
     }//end validateOasIntegrity()
+
+    /**
+     * Validate the generated OAS document against the vendored OpenAPI 3.1
+     * meta-schema. Closes oas-validation issue #1378.
+     *
+     * @return void
+     */
+    private function validateAgainstMetaSchema(): void
+    {
+        if ($this->metaValidator === null) {
+            return;
+        }
+
+        $metaPath = __DIR__.'/Resources/meta/openapi-3.1.0.json';
+        if (file_exists($metaPath) === false) {
+            return;
+        }
+
+        $metaJson = (string) file_get_contents($metaPath);
+        $meta     = json_decode($metaJson, true);
+        if (is_array($meta) === false) {
+            return;
+        }
+
+        try {
+            $errors = $this->metaValidator->validate(body: $this->oas, schema: $meta);
+            foreach ($errors as $err) {
+                $this->report->addError(
+                    path: $err['path'],
+                    message: 'OpenAPI 3.1 meta-schema violation: '.$err['message'],
+                    code: 'meta-schema-violation'
+                );
+            }
+        } catch (\Throwable $e) {
+            // Validator errors MUST NOT block OAS generation — log and move on.
+            if ($this->logger !== null) {
+                $this->logger->warning(
+                    '[OasService] meta-schema validation pass errored: '.$e->getMessage(),
+                    ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+        }
+
+    }//end validateAgainstMetaSchema()
+
+    /**
+     * Verify every entry in `servers` uses an absolute URL.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
+     */
+    private function validateServerUrls(): void
+    {
+        $servers = ($this->oas['servers'] ?? []);
+        if (is_array($servers) === false) {
+            return;
+        }
+
+        foreach ($servers as $idx => $server) {
+            $url = (string) ($server['url'] ?? '');
+            if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
+                $this->report->addError(
+                    path: 'servers.'.$idx.'.url',
+                    message: 'Server URL must be absolute (http:// or https://). Got: '.$url,
+                    code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
+                );
+            }
+        }
+    }//end validateServerUrls()
+
+    /**
+     * Walk every operation and ensure operationIds are unique. Collisions are
+     * deduplicated in place by appending a numeric suffix (`_2`, `_3`, ...).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
+     */
+    private function validateOperationIdUniqueness(): void
+    {
+        if (isset($this->oas['paths']) === false || is_array($this->oas['paths']) === false) {
+            return;
+        }
+
+        $seen = [];
+        foreach ($this->oas['paths'] as $pathName => &$pathItem) {
+            if (is_array($pathItem) === false) {
+                continue;
+            }
+
+            foreach ($pathItem as $method => &$operation) {
+                if (is_array($operation) === false || isset($operation['operationId']) === false) {
+                    continue;
+                }
+
+                $original = (string) $operation['operationId'];
+                if ($original === '') {
+                    continue;
+                }
+
+                if (isset($seen[$original]) === false) {
+                    $seen[$original] = 1;
+                    continue;
+                }
+
+                // Collision — auto-suffix until unique.
+                $seen[$original]++;
+                $candidate = $original.'_'.$seen[$original];
+                while (isset($seen[$candidate]) === true) {
+                    $seen[$original]++;
+                    $candidate = $original.'_'.$seen[$original];
+                }
+
+                $seen[$candidate] = 1;
+
+                $operation['operationId'] = $candidate;
+                $this->report->addAutoCorrection(
+                    path: 'paths.'.$pathName.'.'.$method.'.operationId',
+                    message: 'Duplicate operationId "'.$original.'" auto-renamed to "'.$candidate.'".',
+                    code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
+                );
+            }//end foreach
+
+            unset($operation);
+        }//end foreach
+
+        unset($pathItem);
+    }//end validateOperationIdUniqueness()
+
+    /**
+     * Cross-check declared `tags` against tag references in path operations.
+     *
+     * - Every tag referenced by an operation MUST exist in the top-level tags array
+     *   (orphan tag → auto-injected with a generated description, warning logged).
+     * - Every tag defined at the top level SHOULD be referenced by at least one
+     *   operation (unused tag → warning only, not auto-removed).
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+     */
+    private function validateTagConsistency(): void
+    {
+        $declaredTags = [];
+        foreach (($this->oas['tags'] ?? []) as $idx => $tagDef) {
+            if (is_array($tagDef) === true && isset($tagDef['name']) === true) {
+                $declaredTags[(string) $tagDef['name']] = $idx;
+            }
+        }
+
+        $usedTags = [];
+        foreach (($this->oas['paths'] ?? []) as $pathName => $pathItem) {
+            if (is_array($pathItem) === false) {
+                continue;
+            }
+
+            foreach ($pathItem as $method => $operation) {
+                if (is_array($operation) === false) {
+                    continue;
+                }
+
+                foreach (($operation['tags'] ?? []) as $tagName) {
+                    if (is_string($tagName) === false || $tagName === '') {
+                        continue;
+                    }
+
+                    $usedTags[$tagName][] = 'paths.'.$pathName.'.'.$method;
+                }
+            }
+        }
+
+        // Orphan tags — used in operations but not declared.
+        foreach ($usedTags as $tagName => $usages) {
+            if (isset($declaredTags[$tagName]) === true) {
+                continue;
+            }
+
+            $this->oas['tags'][] = [
+                'name'        => $tagName,
+                'description' => 'Operations for '.$tagName,
+            ];
+            $this->report->addAutoCorrection(
+                path: $usages[0],
+                message: 'Tag "'.$tagName.'" used by operations but not declared in top-level tags; auto-added.',
+                code: OasValidationReport::CODE_ORPHAN_TAG,
+            );
+        }
+
+        // Unused tags — declared but never referenced.
+        foreach (array_keys($declaredTags) as $tagName) {
+            if (isset($usedTags[$tagName]) === true) {
+                continue;
+            }
+
+            $this->report->addWarning(
+                path: 'tags['.$declaredTags[$tagName].'].name',
+                message: 'Top-level tag "'.$tagName.'" is declared but not referenced by any operation.',
+                code: OasValidationReport::CODE_UNUSED_TAG,
+            );
+        }
+    }//end validateTagConsistency()
+
+    /**
+     * NLGov API Design Rules — narrow checks that are verifiable from the
+     * OAS document alone:
+     *
+     * - API-01: only GET, POST, PUT, DELETE on documented operations.
+     * - API-03: only standard HTTP status codes on responses.
+     *
+     * @return void
+     */
+    private function validateNlGovRules(): void
+    {
+        if (isset($this->oas['paths']) === false || is_array($this->oas['paths']) === false) {
+            return;
+        }
+
+        $allowedMethods = array_flip(self::ALLOWED_HTTP_METHODS);
+        $allowedCodes   = array_flip(self::ALLOWED_STATUS_CODES);
+
+        foreach ($this->oas['paths'] as $pathName => $pathItem) {
+            if (is_array($pathItem) === false) {
+                continue;
+            }
+
+            foreach ($pathItem as $method => $operation) {
+                $methodKey = strtolower((string) $method);
+                if (isset($allowedMethods[$methodKey]) === false) {
+                    $reason  = 'violates NLGov API-01 (only GET, POST, PUT, DELETE allowed).';
+                    $message = sprintf('Non-standard HTTP method "%s" %s', (string) $method, $reason);
+                    $this->report->addError(
+                        path: 'paths.'.$pathName.'.'.$method,
+                        message: $message,
+                        code: OasValidationReport::CODE_INVALID_HTTP_METHOD,
+                    );
+                    continue;
+                }
+
+                if ($methodKey === 'parameters' || is_array($operation) === false) {
+                    continue;
+                }
+
+                foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
+                    $statusKey = (string) $statusCode;
+                    if (isset($allowedCodes[$statusKey]) === false) {
+                        $this->report->addWarning(
+                            path: 'paths.'.$pathName.'.'.$method.'.responses.'.$statusCode,
+                            message: 'Non-standard HTTP status code "'.$statusCode.'" violates NLGov API-03 conventions.',
+                            code: OasValidationReport::CODE_INVALID_STATUS_CODE,
+                        );
+                    }
+                }
+            }//end foreach
+        }//end foreach
+    }//end validateNlGovRules()
 
     /**
      * Validate schema references recursively
@@ -1725,6 +2173,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-24
      */
     private function validateSchemaReferences(array &$schema, string $context): void
     {
@@ -1760,6 +2210,11 @@ class OasService
                 // If no valid items remain, remove allOf.
                 if (empty($validAllOfItems) === true) {
                     unset($schema['allOf']);
+                    $this->report->addAutoCorrection(
+                        path: $context.'.allOf',
+                        message: 'allOf with no valid items was removed.',
+                        code: OasValidationReport::CODE_INVALID_ALLOF,
+                    );
                 }
 
                 if (empty($validAllOfItems) === false) {
@@ -1797,8 +2252,14 @@ class OasService
                             $schema['type']        = 'string';
                             $schema['description'] = $schema['description'] ?? 'Reference to '.$refPath;
                         }
+
+                        $this->report->addError(
+                            path: $context.'.$ref',
+                            message: 'Dangling $ref to "#/components/schemas/'.$refPath.'"; substituted with type=string.',
+                            code: OasValidationReport::CODE_DANGLING_REF,
+                        );
                     }
-                }
+                }//end if
             }//end if
         }//end if
 
@@ -1844,6 +2305,8 @@ class OasService
      * @param object $schema The schema object.
      *
      * @return array|null The effective authorization array.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function resolveEffectiveAuthorization(object $schema): ?array
     {
@@ -1881,6 +2344,9 @@ class OasService
      * @return array The authorization with roles expanded.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function expandRolesForOas(array $authorization, object $schema, ?object $register=null): array
     {

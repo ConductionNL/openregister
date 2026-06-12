@@ -5,6 +5,9 @@
  *
  * This file contains the controller class for handling configuration-related API requests.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -27,6 +30,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\NotificationService;
+use OCA\OpenRegister\Service\SecurityService;
 use OCP\App\IAppManager;
 use DateTime;
 use stdClass;
@@ -34,7 +38,9 @@ use GuzzleHttp\Client;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -54,6 +60,8 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
 
     /**
      * Configuration mapper instance.
@@ -116,6 +124,8 @@ class ConfigurationController extends Controller
      * @param GitLabHandler        $gitlabHandler        GitLab handler
      * @param IAppManager          $appManager           App manager
      * @param LoggerInterface      $logger               Logger
+     * @param IUserSession         $userSession          User session for admin checks
+     * @param IGroupManager        $groupManager         Group manager for admin checks
      */
     public function __construct(
         string $appName,
@@ -126,7 +136,9 @@ class ConfigurationController extends Controller
         GitHubHandler $githubHandler,
         GitLabHandler $gitlabHandler,
         IAppManager $appManager,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -140,6 +152,21 @@ class ConfigurationController extends Controller
     }//end __construct()
 
     /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    /**
      * Get all configurations.
      *
      * @return JSONResponse JSON response with configurations list
@@ -149,6 +176,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array<'Failed to fetch configurations'|Configuration>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function index(): JSONResponse
     {
@@ -184,9 +213,16 @@ class ConfigurationController extends Controller
      *     array<never, never>>|JSONResponse<404|500,
      *     array{error: 'Configuration not found'|'Failed to fetch configuration'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function show(int $id): JSONResponse
     {
+        // SEC-CTRL-3: prevent IDOR — only admins may read a configuration by id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
 
@@ -214,6 +250,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with enriched configuration details
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function enrichDetails(): JSONResponse
     {
@@ -283,7 +321,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to enrich configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to enrich configuration');
         }//end try
     }//end enrichDetails()
 
@@ -295,9 +333,15 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function create(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -346,7 +390,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to create configuration');
         }//end try
     }//end create()
 
@@ -362,9 +406,15 @@ class ConfigurationController extends Controller
      * @return JSONResponse JSON response with updated configuration
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Already refactored — NPath from try/catch + field mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
             $data          = $this->request->getParams();
@@ -397,10 +447,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                data: ['error' => 'Failed to update configuration: '.$e->getMessage()],
-                statusCode: 500
-            );
+            return $this->errorResponse($e, 'Failed to update configuration');
         }//end try
     }//end update()
 
@@ -462,12 +509,14 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500,
-     *     array{error?: 'Configuration not found'|'Failed to delete configuration',
-     *     success?: true}, array<never, never>>
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
             $this->configurationMapper->delete($configuration);
@@ -506,8 +555,10 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with version comparison
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
-    public function checkVersion(int $id): JSONResponse
+    public function versionStatus(int $id): JSONResponse
     {
         try {
             $configuration = $this->configurationMapper->find($id);
@@ -534,7 +585,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch remote version: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch remote version');
         } catch (Exception $e) {
             $this->logger->error(
                 message: "[ConfigurationController] Failed to check version for configuration {$id}: ".$e->getMessage(),
@@ -546,7 +597,7 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['error' => 'Failed to check version'], statusCode: 500);
         }//end try
-    }//end checkVersion()
+    }//end versionStatus()
 
     /**
      * Preview configuration changes.
@@ -561,9 +612,16 @@ class ConfigurationController extends Controller
      * @psalm-suppress InvalidReturnType
      *
      * @return JSONResponse JSON response with configuration preview
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function preview(int $id): JSONResponse
     {
+        // SEC-CTRL-3: prevent IDOR — only admins may preview a configuration by id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
 
@@ -598,9 +656,15 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function import(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
             $data          = $this->request->getParams();
@@ -642,7 +706,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to import configuration');
         }//end try
     }//end import()
 
@@ -658,9 +722,17 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function export(int $id): JSONResponse
     {
+        // SEC-CTRL-3: prevent IDOR — export (incl. ?includeObjects=true) serialises a
+        // configuration's objects; restrict to admins to block bulk exfiltration by id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration  = $this->configurationMapper->find($id);
             $data           = $this->request->getParams();
@@ -682,7 +754,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to export configuration');
         }//end try
     }//end export()
 
@@ -707,6 +779,8 @@ class ConfigurationController extends Controller
      *     type: 'User'|mixed, url: ''|mixed}, config: array,
      *     project_id?: mixed, ref?: 'main'|mixed}|mixed,...},
      *     page?: int, per_page?: int}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function discover(): JSONResponse
     {
@@ -775,10 +849,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                data: ['error' => 'Failed to discover configurations: '.$e->getMessage()],
-                statusCode: 500
-            );
+            return $this->errorResponse($e, 'Failed to discover configurations');
         }//end try
     }//end discover()
 
@@ -792,6 +863,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with branches list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -823,7 +896,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch branches');
         }//end try
     }//end getGitHubBranches()
 
@@ -835,6 +908,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with repositories list
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function getGitHubRepositories(): JSONResponse
     {
@@ -872,7 +947,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch repositories: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch repositories');
         }//end try
     }//end getGitHubRepositories()
 
@@ -886,6 +961,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with configuration files
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function getGitHubConfigurations(): JSONResponse
     {
@@ -919,7 +996,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch configurations');
         }//end try
     }//end getGitHubConfigurations()
 
@@ -933,6 +1010,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with branches list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -969,7 +1048,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch branches');
         }//end try
     }//end getGitLabBranches()
 
@@ -983,6 +1062,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with configuration files
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function getGitLabConfigurations(): JSONResponse
     {
@@ -1021,7 +1102,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch configurations');
         }//end try
     }//end getGitLabConfigurations()
 
@@ -1127,14 +1208,24 @@ class ConfigurationController extends Controller
             throw new Exception('URL parameter is required', 400);
         }
 
-        // Validate URL.
+        // Validate URL: must be a valid URL.
         if (filter_var($url, FILTER_VALIDATE_URL) === false) {
             throw new Exception('Invalid URL provided', 400);
         }
 
-        // Fetch content from URL.
+        // SEC-SVC-6: replace the ad-hoc (DNS-rebinding/IPv6-bypassable) guard with the
+        // shared anti-SSRF check that resolves every A and AAAA record and rejects any
+        // loopback/private/reserved/link-local target.
+        try {
+            SecurityService::assertSafeFetchUrl($url);
+        } catch (\InvalidArgumentException $e) {
+            throw new Exception($e->getMessage(), 400);
+        }
+
+        // Fetch content from URL. Redirects are disabled so a public host cannot
+        // 302 us to an internal address after the point-in-time DNS validation.
         $client   = new Client();
-        $response = $client->request('GET', $url);
+        $response = $client->request('GET', $url, ['allow_redirects' => false]);
         $content  = $response->getBody()->getContents();
 
         $configData = json_decode($content, true);
@@ -1302,6 +1393,12 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
+            // SEC-CTRL-7: only 4xx validation responses keep the specific message;
+            // 500s return a generic envelope (the real error is logged above).
+            if ($statusCode >= 500) {
+                return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: $statusCode);
+            }
+
             return new JSONResponse(
                 data: ['error' => 'Failed to import configuration: '.$e->getMessage()],
                 statusCode: $statusCode
@@ -1321,9 +1418,15 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function importFromGitHub(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         return $this->importFromSource(
             fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub(params: $params),
             params: $this->request->getParams(),
@@ -1343,9 +1446,15 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function importFromGitLab(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         return $this->importFromSource(
             fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab(params: $params),
             params: $this->request->getParams(),
@@ -1365,9 +1474,15 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function importFromUrl(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         return $this->importFromSource(
             fetchConfig: fn(array $params) => $this->fetchConfigFromUrl(params: $params),
             params: $this->request->getParams(),
@@ -1391,9 +1506,23 @@ class ConfigurationController extends Controller
      * @psalm-suppress InvalidReturnStatement
      *
      * @return JSONResponse JSON response with publish result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function publishToGitHub(int $id): JSONResponse
     {
+        // Authorization: publishToGitHub uses the shared app-level
+        // `github_api_token` to push to any repo that token can write. Restrict
+        // to administrators (mirror the importFromGitHub gate). Ideally
+        // callers would use a per-user token, but until that lands the
+        // endpoint must be admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may publish configurations to GitHub'],
+                statusCode: 403
+            );
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
 
@@ -1787,8 +1916,9 @@ class ConfigurationController extends Controller
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
+        // SEC-CTRL-7: generic 500 envelope; the real error is logged above.
         return new JSONResponse(
-            data: ['error' => 'Failed to publish configuration: '.$exception->getMessage()],
+            data: ['error' => 'Internal server error'],
             statusCode: 500
         );
     }//end handlePublishingError()

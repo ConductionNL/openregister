@@ -6,6 +6,9 @@
  * Flushes APCu-based quota counters to the openregister_tenant_usage database
  * table for persistence, dashboard display, and historical tracking.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -15,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-80
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-80
  */
 
 declare(strict_types=1);
@@ -64,9 +67,13 @@ class TenantUsageSyncJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
-     * @spec openspec/changes/retrofit-tenant-isolation-audit-2026-04-28/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-80
+     * @spec openspec/changes/retrofit-2026-04-28-tenant-isolation-audit/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-80
      */
     protected function run(mixed $argument): void
     {
@@ -106,10 +113,17 @@ class TenantUsageSyncJob extends TimedJob
             $requestKey   = "or_quota_{$orgUuid}_{$hourBucket}";
             $bandwidthKey = "or_bw_{$orgUuid}_{$hourBucket}";
 
-            $requestCount   = apcu_fetch($requestKey, $reqSuccess);
-            $requestCount   = ($reqSuccess === true) ? (int) $requestCount : 0;
-            $bandwidthBytes = apcu_fetch($bandwidthKey, $bwSuccess);
-            $bandwidthBytes = ($bwSuccess === true) ? (int) $bandwidthBytes : 0;
+            $rawRequest   = apcu_fetch($requestKey, $reqSuccess);
+            $requestCount = 0;
+            if ($reqSuccess === true) {
+                $requestCount = (int) $rawRequest;
+            }
+
+            $rawBandwidth   = apcu_fetch($bandwidthKey, $bwSuccess);
+            $bandwidthBytes = 0;
+            if ($bwSuccess === true) {
+                $bandwidthBytes = (int) $rawBandwidth;
+            }
 
             if ($requestCount === 0 && $bandwidthBytes === 0) {
                 continue;

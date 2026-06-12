@@ -5,10 +5,13 @@
  *
  * Provider for parsing and rendering OpenRegister activity events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Activity
  * @package  OCA\OpenRegister\Activity
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -57,7 +60,7 @@ class Provider implements IProvider
      * @param IURLGenerator          $urlGenerator   The URL generator.
      * @param ProviderSubjectHandler $subjectHandler The subject handler.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      */
     public function __construct(
         private IFactory $l10nFactory,
@@ -79,7 +82,7 @@ class Provider implements IProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $previousEvent required by IProvider interface
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      */
     public function parse($language, IEvent $event, ?IEvent $previousEvent=null): IEvent
     {

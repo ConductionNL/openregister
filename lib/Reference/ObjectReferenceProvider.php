@@ -7,10 +7,13 @@
  * to search for and insert rich references to register objects in Mail,
  * Text, Talk, Collectives, and any Nextcloud app supporting the Smart Picker.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Reference
  * @package  OCA\OpenRegister\Reference
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -42,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * Supports hash-routed UI URLs, API object URLs, and direct object routes.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements ISearchableReferenceProvider
 {
@@ -150,7 +154,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function __construct(
         IURLGenerator $urlGenerator,
@@ -177,7 +181,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Provider ID
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getId(): string
     {
@@ -189,7 +193,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Translated title
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getTitle(): string
     {
@@ -201,7 +205,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return int Order value (lower = higher priority)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getOrder(): int
     {
@@ -213,7 +217,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string URL to the app icon
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getIconUrl(): string
     {
@@ -225,7 +229,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string[] List of search provider IDs
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getSupportedSearchProviderIds(): array
     {
@@ -246,7 +250,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return bool True if the URL matches an OpenRegister object reference
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function matchReference(string $referenceText): bool
     {
@@ -265,8 +269,9 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function resolveReference(string $referenceText): ?IReference
     {
@@ -305,8 +310,13 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
             $registerTitle = $this->resolveRegisterName(registerId: $registerId);
 
             // Resolve deep link URL.
+            $selfArray = [];
+            if (is_array($selfData) === true) {
+                $selfArray = $selfData;
+            }
+
             $flatData = array_merge(
-                is_array($selfData) === true ? $selfData : [],
+                $selfArray,
                 ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
             );
 
@@ -384,7 +394,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Cache prefix based on register/schema/uuid
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getCachePrefix(string $referenceId): string
     {
@@ -405,7 +415,9 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string|null Cache key (user ID or empty string for anonymous)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getCacheKey(string $referenceId): ?string
     {
@@ -419,7 +431,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return array{registerId: int, schemaId: int, uuid: string}|null Parsed parts or null
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function parseReference(string $referenceText): ?array
     {
@@ -434,7 +446,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 1: Hash-routed UI URL.
         // /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
-        $hashPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/('.$uuidPattern.')$/i';
+        $hashPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($hashPattern, $referenceText, $matches) === 1) {
             return [
@@ -446,7 +462,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 2: API object URL.
         // /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}.
-        $apiPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+        $apiPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($apiPattern, $referenceText, $matches) === 1) {
             return [
@@ -458,7 +478,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 3: Direct object show route.
         // /apps/openregister/objects/{registerId}/{schemaId}/{uuid}.
-        $directPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+        $directPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($directPattern, $referenceText, $matches) === 1) {
             return [
@@ -479,7 +503,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string The object title
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     private function extractTitle(array $objectData, array $selfData): string
     {
@@ -514,7 +538,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string Truncated description (max 200 chars)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     private function extractDescription(array $objectData): string
     {
@@ -545,7 +569,9 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return array<int, array{label: string, value: string}> Preview properties
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     private function extractPreviewProperties(array $objectData): array
     {
@@ -593,7 +619,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string The schema title or fallback
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     private function resolveSchemaName(int $schemaId): string
     {
@@ -617,7 +643,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string The register title or fallback
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     private function resolveRegisterName(int $registerId): string
     {

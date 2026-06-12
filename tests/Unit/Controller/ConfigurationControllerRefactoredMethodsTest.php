@@ -98,7 +98,9 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 			githubHandler: $this->githubHandler,
 			gitlabHandler: $this->gitlabHandler,
 			appManager: $this->appManager,
-			logger: $this->logger
+			logger: $this->logger,
+			userSession: $this->createMock(\OCP\IUserSession::class),
+			groupManager: $this->createMock(\OCP\IGroupManager::class)
 		);
 
 		// Set up reflection for accessing private methods.

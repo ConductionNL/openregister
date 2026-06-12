@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent>
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -149,6 +149,7 @@
 										<NcCheckboxRadioSwitch
 											:checked="allSelected"
 											:indeterminate="someSelected"
+											:aria-label="t('openregister', 'Select all entities')"
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Value') }}</th>
@@ -169,6 +170,7 @@
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="selectedEntities.includes(entity.id)"
+											:aria-label="t('openregister', 'Select entity {value}', { value: entity.value })"
 											@update:checked="(checked) => toggleEntitySelection(entity.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
@@ -218,17 +220,6 @@
 				@page-changed="onPageChanged"
 				@page-size-changed="onPageSizeChanged" />
 		</div>
-
-		<!-- Search Sidebar -->
-		<template #details>
-			<EntitiesSidebar
-				:search.sync="searchQuery"
-				:type.sync="typeFilter"
-				:category.sync="categoryFilter"
-				@update:search="handleSearchUpdate"
-				@update:type="handleTypeUpdate"
-				@update:category="handleCategoryUpdate" />
-		</template>
 	</NcAppContent>
 </template>
 
@@ -254,8 +245,8 @@ import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 
-import EntitiesSidebar from '../../components/EntitiesSidebar.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * Main view for managing entities
@@ -283,7 +274,6 @@ export default {
 		FilterVariant,
 		EyeOutline,
 		DotsHorizontal,
-		EntitiesSidebar,
 		PaginationComponent,
 	},
 	data() {
@@ -293,7 +283,6 @@ export default {
 			totalEntities: 0,
 			limit: 20,
 			currentPage: 1,
-			sidebarOpen: false,
 			searchQuery: '',
 			typeFilter: null,
 			categoryFilter: null,
@@ -303,8 +292,18 @@ export default {
 	},
 	computed: {
 		/**
+		 * Whether the entities filter sidebar is currently open (driven by navigationStore).
+		 *
+		 * @spec exclude UI sidebar open-state proxy, driven by navigationStore
+		 * @return {boolean}
+		 */
+		sidebarOpen() {
+			return navigationStore.sidebarState.entities
+		},
+		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude list-view pagination total-pages helper (computed)
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -314,6 +313,7 @@ export default {
 		/**
 		 * Get paginated entities for current page
 		 *
+		 * @spec exclude list-view client-side pagination slice (computed)
 		 * @return {Array} Paginated entities
 		 */
 		paginatedEntities() {
@@ -325,6 +325,7 @@ export default {
 		/**
 		 * Check if all entities are selected
 		 *
+		 * @spec exclude list-view select-all checkbox state (computed)
 		 * @return {boolean} True if all selected
 		 */
 		allSelected() {
@@ -334,30 +335,48 @@ export default {
 		/**
 		 * Check if some entities are selected
 		 *
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
 		 * @return {boolean} True if some selected
 		 */
 		someSelected() {
 			return this.selectedEntities.length > 0 && !this.allSelected
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; loads entity list and wires root event bus listeners from EntitiesSideBar.
+	 */
 	mounted() {
 		this.loadEntities()
+		// Listen for filter changes emitted by EntitiesSideBar via the root event bus.
+		this.$root.$on('entities-search-changed', this.handleSearchUpdate)
+		this.$root.$on('entities-type-changed', this.handleTypeUpdate)
+		this.$root.$on('entities-category-changed', this.handleCategoryUpdate)
+	},
+	/**
+	 * @spec exclude Lifecycle teardown; removes root event bus listeners to prevent memory leaks.
+	 */
+	beforeDestroy() {
+		this.$root.$off('entities-search-changed', this.handleSearchUpdate)
+		this.$root.$off('entities-type-changed', this.handleTypeUpdate)
+		this.$root.$off('entities-category-changed', this.handleCategoryUpdate)
 	},
 	methods: {
 		t,
 
 		/**
-		 * Toggle sidebar visibility
+		 * Toggle the entities filter sidebar via navigationStore.
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
 		 * @return {void}
 		 */
 		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
+			navigationStore.setSidebarState('entities', !navigationStore.sidebarState.entities)
 		},
 
 		/**
-		 * Handle search query update
+		 * Handle search query update from EntitiesSideBar event bus emission.
 		 *
+		 * @spec exclude list-view search-input handler; resets page and reloads (linked-entity-types contract)
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -368,8 +387,9 @@ export default {
 		},
 
 		/**
-		 * Handle type filter update
+		 * Handle type filter update from EntitiesSideBar event bus emission.
 		 *
+		 * @spec exclude list-view filter-input handler; resets page and reloads
 		 * @param {string|null} type - Type filter
 		 * @return {void}
 		 */
@@ -380,8 +400,9 @@ export default {
 		},
 
 		/**
-		 * Handle category filter update
+		 * Handle category filter update from EntitiesSideBar event bus emission.
 		 *
+		 * @spec exclude list-view filter-input handler; resets page and reloads
 		 * @param {string|null} category - Category filter
 		 * @return {void}
 		 */
@@ -394,6 +415,7 @@ export default {
 		/**
 		 * Load entities from the API
 		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
 		 * @return {Promise<void>}
 		 */
 		async loadEntities() {
@@ -436,6 +458,7 @@ export default {
 		/**
 		 * Refresh the entities list
 		 *
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshEntities() {
@@ -445,6 +468,7 @@ export default {
 		/**
 		 * Handle page change event
 		 *
+		 * @spec exclude list-view pagination page-change handler
 		 * @param {number} page - New page number
 		 * @return {void}
 		 */
@@ -456,6 +480,7 @@ export default {
 		/**
 		 * Handle page size change event
 		 *
+		 * @spec exclude list-view pagination page-size-change handler
 		 * @param {number} pageSize - New page size
 		 * @return {void}
 		 */
@@ -468,6 +493,7 @@ export default {
 		/**
 		 * Toggle select all entities
 		 *
+		 * @spec exclude list-view select-all checkbox plumbing
 		 * @param {boolean} checked - Whether to select all
 		 * @return {void}
 		 */
@@ -482,6 +508,7 @@ export default {
 		/**
 		 * Toggle entity selection
 		 *
+		 * @spec exclude list-view single-row selection toggle plumbing
 		 * @param {number} entityId - Entity ID
 		 * @param {boolean} checked - Whether entity is selected
 		 * @return {void}
@@ -497,6 +524,7 @@ export default {
 		/**
 		 * View entity details
 		 *
+		 * @spec exclude list-view router-navigation plumbing to the entity detail page
 		 * @param {object} entity - Entity object
 		 * @return {void}
 		 */
@@ -507,6 +535,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

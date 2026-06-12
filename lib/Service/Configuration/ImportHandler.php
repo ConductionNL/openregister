@@ -6,6 +6,9 @@
  * This file contains the handler class for importing configurations
  * from various sources in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -17,16 +20,19 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-13
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-86
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-13
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
+use RuntimeException;
 use stdClass;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -44,10 +50,14 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTime;
 use Symfony\Component\Yaml\Yaml;
@@ -220,19 +230,48 @@ class ImportHandler
     private ?DeployedWorkflowMapper $deployedWfMapper = null;
 
     /**
+     * Optional task service for seeding related VTODO items.
+     *
+     * @var TaskService|null
+     */
+    private ?TaskService $taskService = null;
+
+    /**
+     * Optional note service for seeding related comments.
+     *
+     * @var NoteService|null
+     */
+    private ?NoteService $noteService = null;
+
+    /**
+     * Optional file service for seeding related attachments.
+     *
+     * @var FileService|null
+     */
+    private ?FileService $fileService = null;
+
+    /**
+     * Optional user session for tasks/notes that require a logged-in actor.
+     *
+     * @var IUserSession|null
+     */
+    private ?IUserSession $userSession = null;
+
+    /**
      * Constructor for ImportHandler.
      *
-     * @param SchemaMapper        $schemaMapper        The schema mapper.
-     * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param MagicMapper         $objectEntityMapper  The object entity mapper.
-     * @param ConfigurationMapper $configurationMapper The configuration mapper.
-     * @param MappingMapper       $mappingMapper       The mapping mapper.
-     * @param Client              $client              The HTTP client for URL fetching.
-     * @param IAppConfig          $appConfig           The app config.
-     * @param LoggerInterface     $logger              The logger interface.
-     * @param string              $appDataPath         The app data path.
-     * @param UploadHandler       $uploadHandler       The upload handler.
-     * @param ObjectService       $objectService       The object service.
+     * @param SchemaMapper                                       $schemaMapper         The schema mapper.
+     * @param RegisterMapper                                     $registerMapper       The register mapper.
+     * @param MagicMapper                                        $objectEntityMapper   The object entity mapper.
+     * @param ConfigurationMapper                                $configurationMapper  The configuration mapper.
+     * @param MappingMapper                                      $mappingMapper        The mapping mapper.
+     * @param Client                                             $client               The HTTP client for URL fetching.
+     * @param IAppConfig                                         $appConfig            The app config.
+     * @param LoggerInterface                                    $logger               The logger interface.
+     * @param string                                             $appDataPath          The app data path.
+     * @param UploadHandler                                      $uploadHandler        The upload handler.
+     * @param ObjectService                                      $objectService        The object service.
+     * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -245,7 +284,8 @@ class ImportHandler
         LoggerInterface $logger,
         string $appDataPath,
         UploadHandler $uploadHandler,
-        ObjectService $objectService
+        ObjectService $objectService,
+        private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator=null
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -270,7 +310,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function setObjectService(ObjectService $objectService): void
     {
@@ -287,7 +327,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function setOpenConnectorConfigurationService(mixed $service): void
     {
@@ -319,6 +359,55 @@ class ImportHandler
     }//end setDeployedWorkflowMapper()
 
     /**
+     * Inject the TaskService used by seed-related-items to create VTODO tasks.
+     *
+     * @param TaskService|null $taskService Optional task service.
+     *
+     * @return void
+     */
+    public function setTaskService(?TaskService $taskService): void
+    {
+        $this->taskService = $taskService;
+    }//end setTaskService()
+
+    /**
+     * Inject the NoteService used by seed-related-items to attach comments.
+     *
+     * @param NoteService|null $noteService Optional note service.
+     *
+     * @return void
+     */
+    public function setNoteService(?NoteService $noteService): void
+    {
+        $this->noteService = $noteService;
+    }//end setNoteService()
+
+    /**
+     * Inject the FileService used by seed-related-items to attach files.
+     *
+     * @param FileService|null $fileService Optional file service.
+     *
+     * @return void
+     */
+    public function setFileService(?FileService $fileService): void
+    {
+        $this->fileService = $fileService;
+    }//end setFileService()
+
+    /**
+     * Inject the IUserSession used to detect whether a logged-in actor
+     * exists at seed time. Tasks + notes are skipped without one.
+     *
+     * @param IUserSession|null $userSession Optional user session.
+     *
+     * @return void
+     */
+    public function setUserSession(?IUserSession $userSession): void
+    {
+        $this->userSession = $userSession;
+    }//end setUserSession()
+
+    /**
      * Set the MagicMapper dependency for ensuring magic mapper tables exist.
      *
      * This method allows setting the MagicMapper after construction for
@@ -328,7 +417,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function setMagicMapper(MagicMapper $magicMapper): void
     {
@@ -345,7 +434,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
@@ -362,7 +451,7 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function decode(string $data, ?string $type): ?array
     {
@@ -400,7 +489,7 @@ class ImportHandler
      *
      * @return array The converted array data.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function ensureArrayStructure(mixed $data): array
     {
@@ -431,7 +520,7 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -464,7 +553,7 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -498,7 +587,7 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -534,7 +623,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
      */
     public function importRegister(
         array $data,
@@ -558,7 +647,6 @@ class ImportHandler
             try {
                 $existingRegister = $this->registerMapper->find(
                     id: strtolower($data['slug']),
-                    _extend: [],
                     published: null,
                     _rbac: false,
                     _multitenancy: false
@@ -665,7 +753,7 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-13
      */
     private function importMapping(
         array $data,
@@ -747,7 +835,7 @@ class ImportHandler
      *
      * @throws Exception Always throws with duplicate register information.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
      */
     private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
@@ -823,7 +911,7 @@ class ImportHandler
      *
      * @throws Exception Always throws with duplicate schema information.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
      */
     private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
@@ -907,7 +995,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
      */
     public function importSchema(
         array $data,
@@ -917,6 +1005,52 @@ class ImportHandler
         ?string $version=null,
         bool $force=false
     ): Schema {
+        // Pre-validate the schema's shape against a minimal meta-schema
+        // before we mutate it. Catches structurally-invalid imports
+        // (no `properties` map, wrong type) early, before persistence,
+        // so the import API returns a clear error instead of a deep
+        // mapper failure later. Validator is null-safe: when not wired,
+        // import proceeds on the legacy path.
+        if ($this->schemaShapeValidator !== null) {
+            $shapeErrors = $this->schemaShapeValidator->validate(
+                body: $data,
+                schema: $this->minimalSchemaShapeMetaSchema()
+            );
+            if ($shapeErrors !== []) {
+                $msg = 'imported schema fails OAS-shape validation: '.implode(
+                            '; ',
+                            array_map(
+                        static fn($e) => ($e['path'].' '.$e['message']),
+                        $shapeErrors
+                    )
+                            );
+                throw new RuntimeException($msg);
+            }
+        }
+
+        // Guard: a schema fragment MUST carry a non-empty slug. Without it the
+        // later `$this->schemaMapper->find($data['slug'])` lookup receives null
+        // and raises an uncaught \TypeError — which is an \Error, NOT an
+        // \Exception, so the caller's `catch (Exception)` never sees it and the
+        // WHOLE register import aborts on one bad fragment. Fail fast with a
+        // descriptive \RuntimeException (an \Exception) so the caller skips this
+        // fragment and continues importing the rest of the app's data layer.
+        $slug = $data['slug'] ?? null;
+        if (is_string($slug) === false || trim($slug) === '') {
+            $title = (string) ($data['title'] ?? '');
+            $hint  = 'no title';
+            if ($title !== '') {
+                $hint = "title '{$title}'";
+            }
+
+            $msg = "imported schema fragment is missing a 'slug' ({$hint}); skipping fragment";
+            $this->logger->error(
+                message: '[ImportHandler] '.$msg,
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            throw new RuntimeException($msg);
+        }
+
         try {
             // Remove id, uuid, and organisation from the data.
             unset($data['id'], $data['uuid'], $data['organisation']);
@@ -1258,7 +1392,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
      */
     public function importFromJson(
         array $data,
@@ -1544,6 +1678,16 @@ class ImportHandler
                     $registerData['schemas'] = $schemaIds;
                 }//end if
 
+                // Propagate parent-level x-openregister.type onto the register
+                // so consuming apps can filter mock/demo data via
+                // `GET /api/registers?filters[type]=mock`. Per-register
+                // overrides on `$registerData['type']` take precedence so a
+                // single configuration file can mix register types.
+                $parentType = ($data['x-openregister']['type'] ?? null);
+                if (isset($registerData['type']) === false && $parentType !== null && $parentType !== '') {
+                    $registerData['type'] = (string) $parentType;
+                }
+
                 $register = $this->importRegister(
                     data: $registerData,
                     owner: $owner,
@@ -1652,6 +1796,13 @@ class ImportHandler
             );
         }//end if
 
+        // Resolve `@ref:<slug>` seed-reference tokens to concrete target UUIDs
+        // before the import loop. Seed objects reference siblings by slug; the
+        // referenced schema properties are `format: uuid`, so the tokens must be
+        // rewritten to the target object's UUID (and the targets given a stable
+        // id) before validation runs inside saveObject().
+        $data = $this->resolveSeedReferenceTokens(data: $data);
+
         // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
         // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
         // Process and import objects.
@@ -1672,9 +1823,39 @@ class ImportHandler
                 // This is CRITICAL - passing objects avoids organisation filter in find().
                 $registerObject = $this->registersMap[$rawRegister] ?? null;
                 $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
+
+                // Fallback for object-only bundles that reference pre-existing
+                // registers/schemas (e.g. the rapportage templates that ship a
+                // dashboard against the already-imported reports/dashboard).
+                if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
+                    try {
+                        $registerObject = $this->registerMapper->find(
+                            $rawRegister,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $this->registersMap[$rawRegister] = $registerObject;
+                    } catch (\Throwable $e) {
+                        $registerObject = null;
+                    }
+                }
+
+                if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
+                    try {
+                        $schemaObject = $this->schemaMapper->find(
+                            $rawSchema,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $this->schemasMap[$rawSchema] = $schemaObject;
+                    } catch (\Throwable $e) {
+                        $schemaObject = null;
+                    }
+                }
+
                 if ($registerObject === null || $schemaObject === null) {
                     $this->logger->warning(
-                        message: '[ImportHandler] Skipping object import - register or schema not found in maps',
+                        message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
                         context: [
                             'file'          => __FILE__,
                             'line'          => __LINE__,
@@ -1761,11 +1942,18 @@ class ImportHandler
                         $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
                         // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
                         // This avoids organisation filter issues in find().
+                        // Installer-time seeding runs in the repair/CLI context
+                        // with no user session ('Anonymous'); bypass RBAC and
+                        // multitenancy here as everywhere else in this trusted
+                        // import path, otherwise seed objects on RBAC-guarded
+                        // schemas (e.g. Retainer Drawdown) abort the whole import.
                         $object = $this->objectService->saveObject(
                             object: $objectData,
                             register: $registerObject,
                             schema: $schemaObject,
-                            uuid: $uuid
+                            uuid: $uuid,
+                            _rbac: false,
+                            _multitenancy: false
                         );
                         $result['objects'][] = $object;
                     }
@@ -1791,10 +1979,16 @@ class ImportHandler
                     // Create new object.
                     // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
                     // This avoids organisation filter issues in find().
+                    // Installer-time seeding runs without a user session
+                    // ('Anonymous'); bypass RBAC/multitenancy as in the rest of
+                    // this trusted import path so seed objects on RBAC-guarded
+                    // schemas don't abort the whole import.
                     $object = $this->objectService->saveObject(
                         object: $objectData,
                         register: $registerObject,
-                        schema: $schemaObject
+                        schema: $schemaObject,
+                        _rbac: false,
+                        _multitenancy: false
                     );
                     $result['objects'][] = $object;
                 }//end if
@@ -1860,6 +2054,370 @@ class ImportHandler
 
         return $result;
     }//end importFromJson()
+
+    /**
+     * Resolve `@ref:<slug>` seed-reference tokens to target object UUIDs.
+     *
+     * Seed objects declare relationships to sibling seed objects by slug using
+     * the `@ref:<slug>` token (or the disambiguated `@ref:<schema-slug>:<slug>`
+     * form) in any property value. The referenced schema properties are normally
+     * constrained to `format: uuid`, so a literal slug token would fail
+     * validation inside {@see SaveObject}. This method runs before the
+     * object-import loop and:
+     *
+     *  1. Assigns every referenced target object a stable UUID — reusing the
+     *     UUID of an already-imported object with the same register+schema+slug
+     *     (so re-imports stay idempotent), otherwise minting a fresh v4 UUID —
+     *     and writes it into `@self.id` so saveObject persists that exact id.
+     *  2. Replaces every `@ref:` token in object property values with the
+     *     resolved target UUID.
+     *
+     * Unresolvable or ambiguous tokens are left untouched and logged as a
+     * warning, so the subsequent schema validation surfaces them rather than
+     * silently dropping the relationship. Objects that are never referenced are
+     * left exactly as-is (the import loop assigns their identity as before).
+     *
+     * @param array $data The configuration data.
+     *
+     * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
+     */
+    private function resolveSeedReferenceTokens(array $data): array
+    {
+        if (($data['components']['objects'] ?? null) === null
+            || is_array($data['components']['objects']) === false
+        ) {
+            return $data;
+        }
+
+        // Collect the slugs that are actually referenced, so we only resolve
+        // identities for genuine reference targets (and skip the work entirely
+        // when no object references another).
+        $referencedSlugs = [];
+        $refSchemaSlugs  = [];
+        foreach ($data['components']['objects'] as $objectData) {
+            if (is_array($objectData) === true) {
+                $this->collectRefTargets(
+                    value: $objectData,
+                    bareSlugs: $referencedSlugs,
+                    schemaSlugs: $refSchemaSlugs
+                );
+            }
+        }
+
+        if (count($referencedSlugs) === 0 && count($refSchemaSlugs) === 0) {
+            return $data;
+        }
+
+        // PASS 1 — assign a stable UUID to each referenced target and index it.
+        $uuidBySchemaSlug = [];
+        $uuidBySlug       = [];
+        $ambiguousSlugs   = [];
+
+        foreach ($data['components']['objects'] as &$targetData) {
+            if (is_array($targetData) === false) {
+                continue;
+            }
+
+            $objectSlug = $targetData['@self']['slug'] ?? null;
+            if (empty($objectSlug) === true) {
+                continue;
+            }
+
+            $schemaSlug    = $targetData['@self']['schema'] ?? null;
+            $schemaSlugKey = null;
+            if (is_string($schemaSlug) === true && $schemaSlug !== '') {
+                $schemaSlugKey = $schemaSlug.':'.$objectSlug;
+            }
+
+            // Only objects that something references need a pre-resolved identity.
+            $isReferenced = (array_key_exists($objectSlug, $referencedSlugs) === true
+                || ($schemaSlugKey !== null && array_key_exists($schemaSlugKey, $refSchemaSlugs) === true));
+            if ($isReferenced === false) {
+                continue;
+            }
+
+            // A target whose register/schema cannot be resolved will be skipped
+            // by the import loop and never persisted; pre-assigning it an id
+            // would leave referrers pointing at a dangling, never-stored UUID.
+            // Leave it unmapped so replaceRefTokens logs the unresolved reference
+            // instead of silently fabricating one.
+            [$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData);
+            if ($registerObject === null || $schemaObject === null) {
+                continue;
+            }
+
+            // Prefer the UUID already persisted for this register+schema+slug so
+            // re-imports stay idempotent and resolved references always match the
+            // id the import loop will keep on update; fall back to an explicit
+            // seed id (first import), then a freshly minted one.
+            $uuid = $this->findExistingSeedUuid(
+                register: $registerObject,
+                schema: $schemaObject,
+                slug: $objectSlug
+            );
+            if (empty($uuid) === true) {
+                $uuid = $targetData['@self']['id'] ?? null;
+            }
+
+            if (empty($uuid) === true) {
+                $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+            }
+
+            $targetData['@self']['id'] = $uuid;
+
+            if ($schemaSlugKey !== null) {
+                $uuidBySchemaSlug[$schemaSlugKey] = $uuid;
+            }
+
+            $isDuplicateSlug = (array_key_exists($objectSlug, $uuidBySlug) === true
+                && $uuidBySlug[$objectSlug] !== $uuid);
+            if ($isDuplicateSlug === true) {
+                $ambiguousSlugs[$objectSlug] = true;
+            }
+
+            if ($isDuplicateSlug === false) {
+                $uuidBySlug[$objectSlug] = $uuid;
+            }
+        }//end foreach
+
+        unset($targetData);
+
+        // PASS 2 — replace @ref: tokens in every object's property values.
+        foreach ($data['components']['objects'] as &$objectData) {
+            if (is_array($objectData) === false) {
+                continue;
+            }
+
+            $self = $objectData['@self'] ?? null;
+            unset($objectData['@self']);
+
+            $objectData = $this->replaceRefTokens(
+                value: $objectData,
+                uuidBySchemaSlug: $uuidBySchemaSlug,
+                uuidBySlug: $uuidBySlug,
+                ambiguousSlugs: $ambiguousSlugs
+            );
+
+            if ($self !== null) {
+                $objectData['@self'] = $self;
+            }
+        }//end foreach
+
+        unset($objectData);
+
+        return $data;
+    }//end resolveSeedReferenceTokens()
+
+    /**
+     * Recursively collect the slugs referenced by `@ref:` tokens in a value.
+     *
+     * @param mixed $value       The property value to scan.
+     * @param array $bareSlugs   Accumulator of "objectSlug" => true (by reference).
+     * @param array $schemaSlugs Accumulator of "schemaSlug:objectSlug" => true (by reference).
+     *
+     * @return void
+     */
+    private function collectRefTargets(mixed $value, array &$bareSlugs, array &$schemaSlugs): void
+    {
+        if (is_array($value) === true) {
+            foreach ($value as $item) {
+                $this->collectRefTargets(value: $item, bareSlugs: $bareSlugs, schemaSlugs: $schemaSlugs);
+            }
+
+            return;
+        }
+
+        if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
+            return;
+        }
+
+        $reference = substr($value, strlen('@ref:'));
+        if (str_contains($reference, ':') === true) {
+            $schemaSlugs[$reference] = true;
+            return;
+        }
+
+        $bareSlugs[$reference] = true;
+    }//end collectRefTargets()
+
+    /**
+     * Recursively replace `@ref:` tokens in a value with resolved target UUIDs.
+     *
+     * A token is matched only when it spans the whole string value, in one of:
+     *  - `@ref:<slug>`               — resolved by slug (must be unambiguous).
+     *  - `@ref:<schema-slug>:<slug>` — resolved by schema + slug (explicit).
+     *
+     * @param mixed $value            The property value (scalar, list, or map).
+     * @param array $uuidBySchemaSlug Map of "schemaSlug:objectSlug" => uuid.
+     * @param array $uuidBySlug       Map of "objectSlug" => uuid.
+     * @param array $ambiguousSlugs   Set of slugs that map to multiple objects.
+     *
+     * @return mixed The value with any `@ref:` tokens replaced.
+     */
+    private function replaceRefTokens(
+        mixed $value,
+        array $uuidBySchemaSlug,
+        array $uuidBySlug,
+        array $ambiguousSlugs
+    ): mixed {
+        if (is_array($value) === true) {
+            foreach ($value as $key => $item) {
+                $value[$key] = $this->replaceRefTokens(
+                    value: $item,
+                    uuidBySchemaSlug: $uuidBySchemaSlug,
+                    uuidBySlug: $uuidBySlug,
+                    ambiguousSlugs: $ambiguousSlugs
+                );
+            }
+
+            return $value;
+        }
+
+        if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
+            return $value;
+        }
+
+        $reference  = substr($value, strlen('@ref:'));
+        $schemaSlug = null;
+        $objectSlug = $reference;
+        if (str_contains($reference, ':') === true) {
+            [$schemaSlug, $objectSlug] = explode(':', $reference, 2);
+        }
+
+        if ($schemaSlug !== null && $schemaSlug !== '') {
+            if (array_key_exists($schemaSlug.':'.$objectSlug, $uuidBySchemaSlug) === true) {
+                return $uuidBySchemaSlug[$schemaSlug.':'.$objectSlug];
+            }
+
+            $this->logger->warning(
+                message: '[ImportHandler] Unresolved seed reference "'.$value.'" — no imported object for that schema+slug.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return $value;
+        }
+
+        if (array_key_exists($objectSlug, $ambiguousSlugs) === true) {
+            $this->logger->warning(
+                message: '[ImportHandler] Ambiguous seed reference "'.$value.'"; slug exists in '
+                    .'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return $value;
+        }
+
+        if (array_key_exists($objectSlug, $uuidBySlug) === true) {
+            return $uuidBySlug[$objectSlug];
+        }
+
+        $this->logger->warning(
+            message: '[ImportHandler] Unresolved seed reference "'.$value.'" — no imported object with that slug.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        return $value;
+    }//end replaceRefTokens()
+
+    /**
+     * Resolve a seed object's `@self` register + schema slugs to their entities,
+     * using the in-flight import maps first and falling back to a direct mapper
+     * lookup (RBAC/multitenancy bypassed, as everywhere else in this trusted
+     * import path). Returns nulls when either cannot be resolved.
+     *
+     * @param array $objectData The seed object (with @self register/schema).
+     *
+     * @return array{0: ?Register, 1: ?Schema} The resolved register and schema.
+     */
+    private function resolveImportRegisterSchema(array $objectData): array
+    {
+        $rawRegister = $objectData['@self']['register'] ?? null;
+        $rawSchema   = $objectData['@self']['schema'] ?? null;
+
+        $registerObject = $this->registersMap[$rawRegister] ?? null;
+        if ($registerObject instanceof Register === false
+            && is_string($rawRegister) === true
+            && $rawRegister !== ''
+        ) {
+            try {
+                $registerObject = $this->registerMapper->find($rawRegister, _rbac: false, _multitenancy: false);
+                $this->registersMap[$rawRegister] = $registerObject;
+            } catch (\Throwable $e) {
+                $registerObject = null;
+            }
+        }
+
+        $schemaObject = $this->schemasMap[$rawSchema] ?? null;
+        if ($schemaObject instanceof Schema === false
+            && is_string($rawSchema) === true
+            && $rawSchema !== ''
+        ) {
+            try {
+                $schemaObject = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
+                $this->schemasMap[$rawSchema] = $schemaObject;
+            } catch (\Throwable $e) {
+                $schemaObject = null;
+            }
+        }
+
+        if ($registerObject instanceof Register === false) {
+            $registerObject = null;
+        }
+
+        if ($schemaObject instanceof Schema === false) {
+            $schemaObject = null;
+        }
+
+        return [$registerObject, $schemaObject];
+    }//end resolveImportRegisterSchema()
+
+    /**
+     * Look up the UUID of an already-imported object with the given
+     * register + schema + slug, so re-imports reuse the same identity.
+     *
+     * @param Register $register The resolved register.
+     * @param Schema   $schema   The resolved schema.
+     * @param string   $slug     The seed object slug.
+     *
+     * @return string|null The existing object UUID, or null when none exists.
+     */
+    private function findExistingSeedUuid(Register $register, Schema $schema, string $slug): ?string
+    {
+        $search = [
+            '@self'  => [
+                'register' => (int) $register->getId(),
+                'schema'   => (int) $schema->getId(),
+                'slug'     => $slug,
+            ],
+            '_limit' => 1,
+        ];
+
+        try {
+            $results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_array($results) === false || count($results) === 0) {
+            return null;
+        }
+
+        $existing = $results[0];
+        if ($existing instanceof ObjectEntity) {
+            $existing = $existing->jsonSerialize();
+        }
+
+        if (is_array($existing) === false) {
+            return null;
+        }
+
+        $uuid = $existing['@self']['id'] ?? $existing['id'] ?? null;
+        if (is_string($uuid) === true && $uuid !== '') {
+            return $uuid;
+        }
+
+        return null;
+    }//end findExistingSeedUuid()
 
     /**
      * Process workflow deployment during import (Phase 2).
@@ -1997,7 +2555,7 @@ class ImportHandler
      *
      * @return array<string, mixed> Updated result array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-86
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
      */
     private function processWorkflowHookWiring(
         array $workflows,
@@ -2125,7 +2683,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -2411,6 +2969,20 @@ class ImportHandler
                 );
             }//end if
 
+            // **AUTO-REGISTER CREATION (runtime-schema-api / data-import-export spec)**:
+            // When a runtime caller (e.g. OpenBuild's schema editor) imports an OAS
+            // marked as `x-openregister.type=application`, the installer-time `repair`
+            // step that normally provisions a Register row does NOT run. Without this
+            // step, the smoke-test foot-gun reappears: schemas exist but no Register
+            // wraps them, so slug-aware searches return zero. This block closes that gap.
+            $this->autoCreateRegisterIfApplication(
+                data: $data,
+                appId: $appId,
+                schemas: $result['schemas'],
+                configuration: $configuration,
+                result: $result
+            );
+
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
@@ -2420,6 +2992,213 @@ class ImportHandler
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
     }//end importFromApp()
+
+    /**
+     * Auto-create or reconcile a Register entity for application-type imports
+     *
+     * Implements the runtime-schema-api spec contract: when an imported OAS
+     * document carries `x-openregister.type=application`, derive a Register
+     * from `x-openregister.app` (slug), `info.title` (title), and
+     * `info.description` (description), then attach every imported schema's
+     * numeric ID to the resulting Register's `schemas[]` field.
+     *
+     * Lookup is idempotent on `(slug, organisationId)` so a re-import of the
+     * same OAS updates the existing row instead of inserting a duplicate. The
+     * organisation tuple preserves the multi-tenant boundary that OR relies
+     * on everywhere else — two organisations on the same Nextcloud must be
+     * able to install the same app independently.
+     *
+     * Skipped silently when `x-openregister.type` is absent or set to
+     * anything other than `application` (e.g. `library`, the default).
+     * The Configuration row is also updated to reference the resulting
+     * Register ID so the (Configuration, Schemas, Register) triple stays
+     * consistent.
+     *
+     * @param array         $data          The full OAS document.
+     * @param string        $appId         The app identifier (caller).
+     * @param array         $schemas       Imported schemas (Schema entities or stdClass with getId()).
+     * @param Configuration $configuration The Configuration row already persisted.
+     * @param array         $result        Mutable result array; the resulting Register entity is appended into $result['registers'].
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-branch auto-create / reconcile logic.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Idempotent insert-or-update with multiple optional fields.
+     */
+    private function autoCreateRegisterIfApplication(
+        array $data,
+        string $appId,
+        array $schemas,
+        Configuration $configuration,
+        array &$result
+    ): void {
+        $xOpenregister = $data['x-openregister'] ?? [];
+        $type          = $xOpenregister['type'] ?? null;
+
+        // Only trigger on `application`-typed configurations.
+        if ($type !== 'application') {
+            return;
+        }
+
+        // Derive register attributes from the OAS document.
+        $info = $data['info'] ?? [];
+        $slug = $xOpenregister['app'] ?? $appId;
+        if (is_string($slug) === false || $slug === '') {
+            $this->logger->warning(
+                message: '[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+            );
+            return;
+        }
+
+        $title       = $info['title'] ?? $xOpenregister['title'] ?? $appId;
+        $description = $info['description'] ?? $xOpenregister['description'] ?? null;
+
+        // Collect numeric schema IDs from the import result.
+        $newSchemaIds = [];
+        foreach ($schemas as $schema) {
+            if ($schema instanceof Schema && $schema->getId() !== null) {
+                $newSchemaIds[] = (int) $schema->getId();
+            }
+        }
+
+        // Idempotent lookup on (slug, organisationId). The find cache on
+        // RegisterMapper already keys by slug, so this is cheap.
+        // Use findAll with filters so we can scope to organisation explicitly
+        // without relying on session-derived multi-tenancy (the import path
+        // may run under a system context where the active org is null).
+        $existingRegisters = $this->registerMapper->findAll(
+            limit: 1,
+            offset: 0,
+            filters: ['slug' => $slug],
+            _rbac: false,
+            _multitenancy: true
+        );
+
+        $register = null;
+        if (count($existingRegisters) > 0) {
+            $register = $existingRegisters[0];
+
+            // Reconcile: refresh title/description and union schema IDs.
+            $register->setTitle($title);
+            if ($description !== null) {
+                $register->setDescription($description);
+            }
+
+            $currentSchemaIds = $register->getSchemas() ?? [];
+            $unionSchemaIds   = $currentSchemaIds;
+            foreach ($newSchemaIds as $newId) {
+                if (in_array($newId, $unionSchemaIds, true) === false) {
+                    $unionSchemaIds[] = $newId;
+                }
+            }
+
+            $register->setSchemas($unionSchemaIds);
+            $register = $this->registerMapper->update($register);
+
+            $this->logger->info(
+                message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
+                context: [
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
+                    'registerId'     => $register->getId(),
+                    'slug'           => $slug,
+                    'unionSchemaIds' => $unionSchemaIds,
+                ]
+            );
+        }//end if
+
+        if ($register === null) {
+            // Fresh insert: derive a new Register entity.
+            $register = $this->registerMapper->createFromArray(
+                object: [
+                    'title'       => $title,
+                    'description' => $description ?? '',
+                    'slug'        => $slug,
+                    'schemas'     => $newSchemaIds,
+                    'source'      => 'import',
+                ]
+            );
+
+            $this->logger->info(
+                message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'registerId' => $register->getId(),
+                    'slug'       => $slug,
+                    'schemaIds'  => $newSchemaIds,
+                ]
+            );
+        }//end if
+
+        // Surface the auto-created register in the import result so callers
+        // see a complete (Configuration, Schemas, Register) triple.
+        $resultRegisters = $result['registers'] ?? [];
+        $alreadyPresent  = false;
+        foreach ($resultRegisters as $existing) {
+            if ($existing instanceof Register && $existing->getId() === $register->getId()) {
+                $alreadyPresent = true;
+                break;
+            }
+        }
+
+        if ($alreadyPresent === false) {
+            $resultRegisters[]   = $register;
+            $result['registers'] = $resultRegisters;
+        }
+
+        // Keep the Configuration entity's registers[] field in sync so the
+        // triple stays consistent and a follow-up `_extend=registers` GET
+        // serializes the new ID without an extra round-trip.
+        $configRegisterIds = $configuration->getRegisters() ?? [];
+        if (in_array($register->getId(), $configRegisterIds, true) === false) {
+            $configRegisterIds[] = $register->getId();
+            $configuration->setRegisters($configRegisterIds);
+            $this->configurationMapper->update($configuration);
+        }
+
+        // EAGER MAGIC-TABLE CREATION (fixes #1615): provision the per-schema
+        // magic table for EVERY imported schema, not just those that ship
+        // seed data. Without this, log-style schemas (call_log, job_log,
+        // synchronization_log, …) — which typically have no seed data —
+        // never get their `oc_openregister_table_{registerId}_{schemaId}`
+        // table created on `occ app:enable`, and the first runtime write
+        // from a service like CallService throws "relation does not exist".
+        //
+        // Idempotent on re-import: ensureTableForRegisterSchema short-
+        // circuits when the table already exists (see MagicTableHandler
+        // line 109-112). The seed-objects loop further down still calls
+        // the same method as a defensive no-op.
+        if ($this->magicMapper !== null && $register !== null) {
+            foreach ($schemas as $schema) {
+                if ($schema instanceof Schema === false) {
+                    continue;
+                }
+
+                try {
+                    $this->magicMapper->ensureTableForRegisterSchema(
+                        register: $register,
+                        schema: $schema
+                    );
+                } catch (\Exception $e) {
+                    // Non-fatal: surfaced via logger so the rest of the
+                    // import (other schemas, seed data) still completes.
+                    $this->logger->warning(
+                        message: '[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create',
+                        context: [
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
+                            'schema_id'   => $schema->getId(),
+                            'schema_slug' => $schema->getSlug(),
+                            'register_id' => $register->getId(),
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }//end foreach
+        }//end if
+    }//end autoCreateRegisterIfApplication()
 
     /**
      * Import configuration from a file path.
@@ -2452,25 +3231,44 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File path resolution has multiple fallback conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Path resolution and JSON parsing have multiple outcomes
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
         try {
-            // Resolve the file path relative to Nextcloud root.
-            // Try multiple resolution strategies.
-            $fullPath = $this->appDataPath.'/../../../'.$filePath;
-            $fullPath = realpath($fullPath);
+            // SEC-SVC-7: contain the resolved file inside the Nextcloud root.
+            // Reject absolute paths and any path-traversal sequence up front so
+            // a crafted $filePath (e.g. '../../etc/passwd') cannot escape the
+            // intended base directory.
+            if (str_starts_with($filePath, '/') === true
+                || str_contains($filePath, '..') === true
+                || preg_match('/[\x00-\x1f]/', $filePath) === 1
+            ) {
+                throw new Exception("Invalid configuration file path: {$filePath}");
+            }
+
+            // Establish the allowed base directory (Nextcloud root).
+            $baseDir = realpath($this->appDataPath.'/../../../');
+            if ($baseDir === false) {
+                $baseDir = realpath('/var/www/html');
+            }
+
+            // Resolve the file path relative to the Nextcloud root.
+            $fullPath = realpath($this->appDataPath.'/../../../'.$filePath);
 
             // If realpath fails, try direct path from Nextcloud root.
             if ($fullPath === false) {
-                $fullPath = '/var/www/html/'.$filePath;
-                // Normalize the path.
-                $fullPath = str_replace('//', '/', $fullPath);
+                $fullPath = realpath('/var/www/html/'.$filePath);
             }
 
             if ($fullPath === false || file_exists($fullPath) === false) {
                 throw new Exception("Configuration file not found: {$filePath}");
+            }
+
+            // Final containment check: the resolved real path MUST live under
+            // the allowed base directory.
+            if ($baseDir === false || str_starts_with($fullPath, $baseDir.'/') === false) {
+                throw new Exception("Configuration file is outside the allowed directory: {$filePath}");
             }
 
             // Read the file contents.
@@ -2536,6 +3334,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Configuration creation requires many conditional checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity ID collection and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Configuration tracking involves detailed entity management
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-4
      */
     public function createOrUpdateConfiguration(
         array $data,
@@ -2714,6 +3514,10 @@ class ImportHandler
      * @param array         $result        The result array to append object IDs to.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
      */
     private function importSeedData(
         array $configData,
@@ -2732,6 +3536,25 @@ class ImportHandler
             );
             return;
         }
+
+        // Tasks + notes both require a logged-in actor (CalDAV calendar
+        // lookup, comment authorship). Capture this once at the top of
+        // the import — at occ install time there's no user session, so
+        // those item types skip with a warning. Files are tied to the
+        // object's folder, not the actor, so they always run.
+        $hasUserContext = ($this->userSession !== null && $this->userSession->getUser() !== null);
+        $this->logger->debug(
+            message: '[ImportHandler] Seed data import context',
+            context: [
+                'file'             => __FILE__,
+                'line'             => __LINE__,
+                'has_user_context' => $hasUserContext,
+            ]
+        );
+
+        $result['relatedFiles'] = ($result['relatedFiles'] ?? 0);
+        $result['relatedNotes'] = ($result['relatedNotes'] ?? 0);
+        $result['relatedTasks'] = ($result['relatedTasks'] ?? 0);
 
         // Determine target register for seedData objects.
         // SeedData should go into the first register defined in the configuration.
@@ -2860,6 +3683,13 @@ class ImportHandler
             }//end if
 
             foreach ($objects as $objectData) {
+                // Strip + capture _relatedItems before any other processing.
+                // Must happen before the object is persisted so the marker
+                // never reaches the database. Tasks/notes/files are created
+                // AFTER successful insert so we have a real UUID to link to.
+                $relatedItems = ($objectData['_relatedItems'] ?? null);
+                unset($objectData['_relatedItems']);
+
                 // Check if object has @self with external configuration reference.
                 // This allows seedData from one app to reference schemas/registers from another app's configuration.
                 $selfData          = $objectData['@self'] ?? null;
@@ -3101,6 +3931,18 @@ class ImportHandler
                             'slug'      => $objectSlug,
                         ]
                     );
+
+                    if (is_array($relatedItems) === true && count($relatedItems) > 0) {
+                        $this->processRelatedItems(
+                            object: $createdObject,
+                            relatedItems: $relatedItems,
+                            registerId: (int) $targetRegId,
+                            schemaId: (int) $objectSchema->getId(),
+                            objectTitle: (string) ($objectData['title'] ?? $objectSlug),
+                            hasUserContext: $hasUserContext,
+                            result: $result
+                        );
+                    }
                 } catch (Exception $e) {
                     $this->logger->error(
                         message: "[ImportHandler] Failed to import seed for '{$schemaSlug}': ".$e->getMessage(),
@@ -3118,13 +3960,191 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Seed data import complete',
             context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'config_title' => $configData['info']['title'] ?? 'unknown',
-                'imported'     => count($result['objects']),
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'config_title'  => $configData['info']['title'] ?? 'unknown',
+                'imported'      => count($result['objects']),
+                'related_files' => $result['relatedFiles'] ?? 0,
+                'related_notes' => $result['relatedNotes'] ?? 0,
+                'related_tasks' => $result['relatedTasks'] ?? 0,
             ]
         );
     }//end importSeedData()
+
+    /**
+     * Create related Nextcloud items (files, notes, tasks) for a freshly
+     * seeded object. Each item type is attempted independently so a
+     * failure in one doesn't block the others.
+     *
+     * @param ObjectEntity         $object         The freshly seeded object the related items belong to.
+     * @param array<string, mixed> $relatedItems   The `_relatedItems` payload — keys: files, notes, tasks.
+     * @param int                  $registerId     Register ID the object lives in.
+     * @param int                  $schemaId       Schema ID of the object.
+     * @param string               $objectTitle    Human-readable title used in note/task subjects.
+     * @param bool                 $hasUserContext Whether a logged-in user exists (gates note/task creation).
+     * @param array<string, mixed> $result         Result accumulator updated in place with related-item counts.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
+     */
+    private function processRelatedItems(
+        ObjectEntity $object,
+        array $relatedItems,
+        int $registerId,
+        int $schemaId,
+        string $objectTitle,
+        bool $hasUserContext,
+        array &$result
+    ): void {
+        $files = (array) ($relatedItems['files'] ?? []);
+        $notes = (array) ($relatedItems['notes'] ?? []);
+        $tasks = (array) ($relatedItems['tasks'] ?? []);
+
+        $this->logger->info(
+            message: '[ImportHandler] Processing related items for seed object',
+            context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'object_uuid' => $object->getUuid(),
+                'files_count' => count($files),
+                'notes_count' => count($notes),
+                'tasks_count' => count($tasks),
+            ]
+        );
+
+        $filesCreated = 0;
+        $notesCreated = 0;
+        $tasksCreated = 0;
+
+        if (count($files) > 0 && $this->fileService !== null) {
+            foreach ($files as $fileSpec) {
+                $name    = (string) ($fileSpec['name'] ?? '');
+                $content = ($fileSpec['content'] ?? null);
+                if ($name === '' || is_string($content) === false) {
+                    continue;
+                }
+
+                $tags  = (array) ($fileSpec['tags'] ?? []);
+                $share = (bool) ($fileSpec['share'] ?? false);
+
+                // `base64:` prefix means the content was encoded; strip + decode.
+                if (str_starts_with($content, 'base64:') === true) {
+                    $decoded = base64_decode(substr($content, 7), strict: true);
+                    if ($decoded === false) {
+                        $this->logger->warning(
+                            message: '[ImportHandler] Seed file base64 decode failed - skipping',
+                            context: ['object_uuid' => $object->getUuid(), 'name' => $name]
+                        );
+                        continue;
+                    }
+
+                    $content = $decoded;
+                }
+
+                try {
+                    $this->fileService->addFile($object, $name, $content, $share, $tags);
+                    $filesCreated++;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Seed file creation failed',
+                        context: [
+                            'object_uuid' => $object->getUuid(),
+                            'name'        => $name,
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }//end foreach
+        }//end if
+
+        if (count($notes) > 0 && $this->noteService !== null && $hasUserContext === false) {
+            $this->logger->warning(
+                message: '[ImportHandler] Skipping seed notes - no user session available',
+                context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
+            );
+        } else if (count($notes) > 0 && $this->noteService !== null) {
+            foreach ($notes as $noteSpec) {
+                $message = (string) ($noteSpec['message'] ?? '');
+                if ($message === '') {
+                    continue;
+                }
+
+                try {
+                    $this->noteService->createNote((string) $object->getUuid(), $message);
+                    $notesCreated++;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Seed note creation failed',
+                        context: [
+                            'object_uuid' => $object->getUuid(),
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+        }//end if
+
+        if (count($tasks) > 0 && $this->taskService !== null && $hasUserContext === false) {
+            $this->logger->warning(
+                message: '[ImportHandler] Skipping seed tasks - no user session available',
+                context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
+            );
+        } else if (count($tasks) > 0 && $this->taskService !== null) {
+            foreach ($tasks as $taskSpec) {
+                $summary = (string) ($taskSpec['summary'] ?? '');
+                if ($summary === '') {
+                    continue;
+                }
+
+                $taskData = [
+                    'summary'     => $summary,
+                    'description' => (string) ($taskSpec['description'] ?? ''),
+                    'status'      => (string) ($taskSpec['status'] ?? 'needs-action'),
+                    'priority'    => (int) ($taskSpec['priority'] ?? 0),
+                    'due'         => $taskSpec['due'] ?? null,
+                ];
+                try {
+                    $this->taskService->createTask(
+                        $registerId,
+                        $schemaId,
+                        (string) $object->getUuid(),
+                        $objectTitle,
+                        $taskData
+                    );
+                    $tasksCreated++;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Seed task creation failed',
+                        context: [
+                            'object_uuid' => $object->getUuid(),
+                            'summary'     => $summary,
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }//end foreach
+        }//end if
+
+        $result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
+        $result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
+        $result['relatedTasks'] = ($result['relatedTasks'] ?? 0) + $tasksCreated;
+
+        $this->logger->debug(
+            message: '[ImportHandler] Related items processed for seed object',
+            context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'object_uuid'   => $object->getUuid(),
+                'files_created' => $filesCreated,
+                'notes_created' => $notesCreated,
+                'tasks_created' => $tasksCreated,
+            ]
+        );
+    }//end processRelatedItems()
 
     /**
      * Ensure Nextcloud app dependencies are met for seedData import.
@@ -3286,4 +4306,43 @@ class ImportHandler
     {
         $this->ensureDependenciesForSeedData(configData: $configData);
     }//end handleNextcloudAppDependencies()
+
+    /**
+     * Minimal meta-schema describing the structural shape an OR schema
+     * MUST satisfy at import time. Stricter shapes (per-property type
+     * validation, RBAC sigil presence) belong in `SchemaService` after
+     * the import succeeds — this pass only catches the cases that
+     * would fail catastrophically downstream (non-object, missing
+     * `properties`, wrong type for `properties`).
+     *
+     * The full OpenAPI 3.1 meta-schema is vendored at
+     * `lib/Service/Resources/meta/openapi-3.1.0.json` (closes #1378). It
+     * is used by `OasService::validateOas()` for the generated OAS
+     * document; for imported OR register schemas we keep using the
+     * smaller shape check here because OR schemas are not full OAS
+     * documents — they are JSON-Schema-with-OR-extensions, and the
+     * OpenAPI meta would over-reject them.
+     *
+     * @return array<string, mixed>
+     */
+    private function minimalSchemaShapeMetaSchema(): array
+    {
+        return [
+            'type'       => 'object',
+            'required'   => ['properties'],
+            'properties' => [
+                'title'       => ['type' => 'string'],
+                'description' => ['type' => 'string'],
+                'slug'        => ['type' => 'string'],
+                'properties'  => [
+                    'type' => 'object',
+                ],
+                'required'    => [
+                    'type'  => 'array',
+                    'items' => ['type' => 'string'],
+                ],
+            ],
+        ];
+
+    }//end minimalSchemaShapeMetaSchema()
 }//end class

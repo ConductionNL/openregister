@@ -133,8 +133,11 @@ class SaveObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->logger,
             $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             $arrayLoader
         );
     }
@@ -1718,19 +1721,44 @@ class SaveObjectTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function testSetSelfMetadataSetsOwner(): void
+    public function testSetSelfMetadataOwnerIsIgnored(): void
     {
-        $entity = new ObjectEntity();
-        $selfData = ['owner' => 'admin'];
+        // SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self input.
+        // The sole authoritative setter is applyOwnerAttribution() (session user UID).
+        $entity   = new ObjectEntity();
+        $selfData = ['owner' => 'injected-owner'];
 
         $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
 
-        $this->assertSame('admin', $entity->getOwner());
+        // Owner must remain null — client-supplied value is discarded.
+        $this->assertNull($entity->getOwner());
     }
 
     public function testSetSelfMetadataSetsOrganisation(): void
     {
-        $entity = new ObjectEntity();
+        // SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
+        // has verified membership in the requested organisation.  With the default mock
+        // setup (userSession→null user, groupManager→null, hasAccessToOrganisation→false)
+        // the organisation must NOT be stamped from client input.
+        $entity   = new ObjectEntity();
+        $selfData = ['organisation' => 'org-uuid'];
+
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+        // Entity stays null — the caller has no access to 'org-uuid'.
+        $this->assertNull($entity->getOrganisation());
+    }
+
+    public function testSetSelfMetadataSetsOrganisationWhenCallerHasAccess(): void
+    {
+        // SECURITY (wave-11 SB1): When hasAccessToOrganisation returns true the
+        // organisation value IS applied (admin / verified member use case).
+        $this->organisationService
+            ->method('hasAccessToOrganisation')
+            ->with('org-uuid')
+            ->willReturn(true);
+
+        $entity   = new ObjectEntity();
         $selfData = ['organisation' => 'org-uuid'];
 
         $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);

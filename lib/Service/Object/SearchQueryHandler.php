@@ -7,6 +7,9 @@
  * This handler separates search-related business logic from the main ObjectService,
  * improving code organization and maintainability.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
@@ -18,9 +21,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-96
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-96
  */
 
 declare(strict_types=1);
@@ -62,7 +65,7 @@ class SearchQueryHandler
      * @param LoggerInterface $logger          Logger for performance monitoring.
      * @param IRequest        $request         Request object.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function __construct(
         private readonly ViewMapper $viewMapper,
@@ -93,8 +96,8 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -275,7 +278,7 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function applyViewsToQuery(array $query, array $viewIds): array
     {
@@ -388,7 +391,7 @@ class SearchQueryHandler
      *
      * @return bool True if SOLR is enabled and available, false otherwise
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function isSolrAvailable(): bool
     {
@@ -412,7 +415,7 @@ class SearchQueryHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditional paths for parameter normalization
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function cleanQuery(array $parameters): array
     {
@@ -482,8 +485,8 @@ class SearchQueryHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-96
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-96
      */
     public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void
     {
@@ -528,7 +531,7 @@ class SearchQueryHandler
      *
      * @psalm-return '&'|'?'
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     private function getUrlSeparator(string $url): string
     {
@@ -553,7 +556,7 @@ class SearchQueryHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
     public function logSearchTrail(
         array $_query,
@@ -585,7 +588,7 @@ class SearchQueryHandler
      *
      * @return bool True if search trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
      */
     public function isSearchTrailsEnabled(): bool
     {

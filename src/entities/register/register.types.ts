@@ -10,6 +10,7 @@ export type TRegister = {
     created: string
     slug: string // Slug for the register
     groups?: string[]
+    languages?: string[] // Ordered BCP 47 language tags; first is the register's default language
     quota?: {
         storage?: number | null
         bandwidth?: number | null

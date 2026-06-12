@@ -3,10 +3,13 @@
 /**
  * OpenRegister WorkflowEngineController
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -14,9 +17,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-89
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-89
  */
 
 declare(strict_types=1);
@@ -27,7 +30,9 @@ use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,21 +47,40 @@ class WorkflowEngineController extends Controller
     /**
      * Constructor for WorkflowEngineController.
      *
-     * @param string                 $appName  App name
-     * @param IRequest               $request  Request
-     * @param WorkflowEngineRegistry $registry Engine registry
-     * @param LoggerInterface        $logger   Logger
-     * @param IL10N                  $l10n     Localization service
+     * @param string                 $appName      App name
+     * @param IRequest               $request      Request
+     * @param WorkflowEngineRegistry $registry     Engine registry
+     * @param LoggerInterface        $logger       Logger
+     * @param IL10N                  $l10n         Localization service
+     * @param IUserSession           $userSession  User session for admin checks
+     * @param IGroupManager          $groupManager Group manager for admin checks
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly WorkflowEngineRegistry $registry,
         private readonly LoggerInterface $logger,
-        private readonly IL10N $l10n
+        private readonly IL10N $l10n,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * List all registered engines.
@@ -65,7 +89,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function index(): JSONResponse
     {
@@ -84,6 +108,8 @@ class WorkflowEngineController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function show(int $id): JSONResponse
     {
@@ -109,7 +135,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function create(
         string $name,
@@ -120,6 +146,10 @@ class WorkflowEngineController extends Controller
         bool $enabled=true,
         int $defaultTimeout=30
     ): JSONResponse {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         $validTypes = ['n8n', 'windmill'];
         if (in_array(needle: $engineType, haystack: $validTypes, strict: true) === false) {
             return new JSONResponse(
@@ -164,9 +194,15 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data   = $this->request->getParams();
             $engine = $this->registry->updateEngine($id, $data);
@@ -185,9 +221,15 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $engine = $this->registry->deleteEngine($id);
 
@@ -204,8 +246,8 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function health(int $id): JSONResponse
     {
@@ -225,7 +267,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-89
      */
     public function available(): JSONResponse
     {
@@ -242,6 +284,8 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function testHook(int $id): JSONResponse
     {

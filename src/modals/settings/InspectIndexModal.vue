@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog
 		v-if="show"
-		name="Inspect SOLR Index"
+		:name="t('openregister', 'Inspect SOLR Index')"
 		:can-close="!loading"
 		size="large"
 		@closing="$emit('close')">
@@ -11,7 +15,7 @@
 				<div class="search-row">
 					<NcTextField
 						v-model="searchQuery"
-						label="Search Query"
+						:label="t('openregister', 'Search Query')"
 						placeholder="self_name:* or title:example or created:[2024-01-01T00:00:00Z TO NOW]"
 						@keyup.enter="searchDocuments">
 						<template #trailing-button-icon>
@@ -23,24 +27,25 @@
 						<template #icon>
 							<Magnify :size="20" />
 						</template>
-						Search
+						{{ t('openregister', 'Search') }}
 					</NcButton>
 
 					<NcButton type="tertiary" :disabled="loading" @click="openQueryHelp">
 						<template #icon>
 							<InformationOutline :size="20" />
 						</template>
-						Query Help
+						{{ t('openregister', 'Query Help') }}
 					</NcButton>
 				</div>
 
 				<div class="filter-row">
 					<NcSelect
+						input-label="Selected Fields"
 						v-model="selectedFields"
 						:options="availableFields"
-						label="Fields to Display"
+						:label="t('openregister', 'Fields to Display')"
 						multiple
-						placeholder="Select fields to display" />
+						:placeholder="t('openregister', 'Select fields to display')" />
 
 					<div class="pagination-controls">
 						<span class="pagination-info">
@@ -91,7 +96,7 @@
 									<ChevronDown v-if="!showErrorDetails" :size="20" />
 									<ChevronUp v-else :size="20" />
 								</template>
-								{{ showErrorDetails ? 'Hide' : 'Show' }} Technical Details
+								{{ showErrorDetails ? t('openregister', 'Hide') : t('openregister', 'Show') }} {{ t('openregister', 'Technical Details') }}
 							</NcButton>
 							<div v-if="showErrorDetails" class="error-details-content">
 								<pre>{{ JSON.stringify(errorDetails, null, 2) }}</pre>
@@ -104,8 +109,8 @@
 			<!-- Results -->
 			<div v-else-if="documents && documents.length > 0" class="results-section">
 				<div class="results-header">
-					<h3>Search Results</h3>
-					<span class="results-count">{{ totalResults }} documents found</span>
+					<h3>{{ t('openregister', 'Search Results') }}</h3>
+					<span class="results-count">{{ t('openregister', '{count} documents found', { count: totalResults }) }}</span>
 				</div>
 
 				<div class="documents-list">
@@ -265,6 +270,7 @@ export default {
 	computed: {
 		/**
 		 * Get preview fields to show in collapsed view
+		 * @spec exclude computed display helper for document preview fields
 		 */
 		getPreviewFields() {
 			return (document) => {
@@ -294,6 +300,9 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec exclude watcher loading fields / resetting modal on open change
+		 */
 		show(newVal) {
 			if (newVal) {
 				this.loadAvailableFields()
@@ -305,6 +314,8 @@ export default {
 	methods: {
 		/**
 		 * Load available fields from SOLR schema
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
 		 */
 		async loadAvailableFields() {
 			try {
@@ -323,6 +334,7 @@ export default {
 
 		/**
 		 * Search documents in SOLR index
+		 * @spec exclude search handler delegating to SOLR inspect API
 		 */
 		async searchDocuments() {
 			this.loading = true
@@ -365,6 +377,7 @@ export default {
 
 		/**
 		 * Go to next page
+		 * @spec exclude pagination UI handler
 		 */
 		nextPage() {
 			if (this.startIndex + this.pageSize < this.totalResults) {
@@ -375,6 +388,7 @@ export default {
 
 		/**
 		 * Go to previous page
+		 * @spec exclude pagination UI handler
 		 */
 		previousPage() {
 			if (this.startIndex > 0) {
@@ -386,6 +400,7 @@ export default {
 		/**
 		 * Toggle document expansion.
 		 * @param {number} index - The index of the document to toggle.
+		 * @spec exclude UI toggle for document expansion
 		 */
 		toggleDocument(index) {
 			const docIndex = this.expandedDocs.indexOf(index)
@@ -399,6 +414,7 @@ export default {
 		/**
 		 * Truncate long values for preview
 		 * @param {string} value - The value to truncate.
+		 * @spec exclude display helper truncating value
 		 */
 		truncateValue(value) {
 			if (typeof value !== 'string') {
@@ -410,6 +426,7 @@ export default {
 		/**
 		 * Get field type for display
 		 * @param {any} value - The value to get the field type for
+		 * @spec exclude display helper inferring field type
 		 */
 		getFieldType(value) {
 			if (Array.isArray(value)) return 'array'
@@ -436,6 +453,7 @@ export default {
 		/**
 		 * Get CSS class for field based on name and type
 		 * @param {string} fieldName - The name of the field to get the CSS class for
+		 * @spec exclude display helper mapping field name to CSS class
 		 */
 		getFieldClass(fieldName) {
 			if (fieldName === 'id' || fieldName.endsWith('_id')) return 'field-id'
@@ -447,6 +465,7 @@ export default {
 
 		/**
 		 * Open query help documentation
+		 * @spec exclude opens external query docs (UI navigation)
 		 */
 		openQueryHelp() {
 			// Open the official SOLR query documentation in a new tab
@@ -456,6 +475,7 @@ export default {
 
 		/**
 		 * Reset modal state
+		 * @spec exclude modal form-state reset handler
 		 */
 		resetModal() {
 			this.documents = []

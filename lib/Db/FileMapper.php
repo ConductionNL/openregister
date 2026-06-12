@@ -6,10 +6,13 @@
  * This file contains the class for handling read-only file operations
  * on the oc_filecache table with share information from oc_share table.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
@@ -33,7 +36,7 @@ use OCP\IURLGenerator;
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
@@ -76,6 +79,9 @@ use OCP\IURLGenerator;
  * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
  *
  * @template-extends QBMapper<Entity>
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FileMapper extends QBMapper
 {
@@ -97,9 +103,186 @@ class FileMapper extends QBMapper
         IDBConnection $db,
         IURLGenerator $urlGenerator
     ) {
-        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: \OCP\AppFramework\Db\Entity::class);
+        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
         $this->urlGenerator = $urlGenerator;
     }//end __construct()
+
+    /**
+     * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
+     *
+     * @param int $fileId The Nextcloud filecache fileid to look up.
+     *
+     * @return File|null The OR-side metadata row, or null when no row exists yet.
+     */
+    public function findByFileId(int $fileId): ?File
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_files')
+            ->where(
+                $qb->expr()->eq(
+                    'file_id',
+                    $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)
+                )
+            );
+
+        try {
+            return $this->findEntity(query: $qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        }
+    }//end findByFileId()
+
+    /**
+     * Find or lazily create an OR-side `File` row for the given
+     * Nextcloud `filecache.fileid`. Useful when a write path
+     * (set description, increment download_count, acquire lock)
+     * needs an entity to mutate but the row may not exist yet.
+     *
+     * @param int $fileId The Nextcloud filecache fileid.
+     *
+     * @return File The persisted entity (existing or freshly created).
+     */
+    public function findOrCreateByFileId(int $fileId): File
+    {
+        $existing = $this->findByFileId(fileId: $fileId);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $file = new File();
+        $file->setFileId($fileId);
+        $file->setDownloadCount(0);
+        $file->setCreated(new DateTime());
+
+        return $this->insert(entity: $file);
+    }//end findOrCreateByFileId()
+
+    /**
+     * Set the OR-side description metadata for a Nextcloud file.
+     *
+     * @param int         $fileId      The Nextcloud filecache fileid.
+     * @param string|null $description The description, or null to clear.
+     *
+     * @return File The updated entity.
+     */
+    public function setDescriptionForFile(int $fileId, ?string $description): File
+    {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setDescription($description);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setDescriptionForFile()
+
+    /**
+     * Set the OR-side category for a Nextcloud file.
+     *
+     * @param int         $fileId   The Nextcloud filecache fileid.
+     * @param string|null $category The category, or null to clear.
+     *
+     * @return File The updated entity.
+     */
+    public function setCategoryForFile(int $fileId, ?string $category): File
+    {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setCategory($category);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setCategoryForFile()
+
+    /**
+     * Set the OR-side labels for a Nextcloud file.
+     *
+     * @param int        $fileId The Nextcloud filecache fileid.
+     * @param array|null $labels Labels (JSON-serialisable), or null to clear.
+     *
+     * @return File The updated entity.
+     */
+    public function setLabelsForFile(int $fileId, ?array $labels): File
+    {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setLabels($labels);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setLabelsForFile()
+
+    /**
+     * Increment the cached download count for a Nextcloud file.
+     * Idempotent: creates the row on first download.
+     *
+     * @param int $fileId The Nextcloud filecache fileid.
+     *
+     * @return File The updated entity with the incremented counter.
+     */
+    public function incrementDownloadCount(int $fileId): File
+    {
+        $file    = $this->findOrCreateByFileId(fileId: $fileId);
+        $current = ($file->getDownloadCount() ?? 0);
+        $file->setDownloadCount($current + 1);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end incrementDownloadCount()
+
+    /**
+     * Acquire a DB-backed lock on a Nextcloud file. Pass null for
+     * `lockedBy` to release. The cache-backed `FileLockHandler` is
+     * the canonical lock mechanism today; this surface lets operators
+     * who prefer DB persistence over the distributed-cache TTL pattern
+     * opt in.
+     *
+     * @param int            $fileId      The Nextcloud filecache fileid.
+     * @param string|null    $lockedBy    User ID acquiring the lock, or null to release.
+     * @param \DateTime|null $lockedAt    Acquisition timestamp, or null to release.
+     * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
+     *
+     * @return File The updated entity.
+     */
+    public function setLockForFile(
+        int $fileId,
+        ?string $lockedBy,
+        ?\DateTime $lockedAt,
+        ?\DateTime $lockExpires
+    ): File {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setLockedBy($lockedBy);
+        $file->setLockedAt($lockedAt);
+        $file->setLockExpires($lockExpires);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setLockForFile()
+
+    /**
+     * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
+     * One round trip vs. N+1.
+     *
+     * @param int[] $fileIds The Nextcloud filecache fileids to look up.
+     *
+     * @return array<int, File> Map of fileId => File for rows that exist.
+     */
+    public function findByFileIds(array $fileIds): array
+    {
+        if (empty($fileIds) === true) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_files')
+            ->where(
+                $qb->expr()->in(
+                    'file_id',
+                    $qb->createNamedParameter($fileIds, IQueryBuilder::PARAM_INT_ARRAY)
+                )
+            );
+
+        $entities = $this->findEntities(query: $qb);
+        $map      = [];
+        foreach ($entities as $entity) {
+            $map[(int) $entity->getFileId()] = $entity;
+        }
+
+        return $map;
+    }//end findByFileIds()
 
     /**
      * Get all files for a given node (parent) and/or file IDs with share information and owner data.
@@ -297,6 +480,45 @@ class FileMapper extends QBMapper
 
         return $file;
     }//end getFile()
+
+    /**
+     * Batch-load multiple files by their fileids in a single query (PERF-1).
+     *
+     * Avoids the N+1 pattern of calling getFile() once per file during list rendering.
+     * Returns a map keyed by the (string) fileid so callers can do O(1) lookups, with
+     * the same per-file shape (share urls, owner, published, etc.) as getFile().
+     *
+     * @param array $fileIds List of file ids (int|string) to load
+     *
+     * @return array<string, array> Map of (string) fileid => file record
+     *
+     * @phpstan-param  array<int, int|string> $fileIds
+     * @phpstan-return array<string, File>
+     */
+    public function getFilesByIds(array $fileIds): array
+    {
+        // Normalise to unique positive integers; ignore non-numeric entries.
+        $normalisedIds = [];
+        foreach ($fileIds as $fileId) {
+            if (is_numeric($fileId) === true) {
+                $normalisedIds[(int) $fileId] = (int) $fileId;
+            }
+        }
+
+        if (empty($normalisedIds) === true) {
+            return [];
+        }
+
+        // Reuse the existing batch query (single WHERE fileid IN (...)).
+        $files = $this->getFiles(node: null, ids: array_values($normalisedIds));
+
+        $filesById = [];
+        foreach ($files as $file) {
+            $filesById[(string) $file['fileid']] = $file;
+        }
+
+        return $filesById;
+    }//end getFilesByIds()
 
     /**
      * Get all files for a given ObjectEntity by using its folder property as the node id.
@@ -637,6 +859,25 @@ class FileMapper extends QBMapper
             'file_id'        => $fileId,
         ];
     }//end depublishFile()
+
+    /**
+     * Check whether a file has at least one active public share (share_type=3).
+     *
+     * Used by anonymous-accessible endpoints (e.g. preview, download)
+     * to gate access — only published files are exposed to unauthenticated
+     * callers.
+     *
+     * @param int $fileId The file ID to check.
+     *
+     * @return bool True when a public share exists, false otherwise.
+     *
+     * @phpstan-param  int $fileId
+     * @phpstan-return bool
+     */
+    public function isFilePublished(int $fileId): bool
+    {
+        return $this->getPublicShare(fileId: $fileId) !== null;
+    }//end isFilePublished()
 
     /**
      * Get an existing public share for a file.

@@ -5,6 +5,9 @@
  *
  * Business logic for Action entity management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -15,6 +18,8 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -22,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Action;
 use OCA\OpenRegister\Db\ActionMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -78,25 +84,27 @@ class ActionService
      *
      * @return Action The created action
      *
-     * @throws \InvalidArgumentException If required fields are missing
+     * @throws InvalidArgumentException If required fields are missing
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     public function createAction(array $data): Action
     {
         // Validate required fields.
         if (empty($data['name']) === true) {
-            throw new \InvalidArgumentException('Action name is required');
+            throw new InvalidArgumentException('Action name is required');
         }
 
         if (empty($data['eventType']) === true) {
-            throw new \InvalidArgumentException('Action eventType is required');
+            throw new InvalidArgumentException('Action eventType is required');
         }
 
         if (empty($data['engine']) === true) {
-            throw new \InvalidArgumentException('Action engine is required');
+            throw new InvalidArgumentException('Action engine is required');
         }
 
         if (empty($data['workflowId']) === true) {
-            throw new \InvalidArgumentException('Action workflowId is required');
+            throw new InvalidArgumentException('Action workflowId is required');
         }
 
         // Remove ID to ensure new record.
@@ -142,6 +150,8 @@ class ActionService
      * @param array $data Partial update data
      *
      * @return Action The updated action
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     public function updateAction(int $id, array $data): Action
     {
@@ -168,6 +178,8 @@ class ActionService
      * @param int $id Action ID
      *
      * @return Action The deleted action
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     public function deleteAction(int $id): Action
     {
@@ -198,6 +210,10 @@ class ActionService
      * @param array $samplePayload Sample event payload
      *
      * @return array Test result with match info and payload
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
      */
     public function testAction(int $id, array $samplePayload): array
     {
@@ -226,7 +242,13 @@ class ActionService
                 if (is_array($expected) === true) {
                     if (in_array($actual, $expected) === false) {
                         $filterMatch     = false;
-                        $filterReasons[] = "filter_condition mismatch: {$key} expected one of [".implode(', ', $expected)."], got '{$actual}'";
+                        $expectedList    = implode(', ', $expected);
+                        $filterReasons[] = sprintf(
+                            "filter_condition mismatch: %s expected one of [%s], got '%s'",
+                            $key,
+                            $expectedList,
+                            (string) $actual
+                        );
                     }
                 } else if ($actual !== $expected) {
                     $filterMatch     = false;
@@ -237,6 +259,11 @@ class ActionService
 
         $matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
 
+        $builtPayload = null;
+        if ($matched === true) {
+            $builtPayload = $samplePayload;
+        }
+
         return [
             'matched'       => $matched,
             'action'        => $action->jsonSerialize(),
@@ -245,7 +272,7 @@ class ActionService
             'registerMatch' => $registerMatch,
             'filterMatch'   => $filterMatch,
             'filterReasons' => $filterReasons,
-            'builtPayload'  => $matched === true ? $samplePayload : null,
+            'builtPayload'  => $builtPayload,
         ];
     }//end testAction()
 
@@ -257,6 +284,8 @@ class ActionService
      * @return array Migration report
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
      */
     public function migrateFromHooks(int $schemaId): array
     {
@@ -336,6 +365,8 @@ class ActionService
      * @param string $status   Execution status (success, failure, abandoned)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     public function updateStatistics(int $actionId, string $status): void
     {
@@ -347,7 +378,9 @@ class ActionService
 
             if ($status === 'success') {
                 $action->setSuccessCount($action->getSuccessCount() + 1);
-            } else {
+            }
+
+            if ($status !== 'success') {
                 $action->setFailureCount($action->getFailureCount() + 1);
             }
 
@@ -357,7 +390,7 @@ class ActionService
                 message: '[ActionService] Failed to update action statistics',
                 context: ['actionId' => $actionId, 'error' => $e->getMessage()]
             );
-        }
+        }//end try
     }//end updateStatistics()
 
     /**

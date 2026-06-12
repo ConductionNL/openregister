@@ -13,7 +13,7 @@ import { dashboardStore, searchTrailStore } from '../../store/store.js'
 			:empty-label="t('openregister', 'No data available')"
 			@layout-change="onLayoutChange">
 			<!-- Header actions -->
-			<template #header-actions>
+			<template #actions>
 				<NcButton :disabled="refreshing"
 					:aria-label="t('openregister', 'Refresh dashboard')"
 					@click="refreshDashboard">
@@ -185,12 +185,22 @@ import { dashboardStore, searchTrailStore } from '../../store/store.js'
 				</div>
 			</template> -->
 		</CnDashboardPage>
+
+		<!-- Phase E (ADR-019): mount the integration umbrella as a
+		     dedicated section below the classic grid so every
+		     registered integration's `app-dashboard` widget renders. -->
+		<section class="dashboard-integrations" data-testid="dashboard-integrations">
+			<h2 class="dashboard-integrations__title">
+				{{ t('openregister', 'Integrations') }}
+			</h2>
+			<CnIntegrationWidgetGrid surface="app-dashboard" />
+		</section>
 	</NcAppContent>
 </template>
 
 <script>
 import { NcAppContent, NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import { CnDashboardPage } from '@conduction/nextcloud-vue'
+import { CnDashboardPage, CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
 // TODO: CnChartWidget does not exist yet in @conduction/nextcloud-vue. Was this intentionally added?
 // If so, please create CnChartWidget in the nextcloud-vue library before re-enabling this import.
 // import { CnChartWidget } from '@conduction/nextcloud-vue'
@@ -199,6 +209,11 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import TimerOutline from 'vue-material-design-icons/TimerOutline.vue'
 import TagMultiple from 'vue-material-design-icons/TagMultiple.vue'
+import { ensureIntegrationRegistry } from '../../integrations/bootstrap.js'
+
+// Make sure the integration registry singleton is installed before
+// CnIntegrationWidgetGrid renders the app-dashboard tiles. Idempotent.
+ensureIntegrationRegistry()
 
 const DEFAULT_LAYOUT = [
 	{ id: 1, widgetId: 'count-searches', gridX: 0, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
@@ -218,6 +233,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		CnDashboardPage,
+		CnIntegrationWidgetGrid,
 		// CnChartWidget, // TODO: commented out — CnChartWidget does not exist yet in @conduction/nextcloud-vue
 		Refresh,
 		Magnify,
@@ -235,10 +251,22 @@ export default {
 		isLoading() {
 			return dashboardStore.loading || searchTrailStore.statisticsLoading
 		},
+		/**
+		 * Whether the dashboard has any data to display.
+		 *
+		 * @spec exclude UI plumbing — derived view state for empty-content gating
+		 * @return {boolean}
+		 */
 		hasData() {
 			return searchTrailStore.statistics.total > 0
 				|| this.registerData.length > 0
 		},
+		/**
+		 * Objects-by-register chart rows mapped from store chart data.
+		 *
+		 * @spec exclude UI plumbing — derived chart view state
+		 * @return {Array<object>}
+		 */
 		registerData() {
 			const chartData = dashboardStore.chartData.objectsByRegister
 			if (!chartData?.labels || !chartData?.series) return []
@@ -247,6 +275,12 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+		/**
+		 * Objects-by-schema chart rows mapped from store chart data.
+		 *
+		 * @spec exclude UI plumbing — derived chart view state
+		 * @return {Array<object>}
+		 */
 		schemaData() {
 			const chartData = dashboardStore.chartData.objectsBySchema
 			if (!chartData?.labels || !chartData?.series) return []
@@ -255,6 +289,12 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+		/**
+		 * Widget definitions for the dashboard grid.
+		 *
+		 * @spec exclude UI plumbing — static widget list for display
+		 * @return {Array<object>}
+		 */
 		widgetDefs() {
 			return [
 				{ id: 'count-searches', title: t('openregister', 'Total Searches'), type: 'custom' },
@@ -268,6 +308,12 @@ export default {
 			]
 		},
 	},
+	/**
+	 * Lifecycle hook: preload dashboard and search-trail data on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		dashboardStore.preload()
 		dashboardStore.fetchAllChartData()
@@ -279,6 +325,12 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Reset search-trail statistics to empty defaults for display.
+		 *
+		 * @spec exclude UI plumbing — empty-state seed for display
+		 * @return {void}
+		 */
 		setEmptySearchTrailData() {
 			searchTrailStore.setStatistics({
 				total_searches: 0,
@@ -294,6 +346,12 @@ export default {
 			searchTrailStore.setPopularTerms({ results: [] })
 			searchTrailStore.setActivity({ daily: { activity: [] } })
 		},
+		/**
+		 * Load search-trail statistics and popular terms from the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the search-trail store fetch
+		 * @return {Promise<void>}
+		 */
 		async loadSearchTrailData() {
 			try {
 				await searchTrailStore.fetchStatistics()
@@ -303,6 +361,12 @@ export default {
 				this.setEmptySearchTrailData()
 			}
 		},
+		/**
+		 * Reload all dashboard and search-trail data.
+		 *
+		 * @spec exclude UI plumbing — refresh button delegates to store fetches
+		 * @return {Promise<void>}
+		 */
 		async refreshDashboard() {
 			this.refreshing = true
 			try {
@@ -315,6 +379,13 @@ export default {
 				this.refreshing = false
 			}
 		},
+		/**
+		 * Update the stored dashboard grid layout when the user rearranges widgets.
+		 *
+		 * @param {Array<object>} newLayout The new widget layout.
+		 * @spec exclude UI plumbing — local layout state update
+		 * @return {void}
+		 */
 		onLayoutChange(newLayout) {
 			this.dashboardLayout = newLayout
 		},
@@ -363,9 +434,14 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-/* List widgets */
+/* List widgets.
+ * No own `overflow` — the surrounding CnWidgetWrapper content region
+ * (`.cn-widget-wrapper__content`) already scrolls and is keyboard-focusable
+ * with an accessible name. A nested scrollable container here would create a
+ * second scroll region that is NOT keyboard-reachable, tripping the
+ * `scrollable-region-focusable` WCAG 2.1.1/2.1.3 rule (axe, serious). */
 .list-widget-content {
-	overflow: auto;
+	overflow: visible;
 }
 
 .stats-table {
@@ -433,5 +509,18 @@ export default {
 	text-align: center;
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
+}
+
+/* Phase E — Integrations section */
+.dashboard-integrations {
+	padding: 16px;
+	margin-top: 24px;
+}
+
+.dashboard-integrations__title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0 0 16px;
+	color: var(--color-main-text);
 }
 </style>

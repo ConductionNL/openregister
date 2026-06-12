@@ -21,6 +21,9 @@ export class Message implements TMessage {
 	public sources?: any[]
 	public created?: string
 
+	/**
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(message: TMessage) {
 		this.id = message.id
 		this.uuid = message.uuid || ''

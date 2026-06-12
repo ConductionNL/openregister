@@ -69,12 +69,21 @@ class ImportServiceTest extends TestCase
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->jobList = $this->createMock(IJobList::class);
 
+        // The CSV codec is invoked as a translatable-property pre-pass
+        // inside transformCsvRowToObject; without a stub the default
+        // mock returns null and wipes the row data. Pass-through.
+        $translationCsvCodec = $this->createMock(\OCA\OpenRegister\Service\Translation\TranslationCsvCodec::class);
+        $translationCsvCodec->method('unflattenFromCsv')
+            ->willReturnCallback(static fn(array $row) => $row);
+
         $this->service = new ImportService(
             $this->schemaMapper,
             $this->objectService,
             $this->logger,
             $this->groupManager,
-            $this->jobList
+            $this->jobList,
+            $translationCsvCodec,
+            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
         );
     }
 
@@ -1717,8 +1726,10 @@ class ImportServiceTest extends TestCase
         $method = $ref->getMethod('transformSelfProperty');
         $method->setAccessible(true);
 
+        // BUG-SVC-5: offset-bearing timestamps are normalised to UTC before the
+        // offset is stripped. +02:00 10:30 is 08:30 UTC.
         $result = $method->invoke($this->service, 'updated', '2025-03-15T10:30:00+02:00');
-        $this->assertSame('2025-03-15 10:30:00', $result);
+        $this->assertSame('2025-03-15 08:30:00', $result);
     }
 
     public function testTransformSelfPropertyOrganisationValidUuid(): void

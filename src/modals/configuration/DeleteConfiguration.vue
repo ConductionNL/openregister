@@ -57,6 +57,9 @@ export default {
 		Cancel,
 		Delete,
 	},
+	/**
+	 * @spec exclude Vue setup() exposing stores to the template; framework plumbing.
+	 */
 	setup() {
 		return { configurationStore, navigationStore }
 	},
@@ -67,11 +70,17 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		closeModal() {
 			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = null
 		},
+		/**
+		 * @spec exclude Delete-confirm handler delegating to configurationStore.deleteConfiguration; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteConfiguration() {
 			this.loading = true
 			this.error = null

@@ -1,0 +1,278 @@
+{
+  "$schema": "https://docs.conduction.nl/openregister/configuration/schema.json",
+  "title": "AVG Bundle (Verwerker / Consent / DPIA)",
+  "description": "Operator-importable bundle of the three AVG-related object types that intentionally live as schemas (configurable from the operator UI) rather than hardcoded tables. Verwerker captures third-party processor agreements (Art 28 verwerkersovereenkomst). Consent is the granular per-subject opt-in/opt-out ledger (Art 6(1)(a) + Art 7). DPIA is the Data Protection Impact Assessment shape (Art 35). Each schema carries x-openregister-processing-activity so writes are correctly tagged on the audit trail.",
+  "version": "1.0.0",
+  "components": {
+    "registers": [
+      {
+        "title": "AVG (Verwerker / Consent / DPIA)",
+        "slug": "avg",
+        "description": "Bundle register holding AVG-related object types that operators manage through the standard schema/object UI. Pairs with the dedicated `oc_openregister_verwerkingsactiviteiten` catalog table — schemas here describe operational records (signed processor agreements, consent grants, DPIA assessments) rather than the static processing-activity catalog itself.",
+        "version": "1.0.0",
+        "schemas": ["verwerker", "consent", "dpia"],
+        "configuration": {
+          "x-openregister-processing-activity": "avg-administratie"
+        }
+      }
+    ],
+    "schemas": {
+      "verwerker": {
+        "title": "Verwerker",
+        "slug": "verwerker",
+        "description": "Third-party data processor (verwerker per AVG Art 28). One row captures a single processor + the operator's signed verwerkersovereenkomst with them. Sub-processors (sub-verwerkers) are referenced via the subVerwerkers property.",
+        "version": "1.0.0",
+        "type": "object",
+        "configuration": {
+          "x-openregister-processing-activity": "avg-administratie"
+        },
+        "properties": {
+          "naam": {
+            "type": "string",
+            "title": "Naam",
+            "description": "Bedrijfsnaam van de verwerker"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "enum": ["saas", "infra", "support", "consultancy", "anders"],
+            "description": "Type dienstverlening"
+          },
+          "kvk": {
+            "type": "string",
+            "title": "KVK-nummer",
+            "pattern": "^[0-9]{8}$",
+            "description": "KVK-nummer (8 cijfers) als de verwerker een NL-rechtspersoon is"
+          },
+          "vestiging": {
+            "type": "object",
+            "title": "Vestigingsadres",
+            "properties": {
+              "land": { "type": "string", "title": "Land" },
+              "stad": { "type": "string", "title": "Stad" },
+              "adres": { "type": "string", "title": "Straat + huisnummer" },
+              "postcode": { "type": "string", "title": "Postcode" }
+            }
+          },
+          "contactpersoon": {
+            "type": "string",
+            "title": "Contactpersoon"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "E-mail"
+          },
+          "telefoon": {
+            "type": "string",
+            "title": "Telefoon"
+          },
+          "verwerkersovereenkomstUrl": {
+            "type": "string",
+            "format": "uri",
+            "title": "Verwerkersovereenkomst",
+            "description": "URL naar de getekende verwerkersovereenkomst (DocuDesk / contract management)"
+          },
+          "verwerkersovereenkomstDatum": {
+            "type": "string",
+            "format": "date",
+            "title": "Datum overeenkomst"
+          },
+          "subVerwerkers": {
+            "type": "array",
+            "title": "Sub-verwerkers",
+            "items": {
+              "type": "object",
+              "properties": {
+                "naam": { "type": "string", "title": "Naam" },
+                "land": { "type": "string", "title": "Land" },
+                "doel": { "type": "string", "title": "Doel verwerking" }
+              }
+            }
+          },
+          "doorgifteBuitenEu": {
+            "type": "object",
+            "title": "Doorgifte buiten EU",
+            "properties": {
+              "ja": { "type": "boolean", "title": "Doorgifte naar derde land?" },
+              "landen": {
+                "type": "array",
+                "title": "Landen",
+                "items": { "type": "string" }
+              },
+              "waarborgen": {
+                "type": "string",
+                "title": "Waarborgen",
+                "description": "Bijv. SCC, BCR, adequaatheidsbesluit"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "enum": ["concept", "actief", "beeindigd"],
+            "default": "concept"
+          }
+        },
+        "required": ["naam", "type", "contactpersoon", "email", "verwerkersovereenkomstUrl", "verwerkersovereenkomstDatum"]
+      },
+      "consent": {
+        "title": "Consent",
+        "slug": "consent",
+        "description": "Per-subject consent ledger entry (AVG Art 6(1)(a) + Art 7). Each row records a single act of consent: who, for which processing activity, when granted, when withdrawn (if applicable), and the source channel through which the operator obtained it.",
+        "version": "1.0.0",
+        "type": "object",
+        "configuration": {
+          "x-openregister-processing-activity": "avg-administratie"
+        },
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "title": "Subject identifier",
+            "description": "Identifier of the data subject (BSN, email, user uuid). Pair with subjectType to disambiguate."
+          },
+          "subjectType": {
+            "type": "string",
+            "title": "Subject identifier type",
+            "enum": ["bsn", "email", "user_uuid", "external_id"],
+            "description": "Identifier domain — drives which downstream system can resolve the subject."
+          },
+          "processingActivityId": {
+            "type": "string",
+            "title": "Verwerkingsactiviteit",
+            "description": "UUID of the verwerkingsactiviteit (in oc_openregister_verwerkingsactiviteiten) this consent applies to."
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose / doelbinding",
+            "description": "Specific purpose the subject consented to (may refine the broader doelbinding of the linked verwerkingsactiviteit)."
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Granted at"
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Withdrawn at",
+            "description": "Set when the subject withdraws consent (Art 7(3))."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "enum": ["web_form", "api", "paper", "phone", "email", "kiosk"],
+            "description": "Channel through which consent was captured."
+          },
+          "evidenceUrl": {
+            "type": "string",
+            "format": "uri",
+            "title": "Evidence URL",
+            "description": "Optional link to a stored evidence artefact (signed PDF, screenshot, recording)."
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes"
+          }
+        },
+        "required": ["subjectId", "subjectType", "processingActivityId", "grantedAt", "source"]
+      },
+      "dpia": {
+        "title": "DPIA (Data Protection Impact Assessment)",
+        "slug": "dpia",
+        "description": "AVG Art 35 Data Protection Impact Assessment. Operators run a DPIA when a processing activity is likely to result in a high risk to data subjects. One DPIA row per assessed verwerkingsactiviteit; identifiedRisks + mitigations are nested arrays so the full assessment lives in a single object.",
+        "version": "1.0.0",
+        "type": "object",
+        "configuration": {
+          "x-openregister-processing-activity": "avg-administratie"
+        },
+        "properties": {
+          "processingActivityId": {
+            "type": "string",
+            "title": "Verwerkingsactiviteit",
+            "description": "UUID of the verwerkingsactiviteit being assessed."
+          },
+          "assessmentDate": {
+            "type": "string",
+            "format": "date",
+            "title": "Assessment date"
+          },
+          "assessor": {
+            "type": "string",
+            "title": "Assessor",
+            "description": "Name + role of the person who performed the DPIA"
+          },
+          "dpoConsulted": {
+            "type": "boolean",
+            "title": "DPO consulted?",
+            "description": "Art 35(2) — DPIA MUST be carried out with the advice of the DPO when one is designated."
+          },
+          "riskLevel": {
+            "type": "string",
+            "title": "Overall risk level",
+            "enum": ["low", "medium", "high", "very_high"]
+          },
+          "identifiedRisks": {
+            "type": "array",
+            "title": "Identified risks",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": { "type": "string", "title": "Description" },
+                "likelihood": {
+                  "type": "string",
+                  "title": "Likelihood",
+                  "enum": ["rare", "unlikely", "possible", "likely", "almost_certain"]
+                },
+                "impact": {
+                  "type": "string",
+                  "title": "Impact",
+                  "enum": ["minor", "moderate", "major", "severe", "catastrophic"]
+                }
+              }
+            }
+          },
+          "mitigations": {
+            "type": "array",
+            "title": "Mitigations",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": { "type": "string", "title": "Description" },
+                "owner": { "type": "string", "title": "Owner" },
+                "status": {
+                  "type": "string",
+                  "title": "Status",
+                  "enum": ["planned", "in_progress", "implemented", "verified"]
+                }
+              }
+            }
+          },
+          "priorConsultationRequired": {
+            "type": "boolean",
+            "title": "Prior consultation required?",
+            "description": "Art 36 — when residual risk remains high, the AP MUST be consulted before processing starts."
+          },
+          "approvalStatus": {
+            "type": "string",
+            "title": "Approval status",
+            "enum": ["concept", "approved", "rejected"],
+            "default": "concept"
+          },
+          "approvalDate": {
+            "type": "string",
+            "format": "date",
+            "title": "Approval date"
+          },
+          "documentUrl": {
+            "type": "string",
+            "format": "uri",
+            "title": "DPIA document URL",
+            "description": "Link to the full DPIA document (often in DocuDesk)"
+          }
+        },
+        "required": ["processingActivityId", "assessmentDate", "assessor", "riskLevel", "approvalStatus"]
+      }
+    }
+  }
+}

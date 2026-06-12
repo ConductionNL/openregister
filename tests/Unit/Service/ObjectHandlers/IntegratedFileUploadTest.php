@@ -233,8 +233,11 @@ class IntegratedFileUploadTest extends TestCase
             $this->propertyRbacHandler,
             $computedFieldHandler,
             $translationHandler,
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->logger,
             $tmloService,
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             $arrayLoader
         );
     }

@@ -36,7 +36,8 @@ describe('Organisation Entity', () => {
 
 		expect(organisation.users).toBeDefined()
 		expect(organisation.users?.length).toBe(2)
-		expect(organisation.userCount).toBe(2)
+		// userCount property was removed; consumers compute from users.length.
+		expect(organisation.users?.length).toBe(2)
 		expect(organisation.owner).toBe('alice')
 		expect(organisation.isDefault).toBe(false)
 	})

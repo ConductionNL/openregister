@@ -14,10 +14,14 @@ export class Register implements TRegister {
 	public created: string
 	public slug: string
 	public groups?: string[]
+	public languages?: string[]
 	public quota?: TRegister['quota']
 	public usage?: TRegister['usage']
 	public stats?: TRegister['stats']
 
+	/**
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(register: TRegister) {
 		this.id = register.id || ''
 		this.title = register.title
@@ -30,6 +34,7 @@ export class Register implements TRegister {
 		this.created = register.created || ''
 		this.slug = register.slug || ''
 		this.groups = register.groups || []
+		this.languages = register.languages || []
 		this.quota = register.quota || {
 			storage: null,
 			bandwidth: null,

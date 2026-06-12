@@ -6,10 +6,13 @@
  * This file contains the class for handling schema related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -64,6 +67,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setSource(?string $source)
  * @method bool getHardValidation()
  * @method void setHardValidation(bool $hardValidation)
+ * @method bool getAppendOnly()
+ * @method void setAppendOnly(bool $appendOnly)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
@@ -301,6 +306,17 @@ class Schema extends Entity implements JsonSerializable
     protected bool $immutable = false;
 
     /**
+     * Whether objects of this schema are append-only (INSERT allowed; UPDATE and DELETE rejected)
+     *
+     * When true, new objects can be created but existing objects cannot be mutated or removed.
+     * This is used for append-only audit logs (e.g. xAPI statements, compliance attestations)
+     * where immutability of past records is a business or legal requirement.
+     *
+     * @var boolean
+     */
+    protected bool $appendOnly = false;
+
+    /**
      * Whether objects of this schema should be indexed in SOLR for searching
      *
      * When set to false, objects of this schema will be excluded from SOLR indexing,
@@ -462,6 +478,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
+        $this->addType(fieldName: 'appendOnly', type: Types::BOOLEAN);
         $this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
@@ -700,8 +717,10 @@ class Schema extends Entity implements JsonSerializable
      * Validate the authorization structure for RBAC
      *
      * Validates that the authorization array follows the correct structure:
-     * - Keys must be valid CRUD actions (create, read, update, delete)
-     * - Values must be arrays of group IDs (strings)
+     * - Keys are either CRUD actions (create, read, update, delete) or
+     *   reserved cascade flags (e.g. inheritFromPublic)
+     * - Action values must be arrays of group IDs (strings); reserved flag
+     *   values must be booleans
      * - Group IDs must be non-empty strings
      *
      * Also validates property-level authorization if any properties have authorization defined.
@@ -726,6 +745,12 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Validate an authorization rules array
      *
+     * Keys are either CRUD actions (create, read, update, delete) holding rule
+     * arrays, or reserved cascade flags (e.g. inheritFromPublic) holding a
+     * boolean. Reserved flags are behaviour toggles read at runtime by
+     * PermissionHandler, not action rule sets, so they are validated as
+     * booleans and skip the action/array checks.
+     *
      * @param array|null $authorization The authorization rules to validate
      * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
      *
@@ -741,14 +766,16 @@ class Schema extends Entity implements JsonSerializable
 
         $validActions = ['create', 'read', 'update', 'delete'];
 
+        // Reserved non-action authorization flags. These are cascade/behaviour
+        // toggles read at runtime by PermissionHandler, not CRUD rule sets.
+        $reservedFlags = ['inheritFromPublic'];
+
         foreach ($authorization as $action => $rules) {
-            // The optional `inheritFromPublic` flag is a sibling of the CRUD actions and
-            // controls whether authenticated users qualify for `public` rules on this
-            // schema/register. See PermissionHandler::resolveInheritFromPublic.
-            if ($action === 'inheritFromPublic') {
-                if ($rules !== null && is_bool($rules) === false) {
+            // Reserved flags are validated as booleans, not action rule arrays.
+            if (in_array($action, $reservedFlags, true) === true) {
+                if (is_bool($rules) === false) {
                     throw new InvalidArgumentException(
-                        "Authorization '{$action}' in {$context} must be a boolean or null"
+                        "Authorization flag '{$action}' in {$context} must be a boolean"
                     );
                 }
 
@@ -1164,6 +1191,33 @@ class Schema extends Entity implements JsonSerializable
             $object['hardValidation'] = true;
         }
 
+        // Fold top-level `x-openregister-*` annotation blocks (e.g. the
+        // OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
+        // declaration) into the `configuration` array BEFORE the per-key
+        // setter loop runs. Without this the keys fall through to a
+        // non-existent `setXOpenregisterLifecycle()` setter, the silent-
+        // catch below swallows the call, and the annotation is dropped on
+        // the floor — so OR's TransitionEngine never sees a state machine
+        // and every transition 422s ("schema does not declare
+        // x-openregister-lifecycle"; openregister#1520).
+        $existingConfig = ($object['configuration'] ?? []);
+        if (is_array($existingConfig) === false) {
+            $existingConfig = [];
+        }
+
+        $annotationsFolded = false;
+        foreach ($object as $key => $value) {
+            if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
+                $existingConfig[$key] = $value;
+                $annotationsFolded    = true;
+                unset($object[$key]);
+            }
+        }
+
+        if ($annotationsFolded === true) {
+            $object['configuration'] = $existingConfig;
+        }
+
         foreach ($object as $key => $value) {
             // Special handling for 'required' field - must always be an array, never NULL.
             if ($key === 'required') {
@@ -1258,7 +1312,7 @@ class Schema extends Entity implements JsonSerializable
      *     slug: null|string, title: null|string, description: null|string,
      *     version: null|string, summary: null|string, icon: null|string,
      *     required: array, properties: array, archive: array|null,
-     *     source: null|string, hardValidation: bool, immutable: bool,
+     *     source: null|string, hardValidation: bool, immutable: bool, appendOnly: bool,
      *     searchable: bool, updated: null|string, created: null|string,
      *     maxDepth: int, owner: null|string, application: null|string,
      *     organisation: null|string,
@@ -1328,6 +1382,7 @@ class Schema extends Entity implements JsonSerializable
             'source'         => $this->source,
             'hardValidation' => $this->hardValidation,
             'immutable'      => $this->immutable,
+            'appendOnly'     => $this->appendOnly,
             'searchable'     => $this->searchable,
         // @todo: should be refactored to strict.
             'updated'        => $updated,
@@ -1546,6 +1601,10 @@ class Schema extends Entity implements JsonSerializable
      *   Example: 'profile.avatar' (should contain base64 encoded image data)
      * - 'allowFiles': (bool) Whether this schema allows file attachments
      * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+     * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
+     *   toggle on the attachment upload dialog. true seeds the toggle on; absent
+     *   or false keeps it off. Users can always override per upload.
+     *   See: ConductionNL/opencatalogi#577
      *
      * @param array|string|null $configuration The configuration array/string to validate and set
      *
@@ -1609,12 +1668,14 @@ class Schema extends Entity implements JsonSerializable
      * @throws \InvalidArgumentException If validation fails
      *
      * @return array Validated configuration
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function validateConfigurationArray(array $configuration): array
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles'];
+        $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
@@ -1649,11 +1710,67 @@ class Schema extends Entity implements JsonSerializable
 
             if (in_array($key, $passThrough, true) === true) {
                 $validatedConfig[$key] = $value;
+                continue;
             }
+
+            // Allow declarative annotation extensions to round-trip
+            // through the schema's configuration column. Validation of
+            // their shape is done by the dedicated validators (e.g.
+            // LifecycleAnnotationValidator) at schema-save time.
+            //
+            // The key MUST be in the declared vocabulary — unknown
+            // `x-openregister-*` keys are silently dropped to surface
+            // typos at save time rather than persisting them and having
+            // them silently no-op (e.g. `x-openregister-lifecycl` would
+            // otherwise round-trip without ever firing the listener).
+            if (str_starts_with((string) $key, 'x-openregister-') === true) {
+                if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
+                    $validatedConfig[$key] = $value;
+                    continue;
+                }
+
+                // R07: track unknown `x-openregister-*` keys (almost
+                // always typos like `x-openregister-lifecycl`) so
+                // SchemaMapper can log them via its structured
+                // logger after save. The entity has no DI surface
+                // for a logger and the ADR added in F06 bans the
+                // `\OC::$server` static accessor — collecting on
+                // the entity and bridging through the mapper is
+                // the cleanest path that still surfaces a signal.
+                $this->droppedKeys[] = (string) $key;
+            }//end if
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * Dropped `x-openregister-*` annotation keys collected during the most
+     * recent `validateConfigurationArray()` pass (R07). SchemaMapper reads
+     * this after `setConfiguration()` and emits a logger->warning()
+     * for each entry so operators see a signal without us having to
+     * inject a logger into the entity itself.
+     *
+     * @var array<int, string>
+     */
+    private array $droppedKeys = [];
+
+    /**
+     * Return + reset the list of dropped annotation keys.
+     *
+     * Returns the keys collected since the last call (or instance
+     * construction) and then clears the internal buffer so a single
+     * dropped key isn't logged twice across the cleanObject() →
+     * insert/update path.
+     *
+     * @return array<int, string>
+     */
+    public function consumeDroppedAnnotationKeys(): array
+    {
+        $dropped           = $this->droppedKeys;
+        $this->droppedKeys = [];
+        return $dropped;
+    }//end consumeDroppedAnnotationKeys()
 
     /**
      * Validate calendar provider configuration
@@ -1754,27 +1871,54 @@ class Schema extends Entity implements JsonSerializable
     }//end validateAllowedTagsValue()
 
     /**
-     * Valid linked type values for Nextcloud entity integration
+     * Declared `x-openregister-*` annotation keys.
+     *
+     * Keys outside this set are dropped at save time so a typo
+     * (e.g. `x-openregister-lifecycl` instead of `…-lifecycle`) is
+     * caught early instead of silently round-tripping through the
+     * configuration column and having the corresponding listener
+     * never fire.
+     *
+     * @var array<int, string>
      */
-    private const VALID_LINKED_TYPES = [
-        'files',
-        'mail',
-        'contacts',
-        'notes',
-        'todos',
-        'calendar',
-        'talk',
-        'deck',
+    private const ANNOTATION_VOCABULARY = [
+        'x-openregister-lifecycle',
+        'x-openregister-aggregations',
+        'x-openregister-calculations',
+        'x-openregister-notifications',
+        'x-openregister-widgets',
+        'x-openregister-relations',
+        'x-openregister-processing-activity',
+        'x-openregister-archival',
+        'x-openregister-seed',
     ];
 
     /**
-     * Validate the linkedTypes configuration value
+     * Validate the linkedTypes configuration value.
      *
-     * @param mixed $value The linkedTypes value to validate
+     * Registry-driven validation per AD-5 of pluggable-integration-registry:
+     * an id is valid when it appears in the registry's `listIds()`
+     * output OR in the legacy-id allow-list returned by
+     * `legacyLinkedTypeIds()` (see that method for the rationale — it
+     * preserves backwards-compat for `linkedTypes` values that were
+     * created before the matching provider was renamed/added).
      *
-     * @throws InvalidArgumentException If validation fails
+     * When the integration registry isn't reachable (entity built
+     * outside a request context, e.g. unit tests constructing Schema
+     * directly), validation falls back to the legacy allow-list alone.
+     *
+     * Per `cleanup-linked-entity-type-map`, the public linked-types
+     * constant was removed; the surviving allow-list lives inside
+     * `legacyLinkedTypeIds()` as an implementation detail.
+     *
+     * @param mixed $value The linkedTypes value to validate.
+     *
+     * @throws InvalidArgumentException If validation fails.
      *
      * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
+     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -1786,18 +1930,92 @@ class Schema extends Entity implements JsonSerializable
             throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
         }
 
+        $registryIds = $this->resolveIntegrationRegistryIds();
+        $legacyIds   = self::legacyLinkedTypeIds();
+
         foreach ($value as $type) {
             if (is_string($type) === false) {
                 throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
             }
 
-            if (in_array($type, self::VALID_LINKED_TYPES, true) === false) {
+            $valid = in_array($type, $legacyIds, true)
+                || in_array($type, $registryIds, true);
+
+            if ($valid === false) {
+                $combined = array_unique(array_merge($legacyIds, $registryIds));
+                sort($combined);
                 throw new InvalidArgumentException(
-                    "Invalid linked type '$type'. Valid values: ".implode(', ', self::VALID_LINKED_TYPES)
+                    "Invalid linked type '$type'. Valid values: ".implode(', ', $combined)
                 );
             }
         }
     }//end validateLinkedTypesValue()
+
+    /**
+     * Legacy linked-type id allow-list — internal implementation detail.
+     *
+     * Returns the set of legacy `linkedTypes` ids that were valid
+     * before the IntegrationRegistry became the authoritative source.
+     * Preserved so existing schemas declaring `linkedTypes: ['mail',
+     * 'todos', ...]` keep validating after the public linked-types
+     * constant was removed by `cleanup-linked-entity-type-map`.
+     * New consumers SHOULD register
+     * a provider via `IntegrationRegistry::addProvider()`; this
+     * allow-list MUST NOT grow.
+     *
+     * NOT exposed as a public constant — the public symbol was the
+     * removal target. Method form keeps the values reachable from
+     * tests and inspectable in PHPStan without making them part of OR's
+     * API surface.
+     *
+     * @return array<int, string>
+     *
+     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     */
+    private static function legacyLinkedTypeIds(): array
+    {
+        return [
+            'files',
+            'mail',
+            'contacts',
+            'notes',
+            'todos',
+            'calendar',
+            'talk',
+            'deck',
+        ];
+    }//end legacyLinkedTypeIds()
+
+    /**
+     * Resolve the current set of registered integration ids.
+     *
+     * Schema is a Nextcloud Entity, not a service — DI doesn't
+     * reach it. We pull the registry from the server container at
+     * validation time. Failures (tests without a booted container,
+     * missing service binding) fall through to an empty list so the
+     * legacy allow-list path keeps working.
+     *
+     * @return array<int,string> Registered integration ids, possibly empty.
+     */
+    private function resolveIntegrationRegistryIds(): array
+    {
+        if (class_exists('\OC') === false || isset(\OC::$server) === false) {
+            return [];
+        }
+
+        try {
+            $registry = \OC::$server->get(
+                \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
+            );
+            if ($registry instanceof \OCA\OpenRegister\Service\Integration\IntegrationRegistry) {
+                return $registry->listIds();
+            }
+        } catch (\Throwable $e) {
+            // Registry binding not available — fall back to legacy list only.
+        }
+
+        return [];
+    }//end resolveIntegrationRegistryIds()
 
     /**
      * Get the linked types from the schema configuration
@@ -1840,6 +2058,19 @@ class Schema extends Entity implements JsonSerializable
         $this->searchable = $searchable;
         $this->markFieldUpdated(attribute: 'searchable');
     }//end setSearchable()
+
+    /**
+     * Check whether objects of this schema are append-only.
+     *
+     * When true, INSERT is permitted but UPDATE and DELETE are rejected with
+     * HTTP 405 and error code SCHEMA_APPEND_ONLY.
+     *
+     * @return bool True if the schema is append-only
+     */
+    public function isAppendOnly(): bool
+    {
+        return $this->appendOnly;
+    }//end isAppendOnly()
 
     /**
      * String representation of the schema

@@ -1,3 +1,7 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog :name="t('openregister', 'Manage Organisation Roles')"
 		size="normal"
@@ -47,7 +51,7 @@
 					:loading="loadingGroups"
 					:filterable="true"
 					label-outside
-					input-label="Nextcloud Groups"
+					:input-label="t('openregister', 'Nextcloud Groups')"
 					@input="addRole">
 					<template #option="{ name, userCount }">
 						<div class="group-option">
@@ -149,6 +153,7 @@ export default {
 		 * Get available groups that haven't been selected yet
 		 *
 		 * @return {Array} Available groups
+		 * @spec exclude computed display helper filtering available groups
 		 */
 		availableGroupOptions() {
 			const selectedIds = this.selectedRoles.map(r => r.id)
@@ -164,6 +169,7 @@ export default {
 		 * Check if there are unsaved changes
 		 *
 		 * @return {boolean} True if there are changes
+		 * @spec exclude computed dirty-state flag for unsaved changes
 		 */
 		hasChanges() {
 			const originalIds = this.originalRoles.map(r => r.id).sort()
@@ -171,6 +177,9 @@ export default {
 			return JSON.stringify(originalIds) !== JSON.stringify(currentIds)
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	mounted() {
 		this.initializeOrganisationItem()
 		this.loadNextcloudGroups()
@@ -180,6 +189,7 @@ export default {
 		 * Initialize organisation data
 		 *
 		 * @return {void}
+		 * @spec exclude form-state initializer from organisationStore
 		 */
 		initializeOrganisationItem() {
 			if (organisationStore.organisationItem?.uuid) {
@@ -200,6 +210,7 @@ export default {
 		 * Load available Nextcloud groups
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude form-state loader for Nextcloud groups via OCS API
 		 */
 		async loadNextcloudGroups() {
 			this.loadingGroups = true
@@ -236,6 +247,7 @@ export default {
 		 *
 		 * @param {object} group - The group to add
 		 * @return {void}
+		 * @spec exclude form-state helper adding a role to selection
 		 */
 		addRole(group) {
 			if (group && !this.selectedRoles.find(r => r.id === group.id)) {
@@ -253,6 +265,7 @@ export default {
 		 *
 		 * @param {object} role - The role to remove
 		 * @return {void}
+		 * @spec exclude form-state helper removing a role from selection
 		 */
 		removeRole(role) {
 			this.selectedRoles = this.selectedRoles.filter(r => r.id !== role.id)
@@ -262,6 +275,7 @@ export default {
 		 * Save the roles to the organisation
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude modal submit handler delegating to organisationStore.saveOrganisation
 		 */
 		async saveRoles() {
 			this.loading = true
@@ -291,6 +305,7 @@ export default {
 		 * Close the modal
 		 *
 		 * @return {void}
+		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
 			this.success = false
@@ -304,6 +319,7 @@ export default {
 		 * Handle dialog close
 		 *
 		 * @return {void}
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose() {
 			this.closeModal()

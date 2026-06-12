@@ -3,18 +3,22 @@
 /**
  * LinkedEntityService
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-42
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-42
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
  */
 
 namespace OCA\OpenRegister\Service;
@@ -28,6 +32,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\Exception as DbException;
 use Psr\Log\LoggerInterface;
 
@@ -48,20 +54,6 @@ use Psr\Log\LoggerInterface;
 class LinkedEntityService
 {
     /**
-     * Valid linked entity types and their column names.
-     */
-    private const TYPE_COLUMN_MAP = [
-        'mail'     => 'mail',
-        'contacts' => 'contacts',
-        'notes'    => 'notes',
-        'todos'    => 'todos',
-        'calendar' => 'calendar',
-        'talk'     => 'talk',
-        'deck'     => 'deck',
-        'files'    => 'files',
-    ];
-
-    /**
      * Maximum number of magic tables to scan for reverse lookups (circuit breaker).
      */
     private const MAX_TABLES_TO_SCAN = 50;
@@ -69,20 +61,65 @@ class LinkedEntityService
     /**
      * Constructor for LinkedEntityService.
      *
-     * @param MagicMapper        $magicMapper        Magic mapper for object operations
-     * @param SchemaMapper       $schemaMapper       Schema mapper
-     * @param RegisterMapper     $registerMapper     Register mapper
-     * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param LoggerInterface    $logger             Logger
+     * Per `cleanup-linked-entity-type-map`, the legacy linked-type to
+     * column-name map constant was removed; validation flows through
+     * `IntegrationRegistry::isValidIntegrationId()` plus a small
+     * legacy-id allow-list (see `validateType()`). The column name for
+     * a known linked-type is the type id itself — historically the
+     * removed map was a verbatim identity for every entry.
+     *
+     * @param MagicMapper         $magicMapper         Magic mapper for object operations
+     * @param SchemaMapper        $schemaMapper        Schema mapper
+     * @param RegisterMapper      $registerMapper      Register mapper
+     * @param OrganisationMapper  $organisationMapper  Organisation mapper
+     * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
+     *                                                  type-id source, post `cleanup-linked-entity-type-map`)
+     * @param LoggerInterface     $logger              Logger
+     * @param PermissionHandler   $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly OrganisationMapper $organisationMapper,
+        private readonly IntegrationRegistry $integrationRegistry,
         private readonly LoggerInterface $logger,
+        private readonly PermissionHandler $permissionHandler,
     ) {
     }//end __construct()
+
+    /**
+     * Assert the current user may write (update) the given object before mutating
+     * its linked-entity columns.
+     *
+     * SEC-CTRL-4: addLink()/removeLink() previously only ran the read check inside
+     * MagicMapper::find(), then called update() with no write-permission gate — so a
+     * read-only user could mutate link columns. This resolves the object's schema and
+     * runs the canonical `update` RBAC check, throwing NotAuthorizedException (403) on
+     * denial.
+     *
+     * @param ObjectEntity $object The object about to be updated.
+     *
+     * @throws Exception When the schema cannot be resolved or the user lacks write permission.
+     *
+     * @return void
+     */
+    private function assertCanWriteObject(ObjectEntity $object): void
+    {
+        $schemaId = $object->getSchema();
+        if ($schemaId === null) {
+            throw new Exception('Cannot resolve schema for linked-entity write permission check.');
+        }
+
+        $schema = $this->schemaMapper->find($schemaId);
+
+        $this->permissionHandler->checkPermission(
+            schema: $schema,
+            action: 'update',
+            objectOwner: $object->getOwner(),
+            object: $object
+        );
+    }//end assertCanWriteObject()
 
     /**
      * Add a linked entity ID to an object's metadata column.
@@ -95,13 +132,13 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
     public function addLink(string $objectUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $object      = $this->magicMapper->find($objectUuid);
         $getter      = 'get'.ucfirst($columnName);
@@ -110,6 +147,8 @@ class LinkedEntityService
 
         // Idempotent: don't add if already present.
         if (in_array($entityId, $existingIds, true) === false) {
+            // SEC-CTRL-4: enforce write (update) permission before mutating the object.
+            $this->assertCanWriteObject($object);
             $existingIds[] = $entityId;
             $object->$setter($existingIds);
             $this->magicMapper->update($object);
@@ -129,13 +168,13 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
     public function removeLink(string $objectUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $object      = $this->magicMapper->find($objectUuid);
         $getter      = 'get'.ucfirst($columnName);
@@ -151,6 +190,8 @@ class LinkedEntityService
         )
                 );
 
+        // SEC-CTRL-4: enforce write (update) permission before mutating the object.
+        $this->assertCanWriteObject($object);
         $object->$setter($existingIds);
         $this->magicMapper->update($object);
 
@@ -168,12 +209,12 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      */
     public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $registers = $this->registerMapper->findAll(filters: ['uuid' => $registerUuid]);
         if (empty($registers) === true) {
@@ -205,12 +246,12 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      */
     public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
 
         $schemas = $this->schemaMapper->findAll(filters: ['uuid' => $schemaUuid]);
         if (empty($schemas) === true) {
@@ -244,13 +285,13 @@ class LinkedEntityService
      *
      * @return array Array of result objects with entityType, uuid, name, etc.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
      */
     public function reverseLookup(string $type, string $entityId): array
     {
         $this->validateType(type: $type);
-        $columnName = self::TYPE_COLUMN_MAP[$type];
+        $columnName = $type;
         $results    = [];
 
         // 1. Scan magic tables (objects).
@@ -271,14 +312,21 @@ class LinkedEntityService
      *
      * @return array Array of matching results
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-42
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-42
      */
     private function scanMagicTables(string $type, string $columnName, string $entityId): array
     {
         $results = [];
 
         // Find schemas that declare this linkedType.
-        $allSchemas = $this->schemaMapper->findAll();
+        // WARNING: RBAC and multitenancy are intentionally disabled here, so schema metadata (names,
+        // slugs, linkedType declarations) and matched object UUIDs/names are returned cross-tenant to
+        // any authenticated user calling GET /api/linked/{type}/{entityId}. There is currently NO
+        // per-row access check before results are returned. This is intentional for the mail-sidebar
+        // use-case where cross-tenant linking is required, but constitutes a cross-tenant data exposure
+        // for multi-tenant SaaS deployments. A per-row access check should be added before this
+        // endpoint is used in strict-isolation deployments. See TODO #1273.
+        $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         $scanned    = 0;
 
         foreach ($allSchemas as $schema) {
@@ -334,7 +382,9 @@ class LinkedEntityService
      *
      * @return array Array of matching results
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function scanEntityTables(string $columnName, string $entityId): array
     {
@@ -409,20 +459,67 @@ class LinkedEntityService
     /**
      * Validate that the given type is a valid linked entity type.
      *
+     * Per `cleanup-linked-entity-type-map`, validation flows through:
+     *
+     *   1. `IntegrationRegistry::isValidIntegrationId($type)` — the
+     *      authoritative source.
+     *   2. A small legacy-id allow-list (`legacyLinkedTypeIds()`) so
+     *      pre-cleanup callers passing ids like `mail` (now `email` in
+     *      the registry) or `todos` (now `tasks`) continue to work
+     *      until consumers migrate.
+     *
      * @param string $type The type to validate
      *
      * @throws Exception If the type is invalid
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateType(string $type): void
     {
-        if (isset(self::TYPE_COLUMN_MAP[$type]) === false) {
-            throw new Exception(
-                "Invalid linked entity type '$type'. Valid types: ".implode(', ', array_keys(self::TYPE_COLUMN_MAP))
-            );
+        if ($this->integrationRegistry->isValidIntegrationId($type) === true) {
+            return;
         }
+
+        $legacy = self::legacyLinkedTypeIds();
+        if (in_array($type, $legacy, true) === true) {
+            return;
+        }
+
+        $registered = $this->integrationRegistry->listIds();
+        $combined   = array_unique(array_merge($legacy, $registered));
+        sort($combined);
+        throw new Exception(
+            "Invalid linked entity type '$type'. Valid types: ".implode(', ', $combined)
+        );
     }//end validateType()
+
+    /**
+     * Legacy linked-type id allow-list — internal implementation detail.
+     *
+     * Mirrors `Schema::legacyLinkedTypeIds()` (the cleanup also
+     * removed `Schema`'s public linked-types constant). Kept private
+     * and method-form so the values aren't exposed as a public symbol;
+     * new linked-types MUST be added by registering an
+     * `IntegrationProvider`, not by extending this list.
+     *
+     * @return array<int, string>
+     *
+     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     */
+    private static function legacyLinkedTypeIds(): array
+    {
+        return [
+            'files',
+            'mail',
+            'contacts',
+            'notes',
+            'todos',
+            'calendar',
+            'talk',
+            'deck',
+        ];
+    }//end legacyLinkedTypeIds()
 }//end class

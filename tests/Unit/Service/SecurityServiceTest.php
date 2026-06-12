@@ -296,8 +296,12 @@ class SecurityServiceTest extends TestCase
         $this->assertSame('192.168.1.1', $result);
     }
 
-    public function testGetClientIpAddressUsesForwardedHeader(): void
+    public function testGetClientIpAddressIgnoresSpoofedForwardedHeader(): void
     {
+        // SEC-SVC-11: client-supplied forwarding headers (X-Forwarded-For,
+        // X-Real-IP, CF-Connecting-IP) are no longer trusted. The resolver must
+        // defer to IRequest::getRemoteAddress(), which is trusted-proxy aware,
+        // so a spoofed CF-Connecting-IP cannot bypass per-IP rate limiting.
         $request = $this->createMock(IRequest::class);
         $request->method('getRemoteAddress')->willReturn('192.168.1.1');
         $request->method('getHeader')->willReturnCallback(function (string $header) {
@@ -308,7 +312,8 @@ class SecurityServiceTest extends TestCase
         });
 
         $result = $this->service->getClientIpAddress($request);
-        $this->assertSame('8.8.8.8', $result);
+        // The spoofed 8.8.8.8 must be ignored; the platform remote address wins.
+        $this->assertSame('192.168.1.1', $result);
     }
 
     public function testGetClientIpAddressIgnoresPrivateForwardedIps(): void
@@ -325,5 +330,146 @@ class SecurityServiceTest extends TestCase
         $result = $this->service->getClientIpAddress($request);
         // Private IP in forwarded header is rejected, falls back to remote address.
         $this->assertSame('10.0.0.1', $result);
+    }
+
+    // ── getTrustedClientIpAddress (issue #1834 item 3) ──
+
+    public function testGetTrustedClientIpAddressUsesPlatformRemoteAddress(): void
+    {
+        $request = $this->createMock(IRequest::class);
+        // Even if a spoofed forwarding header is present, the trusted resolver
+        // must defer entirely to getRemoteAddress() (which is trusted-proxy aware).
+        $request->method('getRemoteAddress')->willReturn('203.0.113.7');
+        $request->expects($this->never())->method('getHeader');
+
+        $result = $this->service->getTrustedClientIpAddress($request);
+        $this->assertSame('203.0.113.7', $result);
+    }
+
+    // ── checkAuthRateLimit (issue #1834 item 1 + 2) ──
+
+    public function testCheckAuthRateLimitAllowsWhenNoLockout(): void
+    {
+        $this->cache->method('get')->willReturn(null);
+
+        $result = $this->service->checkAuthRateLimit('user1', '1.2.3.4');
+
+        $this->assertTrue($result['allowed']);
+    }
+
+    public function testCheckAuthRateLimitBlocksLockedOutCompositeKey(): void
+    {
+        $this->cache->method('get')->willReturnCallback(function (string $key) {
+            if (str_contains($key, 'auth_lockout')) {
+                return time() + 900;
+            }
+            return null;
+        });
+
+        $result = $this->service->checkAuthRateLimit('user1', '1.2.3.4');
+
+        $this->assertFalse($result['allowed']);
+        $this->assertArrayHasKey('lockout_until', $result);
+    }
+
+    public function testCheckAuthRateLimitAllowsExpiredLockout(): void
+    {
+        $this->cache->method('get')->willReturnCallback(function (string $key) {
+            if (str_contains($key, 'auth_lockout')) {
+                return time() - 1;
+            }
+            return null;
+        });
+
+        $result = $this->service->checkAuthRateLimit('user1', '1.2.3.4');
+
+        $this->assertTrue($result['allowed']);
+    }
+
+    public function testCheckAuthRateLimitIsolatesCompositeKeysPerIdentity(): void
+    {
+        // A lockout set for user1@ip must NOT be returned for user2@ip
+        // (shared-IP isolation — issue #1834 item 2). The composite key
+        // includes the sanitized identity, so a key built for a different
+        // identity simply won't match the lockout entry.
+        $this->cache->method('get')->willReturnCallback(function (string $key) {
+            // Only user1's composite lockout exists.
+            if (str_contains($key, 'auth_lockout') && str_contains($key, 'user1')) {
+                return time() + 900;
+            }
+            return null;
+        });
+
+        $this->assertFalse($this->service->checkAuthRateLimit('user1', '1.2.3.4')['allowed']);
+        $this->assertTrue($this->service->checkAuthRateLimit('user2', '1.2.3.4')['allowed']);
+    }
+
+    // ── recordFailedAuthAttempt ──
+
+    public function testRecordFailedAuthAttemptIncrementsCounters(): void
+    {
+        $this->cache->method('get')->willReturn(0);
+        $setCalls = [];
+        $this->cache->method('set')->willReturnCallback(function ($key) use (&$setCalls) {
+            $setCalls[] = $key;
+        });
+
+        $this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+
+        // Both the composite and per-IP counters are written.
+        $this->assertNotEmpty(array_filter($setCalls, fn($k) => str_contains($k, 'auth_attempts')));
+        $this->assertNotEmpty(array_filter($setCalls, fn($k) => str_contains($k, 'auth_ip_attempts')));
+    }
+
+    public function testRecordFailedAuthAttemptLocksOutAtCompositeThreshold(): void
+    {
+        // 19 -> becomes 20, crossing AUTH_RATE_LIMIT_ATTEMPTS.
+        $this->cache->method('get')->willReturnCallback(function (string $key) {
+            if (str_contains($key, 'auth_attempts') && str_contains($key, 'auth_ip_attempts') === false) {
+                return 19;
+            }
+            return 0;
+        });
+
+        $setCalls = [];
+        $this->cache->method('set')->willReturnCallback(function ($key) use (&$setCalls) {
+            $setCalls[] = $key;
+        });
+
+        $this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+
+        $this->assertNotEmpty(array_filter($setCalls, fn($k) => str_contains($k, 'auth_lockout')));
+    }
+
+    public function testRecordFailedAuthAttemptDoesNotLockBelowThreshold(): void
+    {
+        $this->cache->method('get')->willReturn(1);
+
+        $setCalls = [];
+        $this->cache->method('set')->willReturnCallback(function ($key) use (&$setCalls) {
+            $setCalls[] = $key;
+        });
+
+        $this->service->recordFailedAuthAttempt('user1', '1.2.3.4');
+
+        $this->assertEmpty(array_filter($setCalls, fn($k) => str_contains($k, 'auth_lockout')));
+    }
+
+    // ── recordSuccessfulAuth ──
+
+    public function testRecordSuccessfulAuthClearsCompositeCounters(): void
+    {
+        $removedKeys = [];
+        $this->cache->method('remove')->willReturnCallback(function ($key) use (&$removedKeys) {
+            $removedKeys[] = $key;
+            return true;
+        });
+
+        $this->service->recordSuccessfulAuth('user1', '1.2.3.4');
+
+        // Clears the composite attempts + composite lockout.
+        $this->assertCount(2, $removedKeys);
+        $this->assertNotEmpty(array_filter($removedKeys, fn($k) => str_contains($k, 'auth_attempts')));
+        $this->assertNotEmpty(array_filter($removedKeys, fn($k) => str_contains($k, 'auth_lockout')));
     }
 }

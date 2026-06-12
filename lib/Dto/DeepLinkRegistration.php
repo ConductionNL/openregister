@@ -5,10 +5,13 @@
  *
  * Value object representing a deep link registration from a consuming app.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Dto
  * @package  OCA\OpenRegister\Dto
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -16,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -67,7 +70,7 @@ class DeepLinkRegistration
      *
      * @return string The resolved URL
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
      */
     public function resolveUrl(array $objectData, array $contactContext=[]): string
     {

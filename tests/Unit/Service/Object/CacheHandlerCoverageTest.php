@@ -248,8 +248,10 @@ class CacheHandlerCoverageTest extends TestCase
         $handler = $this->createHandler(false, false);
         $entity = $this->createObjectEntity(1, 'uuid-1');
 
-        // Pre-populate cache via reflection
-        $this->setProperty($handler, 'objectCache', ['uuid-1' => $entity]);
+        // Pre-populate cache via reflection. BUG-OBJ-6: the object cache is now keyed
+        // per active organisation ("<org>|<rawKey>"); with no session user the scope
+        // sentinel is "__no_org__".
+        $this->setProperty($handler, 'objectCache', ['__no_org__|uuid-1' => $entity]);
 
         $result = $handler->getObject('uuid-1');
         $this->assertSame($entity, $result);
@@ -300,7 +302,8 @@ class CacheHandlerCoverageTest extends TestCase
 
         // Trigger some hits and misses
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->setProperty($handler, 'objectCache', ['uuid-1' => $entity]);
+        // BUG-OBJ-6: object cache keyed per active organisation ("__no_org__" sentinel).
+        $this->setProperty($handler, 'objectCache', ['__no_org__|uuid-1' => $entity]);
 
         $handler->getObject('uuid-1'); // hit
         $this->objectMapper->method('find')
@@ -328,7 +331,8 @@ class CacheHandlerCoverageTest extends TestCase
     {
         $handler = $this->createHandler(false, false);
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->setProperty($handler, 'objectCache', ['uuid-1' => $entity]);
+        // BUG-OBJ-6: object cache keyed per active organisation ("__no_org__" sentinel).
+        $this->setProperty($handler, 'objectCache', ['__no_org__|uuid-1' => $entity]);
 
         $result = $handler->preloadObjects(['uuid-1']);
         $this->assertCount(1, $result);
@@ -384,7 +388,8 @@ class CacheHandlerCoverageTest extends TestCase
         $currentCache = $cacheProp->getValue($handler);
 
         $this->assertLessThan(1002, count($currentCache));
-        $this->assertArrayHasKey('uuid-new', $currentCache);
+        // BUG-OBJ-6: new entries are stored under the tenant-scoped key.
+        $this->assertArrayHasKey('__no_org__|uuid-new', $currentCache);
     }
 
     // =========================================================================

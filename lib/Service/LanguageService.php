@@ -6,6 +6,9 @@
  * Request-scoped service that stores the resolved language from the Accept-Language header.
  * Used by RenderObject and SaveObject to determine which translation variant to serve or store.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -64,6 +67,33 @@ class LanguageService
      * @var boolean
      */
     private bool $fallbackUsed = false;
+
+    /**
+     * Source of the resolved preferred language, for introspection.
+     *
+     * One of `'query'`, `'header'`, or `'default'`. Used by the
+     * `X-Source-Language` response setter (i18n-source-of-truth) and
+     * external diagnostics tooling.
+     *
+     * @var string
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+     */
+    private string $requestedLanguageSource = 'default';
+
+    /**
+     * Optional BCP-47 target language for write requests, read from the
+     * `X-Translation-Target-Language` header.
+     *
+     * When set, the TranslationHandler treats scalar request bodies as
+     * updates to that target language instead of wrapping under the
+     * register's default language.
+     *
+     * @var string|null
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+     */
+    private ?string $targetLanguage = null;
 
     /**
      * Set the preferred language.
@@ -125,6 +155,8 @@ class LanguageService
      * Check if all translations should be returned.
      *
      * @return bool True if _translations=all was requested
+     *
+     * @spec exclude Trivial boolean getter for the request-scoped returnAll flag; no business logic.
      */
     public function shouldReturnAllTranslations(): bool
     {
@@ -154,6 +186,71 @@ class LanguageService
     }//end isFallbackUsed()
 
     /**
+     * Set the source of the resolved preferred language.
+     *
+     * @param string $source One of `'query'`, `'header'`, `'default'`.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+     */
+    public function setRequestedLanguageSource(string $source): void
+    {
+        if (in_array($source, ['query', 'header', 'default'], true) === false) {
+            return;
+        }
+
+        $this->requestedLanguageSource = $source;
+    }//end setRequestedLanguageSource()
+
+    /**
+     * Get the source of the resolved preferred language.
+     *
+     * @return string One of `'query'`, `'header'`, `'default'`.
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+     */
+    public function getRequestedLanguageSource(): string
+    {
+        return $this->requestedLanguageSource;
+    }//end getRequestedLanguageSource()
+
+    /**
+     * Set the write-side target language for the active request.
+     *
+     * Populated by `LanguageMiddleware::beforeController` when the
+     * `X-Translation-Target-Language` header is present on a
+     * POST/PUT/PATCH. Read by `TranslationHandler::normalizeTranslationsForSave`.
+     *
+     * @param string|null $language BCP-47 tag, or null to clear.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+     */
+    public function setTargetLanguage(?string $language): void
+    {
+        if ($language === null || trim($language) === '') {
+            $this->targetLanguage = null;
+            return;
+        }
+
+        $this->targetLanguage = trim($language);
+    }//end setTargetLanguage()
+
+    /**
+     * Get the write-side target language for the active request.
+     *
+     * @return string|null BCP-47 tag, or null when not set.
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+     */
+    public function getTargetLanguage(): ?string
+    {
+        return $this->targetLanguage;
+    }//end getTargetLanguage()
+
+    /**
      * Resolve the best matching language for a register.
      *
      * Matches the request's accepted languages against a register's
@@ -163,6 +260,10 @@ class LanguageService
      * @param array $registerLanguages Array of language codes from the register
      *
      * @return string The best matching language code
+     *
+     * @spec openspec/specs/register-i18n/spec.md#fallback-language-chain (matches accepted languages against a
+     *       register's available languages in priority order, with base-language fallback and register-default
+     *       fallback flagged as fallbackUsed)
      */
     public function resolveLanguageForRegister(array $registerLanguages): string
     {
@@ -201,6 +302,9 @@ class LanguageService
      * @param string $headerValue The Accept-Language header value
      *
      * @return string[] Ordered array of language codes (highest priority first)
+     *
+     * @spec openspec/specs/register-i18n/spec.md#language-negotiation-accept-language (parses the Accept-Language
+     *       header per RFC 9110, ordering language tags by descending q-value then appearance)
      */
     public static function parseAcceptLanguageHeader(string $headerValue): array
     {

@@ -325,25 +325,11 @@ class LlmSettingsControllerBranchTest extends TestCase
 
     public function testGetVectorStatsSuccess(): void
     {
-        $this->vectorizationService->method('getVectorStats')
-            ->willReturn(['total' => 100, 'models' => ['nomic']]);
-
-        $response = $this->controller->getVectorStats();
-        $data = $response->getData();
-
-        $this->assertTrue($data['success']);
-        $this->assertSame(100, $data['stats']['total']);
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
     }
 
     public function testGetVectorStatsException(): void
     {
-        $this->vectorizationService->method('getVectorStats')
-            ->willThrowException(new \Exception('Stats error'));
-
-        $response = $this->controller->getVectorStats();
-        $data = $response->getData();
-
-        $this->assertFalse($data['success']);
-        $this->assertSame(500, $response->getStatus());
+        $this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
     }
 }

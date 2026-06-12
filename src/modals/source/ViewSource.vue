@@ -159,7 +159,7 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
@@ -226,6 +226,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — inline schema definition for the edit-register dialog.
+		 */
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -238,6 +241,9 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+		/**
+		 * @spec exclude UI display helper — filters registers belonging to the current source.
+		 */
 		filterRegisters() {
 			if (!registerStore.registerList || !sourceStore.sourceItem?.id) {
 				return []
@@ -251,26 +257,44 @@ export default {
 		this.fetchRegisters()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the edit-source modal.
+		 */
 		editSource() {
 			navigationStore.setModal('editSource')
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the delete-source dialog.
+		 */
 		deleteSource() {
 			navigationStore.setModal(false)
 			navigationStore.setDialog('deleteSource')
 		},
+		/**
+		 * @spec exclude UI navigation handler — selects a register and routes to the registers view.
+		 */
 		viewRegister(register) {
 			registerStore.setRegisterItem(register)
 			navigationStore.setModal(false)
 			this.$router.push('/registers')
 		},
+		/**
+		 * @spec exclude UI event handler — opens the inline edit-register dialog.
+		 */
 		editRegister(register) {
 			this.editingRegister = register
 			this.showEditRegisterDialog = true
 			this.loadSchemaOptions()
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — loads schema options for the register dialog.
+		 */
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -282,6 +306,9 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+		/**
+		 * @spec exclude UI display helper — resolves schema ids to select-value objects.
+		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -290,6 +317,9 @@ export default {
 					|| { id, label: String(id) }
 			})
 		},
+		/**
+		 * @spec exclude Modal save plumbing — delegates register save to registerStore.saveRegister.
+		 */
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -302,6 +332,9 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — refreshes the register list for the source.
+		 */
 		fetchRegisters() {
 			this.registersLoading = true
 			registerStore.refreshRegisterList()

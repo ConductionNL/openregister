@@ -125,7 +125,7 @@
 							<div v-if="message.feedback && message.showFeedbackInput" class="feedback-comment">
 								<textarea
 									v-model="message.feedbackComment"
-									:placeholder="t('openregister', 'Your feedback has been recorded. Optionally, you can provide additional details here...')"
+									:placeholder="t('openregister', 'Your feedback has been recorded. optionally, you can provide additional details here...')"
 									class="feedback-input"
 									rows="3"
 									@keydown.enter.ctrl="saveFeedbackComment(message)" />
@@ -176,7 +176,7 @@
 				</div>
 				<div class="input-hint">
 					<InformationOutline :size="14" />
-					<span>{{ t('openregister', 'Press Enter to send, Shift+Enter for new line') }}</span>
+					<span>{{ t('openregister', 'Press enter to send, shift+enter for new line') }}</span>
 				</div>
 			</div>
 		</div>
@@ -369,6 +369,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { agentStore, conversationStore } from '../../store/store.js'
 
 export default {
@@ -428,31 +429,52 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude chat UI store passthrough for the conversation list (computed; ai-chat-companion contract)
+		 */
 		conversationList() {
 			return conversationStore.conversationList || []
 		},
 
+		/**
+		 * @spec exclude chat UI store passthrough for archived conversations (computed; ai-chat-companion contract)
+		 */
 		archivedConversations() {
 			return conversationStore.archivedConversations || []
 		},
 
+		/**
+		 * @spec exclude chat UI store passthrough for the active conversation (computed; ai-chat-companion contract)
+		 */
 		activeConversation() {
 			return conversationStore.activeConversation || null
 		},
 
+		/**
+		 * @spec exclude chat UI store passthrough for active-conversation messages (computed; ai-chat-companion contract)
+		 */
 		activeMessages() {
 			return conversationStore.activeConversationMessages || []
 		},
 
+		/**
+		 * @spec exclude chat UI store passthrough for conversation loading state (computed)
+		 */
 		conversationLoading() {
 			return conversationStore.loading || false
 		},
 
+		/**
+		 * @spec exclude chat UI store passthrough for messages loading state (computed)
+		 */
 		messagesLoading() {
 			return conversationStore.messagesLoading || false
 		},
 	},
 
+	/**
+	 * @spec exclude chat UI lifecycle; loads preloaded agents/conversations from the store on mount
+	 */
 	mounted() {
 		// Conversations are already loaded during app warmup
 		// Agents are already loaded during app warmup
@@ -460,13 +482,15 @@ export default {
 
 		// Just ensure we have the latest conversation list (should already be loaded)
 		if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
-			console.info('Conversations not preloaded, loading now...')
 			conversationStore.refreshConversationList()
 		}
 	},
 
 	methods: {
 
+		/**
+		 * @spec exclude chat UI dialog-open plumbing for the agent selector
+		 */
 		async showAgentSelector() {
 			this.showAgentSelectorDialog = true
 			this.selectedAgent = null
@@ -478,39 +502,34 @@ export default {
 		 * Load agents from the already-initialized agent store
 		 * Agents are preloaded during app warmup, so we just use them from the store
 		 *
+		 * @spec exclude chat UI store passthrough; reads preloaded agents from agentStore (ai-chat-companion contract)
 		 * @return {void}
 		 */
 		loadAgentsFromStore() {
 			// Agents are already loaded during app warmup (AppInitializationService)
 			// Just use them from the store
-			console.info('[ChatIndex] loadAgentsFromStore called')
-			console.info('[ChatIndex] agentStore:', agentStore)
-			console.info('[ChatIndex] agentStore.agentList:', agentStore.agentList)
-
 			this.availableAgents = agentStore.agentList || []
 
-			console.info('[ChatIndex] availableAgents set to:', this.availableAgents)
-
 			if (this.availableAgents.length === 0) {
-				console.warn('[ChatIndex] ⚠ No agents available in store')
-				console.warn('[ChatIndex] Trying to refresh agent list...')
 				// If no agents, try to refresh the list
 				agentStore.refreshAgentList().then(() => {
-					console.info('[ChatIndex] After refresh, agentList:', agentStore.agentList)
 					this.availableAgents = agentStore.agentList || []
-					console.info('[ChatIndex] availableAgents now:', this.availableAgents)
 				}).catch(err => {
 					console.error('[ChatIndex] Failed to refresh agents:', err)
 				})
-			} else {
-				console.info('[ChatIndex] ✓ Using preloaded agents from store:', this.availableAgents.length)
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI selection state setter for the chosen agent
+		 */
 		selectAgent(agent) {
 			this.selectedAgent = agent
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; delegates to conversationStore.createConversation and shows toasts (ai-chat-companion contract)
+		 */
 		async startConversationWithAgent() {
 			if (!this.selectedAgent) {
 				showError(this.t('openregister', 'Please select an agent to continue'))
@@ -545,6 +564,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; loads a conversation + its agent via the store (ai-chat-companion contract)
+		 */
 		async selectConversation(conversation) {
 			try {
 				await conversationStore.loadConversation(conversation.uuid)
@@ -564,6 +586,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; confirms then delegates to store delete/permanent-delete (ai-chat-companion contract)
+		 */
 		async deleteConversation(conversation) {
 			const message = this.showArchive
 				? this.t('openregister', 'Permanently delete this conversation?')
@@ -585,6 +610,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; delegates to conversationStore.restoreConversation (ai-chat-companion contract)
+		 */
 		async restoreConversation(conversation) {
 			try {
 				await conversationStore.restoreConversation(conversation.uuid)
@@ -594,11 +622,17 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI dialog-open plumbing for renaming a conversation
+		 */
 		renameConversation() {
 			this.newConversationTitle = this.activeConversation.title || ''
 			this.showRenameDialog = true
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; delegates to conversationStore.updateConversation to persist the title (ai-chat-companion contract)
+		 */
 		async saveConversationTitle() {
 			if (!this.newConversationTitle.trim()) {
 				return
@@ -615,6 +649,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; delegates to conversationStore.sendMessage with selected views/tools/RAG opts (ai-chat-companion contract)
+		 */
 		async handleSendMessage() {
 			if (!this.currentMessage.trim() || this.loading || !this.activeConversation) {
 				return
@@ -652,6 +689,8 @@ export default {
 		/**
 		 * Load available views and tools from the current agent
 		 * and initialize selections with all items enabled by default
+		 *
+		 * @spec exclude chat UI state init; maps agent views/tools/RAG settings into local selection state (ai-chat-companion contract)
 		 */
 		async loadAgentCapabilities() {
 			if (!this.currentAgent) {
@@ -695,13 +734,6 @@ export default {
 				this.includeFiles = this.currentAgent.searchFiles ?? true
 				this.numSourcesFiles = this.currentAgent.ragNumSources ?? 5
 				this.numSourcesObjects = this.currentAgent.ragNumSources ?? 5
-
-				console.info('[ChatIndex] Loaded agent capabilities:', {
-					views: this.availableViews.length,
-					tools: this.availableTools.length,
-					includeObjects: this.includeObjects,
-					includeFiles: this.includeFiles,
-				})
 			} catch (error) {
 				console.error('[ChatIndex] Failed to load agent capabilities:', error)
 				this.availableViews = []
@@ -714,6 +746,7 @@ export default {
 		/**
 		 * Toggle view selection
 		 *
+		 * @spec exclude chat UI checkbox selection toggle plumbing
 		 * @param {string} viewUuid - The UUID of the view to toggle
 		 */
 		toggleView(viewUuid) {
@@ -730,6 +763,7 @@ export default {
 		/**
 		 * Toggle tool selection
 		 *
+		 * @spec exclude chat UI checkbox selection toggle plumbing
 		 * @param {string} toolUuid - The UUID of the tool to toggle
 		 */
 		toggleTool(toolUuid) {
@@ -743,6 +777,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; posts thumbs up/down feedback for a message (ai-chat-companion contract)
+		 */
 		async sendFeedback(message, feedback) {
 			const isSameFeedback = message.feedback === feedback
 			message.feedback = isSameFeedback ? null : feedback
@@ -780,6 +817,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI wiring; posts an optional feedback comment for a message (ai-chat-companion contract)
+		 */
 		async saveFeedbackComment(message) {
 			if (!message.feedbackComment || !message.feedbackComment.trim()) {
 				return
@@ -801,16 +841,24 @@ export default {
 			}
 		},
 
-		viewSource(source) {
+		/**
+		 * @spec exclude chat UI source-navigation stub (logs only; not yet implemented)
+		 */
+		viewSource(_source) {
 			// TODO: Navigate to source object/file
-			console.info('View source:', source)
 		},
 
+		/**
+		 * @spec exclude chat UI markdown-to-HTML rendering helper for display only
+		 */
 		formatMessage(content) {
-			// Convert markdown to HTML using marked library
-			return marked.parse(content || '')
+			// Convert markdown to HTML using marked library, then sanitize to prevent XSS
+			return DOMPurify.sanitize(marked.parse(content || ''))
 		},
 
+		/**
+		 * @spec exclude chat UI relative-timestamp formatting helper for display only
+		 */
 		formatTime(timestamp) {
 			if (!timestamp) return ''
 
@@ -829,6 +877,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI textarea auto-resize DOM helper
+		 */
 		autoResize() {
 			const textarea = this.$refs.messageInput
 			if (textarea) {
@@ -837,6 +888,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude chat UI scroll-to-bottom DOM helper
+		 */
 		scrollToBottom() {
 			this.$nextTick(() => {
 				const container = this.$refs.messagesContainer
@@ -846,6 +900,9 @@ export default {
 			})
 		},
 
+		/**
+		 * @spec exclude chat UI translation/interpolation placeholder helper
+		 */
 		t(app, text, vars) {
 			// Translation function placeholder
 			return text.replace(/\{(\w+)\}/g, (match, key) => vars?.[key] || match)

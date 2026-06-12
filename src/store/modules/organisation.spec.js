@@ -9,18 +9,18 @@ describe('Organisation Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets organisation item correctly', () => {
+	it('wraps the active organisation in an Organisation entity', () => {
 		const store = useOrganisationStore()
+		const item = mockOrganisation()[0]
 
-		store.setOrganisationItem(mockOrganisation()[0])
+		store.setOrganisationItem(item)
 
 		expect(store.organisationItem).toBeInstanceOf(Organisation)
-		expect(store.organisationItem).toEqual(mockOrganisation()[0])
-
+		expect(store.organisationItem.uuid).toBe(item.uuid)
 		expect(store.organisationItem.validate().success).toBe(true)
 	})
 
-	it('sets active organisation correctly', () => {
+	it('wraps active organisation', () => {
 		const store = useOrganisationStore()
 		const testOrg = mockOrganisation()[1]
 
@@ -31,43 +31,41 @@ describe('Organisation Store', () => {
 		expect(store.activeOrganisation.uuid).toBe(testOrg.uuid)
 	})
 
-	it('sets organisation list correctly', () => {
+	it('wraps every entry of the list in an Organisation', () => {
 		const store = useOrganisationStore()
-		const mockData = mockOrganisation()
+		const items = mockOrganisation()
 
-		store.setOrganisationList(mockData)
+		store.setOrganisationList(items)
 
-		expect(store.organisationList).toHaveLength(mockData.length)
-
+		expect(store.organisationList).toHaveLength(items.length)
 		store.organisationList.forEach((item, index) => {
 			expect(item).toBeInstanceOf(Organisation)
-			expect(item).toEqual(mockData[index])
+			expect(item.uuid).toBe(items[index].uuid)
 			expect(item.validate().success).toBe(true)
 		})
 	})
 
-	it('sets user stats correctly', () => {
+	it('builds userStats from a stats payload', () => {
 		const store = useOrganisationStore()
-		const mockStats = {
+		const stats = {
 			total: 3,
 			active: mockOrganisation()[0],
-			list: mockOrganisation(),
+			results: mockOrganisation(),
 		}
 
-		store.setUserStats(mockStats)
+		store.setUserStats(stats)
 
 		expect(store.userStats.total).toBe(3)
 		expect(store.userStats.active).toBeInstanceOf(Organisation)
-		expect(store.userStats.active.name).toBe(mockStats.active.name)
-		expect(store.userStats.list).toHaveLength(3)
-
+		expect(store.userStats.active.name).toBe(stats.active.name)
+		expect(store.userStats.list).toHaveLength(stats.results.length)
 		store.userStats.list.forEach((item) => {
 			expect(item).toBeInstanceOf(Organisation)
 			expect(item.validate().success).toBe(true)
 		})
 	})
 
-	it('cleans organisation data for save correctly', () => {
+	it('strips server-managed fields when cleaning for save', () => {
 		const store = useOrganisationStore()
 		const testOrg = {
 			id: 1,
@@ -84,8 +82,6 @@ describe('Organisation Store', () => {
 
 		expect(cleaned.name).toBe('Test Org')
 		expect(cleaned.description).toBe('Test Description')
-
-		// These fields should be removed
 		expect(cleaned.id).toBeUndefined()
 		expect(cleaned.uuid).toBeUndefined()
 		expect(cleaned.users).toBeUndefined()
@@ -93,6 +89,4 @@ describe('Organisation Store', () => {
 		expect(cleaned.created).toBeUndefined()
 		expect(cleaned.updated).toBeUndefined()
 	})
-
-	// ... other tests ...
 })

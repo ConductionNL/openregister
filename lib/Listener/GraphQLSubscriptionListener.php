@@ -6,10 +6,13 @@
  * Listens for object CRUD events and pushes them to the
  * GraphQL subscription buffer for SSE delivery.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
@@ -37,7 +40,7 @@ class GraphQLSubscriptionListener implements IEventListener
      * @param SubscriptionService $subscriptionService Subscription service
      * @param LoggerInterface     $logger              Logger
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-11
      */
     public function __construct(
         private readonly SubscriptionService $subscriptionService,
@@ -52,7 +55,7 @@ class GraphQLSubscriptionListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-11
      */
     public function handle(Event $event): void
     {
