@@ -238,6 +238,9 @@ class PermissionHandlerInheritFromPublicTest extends TestCase
      */
     private function wireRegister(int $registerId, Register $register): void
     {
+        // The cascade consults every register containing the schema (conservative,
+        // most-restrictive wins), so expose the id via getAllRegisterIdsWithSchema.
+        $this->registerMapper->method('getAllRegisterIdsWithSchema')->willReturn([$registerId]);
         $this->registerMapper->method('getFirstRegisterWithSchema')->willReturn($registerId);
         $this->registerMapper->method('find')->willReturn($register);
         $this->container->method('get')->willReturnCallback(
@@ -623,4 +626,87 @@ class PermissionHandlerInheritFromPublicTest extends TestCase
         $this->assertTrue(condition: $result);
 
     }//end testAuthUserGrantedViaOwnGroupEvenWhenInheritIsFalse()
+
+    // ---------- Conservative multi-register cascade ----------
+
+    /**
+     * Wire the container + register mapper to expose several registers for a
+     * schema, returning the matching Register from find() per id.
+     *
+     * @param array<int,Register> $registersById Map of register id => Register.
+     *
+     * @return void
+     */
+    private function wireRegisters(array $registersById): void
+    {
+        $this->registerMapper->method('getAllRegisterIdsWithSchema')->willReturn(array_keys($registersById));
+        $this->registerMapper->method('find')->willReturnCallback(
+            fn (int $id) => ($registersById[$id] ?? throw new \OCP\AppFramework\Db\DoesNotExistException('no register'))
+        );
+        $this->container->method('get')->willReturnCallback(
+            fn (string $class) => $class === RegisterMapper::class ? $this->registerMapper : null
+        );
+
+    }//end wireRegisters()
+
+    /**
+     * When a schema lives in multiple registers with conflicting values, the
+     * most-restrictive explicit value wins: a single `false` disables
+     * inheritance even though another register sets `true`. This keeps the
+     * verdict deterministic regardless of register scan order.
+     *
+     * @return void
+     */
+    public function testCascadeMostRestrictiveWinsAcrossRegisters(): void
+    {
+        $schema = $this->createSchema(id: 1, authorization: null);
+        $this->wireRegisters([
+            10 => $this->createRegister(id: 10, authorization: ['inheritFromPublic' => true]),
+            20 => $this->createRegister(id: 20, authorization: ['inheritFromPublic' => false]),
+        ]);
+
+        $this->assertFalse(condition: $this->handler->resolveInheritFromPublic(schema: $schema));
+
+    }//end testCascadeMostRestrictiveWinsAcrossRegisters()
+
+    /**
+     * When every register agrees on `true` (and the schema is unset), the
+     * cascade resolves to true.
+     *
+     * @return void
+     */
+    public function testCascadeAllRegistersTrueResolvesTrue(): void
+    {
+        $schema = $this->createSchema(id: 1, authorization: null);
+        $this->wireRegisters([
+            10 => $this->createRegister(id: 10, authorization: ['inheritFromPublic' => true]),
+            20 => $this->createRegister(id: 20, authorization: ['inheritFromPublic' => true]),
+        ]);
+
+        $this->assertTrue(condition: $this->handler->resolveInheritFromPublic(schema: $schema));
+
+    }//end testCascadeAllRegistersTrueResolvesTrue()
+
+    // ---------- Cache invalidation ----------
+
+    /**
+     * resolveInheritFromPublic caches per schema id; clearInheritFromPublicCache()
+     * evicts the entry so a subsequent resolution reflects mutated authorization.
+     *
+     * @return void
+     */
+    public function testClearInheritFromPublicCacheEvictsEntry(): void
+    {
+        $schema = $this->createSchema(id: 1, authorization: ['inheritFromPublic' => false]);
+        $this->assertFalse(condition: $this->handler->resolveInheritFromPublic(schema: $schema));
+
+        // Mutate authorization; the cached verdict should still be served.
+        $schema->setAuthorization(['inheritFromPublic' => true]);
+        $this->assertFalse(condition: $this->handler->resolveInheritFromPublic(schema: $schema));
+
+        // After eviction the new value is resolved.
+        $this->handler->clearInheritFromPublicCache(schemaId: 1);
+        $this->assertTrue(condition: $this->handler->resolveInheritFromPublic(schema: $schema));
+
+    }//end testClearInheritFromPublicCacheEvictsEntry()
 }//end class

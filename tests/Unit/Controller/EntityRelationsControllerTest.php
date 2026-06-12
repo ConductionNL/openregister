@@ -48,7 +48,12 @@ use Psr\Log\LoggerInterface;
  * path. The mapper itself is mocked; mapper-internal contract is
  * covered by `EntityRelationMapperUpdateDecisionMetadataTest`.
  *
+ * HTTP-side task-4.2 shape-validation traceability for the `bases` field,
+ * relocated here from the retired FileTextControllerAnonymizeTest (the dev
+ * anonymise endpoint no longer accepts `bases`).
+ *
  * @spec openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md
+ * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-4.2
  */
 class EntityRelationsControllerTest extends TestCase
 {

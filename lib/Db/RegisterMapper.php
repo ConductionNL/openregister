@@ -484,8 +484,8 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[]
      *
-     * @psalm-return                                  list<OCA\OpenRegister\Db\Register>
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @psalm-return                                list<OCA\OpenRegister\Db\Register>
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,
@@ -802,6 +802,25 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
+        $matches = $this->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+        return ($matches[0] ?? null);
+    }//end getFirstRegisterWithSchema()
+
+    /**
+     * Retrieves the IDs of all registers that include the given schema ID.
+     *
+     * A schema may be referenced by more than one register. Callers that make a
+     * security decision off register-level configuration (e.g. the
+     * inheritFromPublic cascade) must consider every register rather than an
+     * arbitrary first match, so the verdict is deterministic across nodes and
+     * restores. IDs are returned in ascending order for stability.
+     *
+     * @param int $schemaId The ID of the schema to search for.
+     *
+     * @return int[] The IDs of all matching registers (empty when none found).
+     */
+    public function getAllRegisterIdsWithSchema(int $schemaId): array
+    {
         // Three platforms in production: SQLite (no REGEXP function),
         // MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
         // but stores the `schemas` column as `json`, which doesn't
@@ -819,18 +838,22 @@ class RegisterMapper extends QBMapper
 
         $candidates = $qb->executeQuery()->fetchAllAssociative();
         $needle     = (string) $schemaId;
+        $matches    = [];
 
         foreach ($candidates as $row) {
             $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
             foreach ($schemas as $candidate) {
                 if ((string) $candidate === $needle) {
-                    return (int) $row['id'];
+                    $matches[] = (int) $row['id'];
+                    break;
                 }
             }
         }
 
-        return null;
-    }//end getFirstRegisterWithSchema()
+        sort($matches);
+
+        return $matches;
+    }//end getAllRegisterIdsWithSchema()
 
     /**
      * Decode the persisted `schemas` column into a flat ID list.

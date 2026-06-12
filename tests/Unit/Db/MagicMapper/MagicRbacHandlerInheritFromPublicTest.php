@@ -469,4 +469,98 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase
         $this->handler->applyRbacFilters(qb: $qb, schema: $schema, action: 'read');
 
     }//end testApplyRbacFiltersAuthInheritFalseDeniesAccess()
+
+    // ---------- Multitenancy-bypass gating (regression for cross-tenant leak) ----------
+
+    /**
+     * Regression: with inheritFromPublic=false, an authenticated user querying a
+     * schema with read: ['public', 'authenticated'] must NOT trigger the
+     * multitenancy bypass. Previously the unconditional 'public' bypass let the
+     * 'authenticated' rule then return rows from every tenant.
+     *
+     * @return void
+     */
+    public function testBypassAuthPublicAndAuthenticatedRuleInheritFalseDoesNotBypass(): void
+    {
+        $this->mockUser(uid: 'alice', groups: ['users']);
+        $schema = $this->createSchema(
+            authorization: [
+                'inheritFromPublic' => false,
+                'read'              => ['public', 'authenticated'],
+            ]
+        );
+
+        $this->assertFalse(
+            condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+        );
+
+    }//end testBypassAuthPublicAndAuthenticatedRuleInheritFalseDoesNotBypass()
+
+    /**
+     * With inheritFromPublic=true the authenticated user qualifies for the
+     * 'public' rule, so the bypass is correctly granted.
+     *
+     * @return void
+     */
+    public function testBypassAuthPublicRuleInheritTrueBypasses(): void
+    {
+        $this->mockUser(uid: 'alice', groups: ['users']);
+        $schema = $this->createSchema(
+            authorization: [
+                'inheritFromPublic' => true,
+                'read'              => ['public', 'authenticated'],
+            ]
+        );
+
+        $this->assertTrue(
+            condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+        );
+
+    }//end testBypassAuthPublicRuleInheritTrueBypasses()
+
+    /**
+     * Anonymous users always qualify for 'public', so the bypass holds even when
+     * inheritFromPublic is false (the flag only governs authenticated users).
+     *
+     * @return void
+     */
+    public function testBypassAnonPublicRuleInheritFalseStillBypasses(): void
+    {
+        $this->mockUser(uid: null);
+        $schema = $this->createSchema(
+            authorization: [
+                'inheritFromPublic' => false,
+                'read'              => ['public'],
+            ]
+        );
+
+        $this->assertTrue(
+            condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+        );
+
+    }//end testBypassAnonPublicRuleInheritFalseStillBypasses()
+
+    /**
+     * A conditional 'public' rule with a non-_organisation match must also be
+     * gated by inheritFromPublic for authenticated users.
+     *
+     * @return void
+     */
+    public function testBypassAuthConditionalPublicRuleInheritFalseDoesNotBypass(): void
+    {
+        $this->mockUser(uid: 'alice', groups: ['users']);
+        $schema = $this->createSchema(
+            authorization: [
+                'inheritFromPublic' => false,
+                'read'              => [
+                    ['group' => 'public', 'match' => ['status' => 'open']],
+                ],
+            ]
+        );
+
+        $this->assertFalse(
+            condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+        );
+
+    }//end testBypassAuthConditionalPublicRuleInheritFalseDoesNotBypass()
 }//end class
