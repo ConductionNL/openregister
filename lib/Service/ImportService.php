@@ -1201,6 +1201,11 @@ class ImportService
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === 1) {
             try {
                 $dateTime = new DateTime($value);
+                // BUG-SVC-5: normalise to UTC before stripping the offset, so
+                // an offset-bearing timestamp persists the correct instant
+                // instead of its local wall-clock reading (e.g. +05:00 input
+                // must shift back five hours, not just drop the offset).
+                $dateTime->setTimezone(new \DateTimeZone('UTC'));
                 return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (Exception $e) {
                 // Fallback to original value if parsing fails.

@@ -435,8 +435,10 @@ class FileValidationHandlerTest extends TestCase
         $this->handler->checkOwnership(file: $file);
     }//end testCheckOwnershipUnreadableFileThrowsNotPermitted()
 
-    public function testCheckOwnershipReadableFileWithDriftedOwnerTriggersRepair(): void
+    public function testCheckOwnershipReadableFileWithDriftedOwnerThrows(): void
     {
+        // SEC-CTRL-5: owner drift must DENY access (throw), never silently re-own
+        // the file on a read path. ownFile()/setFileOwnership() must NOT be called.
         $file = $this->createMock(Node::class);
         $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
@@ -450,19 +452,18 @@ class FileValidationHandlerTest extends TestCase
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
-        // Readable but drifted owner — repair must be attempted.
-        $this->fileMapper->expects($this->once())
-            ->method('setFileOwnership')
-            ->with(42, 'admin')
-            ->willReturn(true);
+        // No ownership repair may be attempted on a read path.
+        $this->fileMapper->expects($this->never())
+            ->method('setFileOwnership');
+
+        $this->expectException(NotPermittedException::class);
 
         $this->handler->checkOwnership(file: $file);
+    }//end testCheckOwnershipReadableFileWithDriftedOwnerThrows()
 
-        $this->assertTrue(true);
-    }//end testCheckOwnershipReadableFileWithDriftedOwnerTriggersRepair()
-
-    public function testCheckOwnershipReadableFileWithNullOwnerTriggersRepair(): void
+    public function testCheckOwnershipReadableFileWithNullOwnerThrows(): void
     {
+        // SEC-CTRL-5: a null owner is also an ownership mismatch — deny access.
         $file = $this->createMock(Node::class);
         $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
@@ -473,43 +474,13 @@ class FileValidationHandlerTest extends TestCase
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
-        $this->fileMapper->expects($this->once())
-            ->method('setFileOwnership')
-            ->with(42, 'admin')
-            ->willReturn(true);
+        $this->fileMapper->expects($this->never())
+            ->method('setFileOwnership');
+
+        $this->expectException(NotPermittedException::class);
 
         $this->handler->checkOwnership(file: $file);
-
-        $this->assertTrue(true);
-    }//end testCheckOwnershipReadableFileWithNullOwnerTriggersRepair()
-
-    public function testCheckOwnershipRepairFailureIsSwallowed(): void
-    {
-        $file = $this->createMock(Node::class);
-        $file->method('isReadable')->willReturn(true);
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
-        $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('old-owner');
-        $file->method('getOwner')->willReturn($fileOwner);
-
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        // Repair fails — checkOwnership must NOT propagate the failure (best-effort).
-        $this->fileMapper->method('setFileOwnership')
-            ->willThrowException(new Exception('DB error'));
-
-        $this->logger->expects($this->atLeastOnce())
-            ->method('warning');
-
-        // No exception thrown despite repair failure.
-        $this->handler->checkOwnership(file: $file);
-
-        $this->assertTrue(true);
-    }//end testCheckOwnershipRepairFailureIsSwallowed()
+    }//end testCheckOwnershipReadableFileWithNullOwnerThrows()
 
     // =========================================================================
     // ownFile

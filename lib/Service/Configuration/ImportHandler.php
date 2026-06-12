@@ -3236,20 +3236,39 @@ class ImportHandler
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
         try {
-            // Resolve the file path relative to Nextcloud root.
-            // Try multiple resolution strategies.
-            $fullPath = $this->appDataPath.'/../../../'.$filePath;
-            $fullPath = realpath($fullPath);
+            // SEC-SVC-7: contain the resolved file inside the Nextcloud root.
+            // Reject absolute paths and any path-traversal sequence up front so
+            // a crafted $filePath (e.g. '../../etc/passwd') cannot escape the
+            // intended base directory.
+            if (str_starts_with($filePath, '/') === true
+                || str_contains($filePath, '..') === true
+                || preg_match('/[\x00-\x1f]/', $filePath) === 1
+            ) {
+                throw new Exception("Invalid configuration file path: {$filePath}");
+            }
+
+            // Establish the allowed base directory (Nextcloud root).
+            $baseDir = realpath($this->appDataPath.'/../../../');
+            if ($baseDir === false) {
+                $baseDir = realpath('/var/www/html');
+            }
+
+            // Resolve the file path relative to the Nextcloud root.
+            $fullPath = realpath($this->appDataPath.'/../../../'.$filePath);
 
             // If realpath fails, try direct path from Nextcloud root.
             if ($fullPath === false) {
-                $fullPath = '/var/www/html/'.$filePath;
-                // Normalize the path.
-                $fullPath = str_replace('//', '/', $fullPath);
+                $fullPath = realpath('/var/www/html/'.$filePath);
             }
 
             if ($fullPath === false || file_exists($fullPath) === false) {
                 throw new Exception("Configuration file not found: {$filePath}");
+            }
+
+            // Final containment check: the resolved real path MUST live under
+            // the allowed base directory.
+            if ($baseDir === false || str_starts_with($fullPath, $baseDir.'/') === false) {
+                throw new Exception("Configuration file is outside the allowed directory: {$filePath}");
             }
 
             // Read the file contents.

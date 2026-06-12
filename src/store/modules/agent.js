@@ -8,7 +8,6 @@
  * @version  1.0.0
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Agent } from '../../entities/index.js'
 
@@ -40,7 +39,6 @@ export const useAgentStore = defineStore('agent', {
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
 		/**
 		 * Set the current agent item
@@ -53,7 +51,6 @@ export const useAgentStore = defineStore('agent', {
 				this.loading = true
 				this.error = null
 				this.agentItem = agentItem ? new Agent(agentItem) : null
-				console.log('Active agent item set to ' + (agentItem?.name || 'null'))
 			} catch (error) {
 				console.error('Error setting agent item:', error)
 				this.error = error.message
@@ -71,7 +68,6 @@ export const useAgentStore = defineStore('agent', {
 			this.agentList = agentList.map(
 				(agentItem) => new Agent(agentItem),
 			)
-			console.log('Agent list set to ' + agentList.length + ' items')
 		},
 		/**
 		 * Set pagination details
@@ -82,7 +78,6 @@ export const useAgentStore = defineStore('agent', {
 		 */
 		setPagination(page, limit = 20) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for agent list
@@ -92,7 +87,6 @@ export const useAgentStore = defineStore('agent', {
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters)
 		},
 		/**
 		 * Refresh the agent list from the API
@@ -104,8 +98,6 @@ export const useAgentStore = defineStore('agent', {
 		 */
 		/* istanbul ignore next */
 		async refreshAgentList(search = null, soft = false) {
-			console.log('AgentStore: Starting refreshAgentList (soft=' + soft + ')')
-
 			// Only set loading state for hard reloads
 			if (!soft) {
 				this.loading = true
@@ -127,13 +119,11 @@ export const useAgentStore = defineStore('agent', {
 				}
 
 				const responseData = await response.json()
-				console.log('AgentStore: API response type:', Array.isArray(responseData) ? 'array' : 'object', responseData)
 
 				// API returns array directly, not wrapped in 'results'
 				const data = Array.isArray(responseData) ? responseData : (responseData.results || [])
 
 				this.setAgentList(data)
-				console.log('AgentStore: refreshAgentList completed, got', data.length, 'agents', 'agentList now has', this.agentList.length, 'items')
 
 				return { response, data }
 			} catch (error) {
@@ -188,7 +178,6 @@ export const useAgentStore = defineStore('agent', {
 				throw new Error('No agent to delete')
 			}
 
-			console.log('Deleting agent...')
 			this.loading = true
 
 			const endpoint = `/index.php/apps/openregister/api/agents/${agentItem.id}`
@@ -226,7 +215,6 @@ export const useAgentStore = defineStore('agent', {
 				throw new Error('No agent to save')
 			}
 
-			console.log('Saving agent...')
 			this.loading = true
 
 			const isNewAgent = !agentItem.id

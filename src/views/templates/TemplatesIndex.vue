@@ -300,7 +300,6 @@ export default {
 		 */
 		viewTemplate(_template) {
 			// TODO: Navigate to template details page when available
-			// console.log('View template:', template)
 		},
 
 		/**

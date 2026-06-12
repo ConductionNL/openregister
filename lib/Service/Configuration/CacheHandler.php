@@ -130,7 +130,13 @@ class CacheHandler
         $cachedData = $this->session->get($sessionKey);
         if ($cachedData !== null) {
             // Configurations are cached - unserialize and return.
-            return unserialize($cachedData);
+            // SEC-SVC-10: restrict unserialize to the expected entity/value
+            // classes so a tampered session blob cannot instantiate arbitrary
+            // objects (PHP object injection).
+            return unserialize(
+                $cachedData,
+                ['allowed_classes' => [Configuration::class, \DateTime::class]]
+            );
         }
 
         // Step 4: Not cached - fetch configurations from database.

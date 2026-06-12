@@ -138,6 +138,37 @@ class RenderObject
     private ?array $batchFileIdsCache = null;
 
     /**
+     * Request-scoped cache of formatted file objects keyed by (string) fileid (PERF-1).
+     *
+     * Populated by renderEntities() (batch) before the per-entity loop so that
+     * renderFileProperties()/getFileObject() do not issue one FileMapper query per
+     * file per row. getFileObject() also back-fills this cache on the single-object
+     * path. Reset after the page loop.
+     *
+     * @var array<string, array|null>
+     */
+    private array $fileObjectCache = [];
+
+    /**
+     * Request-scoped cache of file tag-name lists keyed by (string) fileid (PERF-1).
+     *
+     * @var array<string, array<int, string>>
+     */
+    private array $fileTagsCache = [];
+
+    /**
+     * Whether a full page render is in progress (PERF-8).
+     *
+     * Set by renderEntities() around its per-entity loop. When true, extendObject()
+     * skips its per-entity preloadObjects() call and relies on the warm page-level
+     * batch preload already populated into $objectsCache — avoiding duplicate
+     * UUID collection + preload work for every row.
+     *
+     * @var bool
+     */
+    private bool $pageRenderActive = false;
+
+    /**
      * Constructor for RenderObject handler.
      *
      * @param FileMapper               $fileMapper               File mapper for database operations.
@@ -755,6 +786,11 @@ class RenderObject
      */
     private function getFileTags(string $fileId): array
     {
+        // PERF-1: serve from the request-scoped batch cache when present (page render).
+        if (array_key_exists($fileId, $this->fileTagsCache) === true) {
+            return $this->fileTagsCache[$fileId];
+        }
+
         // File tag type constant (same as in FileService).
         $fileTagType = 'files';
 
@@ -766,6 +802,7 @@ class RenderObject
 
         // Check if file has any tags.
         if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+            $this->fileTagsCache[$fileId] = [];
             return [];
         }
 
@@ -786,8 +823,10 @@ class RenderObject
             }
         );
 
-        // Return array of filtered tag names.
-        return array_values($tagNames);
+        // Return array of filtered tag names (PERF-1: back-fill request cache).
+        $result = array_values($tagNames);
+        $this->fileTagsCache[$fileId] = $result;
+        return $result;
     }//end getFileTags()
 
     /**
@@ -945,6 +984,14 @@ class RenderObject
 
         $returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
 
+        // PERF-11: never embed base64 file content on a list/collection (page) render —
+        // reading whole files into memory per file per row blows up peak memory. On a
+        // page render, fall back to the lightweight file reference instead; the full
+        // base64 content is still produced on single-object GETs (size-capped below).
+        if ($returnBase64 === true && $this->pageRenderActive === true) {
+            $returnBase64 = false;
+        }
+
         if ($isArrayProperty === true) {
             // Handle array of files.
             if (is_array($propertyValue) === false) {
@@ -1008,6 +1055,33 @@ class RenderObject
             $file = $this->fileService->getFileById($fileIdInt);
             if ($file === null) {
                 return null;
+            }
+
+            // PERF-11: cap the size of files we are willing to base64-embed even on the
+            // single-object path, so a single oversized attachment cannot exhaust memory.
+            // Oversized files return null (the caller still has the file reference via the
+            // non-base64 path / @self.files).
+            $maxBase64Bytes = (10 * 1024 * 1024);
+            try {
+                $fileSize = (int) $file->getSize();
+                if ($fileSize > $maxBase64Bytes) {
+                    $this->logger->warning(
+                        message: '[RenderObject] Refusing to base64-embed oversized file',
+                        context: [
+                            'file'   => __FILE__,
+                            'line'   => __LINE__,
+                            'fileId' => $fileIdInt,
+                            'size'   => $fileSize,
+                            'cap'    => $maxBase64Bytes,
+                        ]
+                    );
+                    return null;
+                }
+            } catch (\Throwable $sizeError) {
+                // If size can't be determined, fall through and let getContent() decide.
+                $this->logger->debug(
+                    '[RenderObject] Could not determine file size for base64 cap: '.$sizeError->getMessage()
+                );
             }
 
             // Get file content.
@@ -1139,35 +1213,65 @@ class RenderObject
                 return null;
             }
 
+            $cacheKey = (string) $fileIdStr;
+
+            // PERF-1: serve from the request-scoped batch cache when present.
+            if (array_key_exists($cacheKey, $this->fileObjectCache) === true) {
+                return $this->fileObjectCache[$cacheKey];
+            }
+
             // Use FileMapper to get file information directly.
             $fileRecord = $this->fileMapper->getFile((int) $fileIdStr);
 
             if (empty($fileRecord) === true) {
+                $this->fileObjectCache[$cacheKey] = null;
                 return null;
             }
 
-            // Get file tags.
-            $labels = $this->getFileTags(fileId: (string) $fileRecord['fileid']);
+            $formatted = $this->formatFileRecord(fileRecord: $fileRecord);
 
-            // Format the file object (same structure as renderFiles method).
-            return [
-                'id'          => (string) $fileRecord['fileid'],
-                'path'        => $fileRecord['path'],
-                'title'       => $fileRecord['name'],
-                'accessUrl'   => $fileRecord['accessUrl'] ?? null,
-                'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
-                'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
-                'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
-                'size'        => (int) $fileRecord['size'],
-                'hash'        => $fileRecord['etag'] ?? '',
-                'published'   => $fileRecord['published'] ?? null,
-                'modified'    => $fileRecord['mtime'] ?? null,
-                'labels'      => $labels,
-            ];
+            // PERF-1: back-fill the request cache so repeated refs reuse it.
+            $this->fileObjectCache[$cacheKey] = $formatted;
+
+            return $formatted;
         } catch (Exception $e) {
             return null;
         }//end try
     }//end getFileObject()
+
+    /**
+     * Format a raw FileMapper file record into the rendered file object shape (PERF-1).
+     *
+     * Shared by getFileObject() and the page-level batch prefetch so both paths emit
+     * an identical structure.
+     *
+     * @param array $fileRecord The raw file record from FileMapper
+     *
+     * @return array The formatted file object (same structure as renderFiles()).
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function formatFileRecord(array $fileRecord): array
+    {
+        // Get file tags (request-cached).
+        $labels = $this->getFileTags(fileId: (string) $fileRecord['fileid']);
+
+        // Format the file object (same structure as renderFiles method).
+        return [
+            'id'          => (string) $fileRecord['fileid'],
+            'path'        => $fileRecord['path'],
+            'title'       => $fileRecord['name'],
+            'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+            'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+            'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+            'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+            'size'        => (int) $fileRecord['size'],
+            'hash'        => $fileRecord['etag'] ?? '',
+            'published'   => $fileRecord['published'] ?? null,
+            'modified'    => $fileRecord['mtime'] ?? null,
+            'labels'      => $labels,
+        ];
+    }//end formatFileRecord()
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -2161,7 +2265,16 @@ class RenderObject
         // **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
         // This collects all UUIDs from the properties that will be extended and loads
         // them in a SINGLE database query, instead of one query per UUID.
-        $uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
+        // PERF-8: during a full page render renderEntities() has already batch-preloaded
+        // every extend UUID for the whole page into $objectsCache, so re-collecting and
+        // re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
+        // active; nested (depth > 0) extends still preload their own children.
+        $skipPreload = ($this->pageRenderActive === true && $depth === 0);
+        $uuidsToPreload = [];
+        if ($skipPreload === false) {
+            $uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
+        }
+
         if (empty($uuidsToPreload) === false) {
             $preloadedObjects = $this->objectCacheService->preloadObjects($uuidsToPreload);
             // Add preloaded objects to local cache for immediate access.
@@ -3247,7 +3360,17 @@ class RenderObject
             }
         }
 
+        // PERF-1: batch-prefetch full file objects + tags for every file-typed property
+        // value across the whole page, so renderFileProperties()/getFileObject() do not
+        // issue 1+ queries per file per row. This turns a 20-row x 3-file page from ~120
+        // queries into ~3 (one IN(...) files query + one batched tag-id query + one tag
+        // resolve). Caches are request-scoped and cleared in the finally below.
+        $this->batchPreloadFileObjects(entities: $entities);
+
         $renderedEntities = [];
+
+        // PERF-8: mark a page render so extendObject() skips per-row re-preloading.
+        $this->pageRenderActive = true;
 
         try {
             // Render each entity (now using warm cache for forward relations).
@@ -3272,8 +3395,162 @@ class RenderObject
             }
         } finally {
             $this->batchFileIdsCache = null;
+            // PERF-1: drop request-scoped file caches after the page render.
+            $this->fileObjectCache = [];
+            $this->fileTagsCache   = [];
+            // PERF-8: clear the page-render flag.
+            $this->pageRenderActive = false;
         }//end try
 
         return $renderedEntities;
     }//end renderEntities()
+
+    /**
+     * Batch-preload formatted file objects + tags for an entire page of entities (PERF-1).
+     *
+     * Collects every file id referenced by a file-typed property across all entities,
+     * loads them in a single FileMapper::getFilesByIds() call and resolves their tags in
+     * one batched ISystemTagManager call, then populates the request-scoped
+     * $fileObjectCache / $fileTagsCache so per-row getFileObject()/getFileTags() are
+     * cache hits.
+     *
+     * @param array $entities The page of ObjectEntity instances about to be rendered
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function batchPreloadFileObjects(array $entities): void
+    {
+        if (empty($entities) === true) {
+            return;
+        }
+
+        // 1) Collect all file ids referenced by file-typed properties across the page.
+        $allFileIds = [];
+        foreach ($entities as $entity) {
+            if ($entity instanceof ObjectEntity === false) {
+                continue;
+            }
+
+            $schema = $this->getSchema(id: $entity->getSchema());
+            if ($schema === null) {
+                continue;
+            }
+
+            $schemaProperties = $schema->getProperties() ?? [];
+            $objectData       = $entity->getObject();
+            if (is_array($objectData) === false) {
+                continue;
+            }
+
+            foreach ($schemaProperties as $propertyName => $propertyConfig) {
+                if (is_array($propertyConfig) === false
+                    || $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === false
+                ) {
+                    continue;
+                }
+
+                $value = ($objectData[$propertyName] ?? null);
+                if ($value === null) {
+                    continue;
+                }
+
+                // base64-format properties read content, not the formatted file
+                // object/tags, so they are not part of this prefetch.
+                $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+                $fileConfig      = $propertyConfig;
+                if ($isArrayProperty === true) {
+                    $fileConfig = ($propertyConfig['items'] ?? []);
+                }
+
+                if (($fileConfig['format'] ?? '') === 'base64') {
+                    continue;
+                }
+
+                $candidates = $value;
+                if (is_array($value) === false) {
+                    $candidates = [$value];
+                }
+
+                foreach ($candidates as $candidate) {
+                    if (is_numeric($candidate) === true
+                        || (is_string($candidate) === true && ctype_digit($candidate) === true)
+                    ) {
+                        $allFileIds[(int) $candidate] = (int) $candidate;
+                    }
+                }
+            }//end foreach
+        }//end foreach
+
+        if (empty($allFileIds) === true) {
+            return;
+        }
+
+        $fileIds = array_values($allFileIds);
+
+        try {
+            // 2) Batch-load all files in one query.
+            $filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
+
+            // 3) Batch-load all tag ids for all files in one query.
+            $stringFileIds    = array_map(static fn($id) => (string) $id, $fileIds);
+            $allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
+                objIds: $stringFileIds,
+                objectType: 'files'
+            );
+
+            // Resolve all unique tag ids to names in one call.
+            $uniqueTagIds = [];
+            foreach ($allTagIdsPerFile as $fileTagIds) {
+                foreach ($fileTagIds as $tagId) {
+                    $uniqueTagIds[$tagId] = true;
+                }
+            }
+
+            $tagNameMap = [];
+            if (empty($uniqueTagIds) === false) {
+                $tags = $this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds));
+                foreach ($tags as $tag) {
+                    $name = $tag->getName();
+                    if (str_starts_with($name, 'object:') === false) {
+                        $tagNameMap[$tag->getId()] = $name;
+                    }
+                }
+            }
+
+            // 4) Populate the request-scoped tag cache for every requested file id.
+            foreach ($stringFileIds as $fileIdStr) {
+                $labels = [];
+                foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
+                    if (isset($tagNameMap[$tagId]) === true) {
+                        $labels[] = $tagNameMap[$tagId];
+                    }
+                }
+
+                $this->fileTagsCache[$fileIdStr] = $labels;
+            }
+
+            // 5) Populate the request-scoped file-object cache (null for missing files).
+            foreach ($fileIds as $fileId) {
+                $fileIdStr = (string) $fileId;
+                $record    = ($filesById[$fileIdStr] ?? null);
+                if ($record === null) {
+                    $this->fileObjectCache[$fileIdStr] = null;
+                    continue;
+                }
+
+                $this->fileObjectCache[$fileIdStr] = $this->formatFileRecord(fileRecord: $record);
+            }
+        } catch (Exception $e) {
+            // A prefetch failure must never break rendering — per-row paths will simply
+            // fall back to individual lookups (the pre-PERF-1 behaviour).
+            $this->logger->warning(
+                message: '[RenderObject] Batch file prefetch failed; falling back to per-row lookups',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }//end try
+    }//end batchPreloadFileObjects()
 }//end class

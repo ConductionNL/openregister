@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\NotificationService;
+use OCA\OpenRegister\Service\SecurityService;
 use OCP\App\IAppManager;
 use DateTime;
 use stdClass;
@@ -59,6 +60,8 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
 
     /**
      * Configuration mapper instance.
@@ -215,6 +218,11 @@ class ConfigurationController extends Controller
      */
     public function show(int $id): JSONResponse
     {
+        // SEC-CTRL-3: prevent IDOR — only admins may read a configuration by id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
 
@@ -313,7 +321,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to enrich configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to enrich configuration');
         }//end try
     }//end enrichDetails()
 
@@ -382,7 +390,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to create configuration');
         }//end try
     }//end create()
 
@@ -439,10 +447,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                data: ['error' => 'Failed to update configuration: '.$e->getMessage()],
-                statusCode: 500
-            );
+            return $this->errorResponse($e, 'Failed to update configuration');
         }//end try
     }//end update()
 
@@ -580,7 +585,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch remote version: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch remote version');
         } catch (Exception $e) {
             $this->logger->error(
                 message: "[ConfigurationController] Failed to check version for configuration {$id}: ".$e->getMessage(),
@@ -612,6 +617,11 @@ class ConfigurationController extends Controller
      */
     public function preview(int $id): JSONResponse
     {
+        // SEC-CTRL-3: prevent IDOR — only admins may preview a configuration by id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
 
@@ -696,7 +706,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to import configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to import configuration');
         }//end try
     }//end import()
 
@@ -717,6 +727,12 @@ class ConfigurationController extends Controller
      */
     public function export(int $id): JSONResponse
     {
+        // SEC-CTRL-3: prevent IDOR — export (incl. ?includeObjects=true) serialises a
+        // configuration's objects; restrict to admins to block bulk exfiltration by id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration  = $this->configurationMapper->find($id);
             $data           = $this->request->getParams();
@@ -738,7 +754,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to export configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to export configuration');
         }//end try
     }//end export()
 
@@ -833,10 +849,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                data: ['error' => 'Failed to discover configurations: '.$e->getMessage()],
-                statusCode: 500
-            );
+            return $this->errorResponse($e, 'Failed to discover configurations');
         }//end try
     }//end discover()
 
@@ -883,7 +896,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch branches');
         }//end try
     }//end getGitHubBranches()
 
@@ -934,7 +947,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch repositories: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch repositories');
         }//end try
     }//end getGitHubRepositories()
 
@@ -983,7 +996,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch configurations');
         }//end try
     }//end getGitHubConfigurations()
 
@@ -1035,7 +1048,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch branches: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch branches');
         }//end try
     }//end getGitLabBranches()
 
@@ -1089,7 +1102,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to fetch configurations: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e, 'Failed to fetch configurations');
         }//end try
     }//end getGitLabConfigurations()
 
@@ -1200,50 +1213,19 @@ class ConfigurationController extends Controller
             throw new Exception('Invalid URL provided', 400);
         }
 
-        // SSRF guard: only allow HTTPS URLs and block RFC-1918 / link-local /
-        // loopback / cloud-metadata IP ranges that should never be reachable
-        // from a legitimate external configuration URL.
-        $parsedUrl = parse_url($url);
-        if (($parsedUrl['scheme'] ?? '') !== 'https') {
-            throw new Exception('Only HTTPS URLs are allowed for configuration import', 400);
+        // SEC-SVC-6: replace the ad-hoc (DNS-rebinding/IPv6-bypassable) guard with the
+        // shared anti-SSRF check that resolves every A and AAAA record and rejects any
+        // loopback/private/reserved/link-local target.
+        try {
+            SecurityService::assertSafeFetchUrl($url);
+        } catch (\InvalidArgumentException $e) {
+            throw new Exception($e->getMessage(), 400);
         }
 
-        $host = strtolower($parsedUrl['host'] ?? '');
-        // Resolve the host to an IP for range checks (best-effort; DNS must succeed).
-        $resolvedIp = gethostbyname($host);
-        if ($resolvedIp !== $host) {
-            $longIp = ip2long($resolvedIp);
-            if ($longIp !== false) {
-                // Block loopback (127.0.0.0/8).
-                if (($longIp & 0xFF000000) === 0x7F000000) {
-                    throw new Exception('URL resolves to a blocked IP range (loopback)', 400);
-                }
-
-                // Block RFC-1918: 10.0.0.0/8.
-                if (($longIp & 0xFF000000) === 0x0A000000) {
-                    throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
-                }
-
-                // Block RFC-1918: 172.16.0.0/12.
-                if (($longIp & 0xFFF00000) === 0xAC100000) {
-                    throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
-                }
-
-                // Block RFC-1918: 192.168.0.0/16.
-                if (($longIp & 0xFFFF0000) === 0xC0A80000) {
-                    throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
-                }
-
-                // Block link-local (169.254.0.0/16) including AWS metadata endpoint.
-                if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-                    throw new Exception('URL resolves to a blocked IP range (link-local/metadata)', 400);
-                }
-            }//end if
-        }//end if
-
-        // Fetch content from URL.
+        // Fetch content from URL. Redirects are disabled so a public host cannot
+        // 302 us to an internal address after the point-in-time DNS validation.
         $client   = new Client();
-        $response = $client->request('GET', $url);
+        $response = $client->request('GET', $url, ['allow_redirects' => false]);
         $content  = $response->getBody()->getContents();
 
         $configData = json_decode($content, true);
@@ -1410,6 +1392,12 @@ class ConfigurationController extends Controller
                 message: "[ConfigurationController] Failed to import from {$sourceType}: ".$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
+
+            // SEC-CTRL-7: only 4xx validation responses keep the specific message;
+            // 500s return a generic envelope (the real error is logged above).
+            if ($statusCode >= 500) {
+                return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: $statusCode);
+            }
 
             return new JSONResponse(
                 data: ['error' => 'Failed to import configuration: '.$e->getMessage()],
@@ -1928,8 +1916,9 @@ class ConfigurationController extends Controller
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
+        // SEC-CTRL-7: generic 500 envelope; the real error is logged above.
         return new JSONResponse(
-            data: ['error' => 'Failed to publish configuration: '.$exception->getMessage()],
+            data: ['error' => 'Internal server error'],
             statusCode: 500
         );
     }//end handlePublishingError()

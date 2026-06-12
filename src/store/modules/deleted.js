@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -430,7 +429,6 @@ export const useDeletedStore = defineStore('deleted', {
 			this.deletedFilters = {}
 			this.deletedSearch = ''
 			this.selectedForBulkAction = []
-			console.info('Deleted store cleared')
 		},
 	},
 })

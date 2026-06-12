@@ -712,8 +712,6 @@ export default {
 					})
 				}
 
-				console.info('LLM configuration loaded', llmSettings)
-
 				// Fetch Ollama models if Ollama is selected
 				if ((this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama') && this.ollamaConfig.url) {
 					this.fetchOllamaModels()

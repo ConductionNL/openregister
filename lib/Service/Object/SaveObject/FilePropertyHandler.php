@@ -23,6 +23,7 @@ use finfo;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\SecurityService;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 
@@ -915,15 +916,23 @@ class FilePropertyHandler
      */
     private function fetchFileFromUrl(string $url): string
     {
+        // SEC-SVC-2: validate the user-supplied URL against the shared anti-SSRF guard
+        // BEFORE issuing any request. This rejects non-http(s) schemes and any host that
+        // resolves to a loopback / private / reserved address (e.g. cloud metadata,
+        // localhost, RFC-1918), closing the full read-SSRF on this object-write path.
+        SecurityService::assertSafeFetchUrl($url);
+
         // Create a context with appropriate options.
+        // SEC-SVC-2: redirects are DISABLED — follow_location would let a public URL
+        // 302-redirect to an internal address, defeating the point-in-time guard above.
         $context = stream_context_create(
             [
                 'http' => [
                     'timeout'         => 30,
             // 30 second timeout.
                     'user_agent'      => 'OpenRegister/1.0',
-                    'follow_location' => true,
-                    'max_redirects'   => 5,
+                    'follow_location' => false,
+                    'max_redirects'   => 0,
                 ],
             ]
         );

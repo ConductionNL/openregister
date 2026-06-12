@@ -150,6 +150,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
@@ -1812,7 +1813,30 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
         // WebhookEventListener for webhook delivery.
+        // OPS-2: register for EVERY event the listener's extractPayload() handles,
+        // not just create — otherwise update/delete/lock/revert/register/schema
+        // webhooks silently never deliver.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
+
+        // OPS-1: ActionListener drives the event-driven Actions feature. It is
+        // event-agnostic (resolves the payload from the dispatched event), so it
+        // must be wired to the object lifecycle events or configured Actions
+        // never fire.
+        $context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, ActionListener::class);
 
         // GraphQL subscription event listeners.
         $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);

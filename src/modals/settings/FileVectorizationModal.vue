@@ -307,7 +307,6 @@ export default {
 				const response = await axios.get(generateUrl('/apps/openregister/api/files/types'))
 				if (response.data.success) {
 					this.fileTypes = response.data.data
-					console.info('[FileVectorizationModal] Loaded file types:', this.fileTypes)
 				}
 			} catch (error) {
 				console.error('[FileVectorizationModal] Failed to load file types:', error)

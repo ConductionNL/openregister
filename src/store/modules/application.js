@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Application } from '../../entities/index.js'
 
@@ -28,7 +27,6 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
 		/**
 		 * @spec exclude Client state mutator — wraps the active application in an entity. No backend contract.
@@ -38,7 +36,6 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = true
 				this.error = null
 				this.applicationItem = applicationItem ? new Application(applicationItem) : null
-				console.log('Active application item set to ' + (applicationItem?.name || 'null'))
 			} catch (error) {
 				console.error('Error setting application item:', error)
 				this.error = error.message
@@ -53,7 +50,6 @@ export const useApplicationStore = defineStore('application', {
 			this.applicationList = applicationList.map(
 				(applicationItem) => new Application(applicationItem),
 			)
-			console.log('Application list set to ' + applicationList.length + ' items')
 		},
 		/**
 		 * Set pagination details
@@ -64,7 +60,6 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		setPagination(page, limit = 20) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for application list
@@ -74,7 +69,6 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters)
 		},
 		/**
 		 * Refresh the application list from the API
@@ -87,8 +81,6 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
-			console.log('ApplicationStore: Starting refreshApplicationList (soft=' + soft + ')')
-
 			// Only set loading state for hard reloads
 			if (!soft) {
 				this.loading = true
@@ -112,7 +104,6 @@ export const useApplicationStore = defineStore('application', {
 				const data = (await response.json()).results
 
 				this.setApplicationList(data)
-				console.log('ApplicationStore: refreshApplicationList completed, got', data.length, 'applications')
 
 				return { response, data }
 			} catch (error) {
@@ -159,7 +150,6 @@ export const useApplicationStore = defineStore('application', {
 				throw new Error('No application to delete')
 			}
 
-			console.log('Deleting application...')
 			this.loading = true
 
 			const endpoint = `/index.php/apps/openregister/api/applications/${applicationItem.id}`
@@ -193,7 +183,6 @@ export const useApplicationStore = defineStore('application', {
 				throw new Error('No application to save')
 			}
 
-			console.log('Saving application...')
 			this.loading = true
 
 			const isNewApplication = !applicationItem.id
@@ -284,10 +273,7 @@ export const useApplicationStore = defineStore('application', {
 							name: groupId,
 							userCount: 0, // Could be fetched separately if needed
 						}))
-						console.log('Loaded', this.nextcloudGroups.length, 'Nextcloud groups into application store')
 					}
-				} else {
-					console.warn('Failed to load Nextcloud groups:', response.statusText)
 				}
 			} catch (error) {
 				console.error('Error loading Nextcloud groups:', error)
