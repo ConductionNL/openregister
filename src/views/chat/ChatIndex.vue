@@ -369,6 +369,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { agentStore, conversationStore } from '../../store/store.js'
 
 export default {
@@ -481,7 +482,6 @@ export default {
 
 		// Just ensure we have the latest conversation list (should already be loaded)
 		if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
-			console.info('Conversations not preloaded, loading now...')
 			conversationStore.refreshConversationList()
 		}
 	},
@@ -508,27 +508,15 @@ export default {
 		loadAgentsFromStore() {
 			// Agents are already loaded during app warmup (AppInitializationService)
 			// Just use them from the store
-			console.info('[ChatIndex] loadAgentsFromStore called')
-			console.info('[ChatIndex] agentStore:', agentStore)
-			console.info('[ChatIndex] agentStore.agentList:', agentStore.agentList)
-
 			this.availableAgents = agentStore.agentList || []
 
-			console.info('[ChatIndex] availableAgents set to:', this.availableAgents)
-
 			if (this.availableAgents.length === 0) {
-				console.warn('[ChatIndex] ⚠ No agents available in store')
-				console.warn('[ChatIndex] Trying to refresh agent list...')
 				// If no agents, try to refresh the list
 				agentStore.refreshAgentList().then(() => {
-					console.info('[ChatIndex] After refresh, agentList:', agentStore.agentList)
 					this.availableAgents = agentStore.agentList || []
-					console.info('[ChatIndex] availableAgents now:', this.availableAgents)
 				}).catch(err => {
 					console.error('[ChatIndex] Failed to refresh agents:', err)
 				})
-			} else {
-				console.info('[ChatIndex] ✓ Using preloaded agents from store:', this.availableAgents.length)
 			}
 		},
 
@@ -746,13 +734,6 @@ export default {
 				this.includeFiles = this.currentAgent.searchFiles ?? true
 				this.numSourcesFiles = this.currentAgent.ragNumSources ?? 5
 				this.numSourcesObjects = this.currentAgent.ragNumSources ?? 5
-
-				console.info('[ChatIndex] Loaded agent capabilities:', {
-					views: this.availableViews.length,
-					tools: this.availableTools.length,
-					includeObjects: this.includeObjects,
-					includeFiles: this.includeFiles,
-				})
 			} catch (error) {
 				console.error('[ChatIndex] Failed to load agent capabilities:', error)
 				this.availableViews = []
@@ -863,17 +844,16 @@ export default {
 		/**
 		 * @spec exclude chat UI source-navigation stub (logs only; not yet implemented)
 		 */
-		viewSource(source) {
+		viewSource(_source) {
 			// TODO: Navigate to source object/file
-			console.info('View source:', source)
 		},
 
 		/**
 		 * @spec exclude chat UI markdown-to-HTML rendering helper for display only
 		 */
 		formatMessage(content) {
-			// Convert markdown to HTML using marked library
-			return marked.parse(content || '')
+			// Convert markdown to HTML using marked library, then sanitize to prevent XSS
+			return DOMPurify.sanitize(marked.parse(content || ''))
 		},
 
 		/**

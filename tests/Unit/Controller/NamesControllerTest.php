@@ -9,6 +9,8 @@ use OCA\OpenRegister\Controller\NamesController;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -24,6 +26,7 @@ class NamesControllerTest extends TestCase
     private IRequest&MockObject $request;
     private CacheHandler&MockObject $cacheHandler;
     private LoggerInterface&MockObject $logger;
+    private IUserSession&MockObject $userSession;
 
     protected function setUp(): void
     {
@@ -32,12 +35,20 @@ class NamesControllerTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->cacheHandler = $this->createMock(CacheHandler::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+
+        // SEC-CTRL-2: index()/create() now require an authenticated user.
+        // Default the session to a logged-in user so happy-path tests pass;
+        // individual tests override this for the unauthenticated 401 path.
+        $user = $this->createMock(IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
 
         $this->controller = new NamesController(
             'openregister',
             $this->request,
             $this->cacheHandler,
-            $this->logger
+            $this->logger,
+            $this->userSession
         );
     }
 
@@ -101,6 +112,46 @@ class NamesControllerTest extends TestCase
         $this->assertSame(500, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('error', $data);
+    }
+
+    public function testIndexReturns401WhenUnauthenticated(): void
+    {
+        // SEC-CTRL-2: anonymous callers must not resolve object names.
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn(null);
+
+        $controller = new NamesController(
+            'openregister',
+            $this->request,
+            $this->cacheHandler,
+            $this->logger,
+            $session
+        );
+
+        $result = $controller->index();
+
+        $this->assertSame(401, $result->getStatus());
+        $this->assertArrayHasKey('error', $result->getData());
+    }
+
+    public function testCreateReturns401WhenUnauthenticated(): void
+    {
+        // SEC-CTRL-2: anonymous callers must not resolve object names.
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn(null);
+
+        $controller = new NamesController(
+            'openregister',
+            $this->request,
+            $this->cacheHandler,
+            $this->logger,
+            $session
+        );
+
+        $result = $controller->create();
+
+        $this->assertSame(401, $result->getStatus());
+        $this->assertArrayHasKey('error', $result->getData());
     }
 
     public function testCreateWithValidIds(): void

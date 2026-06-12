@@ -345,8 +345,14 @@ class RegisterMapper extends QBMapper
 
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
-            $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;
-            $this->findCache[strtolower($register->getUuid()).$rbacSuffix] = $register;
+            $this->findCache[(string) $register->getId().$rbacSuffix] = $register;
+
+            // BUG-DB-10: guard against a null uuid before strtolower().
+            $registerUuid = $register->getUuid();
+            if ($registerUuid !== null) {
+                $this->findCache[strtolower($registerUuid).$rbacSuffix] = $register;
+            }
+
             if ($register->getSlug() !== null) {
                 $this->findCache[strtolower($register->getSlug()).$rbacSuffix] = $register;
             }
@@ -689,9 +695,7 @@ class RegisterMapper extends QBMapper
         // Set or update the version.
         if (isset($object['version']) === false) {
             $currentVersion = $register->getVersion() ?? '0.0.0';
-            $version        = explode('.', $currentVersion);
-            $version[2]     = ((int) $version[2] + 1);
-            $register->setVersion(implode('.', $version));
+            $register->setVersion($this->bumpPatchVersion($currentVersion));
         }
 
         $register->hydrate(object: $object);
@@ -703,6 +707,34 @@ class RegisterMapper extends QBMapper
 
         return $register;
     }//end updateFromArray()
+
+    /**
+     * Increment the patch component of a semantic version string.
+     *
+     * BUG-DB-12: the previous naive `explode('.')` + `(int)` bump turned a
+     * pre-release like `1.0.0-beta` into `1.0.1`, silently dropping the
+     * `-beta` suffix. This parser preserves any pre-release/build suffix and
+     * pads missing segments so a bare `1` or `1.2` still bumps cleanly.
+     *
+     * @param string $version The current version string (e.g. `1.0.0-beta`).
+     *
+     * @return string The version with its patch component incremented.
+     */
+    private function bumpPatchVersion(string $version): string
+    {
+        // Capture: major.minor.patch followed by an optional -prerelease/+build suffix.
+        if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) === 1) {
+            $major  = (int) $matches[1];
+            $minor  = (int) ($matches[2] ?? 0);
+            $patch  = (int) ($matches[3] ?? 0);
+            $suffix = $matches[4] ?? '';
+
+            return $major.'.'.$minor.'.'.($patch + 1).$suffix;
+        }
+
+        // Fall back to a safe default when the version is unparsable.
+        return '0.0.1';
+    }//end bumpPatchVersion()
 
     /**
      * Delete a register only if no objects are attached

@@ -82,6 +82,8 @@ use Psr\Log\LoggerInterface;
  */
 class SchemasController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
     /**
      * Constructor
      *
@@ -360,7 +362,7 @@ class SchemasController extends Controller
                     'error_message' => $e->getMessage(),
                 ]
             );
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end show()
 
@@ -496,7 +498,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end create()
 
@@ -645,7 +647,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end update()
 
@@ -770,7 +772,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
         } catch (\Exception $e) {
             // Return 500 for other errors.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end destroy()
 
@@ -950,7 +952,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end upload()
 
@@ -1057,7 +1059,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions.
-            return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end related()
 
@@ -1117,7 +1119,7 @@ class SchemasController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end stats()
 
@@ -1162,7 +1164,7 @@ class SchemasController extends Controller
                 message: '[SchemasController] Schema exploration failed: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end explore()
 
@@ -1225,7 +1227,7 @@ class SchemasController extends Controller
                 message: '[SchemasController] Failed to update schema from exploration: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end updateFromExploration()
 

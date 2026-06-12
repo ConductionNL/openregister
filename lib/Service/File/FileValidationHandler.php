@@ -289,27 +289,21 @@ class FileValidationHandler
             throw new NotPermittedException("File {$fileName} is not readable by the current session");
         }
 
-        try {
-            $fileOwner        = $file->getOwner();
-            $openRegisterUser = $this->getUser();
+        // SEC-CTRL-5: On owner mismatch DENY access — never call ownFile() here.
+        // Re-owning a file on a read path is a state-changing side effect that turns
+        // any mount-visibility drift into a silent cross-user read. Legitimate
+        // ownership repair must be done by an explicit admin job, not on access.
+        $fileOwner        = $file->getOwner();
+        $openRegisterUser = $this->getUser();
 
-            if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
-                $this->logger->info(
-                    message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) has drifted owner, repairing",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-
-                $this->ownFile(file: $file);
-            }
-        } catch (Exception $ownershipException) {
-            // Repair is best-effort: a readable file with an unrecoverable owner
-            // record should not fail the caller. The drift will be re-evaluated
-            // on the next call.
+        if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
             $this->logger->warning(
-                message: "[FileValidationHandler] checkOwnership: Could not repair ownership for {$fileName}: ".$ownershipException->getMessage(),
+                message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) owner does not match the current session; denying access",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-        }//end try
+
+            throw new NotPermittedException("File {$fileName} is not owned by the current session");
+        }
     }//end checkOwnership()
 
     /**

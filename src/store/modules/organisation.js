@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Organisation } from '../../entities/index.js'
 
@@ -31,28 +30,24 @@ export const useOrganisationStore = defineStore('organisation', {
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
 		/**
 		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
 		 */
 		setOrganisationItem(organisationItem) {
 			this.organisationItem = organisationItem && new Organisation(organisationItem)
-			console.log('Active organisation item set to ' + (organisationItem?.name || 'null'))
 		},
 		/**
 		 * @spec exclude Client state mutator — maps the organisation list to entities. No backend contract.
 		 */
 		setOrganisationList(organisations) {
 			this.organisationList = organisations.map(organisation => new Organisation(organisation))
-			console.log('Organisation list set to ' + organisations.length + ' items')
 		},
 		/**
 		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
 		 */
 		setActiveOrganisation(activeOrganisation) {
 			this.activeOrganisation = activeOrganisation && new Organisation(activeOrganisation)
-			console.log('Active organisation set to ' + (activeOrganisation?.name || 'null'))
 		},
 		/**
 		 * @spec exclude Client state mutator — maps the user-org stats response into entities. No backend contract.
@@ -63,7 +58,6 @@ export const useOrganisationStore = defineStore('organisation', {
 				active: stats.active ? new Organisation(stats.active) : null,
 				list: (stats.results || []).map(org => new Organisation(org)),
 			}
-			console.log('User organisation stats set:', this.userStats)
 		},
 		/**
 		 * Set pagination details
@@ -74,7 +68,6 @@ export const useOrganisationStore = defineStore('organisation', {
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for organisation list
@@ -84,7 +77,6 @@ export const useOrganisationStore = defineStore('organisation', {
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters)
 		},
 		/**
 		 * @spec exclude Thin API passthrough — GET /api/organisations list; observable contract owned by tenant-lifecycle.
@@ -254,8 +246,6 @@ export const useOrganisationStore = defineStore('organisation', {
 				throw new Error('No organisation UUID to delete')
 			}
 
-			console.log('Deleting organisation...')
-
 			// Create the organisation item from the organisation
 			const uuid = organisationItem.uuid || organisationItem.id
 
@@ -275,8 +265,6 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations; observable contract owned by tenant-lifecycle.
 		 */
 		async createOrganisation(organisationData) {
-			console.log('Creating organisation...', organisationData)
-
 			const endpoint = '/index.php/apps/openregister/api/organisations'
 
 			try {
@@ -302,7 +290,6 @@ export const useOrganisationStore = defineStore('organisation', {
 				// Refresh the full list to get updated stats
 				await this.refreshOrganisationList()
 
-				console.log('Organisation created successfully:', savedOrganisation)
 				return { response, data: savedOrganisation }
 			} catch (error) {
 				console.error('Error creating organisation:', error)
@@ -315,8 +302,6 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — PUT /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
 		 */
 		async updateOrganisation(organisationData) {
-			console.log('Updating organisation...', organisationData)
-
 			if (!organisationData.id && !organisationData.uuid) {
 				throw new Error('Organisation UUID is required for updates')
 			}
@@ -361,7 +346,6 @@ export const useOrganisationStore = defineStore('organisation', {
 				// Refresh the full list to get updated stats
 				await this.refreshOrganisationList()
 
-				console.log('Organisation updated successfully:', savedOrganisation)
 				return { response, data: savedOrganisation }
 			} catch (error) {
 				console.error('Error updating organisation:', error)
@@ -465,7 +449,6 @@ export const useOrganisationStore = defineStore('organisation', {
 				})
 
 				const data = await response.json()
-				console.log('Organisation cache cleared:', data.message)
 
 				// Refresh organisation data after cache clear
 				await this.refreshOrganisationList()
@@ -502,10 +485,7 @@ export const useOrganisationStore = defineStore('organisation', {
 							name: groupId,
 							userCount: 0, // Could be fetched separately if needed
 						}))
-						console.log('Loaded', this.nextcloudGroups.length, 'Nextcloud groups into organisation store')
 					}
-				} else {
-					console.warn('Failed to load Nextcloud groups:', response.statusText)
 				}
 			} catch (error) {
 				console.error('Error loading Nextcloud groups:', error)

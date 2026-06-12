@@ -44,7 +44,6 @@ class FileChangeListenerTest extends TestCase
         $ref2->setValue(null, null);
 
         $this->listener = new FileChangeListener(
-            $this->textExtractSvc,
             $this->settingsService,
             $this->jobList,
             $this->logger,
@@ -131,8 +130,11 @@ class FileChangeListenerTest extends TestCase
         $this->listener->handle($event);
     }
 
-    public function testHandleImmediateModeSynchronousExtraction(): void
+    public function testHandleImmediateModeQueuesExtractionJob(): void
     {
+        // OPS-14: immediate mode no longer extracts synchronously on the
+        // instance-wide NodeWritten hot path — it enqueues a background job so
+        // the write returns immediately.
         $file = $this->createMock(File::class);
         $file->method('getPath')->willReturn('/admin/files/Open Registers/test.pdf');
         $file->method('getId')->willReturn(42);
@@ -144,12 +146,12 @@ class FileChangeListenerTest extends TestCase
         $this->settingsService->method('getFileSettingsOnly')
             ->willReturn(['extractionScope' => 'objects', 'extractionMode' => 'immediate']);
 
-        $this->textExtractSvc->expects($this->once())
-            ->method('extractFile')
-            ->with(42, false);
-
-        $this->jobList->expects($this->never())
-            ->method('add');
+        $this->jobList->expects($this->once())
+            ->method('add')
+            ->with(
+                \OCA\OpenRegister\BackgroundJob\FileTextExtractionJob::class,
+                ['file_id' => 42]
+            );
 
         $this->listener->handle($event);
     }

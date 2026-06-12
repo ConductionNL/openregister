@@ -638,11 +638,6 @@ export default {
 					this.propertySelections[property] = options.find(opt => opt.value === selectedValue) || null
 				}
 			})
-
-			// eslint-disable-next-line no-console
-			console.log('Initial mergedData after setup:', this.mergedData)
-			// eslint-disable-next-line no-console
-			console.log('Initial propertySelections after setup:', this.propertySelections)
 		},
 		/**
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
@@ -677,14 +672,10 @@ export default {
 		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
 		 */
 		onPropertySelectionChange(property, selectedOption) {
-			// eslint-disable-next-line no-console
-			console.log('Property selection change:', property, selectedOption)
 			if (selectedOption && selectedOption.value !== undefined) {
 				// Always store the actual value, never the option object
 				this.mergedData[property] = selectedOption.value
 				this.propertySelections[property] = selectedOption
-				// eslint-disable-next-line no-console
-				console.log('Set mergedData[' + property + '] to:', selectedOption.value)
 
 				// Clear custom value if switching away from custom
 				if (selectedOption.value !== 'custom') {
@@ -734,8 +725,6 @@ export default {
 			try {
 				// Prepare merged data with custom values resolved - ensure no ID is included
 				const finalMergedData = {}
-				// eslint-disable-next-line no-console
-				console.log('Raw mergedData before processing:', this.mergedData)
 
 				Object.keys(this.mergedData).forEach(property => {
 					// Skip any ID-related properties
@@ -749,17 +738,12 @@ export default {
 						// Ensure we extract the actual value if it's an object with label/value structure
 						const value = this.mergedData[property]
 						if (value && typeof value === 'object' && value.value !== undefined) {
-							// eslint-disable-next-line no-console
-							console.log('Extracting value from object for', property, ':', value.value)
 							finalMergedData[property] = value.value
 						} else {
 							finalMergedData[property] = value
 						}
 					}
 				})
-
-				// eslint-disable-next-line no-console
-				console.log('Final merged data to send:', finalMergedData)
 
 				// Use the object store method for consistent API handling
 				const result = await objectStore.mergeObjects({

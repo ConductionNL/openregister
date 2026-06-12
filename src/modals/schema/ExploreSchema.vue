@@ -738,10 +738,8 @@ export default {
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.info('Loaded detailed schema stats for exploration:', stats)
 				}
-			} catch (error) {
-				console.warn('Could not fetch object count:', error)
+			} catch {
 				this.objectCount = 0
 				this.objectStats = null
 			}

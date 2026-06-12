@@ -1796,6 +1796,13 @@ class ImportHandler
             );
         }//end if
 
+        // Resolve `@ref:<slug>` seed-reference tokens to concrete target UUIDs
+        // before the import loop. Seed objects reference siblings by slug; the
+        // referenced schema properties are `format: uuid`, so the tokens must be
+        // rewritten to the target object's UUID (and the targets given a stable
+        // id) before validation runs inside saveObject().
+        $data = $this->resolveSeedReferenceTokens(data: $data);
+
         // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
         // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
         // Process and import objects.
@@ -2047,6 +2054,370 @@ class ImportHandler
 
         return $result;
     }//end importFromJson()
+
+    /**
+     * Resolve `@ref:<slug>` seed-reference tokens to target object UUIDs.
+     *
+     * Seed objects declare relationships to sibling seed objects by slug using
+     * the `@ref:<slug>` token (or the disambiguated `@ref:<schema-slug>:<slug>`
+     * form) in any property value. The referenced schema properties are normally
+     * constrained to `format: uuid`, so a literal slug token would fail
+     * validation inside {@see SaveObject}. This method runs before the
+     * object-import loop and:
+     *
+     *  1. Assigns every referenced target object a stable UUID — reusing the
+     *     UUID of an already-imported object with the same register+schema+slug
+     *     (so re-imports stay idempotent), otherwise minting a fresh v4 UUID —
+     *     and writes it into `@self.id` so saveObject persists that exact id.
+     *  2. Replaces every `@ref:` token in object property values with the
+     *     resolved target UUID.
+     *
+     * Unresolvable or ambiguous tokens are left untouched and logged as a
+     * warning, so the subsequent schema validation surfaces them rather than
+     * silently dropping the relationship. Objects that are never referenced are
+     * left exactly as-is (the import loop assigns their identity as before).
+     *
+     * @param array $data The configuration data.
+     *
+     * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
+     */
+    private function resolveSeedReferenceTokens(array $data): array
+    {
+        if (($data['components']['objects'] ?? null) === null
+            || is_array($data['components']['objects']) === false
+        ) {
+            return $data;
+        }
+
+        // Collect the slugs that are actually referenced, so we only resolve
+        // identities for genuine reference targets (and skip the work entirely
+        // when no object references another).
+        $referencedSlugs = [];
+        $refSchemaSlugs  = [];
+        foreach ($data['components']['objects'] as $objectData) {
+            if (is_array($objectData) === true) {
+                $this->collectRefTargets(
+                    value: $objectData,
+                    bareSlugs: $referencedSlugs,
+                    schemaSlugs: $refSchemaSlugs
+                );
+            }
+        }
+
+        if (count($referencedSlugs) === 0 && count($refSchemaSlugs) === 0) {
+            return $data;
+        }
+
+        // PASS 1 — assign a stable UUID to each referenced target and index it.
+        $uuidBySchemaSlug = [];
+        $uuidBySlug       = [];
+        $ambiguousSlugs   = [];
+
+        foreach ($data['components']['objects'] as &$targetData) {
+            if (is_array($targetData) === false) {
+                continue;
+            }
+
+            $objectSlug = $targetData['@self']['slug'] ?? null;
+            if (empty($objectSlug) === true) {
+                continue;
+            }
+
+            $schemaSlug    = $targetData['@self']['schema'] ?? null;
+            $schemaSlugKey = null;
+            if (is_string($schemaSlug) === true && $schemaSlug !== '') {
+                $schemaSlugKey = $schemaSlug.':'.$objectSlug;
+            }
+
+            // Only objects that something references need a pre-resolved identity.
+            $isReferenced = (array_key_exists($objectSlug, $referencedSlugs) === true
+                || ($schemaSlugKey !== null && array_key_exists($schemaSlugKey, $refSchemaSlugs) === true));
+            if ($isReferenced === false) {
+                continue;
+            }
+
+            // A target whose register/schema cannot be resolved will be skipped
+            // by the import loop and never persisted; pre-assigning it an id
+            // would leave referrers pointing at a dangling, never-stored UUID.
+            // Leave it unmapped so replaceRefTokens logs the unresolved reference
+            // instead of silently fabricating one.
+            [$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData);
+            if ($registerObject === null || $schemaObject === null) {
+                continue;
+            }
+
+            // Prefer the UUID already persisted for this register+schema+slug so
+            // re-imports stay idempotent and resolved references always match the
+            // id the import loop will keep on update; fall back to an explicit
+            // seed id (first import), then a freshly minted one.
+            $uuid = $this->findExistingSeedUuid(
+                register: $registerObject,
+                schema: $schemaObject,
+                slug: $objectSlug
+            );
+            if (empty($uuid) === true) {
+                $uuid = $targetData['@self']['id'] ?? null;
+            }
+
+            if (empty($uuid) === true) {
+                $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+            }
+
+            $targetData['@self']['id'] = $uuid;
+
+            if ($schemaSlugKey !== null) {
+                $uuidBySchemaSlug[$schemaSlugKey] = $uuid;
+            }
+
+            $isDuplicateSlug = (array_key_exists($objectSlug, $uuidBySlug) === true
+                && $uuidBySlug[$objectSlug] !== $uuid);
+            if ($isDuplicateSlug === true) {
+                $ambiguousSlugs[$objectSlug] = true;
+            }
+
+            if ($isDuplicateSlug === false) {
+                $uuidBySlug[$objectSlug] = $uuid;
+            }
+        }//end foreach
+
+        unset($targetData);
+
+        // PASS 2 — replace @ref: tokens in every object's property values.
+        foreach ($data['components']['objects'] as &$objectData) {
+            if (is_array($objectData) === false) {
+                continue;
+            }
+
+            $self = $objectData['@self'] ?? null;
+            unset($objectData['@self']);
+
+            $objectData = $this->replaceRefTokens(
+                value: $objectData,
+                uuidBySchemaSlug: $uuidBySchemaSlug,
+                uuidBySlug: $uuidBySlug,
+                ambiguousSlugs: $ambiguousSlugs
+            );
+
+            if ($self !== null) {
+                $objectData['@self'] = $self;
+            }
+        }//end foreach
+
+        unset($objectData);
+
+        return $data;
+    }//end resolveSeedReferenceTokens()
+
+    /**
+     * Recursively collect the slugs referenced by `@ref:` tokens in a value.
+     *
+     * @param mixed $value       The property value to scan.
+     * @param array $bareSlugs   Accumulator of "objectSlug" => true (by reference).
+     * @param array $schemaSlugs Accumulator of "schemaSlug:objectSlug" => true (by reference).
+     *
+     * @return void
+     */
+    private function collectRefTargets(mixed $value, array &$bareSlugs, array &$schemaSlugs): void
+    {
+        if (is_array($value) === true) {
+            foreach ($value as $item) {
+                $this->collectRefTargets(value: $item, bareSlugs: $bareSlugs, schemaSlugs: $schemaSlugs);
+            }
+
+            return;
+        }
+
+        if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
+            return;
+        }
+
+        $reference = substr($value, strlen('@ref:'));
+        if (str_contains($reference, ':') === true) {
+            $schemaSlugs[$reference] = true;
+            return;
+        }
+
+        $bareSlugs[$reference] = true;
+    }//end collectRefTargets()
+
+    /**
+     * Recursively replace `@ref:` tokens in a value with resolved target UUIDs.
+     *
+     * A token is matched only when it spans the whole string value, in one of:
+     *  - `@ref:<slug>`               — resolved by slug (must be unambiguous).
+     *  - `@ref:<schema-slug>:<slug>` — resolved by schema + slug (explicit).
+     *
+     * @param mixed $value            The property value (scalar, list, or map).
+     * @param array $uuidBySchemaSlug Map of "schemaSlug:objectSlug" => uuid.
+     * @param array $uuidBySlug       Map of "objectSlug" => uuid.
+     * @param array $ambiguousSlugs   Set of slugs that map to multiple objects.
+     *
+     * @return mixed The value with any `@ref:` tokens replaced.
+     */
+    private function replaceRefTokens(
+        mixed $value,
+        array $uuidBySchemaSlug,
+        array $uuidBySlug,
+        array $ambiguousSlugs
+    ): mixed {
+        if (is_array($value) === true) {
+            foreach ($value as $key => $item) {
+                $value[$key] = $this->replaceRefTokens(
+                    value: $item,
+                    uuidBySchemaSlug: $uuidBySchemaSlug,
+                    uuidBySlug: $uuidBySlug,
+                    ambiguousSlugs: $ambiguousSlugs
+                );
+            }
+
+            return $value;
+        }
+
+        if (is_string($value) === false || str_starts_with($value, '@ref:') === false) {
+            return $value;
+        }
+
+        $reference  = substr($value, strlen('@ref:'));
+        $schemaSlug = null;
+        $objectSlug = $reference;
+        if (str_contains($reference, ':') === true) {
+            [$schemaSlug, $objectSlug] = explode(':', $reference, 2);
+        }
+
+        if ($schemaSlug !== null && $schemaSlug !== '') {
+            if (array_key_exists($schemaSlug.':'.$objectSlug, $uuidBySchemaSlug) === true) {
+                return $uuidBySchemaSlug[$schemaSlug.':'.$objectSlug];
+            }
+
+            $this->logger->warning(
+                message: '[ImportHandler] Unresolved seed reference "'.$value.'" — no imported object for that schema+slug.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return $value;
+        }
+
+        if (array_key_exists($objectSlug, $ambiguousSlugs) === true) {
+            $this->logger->warning(
+                message: '[ImportHandler] Ambiguous seed reference "'.$value.'"; slug exists in '
+                    .'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return $value;
+        }
+
+        if (array_key_exists($objectSlug, $uuidBySlug) === true) {
+            return $uuidBySlug[$objectSlug];
+        }
+
+        $this->logger->warning(
+            message: '[ImportHandler] Unresolved seed reference "'.$value.'" — no imported object with that slug.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        return $value;
+    }//end replaceRefTokens()
+
+    /**
+     * Resolve a seed object's `@self` register + schema slugs to their entities,
+     * using the in-flight import maps first and falling back to a direct mapper
+     * lookup (RBAC/multitenancy bypassed, as everywhere else in this trusted
+     * import path). Returns nulls when either cannot be resolved.
+     *
+     * @param array $objectData The seed object (with @self register/schema).
+     *
+     * @return array{0: ?Register, 1: ?Schema} The resolved register and schema.
+     */
+    private function resolveImportRegisterSchema(array $objectData): array
+    {
+        $rawRegister = $objectData['@self']['register'] ?? null;
+        $rawSchema   = $objectData['@self']['schema'] ?? null;
+
+        $registerObject = $this->registersMap[$rawRegister] ?? null;
+        if ($registerObject instanceof Register === false
+            && is_string($rawRegister) === true
+            && $rawRegister !== ''
+        ) {
+            try {
+                $registerObject = $this->registerMapper->find($rawRegister, _rbac: false, _multitenancy: false);
+                $this->registersMap[$rawRegister] = $registerObject;
+            } catch (\Throwable $e) {
+                $registerObject = null;
+            }
+        }
+
+        $schemaObject = $this->schemasMap[$rawSchema] ?? null;
+        if ($schemaObject instanceof Schema === false
+            && is_string($rawSchema) === true
+            && $rawSchema !== ''
+        ) {
+            try {
+                $schemaObject = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
+                $this->schemasMap[$rawSchema] = $schemaObject;
+            } catch (\Throwable $e) {
+                $schemaObject = null;
+            }
+        }
+
+        if ($registerObject instanceof Register === false) {
+            $registerObject = null;
+        }
+
+        if ($schemaObject instanceof Schema === false) {
+            $schemaObject = null;
+        }
+
+        return [$registerObject, $schemaObject];
+    }//end resolveImportRegisterSchema()
+
+    /**
+     * Look up the UUID of an already-imported object with the given
+     * register + schema + slug, so re-imports reuse the same identity.
+     *
+     * @param Register $register The resolved register.
+     * @param Schema   $schema   The resolved schema.
+     * @param string   $slug     The seed object slug.
+     *
+     * @return string|null The existing object UUID, or null when none exists.
+     */
+    private function findExistingSeedUuid(Register $register, Schema $schema, string $slug): ?string
+    {
+        $search = [
+            '@self'  => [
+                'register' => (int) $register->getId(),
+                'schema'   => (int) $schema->getId(),
+                'slug'     => $slug,
+            ],
+            '_limit' => 1,
+        ];
+
+        try {
+            $results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_array($results) === false || count($results) === 0) {
+            return null;
+        }
+
+        $existing = $results[0];
+        if ($existing instanceof ObjectEntity) {
+            $existing = $existing->jsonSerialize();
+        }
+
+        if (is_array($existing) === false) {
+            return null;
+        }
+
+        $uuid = $existing['@self']['id'] ?? $existing['id'] ?? null;
+        if (is_string($uuid) === true && $uuid !== '') {
+            return $uuid;
+        }
+
+        return null;
+    }//end findExistingSeedUuid()
 
     /**
      * Process workflow deployment during import (Phase 2).
@@ -2865,20 +3236,39 @@ class ImportHandler
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
         try {
-            // Resolve the file path relative to Nextcloud root.
-            // Try multiple resolution strategies.
-            $fullPath = $this->appDataPath.'/../../../'.$filePath;
-            $fullPath = realpath($fullPath);
+            // SEC-SVC-7: contain the resolved file inside the Nextcloud root.
+            // Reject absolute paths and any path-traversal sequence up front so
+            // a crafted $filePath (e.g. '../../etc/passwd') cannot escape the
+            // intended base directory.
+            if (str_starts_with($filePath, '/') === true
+                || str_contains($filePath, '..') === true
+                || preg_match('/[\x00-\x1f]/', $filePath) === 1
+            ) {
+                throw new Exception("Invalid configuration file path: {$filePath}");
+            }
+
+            // Establish the allowed base directory (Nextcloud root).
+            $baseDir = realpath($this->appDataPath.'/../../../');
+            if ($baseDir === false) {
+                $baseDir = realpath('/var/www/html');
+            }
+
+            // Resolve the file path relative to the Nextcloud root.
+            $fullPath = realpath($this->appDataPath.'/../../../'.$filePath);
 
             // If realpath fails, try direct path from Nextcloud root.
             if ($fullPath === false) {
-                $fullPath = '/var/www/html/'.$filePath;
-                // Normalize the path.
-                $fullPath = str_replace('//', '/', $fullPath);
+                $fullPath = realpath('/var/www/html/'.$filePath);
             }
 
             if ($fullPath === false || file_exists($fullPath) === false) {
                 throw new Exception("Configuration file not found: {$filePath}");
+            }
+
+            // Final containment check: the resolved real path MUST live under
+            // the allowed base directory.
+            if ($baseDir === false || str_starts_with($fullPath, $baseDir.'/') === false) {
+                throw new Exception("Configuration file is outside the allowed directory: {$filePath}");
             }
 
             // Read the file contents.

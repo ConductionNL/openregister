@@ -482,6 +482,45 @@ class FileMapper extends QBMapper
     }//end getFile()
 
     /**
+     * Batch-load multiple files by their fileids in a single query (PERF-1).
+     *
+     * Avoids the N+1 pattern of calling getFile() once per file during list rendering.
+     * Returns a map keyed by the (string) fileid so callers can do O(1) lookups, with
+     * the same per-file shape (share urls, owner, published, etc.) as getFile().
+     *
+     * @param array $fileIds List of file ids (int|string) to load
+     *
+     * @return array<string, array> Map of (string) fileid => file record
+     *
+     * @phpstan-param  array<int, int|string> $fileIds
+     * @phpstan-return array<string, File>
+     */
+    public function getFilesByIds(array $fileIds): array
+    {
+        // Normalise to unique positive integers; ignore non-numeric entries.
+        $normalisedIds = [];
+        foreach ($fileIds as $fileId) {
+            if (is_numeric($fileId) === true) {
+                $normalisedIds[(int) $fileId] = (int) $fileId;
+            }
+        }
+
+        if (empty($normalisedIds) === true) {
+            return [];
+        }
+
+        // Reuse the existing batch query (single WHERE fileid IN (...)).
+        $files = $this->getFiles(node: null, ids: array_values($normalisedIds));
+
+        $filesById = [];
+        foreach ($files as $file) {
+            $filesById[(string) $file['fileid']] = $file;
+        }
+
+        return $filesById;
+    }//end getFilesByIds()
+
+    /**
      * Get all files for a given ObjectEntity by using its folder property as the node id.
      * If the folder property is empty, search oc_filecache for a row where name matches the object's uuid.
      * If one result, use its fileid as node id; if more than one, throw an error; if zero, return empty array.

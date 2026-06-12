@@ -953,8 +953,6 @@ export default {
 		 */
 		handleRegisterChange(options) {
 			// Handle multi-select - options is an array of values
-			console.info('Register change - raw options:', options)
-
 			// NcSelect with reduce returns the reduced values directly
 			// For multi-select, it's an array of the reduced values (IDs)
 			if (!options || options.length === 0) {
@@ -966,8 +964,6 @@ export default {
 				// Fallback for single value
 				this.selectedRegisters = [options]
 			}
-
-			console.info('Selected registers after processing:', this.selectedRegisters)
 
 			// Clear schemas that are no longer valid for selected registers
 			const validSchemaIds = new Set()
