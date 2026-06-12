@@ -35,6 +35,16 @@
 						{{ t('openregister', 'Searching...') }}
 					</div>
 				</div>
+				<button
+					v-if="hasCreateTemplate(schema)"
+					type="button"
+					class="or-action-create"
+					:disabled="!!creating[schema.id]"
+					@click="createFromEmail(schema)">
+					{{ creating[schema.id]
+						? t('openregister', 'Creating...')
+						: t('openregister', 'New {name} from this email', { name: schema.title }) }}
+				</button>
 			</div>
 		</div>
 	</div>
@@ -65,6 +75,8 @@ export default {
 			visibleResults: {},
 			debounceTimers: {},
 			registerCache: {},
+			creating: {},
+			envelopeCache: {},
 		}
 	},
 	async created() {
@@ -89,13 +101,14 @@ export default {
 		async loadSchemas() {
 			this.loading = true
 			try {
-				// Load schemas and registers in parallel
-				const [schemaResponse, regResponse] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/schemas'), { params: { _limit: 100 } }),
-					axios.get(generateUrl('/apps/openregister/api/registers'), { params: { _limit: 100 } }),
+				// Load schemas (paged — instances can hold many hundreds of
+				// schemas and the API result order is not by id, so a single
+				// first page would miss mail-linked schemas) and registers.
+				const [allSchemas, regResponse] = await Promise.all([
+					this.fetchAllSchemas(),
+					axios.get(generateUrl('/apps/openregister/api/registers'), { params: { _limit: 500 } }),
 				])
 
-				const allSchemas = schemaResponse.data?.results || schemaResponse.data || []
 				const registers = regResponse.data?.results || regResponse.data || []
 
 				// Cache register lookups
@@ -191,6 +204,127 @@ export default {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
 				this.$set(this.searching, schema.id, false)
+			}
+		},
+		/**
+		 * Fetch every schema page by page (capped at 10 pages of 500).
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		async fetchAllSchemas() {
+			const limit = 500
+			const all = []
+			for (let page = 1; page <= 10; page++) {
+				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'), {
+					params: { _limit: limit, _page: page },
+					timeout: 15000,
+				})
+				const results = response.data?.results || response.data || []
+				all.push(...results)
+				if (results.length < limit) break
+			}
+			return all
+		},
+		/**
+		 * Schemas opt into create-from-email by declaring a field template in
+		 * `configuration.mailObjectTemplate` (e.g. pipelinq lead, shillinq invoice).
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		hasCreateTemplate(schema) {
+			const tpl = schema.configuration?.mailObjectTemplate
+			return tpl && typeof tpl === 'object' && Object.keys(tpl).length > 0
+		},
+		/**
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		async fetchEnvelope() {
+			if (this.envelopeCache[this.messageId]) {
+				return this.envelopeCache[this.messageId]
+			}
+			const url = generateUrl('/apps/mail/api/messages/{id}/body', { id: this.messageId })
+			const response = await axios.get(url, { timeout: 10000 })
+			const envelope = response.data?.data || response.data
+			this.$set(this.envelopeCache, this.messageId, envelope)
+			return envelope
+		},
+		/**
+		 * Build the placeholder map available to mailObjectTemplate values.
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		buildPlaceholders(envelope) {
+			const from = (envelope.from || [])[0] || {}
+			const sentAt = envelope.dateInt ? new Date(envelope.dateInt * 1000) : new Date()
+			const due = new Date(sentAt.getTime() + (30 * 24 * 60 * 60 * 1000))
+			const isoDate = (d) => d.toISOString().slice(0, 10)
+			let preview = envelope.body || ''
+			if (envelope.hasHtmlBody) {
+				preview = new DOMParser().parseFromString(preview, 'text/html').body.textContent || ''
+			}
+			preview = preview.trim().slice(0, 600)
+			return {
+				subject: envelope.subject || '',
+				sender: from.email || '',
+				senderName: from.label || from.email || '',
+				date: isoDate(sentAt),
+				date30: isoDate(due),
+				datetime: sentAt.toISOString(),
+				preview,
+				messageId: String(this.messageId),
+				mailRef: `${this.accountId}/${this.messageId}`,
+			}
+		},
+		/**
+		 * Substitute {{placeholder}} tokens in string template values; pass
+		 * non-string values (numbers, booleans) through untouched.
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		applyTemplate(template, placeholders) {
+			const data = {}
+			for (const [field, value] of Object.entries(template)) {
+				if (typeof value === 'string') {
+					data[field] = value.replace(/\{\{(\w+)\}\}/g, (match, key) => (
+						key in placeholders ? placeholders[key] : match
+					))
+				} else {
+					data[field] = value
+				}
+			}
+			return data
+		},
+		/**
+		 * Create a new object from the current email via the schema's
+		 * mailObjectTemplate, then link the email to it.
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		async createFromEmail(schema) {
+			if (!this.accountId || !this.messageId || this.creating[schema.id]) return
+			const register = this.registerCache[schema.id]
+			if (!register) return
+
+			this.$set(this.creating, schema.id, true)
+			try {
+				const envelope = await this.fetchEnvelope()
+				const data = this.applyTemplate(
+					schema.configuration.mailObjectTemplate,
+					this.buildPlaceholders(envelope),
+				)
+				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
+					register: register.id,
+					schema: schema.id,
+				})
+				const response = await axios.post(url, data, { timeout: 15000 })
+				const created = response.data
+				await this.linkObject(schema, created)
+			} catch (err) {
+				const detail = err.response?.data?.error || err.response?.data || ''
+				showError(t('openregister', 'Failed to create {name} from email', { name: schema.title }))
+				console.error('[ActionsTab] Create from email failed:', detail, err)
+			} finally {
+				this.$set(this.creating, schema.id, false)
 			}
 		},
 		/**
