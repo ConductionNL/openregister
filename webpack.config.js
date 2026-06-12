@@ -35,6 +35,51 @@ if (!isDev) {
 	// A one-shot build never reuses it, so it only inflates the webpack main
 	// process — the dominant memory consumer here. Disable it for the build.
 	webpackConfig.cache = false
+
+	// Deduplicate heavy shared deps (vue, @nextcloud/vue, pinia, the local
+	// nextcloud-vue source, …) across entries into shared chunks instead of
+	// re-bundling them into every entry. This cuts total `js/` size by ~70% and
+	// roughly halves build RAM again. Because the entries are no longer
+	// self-contained, each page must now load ALL of its entry's initial chunks
+	// (see ScriptManifestLoader on the PHP side, fed by the manifest below).
+	//
+	// `integrationGlobal` is deliberately EXCLUDED from splitting: it is injected
+	// on EVERY Nextcloud page via addInitScript, so sharing chunks with it would
+	// (a) pull this app's vendor code onto every page of the whole instance and
+	// (b) create a second webpack runtime co-loading shared chunks with the
+	// page's real entry. Keeping it self-contained preserves today's behaviour.
+	webpackConfig.optimization.splitChunks = {
+		chunks: (chunk) => chunk.name !== 'integrationGlobal',
+		cacheGroups: {
+			vendor: {
+				test: /[\\/]node_modules[\\/]/,
+				name: 'openregister-vendor',
+				priority: 10,
+			},
+		},
+	}
+
+	// Emit js/openregister-entrypoints.json mapping each entry name to the
+	// ordered list of initial JS chunks it needs. The PHP ScriptManifestLoader
+	// reads this at render time and enqueues every chunk (split-chunk filenames
+	// are content-hashed and change per build, so they cannot be hardcoded).
+	webpackConfig.plugins.push({
+		apply(compiler) {
+			compiler.hooks.afterEmit.tap('OpenRegisterEntrypointsManifest', (compilation) => {
+				const manifest = {}
+				for (const [name, entrypoint] of compilation.entrypoints) {
+					manifest[name] = entrypoint
+						.getFiles()
+						.map((file) => file.split('?')[0])
+						.filter((file) => file.endsWith('.js'))
+				}
+				fs.writeFileSync(
+					path.join(compiler.options.output.path, 'openregister-entrypoints.json'),
+					JSON.stringify(manifest, null, '\t') + '\n',
+				)
+			})
+		},
+	})
 }
 
 webpackConfig.stats = {
