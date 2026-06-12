@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterResolverService;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
+use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -320,6 +321,146 @@ class RegisterResolverServiceTest extends TestCase
         $this->assertArrayHasKey('theme_schema', $result);
 
     }//end testEnumerateAppConfigsSkipsEmptyValues()
+
+
+    public function testResolvePropertyIdHappyPath(): void
+    {
+        $this->appConfig->method('getValueString')
+            ->with('openconnector', 'swc_type_property', '')
+            ->willReturn('id-9358c742-a631-47b5-80d4-f8e69b3a5d12');
+
+        $this->assertSame(
+            'id-9358c742-a631-47b5-80d4-f8e69b3a5d12',
+            $this->resolver->resolvePropertyId('openconnector', 'swc_type_property')
+        );
+
+    }//end testResolvePropertyIdHappyPath()
+
+
+    public function testResolvePropertyIdFallsBackToDefault(): void
+    {
+        $this->appConfig->method('getValueString')->willReturn('');
+
+        $result = $this->resolver->resolvePropertyId('openconnector', 'swc_type_property', 'id-default');
+        $this->assertSame('id-default', $result);
+
+    }//end testResolvePropertyIdFallsBackToDefault()
+
+
+    public function testResolvePropertyIdThrowsMissingConfigExceptionWithDiagnostics(): void
+    {
+        $this->appConfig->method('getValueString')->willReturn('');
+
+        try {
+            $this->resolver->resolvePropertyId('openconnector', 'swc_type_property');
+            $this->fail('Expected MissingConfigException');
+        } catch (MissingConfigException $exception) {
+            $this->assertSame('openconnector', $exception->getAppId());
+            $this->assertSame('swc_type_property', $exception->getConfigKey());
+        }
+
+    }//end testResolvePropertyIdThrowsMissingConfigExceptionWithDiagnostics()
+
+
+    public function testResolvePropertyMatchesByArrayKey(): void
+    {
+        $schema = $this->makeSchema(id: 5, slug: 'extendview');
+        $schema->setProperties([
+            'type' => ['type' => 'string', 'id' => 'prop-7', 'slug' => 'type'],
+            'name' => ['type' => 'string', 'id' => 'prop-8', 'slug' => 'name'],
+        ]);
+
+        $this->appConfig->method('getValueString')->willReturnMap([
+            ['openconnector', 'swc_schema', '', 'extendview'],
+            ['openconnector', 'swc_type_property', '', 'type'],
+        ]);
+        $this->schemaMapper->method('find')->with(id: 'extendview')->willReturn($schema);
+
+        [$key, $definition] = $this->resolver->resolveProperty(
+            'openconnector',
+            'swc_schema',
+            'swc_type_property'
+        );
+
+        $this->assertSame('type', $key);
+        $this->assertSame('prop-7', $definition['id']);
+
+    }//end testResolvePropertyMatchesByArrayKey()
+
+
+    public function testResolvePropertyMatchesById(): void
+    {
+        $schema = $this->makeSchema(id: 5, slug: 'extendview');
+        $schema->setProperties([
+            'type' => ['type' => 'string', 'id' => 'prop-7', 'slug' => 'type'],
+            'name' => ['type' => 'string', 'id' => 'prop-8', 'slug' => 'name'],
+        ]);
+
+        $this->appConfig->method('getValueString')->willReturnMap([
+            ['openconnector', 'swc_schema', '', 'extendview'],
+            ['openconnector', 'swc_type_property', '', 'prop-7'],
+        ]);
+        $this->schemaMapper->method('find')->with(id: 'extendview')->willReturn($schema);
+
+        [$key, $definition] = $this->resolver->resolveProperty(
+            'openconnector',
+            'swc_schema',
+            'swc_type_property'
+        );
+
+        $this->assertSame('type', $key);
+        $this->assertSame('prop-7', $definition['id']);
+
+    }//end testResolvePropertyMatchesById()
+
+
+    public function testResolvePropertyThrowsWhenPropertyMissing(): void
+    {
+        $schema = $this->makeSchema(id: 5, slug: 'extendview');
+        $schema->setProperties([
+            'type' => ['type' => 'string', 'id' => 'prop-7'],
+        ]);
+
+        $this->appConfig->method('getValueString')->willReturnMap([
+            ['openconnector', 'swc_schema', '', 'extendview'],
+            ['openconnector', 'swc_type_property', '', 'does-not-exist'],
+        ]);
+        $this->schemaMapper->method('find')->with(id: 'extendview')->willReturn($schema);
+
+        try {
+            $this->resolver->resolveProperty(
+                'openconnector',
+                'swc_schema',
+                'swc_type_property'
+            );
+            $this->fail('Expected PropertyNotFoundException');
+        } catch (PropertyNotFoundException $exception) {
+            $this->assertSame('openconnector', $exception->getAppId());
+            $this->assertSame('swc_type_property', $exception->getConfigKey());
+            $this->assertSame('does-not-exist', $exception->getResolvedValue());
+            $this->assertSame('extendview', $exception->getSchemaIdentifier());
+        }
+
+    }//end testResolvePropertyThrowsWhenPropertyMissing()
+
+
+    public function testEnumerateAppConfigsIncludesPropertyKeys(): void
+    {
+        $this->appConfig->method('getAllValues')->willReturn([
+            'theme_register'    => 'theme-2026',
+            'swc_type_property' => 'id-9358c742-a631-47b5-80d4-f8e69b3a5d12',
+            'foo_property'      => 'prop-foo',
+            'unrelated_threshold' => '500',
+        ]);
+
+        $result = $this->resolver->enumerateAppConfigs('openconnector');
+
+        $this->assertArrayHasKey('swc_type_property', $result);
+        $this->assertArrayHasKey('foo_property', $result);
+        $this->assertSame('id-9358c742-a631-47b5-80d4-f8e69b3a5d12', $result['swc_type_property']);
+        $this->assertArrayNotHasKey('unrelated_threshold', $result);
+
+    }//end testEnumerateAppConfigsIncludesPropertyKeys()
 
 
     private function makeRegister(int $id, string $slug, ?string $organisation=null): Register

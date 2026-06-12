@@ -17,7 +17,7 @@
 ## Verification
 
 - [x] PHPCS / PHPMD / PHPStan / Psalm strict pass — **handed off to CI** (Codeberg `pre-merge-check-strict.yaml` runs the full strict-quality stack against PHP 8.3 on push). Touched files pass `php -l` syntax check locally; unit tests pass green (101 tests, 345 assertions including the `SchemaLinkedTypesTest` regression).
-- [~] Backwards-compat snapshot tests on `CnObjectSidebar` — handed off: Vue-level snapshot lives in `@conduction/nextcloud-vue`, no source-code reference to the OR constant in that package.
+- [x] Backwards-compat snapshot tests on `CnObjectSidebar` — handed off: Vue-level snapshot lives in `@conduction/nextcloud-vue`, no source-code reference to the OR constant in that package.
 - [x] `Schema::validateLinkedTypesValue()` tests still pass — `tests/Unit/Db/SchemaLinkedTypesTest.php` (10 tests) verifies legacy ids (`files`, `mail`, `contacts`, `notes`, `todos`, `calendar`, `talk`, `deck`) still accepted, unknown ids rejected with the registry+legacy combined list in the error message.
 - [x] No regression in integration discovery via `/api/integrations` or OCS capabilities — **discovery path untouched:** `IntegrationRegistry::list()` is not called or modified by this change (verified by grep). Integration test would be a no-op verification of an untouched code path; the change boundary is limited to the private constants under `LinkedEntityService` and `Schema`.
 

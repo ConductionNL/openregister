@@ -61,6 +61,18 @@ on:
         required: false
         type: boolean
         default: false
+      run-visual:
+        description: >-
+          Run the Playwright visual-regression project (tests/e2e/visual/, GAP-5)
+          against the live NC. NON-GATING by design (continue-on-error). PLATFORM
+          CAVEAT: PNG baselines are host-font/GPU specific, so committed
+          dev-container baselines will NOT byte-match a CI Linux runner. On the
+          first CI run the baselines must be regenerated in-CI (download the
+          uploaded visual-snapshots artifact and commit it) before this step can
+          be made gating. Until then it reports diffs as an artifact only.
+        required: false
+        type: boolean
+        default: false
       newman-entrypoint:
         description: "Path to the Newman runner. openregister uses the orchestrator; feature apps use tests/integration/run-newman.sh."
         required: false
@@ -85,7 +97,7 @@ jobs:
   # ---------------------------------------------------------------------------
   live-nc:
     name: Live NC e2e + Newman (${{ inputs.app-id }})
-    if: ${{ inputs.run-e2e || inputs.run-newman }}
+    if: ${{ inputs.run-e2e || inputs.run-newman || inputs.run-visual }}
     runs-on: docker
     timeout-minutes: 40
     permissions:
@@ -220,6 +232,45 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npx playwright test tests/e2e/workflows
+
+      - name: Run visual-regression project (NON-GATING — GAP-5)
+        # Visual baselines are rendered against the local dev container; a CI
+        # Linux runner uses a different font stack + GPU so the committed PNGs
+        # will not byte-match here. This step is therefore NON-GATING
+        # (continue-on-error) and exists to (a) surface visual diffs as an
+        # artifact and (b) let a maintainer regenerate CI-native baselines:
+        #   download the `visual-snapshots-<app>` artifact from a run with
+        #   PLAYWRIGHT_UPDATE=1 and commit it, then drop continue-on-error to
+        #   make the step gating in the CI environment.
+        if: ${{ inputs.run-visual }}
+        continue-on-error: true
+        env:
+          NEXTCLOUD_URL: http://localhost:8080
+          NC_ADMIN_USER: admin
+          NC_ADMIN_PASS: admin
+          OR_USER: admin
+          OR_PASS: admin
+          CI: "true"
+        run: |
+          npx playwright install --with-deps chromium
+          if [ "${PLAYWRIGHT_UPDATE:-0}" = "1" ]; then
+            echo "Regenerating CI-native visual baselines (--update-snapshots)…"
+            npx playwright test --project visual --update-snapshots || true
+          else
+            npx playwright test --project visual || true
+          fi
+
+      - name: Upload visual snapshots + diffs (NON-GATING)
+        if: ${{ inputs.run-visual }}
+        continue-on-error: true
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: visual-snapshots-${{ inputs.app-id }}
+          path: |
+            tests/e2e/visual/**/*-snapshots/**
+            tests/e2e/test-results/**
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Run Newman API-contract suite (GATING)
         if: ${{ inputs.run-newman }}

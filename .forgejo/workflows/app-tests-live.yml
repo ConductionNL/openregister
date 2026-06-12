@@ -37,6 +37,12 @@ jobs:
       # GATING: both suites run against the live NC and fail the PR on a defect.
       run-e2e: true
       run-newman: true
+      # NON-GATING (GAP-5): runs the visual-regression project + uploads
+      # snapshots/diffs as an artifact. Committed baselines are dev-container
+      # native, so they will not byte-match the CI Linux runner until
+      # regenerated in-CI (see tests-live.yml run-visual caveat) — the step is
+      # continue-on-error so it never blocks a PR.
+      run-visual: true
       # openregister uses the orchestrator (multi-collection), restricted to the
       # self-seeding domains that don't assume dev-container fixture IDs — same
       # default set the GitHub api-test-coverage.yml rig uses.

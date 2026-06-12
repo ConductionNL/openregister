@@ -157,6 +157,8 @@ use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
+use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
+use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
@@ -1786,6 +1788,14 @@ class Application extends App implements IBootstrap
         // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+
+        // Scheduled-notification per-object dedup pruning (Phase 3.4):
+        // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
+        // - drop dedup rows for rule keys removed/renamed in the schema annotation
+        //   so orphan state does not pile up after edits.
+        $context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
 
         // Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
