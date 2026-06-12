@@ -28,11 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Dashboard;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\Dashboard\IIconWidget;
 use OCP\Dashboard\IWidget;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\Util;
 
 /**
  * Umbrella dashboard widget hosting all registered integration widgets
@@ -140,13 +140,13 @@ class IntegrationDashboardWidget implements IWidget, IIconWidget
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addScript() is the
-     *   canonical Nextcloud API for enqueuing scripts from an IWidget::load()
-     *   implementation; no injectable alternative (IUtil, etc.) exists in the
-     *   NC AppFramework.
+     * @SuppressWarnings(PHPMD.StaticAccess) ScriptManifestLoader wraps the
+     *   canonical \OCP\Util::addScript() API for enqueuing scripts from an
+     *   IWidget::load() implementation; no injectable alternative (IUtil, etc.)
+     *   exists in the NC AppFramework.
      */
     public function load(): void
     {
-        Util::addScript(Application::APP_ID, 'openregister-user-dashboard');
+        ScriptManifestLoader::addEntryScripts(Application::APP_ID, 'userDashboard', 'openregister-user-dashboard');
     }//end load()
 }//end class
