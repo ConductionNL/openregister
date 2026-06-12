@@ -13,10 +13,14 @@ authenticated users file feature requests straight into the repo.
 `@conduction/nextcloud-vue` is the existing shared Vue library (currently
 exporting only settings primitives — `CnSettingsCard`, `CnSettingsSection`)
 so it's the natural home for the new component family. The build-time
-spec-to-manifest tool is its own package (`@conduction/openspec-manifest`)
-because it must be usable from any app's build without dragging in the full
-UI library. A fourth package (`@conduction/docusaurus-features`) renders
-the same manifest on each app's public Docusaurus site.
+spec-to-manifest tool lives in-tree as
+`openregister/scripts/build-features-manifest.js`; adopting apps copy the
+222-line script verbatim into their own `scripts/` tree. The Docusaurus
+surface is a per-site `src/pages/features.js` template (~30 LOC) that
+imports `docs/features.json` directly. Originally both surfaces were scoped
+as standalone npm packages (`@conduction/openspec-manifest`,
+`@conduction/docusaurus-features`) — rescoped 2026-06-12 per the W33
+honest-handoffs review (see §D6 and §D19).
 
 The backend (read proxy + submission endpoint) lives in OpenRegister and
 ships in the paired `add-github-issue-proxy` change. This change depends on
@@ -51,9 +55,10 @@ it.
 
 Runtime endpoint reading specs from the installed app's filesystem rejected
 (couples backend to deployment layout). Hand-authored JSON curated per
-release rejected (guaranteed drift). **Chosen:** `@conduction/openspec-manifest`
-CLI runs as `prebuild`, writes `docs/features.json`, both webpack/vite and
-Docusaurus consume the same file.
+release rejected (guaranteed drift). **Chosen:** the in-tree
+`scripts/build-features-manifest.js` runs as `prebuild`, writes
+`docs/features.json`; both webpack/vite and Docusaurus consume the same
+file.
 
 ### D4. Feature filter: `status: implemented` OR `status: reviewed`
 
@@ -71,13 +76,28 @@ auto-compute against the repo's default branch resolved from
 to an override via a `docsUrl:` frontmatter key (validated as `https://`
 URL with non-empty hostname; rejection → use computed default).
 
-### D6. Manifest generator as a standalone npm package
+### D6. Manifest generator delivery: in-tree script, copied per app
 
 Ship as dev-dependency inside `@conduction/nextcloud-vue` rejected
 (couples build tooling to UI library; not every consumer has OpenSpec).
-Inline script per app rejected (DRY violation across ten-plus apps).
-**Chosen:** new `@conduction/openspec-manifest` package with a `build`
-CLI.
+Original choice (D6, 2026-02): publish `@conduction/openspec-manifest`
+npm package — rejected on review 2026-06-12 (W33 honest-handoffs): the
+publishable contract was never landed, and ~600 LOC of release plumbing
+(semantic-release, README, peer-dep matrix, Jest fixtures, CHANGELOG,
+version bumps in every consumer) for a 222-line script is gold-plating
+per ADR-022 (apps-consume-or-abstractions). DRY-across-apps concern
+mitigated by: (a) the script has zero divergence drivers — the contract
+is fixed by the spec.md format and the same `docs/features.json` shape —
+and (b) the per-app `manifest:check` CI step would catch any local drift
+the moment a frontmatter format change lands fleet-wide. **Chosen
+(2026-06-12):** the canonical script lives at
+`openregister/scripts/build-features-manifest.js`; adopting apps copy it
+verbatim and wire the `prebuild` + `manifest:check` npm scripts. If the
+script needs evolution (e.g. supporting a third VCS host beyond
+github.com + codeberg.org), the change lands in OR first and is
+back-propagated to adopters by re-copying the updated file — a manual
+sync no different from how shared workflows in `Conduction/.github`
+propagate today.
 
 ### D7. Component home: `@conduction/nextcloud-vue`
 
@@ -149,9 +169,10 @@ GitHub colour.
 `src/features.json` + gitignored (original design) rejected — the same
 file must power the public Docusaurus page; cannot ship a public page
 from a gitignored artifact. Two files rejected (guaranteed to drift).
-**Chosen:** single committed `docs/features.json`. CLI is idempotent +
-deterministic; recommended CI snippet `npx openspec-manifest build && git
-diff --exit-code -- docs/features.json` catches stale manifests in PRs.
+**Chosen:** single committed `docs/features.json`. The in-tree script is
+idempotent + deterministic; recommended CI snippet
+`node scripts/build-features-manifest.js --check` catches stale manifests
+in PRs.
 
 ### D18. Widget/page `specRef` contract: declarative, ADR-008-aligned
 
@@ -167,14 +188,23 @@ pre-filled value against the same regex as the backend
 hidden field + console warn rather than POSTing a value the backend
 will reject.
 
-### D19. Docusaurus integration: shared `@conduction/docusaurus-features` package
+### D19. Docusaurus integration: per-site `src/pages/features.js` template
 
-Per-app Docusaurus code rejected (DRY violation). In-app component
-rendered into Docusaurus rejected (Vue-in-Docusaurus tooling overhead
-not worth it; Docusaurus is React). **Chosen:** new shared package
-exports `<FeaturesPage />` (React) that loads `docs/features.json` and
-renders alphabetically, matching the in-app visual style as closely as
-Docusaurus theming allows.
+In-app component rendered into Docusaurus rejected (Vue-in-Docusaurus
+tooling overhead not worth it; Docusaurus is React). Original choice
+(D19, 2026-02): publish `@conduction/docusaurus-features` npm package
+exporting `<FeaturesPage />` + a Docusaurus plugin hook — rejected on
+review 2026-06-12 (W33 honest-handoffs): same ~600 LOC of release
+plumbing as §D6 for an even smaller payload (the page is ~30 LOC of
+React). DRY-across-apps concern mitigated by: (a) `docs/features.json`
+is already a static asset of the docs build, so a Docusaurus plugin hook
+buys nothing the standard `import` syntax can't provide; (b) per-site
+copies let each app tune the `<Translate>` strings and the layout to its
+own Docusaurus theme without negotiating cross-app theming props on the
+shared package. **Chosen (2026-06-12):** OR ships the reference
+`src/pages/features.js` in its own Docusaurus tree; adopting apps copy
+the file (~30 LOC), drop in their own translations, and ship. The page
+is exposed at `/features` by Docusaurus's file-based routing.
 
 ### D22. Spec-dir discovery: prefer `openspec/specs/`, fall back to `./specs/`
 
@@ -186,10 +216,14 @@ empty manifest when neither exists.
 
 ## Migration Plan
 
-Existing apps adopt by adding `@conduction/openspec-manifest` as a
-devDep, wiring `"prebuild": "openspec-manifest build"`, bumping
-`@conduction/nextcloud-vue` to the version that ships the new component
-family, registering the route, mounting `<CnFeaturesAndRoadmapLink/>`,
-and installing `@conduction/docusaurus-features` on their Docusaurus
-site. OpenRegister itself executes this migration as the pilot in this
-change. Other apps are deferred to ADR-019 + per-app PRs.
+Existing apps adopt by copying
+`openregister/scripts/build-features-manifest.js` into their own
+`scripts/` tree, wiring `"prebuild": "node scripts/build-features-manifest.js"`
+and `"manifest:check": "node scripts/build-features-manifest.js --check"`,
+bumping `@conduction/nextcloud-vue` to the version that ships the new
+component family, registering the route, mounting
+`<CnFeaturesAndRoadmapLink/>`, and copying OR's
+`docusaurus/src/pages/features.js` into their own Docusaurus tree (then
+translating the chrome strings). OpenRegister itself executes this
+migration as the pilot in this change. Other apps are deferred to
+ADR-019 + per-app PRs.
