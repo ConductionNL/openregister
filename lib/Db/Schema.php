@@ -717,8 +717,10 @@ class Schema extends Entity implements JsonSerializable
      * Validate the authorization structure for RBAC
      *
      * Validates that the authorization array follows the correct structure:
-     * - Keys must be valid CRUD actions (create, read, update, delete)
-     * - Values must be arrays of group IDs (strings)
+     * - Keys are either CRUD actions (create, read, update, delete) or
+     *   reserved cascade flags (e.g. inheritFromPublic)
+     * - Action values must be arrays of group IDs (strings); reserved flag
+     *   values must be booleans
      * - Group IDs must be non-empty strings
      *
      * Also validates property-level authorization if any properties have authorization defined.
@@ -743,6 +745,12 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Validate an authorization rules array
      *
+     * Keys are either CRUD actions (create, read, update, delete) holding rule
+     * arrays, or reserved cascade flags (e.g. inheritFromPublic) holding a
+     * boolean. Reserved flags are behaviour toggles read at runtime by
+     * PermissionHandler, not action rule sets, so they are validated as
+     * booleans and skip the action/array checks.
+     *
      * @param array|null $authorization The authorization rules to validate
      * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
      *
@@ -758,7 +766,22 @@ class Schema extends Entity implements JsonSerializable
 
         $validActions = ['create', 'read', 'update', 'delete'];
 
+        // Reserved non-action authorization flags. These are cascade/behaviour
+        // toggles read at runtime by PermissionHandler, not CRUD rule sets.
+        $reservedFlags = ['inheritFromPublic'];
+
         foreach ($authorization as $action => $rules) {
+            // Reserved flags are validated as booleans, not action rule arrays.
+            if (in_array($action, $reservedFlags, true) === true) {
+                if (is_bool($rules) === false) {
+                    throw new InvalidArgumentException(
+                        "Authorization flag '{$action}' in {$context} must be a boolean"
+                    );
+                }
+
+                continue;
+            }
+
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
