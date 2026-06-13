@@ -146,6 +146,7 @@ OC.L10N.register(
     "Before" : "Voor",
     "Before object vectorization can work:" : "Before object vectorization can work:",
     "Behavior Issue" : "Behavior Issue",
+    "Bookmarks" : "Bladwijzers",
     "Blob storage has been retired. All objects now use magic tables." : "Blob-opslag is buiten gebruik gesteld. Alle objecten gebruiken nu magic-tabellen.",
     "Branch" : "Branch",
     "Bulk delete operation completed successfully" : "Bulk verwijderactie succesvol voltooid",

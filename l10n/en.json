@@ -211,6 +211,7 @@
         "Bewaartermijn": "Bewaartermijn",
         "Bewaartermijn (ISO-8601 duration, e.g. P10Y, P30D)": "Bewaartermijn (ISO-8601 duration, e.g. P10Y, P30D)",
         "Blob storage has been retired. All objects now use magic tables.": "Blob storage has been retired. All objects now use magic tables.",
+        "Bookmarks": "Bookmarks",
         "Branch": "Branch",
         "Bulk Role Assignment: {title}": "Bulk Role Assignment: {title}",
         "Bulk delete operation completed successfully": "Bulk delete operation completed successfully",
