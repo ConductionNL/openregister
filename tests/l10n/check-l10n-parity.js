@@ -2,27 +2,27 @@
 /**
  * l10n translation-PARITY gate.
  *
- * The sibling check-l10n.js guards the ENGLISH side: every t() source string
- * has a key in l10n/en.json. This gate guards the OTHER languages: once a
- * string is in the English source, every shipped/required locale must carry a
- * real translation for it. Without this, a new English string ships and
- * nl/de/fr/es/it silently fall back to English with a green pipeline — the
- * app slowly stops "fully supporting" those languages.
+ * Guards that every REQUIRED locale carries a real translation for every
+ * English source key. Without this, a new English string ships and the other
+ * languages silently fall back to English with a green pipeline — the app
+ * slowly stops "fully supporting" those languages.
+ *
+ * The required set is the official language of every European country plus
+ * Russian and Turkish (ISO 639-1). Override with L10N_REQUIRED_LOCALES.
  *
  * For BOTH translation sets that exist in the app:
  *   • frontend  l10n/en.js   (OC.L10N.register)  -> l10n/<locale>.js
  *   • backend   l10n/en.json ({ translations })  -> l10n/<locale>.json
- * it asserts, for every REQUIRED locale:
+ * it asserts, for every required locale:
  *   1. the locale file exists,
  *   2. it contains every key present in the English source (no MISSING keys),
  *   3. no value is empty / whitespace-only (no UNTRANSLATED placeholders);
  *      for plural arrays, no element may be empty.
  *
  * Values identical to English are allowed (cognates / proper nouns / acronyms
- * such as "Status", "API", "OIN" are legitimately the same) and only counted.
+ * are legitimately the same) and only counted.
  *
- * Sparse override locales (en, en_US and any other regional en_*) are NOT
- * required and are skipped.
+ * Sparse override locales (en, en_US and any other regional en_*) are skipped.
  *
  * Dependency-free pure Node so CI can run it in a bare node container:
  *   node tests/l10n/check-l10n-parity.js
@@ -30,10 +30,6 @@
  * Exit codes:
  *   0  every required locale is at full parity for every existing source set
  *   1  one or more locales are missing keys, missing files, or empty values
- *
- * Env:
- *   L10N_APP_ID           override app id (default: package.json "name")
- *   L10N_REQUIRED_LOCALES override required locales (default: nl,de,fr,es,it)
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -48,6 +44,17 @@ const vm = require('vm')
 const ROOT = process.cwd()
 const L10N_DIR = path.join(ROOT, 'l10n')
 
+// Official language of every European country (ISO 639-1) + Russian + Turkish.
+// nl/de/fr/es/it lead (the original supported set); then the EU-24 remainder,
+// wider-Europe national languages, and micro-state / co-official nationals.
+const EUROPEAN = [
+	'nl', 'de', 'fr', 'es', 'it',
+	'bg', 'hr', 'cs', 'da', 'et', 'fi', 'el', 'hu', 'ga', 'lv', 'lt', 'mt',
+	'pl', 'pt', 'ro', 'sk', 'sl', 'sv',
+	'sq', 'is', 'nb', 'sr', 'bs', 'mk', 'uk', 'be', 'ru', 'tr',
+	'ca', 'lb', 'rm',
+].join(',')
+
 function readJson (p) {
 	return JSON.parse(fs.readFileSync(p, 'utf8'))
 }
@@ -57,7 +64,7 @@ const appId = process.env.L10N_APP_ID
 		? readJson(path.join(ROOT, 'package.json')).name
 		: null)
 
-const REQUIRED = (process.env.L10N_REQUIRED_LOCALES || 'nl,de,fr,es,it')
+const REQUIRED = (process.env.L10N_REQUIRED_LOCALES || EUROPEAN)
 	.split(',').map((s) => s.trim()).filter(Boolean)
 
 if (!fs.existsSync(L10N_DIR)) {
@@ -91,7 +98,6 @@ function isEmpty (v) {
 	return typeof v !== 'string' || v.trim() === ''
 }
 
-// Each set: a source English file + the per-locale file builder + a loader.
 const sets = [
 	{
 		kind: 'frontend (.js)',
@@ -132,17 +138,13 @@ for (const set of sets) {
 		const missing = enKeys.filter((k) => !Object.prototype.hasOwnProperty.call(locObj, k))
 		const empty = enKeys.filter((k) => Object.prototype.hasOwnProperty.call(locObj, k) && isEmpty(locObj[k]))
 		if (missing.length || empty.length) {
-			failures.push({
-				set: set.kind, loc, kind: 'INCOMPLETE',
-				missing, empty, total: enKeys.length,
-			})
+			failures.push({ set: set.kind, loc, kind: 'INCOMPLETE', missing, empty, total: enKeys.length })
 		}
 	}
 }
 
 const label = appId ? `[${appId}]` : ''
-console.log(`l10n-parity ${label}: required locales = ${REQUIRED.join(', ')}; `
-	+ `checked ${checkedSets} translation set(s)`)
+console.log(`l10n-parity ${label}: ${REQUIRED.length} required locales; checked ${checkedSets} translation set(s)`)
 
 if (checkedSets === 0) {
 	console.log('l10n-parity: no en.js / en.json source set found — nothing to check')
