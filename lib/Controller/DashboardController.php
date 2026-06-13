@@ -29,8 +29,6 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use Psr\Log\LoggerInterface;
 
 /**

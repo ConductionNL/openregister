@@ -15,8 +15,6 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\IndexService;
