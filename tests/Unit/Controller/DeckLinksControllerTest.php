@@ -22,6 +22,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Controller;
 
 use Exception;
@@ -30,6 +33,7 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,28 +45,61 @@ use PHPUnit\Framework\TestCase;
  */
 class DeckLinksControllerTest extends TestCase
 {
+
+    /**
+     * HTTP request mock.
+     *
+     * @var IRequest&MockObject
+     */
     private IRequest&MockObject $request;
+
+    /**
+     * DeckLinkService mock.
+     *
+     * @var DeckLinkService&MockObject
+     */
     private DeckLinkService&MockObject $service;
+
+    /**
+     * ObjectService mock.
+     *
+     * @var ObjectService&MockObject
+     */
     private ObjectService&MockObject $objectService;
+
+    /**
+     * SettingsService mock.
+     *
+     * @var SettingsService&MockObject
+     */
+    private SettingsService&MockObject $settingsService;
+
+    /**
+     * Controller under test.
+     *
+     * @var DeckLinksController
+     */
     private DeckLinksController $controller;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request       = $this->createMock(IRequest::class);
-        $this->service       = $this->createMock(DeckLinkService::class);
-        $this->objectService = $this->createMock(ObjectService::class);
+        $this->request         = $this->createMock(IRequest::class);
+        $this->service         = $this->createMock(DeckLinkService::class);
+        $this->objectService   = $this->createMock(ObjectService::class);
+        $this->settingsService = $this->createMock(SettingsService::class);
 
         $this->controller = new DeckLinksController(
             'openregister',
             $this->request,
             $this->service,
             $this->objectService,
+            $this->settingsService,
         );
-    }
+    }//end setUp()
 
-    private function mockObject(string $uuid = 'abc-123', int $registerId = 1, int $schemaId = 2): ObjectEntity
+    private function mockObject(string $uuid='abc-123', int $registerId=1, int $schemaId=2): ObjectEntity
     {
         // ObjectEntity uses NC's __call magic; instantiate concretely so
         // setters/getters resolve via the Entity base class rather than
@@ -76,7 +113,7 @@ class DeckLinksControllerTest extends TestCase
         $this->objectService->method('setObject')->willReturnSelf();
         $this->objectService->method('getObject')->willReturn($object);
         return $object;
-    }
+    }//end mockObject()
 
     public function testIndexReturns501WhenDeckUnavailable(): void
     {
@@ -85,15 +122,17 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->index('reg', 'sch', 'obj');
 
         $this->assertSame(501, $response->getStatus());
-    }
+    }//end testIndexReturns501WhenDeckUnavailable()
 
     public function testIndexReturnsResults(): void
     {
         $this->service->method('isDeckAvailable')->willReturn(true);
         $this->mockObject();
-        $this->service->method('getLinkedCards')->with('abc-123')->willReturn([
-            ['cardId' => 99, 'cardTitle' => 'Test'],
-        ]);
+        $this->service->method('getLinkedCards')->with('abc-123')->willReturn(
+                [
+                    ['cardId' => 99, 'cardTitle' => 'Test'],
+                ]
+                );
 
         $response = $this->controller->index('reg', 'sch', 'obj');
         $data     = $response->getData();
@@ -101,7 +140,7 @@ class DeckLinksControllerTest extends TestCase
         $this->assertSame(200, $response->getStatus());
         $this->assertSame(1, $data['total']);
         $this->assertSame(99, $data['results'][0]['cardId']);
-    }
+    }//end testIndexReturnsResults()
 
     public function testIndexReturns404WhenObjectMissing(): void
     {
@@ -111,7 +150,7 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->index('reg', 'sch', 'missing');
 
         $this->assertSame(404, $response->getStatus());
-    }
+    }//end testIndexReturns404WhenObjectMissing()
 
     public function testLinkReturns400WhenCardIdMissing(): void
     {
@@ -122,7 +161,7 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->link('reg', 'sch', 'obj');
 
         $this->assertSame(400, $response->getStatus());
-    }
+    }//end testLinkReturns400WhenCardIdMissing()
 
     public function testLinkReturns201OnSuccess(): void
     {
@@ -142,7 +181,7 @@ class DeckLinksControllerTest extends TestCase
 
         $this->assertSame(201, $response->getStatus());
         $this->assertSame(99, $response->getData()['cardId']);
-    }
+    }//end testLinkReturns201OnSuccess()
 
     public function testLinkReturns409OnDuplicate(): void
     {
@@ -156,7 +195,7 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->link('reg', 'sch', 'obj');
 
         $this->assertSame(409, $response->getStatus());
-    }
+    }//end testLinkReturns409OnDuplicate()
 
     public function testCreateNewReturns400WhenFieldsMissing(): void
     {
@@ -167,14 +206,14 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->createNew('reg', 'sch', 'obj');
 
         $this->assertSame(400, $response->getStatus());
-    }
+    }//end testCreateNewReturns400WhenFieldsMissing()
 
     public function testCreateNewReturns201OnSuccess(): void
     {
         $this->service->method('isDeckAvailable')->willReturn(true);
         $this->mockObject();
         $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, $default = null) {
+            static function (string $key, $default=null) {
                 return match ($key) {
                     'boardId'     => 10,
                     'stackId'     => 20,
@@ -209,7 +248,7 @@ class DeckLinksControllerTest extends TestCase
 
         $this->assertSame(201, $response->getStatus());
         $this->assertSame(123, $response->getData()['cardId']);
-    }
+    }//end testCreateNewReturns201OnSuccess()
 
     public function testDestroyReturns200OnSuccess(): void
     {
@@ -223,7 +262,7 @@ class DeckLinksControllerTest extends TestCase
 
         $this->assertSame(200, $response->getStatus());
         $this->assertTrue($response->getData()['success']);
-    }
+    }//end testDestroyReturns200OnSuccess()
 
     public function testDestroyReturns404WhenLinkMissing(): void
     {
@@ -235,21 +274,23 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->destroy('reg', 'sch', 'obj', '42');
 
         $this->assertSame(404, $response->getStatus());
-    }
+    }//end testDestroyReturns404WhenLinkMissing()
 
     public function testBoardsReturnsList(): void
     {
         $this->service->method('isDeckAvailable')->willReturn(true);
-        $this->service->method('getAvailableBoards')->willReturn([
-            ['id' => 1, 'title' => 'Sprint'],
-            ['id' => 2, 'title' => 'Backlog'],
-        ]);
+        $this->service->method('getAvailableBoards')->willReturn(
+                [
+                    ['id' => 1, 'title' => 'Sprint'],
+                    ['id' => 2, 'title' => 'Backlog'],
+                ]
+                );
 
         $response = $this->controller->boards();
 
         $this->assertSame(200, $response->getStatus());
         $this->assertSame(2, $response->getData()['total']);
-    }
+    }//end testBoardsReturnsList()
 
     public function testBoardsReturns501WhenDeckUnavailable(): void
     {
@@ -258,19 +299,21 @@ class DeckLinksControllerTest extends TestCase
         $response = $this->controller->boards();
 
         $this->assertSame(501, $response->getStatus());
-    }
+    }//end testBoardsReturns501WhenDeckUnavailable()
 
     public function testStacksReturnsList(): void
     {
         $this->service->method('isDeckAvailable')->willReturn(true);
-        $this->service->method('getStacksForBoard')->with(7)->willReturn([
-            ['id' => 11, 'title' => 'To Do', 'boardId' => 7],
-        ]);
+        $this->service->method('getStacksForBoard')->with(7)->willReturn(
+                [
+                    ['id' => 11, 'title' => 'To Do', 'boardId' => 7],
+                ]
+                );
 
         $response = $this->controller->stacks('7');
 
         $this->assertSame(200, $response->getStatus());
         $this->assertSame(1, $response->getData()['total']);
         $this->assertSame(11, $response->getData()['results'][0]['id']);
-    }
-}
+    }//end testStacksReturnsList()
+}//end class

@@ -609,6 +609,7 @@ export default {
 		},
 		formatBytes,
 		/**
+		 * @param checked
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		toggleSelectAll(checked) {
@@ -619,6 +620,8 @@ export default {
 			}
 		},
 		/**
+		 * @param id
+		 * @param checked
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		toggleAuditTrailSelection(id, checked) {

@@ -516,6 +516,21 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $translationCompleteness = null;
 
     /**
+     * Effective archival retention metadata for this object.
+     *
+     * Transient property populated by the render layer
+     * (`add-archival-annotation-support`) so the @self envelope can carry the
+     * resolved retention decision — shape:
+     *   `['effectiveRetention' => 'P30D', 'matchedRule' => 0|null, 'expiresAt' => '...']`.
+     * Not persisted to the DB; derived from the schema's archival annotation
+     * rules at render time. Exposed in @self as `_retention`, and omitted
+     * entirely when not set.
+     *
+     * @var array<string, mixed>|null
+     */
+    protected ?array $archivalRetention = null;
+
+    /**
      * AVG / GDPR Art 30 processing-activity override.
      *
      * Transient field — set by callers that want to tag an upcoming
@@ -647,6 +662,30 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $this->translationCompleteness = $translationCompleteness;
     }//end setTranslationCompleteness()
+
+    /**
+     * Read the effective archival retention metadata.
+     *
+     * @return array<string, mixed>|null The retention decision, or null when not set.
+     */
+    public function getArchivalRetention(): ?array
+    {
+        return $this->archivalRetention;
+    }//end getArchivalRetention()
+
+    /**
+     * Write the effective archival retention metadata.
+     *
+     * Surfaced in the @self envelope as `_retention` by getObjectArray().
+     *
+     * @param array<string, mixed>|null $retention The resolved retention decision.
+     *
+     * @return void
+     */
+    public function setArchivalRetention(?array $retention): void
+    {
+        $this->archivalRetention = $retention;
+    }//end setArchivalRetention()
 
     /**
      * Initialize the entity and define field types
@@ -953,6 +992,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         // translatable properties or the object hasn't been rendered yet.
         if ($this->translationCompleteness !== null) {
             $objectArray['translationCompleteness'] = $this->translationCompleteness;
+        }
+
+        // Add the effective archival retention decision when set by the render
+        // layer (add-archival-annotation-support). Exposed as `_retention` and
+        // omitted entirely when the object carries no retention metadata.
+        if ($this->archivalRetention !== null) {
+            $objectArray['_retention'] = $this->archivalRetention;
         }
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).

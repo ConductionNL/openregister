@@ -94,6 +94,7 @@ export default {
 	methods: {
 		t,
 		/**
+		 * @param type
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
 		 */
 		formatType(type) {

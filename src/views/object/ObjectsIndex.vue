@@ -53,9 +53,6 @@ export default {
 			return this.$route.path === '/objects' || this.$route.name === 'objectDetail'
 		},
 	},
-	mounted() {
-		this.loadFromRoute()
-	},
 	watch: {
 		'$route.params.id': {
 			/**
@@ -68,6 +65,9 @@ export default {
 				this.loadFromRoute()
 			},
 		},
+	},
+	mounted() {
+		this.loadFromRoute()
 	},
 	methods: {
 		/**

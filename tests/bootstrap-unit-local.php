@@ -103,3 +103,20 @@ if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
         }'
     );
 }
+
+// OCP\DB\QueryBuilder\IExpressionBuilder uses constant references from Doctrine's ExpressionBuilder.
+// Without this stub, PHPUnit cannot create mocks of IExpressionBuilder in local tests.
+if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder', false) === false) {
+    eval(
+        'namespace Doctrine\\DBAL\\Query\\Expression {
+            class ExpressionBuilder {
+                const EQ  = "=";
+                const NEQ = "<>";
+                const LT  = "<";
+                const LTE = "<=";
+                const GT  = ">";
+                const GTE = ">=";
+            }
+        }'
+    );
+}

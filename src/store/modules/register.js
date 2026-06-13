@@ -34,18 +34,21 @@ export const useRegisterStore = defineStore('register', {
 	},
 	actions: {
 		/**
+		 * @param tab
 		 * @spec exclude Pure client UI-state setter — active detail tab. No backend contract.
 		 */
 		setActiveTab(tab) {
 			this.activeTab = tab
 		},
 		/**
+		 * @param mode
 		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
 		},
 		/**
+		 * @param registerItem
 		 * @spec exclude Client state mutator — wraps the active register in an entity. No backend contract.
 		 */
 		setRegisterItem(registerItem) {
@@ -61,6 +64,7 @@ export const useRegisterStore = defineStore('register', {
 			}
 		},
 		/**
+		 * @param registerList
 		 * @spec exclude Client state mutator — maps the register list to entities. No backend contract.
 		 */
 		setRegisterList(registerList) {
@@ -98,7 +102,7 @@ export const useRegisterStore = defineStore('register', {
 			if (search === null && inFlightRefresh) {
 				return inFlightRefresh
 			}
-			let endpoint ='/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
+			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
@@ -116,6 +120,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// New function to get a single register
 		/**
+		 * @param id
 		 * @spec exclude Thin API passthrough — GET /api/registers/{id}; observable contract owned by the register lifecycle backend capability.
 		 */
 		async getRegister(id) {
@@ -134,6 +139,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// New function to get register statistics
 		/**
+		 * @param id
 		 * @spec exclude Thin API passthrough — GET /api/registers/{id}/stats; observable contract owned by the register lifecycle backend capability.
 		 */
 		async getRegisterStats(id) {
@@ -151,6 +157,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// Delete a register
 		/**
+		 * @param registerItem
 		 * @spec exclude Thin API passthrough — DELETE /api/registers/{id}; observable contract owned by the register lifecycle backend capability.
 		 */
 		async deleteRegister(registerItem) {
@@ -186,6 +193,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// Create or save a register from store
 		/**
+		 * @param registerItem
 		 * @spec exclude Thin API passthrough — POST/PUT /api/registers; observable contract owned by the register lifecycle backend capability.
 		 */
 		async saveRegister(registerItem) {
@@ -237,6 +245,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// Clean register data for saving - remove read-only fields
 		/**
+		 * @param registerItem
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanRegisterForSave(registerItem) {
@@ -252,6 +261,7 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// Create or save a register from store
 		/**
+		 * @param register
 		 * @spec exclude Thin API passthrough — POST/PUT /api/registers/upload; observable contract owned by the register lifecycle backend capability.
 		 */
 		async uploadRegister(register) {
@@ -362,6 +372,8 @@ export const useRegisterStore = defineStore('register', {
 		},
 
 		/**
+		 * @param file
+		 * @param heartbeatCallback
 		 * @spec exclude Thin API passthrough — POST /api/registers/{id}/import; observable contract owned by data-import-export (the heartbeat it spins up is spec'd separately under frontend-client-state-orchestration REQ-001).
 		 */
 		async importRegister(file, heartbeatCallback = null) {

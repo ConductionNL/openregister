@@ -148,6 +148,7 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param newVal
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
 		 */
 		currentPage(newVal) {
@@ -157,6 +158,7 @@ export default {
 			})
 		},
 		/**
+		 * @param newVal
 		 * @spec exclude list-view watcher; debounced reload of the object list on search change (object-lifecycle contract)
 		 */
 		search(newVal) {

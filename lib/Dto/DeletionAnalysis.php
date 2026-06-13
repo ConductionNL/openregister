@@ -1,14 +1,12 @@
 <?php
 
 /**
- * OpenRegister DeletionAnalysis DTO
+ * OpenRegister Deletion Analysis DTO
  *
- * Value object representing the result of a pre-flight deletion analysis.
- * Contains information about what would happen if an object were deleted,
- * including cascade targets, nullification targets, and blockers.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * Value object returned by the referential integrity service after walking the
+ * deletion dependency graph for a given object. Contains the full analysis:
+ * whether the object is deletable, which dependent objects will be cascaded /
+ * nullified / set to their default, and which blockers prevent deletion.
  *
  * @category Dto
  * @package  OCA\OpenRegister\Dto
@@ -17,9 +15,9 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @link https://conduction.nl
  *
- * @link https://OpenRegister.app
+ * @spec openspec/changes/openregister-legacy-quality-cleanup/tasks.md#task-1.1
  */
 
 declare(strict_types=1);
@@ -27,47 +25,106 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Dto;
 
 /**
- * Value object representing the analysis of what would happen when an object is deleted.
+ * Value object representing the result of a deletion dependency-graph walk.
  *
  * @category Dto
  * @package  OCA\OpenRegister\Dto
  */
 class DeletionAnalysis
 {
+
     /**
-     * Constructor for DeletionAnalysis.
+     * Whether the object may be deleted without violating RESTRICT constraints.
      *
-     * @param bool  $deletable      Whether the object can be deleted without violating constraints.
-     * @param array $cascadeTargets Objects that would be cascade-deleted.
-     * @param array $nullifyTargets Objects that would have their reference set to null.
-     * @param array $defaultTargets Objects that would have their reference set to default value.
-     * @param array $blockers       Objects that block the deletion (RESTRICT).
-     * @param array $chainPaths     Full graph paths for debugging.
+     * @var boolean
+     */
+    public readonly bool $deletable;
+
+    /**
+     * Dependent objects that will be cascade-deleted alongside the root.
+     *
+     * @var array
+     */
+    public readonly array $cascadeTargets;
+
+    /**
+     * Dependent objects whose reference property will be set to null.
+     *
+     * @var array
+     */
+    public readonly array $nullifyTargets;
+
+    /**
+     * Dependent objects whose reference property will be set to its schema default.
+     *
+     * @var array
+     */
+    public readonly array $defaultTargets;
+
+    /**
+     * Dependent objects that block deletion (onDelete = RESTRICT).
+     *
+     * @var array
+     */
+    public readonly array $blockers;
+
+    /**
+     * The full dependency chain path for each blocker or cascade target.
+     *
+     * @var array
+     */
+    public readonly array $chainPaths;
+
+    /**
+     * Construct a new DeletionAnalysis value object.
+     *
+     * @param bool  $deletable      Whether the object may be deleted without violating RESTRICT constraints.
+     * @param array $cascadeTargets Dependent objects that will be cascade-deleted alongside the root.
+     * @param array $nullifyTargets Dependent objects whose reference property will be set to null.
+     * @param array $defaultTargets Dependent objects whose reference property will be set to its schema default.
+     * @param array $blockers       Dependent objects that block deletion (onDelete = RESTRICT).
+     * @param array $chainPaths     The full dependency chain path for each blocker or cascade target.
      */
     public function __construct(
-        public readonly bool $deletable,
-        public readonly array $cascadeTargets=[],
-        public readonly array $nullifyTargets=[],
-        public readonly array $defaultTargets=[],
-        public readonly array $blockers=[],
-        public readonly array $chainPaths=[]
+        bool $deletable,
+        array $cascadeTargets=[],
+        array $nullifyTargets=[],
+        array $defaultTargets=[],
+        array $blockers=[],
+        array $chainPaths=[],
     ) {
+        $this->deletable      = $deletable;
+        $this->cascadeTargets = $cascadeTargets;
+        $this->nullifyTargets = $nullifyTargets;
+        $this->defaultTargets = $defaultTargets;
+        $this->blockers       = $blockers;
+        $this->chainPaths     = $chainPaths;
     }//end __construct()
 
     /**
-     * Create an empty deletable analysis with no targets or blockers.
+     * Return an empty analysis indicating no dependencies were found.
      *
-     * @return self A deletable analysis with empty target lists.
+     * Used as a safe early-return value when no referential-integrity configuration
+     * exists for the object's schema, or when a recursion limit / cycle is hit.
+     *
+     * @return self
      */
     public static function empty(): self
     {
-        return new self(deletable: true);
+        return new self(
+            deletable: true,
+            cascadeTargets: [],
+            nullifyTargets: [],
+            defaultTargets: [],
+            blockers: [],
+            chainPaths: []
+        );
     }//end empty()
 
     /**
      * Convert the analysis to an array suitable for JSON serialization.
      *
-     * @return array The analysis as an associative array.
+     * @return array<string,mixed> The analysis as an associative array.
      */
     public function toArray(): array
     {

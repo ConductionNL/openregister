@@ -2024,7 +2024,7 @@ class ObjectServiceTest extends TestCase
 		$this->assertCount(1, $uuids);
 	}
 
-	// ── 54. ensureObjectFolderExists ────────────────────────────────────
+	// ── 54. ensureObjectFolderExists ─────────────────────────────────
 
 	public function testEnsureObjectFolderExistsCreatesFolder(): void
 	{
@@ -2201,7 +2201,7 @@ class ObjectServiceTest extends TestCase
 		$this->invokePrivate('validateObjectIfRequired', [[]]);
 	}
 
-	// ── 55d. ensureObjectFolderExists when getFolderId returns null ───────
+	// ── 55d. ensureObjectFolderExists when getFolderId returns null ────
 
 	/**
 	 * Test ensureObjectFolderExists sets folder to null and still calls update

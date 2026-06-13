@@ -5,7 +5,7 @@
  * OpenRegister objects in the Nextcloud Smart Picker / vue-richtext.
  *
  * @category Reference
- * @package  OCA.OpenRegister.Reference
+ * @package
  * @license  EUPL-1.2
  */
 
