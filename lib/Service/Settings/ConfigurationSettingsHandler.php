@@ -135,6 +135,7 @@ class ConfigurationSettingsHandler
      * @return bool True if multi-tenancy is enabled, false otherwise
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function isMultiTenancyEnabled(): bool
     {
@@ -634,6 +635,7 @@ class ConfigurationSettingsHandler
      * }
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updatePublishingOptions(array $options): array
     {
@@ -684,6 +686,7 @@ class ConfigurationSettingsHandler
      *     availableUsers: array<string, string>}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getRbacSettingsOnly(): array
     {
@@ -738,6 +741,7 @@ class ConfigurationSettingsHandler
      *     availableUsers: array<string, string>}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateRbacSettingsOnly(array $rbacData): array
     {
@@ -775,6 +779,7 @@ class ConfigurationSettingsHandler
      * }}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -820,6 +825,7 @@ class ConfigurationSettingsHandler
      * }}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -845,6 +851,7 @@ class ConfigurationSettingsHandler
      * @return string|null Default organisation UUID or null if not set
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -866,6 +873,7 @@ class ConfigurationSettingsHandler
      * @return string|null Tenant ID (default user tenant) or null if not set
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getTenantId(): ?string
     {
@@ -885,6 +893,8 @@ class ConfigurationSettingsHandler
      * Get organisation ID (alias for getDefaultOrganisationUuid)
      *
      * @return string|null Organisation ID or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationId(): ?string
     {
@@ -899,6 +909,7 @@ class ConfigurationSettingsHandler
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
@@ -931,6 +942,7 @@ class ConfigurationSettingsHandler
      *     adminOverride: mixed|true}, availableTenants: array}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -979,6 +991,7 @@ class ConfigurationSettingsHandler
      * @return array Updated multitenancy config with settings and available tenants.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
@@ -1017,6 +1030,7 @@ class ConfigurationSettingsHandler
      *     Nested else branches handle optional vector config backward compatibility
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getLLMSettingsOnly(): array
     {
@@ -1100,6 +1114,7 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -1163,6 +1178,7 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getFileSettingsOnly(): array
     {
@@ -1240,6 +1256,7 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -1300,6 +1317,7 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If n8n settings retrieval fails.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getN8nSettingsOnly(): array
     {
@@ -1336,6 +1354,7 @@ class ConfigurationSettingsHandler
      * @psalm-return array{enabled: false|mixed, url: ''|mixed, apiKey: ''|mixed, project: 'openregister'|mixed}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateN8nSettingsOnly(array $n8nData): array
     {
@@ -1362,6 +1381,7 @@ class ConfigurationSettingsHandler
      * @return array Version info with name, version, description, author, licence, timestamp, and date.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getVersionInfoOnly(): array
     {
