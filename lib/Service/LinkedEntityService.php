@@ -85,6 +85,7 @@ class LinkedEntityService
         private readonly IntegrationRegistry $integrationRegistry,
         private readonly LoggerInterface $logger,
         private readonly PermissionHandler $permissionHandler,
+        private readonly DeepLinkRegistryService $deepLinkRegistry,
     ) {
     }//end __construct()
 
@@ -352,13 +353,31 @@ class LinkedEntityService
                 );
 
                 foreach ($objects as $object) {
+                    $registerId = (int) $object->getRegister();
+                    $schemaId   = (int) $schema->getId();
+
+                    // Prefer the owning app's detail route (registered via the
+                    // deep-link registry by leaf apps like pipelinq/procest);
+                    // null falls the frontend back to OpenRegister's own page.
+                    $deepLink = $this->deepLinkRegistry->resolveUrl(
+                        registerId: $registerId,
+                        schemaId: $schemaId,
+                        objectData: [
+                            'uuid'     => $object->getUuid(),
+                            'register' => $registerId,
+                            'schema'   => $schemaId,
+                        ]
+                    );
+
                     $results[] = [
                         'entityType' => 'object',
                         'uuid'       => $object->getUuid(),
                         'name'       => $object->getName(),
                         'schema'     => $schema->getTitle(),
-                        'schemaId'   => $schema->getId(),
-                        'register'   => $object->getRegister(),
+                        'schemaId'   => $schemaId,
+                        'schemaIcon' => $schema->getIcon(),
+                        'register'   => $registerId,
+                        'url'        => $deepLink,
                     ];
                 }
             } catch (Exception $e) {
