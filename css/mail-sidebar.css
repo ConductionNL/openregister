@@ -221,6 +221,20 @@ aside.or-mail-sidebar.app-sidebar,
 	cursor: default;
 }
 
+/* Spinner shown while a connection is being made / a record created */
+.or-action-connecting {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 2px;
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+}
+
+.or-action-block--busy {
+	opacity: 0.85;
+}
+
 /* Empty / loading states */
 .or-tab-empty {
 	color: var(--color-text-maxcontrast);
