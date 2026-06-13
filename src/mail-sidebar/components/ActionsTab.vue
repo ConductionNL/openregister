@@ -1,50 +1,56 @@
 <template>
 	<div class="or-tab-actions">
 		<div v-if="loading" class="or-tab-loading">
-			{{ t('openregister', 'Loading schemas...') }}
+			{{ t('openregister', 'Loading…') }}
 		</div>
 		<div v-else-if="schemas.length === 0" class="or-tab-empty">
-			{{ t('openregister', 'No schemas configured for mail linking.') }}
+			{{ t('openregister', 'There is nothing set up to connect this email to yet.') }}
 		</div>
 		<div v-else>
 			<div
 				v-for="schema in schemas"
 				:key="schema.id"
-				class="or-action-block">
+				class="or-action-block"
+				:class="{ 'or-action-block--busy': isBusy(schema) }">
 				<label class="or-action-label">
-					{{ t('openregister', 'Link to {name}', { name: schema.title }) }}
+					{{ t('openregister', 'Connect to {name}', { name: schema.title }) }}
 				</label>
-				<div class="or-action-search">
-					<input
-						v-model="searchTerms[schema.id]"
-						type="text"
-						class="or-action-input"
-						:placeholder="t('openregister', 'Search {name}...', { name: schema.title })"
-						@input="debounceSearch(schema)"
-						@focus="showResults(schema)">
-					<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0" class="or-action-results">
-						<li
-							v-for="obj in searchResults[schema.id]"
-							:key="obj.id"
-							class="or-action-result"
-							@click="linkObject(schema, obj)">
-							<span class="or-action-result-name">{{ objectName(obj) }}</span>
-						</li>
-					</ul>
-					<div v-if="searching[schema.id]" class="or-action-searching">
-						{{ t('openregister', 'Searching...') }}
-					</div>
+				<div v-if="isBusy(schema)" class="or-action-connecting">
+					<NcLoadingIcon :size="20" />
+					<span>{{ creating[schema.id]
+						? t('openregister', 'Creating {name}…', { name: schema.title })
+						: t('openregister', 'Connecting…') }}</span>
 				</div>
-				<button
-					v-if="hasCreateTemplate(schema)"
-					type="button"
-					class="or-action-create"
-					:disabled="!!creating[schema.id]"
-					@click="createFromEmail(schema)">
-					{{ creating[schema.id]
-						? t('openregister', 'Creating...')
-						: t('openregister', 'New {name} from this email', { name: schema.title }) }}
-				</button>
+				<template v-else>
+					<div class="or-action-search">
+						<input
+							v-model="searchTerms[schema.id]"
+							type="text"
+							class="or-action-input"
+							:placeholder="t('openregister', 'Search {name}...', { name: schema.title })"
+							@input="debounceSearch(schema)"
+							@focus="showResults(schema)">
+						<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0" class="or-action-results">
+							<li
+								v-for="obj in searchResults[schema.id]"
+								:key="obj.id"
+								class="or-action-result"
+								@click="linkObject(schema, obj)">
+								<span class="or-action-result-name">{{ objectName(obj) }}</span>
+							</li>
+						</ul>
+						<div v-if="searching[schema.id]" class="or-action-searching">
+							{{ t('openregister', 'Searching...') }}
+						</div>
+					</div>
+					<button
+						v-if="hasCreateTemplate(schema)"
+						type="button"
+						class="or-action-create"
+						@click="createFromEmail(schema)">
+						{{ t('openregister', 'New {name} from this email', { name: schema.title }) }}
+					</button>
+				</template>
 			</div>
 		</div>
 	</div>
@@ -58,9 +64,13 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
+import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 
 export default {
 	name: 'ActionsTab',
+	components: {
+		NcLoadingIcon,
+	},
 	props: {
 		accountId: { type: Number, default: null },
 		messageId: { type: Number, default: null },
@@ -76,6 +86,7 @@ export default {
 			debounceTimers: {},
 			registerCache: {},
 			creating: {},
+			linking: {},
 			envelopeCache: {},
 		}
 	},
@@ -84,6 +95,14 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * A schema block is busy while it is creating a new record or
+		 * connecting an existing one — used to swap the search UI for a
+		 * spinner so the user sees the work happening.
+		 */
+		isBusy(schema) {
+			return !!this.creating[schema.id] || !!this.linking[schema.id]
+		},
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
@@ -335,12 +354,13 @@ export default {
 			if (!objectUuid || !this.accountId || !this.messageId) return
 
 			const mailRef = `${this.accountId}/${this.messageId}`
+			this.$set(this.linking, schema.id, true)
 			try {
 				const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', {
 					uuid: objectUuid,
 				})
 				await axios.post(url, { id: mailRef })
-				showSuccess(t('openregister', 'Linked to {name}', { name: this.objectName(obj) }))
+				showSuccess(t('openregister', 'Connected to {name}', { name: this.objectName(obj) }))
 
 				// Clear search and hide results
 				this.$set(this.searchTerms, schema.id, '')
@@ -349,8 +369,10 @@ export default {
 
 				this.$emit('linked')
 			} catch (err) {
-				showError(t('openregister', 'Failed to link object'))
+				showError(t('openregister', 'Failed to connect'))
 				console.error('[ActionsTab] Link failed:', err)
+			} finally {
+				this.$set(this.linking, schema.id, false)
 			}
 		},
 	},

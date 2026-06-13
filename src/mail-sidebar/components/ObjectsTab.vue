@@ -2,12 +2,12 @@
 	<div class="or-tab-objects">
 		<div v-if="loading" class="or-tab-loading">
 			<NcLoadingIcon :size="28" />
-			<span>{{ t('openregister', 'Loading linked objects...') }}</span>
+			<span>{{ t('openregister', 'Loading connections...') }}</span>
 		</div>
 		<NcEmptyContent
 			v-else-if="objects.length === 0"
-			:name="t('openregister', 'No linked objects')"
-			:description="t('openregister', 'Link an object to see it here.')">
+			:name="t('openregister', 'No connections yet')"
+			:description="t('openregister', 'Connect this email to a case, lead, invoice and more.')">
 			<template #icon>
 				<LinkVariant :size="48" />
 			</template>
@@ -16,7 +16,7 @@
 					<template #icon>
 						<Plus :size="20" />
 					</template>
-					{{ t('openregister', 'Link to Object') }}
+					{{ t('openregister', 'Add a connection') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -33,13 +33,13 @@
 							<a
 								:href="objectUrl(obj)"
 								target="_blank"
-								:title="t('openregister', 'Open in OpenRegister')">
+								:title="t('openregister', 'Open connected item')">
 								{{ displayName(obj) }}
 							</a>
 						</div>
 						<NcButton
 							type="tertiary"
-							:aria-label="t('openregister', 'Remove link to {name}', { name: displayName(obj) })"
+							:aria-label="t('openregister', 'Remove connection to {name}', { name: displayName(obj) })"
 							@click="unlinkObject(obj)">
 							<template #icon>
 								<Close :size="20" />
@@ -48,7 +48,6 @@
 					</div>
 					<div class="or-mail-object-card__meta">
 						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
-						<span v-if="obj.register" class="or-mail-object-card__register">{{ t('openregister', 'Register #{id}', { id: obj.register }) }}</span>
 					</div>
 				</div>
 			</div>
@@ -57,7 +56,7 @@
 					<template #icon>
 						<Plus :size="20" />
 					</template>
-					{{ t('openregister', 'Link another object') }}
+					{{ t('openregister', 'Add another connection') }}
 				</NcButton>
 			</div>
 		</template>
@@ -154,6 +153,7 @@ export default {
 		async loadObjects() {
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
+				this.$emit('count', 0)
 				return
 			}
 
@@ -168,13 +168,14 @@ export default {
 				this.objects = []
 			} finally {
 				this.loading = false
+				this.$emit('count', this.objects.length)
 			}
 		},
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		async unlinkObject(obj) {
-			if (!confirm(t('openregister', 'Remove link to {name}?', { name: obj.name || obj.uuid }))) {
+			if (!confirm(t('openregister', 'Remove connection to {name}?', { name: this.displayName(obj) }))) {
 				return
 			}
 
@@ -184,10 +185,10 @@ export default {
 				})
 				const url = `${base}/${this.accountId}/${this.messageId}`
 				await axios.delete(url)
-				showSuccess(t('openregister', 'Link removed'))
+				showSuccess(t('openregister', 'Connection removed'))
 				this.loadObjects()
 			} catch (err) {
-				showError(t('openregister', 'Failed to remove link'))
+				showError(t('openregister', 'Failed to remove connection'))
 				console.error('[ObjectsTab] Unlink failed:', err)
 			}
 		},
@@ -218,9 +219,9 @@ export default {
 				const attachment = JSON.parse(raw)
 				this.uploadingObjectUuid = obj.uuid
 				await this.uploadAttachmentToObject(attachment, { register, schema, objectId })
-				showSuccess(t('openregister', 'Attachment added to {name}', { name: obj.name || obj.uuid }))
+				showSuccess(t('openregister', 'Attachment added to {name}', { name: this.displayName(obj) }))
 			} catch (err) {
-				showError(t('openregister', 'Failed to add attachment to object'))
+				showError(t('openregister', 'Failed to add attachment'))
 				console.error('[ObjectsTab] Attachment drop upload failed:', err)
 			} finally {
 				this.uploadingObjectUuid = null
