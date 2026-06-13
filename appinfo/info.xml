@@ -82,6 +82,7 @@ Vrij en open source onder de EUPL-licentie.
 	</repair-steps>
 
 	<background-jobs>
+		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob</job>
