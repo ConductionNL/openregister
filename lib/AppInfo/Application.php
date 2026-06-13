@@ -150,6 +150,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
@@ -157,6 +158,8 @@ use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
+use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
+use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
@@ -372,6 +375,18 @@ class Application extends App implements IBootstrap
         // identity+trusted-IP) and pre-emptively blocks locked-out callers.
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
+
+        // Bind the dormant Path B PDF anonymisation fallback bridge to its
+        // null implementation. Tenants enabling Path B replace this binding
+        // with a concrete NcOfficeConverterInterface implementation that
+        // talks to Collabora Online / Code (per the
+        // `pdf-anonymisation-odt-fallback` scaffold).
+        $context->registerService(
+            \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
+            function () {
+                return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+            }
+        );
 
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
@@ -1775,6 +1790,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
 
+        // Scheduled-notification per-object dedup pruning (Phase 3.4):
+        // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
+        // - drop dedup rows for rule keys removed/renamed in the schema annotation
+        //   so orphan state does not pile up after edits.
+        $context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+
         // Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
@@ -1790,7 +1813,30 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
         // WebhookEventListener for webhook delivery.
+        // OPS-2: register for EVERY event the listener's extractPayload() handles,
+        // not just create — otherwise update/delete/lock/revert/register/schema
+        // webhooks silently never deliver.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
+
+        // OPS-1: ActionListener drives the event-driven Actions feature. It is
+        // event-agnostic (resolves the payload from the dispatched event), so it
+        // must be wired to the object lifecycle events or configured Actions
+        // never fire.
+        $context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, ActionListener::class);
 
         // GraphQL subscription event listeners.
         $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);

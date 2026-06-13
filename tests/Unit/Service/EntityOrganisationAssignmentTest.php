@@ -201,7 +201,8 @@ class EntityOrganisationAssignmentTest extends TestCase
             db: $this->createMock(IDBConnection::class),
             fileService: $this->fileService,
             organisationService: $this->organisationService,
-            logger: $this->logger
+            logger: $this->logger,
+            registerSerializer: new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
         );
     }
 

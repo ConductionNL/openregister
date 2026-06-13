@@ -14,13 +14,14 @@ capabilities (extracted from the app's own OpenSpec specs at build time) and the
 roadmap (open GitHub issues via OpenRegister's proxy) — plus a "Suggest feature"
 submission modal available from (a) the route header and (b) any widget or page that opts
 in via the ADR-008-aligned `specRef` declaration. The same `docs/features.json` manifest
-also powers a public features page on the app's Docusaurus site via the shared
-`@conduction/docusaurus-features` package. The capability specifies component APIs, the
+also powers a public features page on the app's Docusaurus site via a per-site
+`src/pages/features.js` page template. The capability specifies component APIs, the
 manifest file shape, the extraction rules for OpenSpec specs, the submission UX, i18n
 requirements, and degraded-state rendering. Implementation lives in
 `@conduction/nextcloud-vue` (the in-app component family),
-`@conduction/openspec-manifest` (the extractor), and `@conduction/docusaurus-features`
-(the public page), all of which are new additions under this change.
+`openregister/scripts/build-features-manifest.js` (the in-tree extractor, copied
+verbatim by adopting apps), and per-site Docusaurus features page templates (no
+separate npm package — rescoped 2026-06-12 per the W33 honest-handoffs review).
 
 ## ADDED Requirements
 
@@ -254,10 +255,7 @@ The Features & Roadmap view SHALL filter its content by `specRef` when opened fr
 
 ### Requirement: Manifest output location
 
-The `@conduction/openspec-manifest` CLI SHALL write its manifest to `docs/features.json`
-relative to the working directory. This file MUST be committed to git (it MUST NOT be
-listed in `.gitignore`) so that the same artifact powers both the in-app JS bundle AND
-the app's Docusaurus public features page.
+The manifest-builder script (`scripts/build-features-manifest.js`, copied from openregister) SHALL write its manifest to `docs/features.json` relative to the working directory. This file MUST be committed to git (it MUST NOT be listed in `.gitignore`) so that the same artifact powers both the in-app JS bundle AND the app's Docusaurus public features page.
 
 #### Scenario: Default output path
 
@@ -363,17 +361,16 @@ default computed `docsUrl` verbatim.
 
 ### Requirement: Docusaurus features page
 
-The `@conduction/docusaurus-features` npm package SHALL export a React component
-`<FeaturesPage />` and a Docusaurus plugin hook that reads `docs/features.json` at
-build time and renders a public `/features` page on the app's Docusaurus site. The page
-SHALL render features in the same alphabetical order as the in-app component and SHALL
-match the in-app visual style as closely as Docusaurus theming allows.
+The host app's Docusaurus site SHALL ship a `src/pages/features.js` page template
+(copied from openregister's reference implementation) that imports `docs/features.json`
+at build time and renders a public `/features` page. The page SHALL render features in
+the same alphabetical order as the in-app component and SHALL match the in-app visual
+style as closely as Docusaurus theming allows.
 
 #### Scenario: Public page renders the manifest
 
-- **WHEN** a host app installs `@conduction/docusaurus-features`, configures the plugin
-  in `docusaurus.config.js`, and builds the Docusaurus site with a non-empty
-  `docs/features.json`
+- **WHEN** a host app copies the reference `src/pages/features.js` into its Docusaurus
+  tree and builds the Docusaurus site with a non-empty `docs/features.json`
 - **THEN** the built site SHALL include a `/features` page
 - **AND** the rendered feature titles SHALL match `docs/features.json` in alphabetical
   order by title
@@ -416,14 +413,14 @@ All external links rendered by the in-app component and the Docusaurus public pa
 ### Requirement: Manifest consumption in app build
 
 The host app's build (webpack or vite) SHALL import `docs/features.json` and pass its
-`features` array to the `FeaturesAndRoadmapView`. The `@conduction/openspec-manifest` CLI
-SHALL be wired as a `prebuild` npm script so that every `npm run build` regenerates the
-manifest before the application build runs.
+`features` array to the `FeaturesAndRoadmapView`. The local
+`scripts/build-features-manifest.js` SHALL be wired as a `prebuild` npm script so that
+every `npm run build` regenerates the manifest before the application build runs.
 
 #### Scenario: Prebuild runs automatically
 
 - **WHEN** `npm run build` is invoked in a host app with
-  `"prebuild": "openspec-manifest build"`
+  `"prebuild": "node scripts/build-features-manifest.js"`
 - **THEN** `docs/features.json` SHALL be regenerated before webpack / vite runs
 - **AND** the bundled JS SHALL contain the current manifest contents
 
@@ -464,27 +461,27 @@ preview matches what will eventually render on the roadmap.
 ### Requirement: Manifest freshness CI check
 
 Every host app adopting this capability SHALL include a CI step in its workflow that runs
-`npx openspec-manifest build` and asserts that the resulting `docs/features.json` is
-byte-identical to the committed file (excluding the deterministically-skipped
-`generatedAt` field). The recommended implementation is:
+the in-tree `scripts/build-features-manifest.js --check` and asserts that the resulting
+`docs/features.json` is byte-identical to the committed file (excluding the
+deterministically-skipped `generatedAt` field). The recommended implementation is:
 
 ```sh
-npx openspec-manifest build
-git diff --exit-code -- docs/features.json
+node scripts/build-features-manifest.js --check
 ```
 
 The CI step SHALL fail the build when `docs/features.json` is out of sync with the
 underlying `openspec/specs/*/spec.md` content. The migration guide SHALL document this
-step as a MUST-have for adopting apps. The shared `@conduction/openspec-manifest` package
-SHALL document the recommended GitHub Actions snippet in its README.
+step as a MUST-have for adopting apps. The OR README SHALL document the recommended
+CI snippet and the adoption recipe (copy the script verbatim).
 
 #### Scenario: Stale manifest is caught
 
 - **WHEN** a developer modifies a spec's frontmatter to flip `status: proposed` →
   `status: implemented` AND commits without re-running the prebuild AND opens a PR
-- **THEN** the CI step `git diff --exit-code -- docs/features.json` SHALL exit non-zero
+- **THEN** the CI step `node scripts/build-features-manifest.js --check` SHALL exit
+  non-zero
 - **AND** the workflow SHALL fail with a clear message instructing the developer to run
-  `npx openspec-manifest build` and re-commit
+  `node scripts/build-features-manifest.js` and re-commit
 
 ### Requirement: Admin opt-out for the navigation entry
 
@@ -522,7 +519,7 @@ compliance reasons without forking the codebase.
 
 ### Requirement: docsUrl frontmatter override validation
 
-The `@conduction/openspec-manifest` CLI SHALL validate any frontmatter `docsUrl:` override before accepting it as the manifest entry's `docsUrl`. The value MUST:
+The manifest-builder script SHALL validate any frontmatter `docsUrl:` override before accepting it as the manifest entry's `docsUrl`. The value MUST:
 
 1. Be a syntactically valid URL parseable by Node's `URL` constructor.
 2. Use the `https:` scheme (case-insensitive). `http:`, `javascript:`, `data:`, `file:`,

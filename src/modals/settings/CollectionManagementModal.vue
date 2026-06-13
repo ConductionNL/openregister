@@ -484,11 +484,6 @@ export default {
 							this.selectedFileCollection = fileCol.name
 						}
 					}
-
-					console.info('📦 Loaded current assignments:', {
-						objectCollection: this.selectedObjectCollection,
-						fileCollection: this.selectedFileCollection,
-					})
 				}
 			} catch (error) {
 				console.error('Failed to load current assignments:', error)
@@ -561,7 +556,6 @@ export default {
 		 * @spec exclude event-listener handler reloading config sets
 		 */
 		handleConfigSetUpdate() {
-			console.info('📦 ConfigSet updated, reloading ConfigSets list')
 			this.loadConfigSets()
 		},
 

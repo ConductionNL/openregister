@@ -79,6 +79,8 @@ class SaveObjectCircularReferenceTest extends TestCase
             propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
             computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
             translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             logger: $this->createMock(LoggerInterface::class),
             tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
             folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),

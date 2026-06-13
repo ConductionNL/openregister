@@ -20,7 +20,6 @@
  * @license   EUPL-1.2
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'

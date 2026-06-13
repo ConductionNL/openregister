@@ -218,6 +218,15 @@ class MagicMapper extends AbstractObjectMapper
     private static array $calcVersionCache = [];
 
     /**
+     * PERF-12: request-scoped memo of the column→property map per schema id,
+     * used by rowToObjectEntity(). Without it the schema was re-resolved and
+     * the map rebuilt for every single row in fallback hydration.
+     *
+     * @var array<int, array<string, string>>
+     */
+    private array $rowColumnToPropertyCache = [];
+
+    /**
      * Cache recording whether a register+schema table's columns have been verified
      * in the current PHP process. Eliminates repeated information_schema queries
      * on the happy path. Cleared by invalidateTableCache() and clearAllStaticCaches().
@@ -354,6 +363,44 @@ class MagicMapper extends AbstractObjectMapper
     }//end __construct()
 
     /**
+     * Get the configured database table prefix.
+     *
+     * Reads `dbtableprefix` from the Nextcloud system config once per call,
+     * defaulting to `oc_`. Centralising this replaces the hardcoded `'oc_'`
+     * literals that previously broke every raw-SQL path on installs with a
+     * custom prefix (BUG-DB-3).
+     *
+     * @return string The configured table prefix (e.g. `oc_`).
+     */
+    private function getTablePrefix(): string
+    {
+        // Fall back to the Nextcloud default when the system value is empty or
+        // unset. An empty prefix would yield unprefixed table names, breaking
+        // magic-table discovery and every raw-SQL table reference.
+        $prefix = (string) $this->config->getSystemValue('dbtableprefix', 'oc_');
+        if ($prefix === '') {
+            return 'oc_';
+        }
+
+        return $prefix;
+    }//end getTablePrefix()
+
+    /**
+     * Build the full, prefixed table name for a bare magic table name.
+     *
+     * Uses the configured `dbtableprefix` rather than a hardcoded `oc_` so
+     * raw-SQL paths work on installs with a custom prefix (BUG-DB-3).
+     *
+     * @param string $tableName The bare table name (without prefix).
+     *
+     * @return string The full table name including the configured prefix.
+     */
+    private function getFullTableName(string $tableName): string
+    {
+        return $this->getTablePrefix().$tableName;
+    }//end getFullTableName()
+
+    /**
      * Initialize specialized handler instances
      *
      * Creates instances of all MagicMapper handlers for modular functionality.
@@ -393,7 +440,8 @@ class MagicMapper extends AbstractObjectMapper
             db: $this->db,
             logger: $this->logger,
             eventDispatcher: $this->eventDispatcher,
-            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+            config: $this->config
         );
 
         // CacheHandler and ICacheFactory are resolved lazily via container
@@ -404,7 +452,8 @@ class MagicMapper extends AbstractObjectMapper
             cacheHandler: null,
             cacheFactory: null,
             searchHandler: $this->searchHandler,
-            container: $this->container
+            container: $this->container,
+            config: $this->config
         );
 
         $this->tableHandler = new MagicTableHandler(
@@ -1247,11 +1296,22 @@ class MagicMapper extends AbstractObjectMapper
             }//end foreach
 
             if (empty($orderClauses) === false) {
-                $unionSql .= ' ORDER BY '.implode(', ', $orderClauses);
+                // BUG-DB-4: append a stable tiebreaker so rows that compare equal
+                // on the requested order keep a deterministic order across pages.
+                $orderClauses[] = self::METADATA_PREFIX.'uuid ASC';
+                $unionSql      .= ' ORDER BY '.implode(', ', $orderClauses);
+            } else {
+                // BUG-DB-4: no usable order clause survived - fall back to a stable order.
+                $unionSql .= ' ORDER BY '.self::METADATA_PREFIX.'uuid ASC';
             }
         } else if ($hasSearch === true) {
             // Default to search score ordering when no _order specified but search is present.
-            $unionSql .= ' ORDER BY _search_score DESC';
+            // BUG-DB-4: tiebreaker keeps equal scores in a deterministic order.
+            $unionSql .= ' ORDER BY _search_score DESC, '.self::METADATA_PREFIX.'uuid ASC';
+        } else {
+            // BUG-DB-4: no order and no search - LIMIT/OFFSET would otherwise be
+            // non-deterministic. Order by the stable uuid column.
+            $unionSql .= ' ORDER BY '.self::METADATA_PREFIX.'uuid ASC';
         }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
@@ -1321,7 +1381,7 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
         // Add table prefix.
-        $fullTableName = 'oc_'.$tableName;
+        $fullTableName = $this->getFullTableName($tableName);
 
         // Get metadata column names, checking each exists in this table.
         // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
@@ -1712,9 +1772,7 @@ class MagicMapper extends AbstractObjectMapper
         try {
             // Check if table exists in information_schema.
             // NOTE: We use raw SQL here because information_schema is a system table.
-            $prefix = 'oc_';
-            // Nextcloud default prefix.
-            $fullTableName = $prefix.$tableName;
+            $fullTableName = $this->getFullTableName($tableName);
 
             // Get database platform to use correct schema check.
             // MySQL/MariaDB: table_schema = DATABASE().
@@ -1764,6 +1822,11 @@ class MagicMapper extends AbstractObjectMapper
         unset(self::$tableStructureCache[$cacheKey]);
         unset(self::$calcVersionCache[$cacheKey]);
         unset(self::$tableColumnsVerifiedCache[$cacheKey]);
+
+        // PERF-12: this instance-scoped map is keyed by schema id (not the
+        // composite cacheKey), so drop it wholesale on any table-structure
+        // invalidation to avoid serving a stale column→property map.
+        $this->rowColumnToPropertyCache = [];
 
         $this->logger->debug(
             message: '[MagicMapper] Invalidated table cache',
@@ -1905,6 +1968,17 @@ class MagicMapper extends AbstractObjectMapper
             '$id',
         ];
 
+        // BUG-DB-8: sanitizeColumnName is non-injective (e.g. `firstName` and
+        // `first_name` both map to `first_name`). Track the column names already
+        // claimed so two distinct properties can never silently collapse onto the
+        // same physical column; the second claimant gets a deterministic suffix.
+        $usedColumnNames = [];
+        foreach ($columns as $existingColumn) {
+            if (isset($existingColumn['name']) === true) {
+                $usedColumnNames[$existingColumn['name']] = true;
+            }
+        }
+
         if (is_array($schemaProperties) === true) {
             foreach ($schemaProperties as $propertyName => $propertyConfig) {
                 // Skip metadata/configuration fields that are not actual properties.
@@ -1931,7 +2005,31 @@ class MagicMapper extends AbstractObjectMapper
                 // Both '_name' (metadata) and 'name' (schema property) can coexist.
                 $column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
                 if ($column !== null && $column !== '') {
-                    $columns[$propertyName] = $column;
+                    // BUG-DB-8: disambiguate column-name collisions deterministically.
+                    if (isset($usedColumnNames[$column['name']]) === true) {
+                        $base       = $column['name'];
+                        $suffix     = 1;
+                        $candidate  = $base.'_'.$suffix;
+                        while (isset($usedColumnNames[$candidate]) === true) {
+                            $suffix++;
+                            $candidate = $base.'_'.$suffix;
+                        }
+
+                        $this->logger->warning(
+                            message: '[MagicMapper] Column name collision after sanitisation; disambiguating',
+                            context: [
+                                'file'           => __FILE__,
+                                'line'           => __LINE__,
+                                'propertyName'   => $propertyName,
+                                'collidingColumn'=> $base,
+                                'resolvedColumn' => $candidate,
+                            ]
+                        );
+                        $column['name'] = $candidate;
+                    }//end if
+
+                    $usedColumnNames[$column['name']] = true;
+                    $columns[$propertyName]           = $column;
                 }
             }//end foreach
         }//end if
@@ -2627,10 +2725,10 @@ class MagicMapper extends AbstractObjectMapper
             $uniqueConstraints = [];
 
             foreach ($columns as $column) {
-                $colName = '`'.$column['name'].'`';
-                if ($isPostgres === true) {
-                    $colName = '"'.$column['name'].'"';
-                }
+                // BUG-DB-7: route the raw column name through quoteIdentifier so
+                // embedded quote characters are escaped (doubled) rather than
+                // concatenated unescaped.
+                $colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $isPostgres);
 
                 $def = $colName.' ';
 
@@ -2652,7 +2750,10 @@ class MagicMapper extends AbstractObjectMapper
                             $defaultValue = 'TRUE';
                         }
                     } else if (is_string($column['default']) === true) {
-                        $defaultValue = "'".$column['default']."'";
+                        // BUG-DB-1: escape via the platform so values containing a
+                        // single quote (e.g. O'Brien) do not break the DDL or allow
+                        // stored-DDL injection.
+                        $defaultValue = $platform->quoteStringLiteral($column['default']);
                     } else if ($column['default'] === null) {
                         $defaultValue = 'NULL';
                     }
@@ -2674,10 +2775,7 @@ class MagicMapper extends AbstractObjectMapper
 
                 // Track primary key.
                 if (($column['primary'] ?? false) === true) {
-                    $primaryKey = '`'.$column['name'].'`';
-                    if ($isPostgres === true) {
-                        $primaryKey = '"'.$column['name'].'"';
-                    }
+                    $primaryKey = $this->quoteIdentifier(name: $column['name'], isPostgres: $isPostgres);
                 }
 
                 // Track unique constraints (required for PostgreSQL ON CONFLICT).
@@ -2817,7 +2915,7 @@ class MagicMapper extends AbstractObjectMapper
     {
         try {
             // Add prefix for raw SQL queries.
-            $fullTableName = 'oc_'.$tableName;
+            $fullTableName = $this->getFullTableName($tableName);
 
             // Create unique index on UUID.
             // Phpcs:ignore Generic.Files.LineLength.TooLong.
@@ -2866,6 +2964,19 @@ class MagicMapper extends AbstractObjectMapper
                 $relationsIdx = "{$tableName}_relations_gin_idx";
                 $this->db->executeStatement(
                     "CREATE INDEX IF NOT EXISTS {$relationsIdx} ON {$fullTableName} USING GIN (_relations)"
+                );
+
+                // PERF-5: every list/search query filters `_deleted IS NULL`, yet
+                // there was no index supporting it. Add a partial index on
+                // (_owner) restricted to live rows so the common
+                // "WHERE _owner = ? AND _deleted IS NULL" access pattern can use
+                // an index. Partial indexes are a PostgreSQL feature; MySQL/
+                // MariaDB do not support them, so this is Postgres-only.
+                $deletedCol      = self::METADATA_PREFIX.'deleted';
+                $ownerColForIdx  = self::METADATA_PREFIX.'owner';
+                $liveOwnerIdx    = "{$tableName}_live_owner_idx";
+                $this->db->executeStatement(
+                    "CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
                 );
             }
 
@@ -3075,15 +3186,19 @@ class MagicMapper extends AbstractObjectMapper
         //
         // Fields handled here:
         //
-        // owner        – stripped from client @self to prevent ownership hijacking.
-        // For the internal entity-serialization path the owner was
-        // stamped by SaveObject::applyOwnerAttribution before
-        // jsonSerialize() was called. Stripping it here prevents any
-        // residual client value from persisting. The DB column will
-        // receive the value set by the entity's setter (not @self).
-        // Note: this means that for any path that does NOT go through
-        // applyOwnerAttribution, _owner will be null. That is safer
-        // than persisting an attacker-controlled value.
+        // owner        – the server-stamped owner (a scalar UID string set by
+        // SaveObject::applyOwnerAttribution before jsonSerialize())
+        // MUST be persisted, otherwise rows land with an empty
+        // `_owner` column: the creator can never equal the owner,
+        // so the update lock-guard 403s the owner's own update and
+        // ownership-based RBAC + owner notifications are neutered.
+        // Client-supplied owner injection is already closed upstream
+        // (SaveObject::setSelfMetadata never copies a client `owner`
+        // into the entity — the entity owner is exclusively the
+        // server-stamped value). As defence-in-depth at this DB write
+        // boundary we still REJECT any non-scalar/array owner shape
+        // (the form a forged @self payload would take) and only keep a
+        // plain string UID.
         //
         // authorization – per-object RBAC rules must not be writable by ordinary
         // object-create/update calls. Management of per-object
@@ -3099,7 +3214,13 @@ class MagicMapper extends AbstractObjectMapper
         // version, created, updated, deleted, locked, retention, uuid, slug, uri
         // Those fields must be fixed at the SaveObject/controller level if client
         // injection is possible for any of them.
-        unset($metadata['owner'], $metadata['authorization']);
+        unset($metadata['authorization']);
+
+        // Keep only a scalar string owner (the server-stamped UID); drop any
+        // array/object shape a forged @self payload could carry.
+        if (isset($metadata['owner']) === true && is_string($metadata['owner']) === false) {
+            unset($metadata['owner']);
+        }
 
         // Always force register and schema from the authoritative server parameters —
         // never accept client-supplied values, even when non-empty.
@@ -3207,22 +3328,6 @@ class MagicMapper extends AbstractObjectMapper
 
         // Map schema properties to columns.
         $schemaProperties = $schema->getProperties();
-
-        // DEBUG: Log schema property mapping for gemmaType.
-        if ($schema->getSlug() === 'element' && isset($schemaProperties['gemmaType']) === true) {
-            $this->logger->error(
-                message: '[MagicMapper] MAGIC_MAPPER_DEBUG: Mapping element properties',
-                context: [
-                    'file'                    => __FILE__,
-                    'line'                    => __LINE__,
-                    'has_gemmaType_in_schema' => isset($schemaProperties['gemmaType']),
-                    'has_gemmaType_in_data'   => isset($data['gemmaType']),
-                    'gemmaType_value'         => $data['gemmaType'] ?? 'NOT IN DATA',
-                    'data_keys'               => array_keys($data),
-                    'objectData_keys'         => array_keys($objectData),
-                ]
-                    );
-        }
 
         if (is_array($schemaProperties) === true) {
             foreach (array_keys($schemaProperties) as $propertyName) {
@@ -3496,7 +3601,19 @@ class MagicMapper extends AbstractObjectMapper
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
+
+        // BUG-DB-13: the request-scoped memo was keyed only by register+schema id,
+        // so a schema edited within the same request returned the stale hash and
+        // hasRegisterSchemaChanged() missed the change (table sync skipped).
+        // Fold the schema/register version + updated timestamp into the memo key
+        // so an intra-request mutation produces a fresh key (and a fresh hash).
+        $schemaUpdated   = $schema->getUpdated();
+        $registerUpdated = $register->getUpdated();
+        $cacheKey        = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId)
+            .'_'.(string) $schema->getVersion()
+            .'_'.($schemaUpdated !== null ? $schemaUpdated->getTimestamp() : '0')
+            .'_'.(string) $register->getVersion()
+            .'_'.($registerUpdated !== null ? $registerUpdated->getTimestamp() : '0');
 
         // Check cache first to avoid expensive json_encode + md5.
         if (isset(self::$calcVersionCache[$cacheKey]) === true) {
@@ -3641,9 +3758,7 @@ class MagicMapper extends AbstractObjectMapper
         try {
             // Use direct SQL query to get table columns (Nextcloud 32 compatible).
             // NOTE: We use raw SQL here because information_schema is a system table that should not be prefixed.
-            $prefix = 'oc_';
-            // Nextcloud default prefix.
-            $fullTableName = $prefix.$tableName;
+            $fullTableName = $this->getFullTableName($tableName);
 
             // Get database platform to use correct schema check.
             // MySQL/MariaDB: table_schema = DATABASE().
@@ -3945,11 +4060,13 @@ class MagicMapper extends AbstractObjectMapper
      */
     private function quoteIdentifier(string $name, bool $isPostgres): string
     {
+        // BUG-DB-7: escape any embedded quote characters by doubling them so an
+        // identifier containing the quote char cannot break out of the quoting.
         if ($isPostgres === true) {
-            return '"'.$name.'"';
+            return '"'.str_replace('"', '""', $name).'"';
         }
 
-        return '`'.$name.'`';
+        return '`'.str_replace('`', '``', $name).'`';
     }//end quoteIdentifier()
 
     /**
@@ -4334,7 +4451,10 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         if (is_string($default) === true) {
-            return "'".$default."'";
+            // BUG-DB-1: escape via the platform so values containing a single
+            // quote (e.g. O'Brien) do not break the DDL or allow stored-DDL
+            // injection.
+            return $this->db->getDatabasePlatform()->quoteStringLiteral($default);
         }
 
         if ($default === null) {
@@ -4374,10 +4494,8 @@ class MagicMapper extends AbstractObjectMapper
     {
         try {
             // Use direct SQL to drop table (Nextcloud 32 compatible).
-            $qb     = $this->db->getQueryBuilder();
-            $prefix = 'oc_';
-            // Nextcloud default prefix.
-            $fullTableName = $prefix.$tableName;
+            $qb            = $this->db->getQueryBuilder();
+            $fullTableName = $this->getFullTableName($tableName);
             $quotedTable   = $qb->getConnection()->quoteIdentifier($fullTableName);
             $qb->getConnection()->executeStatement('DROP TABLE IF EXISTS '.$quotedTable);
 
@@ -4532,7 +4650,11 @@ class MagicMapper extends AbstractObjectMapper
         );
 
         $qb = $this->db->getQueryBuilder();
-        $qb->select('*')->from($tableName);
+        // Use the table alias `t` so the shared access-control filters
+        // (which reference t._organisation / t._owner) can be applied — the
+        // single-object read path MUST enforce the same isolation as the list
+        // path (cross-org IDOR fix). See applyAccessControlToQuery() below.
+        $qb->select('*')->from($tableName, 't');
 
         // Build identifier conditions (ID, UUID, slug, or URI).
         $idParam = -1;
@@ -4540,10 +4662,10 @@ class MagicMapper extends AbstractObjectMapper
             $idParam = (int) $identifier;
         }
 
-        $idCol   = self::METADATA_PREFIX.'id';
-        $uuidCol = self::METADATA_PREFIX.'uuid';
-        $slugCol = self::METADATA_PREFIX.'slug';
-        $uriCol  = self::METADATA_PREFIX.'uri';
+        $idCol   = 't.'.self::METADATA_PREFIX.'id';
+        $uuidCol = 't.'.self::METADATA_PREFIX.'uuid';
+        $slugCol = 't.'.self::METADATA_PREFIX.'slug';
+        $uriCol  = 't.'.self::METADATA_PREFIX.'uri';
         $qb->where(
             $qb->expr()->orX(
                 $qb->expr()->eq($idCol, $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
@@ -4555,19 +4677,27 @@ class MagicMapper extends AbstractObjectMapper
 
         // Exclude deleted objects by default (unless includeDeleted is true).
         if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+            $qb->andWhere($qb->expr()->isNull('t.'.self::METADATA_PREFIX.'deleted'));
         }
 
-        // Apply multitenancy filtering if enabled.
-        // Note: For MagicMapper, we rely on the table structure itself for multitenancy,.
-        // as the organisation column is part of the schema. The $_multitenancy parameter.
-        // is primarily used to decide whether to filter at all.
-        // For now, we skip adding explicit organisation filters in MagicMapper.
-        // as that's handled by RBAC and the table structure.
-        // Apply RBAC filtering if enabled.
-        if ($_rbac === true) {
-            // Add RBAC filtering logic here if needed.
-            // Currently skipped as owner/authorization logic is complex.
+        // SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
+        // access-control filters the list/search path uses. Previously the
+        // single-object read skipped org filtering, so a non-admin in org B
+        // could read an org-A object by id. We now delegate to the search
+        // handler's shared logic, which:
+        // - drops the org filter for `public`-read schemas (published reads,
+        // including anonymous, keep working),
+        // - lets admins (rbac/multitenancy disabled by the controller) and
+        // in-org / owner reads through,
+        // - filters out other-org rows → no row → DoesNotExistException → 404
+        // (existence is not leaked).
+        if ($_rbac === true || $_multitenancy === true) {
+            $this->searchHandler->applyAccessControlToQuery(
+                qb: $qb,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
         }
 
         try {
@@ -4644,7 +4774,7 @@ class MagicMapper extends AbstractObjectMapper
         // Get all magic tables from information_schema.
         // NOTE: We use raw SQL here because the query builder adds the table prefix.
         // to information_schema, which is a system schema and shouldn't be prefixed.
-        $prefix       = 'oc_';
+        $prefix       = $this->getTablePrefix();
         $tablePattern = $prefix.'openregister_table_%';
 
         $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
@@ -4815,7 +4945,7 @@ class MagicMapper extends AbstractObjectMapper
         $foundObjects = [];
 
         // Get all magic tables from information_schema.
-        $prefix       = 'oc_';
+        $prefix       = $this->getTablePrefix();
         $tablePattern = $prefix.'openregister_table_%';
 
         $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
@@ -4994,7 +5124,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     private function discoverMagicTables(): array
     {
-        $prefix       = 'oc_';
+        $prefix       = $this->getTablePrefix();
         $tablePattern = $prefix.'openregister_table_%';
 
         $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
@@ -5050,7 +5180,7 @@ class MagicMapper extends AbstractObjectMapper
         $items = [];
 
         foreach ($this->discoverMagicTables() as $fullTableName => $info) {
-            $bareTableName = str_replace('oc_', '', $fullTableName);
+            $bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('*')
@@ -5114,7 +5244,7 @@ class MagicMapper extends AbstractObjectMapper
         $total      = 0;
 
         foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
-            $bareTableName = str_replace('oc_', '', $fullTableName);
+            $bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select($qb->func()->count('*', 'cnt'))
@@ -5155,7 +5285,7 @@ class MagicMapper extends AbstractObjectMapper
         $foundObjects = [];
 
         // Get all magic tables from information_schema.
-        $prefix       = 'oc_';
+        $prefix       = $this->getTablePrefix();
         $tablePattern = $prefix.'openregister_table_%';
 
         $sql    = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?";
@@ -5458,7 +5588,12 @@ class MagicMapper extends AbstractObjectMapper
             $insertedEntity = $this->findInRegisterSchemaTable(
                 identifier: $uuid,
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                // System re-read of the just-inserted row: bypass access-control
+                // filtering so the writer always gets its freshly-written entity
+                // back (the org/owner context is still being established here).
+                _rbac: false,
+                _multitenancy: false
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Fallback: manually set ID if re-fetch fails.
@@ -5472,7 +5607,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             $insertedEntity = $entity;
-        }
+        }//end try
 
         // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
@@ -5503,7 +5638,12 @@ class MagicMapper extends AbstractObjectMapper
             $oldObject = $this->findInRegisterSchemaTable(
                 identifier: $entity->getUuid(),
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                // Internal pre-update read of the existing row: bypass
+                // access-control filtering (authorization for the update is
+                // enforced upstream by the lock/permission guards).
+                _rbac: false,
+                _multitenancy: false
             );
         }
 
@@ -5570,6 +5710,10 @@ class MagicMapper extends AbstractObjectMapper
                 identifier: $uuid,
                 register: $register,
                 schema: $schema,
+                // System re-read of the just-updated row: bypass access-control
+                // filtering so the writer always gets its fresh entity back.
+                _rbac: false,
+                _multitenancy: false,
                 includeDeleted: true
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -6138,7 +6282,7 @@ class MagicMapper extends AbstractObjectMapper
 
         foreach ($tables as $tableName) {
             try {
-                $fullTableName = 'oc_'.$tableName;
+                $fullTableName = $this->getFullTableName($tableName);
 
                 // Search for the UUID as a VALUE within the _relations JSONB.
                 // The _relations column can be either:.
@@ -6244,7 +6388,7 @@ class MagicMapper extends AbstractObjectMapper
             return [];
         }
 
-        $fullTableName = 'oc_'.$tableName;
+        $fullTableName = $this->getFullTableName($tableName);
         $platform      = $this->db->getDatabasePlatform();
         $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
 
@@ -6351,7 +6495,7 @@ class MagicMapper extends AbstractObjectMapper
 
         // Construct the magic table name directly: openregister_table_{registerId}_{schemaId}.
         $tableName     = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
-        $fullTableName = 'oc_'.$tableName;
+        $fullTableName = $this->getFullTableName($tableName);
 
         // Check if the table exists.
         if ($this->checkTableExistsInDatabase(tableName: $tableName) === false) {
@@ -6537,31 +6681,44 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
         // Construct the full table name with prefix for use in SQL functions.
-        $fullTableName = 'oc_'.$tableName;
-        $searchPattern = '%'.$uuid.'%';
+        $fullTableName = $this->getFullTableName($tableName);
 
         try {
             // Apply multi-tenancy filtering to inverse relationship lookups.
             [$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
 
-            // For PostgreSQL, use row_to_json to convert entire row to searchable text.
-            // This approach works reliably for finding UUIDs in any column.
-            // MySQL/MariaDB: Use JSON_UNQUOTE and CONCAT to search all columns.
-            // This is a fallback approach - may need adjustment for MySQL.
-            // MySQL/MariaDB fallback.
-            $sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
-                    AND CAST({$fullTableName} AS CHAR) LIKE ?
+            // BUG-DB-9: the previous MySQL/MariaDB branch used the invalid
+            // `CAST({$fullTableName} AS CHAR)` (you cannot CAST a table to a
+            // scalar), so every MariaDB/MySQL call threw and was swallowed at
+            // debug level, silently resolving inverse relations to nothing.
+            // Search the `_relations` JSON column for the UUID as a value, the
+            // same approach findByRelationUsingRelationsColumn() uses.
+            // MySQL/MariaDB: JSON_SEARCH finds the UUID as a value anywhere
+            // (works for both object and array relation shapes).
+            $sql       = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
+                    AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
                     {$orgFilter}
                     LIMIT 100";
+            $sqlParams = array_merge([$uuid], $orgParams);
             if ($isPostgres === true) {
-                $sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
-                        AND row_to_json({$fullTableName}.*)::text LIKE ?
+                // PostgreSQL: handle both object and array relation shapes.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                        AND (
+                            (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))
+                            OR
+                            (jsonb_typeof(_relations) = 'object' AND EXISTS (
+                                SELECT 1 FROM jsonb_each_text(_relations) AS kv
+                                WHERE kv.value = ?
+                            ))
+                        )
                         {$orgFilter}
                         LIMIT 100";
+                $sqlParams = array_merge([$uuid, $uuid], $orgParams);
             }
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(array_merge([$searchPattern], $orgParams));
+            $stmt->execute($sqlParams);
             $rows = $stmt->fetchAll();
 
             $this->logger->debug(
@@ -6575,7 +6732,9 @@ class MagicMapper extends AbstractObjectMapper
                 ]
             );
         } catch (Exception $e) {
-            $this->logger->debug(
+            // BUG-DB-9: raise from debug to warning so a genuinely failing
+            // inverse-relation lookup is visible rather than silently empty.
+            $this->logger->warning(
                 message: '[MagicMapper] findByRelationInTable query failed',
                 context: [
                     'file'      => __FILE__,
@@ -6625,24 +6784,27 @@ class MagicMapper extends AbstractObjectMapper
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+            $prefix       = $this->getTablePrefix();
+            $tablePattern = $prefix.'openregister_table_%';
+
             $sql = "SELECT table_name FROM information_schema.tables
                     WHERE table_schema = DATABASE()
-                    AND table_name LIKE 'oc_openregister_table_%'";
+                    AND table_name LIKE ?";
             if ($isPostgres === true) {
                 $sql = "SELECT table_name FROM information_schema.tables
                         WHERE table_schema = current_schema()
-                        AND table_name LIKE 'oc_openregister_table_%'";
+                        AND table_name LIKE ?";
             }
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute([$tablePattern]);
             $tables = [];
 
             while (($row = $stmt->fetch()) !== false) {
-                // Remove the 'oc_' prefix to get the table name for query builder.
+                // Remove the configured prefix to get the table name for query builder.
                 $tableName = $row['table_name'];
-                if (str_starts_with($tableName, 'oc_') === true) {
-                    $tableName = substr($tableName, 3);
+                if (str_starts_with($tableName, $prefix) === true) {
+                    $tableName = substr($tableName, strlen($prefix));
                 }
 
                 $tables[] = $tableName;
@@ -6706,27 +6868,44 @@ class MagicMapper extends AbstractObjectMapper
         // from their sanitized column names (e.g., 'e_mailadres').
         $columnToPropertyMap = [];
         if (isset($row['_schema']) === true) {
-            try {
-                $schema = $this->schemaMapper->find((int) $row['_schema']);
-                if ($schema !== null) {
-                    $properties = $schema->getProperties() ?? [];
-                    foreach (array_keys($properties) as $propertyName) {
-                        $columnName = $this->sanitizeColumnName(name: $propertyName);
-                        $columnToPropertyMap[$columnName] = $propertyName;
+            $schemaIdForMap = (int) $row['_schema'];
+            // PERF-12: reuse the memoised column→property map for this schema id
+            // instead of re-resolving the schema and rebuilding the map per row.
+            if (isset($this->rowColumnToPropertyCache[$schemaIdForMap]) === true) {
+                $columnToPropertyMap = $this->rowColumnToPropertyCache[$schemaIdForMap];
+            } else {
+                try {
+                    $schema = $this->schemaMapper->find($schemaIdForMap);
+                    if ($schema !== null) {
+                        // BUG-DB-8: use the same disambiguated column names the write
+                        // path produces (buildTableColumnsFromSchema), keyed by
+                        // property name, so collision-resolved columns round-trip
+                        // back to their original property instead of being lost.
+                        foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
+                            // Skip metadata columns (handled separately above).
+                            if (str_starts_with($propertyName, '_') === true) {
+                                continue;
+                            }
+
+                            $physicalColumn = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+                            $columnToPropertyMap[$physicalColumn] = $propertyName;
+                        }
                     }
-                }
-            } catch (\Exception $e) {
-                // Schema not found - will fall back to column names as-is.
-                $this->logger->debug(
-                    message: '[MagicMapper] Could not load schema for property mapping',
-                    context: [
-                        'file'     => __FILE__,
-                        'line'     => __LINE__,
-                        'schemaId' => $row['_schema'],
-                        'error'    => $e->getMessage(),
-                    ]
-                        );
-            }//end try
+
+                    $this->rowColumnToPropertyCache[$schemaIdForMap] = $columnToPropertyMap;
+                } catch (\Exception $e) {
+                    // Schema not found - will fall back to column names as-is.
+                    $this->logger->debug(
+                        message: '[MagicMapper] Could not load schema for property mapping',
+                        context: [
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
+                            'schemaId' => $row['_schema'],
+                            'error'    => $e->getMessage(),
+                        ]
+                            );
+                }//end try
+            }//end if
         }//end if
 
         // Build the object data from non-metadata columns.
@@ -6772,7 +6951,7 @@ class MagicMapper extends AbstractObjectMapper
     {
         try {
             // Ensure table name has prefix for information_schema lookup.
-            $prefix        = 'oc_';
+            $prefix        = $this->getTablePrefix();
             $fullTableName = $tableName;
             if (str_starts_with($tableName, $prefix) === false) {
                 $fullTableName = $prefix.$tableName;
@@ -6837,7 +7016,7 @@ class MagicMapper extends AbstractObjectMapper
     ): array {
         if ($register === null && $entity->getRegister() !== null) {
             try {
-                $register = $this->registerMapper->find((int) $entity->getRegister(), [], null, true, false);
+                $register = $this->registerMapper->find((int) $entity->getRegister(), null, true, false);
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve register from entity',
@@ -7049,13 +7228,22 @@ class MagicMapper extends AbstractObjectMapper
      *
      * Searches across all magic tables that belong to the given schema.
      *
-     * @param int $schemaId Schema ID.
+     * PERF-13: the optional $limit/$offset/$filter arguments are pushed down
+     * into SQL (via findAllInRegisterSchemaTable) so callers that only need a
+     * bounded/filtered slice no longer pull every row of the schema into PHP.
+     * They are optional and default to the previous unbounded full-table read,
+     * so existing callers are unaffected.
+     *
+     * @param int        $schemaId Schema ID.
+     * @param int|null   $limit    Optional maximum number of rows (pushed to SQL).
+     * @param int|null   $offset   Optional rows to skip for pagination (pushed to SQL).
+     * @param array|null $filter   Optional filter criteria (pushed to SQL).
      *
      * @return ObjectEntity[]
      *
      * @psalm-return list<ObjectEntity>
      */
-    public function findBySchema(int $schemaId): array
+    public function findBySchema(int $schemaId, ?int $limit=null, ?int $offset=null, ?array $filter=null): array
     {
         // Find all register+schema pairs that include this schema.
         $allPairs = $this->getAllRegisterSchemaPairs();
@@ -7072,7 +7260,10 @@ class MagicMapper extends AbstractObjectMapper
 
                 $entities = $this->findAllInRegisterSchemaTable(
                     register: $register,
-                    schema: $schema
+                    schema: $schema,
+                    limit: $limit,
+                    offset: $offset,
+                    filters: $filter
                 );
                 $results  = array_merge($results, $entities);
             } catch (\Exception $e) {

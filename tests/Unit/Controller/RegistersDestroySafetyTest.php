@@ -156,7 +156,8 @@ class RegistersDestroySafetyTest extends TestCase
             $this->createMock(OasService::class),
             $this->container,
             $this->groupManager,
-            $this->registerCacheHandler
+            $this->registerCacheHandler,
+            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->createMock(SchemaMapper::class), $this->logger)
         );
 
     }//end setUp()

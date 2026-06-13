@@ -583,10 +583,8 @@ export default {
 			if (organisationStore.nextcloudGroups && organisationStore.nextcloudGroups.length > 0) {
 				this.availableGroups = organisationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.info('Using cached Nextcloud groups from store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.info('Groups not cached, loading from API...')
 				this.loadingGroups = true
 				organisationStore.loadNextcloudGroups().then(() => {
 					this.availableGroups = organisationStore.nextcloudGroups
@@ -650,8 +648,6 @@ export default {
 
 							this.availableGroups = mergedGroups
 						}
-					} else {
-						console.warn('Failed to search groups:', response.statusText)
 					}
 				} catch (error) {
 					console.error('Error searching Nextcloud groups:', error)

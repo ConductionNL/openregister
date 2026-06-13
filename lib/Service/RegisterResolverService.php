@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
+use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\Resolver\RegisterSchemaPair;
@@ -191,6 +192,48 @@ final class RegisterResolverService
 
 
     /**
+     * Read the configured slug/UUID/name for a schema property from app config.
+     *
+     * Honours the documented naming convention (`<context>_property`
+     * preferred). Apps storing a property identifier (slug, UUID, or
+     * canonical name) in app config can resolve it through the same
+     * resolver surface they already use for registers and schemas.
+     *
+     * @param string      $appId            Consumer app id.
+     * @param string      $configKey        Config key to read (e.g. `swc_type_property`).
+     * @param string|null $default          Fallback value if config unset.
+     * @param string|null $organisationUuid Optional org override (unused here, kept for signature parity).
+     *
+     * @return string The configured slug, UUID, or name.
+     *
+     * @throws MissingConfigException If the config is unset and no default was provided.
+     *
+     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     *   (Requirement: resolvePropertyId)
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Same parity rationale as resolveRegisterId.
+     */
+    public function resolvePropertyId(
+        string $appId,
+        string $configKey,
+        ?string $default=null,
+        ?string $organisationUuid=null,
+    ): string {
+        $value = $this->appConfig->getValueString($appId, $configKey, '');
+        if ($value !== '') {
+            return $value;
+        }
+
+        if ($default !== null && $default !== '') {
+            return $default;
+        }
+
+        throw new MissingConfigException($appId, $configKey);
+
+    }//end resolvePropertyId()
+
+
+    /**
      * Resolve `<context>_register` config to a hydrated Register entity.
      *
      * @param string      $appId            Consumer app id.
@@ -298,6 +341,85 @@ final class RegisterResolverService
         return $schema;
 
     }//end resolveSchema()
+
+
+    /**
+     * Resolve a schema property by configured identifier.
+     *
+     * Combines `resolvePropertyId` with a schema lookup, then locates
+     * the matching property on the resolved schema. The configured
+     * property identifier is matched against the property's array key,
+     * its `slug`, its `name`, or its `id` (in that order) so apps can
+     * store any stable identifier they prefer.
+     *
+     * Pattern mirrors `resolveRegister` / `resolveSchema`: read config,
+     * hydrate, throw if absent. Returned shape is the raw property
+     * definition array from `Schema::getProperties()[$key]` — callers
+     * read whatever field they need (`id`, `type`, `format`, etc.).
+     *
+     * @param string      $appId             Consumer app id.
+     * @param string      $schemaConfigKey   Config key for the schema (e.g. `swc_schema`).
+     * @param string      $propertyConfigKey Config key for the property (e.g. `swc_type_property`).
+     * @param string|null $propertyDefault   Fallback property id if config unset.
+     * @param string|null $schemaDefault     Fallback schema id if config unset.
+     * @param string|null $organisationUuid  Optional explicit-tenant override.
+     *
+     * @return array{0: string, 1: array<string, mixed>} Tuple of the resolved property key + the property
+     *                                                   definition array. The key is the property's array
+     *                                                   key on `Schema::getProperties()`, which is also
+     *                                                   the canonical name used in object payloads.
+     *
+     * @throws MissingConfigException    If either config is unset and no default given.
+     * @throws SchemaNotFoundException   If the schema id does not resolve.
+     * @throws PropertyNotFoundException If the property id does not match any property on the schema.
+     *
+     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     *   (Requirement: resolveProperty)
+     */
+    public function resolveProperty(
+        string $appId,
+        string $schemaConfigKey,
+        string $propertyConfigKey,
+        ?string $propertyDefault=null,
+        ?string $schemaDefault=null,
+        ?string $organisationUuid=null,
+    ): array {
+        $schema     = $this->resolveSchema($appId, $schemaConfigKey, $schemaDefault, $organisationUuid);
+        $propertyId = $this->resolvePropertyId($appId, $propertyConfigKey, $propertyDefault, $organisationUuid);
+
+        $properties = $schema->getProperties();
+        $schemaId   = (string) ($schema->getSlug() ?? $schema->getUuid() ?? '');
+
+        // Match by array key first (canonical name in property maps).
+        if (isset($properties[$propertyId]) === true && is_array($properties[$propertyId]) === true) {
+            return [$propertyId, $properties[$propertyId]];
+        }
+
+        // Fall back to scanning by slug / name / id.
+        foreach ($properties as $key => $definition) {
+            if (is_array($definition) === false) {
+                continue;
+            }
+
+            $candidates = [
+                (string) ($definition['slug'] ?? ''),
+                (string) ($definition['name'] ?? ''),
+                (string) ($definition['id'] ?? ''),
+            ];
+
+            if (in_array($propertyId, $candidates, true) === true) {
+                return [(string) $key, $definition];
+            }
+        }
+
+        throw new PropertyNotFoundException(
+            appId: $appId,
+            configKey: $propertyConfigKey,
+            resolvedValue: $propertyId,
+            schemaIdentifier: $schemaId,
+        );
+
+    }//end resolveProperty()
 
 
     /**
@@ -418,7 +540,7 @@ final class RegisterResolverService
             return 'default_schema';
         }
 
-        if (preg_match('/^[A-Za-z][A-Za-z0-9_-]*_(register|schema)$/', $key) === 1) {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9_-]*_(register|schema|property)$/', $key) === 1) {
             return $key;
         }
 

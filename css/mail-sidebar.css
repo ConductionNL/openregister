@@ -199,6 +199,28 @@ aside.or-mail-sidebar.app-sidebar,
 	padding: 4px 0;
 }
 
+.or-action-create {
+	display: block;
+	width: 100%;
+	margin-top: 6px;
+	padding: 6px 10px;
+	border: 1px solid var(--color-border-dark);
+	border-radius: var(--border-radius);
+	background-color: var(--color-primary-element-light);
+	color: var(--color-primary-element-light-text);
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.or-action-create:hover:not(:disabled) {
+	background-color: var(--color-primary-element-light-hover);
+}
+
+.or-action-create:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
 /* Empty / loading states */
 .or-tab-empty {
 	color: var(--color-text-maxcontrast);

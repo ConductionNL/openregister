@@ -39,12 +39,23 @@ class SourcesControllerTest extends TestCase
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnArgument(0);
 
+        // Write endpoints are admin-gated; simulate an authenticated admin.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($adminUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new SourcesController(
             'openregister',
             $this->request,
             $this->config,
             $this->sourceMapper,
-            $l10n
+            $l10n,
+            $userSession,
+            $groupManager,
+            $this->createMock(\OCP\Security\ICrypto::class)
         );
     }
 

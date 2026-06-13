@@ -211,6 +211,8 @@ class SaveObjectCoverageTest extends TestCase
             $this->propertyRbacHandler,
             $this->createMock(ComputedFieldHandler::class),
             $this->createMock(TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->logger,
             $this->createMock(TmloService::class),
             $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),

@@ -132,7 +132,8 @@ class FilesControllerTest extends TestCase
         $result = $this->controller->index('reg1', 'schema1', 'obj1');
 
         $this->assertEquals(500, $result->getStatus());
-        $this->assertEquals(['error' => 'General error'], $result->getData());
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertEquals(['error' => 'Internal server error'], $result->getData());
     }
 
     public function testIndexWithFilesReturnsFormattedData(): void
@@ -1085,107 +1086,9 @@ class FilesControllerTest extends TestCase
         $this->assertFalse($data['success']);
     }
 
-    // ==================== publish() Tests ====================
-
-    public function testPublishSuccess(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $this->setupObjectServiceMocks($object);
-
-        $file = $this->createMock(File::class);
-        $this->fileService->method('publishFile')->willReturn($file);
-        $this->fileService->method('formatFile')->willReturn(['id' => 1]);
-
-        $result = $this->controller->publish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testPublishObjectNull(): void
-    {
-        $this->setupObjectServiceMocks(null);
-
-        $result = $this->controller->publish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(404, $result->getStatus());
-    }
-
-    public function testPublishObjectNotFound(): void
-    {
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setObject')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(404, $result->getStatus());
-    }
-
-    public function testPublishGeneralException(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $this->setupObjectServiceMocks($object);
-
-        $this->fileService->method('publishFile')
-            ->willThrowException(new Exception('Publish failed'));
-
-        $result = $this->controller->publish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(400, $result->getStatus());
-        $this->assertEquals(['error' => 'Publish failed'], $result->getData());
-    }
-
-    // ==================== depublish() Tests ====================
-
-    public function testDepublishSuccess(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $this->setupObjectServiceMocks($object);
-
-        $file = $this->createMock(File::class);
-        $this->fileService->method('unpublishFile')->willReturn($file);
-        $this->fileService->method('formatFile')->willReturn(['id' => 1]);
-
-        $result = $this->controller->depublish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testDepublishObjectNull(): void
-    {
-        $this->setupObjectServiceMocks(null);
-
-        $result = $this->controller->depublish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(404, $result->getStatus());
-    }
-
-    public function testDepublishObjectNotFound(): void
-    {
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setObject')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(404, $result->getStatus());
-    }
-
-    public function testDepublishGeneralException(): void
-    {
-        $object = $this->createMock(ObjectEntity::class);
-        $this->setupObjectServiceMocks($object);
-
-        $this->fileService->method('unpublishFile')
-            ->willThrowException(new Exception('Depublish failed'));
-
-        $result = $this->controller->depublish('reg1', 'schema1', 'obj1', 1);
-
-        $this->assertEquals(400, $result->getStatus());
-        $this->assertEquals(['error' => 'Depublish failed'], $result->getData());
-    }
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // FilesController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H4).
 
     // ==================== downloadById() Tests ====================
 
@@ -1232,7 +1135,8 @@ class FilesControllerTest extends TestCase
 
         $this->assertInstanceOf(JSONResponse::class, $result);
         $this->assertEquals(500, $result->getStatus());
-        $this->assertEquals(['error' => 'Server error'], $result->getData());
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertEquals(['error' => 'Internal server error'], $result->getData());
     }
 
     // ==================== Private method tests via reflection ====================

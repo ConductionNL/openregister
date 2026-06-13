@@ -687,4 +687,189 @@ class NotificationAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors, 'calculatedChange without condition/previously is valid (open gate).');
     }
+
+    // -------------------------------------------------------------------
+    // Phase 2 — save-time grammar validation for scheduled filter operators
+    // + dedupeFields. See notification-engine-scheduled-conditions.
+    // -------------------------------------------------------------------
+
+    /**
+     * Helper: build a minimal valid scheduled notification with the given trigger overrides.
+     *
+     * @param array<string, mixed> $triggerOverrides Fields to merge into trigger.
+     *
+     * @return array<string, mixed> Full schema body ready for ->validate().
+     */
+    private function scheduledSchemaWith(array $triggerOverrides): array
+    {
+        $trigger = array_merge(
+            ['type' => 'scheduled', 'intervalSec' => 3600],
+            $triggerOverrides
+        );
+
+        return [
+            'x-openregister-notifications' => [
+                'taskDueSoon' => [
+                    'trigger'    => $trigger,
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels'   => ['nc-notification'],
+                    'subject'    => 'task due soon',
+                ],
+            ],
+            'properties' => [],
+        ];
+    }
+
+    public function testScheduledFilterScalarEntryAccepted(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith(['filter' => ['status' => 'open']])
+        );
+        $this->assertSame([], $errors);
+    }
+
+    public function testScheduledFilterMixedScalarAndOperatorAccepted(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'status'  => 'open',
+                    'dueDate' => ['operator' => 'withinNext', 'value' => 'PT24H'],
+                ],
+            ])
+        );
+        $this->assertSame([], $errors);
+    }
+
+    public function testScheduledFilterUnknownOperatorRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'status' => ['operator' => 'maybe', 'value' => 'open'],
+                ],
+            ])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-filter-operator', $codes);
+        // Carry the structured envelope.
+        foreach ($errors as $err) {
+            if ($err['code'] === 'notification-scheduled-bad-filter-operator') {
+                $this->assertSame('taskDueSoon', $err['ruleKey']);
+                $this->assertSame('trigger.filter.status.operator', $err['field']);
+                $this->assertSame('maybe', $err['value']);
+                return;
+            }
+        }
+    }
+
+    public function testScheduledFilterMissingValueRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'status' => ['operator' => 'equals'],
+                ],
+            ])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-filter-missing-value', $codes);
+    }
+
+    public function testScheduledFilterBadDurationRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'dueDate' => ['operator' => 'withinNext', 'value' => '24h'],
+                ],
+            ])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-filter-duration', $codes);
+    }
+
+    public function testScheduledFilterBadDurationForOlderThanRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'createdAt' => ['operator' => 'olderThan', 'value' => 'thirty days'],
+                ],
+            ])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-filter-duration', $codes);
+    }
+
+    public function testScheduledFilterValidDurationAccepted(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'dueDate'   => ['operator' => 'withinNext', 'value' => 'PT24H'],
+                    'createdAt' => ['operator' => 'olderThan', 'value' => 'P30D'],
+                ],
+            ])
+        );
+        $this->assertSame([], $errors);
+    }
+
+    public function testScheduledFilterEqualsAndNotEqualsAccepted(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith([
+                'filter' => [
+                    'priority' => ['operator' => 'equals', 'value' => 'high'],
+                    'status'   => ['operator' => 'notEquals', 'value' => 'done'],
+                ],
+            ])
+        );
+        $this->assertSame([], $errors);
+    }
+
+    public function testScheduledFilterNotAnArrayRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith(['filter' => 'invalid'])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-filter', $codes);
+    }
+
+    public function testScheduledDedupeFieldsValidAccepted(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith(['dedupeFields' => ['dueDate', 'status']])
+        );
+        $this->assertSame([], $errors);
+    }
+
+    public function testScheduledDedupeFieldsEmptyArrayRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith(['dedupeFields' => []])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-dedupe-fields', $codes);
+    }
+
+    public function testScheduledDedupeFieldsNotArrayRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith(['dedupeFields' => 'dueDate'])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-dedupe-fields', $codes);
+    }
+
+    public function testScheduledDedupeFieldsWithNonStringEntryRejected(): void
+    {
+        $errors = $this->v->validate(
+            $this->scheduledSchemaWith(['dedupeFields' => ['dueDate', 42, 'status']])
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-dedupe-fields', $codes);
+    }
+
 }

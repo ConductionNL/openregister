@@ -434,9 +434,14 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-/* List widgets */
+/* List widgets.
+ * No own `overflow` — the surrounding CnWidgetWrapper content region
+ * (`.cn-widget-wrapper__content`) already scrolls and is keyboard-focusable
+ * with an accessible name. A nested scrollable container here would create a
+ * second scroll region that is NOT keyboard-reachable, tripping the
+ * `scrollable-region-focusable` WCAG 2.1.1/2.1.3 rule (axe, serious). */
 .list-widget-content {
-	overflow: auto;
+	overflow: visible;
 }
 
 .stats-table {

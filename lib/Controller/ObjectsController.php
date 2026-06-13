@@ -89,6 +89,8 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  */
 class ObjectsController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
 
     /**
      * Export service for handling data exports
@@ -751,43 +753,50 @@ class ObjectsController extends Controller
         $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
         $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
-        // Build register+schema pairs.
-        $pairs = [];
-        foreach ($registers as $registerId) {
-            foreach ($schemas as $schemaId) {
-                try {
-                    // Resolve register and schema entities.
-                    $registerEntity = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
-                    $schemaEntity   = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
+        // PERF-14: resolve each register and schema exactly once up front instead of
+        // re-running find() for every register×schema combination in the inner loop.
+        $registerEntities = [];
+        foreach (array_unique($registers) as $registerId) {
+            try {
+                $registerEntities[(string) $registerId] = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectsController] Invalid register in cross-table search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId, 'error' => $e->getMessage()]
+                );
+            }
+        }
 
-                    // Check if magic mapping is enabled for this combination.
-                    // Uses Register::isMagicMappingEnabledForSchema() which supports both
-                    // new format {"schemas": {"slug": {"magicMapping": true}}} and
-                    // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
-                    if ($registerEntity->isMagicMappingEnabledForSchema(
-                        schemaId: $schemaEntity->getId(),
-                        schemaSlug: $schemaEntity->getSlug()
-                    ) === true
-                    ) {
-                        $pairs[] = [
-                            'register' => $registerEntity,
-                            'schema'   => $schemaEntity,
-                        ];
-                    }
-                } catch (\Exception $e) {
-                    // Skip invalid register/schema combinations.
-                    $this->logger->warning(
-                        message: '[ObjectsController] Invalid register/schema in cross-table search',
-                        context: [
-                            'file'     => __FILE__,
-                            'line'     => __LINE__,
-                            'register' => $registerId,
-                            'schema'   => $schemaId,
-                            'error'    => $e->getMessage(),
-                        ]
-                    );
-                    continue;
-                }//end try
+        $schemaEntities = [];
+        foreach (array_unique($schemas) as $schemaId) {
+            try {
+                $schemaEntities[(string) $schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectsController] Invalid schema in cross-table search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        // Build register+schema pairs from the pre-resolved entities.
+        $pairs = [];
+        foreach ($registerEntities as $registerEntity) {
+            foreach ($schemaEntities as $schemaEntity) {
+                // Check if magic mapping is enabled for this combination.
+                // Uses Register::isMagicMappingEnabledForSchema() which supports both
+                // new format {"schemas": {"slug": {"magicMapping": true}}} and
+                // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
+                if ($registerEntity->isMagicMappingEnabledForSchema(
+                    schemaId: $schemaEntity->getId(),
+                    schemaSlug: $schemaEntity->getSlug()
+                ) === true
+                ) {
+                    $pairs[] = [
+                        'register' => $registerEntity,
+                        'schema'   => $schemaEntity,
+                    ];
+                }
             }//end foreach
         }//end foreach
 
@@ -805,6 +814,18 @@ class ObjectsController extends Controller
         // Build search query WITHOUT register/schema to avoid filtering.
         // Cross-table search handles multiple register+schema pairs internally.
         $query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
+
+        // SEC-CTRL-1: This path does NOT read rbac/multi from the request, so the
+        // request-controlled bypass does not apply here. Derive the posture from
+        // admin status for completeness and forward it on the query.
+        // TODO(SEC-CTRL-1): MagicMapper::searchAcrossMultipleTables() and its
+        // union/sequential builders currently apply NO RBAC or multitenancy filter
+        // (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
+        // lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
+        // be wired there before cross-table search is exposed to non-admins.
+        $isAdmin                = $this->isCurrentUserAdmin();
+        $query['_rbac']         = ($isAdmin === false);
+        $query['_multitenancy'] = ($isAdmin === false);
 
         // Remove all register/schema context from query to prevent filtering.
         unset(
@@ -840,14 +861,34 @@ class ObjectsController extends Controller
         }
 
         // Calculate pagination.
-        $limit  = $query['_limit'] ?? 20;
-        $offset = $query['_offset'] ?? 0;
-        $total  = count($serializedResults);
-        $pages  = 1;
-        $page   = 1;
+        $limit  = (int) ($query['_limit'] ?? 20);
+        $offset = (int) ($query['_offset'] ?? 0);
+
+        // PERF-6: the per-table merge can return up to limit×tableCount rows. Slice
+        // down to the requested page window so the response honours _limit/_offset
+        // instead of returning every fetched row.
+        // NOTE: an exact cross-table total still requires a per-table COUNT(*) in SQL
+        // (MagicMapper, out of this controller's scope); $fetchedCount is the best
+        // available bound here. TODO(PERF-6): sum per-table COUNT(*) in MagicMapper.
+        $fetchedCount = count($serializedResults);
         if ($limit > 0) {
-            $pages = (int) ceil($total / $limit);
-            $page  = (int) floor($offset / $limit) + 1;
+            $serializedResults = array_slice($serializedResults, $offset, $limit);
+        } else if ($offset > 0) {
+            $serializedResults = array_slice($serializedResults, $offset);
+        }
+
+        // PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
+        $wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $total     = ($wantTotal === true) ? $fetchedCount : null;
+
+        $pages = 1;
+        $page  = 1;
+        if ($limit > 0) {
+            if ($total !== null) {
+                $pages = (int) ceil($total / $limit);
+            }
+
+            $page = (int) floor($offset / $limit) + 1;
         }
 
         return new JSONResponse(
@@ -1018,10 +1059,15 @@ class ObjectsController extends Controller
 
         // Extract filtering parameters from request.
         $params = $this->request->getParams();
-        $rbac   = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        // Check both _multi and multi params (URL uses _multi, but we also support multi).
-        $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
-        $multi   = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        // SEC-CTRL-1: RBAC and multitenancy posture MUST be derived from the
+        // caller's admin status, never from request parameters. This endpoint is
+        // reachable anonymously (@PublicPage); honouring ?rbac=false&_multi=false
+        // would let any caller list every object across all organisations/ACLs.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = ($isAdmin === false);
+        $multi   = ($isAdmin === false);
+        // No longer request-controlled: never treat _multi as explicitly set by the client.
+        $multiExplicitlySet = false;
         $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
@@ -1112,20 +1158,34 @@ class ObjectsController extends Controller
                     $offset = (int) ($offset ?? 0);
                 }
 
-                // Build count query (same filters, no pagination).
-                $countQuery = $query;
-                unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
-
-                // Get actual total count.
-                $total = $magicMapper->countObjectsInRegisterSchemaTable(
-                    query: $countQuery,
-                    register: $registerEntity,
-                    schema: $schemaEntity
+                // PERF-10: allow callers to skip the extra COUNT(*) query when they
+                // don't need the grand total (e.g. infinite scroll). _count=false /
+                // _noTotal=true returns total:null and skips the count round-trip.
+                $wantTotal = filter_var(
+                    $params['_count'] ?? (($params['_noTotal'] ?? false) ? false : true),
+                    FILTER_VALIDATE_BOOLEAN
                 );
+
+                $total = null;
+                if ($wantTotal === true) {
+                    // Build count query (same filters, no pagination).
+                    $countQuery = $query;
+                    unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+
+                    // Get actual total count.
+                    $total = $magicMapper->countObjectsInRegisterSchemaTable(
+                        query: $countQuery,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
+                }
 
                 $pages = 1;
                 if ($limit > 0) {
-                    $pages = (int) ceil($total / $limit);
+                    if ($total !== null) {
+                        $pages = (int) ceil($total / $limit);
+                    }
+
                     // Calculate page from offset if not explicitly provided.
                     if ($page === null) {
                         $page = (int) floor($offset / $limit) + 1;
@@ -1851,6 +1911,13 @@ class ObjectsController extends Controller
             return new JSONResponse(data: $renderedData);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        } catch (NotAuthorizedException $exception) {
+            // RBAC denied the read. Return 404 (not 500, and not 403) so an
+            // unauthorized caller cannot distinguish "exists but forbidden"
+            // from "does not exist" — avoids leaking object existence while
+            // still denying access. Previously this exception escaped the
+            // handler and surfaced as an HTTP 500.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
     }//end show()
 
@@ -2135,7 +2202,8 @@ class ObjectsController extends Controller
                         'trace'     => $exception->getTraceAsString(),
                     ]
                     );
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($exception);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -2377,7 +2445,8 @@ class ObjectsController extends Controller
                         'trace'     => $exception->getTraceAsString(),
                     ]
                     );
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($exception);
         }//end try
     }//end patch()
 
@@ -2509,7 +2578,8 @@ class ObjectsController extends Controller
             // See the `self-folder-access-control` spec.
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($exception);
         }//end try
     }//end postPatch()
 
@@ -2983,7 +3053,8 @@ class ObjectsController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (\Throwable $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($e);
         }//end try
     }//end lock()
 
@@ -3126,100 +3197,6 @@ class ObjectsController extends Controller
     }//end export()
 
     /**
-     * Import objects into a register
-     *
-     * @param int $register The ID of the register to import into
-     *
-     * @return JSONResponse JSON response with import result or error.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @psalm-suppress NoValue
-     *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
-     */
-    public function import(int $register): JSONResponse
-    {
-        try {
-            // Get the uploaded file.
-            $uploadedFile = $this->request->getUploadedFile('file');
-            if ($uploadedFile === null) {
-                return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
-            }
-
-            // Find the register.
-            $registerEntity = $this->registerMapper->find($register);
-
-            // Get optional schema for CSV (can be null, Excel auto-resolves per sheet).
-            $schemaId = $this->request->getParam(key: 'schema');
-            $schema   = null;
-            if ($schemaId !== null && $schemaId !== '') {
-                $schema = $this->schemaMapper->find($schemaId);
-            }
-
-            // Get optional parameters with sensible defaults.
-            $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
-            $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
-            $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
-            $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
-            $enrich     = filter_var($this->request->getParam(key: 'enrich', default: true), FILTER_VALIDATE_BOOLEAN);
-
-            // Determine the import type from the uploaded file extension.
-            $filename  = ($uploadedFile['name'] ?? '');
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-            // Route to the real ImportService. CSV requires a specific schema;
-            // Excel auto-resolves schemas per sheet.
-            if ($extension === 'csv') {
-                if ($schema === null) {
-                    return new JSONResponse(
-                        data: ['error' => 'Schema parameter is required for CSV imports.'],
-                        statusCode: 400
-                    );
-                }
-
-                $result = $this->importService->importFromCsv(
-                    filePath: $uploadedFile['tmp_name'],
-                    register: $registerEntity,
-                    schema: $schema,
-                    validation: $validation,
-                    events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    publish: $publish,
-                    currentUser: $this->userSession->getUser(),
-                    enrich: $enrich
-                );
-            } else {
-                $result = $this->importService->importFromExcel(
-                    filePath: $uploadedFile['tmp_name'],
-                    register: $registerEntity,
-                    schema: $schema,
-                    validation: $validation,
-                    events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    publish: $publish,
-                    currentUser: $this->userSession->getUser(),
-                    enrich: $enrich
-                );
-            }//end if
-
-            return new JSONResponse(
-                data: [
-                    'message' => 'Import successful',
-                    'summary' => $result,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }//end try
-    }//end import()
-
-    /**
      * Merge two objects
      *
      * This method merges object A into object B within the same register and schema.
@@ -3274,7 +3251,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to merge objects: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3344,7 +3321,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to migrate objects: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3449,7 +3426,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to create ZIP file: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3494,7 +3471,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3538,7 +3515,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3582,7 +3559,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3806,34 +3783,6 @@ class ObjectsController extends Controller
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
     }//end isUuid()
-
-    /**
-     * Clear all blob storage objects (deprecated)
-     *
-     * The blob objects table has been retired. All objects now live in per-schema
-     * magic tables. This endpoint is kept for backwards compatibility but is a no-op.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response indicating the operation is no longer applicable
-     *
-     * @psalm-return JSONResponse
-     *
-     * @deprecated Blob storage has been retired; this endpoint is a no-op.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
-     */
-    public function clearBlob(): JSONResponse
-    {
-        return new JSONResponse(
-            data: [
-                'success' => true,
-                'deleted' => 0,
-                'message' => 'Blob storage has been retired. All objects now use magic tables.',
-            ]
-        );
-    }//end clearBlob()
 
     /**
      * Recursively strips empty values (null, empty string, empty array) from an array.

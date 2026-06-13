@@ -1,0 +1,327 @@
+# tests-live.yml — reusable LIVE-NC feature-test workflow (PHASE-5 NC-in-CI).
+#
+# This is the GATING counterpart to tests.yml: where tests.yml runs the bare
+# layers (phpunit-unit, l10n) that need no service container, this workflow
+# boots a real, seeded Nextcloud and runs the two layers that DO need one —
+# the deep Playwright e2e (tests/e2e/workflows/) and the Newman API-contract
+# suite — so a PR can no longer go green while those flows are broken.
+#
+# It generalises openregister's reference rig
+# (.github/workflows/api-test-coverage.yml + .github/docker-compose.ci.yml),
+# which already boots NC + Postgres, deploys + enables OpenRegister, waits for
+# the API and runs Newman. The only per-app knobs are `app-id` and whether the
+# app is itself openregister (the data backend) or a feature app that needs
+# openregister enabled ALONGSIDE it.
+#
+# Per-app PREREQUISITE (the common seeding step):
+#   The deep e2e + Newman suites must be SELF-SEEDING — each spec/collection
+#   creates the OR register + schema + objects it asserts on in its
+#   beforeAll/setUp and tears them down in afterAll/teardown. openregister's
+#   tests/e2e/workflows/object-lifecycle-workflows.spec.ts and the Newman
+#   collections already do this. A feature app whose suites assume a
+#   pre-imported OR register-config must EITHER add an `occ` seed step here
+#   (import the app's register-config, e.g. via its Repair step or
+#   `occ <app>:import-config`) OR make the suites self-seed. Until one of
+#   those is true, keep run-e2e/run-newman false for that app.
+#
+# Runner label `docker` (needs a docker daemon to boot the compose stack) +
+# the short `https://code.forgejo.org/actions/...@v4` `uses:` form follow the
+# fleet convention. Additive — does not touch tests.yml, pre-merge-check-strict
+# or any release workflow.
+
+name: tests-live
+
+on:
+  workflow_call:
+    inputs:
+      app-id:
+        description: "App id (matches package.json name + composer namespace + custom_apps dir)."
+        required: true
+        type: string
+      node-version:
+        required: false
+        type: string
+        default: "20"
+      php-version:
+        required: false
+        type: string
+        default: "8.3"
+      is-openregister:
+        description: "True when app-id IS openregister (the data backend). Feature apps leave this false; openregister is enabled alongside them."
+        required: false
+        type: boolean
+        default: false
+      run-e2e:
+        description: "Run the deep Playwright e2e (tests/e2e/workflows/) against the live NC. GATING when true."
+        required: false
+        type: boolean
+        default: false
+      run-newman:
+        description: "Run the Newman API-contract suite against the live NC. GATING when true."
+        required: false
+        type: boolean
+        default: false
+      run-visual:
+        description: >-
+          Run the Playwright visual-regression project (tests/e2e/visual/, GAP-5)
+          against the live NC. NON-GATING by design (continue-on-error). PLATFORM
+          CAVEAT: PNG baselines are host-font/GPU specific, so committed
+          dev-container baselines will NOT byte-match a CI Linux runner. On the
+          first CI run the baselines must be regenerated in-CI (download the
+          uploaded visual-snapshots artifact and commit it) before this step can
+          be made gating. Until then it reports diffs as an artifact only.
+        required: false
+        type: boolean
+        default: false
+      newman-entrypoint:
+        description: "Path to the Newman runner. openregister uses the orchestrator; feature apps use tests/integration/run-newman.sh."
+        required: false
+        type: string
+        default: "tests/newman/run-all.sh"
+      newman-collections:
+        description: "COLLECTIONS subset passed to the orchestrator (self-seeding domains only; excludes fixtures that assume dev-container state)."
+        required: false
+        type: string
+        default: "crud graphql relations auth-matrix error-matrix referential-integrity"
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # LIVE GATE — boot seeded NC, deploy OR (+ the app), run deep e2e + Newman.
+  #
+  # A single job boots the stack once and runs both suites against it (cheaper
+  # than two stacks; both are read-mostly + self-seeding so they don't collide
+  # — e2e prefixes its fixtures with a run-id, Newman teardown-cleans its own).
+  # ---------------------------------------------------------------------------
+  live-nc:
+    name: Live NC e2e + Newman (${{ inputs.app-id }})
+    if: ${{ inputs.run-e2e || inputs.run-newman || inputs.run-visual }}
+    runs-on: docker
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      APP_ID: ${{ inputs.app-id }}
+      COMPOSE_FILE: .github/docker-compose.ci.yml
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Set up PHP
+        uses: https://github.com/shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Set up Node.js
+        uses: https://code.forgejo.org/actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install composer deps (production)
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist
+
+      - name: Install npm deps + Newman
+        run: |
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          npm install -g newman
+
+      - name: Boot CI stack (db + Nextcloud)
+        # Reuses openregister's reference compose (db + NC, named volume only).
+        # A feature app that does not ship its own compose should commit a copy
+        # of openregister/.github/docker-compose.ci.yml.
+        run: docker compose -f "$COMPOSE_FILE" up -d
+
+      - name: Wait for Nextcloud to be installed
+        run: |
+          for i in $(seq 1 60); do
+            if docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status" 2>/dev/null | grep -q "installed: true"; then
+              echo "Nextcloud installed and ready"
+              break
+            fi
+            echo "Waiting for Nextcloud installation... ($i/60)"
+            sleep 5
+          done
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status"
+
+      - name: Deploy OpenRegister (data backend)
+        # The app under test stores its objects in OpenRegister, so OR must be
+        # deployed+enabled regardless of which app we're testing. When the app
+        # UNDER TEST *is* openregister, this single deploy covers it.
+        run: |
+          if [ "${{ inputs.is-openregister }}" = "true" ]; then
+            OR_SRC="."
+          else
+            # Feature apps build against a sibling openregister checkout in the
+            # same apps-extra tree. CI clones only this repo, so fetch OR's
+            # release build instead.
+            OR_SRC="$RUNNER_TEMP/openregister"
+            git clone --depth 1 https://codeberg.org/Conduction/openregister.git "$OR_SRC"
+            ( cd "$OR_SRC" && composer install --no-dev --no-interaction --no-progress --prefer-dist )
+          fi
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          tar --exclude='.git' --exclude='node_modules' --exclude='.claude' \
+              --exclude='tests/e2e/playwright-report' --exclude='tests/e2e/test-results' \
+              -C "$OR_SRC" -cf - . \
+            | docker exec -i nextcloud tar -xf - -C /var/www/html/custom_apps/openregister
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
+
+      - name: Deploy app under test
+        # Skipped when the app IS openregister (already deployed above).
+        if: ${{ inputs.is-openregister == false }}
+        run: |
+          docker exec nextcloud mkdir -p "/var/www/html/custom_apps/$APP_ID"
+          tar --exclude='.git' --exclude='node_modules' --exclude='.claude' \
+              --exclude='tests/e2e/playwright-report' --exclude='tests/e2e/test-results' \
+              -cf - . \
+            | docker exec -i nextcloud tar -xf - -C "/var/www/html/custom_apps/$APP_ID"
+          docker exec nextcloud chown -R www-data:www-data "/var/www/html/custom_apps/$APP_ID"
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable $APP_ID"
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep "$APP_ID"
+
+      - name: Seed OR register-config (per-app prerequisite)
+        # SELF-SEEDING suites need nothing here. An app whose deep-e2e / Newman
+        # assumes a pre-imported register-config should import it now, e.g.:
+        #   docker exec nextcloud su -s /bin/bash www-data -c \
+        #     "php /var/www/html/occ $APP_ID:import-config"   # if the app ships one
+        # or trigger the app's Repair step (most Conduction apps import their
+        # register via lib/Repair/Initialize*.php on app:enable — already done
+        # by the enable step above). Left as an explicit, documented hook.
+        run: |
+          echo "Seeding: openregister's own suites are self-seeding (fixtures create"
+          echo "register+schema+objects per run-id, torn down in afterAll/teardown)."
+          echo "Feature apps: add the register-config import here (see step comment)."
+
+      - name: Wait for the API to respond
+        # app:enable returns before the repair/magic-mapping step + PHP-FPM
+        # opcache warm-up finish; poll the OR registers endpoint until it
+        # returns a real HTTP status (not connection-level 000).
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+              -u admin:admin \
+              http://localhost:8080/index.php/apps/openregister/api/registers \
+              2>/dev/null | tr -d '\n')
+            if [ -n "$code" ] && [ ${#code} -eq 3 ] \
+              && [ "$code" -ge 100 ] 2>/dev/null && [ "$code" -lt 500 ]; then
+              echo "OpenRegister API responding (HTTP $code, attempt $i)"
+              sleep 5
+              break
+            fi
+            echo "Waiting for API... (attempt $i/60, last='$code')"
+            sleep 2
+          done
+
+      - name: Mint admin storageState + run deep e2e (GATING)
+        # The app's playwright global-setup logs into NC once and persists the
+        # cookie jar to tests/e2e/.auth/admin.json (the storageState the
+        # workflows spec consumes). We run ONLY tests/e2e/workflows here — the
+        # deep, data-dependent layer — against the live, self-seeded NC.
+        if: ${{ inputs.run-e2e }}
+        env:
+          NEXTCLOUD_URL: http://localhost:8080
+          NC_ADMIN_USER: admin
+          NC_ADMIN_PASS: admin
+          OR_USER: admin
+          OR_PASS: admin
+          CI: "true"
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test tests/e2e/workflows
+
+      - name: Run visual-regression project (NON-GATING — GAP-5)
+        # Visual baselines are rendered against the local dev container; a CI
+        # Linux runner uses a different font stack + GPU so the committed PNGs
+        # will not byte-match here. This step is therefore NON-GATING
+        # (continue-on-error) and exists to (a) surface visual diffs as an
+        # artifact and (b) let a maintainer regenerate CI-native baselines:
+        #   download the `visual-snapshots-<app>` artifact from a run with
+        #   PLAYWRIGHT_UPDATE=1 and commit it, then drop continue-on-error to
+        #   make the step gating in the CI environment.
+        if: ${{ inputs.run-visual }}
+        continue-on-error: true
+        env:
+          NEXTCLOUD_URL: http://localhost:8080
+          NC_ADMIN_USER: admin
+          NC_ADMIN_PASS: admin
+          OR_USER: admin
+          OR_PASS: admin
+          CI: "true"
+        run: |
+          npx playwright install --with-deps chromium
+          if [ "${PLAYWRIGHT_UPDATE:-0}" = "1" ]; then
+            echo "Regenerating CI-native visual baselines (--update-snapshots)…"
+            npx playwright test --project visual --update-snapshots || true
+          else
+            npx playwright test --project visual || true
+          fi
+
+      - name: Upload visual snapshots + diffs (NON-GATING)
+        if: ${{ inputs.run-visual }}
+        continue-on-error: true
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: visual-snapshots-${{ inputs.app-id }}
+          path: |
+            tests/e2e/visual/**/*-snapshots/**
+            tests/e2e/test-results/**
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Run Newman API-contract suite (GATING)
+        if: ${{ inputs.run-newman }}
+        env:
+          BASE_URL: http://localhost:8080
+          ADMIN_USER: admin
+          ADMIN_PASSWORD: admin
+          CONTAINER_NAME: nextcloud
+          NEWMAN_RUNNER: host
+          FAIL_FAST: "0"
+          COLLECTIONS: ${{ inputs.newman-collections }}
+        run: bash "${{ inputs.newman-entrypoint }}"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ inputs.app-id }}
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Newman reports
+        if: always()
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: newman-reports-${{ inputs.app-id }}
+          path: |
+            tests/newman/reports/
+            newman-*.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Collect docker logs on failure
+        if: failure()
+        run: |
+          mkdir -p ci-logs
+          docker compose -f "$COMPOSE_FILE" logs --no-color > ci-logs/docker-compose.log 2>&1 || true
+          docker exec nextcloud cat /var/www/html/data/nextcloud.log > ci-logs/nextcloud.log 2>&1 || true
+
+      - name: Upload docker logs
+        if: failure()
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: ci-logs-${{ inputs.app-id }}
+          path: ci-logs/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Tear down CI stack
+        if: always()
+        run: docker compose -f "$COMPOSE_FILE" down -v

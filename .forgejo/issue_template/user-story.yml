@@ -1,0 +1,74 @@
+name: "✨ User Story"
+description: "Nieuwe functionaliteit vanuit gebruikersperspectief"
+title: "Als [rol] wil ik [actie] zodat [waarde]"
+labels: ["user-story", "needs-refinement"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## User Story
+        Beschrijf de gewenste functionaliteit vanuit het perspectief van de gebruiker.
+
+  - type: textarea
+    id: story
+    attributes:
+      label: "Story"
+      description: "Als [rol] wil ik [actie] zodat [waarde]"
+      placeholder: "Als gemeentemedewerker wil ik een document kunnen anonimiseren zodat ik het veilig kan delen."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Context / Achtergrond"
+      description: "Waarom is dit nodig? Wat is de aanleiding?"
+      placeholder: "WOO-verzoeken vereisen anonimisering vóór publicatie..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Acceptatiecriteria"
+      description: "Definition of Done — vink af wat van toepassing is"
+      value: |
+        - [ ] Functionaliteit werkt zoals beschreven in de story
+        - [ ] Er zijn unit tests aanwezig
+        - [ ] Er zijn integratietests aanwezig
+        - [ ] Documentatie is bijgewerkt
+        - [ ] Code is gereviewd (4-eyes)
+        - [ ] Geen nieuwe security findings (SAST/Trivy)
+        - [ ] Getest in acceptatieomgeving
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: "Buiten scope"
+      description: "Wat doen we expliciet NIET in dit issue?"
+      placeholder: "Geen bulk-verwerking, geen UI-wijzigingen."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Prioriteit"
+      options:
+        - "🔴 Critical"
+        - "🟠 High"
+        - "🟡 Medium"
+        - "🟢 Low"
+    validations:
+      required: true
+
+  - type: input
+    id: story-points
+    attributes:
+      label: "Story points (optioneel)"
+      placeholder: "3"
+    validations:
+      required: false

@@ -288,18 +288,20 @@ return [
         // Linked entities (mail sidebar, contacts sidebar, etc.).
         // Must be before objects/{register}/{schema} routes to avoid wildcard matching.
         ['name' => 'linked_entity#addObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-        ['name' => 'linked_entity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'linked_entity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '.+']],
         ['name' => 'linked_entity#addRegisterLink', 'url' => '/api/registers/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
         ['name' => 'linked_entity#addSchemaLink', 'url' => '/api/schemas/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-        // Note: entityId uses [^/]+ (not .+) to prevent slashes in captured values. Entity IDs are
-        // opaque (UUIDs / external IDs) and should never contain path separators. The legacy underscore-
+        // Note: entityId uses .+ (not [^/]+) because mail entity refs are `{accountId}/{messageId}`
+        // with a RAW slash — the sidebar deliberately does not URL-encode it (Apache rejects %2F in
+        // paths unless AllowEncodedSlashes is on; see commit d8acb45f0). The legacy underscore-
         // prefixed variant below (linkedEntity#reverseLookup on /api/linked/_{type}/{entityId}) coexists
         // for backwards compatibility with older mail-sidebar clients; deduplicate in a future cleanup.
-        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '.+']],
 
         // Objects.
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
-        ['name' => 'objects#clearBlob', 'url' => '/api/objects/clear-blob', 'verb' => 'DELETE'],
+        // SEC-CTRL-10: clearBlob removed — blob storage retired; the controller method was a no-op.
+        // ['name' => 'objects#clearBlob', 'url' => '/api/objects/clear-blob', 'verb' => 'DELETE'],
         // ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'], // DISABLED: Use registers import endpoint instead
         // Lifecycle transitions — MUST precede the wildcard {register}/{schema} routes
         // so /api/objects/{id}/transition isn't grabbed as register=id, schema=transition.
@@ -571,10 +573,10 @@ return [
 
         // Linked-entity-types — generic per-{type} link API (mail / event / contact / deck).
         ['name' => 'linkedEntity#addObjectLink',    'url' => '/api/objects/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
-        ['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_{type}/{entityId}','verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+', 'entityId' => '[^/]+']],
+        ['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_{type}/{entityId}','verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+', 'entityId' => '.+']],
         ['name' => 'linkedEntity#addRegisterLink',  'url' => '/api/registers/{uuid}/_{type}',         'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
         ['name' => 'linkedEntity#addSchemaLink',    'url' => '/api/schemas/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
-        ['name' => 'linkedEntity#reverseLookup',    'url' => '/api/linked/_{type}/{entityId}',        'verb' => 'GET',    'requirements' => ['type' => '[a-z]+', 'entityId' => '[^/]+']],
+        ['name' => 'linkedEntity#reverseLookup',    'url' => '/api/linked/_{type}/{entityId}',        'verb' => 'GET',    'requirements' => ['type' => '[a-z]+', 'entityId' => '.+']],
 
         // TMLO metadata export endpoints (declarative archival metadata per Dutch TMLO standard).
         ['name' => 'tmlo#summary',      'url' => '/api/tmlo/{register}/{schema}/summary',                'verb' => 'GET'],

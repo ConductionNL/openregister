@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -83,6 +85,13 @@ class PermissionHandler
      * @var array<int, array|null>
      */
     private array $cachedRegisterAuth = [];
+
+    /**
+     * Per-request cache of the resolved inheritFromPublic value, keyed by schema id.
+     *
+     * @var array<int, bool>
+     */
+    private array $cachedInheritFromPublic = [];
 
     /**
      * Per-request cache for register configuration (roles).
@@ -156,6 +165,7 @@ class PermissionHandler
      * @param SchemaMapper                               $schemaMapper       Mapper for schema operations.
      * @param MagicMapper                                $objectEntityMapper Mapper for object entity operations.
      * @param ConditionMatcher                           $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
+     * @param IAppConfig                                 $appConfig          App config for the inheritFromPublic tenant default.
      * @param LoggerInterface                            $logger             Logger for permission auditing.
      * @param ContainerInterface                         $container          Container for lazy loading services.
      * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
@@ -169,6 +179,7 @@ class PermissionHandler
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
         private readonly ConditionMatcher $conditionMatcher,
+        private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
         private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null
@@ -485,8 +496,13 @@ class PermissionHandler
             }
         }//end foreach
 
-        // Logged-in users should also have at least the same rights as 'public' users.
-        if ($this->hasGroupPermission(
+        // Logged-in users normally also inherit at least the same rights as
+        // 'public' users — unless the schema/register/tenant disabled public
+        // inheritance for authenticated users (inheritFromPublic = false). The
+        // flag only governs this authenticated-inherits-public step; anonymous
+        // users are handled earlier and are never affected.
+        if ($this->resolveInheritFromPublic(schema: $schema) === true
+            && $this->hasGroupPermission(
                 authorization: $authorization,
                 groupId: 'public',
                 action: $action,
@@ -645,6 +661,28 @@ class PermissionHandler
     }//end clearPermissionCache()
 
     /**
+     * Clear the per-request inheritFromPublic resolution cache.
+     *
+     * The cache keys purely on schema id, which is collision-free only while
+     * schema/register/IAppConfig authorization is immutable mid-request. Any
+     * path that mutates authorization and then re-reads it within the same
+     * request must bust this cache to avoid serving a stale verdict.
+     *
+     * @param int|null $schemaId Specific schema to evict, or null to clear all.
+     *
+     * @return void
+     */
+    public function clearInheritFromPublicCache(?int $schemaId=null): void
+    {
+        if ($schemaId === null) {
+            $this->cachedInheritFromPublic = [];
+            return;
+        }
+
+        unset($this->cachedInheritFromPublic[$schemaId]);
+    }//end clearInheritFromPublicCache()
+
+    /**
      * Check permission and throw exception if not granted
      *
      * @param Schema            $schema      Schema to check permissions for.
@@ -685,8 +723,13 @@ class PermissionHandler
                 $userName = $user->getDisplayName();
             }
 
-            throw new Exception(
-                "User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'"
+            // Use NotAuthorizedException (HTTP 403) rather than a generic
+            // Exception so controllers map an RBAC denial to a 403 Forbidden
+            // response instead of leaking a 500 Internal Server Error. The
+            // class extends \Exception, so any existing `catch (Exception)`
+            // call sites remain backward-compatible.
+            throw new NotAuthorizedException(
+                message: "User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'"
             );
         }
     }//end checkPermission()
@@ -1274,6 +1317,190 @@ class PermissionHandler
 
         return null;
     }//end resolveAuthorization()
+
+    /**
+     * Resolve whether authenticated users inherit `public` group rights for a schema.
+     *
+     * Cascade (first explicit boolean wins): schema authorization →
+     * register authorization → tenant-wide IAppConfig
+     * `openregister.rbac.inherit_from_public_default` → hard-coded `true`.
+     * A `null` (or any non-boolean) value at a level is treated as "unset" so
+     * the cascade falls through. Anonymous users are never affected by this flag.
+     *
+     * @param Schema $schema The schema being evaluated.
+     *
+     * @return bool True when authenticated users inherit `public` rights.
+     *
+     * @spec openspec/changes/rbac-disable-public-inheritance/tasks.md
+     */
+    public function resolveInheritFromPublic(Schema $schema): bool
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId !== null && array_key_exists($schemaId, $this->cachedInheritFromPublic) === true) {
+            return $this->cachedInheritFromPublic[$schemaId];
+        }
+
+        // Resolve defensively: any unexpected failure falls back to the
+        // tenant-wide default rather than propagating. This keeps the fail-mode
+        // symmetric with MagicRbacHandler::authenticatedInheritsPublic() — both
+        // callers degrade to the configured tenant posture (not a hard-coded
+        // grant), so a cluster-wide lock-down is not silently softened by an
+        // exception on one of the two RBAC code paths.
+        try {
+            $resolved = null;
+
+            // Step 1: schema-level authorization (strict boolean; non-bool = unset).
+            $auth = $schema->getAuthorization();
+            if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
+                $resolved = $this->coerceStrictBoolOrLog(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId);
+            }
+
+            // Step 2: register-level authorization. Conservative across multiple
+            // registers — see resolveRegisterInheritFromPublic().
+            if ($resolved === null) {
+                $resolved = $this->resolveRegisterInheritFromPublic(schemaId: $schemaId);
+            }
+
+            // Step 3: tenant-wide IAppConfig default.
+            if ($resolved === null) {
+                $resolved = $this->inheritFromPublicTenantDefault();
+            }
+        } catch (\Throwable $e) {
+            $resolved = $this->inheritFromPublicTenantDefault();
+            $this->logger->error(
+                message: '[PermissionHandler] inheritFromPublic resolution failed; falling back to tenant default',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schemaId,
+                    'default'  => $resolved,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+        if ($schemaId !== null) {
+            $this->cachedInheritFromPublic[$schemaId] = $resolved;
+        }
+
+        return $resolved;
+    }//end resolveInheritFromPublic()
+
+    /**
+     * Read the tenant-wide inheritFromPublic default from IAppConfig.
+     *
+     * This is both the terminal cascade step and the fail-safe used when
+     * resolution errors out. When IAppConfig itself is unreachable it logs at
+     * error level and returns `true` (pre-PR posture) so a config-store outage
+     * does not hard-deny every authenticated read.
+     *
+     * @return bool The configured tenant default (true when unconfigured/unreachable).
+     */
+    public function inheritFromPublicTenantDefault(): bool
+    {
+        try {
+            // IAppConfig tolerates string forms ("true"/"1") here.
+            return $this->appConfig->getValueBool(app: 'openregister', key: 'rbac.inherit_from_public_default', default: true);
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                message: '[PermissionHandler] IAppConfig unreachable resolving inheritFromPublic default; assuming true',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return true;
+        }
+    }//end inheritFromPublicTenantDefault()
+
+    /**
+     * Resolve the register-level inheritFromPublic value, conservatively.
+     *
+     * A schema can belong to multiple registers. Rather than depending on the
+     * undefined scan order of "first register wins" — which would make a
+     * security verdict non-deterministic across nodes/restores — every register
+     * containing the schema is consulted and the most-restrictive explicit value
+     * wins: a single `false` disables inheritance even if other registers say
+     * `true`. Returns null when no register sets the flag (cascade falls through).
+     *
+     * @param int|null $schemaId The schema id (null when the schema is unsaved).
+     *
+     * @return bool|null false if any register disables inheritance, true if some
+     *                   enable it and none disable, null when no register sets it.
+     */
+    private function resolveRegisterInheritFromPublic(?int $schemaId): ?bool
+    {
+        if ($schemaId === null) {
+            return null;
+        }
+
+        $registerIds = [];
+        try {
+            $registerMapper = $this->container->get(RegisterMapper::class);
+            $registerIds    = $registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[PermissionHandler] Failed to list registers for schema; skipping register cascade',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'error' => $e->getMessage()]
+            );
+            return null;
+        }
+
+        $sawTrue = false;
+        foreach ($registerIds as $registerId) {
+            $registerAuth = $this->getRegisterAuthorization(registerId: $registerId);
+            if (is_array($registerAuth) === false || array_key_exists('inheritFromPublic', $registerAuth) === false) {
+                continue;
+            }
+
+            $value = $this->coerceStrictBoolOrLog(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId);
+            if ($value === false) {
+                // Most-restrictive wins: one explicit false disables inheritance.
+                return false;
+            }
+
+            if ($value === true) {
+                $sawTrue = true;
+            }
+        }//end foreach
+
+        if ($sawTrue === true) {
+            return true;
+        }
+
+        return null;
+    }//end resolveRegisterInheritFromPublic()
+
+    /**
+     * Strictly coerce an inheritFromPublic cascade value to bool, or null when unset.
+     *
+     * Only a literal `true`/`false` counts. Anything else (string "false",
+     * int 0, etc.) is treated as "unset" and logged — PHP's loose `(bool)
+     * "false" === true` would otherwise silently invert the gate on a
+     * seed/migration/CLI write that bypasses the schema validator.
+     *
+     * @param mixed    $value    The stored value.
+     * @param string   $level    The cascade level ('schema' | 'register'), for logging.
+     * @param int|null $schemaId The schema id, for logging.
+     *
+     * @return bool|null The boolean value, or null when the value is not a real boolean.
+     */
+    private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool
+    {
+        if ($value === true || $value === false) {
+            return $value;
+        }
+
+        if ($value !== null) {
+            $this->logger->warning(
+                message: '[PermissionHandler] Non-boolean inheritFromPublic value ignored; treating as unset',
+                context: [
+                    'level'    => $level,
+                    'schemaId' => $schemaId,
+                    'type'     => get_debug_type($value),
+                ]
+            );
+        }
+
+        return null;
+    }//end coerceStrictBoolOrLog()
 
     /**
      * Get the parent register for a schema.

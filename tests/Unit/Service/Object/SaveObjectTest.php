@@ -133,6 +133,8 @@ class SaveObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->logger,
             $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
             $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),

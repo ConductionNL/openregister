@@ -80,11 +80,13 @@ class RegisterSerializerTest extends TestCase
         $schema10 = $this->makeSchema(10, 'foo');
         $schema20 = $this->makeSchema(20, 'bar');
 
-        $this->schemaMapper->method('find')->willReturnMap(
-            [
-                [10, null, null, true, false, $schema10],
-                [20, null, null, true, false, $schema20],
-            ]
+        // The serializer calls find() with NAMED args (id:, _multitenancy:),
+        // so PHPUnit records only the supplied arguments — a positional
+        // willReturnMap never matches. Dispatch on the id instead.
+        $this->schemaMapper->method('find')->willReturnCallback(
+            function ($id) use ($schema10, $schema20) {
+                return ($id === 10) ? $schema10 : $schema20;
+            }
         );
 
         $result = $this->serializer->serialize($register, ['schemas']);

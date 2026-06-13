@@ -74,6 +74,8 @@ use OCP\IUserSession;
  */
 class FilesController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
 
     /**
      * File service for handling file operations
@@ -240,7 +242,8 @@ class FilesController extends Controller
         } catch (NotFoundException $e) {
             return new JSONResponse(data: ['error' => 'Files folder not found'], statusCode: 404);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($e);
         }//end try
     }//end index()
 
@@ -278,6 +281,14 @@ class FilesController extends Controller
         try {
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
+
+            // SEC-CTRL-5: enforce object-level read RBAC for authenticated callers too
+            // (not just NC mount visibility). Anonymous callers are gated separately by
+            // the published-file check below. find() applies the read permission check and
+            // throws NotAuthorizedException (403) when the caller may not read this object.
+            if ($this->isAnonymousRequest() === false) {
+                $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
+            }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
 
@@ -321,7 +332,7 @@ class FilesController extends Controller
             // Stream the file inline so browsers display images/logos directly.
             $response = new StreamResponse($file->fopen('r'));
             $response->addHeader('Content-Type', $file->getMimeType());
-            $response->addHeader('Content-Disposition', 'inline; filename="'.$file->getName().'"');
+            $response->addHeader('Content-Disposition', $this->buildContentDisposition('inline', $file->getName()));
             $response->addHeader('Content-Length', (string) $file->getSize());
 
             // Record download (counter + audit). Best-effort.
@@ -330,6 +341,9 @@ class FilesController extends Controller
             return $response;
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            // SEC-CTRL-5: read-permission denial maps to 403.
+            return new JSONResponse(data: ['error' => 'Forbidden'], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1059,6 +1073,13 @@ class FilesController extends Controller
             }
 
             // L2: resolve parent object for audit context (best-effort).
+            // TODO(SEC-CTRL-5): authenticated callers here are gated only by the file
+            // owner check inside FileService::getFileById()/checkOwnership() (deny-on-
+            // mismatch as of SEC-CTRL-5) and NC mount visibility. resolveParentObjectForFile()
+            // is currently a best-effort stub that returns null, so a full object-level read
+            // RBAC check (as done in show()) is not yet possible on this id-only path. Wire
+            // real parent-object resolution + PermissionHandler read check before relying on
+            // this endpoint for strict object-level isolation.
             $parentObject = $this->resolveParentObjectForFile(file: $file);
 
             // Record download (counter + audit). Best-effort.
@@ -1069,7 +1090,8 @@ class FilesController extends Controller
         } catch (NotFoundException $e) {
             return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($e);
         }//end try
     }//end downloadById()
 
@@ -1102,6 +1124,40 @@ class FilesController extends Controller
             return null;
         }
     }//end resolveParentObjectForFile()
+
+    /**
+     * Build an RFC 6266 compliant Content-Disposition header value.
+     *
+     * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
+     * bytes that break the header or allow header/response splitting. This emits a
+     * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
+     *
+     * @param string $disposition Either 'inline' or 'attachment'.
+     * @param string $filename    The raw file name.
+     *
+     * @return string The encoded Content-Disposition header value.
+     */
+    private function buildContentDisposition(string $disposition, string $filename): string
+    {
+        // Strip control characters (incl. CR/LF) that could split headers.
+        $clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
+        if ($clean === null) {
+            $clean = '';
+        }
+
+        // ASCII fallback: replace non-ASCII and quote/backslash with underscore.
+        $ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
+        if ($ascii === null) {
+            $ascii = '';
+        }
+
+        $ascii = str_replace(['\\', '"'], '_', $ascii);
+
+        // RFC 5987 / 6266 UTF-8 encoded form for capable clients.
+        $encoded = rawurlencode($clean);
+
+        return $disposition.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.$encoded;
+    }//end buildContentDisposition()
 
     /**
      * Get a human-readable error message for PHP file upload errors

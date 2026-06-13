@@ -45,6 +45,27 @@ class AuthorizationServiceTest extends TestCase
 
     private AuthorizationService $service;
 
+    /**
+     * Invoke a protected authorize* method on the service under test.
+     *
+     * The authorize{Jwt,OAuth,Basic,ApiKey}() methods are intentionally
+     * `protected` in the service (only the public dispatcher is callable
+     * from outside). These unit tests exercise each scheme in isolation,
+     * so we reach the protected method through reflection rather than
+     * weakening production visibility.
+     *
+     * @param string $method The protected method name.
+     * @param mixed  ...$args Positional arguments for the method.
+     *
+     * @return mixed The method's return value.
+     */
+    private function callAuth(string $method, ...$args)
+    {
+        $ref = new \ReflectionMethod($this->service, $method);
+        $ref->setAccessible(true);
+        return $ref->invokeArgs($this->service, $args);
+    }
+
     protected function setUp(): void
     {
         $this->userManager = $this->createMock(IUserManager::class);
@@ -303,7 +324,7 @@ class AuthorizationServiceTest extends TestCase
             ->with($user);
 
         $header = 'Basic ' . base64_encode('admin:password');
-        $this->service->authorizeBasic($header);
+        $this->callAuth('authorizeBasic',$header);
     }
 
     public function testAuthorizeBasicThrowsOnInvalidCredentials(): void
@@ -317,7 +338,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectExceptionMessage('Invalid username or password');
 
         $header = 'Basic ' . base64_encode('wrong:creds');
-        $this->service->authorizeBasic($header);
+        $this->callAuth('authorizeBasic',$header);
     }
 
     public function testAuthorizeBasicWithUsersAndGroupsParams(): void
@@ -336,7 +357,7 @@ class AuthorizationServiceTest extends TestCase
             ->with($user);
 
         $header = 'Basic ' . base64_encode('testuser:testpass');
-        $this->service->authorizeBasic($header, ['testuser'], ['testgroup']);
+        $this->callAuth('authorizeBasic',$header, ['testuser'], ['testgroup']);
     }
 
     public function testAuthorizeBasicWithPasswordContainingColon(): void
@@ -355,7 +376,7 @@ class AuthorizationServiceTest extends TestCase
             ->with($user);
 
         $header = 'Basic ' . base64_encode('admin:pass:extra');
-        $this->service->authorizeBasic($header);
+        $this->callAuth('authorizeBasic',$header);
     }
 
     public function testAuthorizeBasicEmptyDetailsOnFailure(): void
@@ -366,7 +387,7 @@ class AuthorizationServiceTest extends TestCase
 
         try {
             $header = 'Basic ' . base64_encode('bad:creds');
-            $this->service->authorizeBasic($header);
+            $this->callAuth('authorizeBasic',$header);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -384,7 +405,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('isLoggedIn')
             ->willReturn(true);
 
-        $this->service->authorizeOAuth('Bearer sometoken');
+        $this->callAuth('authorizeOAuth','Bearer sometoken');
         $this->assertTrue(true);
     }
 
@@ -393,7 +414,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid method');
 
-        $this->service->authorizeOAuth('Token sometoken');
+        $this->callAuth('authorizeOAuth','Token sometoken');
     }
 
     public function testAuthorizeOAuthThrowsWhenNotLoggedIn(): void
@@ -406,7 +427,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Not authorized');
 
-        $this->service->authorizeOAuth('Bearer sometoken');
+        $this->callAuth('authorizeOAuth','Bearer sometoken');
     }
 
     public function testAuthorizeOAuthThrowsWithBasicPrefix(): void
@@ -414,7 +435,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid method');
 
-        $this->service->authorizeOAuth('Basic dXNlcjpwYXNz');
+        $this->callAuth('authorizeOAuth','Basic dXNlcjpwYXNz');
     }
 
     public function testAuthorizeOAuthThrowsWithEmptyString(): void
@@ -422,13 +443,13 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid method');
 
-        $this->service->authorizeOAuth('');
+        $this->callAuth('authorizeOAuth','');
     }
 
     public function testAuthorizeOAuthInvalidMethodDetailsContainReason(): void
     {
         try {
-            $this->service->authorizeOAuth('Token abc');
+            $this->callAuth('authorizeOAuth','Token abc');
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -443,7 +464,7 @@ class AuthorizationServiceTest extends TestCase
             ->willReturn(false);
 
         try {
-            $this->service->authorizeOAuth('Bearer sometoken');
+            $this->callAuth('authorizeOAuth','Bearer sometoken');
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -458,7 +479,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('isLoggedIn')
             ->willReturn(true);
 
-        $this->service->authorizeOAuth('Bearertoken');
+        $this->callAuth('authorizeOAuth','Bearertoken');
         $this->assertTrue(true);
     }
 
@@ -482,7 +503,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeApiKey('valid-key-123', $keys);
+        $this->callAuth('authorizeApiKey','valid-key-123', $keys);
     }
 
     public function testAuthorizeApiKeyThrowsForInvalidKey(): void
@@ -490,7 +511,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid API key');
 
-        $this->service->authorizeApiKey('bad-key', ['valid-key' => 'admin']);
+        $this->callAuth('authorizeApiKey','bad-key', ['valid-key' => 'admin']);
     }
 
     public function testAuthorizeApiKeyThrowsWhenUserNotFound(): void
@@ -506,7 +527,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid API key');
 
-        $this->service->authorizeApiKey('valid-key', $keys);
+        $this->callAuth('authorizeApiKey','valid-key', $keys);
     }
 
     public function testAuthorizeApiKeyWithMultipleKeys(): void
@@ -529,7 +550,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeApiKey('key-two', $keys);
+        $this->callAuth('authorizeApiKey','key-two', $keys);
     }
 
     public function testAuthorizeApiKeyWithEmptyKeysMap(): void
@@ -537,13 +558,13 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid API key');
 
-        $this->service->authorizeApiKey('any-key', []);
+        $this->callAuth('authorizeApiKey','any-key', []);
     }
 
     public function testAuthorizeApiKeyEmptyDetailsOnInvalidKey(): void
     {
         try {
-            $this->service->authorizeApiKey('bad', ['good' => 'admin']);
+            $this->callAuth('authorizeApiKey','bad', ['good' => 'admin']);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -557,7 +578,7 @@ class AuthorizationServiceTest extends TestCase
             ->willReturn(null);
 
         try {
-            $this->service->authorizeApiKey('key', ['key' => 'ghost']);
+            $this->callAuth('authorizeApiKey','key', ['key' => 'ghost']);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -573,7 +594,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('No token has been provided');
 
-        $this->service->authorizeJwt('Bearer ');
+        $this->callAuth('authorizeJwt','Bearer ');
     }
 
     public function testAuthorizeJwtThrowsWhenEmptyBearer(): void
@@ -581,13 +602,13 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('No token has been provided');
 
-        $this->service->authorizeJwt('Bearer');
+        $this->callAuth('authorizeJwt','Bearer');
     }
 
     public function testAuthorizeJwtEmptyTokenDetails(): void
     {
         try {
-            $this->service->authorizeJwt('Bearer ');
+            $this->callAuth('authorizeJwt','Bearer ');
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -608,7 +629,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('could not be validated');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenEmptyIssuer(): void
@@ -626,7 +647,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('could not be validated');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtNoIssuerDetailsContainReason(): void
@@ -638,7 +659,7 @@ class AuthorizationServiceTest extends TestCase
         $token = $this->buildHmacJwt($payload, $secret);
 
         try {
-            $this->service->authorizeJwt('Bearer ' . $token);
+            $this->callAuth('authorizeJwt','Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -664,7 +685,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('not supported');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtInvalidAlgorithmDetailsContainReason(): void
@@ -680,7 +701,7 @@ class AuthorizationServiceTest extends TestCase
         $this->consumerMapper->method('findAll')->willReturn([$consumer]);
 
         try {
-            $this->service->authorizeJwt('Bearer ' . $token);
+            $this->callAuth('authorizeJwt','Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('algorithm', $e->getDetails());
@@ -707,7 +728,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('issuer was not found');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithHs256(): void
@@ -740,7 +761,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithHs384(): void
@@ -773,7 +794,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithHs512(): void
@@ -806,7 +827,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenSignatureInvalid(): void
@@ -831,7 +852,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('could not be validated');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSignatureInvalidDetailsContainReason(): void
@@ -853,7 +874,7 @@ class AuthorizationServiceTest extends TestCase
             ->willReturn([$consumer]);
 
         try {
-            $this->service->authorizeJwt('Bearer ' . $token);
+            $this->callAuth('authorizeJwt','Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -882,7 +903,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('expired');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenTokenMissingIat(): void
@@ -904,7 +925,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('no time of creation');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithDefaultExpiry(): void
@@ -936,7 +957,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenUnsupportedAlgorithm(): void
@@ -960,7 +981,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('not supported');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtWithMultipleConsumersReturnsFirst(): void
@@ -995,7 +1016,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     // ==========================================

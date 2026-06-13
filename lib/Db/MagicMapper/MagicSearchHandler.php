@@ -85,6 +85,16 @@ class MagicSearchHandler
     private ?bool $hasPgTrgm = null;
 
     /**
+     * PERF-4: request-scoped memo of the per-schema property-type and
+     * column-to-property maps, keyed by schema id. Building these ran
+     * sanitizeColumnName for every property on every row; memoising it makes
+     * it once-per-schema instead of once-per-row.
+     *
+     * @var array<int, array{types: array<string, string>, columns: array<string, string>}>
+     */
+    private array $schemaColumnMapCache = [];
+
+    /**
      * Constructor for MagicSearchHandler
      *
      * @param IDBConnection            $db                  Database connection for queries
@@ -247,6 +257,12 @@ class MagicSearchHandler
         // indexes for ORDER BY … LIMIT instead of sorting the full result set.
         if (empty($order) === false) {
             $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
+        } else {
+            // BUG-DB-4: without an explicit order, LIMIT/OFFSET pagination is
+            // non-deterministic (the database may return rows in any order),
+            // causing duplicates/gaps across pages. Add a stable default order
+            // on the monotonically increasing primary key.
+            $queryBuilder->addOrderBy('t._id', 'ASC');
         }
 
         $queryBuilder->setMaxResults($limit)
@@ -254,6 +270,59 @@ class MagicSearchHandler
 
         return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
     }//end searchObjects()
+
+    /**
+     * Apply the SAME multitenancy + RBAC access-control filters used by the
+     * list/search path to an arbitrary query builder.
+     *
+     * The single-object read path (MagicMapper::findInRegisterSchemaTable)
+     * historically skipped org/RBAC filtering entirely, creating a cross-org
+     * IDOR: a non-admin in org B could read an org-A object by id even though
+     * the list path correctly hid it. This method exposes the search path's
+     * access-control logic so the single-object read can enforce the exact
+     * same isolation, returning no row (→ 404, no existence leak) for objects
+     * the caller may not see.
+     *
+     * The query builder MUST already use the table alias `t` in its FROM clause,
+     * because the underlying org/RBAC conditions reference `t._organisation`,
+     * `t._owner`, etc.
+     *
+     * Public-published reads are preserved: resolveMultitenancyFlag() drops the
+     * org filter for schemas that grant `public` read, and the RBAC filter then
+     * grants the read — matching the list path exactly.
+     *
+     * @param IQueryBuilder $qb            Query builder (must use FROM alias `t`).
+     * @param Schema        $schema        Schema for access-control rules.
+     * @param bool          $_rbac         Whether to apply RBAC filtering.
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror the search-path posture.
+     */
+    public function applyAccessControlToQuery(
+        IQueryBuilder $qb,
+        Schema $schema,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): void {
+        // Mirror the list path: public schemas bypass multitenancy by default.
+        // No explicit multitenancy request exists on the single-object read path,
+        // so multitenancyExplicit is always false here.
+        $resolvedMultitenancy = $this->resolveMultitenancyFlag(
+            _multitenancy: $_multitenancy,
+            multitenancyExplicit: false,
+            schema: $schema
+        );
+
+        $this->applyAccessControlFilters(
+            qb: $qb,
+            schema: $schema,
+            _rbac: $_rbac,
+            _multitenancy: $resolvedMultitenancy,
+            multitenancyExplicit: false
+        );
+    }//end applyAccessControlToQuery()
 
     /**
      * Build a filtered query with all WHERE conditions applied.
@@ -1541,6 +1610,42 @@ class MagicSearchHandler
     }//end executeSearchQuery()
 
     /**
+     * Build (and memoise) the property-type and column-to-property maps for a schema.
+     *
+     * PERF-4: computing these maps ran sanitizeColumnName() for every property on
+     * every row. Memoising per schema id makes it once-per-schema-per-request.
+     *
+     * @param Schema $schema The schema to build maps for.
+     *
+     * @return array{types: array<string, string>, columns: array<string, string>}
+     */
+    private function getSchemaColumnMaps(Schema $schema): array
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId !== null && isset($this->schemaColumnMapCache[$schemaId]) === true) {
+            return $this->schemaColumnMapCache[$schemaId];
+        }
+
+        $propertyTypes       = [];
+        $columnToPropertyMap = [];
+        $properties          = $schema->getProperties();
+        if (is_array($properties) === true) {
+            foreach ($properties as $propName => $propDef) {
+                $propertyTypes[$propName]         = ($propDef['type'] ?? 'string');
+                $columnName                       = $this->sanitizeColumnName(name: $propName);
+                $columnToPropertyMap[$columnName] = $propName;
+            }
+        }
+
+        $maps = ['types' => $propertyTypes, 'columns' => $columnToPropertyMap];
+        if ($schemaId !== null) {
+            $this->schemaColumnMapCache[$schemaId] = $maps;
+        }
+
+        return $maps;
+    }//end getSchemaColumnMaps()
+
+    /**
      * Convert database row from dynamic table to ObjectEntity
      *
      * @param array    $row       Database row data
@@ -1548,7 +1653,7 @@ class MagicSearchHandler
      * @param Schema   $schema    Schema context
      * @param string   $tableName Target dynamic table name
      *
-     * @return ObjectEntity|null ObjectEntity object or null if conversion fails
+     * @return ObjectEntity|null
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -1570,13 +1675,11 @@ class MagicSearchHandler
             // Build property type map and column-to-property mapping from schema.
             // The column-to-property mapping allows us to restore original property names
             // (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
-            $propertyTypes       = [];
-            $columnToPropertyMap = [];
-            foreach ($schema->getProperties() as $propName => $propDef) {
-                $propertyTypes[$propName] = $propDef['type'] ?? 'string';
-                $columnName = $this->sanitizeColumnName(name: $propName);
-                $columnToPropertyMap[$columnName] = $propName;
-            }
+            // PERF-4: memoised per schema id so sanitizeColumnName runs once per
+            // schema rather than once per property per row.
+            $schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);
+            $propertyTypes       = $schemaMaps['types'];
+            $columnToPropertyMap = $schemaMaps['columns'];
 
             foreach ($row as $column => $value) {
                 if (str_starts_with($column, '_') === true) {

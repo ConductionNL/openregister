@@ -34,12 +34,12 @@
 								:href="objectUrl(obj)"
 								target="_blank"
 								:title="t('openregister', 'Open in OpenRegister')">
-								{{ obj.name || obj.uuid }}
+								{{ displayName(obj) }}
 							</a>
 						</div>
 						<NcButton
 							type="tertiary"
-							:aria-label="t('openregister', 'Remove link to {name}', { name: obj.name || obj.uuid })"
+							:aria-label="t('openregister', 'Remove link to {name}', { name: displayName(obj) })"
 							@click="unlinkObject(obj)">
 							<template #icon>
 								<Close :size="20" />
@@ -120,6 +120,24 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * OR sometimes derives object names as a JSON-encoded locale map
+		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
+		displayName(obj) {
+			const raw = obj.name || obj.uuid || ''
+			if (typeof raw === 'string' && raw.startsWith('{')) {
+				try {
+					const values = Object.values(JSON.parse(raw)).filter((v) => typeof v === 'string')
+					if (values.length > 0) return values[0]
+				} catch (e) {
+					// not JSON — fall through to the raw value
+				}
+			}
+			return raw
+		},
 		/**
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */

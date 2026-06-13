@@ -125,7 +125,8 @@ class RegistersControllerTest extends TestCase
             $this->oasService,
             $this->container,
             $this->groupManager,
-            $this->createMock(RegisterCacheHandler::class)
+            $this->createMock(RegisterCacheHandler::class),
+            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
         );
     }
 
@@ -651,49 +652,10 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(400, $result->getStatus());
     }
 
-    public function testPublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testPublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Publish error'));
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
-
-    public function testDepublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testDepublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Depublish error'));
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // RegistersController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H1). publishToGitHub() (tested below)
+    // is a separate, still-supported method.
 
     public function testPatchThrowsWhenNotFound(): void
     {
@@ -743,53 +705,8 @@ class RegistersControllerTest extends TestCase
         $this->assertStringContainsString('schema', $result->getData()['error']);
     }
 
-    // ── Publish/depublish success tests ────────────────────────────────
-
-    public function testPublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testPublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() success tests removed — endpoints retired
+    // for security (commit 29b1de3af, H1).
 
     // ── PublishToGitHub success test ───────────────────────────────────
 
@@ -1016,8 +933,13 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Only the existing schema should be present
-        $this->assertCount(1, $data['results'][0]['schemas']);
+        // RegisterSerializer::expandSchemas() now RETAINS an orphan schema ID
+        // at its original position when the schema cannot be resolved (rather
+        // than dropping it), so typed JSON clients still see the reference.
+        // Expect both entries: the expanded object (10) and the orphan ID (999).
+        $this->assertCount(2, $data['results'][0]['schemas']);
+        $this->assertSame(['id' => 10, 'title' => 'Schema A'], $data['results'][0]['schemas'][0]);
+        $this->assertSame(999, $data['results'][0]['schemas'][1]);
     }
 
     public function testIndexWithSelfStatsExtend(): void
@@ -1300,7 +1222,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1362,7 +1285,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1395,7 +1319,8 @@ class RegistersControllerTest extends TestCase
         $this->importService->expects($this->once())
             ->method('importFromExcel')
             ->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 

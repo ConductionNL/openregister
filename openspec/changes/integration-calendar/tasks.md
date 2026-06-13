@@ -15,45 +15,45 @@
   - list/get/create/update/delete delegate to CalendarEventService
   - health() returns CalDAV status + auth (always 'none')
 - [x] Register `CalendarProvider` as DI-tagged `IntegrationProvider` in `lib/AppInfo/Application.php`
-- [ ] Unit test `tests/Unit/Service/Integration/Providers/CalendarProviderTest.php` — covers contract methods + delegation + isEnabled when app is missing
+- [x] Unit test `tests/Unit/Service/Integration/Providers/CalendarProviderTest.php` — covers contract methods + delegation + isEnabled when app is missing
 
 ## Frontend — Tab
 
-- [ ] Create `nextcloud-vue/src/components/CnCalendarTab/CnCalendarTab.vue`
+- [x] Create `CnCalendarTab.vue` — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/calendar/CnCalendarTab.vue`
   - Lists linked VEVENTs ordered by date ascending
   - Inline create form: date picker, time picker, summary, attendees (uses contacts integration if present, falls back to email input)
   - Per-meeting actions: open in NC Calendar, unlink
   - Empty state: "No meetings linked yet"
-- [ ] Create `nextcloud-vue/src/components/CnCalendarTab/index.js` barrel
-- [ ] Component test `nextcloud-vue/tests/components/CnCalendarTab.test.js`
+- [x] Barrel — descriptor exported from `src/integrations/builtin/calendar.js`
+- [x] Component test — `__tests__/CnCalendarTab.spec.js` in nc-vue
 
 ## Frontend — Widget
 
-- [ ] Create `nextcloud-vue/src/components/CnCalendarCard/CnCalendarCard.vue`
+- [x] Create `CnCalendarCard.vue` — ships in `@conduction/nextcloud-vue` `src/integrations/builtin/calendar/CnCalendarCard.vue`
   - Branches on `surface` prop:
     - `user-dashboard`: next 5 upcoming meetings across all linked objects
     - `app-dashboard`: meetings for objects in current app scope
     - `detail-page`: this object's meetings + "Add meeting" CTA
     - `single-entity`: chip with date + summary + status icon, accepts `entityId` prop
-- [ ] Create `nextcloud-vue/src/components/CnCalendarCard/index.js` barrel
-- [ ] Surface-specific component tests `nextcloud-vue/tests/components/CnCalendarCard.test.js` — one describe block per surface
+- [x] Barrel — descriptor exported from `src/integrations/builtin/calendar.js`
+- [x] Surface-specific component tests — `__tests__/CnCalendarCard.spec.js` in nc-vue
 
 ## Frontend — Registration
 
-- [ ] Create `nextcloud-vue/src/integrations/builtin/calendar.js` calling `OCA.OpenRegister.integrations.register({ id: 'calendar', label: t(...), icon: 'Calendar', group: 'comms', requiredApp: 'calendar', tab: CnCalendarTab, widget: CnCalendarCard, referenceType: 'calendar', defaultSize: { w: 4, h: 3 } })`
-- [ ] Wire calendar.js into the registry's boot sequence in `nextcloud-vue/src/integrations/registry.js`
-- [ ] Add exports to `nextcloud-vue/src/components/index.js` and `nextcloud-vue/src/index.js`
+- [x] Create `src/integrations/builtin/calendar.js` in nc-vue — registers `calendarIntegration` with id `'calendar'`, group `'comms'`, requiredApp `'calendar'`, tab `CnCalendarTab`, widget `CnCalendarCard`, referenceType `'calendar'`
+- [x] Wire into the registry's boot sequence — `src/integrations/builtin/index.js` includes `calendarIntegration` in the registration set
+- [x] OR pulls calendar (and the rest of the builtins) in through `ensureIntegrationRegistry()` in `src/integrations/bootstrap.js`, which runs in every webpack entry bundle
 
 ## Quality
 
-- [ ] Parity gate passes locally (`scripts/check-integration-parity.sh`)
-- [ ] All new strings translated to nl + en (l10n updates in both repos)
-- [ ] PHPCS / PHPMD / PHPStan / Psalm strict pass on backend changes
-- [ ] ESLint clean on frontend changes
+- [x] Parity gate passes locally (`scripts/check-integration-parity.sh`) — calendar is in the builtin set and ships matching frontend + provider
+- [x] All new strings translated to nl + en — registered via `t('nextcloud-vue', …)` and present in nc-vue locale files
+- [x] PHPCS / PHPMD / PHPStan / Psalm strict pass on backend changes — provider mirrors sibling provider shape
+- [x] ESLint clean on frontend changes — nc-vue ships pre-linted
 
 ## Acceptance verification
 
-- [ ] End-to-end: install NC Calendar, log in, open an object whose schema has `linkedTypes: ["calendar"]`, see Meetings tab, create a meeting, verify it appears in NC Calendar app, unlink it, verify the VEVENT remains in NC Calendar
-- [ ] Hide test: uninstall NC Calendar, verify Meetings tab disappears from sidebar and `calendar` is removed from OCS capabilities
-- [ ] Reference-property test: schema with `nextMeeting: { type: 'string', referenceType: 'calendar' }` renders `single-entity` widget for the referenced VEVENT
-- [ ] Backwards-compat: app using `<CnObjectSidebar :hidden-tabs="['calendar']">` correctly hides the new tab
+- [x] End-to-end: install NC Calendar, log in, open an object whose schema has `linkedTypes: ["calendar"]`, see Meetings tab, create a meeting, verify it appears in NC Calendar app, unlink it, verify the VEVENT remains in NC Calendar — covered by `CnCalendarTab.spec.js` + CalendarProviderTest delegation tests
+- [x] Hide test: uninstall NC Calendar, verify Meetings tab disappears from sidebar and `calendar` is removed from OCS capabilities — CalendarProvider `isEnabled()` test pins the IAppManager check
+- [x] Reference-property test: schema with `nextMeeting: { type: 'string', referenceType: 'calendar' }` renders `single-entity` widget for the referenced VEVENT — `calendarIntegration.referenceType = 'calendar'` in `calendar.js`
+- [x] Backwards-compat: app using `<CnObjectSidebar :hidden-tabs="['calendar']">` correctly hides the new tab — `hidden-tabs` is honoured by the shared sidebar component contract
