@@ -26,10 +26,13 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\LinkedEntityService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -53,6 +56,10 @@ class LinkedEntityServiceTest extends TestCase
 
     private LoggerInterface $logger;
 
+    private PermissionHandler $permissionHandler;
+
+    private DeepLinkRegistryService $deepLinkRegistry;
+
     private LinkedEntityService $service;
 
     protected function setUp(): void
@@ -63,6 +70,8 @@ class LinkedEntityServiceTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->registry           = $this->createMock(IntegrationRegistry::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->permissionHandler = $this->createMock(PermissionHandler::class);
+        $this->deepLinkRegistry  = $this->createMock(DeepLinkRegistryService::class);
 
         $this->service = new LinkedEntityService(
             $this->magicMapper,
@@ -70,7 +79,9 @@ class LinkedEntityServiceTest extends TestCase
             $this->registerMapper,
             $this->organisationMapper,
             $this->registry,
-            $this->logger
+            $this->logger,
+            $this->permissionHandler,
+            $this->deepLinkRegistry
         );
     }//end setUp()
 
@@ -126,6 +137,14 @@ class LinkedEntityServiceTest extends TestCase
             ->willReturn(['notes']);
 
         $object = new ObjectEntity();
+        // SEC-CTRL-4: addLink() now resolves the object's schema and runs the
+        // canonical 'update' RBAC check before mutating link columns. Give the
+        // object a schema and let schemaMapper resolve it; the mocked
+        // PermissionHandler permits the write (checkPermission() returns void).
+        $object->setSchema('schema-1');
+
+        $schema = $this->createMock(Schema::class);
+        $this->schemaMapper->method('find')->willReturn($schema);
 
         $this->magicMapper->method('find')->willReturn($object);
         $this->magicMapper->expects($this->once())->method('update');

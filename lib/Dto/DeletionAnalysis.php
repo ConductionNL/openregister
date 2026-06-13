@@ -87,10 +87,10 @@ class DeletionAnalysis
      */
     public function __construct(
         bool $deletable,
-        array $cascadeTargets,
-        array $nullifyTargets,
-        array $defaultTargets,
-        array $blockers,
+        array $cascadeTargets=[],
+        array $nullifyTargets=[],
+        array $defaultTargets=[],
+        array $blockers=[],
         array $chainPaths=[],
     ) {
         $this->deletable      = $deletable;
