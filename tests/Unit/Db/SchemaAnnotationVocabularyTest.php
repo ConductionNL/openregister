@@ -21,6 +21,7 @@ namespace Unit\Db;
 
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 /**
  * Tests for Schema::ANNOTATION_VOCABULARY and configuration round-trip.
@@ -41,8 +42,14 @@ class SchemaAnnotationVocabularyTest extends TestCase
      */
     public function testAnnotationVocabularyContainsArchivalAndSeed(): void
     {
-        $this->assertContains('x-openregister-archival', Schema::ANNOTATION_VOCABULARY);
-        $this->assertContains('x-openregister-seed', Schema::ANNOTATION_VOCABULARY);
+        // ANNOTATION_VOCABULARY is a private constant on Schema; read it via
+        // reflection rather than direct access (mirrors the convention used
+        // by SchemaArchivalVocabularyTest).
+        $vocabulary = (new ReflectionClass(Schema::class))->getConstant('ANNOTATION_VOCABULARY');
+
+        $this->assertIsArray($vocabulary);
+        $this->assertContains('x-openregister-archival', $vocabulary);
+        $this->assertContains('x-openregister-seed', $vocabulary);
     }
 
     /**

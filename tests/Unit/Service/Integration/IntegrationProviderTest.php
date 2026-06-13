@@ -20,8 +20,17 @@ class ConcreteTestProvider extends AbstractIntegrationProvider
     public function getId(): string { return 'test'; }
     public function getLabel(): string { return 'Test Integration'; }
     public function getIcon(): string { return 'TestIcon'; }
-    public function getGroup(): string { return 'builtin'; }
+    public function getGroup(): ?string { return 'builtin'; }
     public function isEnabled(): bool { return true; }
+
+    public function getRequiredApp(): ?string { return null; }
+
+    public function getStorageStrategy(): string { return 'local'; }
+
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    {
+        return [];
+    }
 }
 
 /**
@@ -77,9 +86,9 @@ class IntegrationProviderTest extends TestCase
     /**
      * @spec openspec/changes/integration-openproject/tasks.md#task-1
      */
-    public function testAuthRequirementsDefaultsToNull(): void
+    public function testAuthRequirementsDefaultsToNone(): void
     {
-        $this->assertNull($this->provider->authRequirements());
+        $this->assertSame(expected: ['type' => 'none'], actual: $this->provider->authRequirements());
     }
 
     /**
@@ -103,9 +112,16 @@ class IntegrationProviderTest extends TestCase
     /**
      * @spec openspec/changes/integration-openproject/tasks.md#task-1
      */
-    public function testHealthDefaultsToAvailable(): void
+    public function testHealthDefaultsToOkConfigured(): void
     {
-        $this->assertSame(expected: 'available', actual: $this->provider->health());
+        $this->assertSame(
+            expected: [
+                'status'     => 'ok',
+                'authStatus' => 'configured',
+                'message'    => null,
+            ],
+            actual: $this->provider->health()
+        );
     }
 
     /**

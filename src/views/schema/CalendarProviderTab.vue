@@ -47,7 +47,6 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-dtstart">{{ t('openregister', 'Start Date Field') }} *</label>
 				<NcSelect
-						input-label="Local Config Dtstart"
 					id="cal-dtstart"
 					v-model="localConfig.dtstart"
 					input-label="Local Config Dtstart"
@@ -59,7 +58,6 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-dtend">{{ t('openregister', 'End Date Field') }}</label>
 				<NcSelect
-						input-label="Local Config Dtend"
 					id="cal-dtend"
 					v-model="localConfig.dtend"
 					input-label="Local Config Dtend"
@@ -97,7 +95,6 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-location">{{ t('openregister', 'Location Field') }}</label>
 				<NcSelect
-						input-label="Local Config Location Field"
 					id="cal-location"
 					v-model="localConfig.locationField"
 					input-label="Local Config Location Field"

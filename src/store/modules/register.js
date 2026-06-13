@@ -102,7 +102,7 @@ export const useRegisterStore = defineStore('register', {
 			if (search === null && inFlightRefresh) {
 				return inFlightRefresh
 			}
-			let endpoint ='/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
+			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}

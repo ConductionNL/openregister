@@ -41,7 +41,7 @@ class ArchivalDeleteGateTest extends TestCase
      */
     public function testExceptionCodeIs403(): void
     {
-        $exception = new ArchivalImmutableException(schema: 'call_log', operation: 'delete');
+        $exception = new ArchivalImmutableException(schemaIdentifier: 'call_log', operation: 'delete');
         $this->assertSame(403, $exception->getCode());
     }
 
@@ -50,8 +50,8 @@ class ArchivalDeleteGateTest extends TestCase
      */
     public function testExceptionBodyStructure(): void
     {
-        $exception = new ArchivalImmutableException(schema: 'call_log', operation: 'delete');
-        $body      = $exception->getBody();
+        $exception = new ArchivalImmutableException(schemaIdentifier: 'call_log', operation: 'delete');
+        $body      = $exception->toResponseBody();
 
         $this->assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $body['error']);
         $this->assertSame('call_log', $body['schema']);
@@ -119,7 +119,7 @@ class ArchivalDeleteGateTest extends TestCase
             $config = $schema->getConfiguration() ?? [];
             if (isset($config['x-openregister-archival']) === true) {
                 throw new ArchivalImmutableException(
-                    schema: 'test-schema',
+                    schemaIdentifier: 'test-schema',
                     operation: 'delete'
                 );
             }

@@ -230,7 +230,7 @@ class DeckLinksController extends Controller
             );
 
             // AD-1: persist sticky schema-level default after each successful create.
-            $this->settingsService->setDeckDefaultBoard(
+            $this->settingsService->setDeckDefault(
                 schemaSlug: $schema,
                 boardId: $boardId,
                 stackId: $stackId,
@@ -375,7 +375,7 @@ class DeckLinksController extends Controller
             return new JSONResponse(['error' => 'boardId and stackId are required'], 400);
         }
 
-        $this->settingsService->setDeckDefaultBoard(
+        $this->settingsService->setDeckDefault(
             schemaSlug: $schema,
             boardId: $boardId,
             stackId: $stackId,

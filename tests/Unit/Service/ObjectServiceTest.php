@@ -2024,7 +2024,7 @@ class ObjectServiceTest extends TestCase
 		$this->assertCount(1, $uuids);
 	}
 
-	// ── 54. provisionObjectFolder ────────────────────────────────────
+	// ── 54. ensureObjectFolderExists ─────────────────────────────────
 
 	public function testEnsureObjectFolderExistsCreatesFolder(): void
 	{
@@ -2043,7 +2043,7 @@ class ObjectServiceTest extends TestCase
 			->method('update')
 			->willReturnArgument(0);
 
-		$this->service->provisionObjectFolder($entity);
+		$this->service->ensureObjectFolderExists($entity);
 
 		$this->assertSame('42', $entity->getFolder());
 	}
@@ -2059,7 +2059,7 @@ class ObjectServiceTest extends TestCase
 			->willThrowException(new Exception('Folder creation failed'));
 
 		// Should not throw - exception is caught
-		$this->service->provisionObjectFolder($entity);
+		$this->service->ensureObjectFolderExists($entity);
 
 		$this->assertNull($entity->getFolder());
 	}
@@ -2201,10 +2201,10 @@ class ObjectServiceTest extends TestCase
 		$this->invokePrivate('validateObjectIfRequired', [[]]);
 	}
 
-	// ── 55d. provisionObjectFolder when getFolderId returns null ───────
+	// ── 55d. ensureObjectFolderExists when getFolderId returns null ────
 
 	/**
-	 * Test provisionObjectFolder sets folder to null and still calls update
+	 * Test ensureObjectFolderExists sets folder to null and still calls update
 	 * when folderNode->getId() returns null (entity needs persisting regardless).
 	 */
 	public function testEnsureObjectFolderExistsCallsUpdateWhenNodeIdNull(): void
@@ -2226,7 +2226,7 @@ class ObjectServiceTest extends TestCase
 			->method('update')
 			->willReturnArgument(0);
 
-		$this->service->provisionObjectFolder($entity);
+		$this->service->ensureObjectFolderExists($entity);
 
 		// Folder should be null since getId() returned null.
 		$this->assertNull($entity->getFolder());

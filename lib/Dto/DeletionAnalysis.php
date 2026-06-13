@@ -120,4 +120,21 @@ class DeletionAnalysis
             chainPaths: []
         );
     }//end empty()
+
+    /**
+     * Convert the analysis to an array suitable for JSON serialization.
+     *
+     * @return array<string,mixed> The analysis as an associative array.
+     */
+    public function toArray(): array
+    {
+        return [
+            'deletable'      => $this->deletable,
+            'cascadeTargets' => $this->cascadeTargets,
+            'nullifyTargets' => $this->nullifyTargets,
+            'defaultTargets' => $this->defaultTargets,
+            'blockers'       => $this->blockers,
+            'chainPaths'     => $this->chainPaths,
+        ];
+    }//end toArray()
 }//end class
