@@ -180,6 +180,7 @@ export default {
 		objectId: {
 			immediate: true,
 			/**
+			 * @param newId
 			 * @spec exclude watcher refetching events on objectId change, UI plumbing
 			 */
 			handler(newId) {
@@ -211,6 +212,7 @@ export default {
 		},
 
 		/**
+		 * @param event
 		 * @spec exclude store passthrough unlinking event + change emit; event-relations contract owned by integration-calendar capability
 		 */
 		async unlinkEvent(event) {
@@ -240,6 +242,7 @@ export default {
 		},
 
 		/**
+		 * @param value
 		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formatDate(value) {

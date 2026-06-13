@@ -149,18 +149,21 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
 		/**
+		 * @param newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		type(newVal) {
 			this.selectedType = newVal
 		},
 		/**
+		 * @param newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		category(newVal) {
@@ -183,6 +186,7 @@ export default {
 			}, 500)
 		},
 		/**
+		 * @param type
 		 * @spec exclude filter-state writer emitting update:type to parent, UI plumbing
 		 */
 		updateType(type) {
@@ -190,6 +194,7 @@ export default {
 			this.$emit('update:type', type)
 		},
 		/**
+		 * @param category
 		 * @spec exclude filter-state writer emitting update:category to parent, UI plumbing
 		 */
 		updateCategory(category) {

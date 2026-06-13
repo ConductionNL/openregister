@@ -29,11 +29,6 @@ use ReflectionClass;
 
 /**
  * Test class for SolrNightlyWarmupJob
- *
- * NOTE: getWarmupConfiguration() calls \OC::$server->get(\OCP\IConfig::class).
- * Since IConfig is a core NC service, the container always returns the real
- * implementation regardless of registerService() overrides. Config-value tests
- * therefore write to the real IConfig and restore values in tearDown().
  */
 class SolrNightlyWarmupJobTest extends TestCase
 {
@@ -41,12 +36,8 @@ class SolrNightlyWarmupJobTest extends TestCase
     private SettingsService&MockObject $settingsService;
     private SchemaMapper&MockObject $schemaMapper;
     private LoggerInterface&MockObject $logger;
-    /** @var IConfig Real Nextcloud IConfig instance */
-    private IConfig $realConfig;
+    private IConfig&MockObject $config;
     private SolrNightlyWarmupJob $job;
-
-    /** @var array<string, string> Config values to restore in tearDown */
-    private array $originalConfigValues = [];
 
     protected function setUp(): void
     {
@@ -56,49 +47,17 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->schemaMapper    = $this->createMock(SchemaMapper::class);
         $this->logger          = $this->createMock(LoggerInterface::class);
-        $this->realConfig      = \OC::$server->get(IConfig::class);
-
-        // Register mocks in the Nextcloud DI container.
-        \OC::$server->registerService(IndexService::class, function () {
-            return $this->indexService;
-        });
-        \OC::$server->registerService(SettingsService::class, function () {
-            return $this->settingsService;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () {
-            return $this->schemaMapper;
-        });
-        \OC::$server->registerService(LoggerInterface::class, function () {
-            return $this->logger;
-        });
+        $this->config          = $this->createMock(IConfig::class);
 
         $timeFactory = $this->createMock(ITimeFactory::class);
-        $this->job   = new SolrNightlyWarmupJob($timeFactory);
-    }
-
-    protected function tearDown(): void
-    {
-        // Restore any app config values changed during tests.
-        foreach ($this->originalConfigValues as $key => $value) {
-            if ($value === '') {
-                $this->realConfig->deleteAppValue('openregister', $key);
-            } else {
-                $this->realConfig->setAppValue('openregister', $key, $value);
-            }
-        }
-        parent::tearDown();
-    }
-
-    /**
-     * Save current config value and set a new one for the test.
-     */
-    private function setAppConfigValue(string $key, string $newValue): void
-    {
-        // Only save original once per key per test.
-        if (!array_key_exists($key, $this->originalConfigValues)) {
-            $this->originalConfigValues[$key] = $this->realConfig->getAppValue('openregister', $key, '');
-        }
-        $this->realConfig->setAppValue('openregister', $key, $newValue);
+        $this->job   = new SolrNightlyWarmupJob(
+            time: $timeFactory,
+            indexService: $this->indexService,
+            settingsService: $this->settingsService,
+            schemaMapper: $this->schemaMapper,
+            logger: $this->logger,
+            config: $this->config,
+        );
     }
 
     /**
@@ -148,7 +107,6 @@ class SolrNightlyWarmupJobTest extends TestCase
 
     public function testRunSkipsWhenSolrEnabledKeyMissing(): void
     {
-        // 'enabled' missing → defaults to false.
         $this->settingsService
             ->method('getSolrSettings')
             ->willReturn([]);
@@ -182,7 +140,7 @@ class SolrNightlyWarmupJobTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Configuration parsing via real IConfig
+    // Configuration parsing via mock IConfig
     // -------------------------------------------------------------------------
 
     public function testRunUsesDefaultMaxObjectsWhenNotConfigured(): void
@@ -191,10 +149,11 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
 
-        // Ensure the key is not set so defaults apply.
-        $this->realConfig->deleteAppValue('openregister', 'solr_nightly_max_objects');
+        $this->config->method('getAppValue')
+            ->willReturnCallback(static function (string $app, string $key, string $default = ''): string {
+                return $default;
+            });
 
-        // positional: schemas, maxObjects, mode, collectErrors
         $this->indexService
             ->expects($this->once())
             ->method('warmupIndex')
@@ -210,7 +169,13 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
 
-        $this->setAppConfigValue('solr_nightly_max_objects', '25000');
+        $this->config->method('getAppValue')
+            ->willReturnCallback(static function (string $app, string $key, string $default = ''): string {
+                if ($key === 'solr_nightly_max_objects') {
+                    return '25000';
+                }
+                return $default;
+            });
 
         $this->indexService
             ->expects($this->once())
@@ -227,7 +192,13 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
 
-        $this->setAppConfigValue('solr_nightly_mode', 'hyper');
+        $this->config->method('getAppValue')
+            ->willReturnCallback(static function (string $app, string $key, string $default = ''): string {
+                if ($key === 'solr_nightly_mode') {
+                    return 'hyper';
+                }
+                return $default;
+            });
 
         $this->indexService
             ->expects($this->once())
@@ -244,7 +215,13 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
 
-        $this->setAppConfigValue('solr_nightly_collect_errors', 'true');
+        $this->config->method('getAppValue')
+            ->willReturnCallback(static function (string $app, string $key, string $default = ''): string {
+                if ($key === 'solr_nightly_collect_errors') {
+                    return 'true';
+                }
+                return $default;
+            });
 
         $this->indexService
             ->expects($this->once())
@@ -264,6 +241,7 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->settingsService->method('getSolrSettings')->willReturn(['enabled' => true]);
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
+        $this->config->method('getAppValue')->willReturnCallback(static fn($a, $k, $d = '') => $d);
 
         $this->indexService->method('warmupIndex')->willReturn([
             'success'            => true,
@@ -294,6 +272,7 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->settingsService->method('getSolrSettings')->willReturn(['enabled' => true]);
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
+        $this->config->method('getAppValue')->willReturnCallback(static fn($a, $k, $d = '') => $d);
 
         $this->indexService->method('warmupIndex')->willReturn([
             'success'    => true,
@@ -322,6 +301,7 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->settingsService->method('getSolrSettings')->willReturn(['enabled' => true]);
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
+        $this->config->method('getAppValue')->willReturnCallback(static fn($a, $k, $d = '') => $d);
 
         $this->indexService->method('warmupIndex')->willReturn([
             'success' => false,
@@ -344,6 +324,7 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->settingsService->method('getSolrSettings')->willReturn(['enabled' => true]);
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
+        $this->config->method('getAppValue')->willReturnCallback(static fn($a, $k, $d = '') => $d);
 
         $this->indexService
             ->method('warmupIndex')
@@ -363,6 +344,7 @@ class SolrNightlyWarmupJobTest extends TestCase
         $this->settingsService->method('getSolrSettings')->willReturn(['enabled' => true]);
         $this->indexService->method('isAvailable')->willReturn(true);
         $this->schemaMapper->method('findAll')->willReturn([]);
+        $this->config->method('getAppValue')->willReturnCallback(static fn($a, $k, $d = '') => $d);
 
         $this->indexService
             ->method('warmupIndex')
@@ -391,6 +373,7 @@ class SolrNightlyWarmupJobTest extends TestCase
     {
         $this->settingsService->method('getSolrSettings')->willReturn(['enabled' => true]);
         $this->indexService->method('isAvailable')->willReturn(true);
+        $this->config->method('getAppValue')->willReturnCallback(static fn($a, $k, $d = '') => $d);
 
         $schema1 = new Schema();
         $schema2 = new Schema();

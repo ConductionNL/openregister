@@ -232,6 +232,7 @@ export default {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
 			/**
+			 * @param newSchemaItem
 			 * @spec exclude UI watcher — reloads the object count when the schema item changes.
 			 */
 			handler(newSchemaItem) {
@@ -244,6 +245,7 @@ export default {
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
 			/**
+			 * @param newDialog
 			 * @spec exclude UI watcher — loads the object count when the dialog opens.
 			 */
 			handler(newDialog) {
@@ -319,6 +321,7 @@ export default {
 		},
 
 		/**
+		 * @param object
 		 * @spec exclude UI navigation stub — placeholder for viewing an object's details.
 		 */
 		viewObjectDetails(_object) {
