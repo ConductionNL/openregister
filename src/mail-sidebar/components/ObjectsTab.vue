@@ -30,6 +30,10 @@
 					@drop.prevent="onAttachmentDrop($event, obj)">
 					<div class="or-mail-object-card__header">
 						<div class="or-mail-object-card__title">
+							<component
+								:is="schemaIconComponent(obj.schemaIcon)"
+								:size="20"
+								class="or-mail-object-card__icon" />
 							<a
 								:href="objectUrl(obj)"
 								target="_blank"
@@ -92,6 +96,7 @@ import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import RemoveConnectionDialog from '../dialogs/RemoveConnectionDialog.vue'
+import { schemaIconComponent } from '../icons.js'
 
 export default {
 	name: 'ObjectsTab',
@@ -131,6 +136,7 @@ export default {
 	},
 	methods: {
 		t,
+		schemaIconComponent,
 		/**
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
@@ -150,9 +156,17 @@ export default {
 			return raw
 		},
 		/**
+		 * Link to the owning app's detail page when the backend resolved a
+		 * deep link for this object's schema (registered by leaf apps via the
+		 * deep-link registry); otherwise fall back to OpenRegister's own
+		 * object page.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		objectUrl(obj) {
+			if (obj.url) {
+				return obj.url
+			}
 			return generateUrl('/apps/openregister/registers/{register}/{schemaId}/{uuid}', {
 				register: obj.register,
 				schemaId: obj.schemaId,

@@ -47,12 +47,20 @@
 						v-if="hasCreateTemplate(schema)"
 						type="button"
 						class="or-action-create"
-						@click="createFromEmail(schema)">
+						@click="openCreate(schema)">
 						{{ t('openregister', 'New {name} from this email', { name: schema.title }) }}
 					</button>
 				</template>
 			</div>
 		</div>
+
+		<CreateConnectedObjectDialog
+			:show="createDialog.show"
+			:schema="createDialog.schema"
+			:initial-data="createDialog.data"
+			:saving="createSaving"
+			@cancel="closeCreate"
+			@confirm="submitCreate" />
 	</div>
 </template>
 
@@ -65,11 +73,13 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import CreateConnectedObjectDialog from '../dialogs/CreateConnectedObjectDialog.vue'
 
 export default {
 	name: 'ActionsTab',
 	components: {
 		NcLoadingIcon,
+		CreateConnectedObjectDialog,
 	},
 	props: {
 		accountId: { type: Number, default: null },
@@ -88,6 +98,9 @@ export default {
 			creating: {},
 			linking: {},
 			envelopeCache: {},
+			// Create-object dialog state.
+			createDialog: { show: false, schema: null, data: {} },
+			createSaving: false,
 		}
 	},
 	async created() {
@@ -314,15 +327,14 @@ export default {
 			return data
 		},
 		/**
-		 * Create a new object from the current email via the schema's
-		 * mailObjectTemplate, then link the email to it.
+		 * Open the create-object dialog, prefilled from the schema's
+		 * mailObjectTemplate applied to the current email.
 		 *
 		 * @spec openspec/changes/integration-email/tasks.md
 		 */
-		async createFromEmail(schema) {
+		async openCreate(schema) {
 			if (!this.accountId || !this.messageId || this.creating[schema.id]) return
-			const register = this.registerCache[schema.id]
-			if (!register) return
+			if (!this.registerCache[schema.id]) return
 
 			this.$set(this.creating, schema.id, true)
 			try {
@@ -331,19 +343,50 @@ export default {
 					schema.configuration.mailObjectTemplate,
 					this.buildPlaceholders(envelope),
 				)
+				this.createDialog = { show: true, schema, data }
+			} catch (err) {
+				showError(t('openregister', 'Could not read this email'))
+				console.error('[ActionsTab] Open create failed:', err)
+			} finally {
+				this.$set(this.creating, schema.id, false)
+			}
+		},
+		/**
+		 * Dismiss the create-object dialog.
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		closeCreate() {
+			if (this.createSaving) return
+			this.createDialog = { show: false, schema: null, data: {} }
+		},
+		/**
+		 * Create the object from the (possibly edited) dialog data, then
+		 * connect the email to it.
+		 *
+		 * @spec openspec/changes/integration-email/tasks.md
+		 */
+		async submitCreate(data) {
+			const schema = this.createDialog.schema
+			if (!schema) return
+			const register = this.registerCache[schema.id]
+			if (!register) return
+
+			this.createSaving = true
+			try {
 				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
 					register: register.id,
 					schema: schema.id,
 				})
 				const response = await axios.post(url, data, { timeout: 15000 })
-				const created = response.data
-				await this.linkObject(schema, created)
+				await this.linkObject(schema, response.data)
+				this.createDialog = { show: false, schema: null, data: {} }
 			} catch (err) {
 				const detail = err.response?.data?.error || err.response?.data || ''
 				showError(t('openregister', 'Failed to create {name} from email', { name: schema.title }))
 				console.error('[ActionsTab] Create from email failed:', detail, err)
 			} finally {
-				this.$set(this.creating, schema.id, false)
+				this.createSaving = false
 			}
 		},
 		/**

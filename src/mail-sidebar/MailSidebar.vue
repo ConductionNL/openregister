@@ -130,10 +130,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-4
 		 */
 		sidebarSubname() {
-			if (!this.isMessageView) {
-				return ''
-			}
-			return t('openregister', 'Mail Integration')
+			return ''
 		},
 		/**
 		 * The Connections tab is disabled once we know this email has no
