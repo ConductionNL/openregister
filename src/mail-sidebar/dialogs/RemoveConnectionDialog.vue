@@ -8,6 +8,10 @@
 		<p>
 			{{ t('openregister', 'Remove the connection between this email and {name}?', { name }) }}
 		</p>
+		<p class="or-remove-connection-dialog__warning">
+			<AlertOutline :size="18" class="or-remove-connection-dialog__warning-icon" />
+			<span>{{ t('openregister', 'This cannot be undone.') }}</span>
+		</p>
 
 		<template #actions>
 			<NcButton
@@ -47,6 +51,7 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 
 export default {
 	name: 'RemoveConnectionDialog',
@@ -56,6 +61,7 @@ export default {
 		NcLoadingIcon,
 		Cancel,
 		LinkVariantOff,
+		AlertOutline,
 	},
 	props: {
 		show: {
@@ -76,3 +82,18 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+.or-remove-connection-dialog__warning {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 8px;
+	color: var(--color-warning-text, var(--color-error));
+	font-weight: 500;
+}
+
+.or-remove-connection-dialog__warning-icon {
+	flex-shrink: 0;
+}
+</style>
