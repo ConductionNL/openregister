@@ -121,12 +121,15 @@ class ZaaktypeAuthorizationService
      */
     public function levelsAtOrBelow(string $maxLevel): array
     {
-        $maxOrdinal = $this->confidentialityOrdinal(level: $maxLevel);
-        if ($maxOrdinal === null) {
-            return [];
-        }
-
-        return array_slice(self::VERTROUWELIJKHEIDAANDUIDING_LEVELS, 0, ($maxOrdinal + 1));
+        // Derive the allow-list from the same ordinal comparison used for
+        // single-object access decisions, so the list-filter allow-set and the
+        // single-object verdict can never disagree (no list-vs-find drift).
+        return array_values(
+            array_filter(
+                self::VERTROUWELIJKHEIDAANDUIDING_LEVELS,
+                fn(string $level): bool => $this->isAccessibleAtClearance(maxLevel: $maxLevel, objectLevel: $level)
+            )
+        );
     }//end levelsAtOrBelow()
 
     /**

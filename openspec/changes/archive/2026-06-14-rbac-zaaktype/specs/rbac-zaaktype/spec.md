@@ -1,5 +1,5 @@
 ---
-status: partial
+status: done
 ---
 
 # RBAC per Zaaktype
@@ -20,7 +20,7 @@ This spec is a configuration and extension layer on top of existing RBAC infrast
 - **Audit trail (partially implemented)**: `AuditTrail` entity exists with `confidentiality` field, but specific `rbac.permission_granted`/`rbac.permission_revoked` events are not yet logged.
 - **What this spec adds**: User-level permission overrides (delegation), permission matrix UI, bulk permission assignment/templates, delegation with expiry, register-level default authorization cascade, and VNG compliance test suite.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Authorization policies MUST be configurable per schema (zaaktype)
 Each schema in a register MUST support an authorization policy that defines which Nextcloud groups or users may perform CRUD operations on its objects. The authorization block on the schema entity SHALL be the primary mechanism for zaaktype-scoped access control, where each schema maps to a zaaktype or objecttype.
