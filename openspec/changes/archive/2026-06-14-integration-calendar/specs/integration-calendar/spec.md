@@ -13,7 +13,7 @@ Surface Nextcloud Calendar VEVENT entries linked to OpenRegister objects through
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Calendar Provider Registration
 

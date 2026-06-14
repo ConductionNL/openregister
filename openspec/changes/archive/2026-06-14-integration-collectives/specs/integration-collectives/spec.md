@@ -13,19 +13,34 @@ Link NC Collectives (team wikis) pages to OR objects. Native alternative to the 
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Collectives Provider Registration
 
-`CollectivesProvider` registered with id='collectives', group='docs', requiredApp='collectives', storage='link-table'.
+The system SHALL register `CollectivesProvider` with id='collectives', group='docs', requiredApp='collectives', storage='link-table'.
+
+#### Scenario: Collectives provider is registered
+
+- **WHEN** the integration registry is enumerated
+- **THEN** the system MUST include a provider with id='collectives', group='docs', requiredApp='collectives', and storage='link-table'
 
 ### Requirement: Link-Only (No Create)
 
 Integration SHALL support linking existing pages; page creation lives in Collectives.
 
+#### Scenario: Linking existing pages is supported
+
+- **WHEN** a user links a Collectives page to an object
+- **THEN** the system MUST support linking the existing page without creating one in OR
+
 ### Requirement: Markdown Preview in Tab
 
 Tab SHALL render page content via markdown (safe subset) with collapsible overflow.
+
+#### Scenario: Tab renders markdown preview
+
+- **WHEN** the Collectives tab renders a linked page
+- **THEN** the system MUST render the page content via markdown (safe subset) with collapsible overflow
 
 ### Requirement: Detail-Page Surface Renders Inline Content
 
@@ -49,6 +64,16 @@ Unlike other integrations, `CnCollectivesCard` at `surface='detail-page'` SHALL 
 
 `referenceType: 'collectives'` SHALL render a page-title chip at single-entity surface.
 
+#### Scenario: Collectives reference renders a page-title chip
+
+- **WHEN** a schema property declares `referenceType: 'collectives'`
+- **THEN** the system MUST render a page-title chip at the single-entity surface
+
 ### Requirement: Permission Inheritance
 
-`requiresPermission() === null`; Collectives ACLs apply.
+The provider SHALL declare `requiresPermission() === null`; Collectives ACLs apply.
+
+#### Scenario: Collectives ACLs govern access
+
+- **WHEN** a user accesses the collectives integration
+- **THEN** the system MUST defer access control to Collectives' own ACLs

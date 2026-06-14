@@ -13,15 +13,26 @@ Link NC Analytics reports to OR objects/schemas with embedded chart rendering vi
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Analytics Provider Registration
 
-`AnalyticsProvider` registered with id='analytics', group='workflow', requiredApp='analytics', storage='link-table'.
+The system SHALL register `AnalyticsProvider` with id='analytics', group='workflow', requiredApp='analytics', storage='link-table'.
+
+#### Scenario: Analytics provider is registered
+
+- **WHEN** the integration registry is enumerated
+- **THEN** the system MUST include a provider with id='analytics', group='workflow', requiredApp='analytics', and storage='link-table'
 
 ### Requirement: Embedded Chart Rendering via Shared Library
 
 Charts SHALL render via apexcharts (the existing shared dep via `@conduction/nextcloud-vue`) consuming Analytics' chart config. Analytics chart logic SHALL NOT be re-implemented.
+
+#### Scenario: Charts render via apexcharts
+
+- **WHEN** a linked Analytics report is displayed
+- **THEN** the system MUST render the chart via apexcharts consuming Analytics' chart config
+- **AND** the system MUST NOT re-implement Analytics chart logic
 
 ### Requirement: Differential Refresh Rates
 
@@ -41,12 +52,27 @@ Dashboard surfaces SHALL auto-refresh every 5 minutes. Detail-page and single-en
 
 ### Requirement: Widget Surfaces
 
-Standard four; single-entity includes sparkline.
+The system SHALL render the standard four surfaces; the single-entity surface MUST include a sparkline.
+
+#### Scenario: Single-entity surface includes a sparkline
+
+- **WHEN** the Analytics widget renders on the single-entity surface
+- **THEN** the system MUST include a sparkline
 
 ### Requirement: Reference-Property Auto-Rendering
 
 `referenceType: 'analytics'` SHALL render report-title chip + sparkline.
 
+#### Scenario: Analytics reference renders chip and sparkline
+
+- **WHEN** a schema property declares `referenceType: 'analytics'`
+- **THEN** the system MUST render a report-title chip and a sparkline
+
 ### Requirement: Permission Inheritance
 
-`requiresPermission() === null`; Analytics ACLs govern.
+The provider SHALL declare `requiresPermission() === null`; Analytics ACLs govern access.
+
+#### Scenario: Analytics ACLs govern access
+
+- **WHEN** a user accesses the analytics integration
+- **THEN** the system MUST defer access control to Analytics' own ACLs

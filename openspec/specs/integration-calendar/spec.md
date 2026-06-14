@@ -1,20 +1,12 @@
 ---
-status: proposed
+status: done
 ---
 
-# Integration: Calendar
+# integration-calendar Specification
 
 ## Purpose
-
-Surface Nextcloud Calendar VEVENT entries linked to OpenRegister objects through the standard integration registry contract. Users see meetings on object detail pages, dashboards, and inline next to schema reference properties; they can link, create, and unlink meetings without leaving the OR object context.
-
-**Standards**: RFC 5545 (iCalendar), RFC 9253 (LINK property), Nextcloud CalDAV, ADR-019 (Integration Registry)
-**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [nextcloud-entity-relations](../../../../specs/nextcloud-entity-relations/spec.md)
-
----
-
-## ADDED Requirements
-
+TBD - created by archiving change integration-calendar. Update Purpose after archive.
+## Requirements
 ### Requirement: Calendar Provider Registration
 
 The system SHALL ship a `CalendarProvider` implementing `IntegrationProvider`. The provider SHALL be registered as a DI-tagged service and SHALL appear in `IntegrationRegistry::list()` with id `calendar` whenever the Nextcloud Calendar app is installed and enabled.
@@ -128,16 +120,3 @@ The provider SHALL declare `requiresPermission(): null`. Access to the calendar 
 - **WHEN** the user lists the object's meetings
 - **THEN** only meetings on calendars the user can see MUST be returned (NC Calendar enforces this transitively)
 
----
-
-### Requirement: Graceful Degradation
-
-The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying VEVENT in Nextcloud Calendar is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
-
-#### Scenario: Concurrent unlink vs delete race
-
-- **GIVEN** a linked VEVENT
-- **AND** user A clicks "Unlink" in OR while user B deletes the VEVENT directly in NC Calendar at the same time
-- **WHEN** both operations resolve
-- **THEN** the link record MUST be removed (unlink succeeds)
-- **AND** no exception MUST be surfaced to user A for the missing VEVENT
