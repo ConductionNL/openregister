@@ -100,6 +100,8 @@ class SchemaMigrationService
      * @param array<int, array<string, mixed>> $plan The transform chain.
      *
      * @return array<int, string> Problems (empty when valid).
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function validatePlan(array $plan): array
     {
@@ -117,6 +119,8 @@ class SchemaMigrationService
      * @param int                              $sampleSize The sample size.
      *
      * @return array<int, array<string, mixed>> Before/after pairs.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function preview(int $schemaId, int $registerId, array $plan, int $sampleSize=self::DEFAULT_PREVIEW_SAMPLE): array
     {
@@ -155,6 +159,8 @@ class SchemaMigrationService
      *
      * @throws SchemaRunConcurrencyException When an active run exists.
      * @throws \InvalidArgumentException     When the plan is invalid.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function start(int $schemaId, int $registerId, array $plan, array $options=[], ?string $startedBy=null): SchemaRun
     {
@@ -191,6 +197,8 @@ class SchemaMigrationService
      * @param int       $batchSize The batch size.
      *
      * @return bool True when more work remains.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function processBatch(SchemaRun $run, int $batchSize=self::DEFAULT_BATCH): bool
     {
@@ -311,6 +319,8 @@ class SchemaMigrationService
      *
      * @throws SchemaRunConcurrencyException When the run was already rolled back.
      * @throws \InvalidArgumentException     When the run is not a migration.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function rollback(int $runId, ?string $startedBy=null): SchemaRun
     {
@@ -392,6 +402,8 @@ class SchemaMigrationService
      * @param string    $state The terminal state.
      *
      * @return void
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function finish(SchemaRun $run, string $state): void
     {
@@ -409,6 +421,8 @@ class SchemaMigrationService
      * @return void
      *
      * @throws SchemaRunConcurrencyException When an active run exists.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function assertNoActiveRun(int $schemaId): void
     {

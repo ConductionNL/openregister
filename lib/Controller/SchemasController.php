@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception as DBException;
@@ -446,7 +447,7 @@ class SchemasController extends Controller
         if ($this->isCurrentUserAdmin() === false) {
             return new JSONResponse(
                 data: ['error' => 'Only administrators may create schemas'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
@@ -613,7 +614,7 @@ class SchemasController extends Controller
         if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
             return new JSONResponse(
                 data: ['error' => 'User does not have permission to manage this schema'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
@@ -780,6 +781,8 @@ class SchemasController extends Controller
      *
      * @return JSONResponse JSON response with patched schema or error
      *
+     * @no-admin-idor-exempt Pure delegation to update(), which performs the checkSchemaManagePermission() guard; this method has no body of its own.
+     *
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
      *     array<never, never>>
@@ -834,7 +837,7 @@ class SchemasController extends Controller
             if ($this->checkSchemaManagePermission(schema: $schemaToDelete) === false) {
                 return new JSONResponse(
                     data: ['error' => 'User does not have permission to manage this schema'],
-                    statusCode: 403
+                    statusCode: Http::STATUS_FORBIDDEN
                 );
             }
 
@@ -911,6 +914,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Pure delegation to upload(), which performs the checkSchemaManagePermission() guard for update paths; this method has no body of its own.
+     *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
@@ -963,14 +968,14 @@ class SchemasController extends Controller
         if ($id !== null && $this->checkSchemaManagePermission(schema: $schema) === false) {
             return new JSONResponse(
                 data: ['error' => 'You do not have permission to update this schema'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
         if ($id === null && $this->isCurrentUserAdmin() === false) {
             return new JSONResponse(
                 data: ['error' => 'Admin privileges required to upload new schemas'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
@@ -1087,6 +1092,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Read-only export of a shared schema *definition* (not a user-owned object); schema metadata is public-readable by design, matching the @PublicPage index/show endpoints. No per-user data, no IDOR vector.
+     *
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Schema not found'}, array<never, never>>
@@ -1123,6 +1130,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read-only discovery of which shared schema *definitions* reference this one; returns schema metadata only (public-readable by design, like @PublicPage index/show). No per-user data, no IDOR vector.
      *
      * @return JSONResponse JSON response with related schemas
      *
@@ -1191,6 +1200,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read-only aggregate counts for a shared schema *definition* (object totals, not object contents); exposes no per-object or per-user data, matching the @PublicPage read posture. No IDOR vector.
      *
      * @return JSONResponse JSON response with schema statistics
      *
@@ -1264,6 +1275,23 @@ class SchemasController extends Controller
     public function explore(int $id): JSONResponse
     {
         try {
+            // Authorization: exploration scans the schema's object population to
+            // surface undefined properties — a schema-introspection operation that
+            // MUST require manage permission (same authority as editing the schema),
+            // so an arbitrary user cannot probe another schema's data shape (IDOR).
+            try {
+                $existingSchema = $this->schemaMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+            }
+
+            if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             $this->logger->info(
                 message: '[SchemasController] Starting schema exploration for schema ID: '.$id,
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1307,6 +1335,23 @@ class SchemasController extends Controller
     public function updateFromExploration(int $id): JSONResponse
     {
         try {
+            // Authorization: writing exploration results back into a schema's
+            // definition is a schema mutation and MUST require manage permission,
+            // exactly like update()/upload(). Without this guard any authenticated
+            // user could rewrite an arbitrary schema's properties (IDOR).
+            try {
+                $existingSchema = $this->schemaMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+            }
+
+            if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             // Get property updates from request.
             $propertyUpdates = $this->request->getParam(key: 'properties', default: []);
 

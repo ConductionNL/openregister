@@ -90,6 +90,8 @@ class SchemaMigrationPlanner
      * @param array<int, array<string, mixed>> $plan The transform chain.
      *
      * @return array<int, string> The list of validation problems (empty when valid).
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function validatePlan(array $plan): array
     {
@@ -160,6 +162,8 @@ class SchemaMigrationPlanner
      * @param array<int, array<string, mixed>> $plan The transform chain.
      *
      * @return MigrationPlanResult The transform outcome.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function apply(array $data, array $plan): MigrationPlanResult
     {

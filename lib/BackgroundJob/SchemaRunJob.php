@@ -75,6 +75,8 @@ class SchemaRunJob extends QueuedJob
      *                                        batch_size (optional).
      *
      * @return void
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     protected function run($argument): void
     {

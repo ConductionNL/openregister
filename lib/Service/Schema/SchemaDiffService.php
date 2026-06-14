@@ -77,6 +77,8 @@ class SchemaDiffService
      *                                        rather than remove + add.
      *
      * @return SchemaChangeSet The typed, classified change set.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function diff(array $old, array $new, array $renames=[]): SchemaChangeSet
     {
@@ -238,6 +240,8 @@ class SchemaDiffService
      * @param SchemaChangeSet $changeSet      The classified change set.
      *
      * @return string The next version string.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
      */
     public function nextVersion(?string $currentVersion, SchemaChangeSet $changeSet): string
     {
