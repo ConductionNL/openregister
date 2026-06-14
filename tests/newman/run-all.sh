@@ -129,6 +129,7 @@ declare -A DOMAIN_COLLECTIONS=(
     [agent-cms]="$REPO_ROOT/tests/newman/agent-cms-testing.postman_collection.json"
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
     [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
+    [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
