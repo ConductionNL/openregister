@@ -259,6 +259,10 @@ return [
         ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
         ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
         ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
+        // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
+        // admin-default + FG-delegated, append-only by surface (no write routes).
+        ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
+        ['name' => 'processingLog#betrokkene', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
         // Realtime cursor-based polling endpoints.
         ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
         ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],

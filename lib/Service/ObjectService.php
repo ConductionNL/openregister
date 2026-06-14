@@ -699,6 +699,11 @@ class ObjectService
 
             $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
+            // AVG / GDPR per-access read logging (verwerkingenlogging).
+            // Fail-soft and gated on the schema's `x-openregister-processing`
+            // opt-in inside ProcessingLogService — never blocks the read.
+            $this->logProcessingRead(object: $object);
+
             return $this->renderHandler->renderEntity(
                 entity: $object,
                 _extend: $_extend,
@@ -714,6 +719,40 @@ class ObjectService
             $this->currentSchema   = $previousSchema;
         }//end try
     }//end find()
+
+
+    /**
+     * Record an AVG processing-log entry for a single object read.
+     *
+     * Lazily resolves ProcessingLogService from the container (mirrors
+     * the audit-trail attribution resolver) so this stays an additive,
+     * fail-soft hook with no new constructor dependency and no circular
+     * risk. The service itself gates on the schema opt-in and swallows
+     * its own errors; the wrapping try/catch is belt-and-braces so a
+     * misconfigured container can never break a read.
+     *
+     * @param ObjectEntity $object The object that was read.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
+     */
+    private function logProcessingRead(ObjectEntity $object): void
+    {
+        try {
+            $service = $this->container->get(\OCA\OpenRegister\Service\ProcessingLogService::class);
+            $service->logRead(object: $object, action: 'read');
+            $service->flush();
+        } catch (\Throwable $e) {
+            // Fail-soft: read logging never breaks or slows the read path.
+            $this->logger->debug(
+                message: '[AVG] processing-log read hook skipped',
+                context: ['exception' => $e->getMessage()]
+            );
+        }
+
+    }//end logProcessingRead()
+
 
     /**
      * Gets an object by its ID without creating an audit trail.
