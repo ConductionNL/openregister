@@ -20,10 +20,10 @@ through the runtime schema API) behind explicit acknowledgement.
 
 ### Requirement: Schema definition changes MUST be classified and recorded as a changelog
 
-On every schema definition update — regardless of entry path (UI,
-`schemas#update`, `schemas#uploadUpdate`, the runtime schema API, or
-configuration import) — the system MUST diff the new definition against
-the previous one and classify the change set:
+The system MUST diff every schema definition update against the previous
+definition and classify the resulting change set, regardless of entry
+path (UI, `schemas#update`, `schemas#uploadUpdate`, the runtime schema
+API, or configuration import). The classification MUST be one of:
 
 - `compatible`: added optional property, relaxed constraint
   (e.g. lower `minLength`, wider enum), changed
