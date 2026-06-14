@@ -62,15 +62,21 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -126,8 +132,13 @@ class SaveObjects
      * @param RegisterMapper      $registerMapper      Mapper for register operations
      * @param SaveObject          $saveHandler         Handler for individual object operations
      * @param IUserSession        $userSession         User session for getting current user
-     * @param OrganisationService $organisationService Service for organisation operations
-     * @param LoggerInterface     $logger              Logger for error and debug logging
+     * @param OrganisationService   $organisationService Service for organisation operations
+     * @param LoggerInterface       $logger              Logger for error and debug logging
+     * @param IGroupManager|null    $groupManager        Group manager for admin-bypass detection
+     * @param PermissionHandler|null $permissionHandler  Permission handler for per-object RBAC enforcement
+     * @param ValidateObject|null   $validateHandler     Validation handler for per-object schema validation
+     * @param IEventDispatcher|null $eventDispatcher     Event dispatcher for object lifecycle events
+     * @param AuditTrailMapper|null $auditTrailMapper    Audit trail mapper for logging bulk changes
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
@@ -138,7 +149,12 @@ class SaveObjects
         private readonly SaveObject $saveHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?PermissionHandler $permissionHandler=null,
+        private readonly ?ValidateObject $validateHandler=null,
+        private readonly ?IEventDispatcher $eventDispatcher=null,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null
     ) {
 
     }//end __construct()
@@ -997,6 +1013,21 @@ class SaveObjects
             return $result;
         }
 
+        // STEP 1b (BUG-OBJ-1): enforce per-object RBAC and schema validation BEFORE persisting,
+        // mirroring the guarantees of the single-object save path. Objects that fail either check
+        // are moved into $result['invalid'] and excluded from persistence.
+        $transformedObjects = $this->enforceChunkGuards(
+            transformedObjects: $transformedObjects,
+            schemaCache: $schemaCache,
+            _rbac: $_rbac,
+            _validation: $_validation,
+            result: $result
+        );
+
+        if (empty($transformedObjects) === true) {
+            return $result;
+        }
+
         // STEP 2: Persist transformed objects to database.
         $bulkResult = $this->persistChunk(
             transformedObjects: $transformedObjects,
@@ -1007,6 +1038,12 @@ class SaveObjects
         // STEP 3: Build and classify results from bulk operation output.
         $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
 
+        // STEP 3b (BUG-OBJ-1): always write the audit trail for created/updated objects and,
+        // when requested, dispatch the matching lifecycle events. The ultraFastBulkSave mapper
+        // path bypasses the per-row event/audit hooks that the single-object insert/update apply,
+        // so the bulk path must replay them here to stay at parity with single-object save.
+        $this->emitChunkSideEffects(result: $result, schemaCache: $schemaCache, _events: $_events);
+
         $endTime        = microtime(true);
         $processingTime = round(($endTime - $startTime) * 1000, 2);
 
@@ -1015,6 +1052,235 @@ class SaveObjects
 
         return $result;
     }//end processObjectsChunk()
+
+    /**
+     * Enforce per-object RBAC and schema validation before persistence (BUG-OBJ-1).
+     *
+     * Mirrors the guarantees of the single-object save path for the bulk path. Each
+     * transformed object is checked for create permission (when $_rbac is true) and
+     * validated against its resolved schema (when $_validation is true). Objects that
+     * fail either check are appended to $result['invalid'] and excluded from the
+     * returned list so they are never persisted.
+     *
+     * @param array $transformedObjects Flat transformed objects ready for persistence
+     * @param array $schemaCache        Schema cache keyed by schema id
+     * @param bool  $_rbac              Whether to enforce per-object create permission
+     * @param bool  $_validation        Whether to validate each object against its schema
+     * @param array $result             The result array (invalid bucket is appended to)
+     *
+     * @return array The transformed objects that passed all enabled guards
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function enforceChunkGuards(
+        array $transformedObjects,
+        array $schemaCache,
+        bool $_rbac,
+        bool $_validation,
+        array &$result
+    ): array {
+        // Nothing to enforce — return untouched.
+        if ($_rbac === false && $_validation === false) {
+            return $transformedObjects;
+        }
+
+        $allowedObjects = [];
+        $currentUserId  = null;
+        $currentUser    = $this->userSession->getUser();
+        if ($currentUser !== null) {
+            $currentUserId = $currentUser->getUID();
+        }
+
+        foreach ($transformedObjects as $objData) {
+            $schemaId = $objData['schema'] ?? null;
+            $schema   = null;
+            if ($schemaId !== null && isset($schemaCache[$schemaId]) === true) {
+                $schema = $schemaCache[$schemaId];
+            }
+
+            // Without a resolvable schema we cannot safely authorize or validate — reject.
+            if ($schema instanceof Schema === false) {
+                $result['invalid'][] = [
+                    'object' => $objData,
+                    'error'  => 'Schema could not be resolved for RBAC/validation enforcement',
+                    'type'   => 'InvalidSchemaException',
+                ];
+                $result['statistics']['invalid']++;
+                $result['statistics']['errors']++;
+                continue;
+            }
+
+            // RBAC: enforce create permission per object (BUG-OBJ-1).
+            if ($_rbac === true && $this->permissionHandler !== null) {
+                $hasPermission = $this->permissionHandler->hasPermission(
+                    schema: $schema,
+                    action: 'create',
+                    userId: $currentUserId,
+                    objectOwner: ($objData['owner'] ?? null),
+                    _rbac: true
+                );
+
+                if ($hasPermission === false) {
+                    $result['invalid'][] = [
+                        'object' => $objData,
+                        'error'  => 'You do not have permission to create objects in this schema',
+                        'type'   => 'PermissionDeniedException',
+                    ];
+                    $result['statistics']['invalid']++;
+                    $result['statistics']['errors']++;
+                    continue;
+                }
+            }
+
+            // Validation: validate the business data against the schema (BUG-OBJ-1).
+            if ($_validation === true && $this->validateHandler !== null) {
+                $businessData      = $objData['object'] ?? [];
+                $validationResult  = $this->validateHandler->validateObject(
+                    object: $businessData,
+                    schema: $schema
+                );
+
+                if ($validationResult->isValid() === false) {
+                    $result['invalid'][] = [
+                        'object' => $objData,
+                        'error'  => $this->validateHandler->generateErrorMessage(result: $validationResult),
+                        'type'   => 'ValidationException',
+                    ];
+                    $result['statistics']['invalid']++;
+                    $result['statistics']['errors']++;
+                    continue;
+                }
+            }
+
+            $allowedObjects[] = $objData;
+        }//end foreach
+
+        return $allowedObjects;
+    }//end enforceChunkGuards()
+
+    /**
+     * Dispatch lifecycle events and write audit trail for persisted objects (BUG-OBJ-1).
+     *
+     * The ultraFastBulkSave mapper path bypasses the per-row event/audit hooks the
+     * single-object insert/update apply, so the bulk path replays them here. Audit
+     * trail rows are always written (unless audit trails are disabled in settings);
+     * ObjectCreated/ObjectUpdatedEvent are only dispatched when $_events is true.
+     *
+     * @param array $result      The classified result (saved/updated buckets)
+     * @param array $schemaCache Schema cache (unused for now, reserved for future per-schema gating)
+     * @param bool  $_events     Whether to dispatch object lifecycle events
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function emitChunkSideEffects(array $result, array $schemaCache, bool $_events): void
+    {
+        // Created objects → audit (action: create) + ObjectCreatedEvent.
+        foreach (($result['saved'] ?? []) as $savedData) {
+            $entity = $this->hydrateResultEntity(data: $savedData);
+            if ($entity === null) {
+                continue;
+            }
+
+            $this->writeBulkAuditTrail(old: null, new: $entity, action: 'create');
+
+            if ($_events === true && $this->eventDispatcher !== null) {
+                try {
+                    $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $entity));
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[SaveObjects] Failed to dispatch ObjectCreatedEvent for bulk object',
+                        context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
+                    );
+                }
+            }
+        }//end foreach
+
+        // Updated objects → audit (action: update) + ObjectUpdatedEvent.
+        foreach (($result['updated'] ?? []) as $updatedData) {
+            $entity = $this->hydrateResultEntity(data: $updatedData);
+            if ($entity === null) {
+                continue;
+            }
+
+            // The bulk path does not retain a pre-update snapshot. Pass the persisted
+            // entity as `old` as well so createAuditTrail() records an 'update' action
+            // (a null `old` would be auto-classified as a 'create').
+            $this->writeBulkAuditTrail(old: $entity, new: $entity, action: 'update');
+
+            if ($_events === true && $this->eventDispatcher !== null) {
+                try {
+                    // The bulk path does not retain a pre-update snapshot; pass the
+                    // persisted entity as both old and new so listeners still fire.
+                    $this->eventDispatcher->dispatchTyped(
+                        new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)
+                    );
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[SaveObjects] Failed to dispatch ObjectUpdatedEvent for bulk object',
+                        context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
+                    );
+                }
+            }
+        }//end foreach
+    }//end emitChunkSideEffects()
+
+    /**
+     * Hydrate an ObjectEntity from a bulk result row, or null when identity is missing.
+     *
+     * @param mixed $data The result row (array) for a persisted object
+     *
+     * @return ObjectEntity|null The hydrated entity, or null when it cannot be built
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function hydrateResultEntity(mixed $data): ?ObjectEntity
+    {
+        if (is_array($data) === false) {
+            return null;
+        }
+
+        // A persisted object must have a stable UUID; without one we cannot write a
+        // meaningful audit row or event, so skip rather than emit a corrupt record.
+        if (empty($data['uuid']) === true && empty($data['id']) === true) {
+            return null;
+        }
+
+        $entity = new ObjectEntity();
+        $entity->hydrate($data);
+
+        return $entity;
+    }//end hydrateResultEntity()
+
+    /**
+     * Write a single audit trail row for a bulk-persisted object, guarded by settings.
+     *
+     * @param ObjectEntity|null $old    The pre-change entity (null on create)
+     * @param ObjectEntity|null $new    The post-change entity
+     * @param string            $action The audit action (create/update)
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function writeBulkAuditTrail(?ObjectEntity $old, ?ObjectEntity $new, string $action): void
+    {
+        if ($this->auditTrailMapper === null) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[SaveObjects] Failed to write audit trail for bulk object',
+                context: ['error' => $e->getMessage(), 'action' => $action, 'uuid' => $new?->getUuid()]
+            );
+        }
+    }//end writeBulkAuditTrail()
 
     /**
      * Transform a chunk of objects to database format and collect invalid objects
@@ -1733,17 +1999,37 @@ class SaveObjects
      */
     private function hydrateObjectMetadataFields(array $selfData): array
     {
-        // Set owner to current user if not provided (with null check).
-        if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
-            $currentUser       = $this->userSession->getUser();
+        // SECURITY (BUG-OBJ-15): mirror single-save setSelfMetadata()/applyOwnerAttribution().
+        // Owner is ALWAYS stamped to the session user and a client-supplied @self.owner is
+        // ignored — accepting it would let any bulk caller forge object ownership. Only when
+        // there is no session user (background/system context) do we fall back to the
+        // (possibly client-supplied) value so system imports keep working.
+        $currentUser = $this->userSession->getUser();
+        if ($currentUser !== null) {
+            $selfData['owner'] = $currentUser->getUID();
+        } else if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
             $selfData['owner'] = null;
-            if ($currentUser !== null) {
-                $selfData['owner'] = $currentUser->getUID();
+        }
+
+        // SECURITY (BUG-OBJ-15): a client-supplied @self.organisation is only honoured when the
+        // caller is an admin OR is a verified member of that organisation. Otherwise we fall back
+        // to the caller's active organisation via getOrganisationForNewEntity() — preventing
+        // cross-tenant data injection through the bulk endpoint.
+        $requestedOrganisation = $selfData['organisation'] ?? null;
+        $acceptOrganisation    = false;
+        if (empty($requestedOrganisation) === false) {
+            $isAdmin = $currentUser !== null
+                && $this->groupManager !== null
+                && $this->groupManager->isAdmin($currentUser->getUID()) === true;
+
+            if ($isAdmin === true
+                || $this->organisationService->hasAccessToOrganisation((string) $requestedOrganisation) === true
+            ) {
+                $acceptOrganisation = true;
             }
         }
 
-        // Set organization using optimized OrganisationService method if not provided.
-        if (isset($selfData['organisation']) === false || empty($selfData['organisation']) === true) {
+        if ($acceptOrganisation === false) {
             // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
             $selfData['organisation'] = $this->organisationService->getOrganisationForNewEntity();
         }

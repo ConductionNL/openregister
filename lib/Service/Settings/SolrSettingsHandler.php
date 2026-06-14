@@ -205,6 +205,7 @@ class SolrSettingsHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dashboard requires complete statistics structure
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSolrDashboardStats(): array
     {
@@ -458,6 +459,7 @@ class SolrSettingsHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many settings fields
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSolrSettingsOnly(): array
     {
@@ -584,6 +586,7 @@ class SolrSettingsHandler
      * @throws \RuntimeException If backend configuration retrieval fails
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSearchBackendConfig(): array
     {
@@ -618,6 +621,7 @@ class SolrSettingsHandler
      * @psalm-return array{active: string, available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateSearchBackendConfig(string $backend): array
     {
@@ -667,6 +671,7 @@ class SolrSettingsHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default configuration structure requires comprehensive initialization
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSolrFacetConfiguration(): array
     {
@@ -695,6 +700,8 @@ class SolrSettingsHandler
      *
      * Updates the configuration for customizing SOLR facets including
      * custom titles, ordering, and descriptions.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      *
      * Expected structure:
      * [

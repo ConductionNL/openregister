@@ -22,7 +22,6 @@
  * @license   EUPL-1.2
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -238,6 +237,7 @@ export const useReportsStore = defineStore('reports', {
 		/**
 		 * Fetch aggregation widget data.
 		 *
+		 * @param dataSource
 		 * @spec exclude private API passthrough to GET /api/objects/aggregations/...
 		 */
 		async _fetchAggregation(dataSource) {
@@ -256,6 +256,7 @@ export const useReportsStore = defineStore('reports', {
 		/**
 		 * Fetch graphql widget data.
 		 *
+		 * @param dataSource
 		 * @spec exclude private API passthrough to POST /api/graphql
 		 */
 		async _fetchGraphql(dataSource) {
@@ -270,6 +271,7 @@ export const useReportsStore = defineStore('reports', {
 		/**
 		 * Fetch statistics widget data.
 		 *
+		 * @param dataSource
 		 * @spec exclude private API passthrough to GET /api/dashboard/statistics
 		 */
 		async _fetchStatistics(dataSource) {

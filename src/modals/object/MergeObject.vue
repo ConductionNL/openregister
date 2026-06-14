@@ -103,8 +103,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</template>
 								<template v-else>
 									<NcSelect
-						input-label="Property Selections[Property]"
 										v-model="propertySelections[property]"
+										input-label="Property Selections[Property]"
 										:options="getMergeOptions(property)"
 										label="label"
 										track-by="value"
@@ -577,6 +577,7 @@ export default {
 			}
 		},
 		/**
+		 * @param obj
 		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
 		 */
 		selectTargetObject(obj) {
@@ -638,13 +639,9 @@ export default {
 					this.propertySelections[property] = options.find(opt => opt.value === selectedValue) || null
 				}
 			})
-
-			// eslint-disable-next-line no-console
-			console.log('Initial mergedData after setup:', this.mergedData)
-			// eslint-disable-next-line no-console
-			console.log('Initial propertySelections after setup:', this.propertySelections)
 		},
 		/**
+		 * @param property
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
 		 */
 		getMergeOptions(property) {
@@ -674,17 +671,15 @@ export default {
 		},
 
 		/**
+		 * @param property
+		 * @param selectedOption
 		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
 		 */
 		onPropertySelectionChange(property, selectedOption) {
-			// eslint-disable-next-line no-console
-			console.log('Property selection change:', property, selectedOption)
 			if (selectedOption && selectedOption.value !== undefined) {
 				// Always store the actual value, never the option object
 				this.mergedData[property] = selectedOption.value
 				this.propertySelections[property] = selectedOption
-				// eslint-disable-next-line no-console
-				console.log('Set mergedData[' + property + '] to:', selectedOption.value)
 
 				// Clear custom value if switching away from custom
 				if (selectedOption.value !== 'custom') {
@@ -693,6 +688,8 @@ export default {
 			}
 		},
 		/**
+		 * @param value
+		 * @param maxLength
 		 * @spec exclude Stringifying/truncating value formatter for property display; UI presentation helper.
 		 */
 		displayValue(value, maxLength = 100) {
@@ -715,6 +712,8 @@ export default {
 			return displayText
 		},
 		/**
+		 * @param text
+		 * @param maxLength
 		 * @spec exclude Simple string-truncation helper for display; UI presentation helper.
 		 */
 		truncateText(text, maxLength) {
@@ -734,8 +733,6 @@ export default {
 			try {
 				// Prepare merged data with custom values resolved - ensure no ID is included
 				const finalMergedData = {}
-				// eslint-disable-next-line no-console
-				console.log('Raw mergedData before processing:', this.mergedData)
 
 				Object.keys(this.mergedData).forEach(property => {
 					// Skip any ID-related properties
@@ -749,17 +746,12 @@ export default {
 						// Ensure we extract the actual value if it's an object with label/value structure
 						const value = this.mergedData[property]
 						if (value && typeof value === 'object' && value.value !== undefined) {
-							// eslint-disable-next-line no-console
-							console.log('Extracting value from object for', property, ':', value.value)
 							finalMergedData[property] = value.value
 						} else {
 							finalMergedData[property] = value
 						}
 					}
 				})
-
-				// eslint-disable-next-line no-console
-				console.log('Final merged data to send:', finalMergedData)
 
 				// Use the object store method for consistent API handling
 				const result = await objectStore.mergeObjects({
@@ -816,6 +808,7 @@ export default {
 			this.showReferenceList = !this.showReferenceList
 		},
 		/**
+		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -825,6 +818,7 @@ export default {
 			return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
 		},
 		/**
+		 * @param filename
 		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
 		 */
 		getFileType(filename) {

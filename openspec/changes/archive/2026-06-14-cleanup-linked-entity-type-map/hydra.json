@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "spec_slug": "cleanup-linked-entity-type-map",
+  "app": "openregister",
+  "repo": "https://codeberg.org/Conduction/openregister",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "https://codeberg.org/Conduction/openregister/issues/1327",
+  "pipeline": {},
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-05T17:16:14Z",
+      "ended_at": "2026-06-05T17:16:38Z",
+      "outcome": "needs-input",
+      "outcome_reason": "builder container exited non-zero",
+      "pattern_tags": [],
+      "stages": [
+        {
+          "stage": "build",
+          "persona": "Al Gorithm",
+          "model": "sonnet",
+          "container": "hydra-builder",
+          "started_at": "2026-06-05T16:59:29Z",
+          "ended_at": "2026-06-05T17:16:03Z",
+          "exit_code": 1,
+          "turns_used": 0,
+          "turns_budget": 40,
+          "checks_run": [],
+          "checks_skipped": [],
+          "findings": [
+            {
+              "id": "build-failed",
+              "severity": "CRITICAL",
+              "gate": "builder",
+              "rule": "builder container exited non-zero",
+              "status": "open",
+              "note": "Builder container failed to complete. See logs/pipeline-*/builder-build.jsonl for detail.",
+              "autofixable": false
+            }
+          ],
+          "decisions": [],
+          "verdict": "fail",
+          "duration_seconds": 994
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "runs": 1,
+    "turns_used": 0,
+    "cost_usd": 0.0,
+    "duration_seconds": 994,
+    "cycles": 1,
+    "by_stage": {
+      "build": {
+        "runs": 1,
+        "turns_used": 0,
+        "cost_usd": 0.0,
+        "duration_seconds": 994
+      }
+    }
+  }
+}

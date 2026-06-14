@@ -3,7 +3,8 @@
 		<h2>{{ t('openregister', 'Activity') }}</h2>
 		<div class="activity-section__filters">
 			<NcSelect
-						input-label="Type Filter" v-model="typeFilter"
+				v-model="typeFilter"
+				input-label="Type Filter"
 				:options="typeOptions"
 				:placeholder="t('openregister', 'Filter by type')"
 				@input="loadActivity" />
@@ -99,6 +100,7 @@ export default {
 			}
 		},
 		/**
+		 * @param timestamp
 		 * @spec exclude detail-view timestamp formatting helper for display only
 		 */
 		formatTime(timestamp) {

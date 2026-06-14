@@ -34,6 +34,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -81,6 +82,9 @@ class PermissionHandlerCustomScopeTest extends TestCase
         $this->container       = $this->createMock(ContainerInterface::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturn(true);
+
         $this->handler = new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -88,6 +92,7 @@ class PermissionHandlerCustomScopeTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $this->conditionMatcher,
+            $appConfig,
             $this->logger,
             $this->container,
             $this->eventDispatcher

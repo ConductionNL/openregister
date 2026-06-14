@@ -1,0 +1,13 @@
+name: Stable Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  release:
+    uses: Conduction/.github/.forgejo/workflows/release-semrel.yml@main
+    with:
+      app-name: openregister
+    secrets: inherit

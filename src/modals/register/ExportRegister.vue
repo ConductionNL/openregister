@@ -21,7 +21,8 @@ import axios from '@nextcloud/axios'
 			<div class="formGroup">
 				<label>{{ t('openregister', 'Export Format:') }}</label>
 				<NcSelect
-						input-label="Export Format" v-model="exportFormat"
+					v-model="exportFormat"
+					input-label="Export Format"
 					:options="exportFormats"
 					option-label="label"
 					option-value="value"

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\Exception as DbException;
 use Psr\Log\LoggerInterface;
 
@@ -74,6 +75,7 @@ class LinkedEntityService
      * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
      *                                                  type-id source, post `cleanup-linked-entity-type-map`)
      * @param LoggerInterface     $logger              Logger
+     * @param PermissionHandler   $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -82,8 +84,43 @@ class LinkedEntityService
         private readonly OrganisationMapper $organisationMapper,
         private readonly IntegrationRegistry $integrationRegistry,
         private readonly LoggerInterface $logger,
+        private readonly PermissionHandler $permissionHandler,
+        private readonly DeepLinkRegistryService $deepLinkRegistry,
     ) {
     }//end __construct()
+
+    /**
+     * Assert the current user may write (update) the given object before mutating
+     * its linked-entity columns.
+     *
+     * SEC-CTRL-4: addLink()/removeLink() previously only ran the read check inside
+     * MagicMapper::find(), then called update() with no write-permission gate — so a
+     * read-only user could mutate link columns. This resolves the object's schema and
+     * runs the canonical `update` RBAC check, throwing NotAuthorizedException (403) on
+     * denial.
+     *
+     * @param ObjectEntity $object The object about to be updated.
+     *
+     * @throws Exception When the schema cannot be resolved or the user lacks write permission.
+     *
+     * @return void
+     */
+    private function assertCanWriteObject(ObjectEntity $object): void
+    {
+        $schemaId = $object->getSchema();
+        if ($schemaId === null) {
+            throw new Exception('Cannot resolve schema for linked-entity write permission check.');
+        }
+
+        $schema = $this->schemaMapper->find($schemaId);
+
+        $this->permissionHandler->checkPermission(
+            schema: $schema,
+            action: 'update',
+            objectOwner: $object->getOwner(),
+            object: $object
+        );
+    }//end assertCanWriteObject()
 
     /**
      * Add a linked entity ID to an object's metadata column.
@@ -111,6 +148,8 @@ class LinkedEntityService
 
         // Idempotent: don't add if already present.
         if (in_array($entityId, $existingIds, true) === false) {
+            // SEC-CTRL-4: enforce write (update) permission before mutating the object.
+            $this->assertCanWriteObject($object);
             $existingIds[] = $entityId;
             $object->$setter($existingIds);
             $this->magicMapper->update($object);
@@ -152,6 +191,8 @@ class LinkedEntityService
         )
                 );
 
+        // SEC-CTRL-4: enforce write (update) permission before mutating the object.
+        $this->assertCanWriteObject($object);
         $object->$setter($existingIds);
         $this->magicMapper->update($object);
 
@@ -312,13 +353,31 @@ class LinkedEntityService
                 );
 
                 foreach ($objects as $object) {
+                    $registerId = (int) $object->getRegister();
+                    $schemaId   = (int) $schema->getId();
+
+                    // Prefer the owning app's detail route (registered via the
+                    // deep-link registry by leaf apps like pipelinq/procest);
+                    // null falls the frontend back to OpenRegister's own page.
+                    $deepLink = $this->deepLinkRegistry->resolveUrl(
+                        registerId: $registerId,
+                        schemaId: $schemaId,
+                        objectData: [
+                            'uuid'     => $object->getUuid(),
+                            'register' => $registerId,
+                            'schema'   => $schemaId,
+                        ]
+                    );
+
                     $results[] = [
                         'entityType' => 'object',
                         'uuid'       => $object->getUuid(),
                         'name'       => $object->getName(),
                         'schema'     => $schema->getTitle(),
-                        'schemaId'   => $schema->getId(),
-                        'register'   => $object->getRegister(),
+                        'schemaId'   => $schemaId,
+                        'schemaIcon' => $schema->getIcon(),
+                        'register'   => $registerId,
+                        'url'        => $deepLink,
                     ];
                 }
             } catch (Exception $e) {

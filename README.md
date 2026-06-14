@@ -1,4 +1,9 @@
-<p align="center">
+> [!IMPORTANT]
+> ## 🚚 This repository has moved to Codeberg
+>
+> Active development now happens at **https://codeberg.org/Conduction/openregister**.
+> This GitHub mirror is read-only — issues, pull requests, and new commits should go to Codeberg.
+> Update your remote with: `git remote set-url origin https://codeberg.org/Conduction/openregister`<p align="center">
   <img src="img/app-store.svg" alt="OpenRegister logo" width="80" height="80">
 </p>
 
@@ -72,7 +77,7 @@ It is the shared data backbone for apps like [OpenCatalogi](https://github.com/C
 - **Source Synchronization** — Keep registers in sync with external data sources
 - **Schema Import** — Import schemas from Schema.org, OpenAPI, and GGM standards
 - **CalDAV Tasks** — Attach Nextcloud tasks and comments directly to data objects
-- **JSON-LD and Linked Data** — Standards-compliant output for the open data ecosystem
+- **JSON-LD and Linked Data** — Opt-in read-side JSON-LD output via content negotiation (`Accept: application/ld+json`) on the object read endpoints, with `@id` set to the canonical object URI, a `@context` derived from the schema definition, and dereferenceable `/api/contexts/*` documents. Schema.org alignment is per-schema mapping (opt-in via the schema's `configuration.jsonld` block); zero-config schemas still emit valid JSON-LD with OpenRegister-local terms. Read-side only — no JSON-LD ingest. See [docs/Features/json-ld.md](docs/Features/json-ld.md).
 
 ## Architecture
 
@@ -213,7 +218,7 @@ Full documentation is available at **[openregisters.app](https://openregisters.a
 
 ## Standards & Compliance
 
-- **Data standard:** JSON Schema, JSON-LD, Schema.org
+- **Data standard:** JSON Schema; JSON-LD read-side output (opt-in via content negotiation); Schema.org alignment per-schema mapping (opt-in) — see [docs/Features/json-ld.md](docs/Features/json-ld.md)
 - **API standard:** NLGov REST API Design Rules (Logius)
 - **Dutch interoperability:** Common Ground principles, VNG standards
 - **Accessibility:** WCAG AA (Dutch government requirement)

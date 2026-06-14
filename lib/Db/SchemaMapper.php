@@ -246,7 +246,18 @@ class SchemaMapper extends QBMapper
             $mtFlag = '1';
         }
 
-        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
+        // BUG-DB-10: $published changes which rows are visible, so it MUST be part
+        // of the cache key; otherwise a published-only lookup could return a
+        // result cached from an unfiltered lookup (or vice versa).
+        $publishedFlag = 'n';
+        if ($published === true) {
+            $publishedFlag = '1';
+        } else if ($published === false) {
+            $publishedFlag = '0';
+        }
+
+        $cacheSuffix = ':'.$rbacFlag.':'.$mtFlag.':'.$publishedFlag;
+        $cacheKey    = strtolower((string) $id).$cacheSuffix;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
         }
@@ -275,12 +286,26 @@ class SchemaMapper extends QBMapper
         );
 
         if (is_numeric($id) === true) {
+            $idParam = $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT);
             $orConditions->add(
-                $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT))
+                $qb->expr()->eq('id', $idParam)
             );
         }
 
         $qb->where($orConditions);
+
+        // BUG-DB-10: when the identifier is numeric it is ambiguous (it could be a
+        // primary key id OR a numeric uuid/slug). Prefer the exact primary-key
+        // match by ordering an `id = ?` hit first, so a row whose slug happens to
+        // be "5" never shadows the row with id 5.
+        if (is_numeric($id) === true) {
+            $qb->addOrderBy(
+                $qb->createFunction(
+                    'CASE WHEN id = '.$idParam.' THEN 0 ELSE 1 END'
+                ),
+                'ASC'
+            );
+        }
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
@@ -315,22 +340,19 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        $rbacChar = '0';
-        if ($_rbac === true) {
-            $rbacChar = '1';
-        }
-
-        $mtChar = '0';
-        if ($_multitenancy === true) {
-            $mtChar = '1';
-        }
-
-        $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
+        // BUG-DB-10: reuse the exact same suffix (rbac + multitenancy + published)
+        // as the read-side key so cache writes and reads stay consistent.
         $this->findCache[$cacheKey] = $schema;
-        $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
-        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix] = $schema;
+        $this->findCache[(string) $schema->getId().$cacheSuffix] = $schema;
+
+        // BUG-DB-10: guard against a null uuid before strtolower().
+        $schemaUuid = $schema->getUuid();
+        if ($schemaUuid !== null) {
+            $this->findCache[strtolower($schemaUuid).$cacheSuffix] = $schema;
+        }
+
         if ($schema->getSlug() !== null) {
-            $this->findCache[strtolower($schema->getSlug()).$rbacSuffix] = $schema;
+            $this->findCache[strtolower($schema->getSlug()).$cacheSuffix] = $schema;
         }
 
         return $schema;

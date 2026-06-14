@@ -121,12 +121,14 @@ export default {
 
 	watch: {
 		/**
+		 * @param newValue
 		 * @spec exclude watcher syncing local cache-type from prop
 		 */
 		cacheType(newValue) {
 			this.localCacheType = newValue
 		},
 		/**
+		 * @param newValue
 		 * @spec exclude watcher emitting cache-type change
 		 */
 		localCacheType(newValue) {

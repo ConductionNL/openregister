@@ -1726,8 +1726,10 @@ class ImportServiceTest extends TestCase
         $method = $ref->getMethod('transformSelfProperty');
         $method->setAccessible(true);
 
+        // BUG-SVC-5: offset-bearing timestamps are normalised to UTC before the
+        // offset is stripped. +02:00 10:30 is 08:30 UTC.
         $result = $method->invoke($this->service, 'updated', '2025-03-15T10:30:00+02:00');
-        $this->assertSame('2025-03-15 10:30:00', $result);
+        $this->assertSame('2025-03-15 08:30:00', $result);
     }
 
     public function testTransformSelfPropertyOrganisationValidUuid(): void

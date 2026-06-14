@@ -338,6 +338,7 @@ class OasService
                         operationIdPrefix: $operationIdPrefix
                     );
                     $this->addExtendedPaths(register: $register, schema: $schema);
+                    $this->addJsonLdContextPaths(register: $register, schema: $schema);
                 }
             }
         }//end foreach
@@ -961,6 +962,78 @@ class OasService
         ];
     }//end addCrudPaths()
 
+
+    /**
+     * Add the JSON-LD `@context` document endpoints for a register/schema
+     * pair (json-ld-output). These are the dereferenceable URLs that object
+     * JSON-LD serializations reference in their `@context`.
+     *
+     * @param object $register The register object.
+     * @param object $schema   The schema object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function addJsonLdContextPaths(object $register, object $schema): void
+    {
+        $registerSlug = $register->getSlug();
+        if ($registerSlug === null || $registerSlug === '') {
+            $registerSlug = $this->slugify(string: $register->getTitle());
+        }
+
+        $schemaSlug = $schema->getSlug();
+        if ($schemaSlug === null || $schemaSlug === '') {
+            $schemaSlug = $this->slugify(string: $schema->getTitle());
+        }
+
+        $contextResponse = [
+            '200' => [
+                'description' => 'JSON-LD context document of the form `{"@context": {…}}`.',
+                'content'     => [
+                    'application/ld+json' => [
+                        'schema' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                '@context' => ['type' => 'object'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            '404' => [
+                'description' => 'Register or schema not found',
+                'content'     => [
+                    'application/json' => [
+                        'schema' => ['$ref' => '#/components/schemas/Error'],
+                    ],
+                ],
+            ],
+        ];
+
+        // Register-wide context document (idempotent across schemas of a register).
+        $this->oas['paths']['/contexts/'.$registerSlug] = [
+            'get' => [
+                'summary'     => 'JSON-LD context for register '.$registerSlug,
+                'operationId' => 'getContext'.$this->pascalCase(string: (string) $registerSlug),
+                'tags'        => ['JSON-LD'],
+                'description' => 'Dereferenceable register-wide JSON-LD @context document.',
+                'responses'   => $contextResponse,
+            ],
+        ];
+
+        // Per-schema context document.
+        $this->oas['paths']['/contexts/'.$registerSlug.'/'.$schemaSlug] = [
+            'get' => [
+                'summary'     => 'JSON-LD context for '.$schemaSlug,
+                'operationId' => 'getContext'.$this->pascalCase(string: (string) $registerSlug).$this->pascalCase(string: (string) $schemaSlug),
+                'tags'        => ['JSON-LD'],
+                'description' => 'Dereferenceable per-schema JSON-LD @context document.',
+                'responses'   => $contextResponse,
+            ],
+        ];
+    }//end addJsonLdContextPaths()
+
     /**
      * Add extended paths for a schema using whitelist approach
      *
@@ -1204,9 +1277,12 @@ class OasService
             'parameters'  => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
             'responses'   => [
                 '200' => [
-                    'description' => 'List of '.$schemaTitle.' objects with pagination metadata',
+                    'description' => 'List of '.$schemaTitle.' objects with pagination metadata. '
+                        .'Send `Accept: application/ld+json` to receive a JSON-LD `@graph` '
+                        .'document (pagination under `or:` terms); the default '
+                        .'`application/json` representation is unchanged (json-ld-output).',
                     'content'     => [
-                        'application/json' => [
+                        'application/json'    => [
                             'schema' => [
                                 'allOf' => [
                                     [
@@ -1223,6 +1299,17 @@ class OasService
                                             ],
                                         ],
                                     ],
+                                ],
+                            ],
+                        ],
+                        'application/ld+json' => [
+                            'schema' => [
+                                'type'        => 'object',
+                                'description' => 'JSON-LD @graph serialization of the collection.',
+                                'properties'  => [
+                                    '@context' => ['type' => 'string', 'format' => 'uri'],
+                                    '@graph'   => ['type' => 'array', 'items' => ['type' => 'object']],
+                                    'or:total' => ['type' => 'integer'],
                                 ],
                             ],
                         ],
@@ -1279,11 +1366,25 @@ class OasService
             ),
             'responses'   => [
                 '200' => [
-                    'description' => $schema->getTitle().' found.',
+                    'description' => $schema->getTitle().' found. Send '
+                        .'`Accept: application/ld+json` to receive the JSON-LD '
+                        .'representation (`@context`/`@id`/`@type`); the default '
+                        .'`application/json` representation is unchanged (json-ld-output).',
                     'content'     => [
-                        'application/json' => [
+                        'application/json'    => [
                             'schema' => [
                                 '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
+                            ],
+                        ],
+                        'application/ld+json' => [
+                            'schema' => [
+                                'type'        => 'object',
+                                'description' => 'JSON-LD serialization of the object.',
+                                'properties'  => [
+                                    '@context' => ['type' => 'string', 'format' => 'uri'],
+                                    '@id'      => ['type' => 'string', 'format' => 'uri'],
+                                    '@type'    => ['type' => 'string'],
+                                ],
                             ],
                         ],
                     ],

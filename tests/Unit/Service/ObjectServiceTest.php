@@ -542,8 +542,13 @@ class ObjectServiceTest extends TestCase
 	/**
 	 * Test find sets register context when register param provided.
 	 */
-	public function testFindSetsRegisterContextWhenProvided(): void
+	public function testFindRestoresRegisterContextAfterReturning(): void
 	{
+		// BUG-OBJ-13 (openregister#1520): find() is a read operation and must
+		// leave the shared currentRegister / currentSchema instance state
+		// UNTOUCHED for the next caller. Any re-anchoring for this call's
+		// rendering/RBAC is snapshot-restored in a finally. The old contract
+		// "find(register: X) sets currentRegister = X afterward" is gone.
 		$entity = new ObjectEntity();
 		$entity->setId(1);
 		$entity->setSchema(2);
@@ -554,9 +559,15 @@ class ObjectServiceTest extends TestCase
 		$this->performanceHandler->method('getCachedEntities')->willReturn([$this->schema]);
 		$this->renderHandler->method('renderEntity')->willReturn($entity);
 
+		// Capture the context before the call so we can assert it is restored.
+		$registerBefore = $this->getProperty('currentRegister');
+		$schemaBefore   = $this->getProperty('currentSchema');
+
 		$this->service->find(id: 'test', register: $this->register);
 
-		$this->assertSame($this->register, $this->getProperty('currentRegister'));
+		// Context is restored to exactly what it was before find() ran.
+		$this->assertSame($registerBefore, $this->getProperty('currentRegister'));
+		$this->assertSame($schemaBefore, $this->getProperty('currentSchema'));
 	}
 
 	// ── 6. findAll() tests ──────────────────────────────────────────────
@@ -2013,7 +2024,7 @@ class ObjectServiceTest extends TestCase
 		$this->assertCount(1, $uuids);
 	}
 
-	// ── 54. ensureObjectFolderExists ────────────────────────────────────
+	// ── 54. ensureObjectFolderExists ─────────────────────────────────
 
 	public function testEnsureObjectFolderExistsCreatesFolder(): void
 	{
@@ -2190,7 +2201,7 @@ class ObjectServiceTest extends TestCase
 		$this->invokePrivate('validateObjectIfRequired', [[]]);
 	}
 
-	// ── 55d. ensureObjectFolderExists when getFolderId returns null ───────
+	// ── 55d. ensureObjectFolderExists when getFolderId returns null ────
 
 	/**
 	 * Test ensureObjectFolderExists sets folder to null and still calls update

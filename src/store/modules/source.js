@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'
 
@@ -17,7 +16,6 @@ export const useSourceStore = defineStore(
 			 */
 			setSourceItem(sourceItem) {
 				this.sourceItem = sourceItem && new Source(sourceItem)
-				console.log('Active source item set to ' + sourceItem)
 			},
 			/**
 			 * Set the source list.
@@ -29,21 +27,17 @@ export const useSourceStore = defineStore(
 				this.sourceList = sourceList.map(
 					(sourceItem) => new Source(sourceItem),
 				)
-				console.log('Source list set to ' + sourceList.length + ' items')
 			},
 			/**
 			 * Refresh the source list from the API
 			 *
 			 * @param {string|null} search - Optional search term
-			 * @param {boolean} soft - If true, don't show loading state (default: false)
+			 * @param {boolean} _soft - If true, don't show loading state (default: false)
 			 * @return {Promise} Promise with source list
 			 * @spec exclude API passthrough to GET /api/sources (list)
 			 */
 			/* istanbul ignore next */ // ignore this for Jest until moved into a service
-			async refreshSourceList(search = null, soft = false) {
-				console.log('SourceStore: Starting refreshSourceList (soft=' + soft + ')')
-				// Note: SourceStore doesn't have a loading state, but we log for consistency
-
+			async refreshSourceList(search = null, _soft = false) {
 				// @todo this might belong in a service?
 				let endpoint = '/index.php/apps/openregister/api/sources'
 				if (search !== null && search !== '') {
@@ -95,8 +89,6 @@ export const useSourceStore = defineStore(
 					throw new Error('No source item to delete')
 				}
 
-				console.log('Deleting source...')
-
 				const endpoint = `/index.php/apps/openregister/api/sources/${sourceItem.id}`
 
 				const response = await fetch(endpoint, {
@@ -130,8 +122,6 @@ export const useSourceStore = defineStore(
 				if (!sourceItem) {
 					throw new Error('No source item to save')
 				}
-
-				console.log('Saving source...')
 
 				const isNewSource = !sourceItem.id
 				const endpoint = isNewSource

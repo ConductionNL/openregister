@@ -44,8 +44,8 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<div class="groups-select-container">
 								<label class="groups-label">Nextcloud Groups</label>
 								<NcSelect
-						input-label="Selected Groups"
 									v-model="selectedGroups"
+									input-label="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
@@ -304,10 +304,8 @@ export default {
 			if (applicationStore.nextcloudGroups && applicationStore.nextcloudGroups.length > 0) {
 				this.availableGroups = applicationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.info('Using cached Nextcloud groups from application store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.info('Groups not cached in application store, loading from API...')
 				this.loadingGroups = true
 				applicationStore.loadNextcloudGroups().then(() => {
 					this.availableGroups = applicationStore.nextcloudGroups
@@ -371,8 +369,6 @@ export default {
 
 							this.availableGroups = mergedGroups
 						}
-					} else {
-						console.warn('Failed to search groups:', response.statusText)
 					}
 				} catch (error) {
 					console.error('Error searching Nextcloud groups:', error)
@@ -455,7 +451,6 @@ export default {
 		 */
 		updateApplicationPermission(payload) {
 			const { groupId, action, hasPermission } = payload
-			console.info('Updating application permission:', { groupId, action, hasPermission })
 
 			// Initialize authorization if not present
 			if (!this.applicationItem.authorization) {
@@ -477,11 +472,9 @@ export default {
 			if (hasPermission && groupIndex === -1) {
 			// Add the group
 				this.applicationItem.authorization[action].push(groupId)
-				console.info(`Added ${groupId} to ${action}:`, this.applicationItem.authorization[action])
 			} else if (!hasPermission && groupIndex !== -1) {
 			// Remove the group
 				this.applicationItem.authorization[action].splice(groupIndex, 1)
-				console.info(`Removed ${groupId} from ${action}:`, this.applicationItem.authorization[action])
 			}
 
 			// Force Vue to detect the change

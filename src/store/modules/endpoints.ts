@@ -19,7 +19,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 */
 	const setEndpointItem = (item) => {
 		endpointItem.value = item
-		console.info('Active endpoint item set to ' + (item ? item.id : 'null'))
 	}
 
 	/**
@@ -48,7 +47,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 */
 	const setEndpointList = (list) => {
 		endpointList.value = list
-		console.info('Endpoint list set to ' + list.length + ' items')
 	}
 
 	/**
@@ -79,7 +77,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * Fetch the list of endpoints from the API
 	 */
 	const refreshEndpointList = () => {
-		console.info('Refreshing endpoint list')
 
 		fetch(apiEndpoint, {
 			method: 'GET',
@@ -99,7 +96,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * @param item - The endpoint item to create
 	 */
 	const createEndpoint = (item) => {
-		console.info('Creating endpoint:', item)
 
 		return fetch(apiEndpoint, {
 			method: 'POST',
@@ -115,7 +111,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				return response.json()
 			})
 			.then((data) => {
-				console.info('Endpoint created successfully:', data)
 				setEndpointItem(data)
 				refreshEndpointList()
 				return data
@@ -135,8 +130,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			throw new Error('Endpoint ID is required for update')
 		}
 
-		console.info('Updating endpoint:', item)
-
 		return fetch(`${apiEndpoint}/${item.id}`, {
 			method: 'PUT',
 			headers: {
@@ -151,7 +144,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				return response.json()
 			})
 			.then((data) => {
-				console.info('Endpoint updated successfully:', data)
 				setEndpointItem(data)
 				refreshEndpointList()
 				return data
@@ -171,8 +163,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			throw new Error('Endpoint ID is required for deletion')
 		}
 
-		console.info('Deleting endpoint:', item)
-
 		return fetch(`${apiEndpoint}/${item.id}`, {
 			method: 'DELETE',
 		})
@@ -180,7 +170,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				if (!response.ok) {
 					throw new Error('Failed to delete endpoint')
 				}
-				console.info('Endpoint deleted successfully')
 				// Clear the active item if it was the deleted one.
 				if (endpointItem.value && endpointItem.value.id === item.id) {
 					setEndpointItem(null)
@@ -203,8 +192,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			throw new Error('Endpoint ID is required for testing')
 		}
 
-		console.info('Testing endpoint:', item)
-
 		return fetch(`${apiEndpoint}/${item.id}/test`, {
 			method: 'POST',
 			headers: {
@@ -221,7 +208,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				})
 			})
 			.then((data) => {
-				console.info('Endpoint tested successfully:', data)
 				return data
 			})
 			.catch((err) => {

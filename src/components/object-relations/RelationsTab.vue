@@ -175,6 +175,7 @@ export default {
 		objectId: {
 			immediate: true,
 			/**
+			 * @param newId
 			 * @spec exclude watcher refetching relations on objectId change, UI plumbing
 			 */
 			handler(newId) {
@@ -217,6 +218,7 @@ export default {
 		},
 
 		/**
+		 * @param data
 		 * @spec exclude client-side normalisation of timeline/envelope response shapes for display, UI plumbing
 		 */
 		normaliseResponse(data) {
@@ -255,6 +257,7 @@ export default {
 		},
 
 		/**
+		 * @param raw
 		 * @spec exclude client-side normalisation of a single relation entry for display, UI plumbing
 		 */
 		normaliseEntry(raw) {
@@ -286,6 +289,7 @@ export default {
 		},
 
 		/**
+		 * @param type
 		 * @spec exclude local type-filter toggle plumbing, UI plumbing
 		 */
 		toggleType(type) {
@@ -297,6 +301,7 @@ export default {
 		},
 
 		/**
+		 * @param value
 		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formatDate(value) {

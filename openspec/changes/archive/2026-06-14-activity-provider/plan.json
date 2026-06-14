@@ -1,0 +1,117 @@
+{
+  "change": "activity-provider",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1093,
+  "parent_issue": 996,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "ActivityService backend core",
+      "github_issue": 1096,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-openregister-must-publish-activity-events-for-object-crud-operations",
+      "acceptance_criteria": [
+        "GIVEN a user creates/updates/deletes an object WHEN the event fires THEN an activity event is published with correct app/type/subject/author/link",
+        "GIVEN object owner differs from author THEN two events are published",
+        "GIVEN IManager::publish() throws THEN exception is caught and logged"
+      ],
+      "files_likely_affected": ["lib/Service/ActivityService.php"],
+      "status": "todo"
+    },
+    {
+      "id": 2,
+      "title": "ActivityEventListener",
+      "github_issue": 1097,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-the-activityeventlistener-must-be-registered-for-all-entity-events",
+      "acceptance_criteria": [
+        "GIVEN any of the 9 entity events is dispatched WHEN the listener handles it THEN the correct ActivityService method is called",
+        "GIVEN Application boots THEN registerEventListener is called for all 9 events"
+      ],
+      "files_likely_affected": ["lib/Listener/ActivityEventListener.php", "lib/AppInfo/Application.php"],
+      "status": "todo"
+    },
+    {
+      "id": 3,
+      "title": "Activity Provider display",
+      "github_issue": 1100,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-an-iprovider-must-parse-activity-events-into-human-readable-entries",
+      "acceptance_criteria": [
+        "GIVEN an activity event with app openregister and any of 9 subjects WHEN parse() is called THEN rich subject and icon are set",
+        "GIVEN foreign app or unknown subject WHEN parse() is called THEN UnknownActivityException is thrown"
+      ],
+      "files_likely_affected": ["lib/Activity/Provider.php"],
+      "status": "todo"
+    },
+    {
+      "id": 4,
+      "title": "ProviderSubjectHandler",
+      "github_issue": 1102,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-an-iprovider-must-parse-activity-events-into-human-readable-entries",
+      "acceptance_criteria": [
+        "GIVEN any of 9 subjects WHEN applySubjectText() is called THEN parsed and rich subjects are set with correct translations"
+      ],
+      "files_likely_affected": ["lib/Activity/ProviderSubjectHandler.php"],
+      "status": "todo"
+    },
+    {
+      "id": 5,
+      "title": "Activity Filter",
+      "github_issue": 1104,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-an-ifilter-must-allow-users-to-filter-the-activity-stream-for-openregister-events",
+      "acceptance_criteria": [
+        "GIVEN the filter WHEN filterTypes() is called THEN returns all 3 OpenRegister types",
+        "GIVEN the filter WHEN allowedApps() is called THEN returns openregister"
+      ],
+      "files_likely_affected": ["lib/Activity/Filter.php"],
+      "status": "todo"
+    },
+    {
+      "id": 6,
+      "title": "Activity Settings",
+      "github_issue": 1105,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-activitysettings-subclasses-must-allow-per-type-notification-configuration",
+      "acceptance_criteria": [
+        "GIVEN ObjectSetting THEN identifier=openregister_objects stream default enabled mail default disabled",
+        "GIVEN RegisterSetting THEN identifier=openregister_registers",
+        "GIVEN SchemaSetting THEN identifier=openregister_schemas"
+      ],
+      "files_likely_affected": ["lib/Activity/Setting/ObjectSetting.php", "lib/Activity/Setting/RegisterSetting.php", "lib/Activity/Setting/SchemaSetting.php"],
+      "status": "todo"
+    },
+    {
+      "id": 7,
+      "title": "App Registration info.xml",
+      "github_issue": 1107,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-activity-components-must-be-registered-via-infoxml",
+      "acceptance_criteria": ["GIVEN appinfo/info.xml THEN activity section contains provider 3 settings and filter"],
+      "files_likely_affected": ["appinfo/info.xml"],
+      "status": "todo"
+    },
+    {
+      "id": 8,
+      "title": "Translations nl/en",
+      "github_issue": 1109,
+      "spec_ref": "specs/activity-provider/spec.md#requirement-i18n-must-be-applied-to-all-user-visible-strings",
+      "acceptance_criteria": [
+        "GIVEN locale nl THEN all 9 subjects use Dutch translations",
+        "GIVEN locale en THEN all 9 subjects use English translations"
+      ],
+      "files_likely_affected": ["l10n/en.json", "l10n/en.js", "l10n/nl.json", "l10n/nl.js"],
+      "status": "todo"
+    },
+    {
+      "id": 9,
+      "title": "Unit Tests",
+      "github_issue": 1111,
+      "spec_ref": "specs/activity-provider/spec.md",
+      "acceptance_criteria": [
+        "ActivityService tests 3+ covering event construction dual notification error handling",
+        "Provider tests 3+ covering all subjects unknown activity icon",
+        "Listener tests 2+ covering dispatch for all 9 event types",
+        "Filter tests 2+ covering identifier filterTypes allowedApps",
+        "Settings tests 2+ covering all 3 settings"
+      ],
+      "files_likely_affected": ["tests/Unit/Service/ActivityServiceTest.php", "tests/Unit/Activity/ProviderTest.php", "tests/Unit/Listener/ActivityEventListenerTest.php"],
+      "status": "todo"
+    }
+  ]
+}

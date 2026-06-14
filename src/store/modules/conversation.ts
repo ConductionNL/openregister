@@ -8,7 +8,6 @@
  * @version  1.0.0
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Conversation, TConversation } from '../../entities/conversation/index'
 import { Message, TMessage } from '../../entities/message/index'
@@ -62,7 +61,6 @@ export const useConversationStore = defineStore('conversation', {
 		 */
 		toggleSidebar() {
 			this.sidebarCollapsed = !this.sidebarCollapsed
-			console.log('Sidebar collapsed:', this.sidebarCollapsed)
 		},
 
 		/**
@@ -72,7 +70,6 @@ export const useConversationStore = defineStore('conversation', {
 		 */
 		toggleArchive() {
 			this.showArchive = !this.showArchive
-			console.log('Show archive:', this.showArchive)
 			if (this.showArchive) {
 				this.refreshArchivedConversations()
 			}
@@ -87,7 +84,6 @@ export const useConversationStore = defineStore('conversation', {
 		 */
 		setActiveConversation(conversation: TConversation | null) {
 			this.activeConversation = conversation ? new Conversation(conversation) : null
-			console.log('Active conversation set:', conversation?.uuid || 'null')
 		},
 
 		/**
@@ -99,7 +95,6 @@ export const useConversationStore = defineStore('conversation', {
 		 */
 		setActiveMessages(messages: TMessage[]) {
 			this.activeConversationMessages = messages.map((msg) => new Message(msg))
-			console.log('Active conversation messages set:', messages.length, 'messages')
 		},
 
 		/**
@@ -112,7 +107,6 @@ export const useConversationStore = defineStore('conversation', {
 		addMessage(message: TMessage) {
 			const newMessage = new Message(message)
 			this.activeConversationMessages.push(newMessage)
-			console.log('Message added to active conversation')
 		},
 
 		/**
@@ -124,7 +118,6 @@ export const useConversationStore = defineStore('conversation', {
 		 */
 		setConversationList(conversations: TConversation[]) {
 			this.conversationList = conversations.map((conv) => new Conversation(conv))
-			console.log('Conversation list set:', conversations.length, 'conversations')
 		},
 
 		/**
@@ -136,8 +129,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — GET /api/conversations list; observable contract owned by chat-ai.
 		 */
 		async refreshConversationList(soft = false) {
-			console.log('ConversationStore: Starting refreshConversationList (soft=' + soft + ')')
-
 			if (!soft) {
 				this.loading = true
 			}
@@ -161,8 +152,6 @@ export const useConversationStore = defineStore('conversation', {
 				this.setConversationList(data.results || [])
 				this.pagination.total = data.total || 0
 
-				console.log('ConversationStore: refreshConversationList completed, got', data.results?.length || 0, 'conversations')
-
 				return { response, data }
 			} catch (error: any) {
 				console.error('Error fetching conversations:', error)
@@ -183,8 +172,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — GET /api/conversations?_deleted=true; observable contract owned by chat-ai.
 		 */
 		async refreshArchivedConversations() {
-			console.log('ConversationStore: Starting refreshArchivedConversations')
-
 			this.loading = true
 			this.error = null
 
@@ -206,8 +193,6 @@ export const useConversationStore = defineStore('conversation', {
 
 				this.archivedConversations = (data.results || []).map((conv: TConversation) => new Conversation(conv))
 
-				console.log('ConversationStore: refreshArchivedConversations completed, got', data.results?.length || 0, 'conversations')
-
 				return { response, data }
 			} catch (error: any) {
 				console.error('Error fetching archived conversations:', error)
@@ -227,8 +212,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — GET /api/conversations/{uuid}; observable contract owned by chat-ai.
 		 */
 		async loadConversation(uuid: string) {
-			console.log('ConversationStore: Loading conversation', uuid)
-
 			this.loading = true
 			this.error = null
 
@@ -248,8 +231,6 @@ export const useConversationStore = defineStore('conversation', {
 				this.setActiveConversation(data)
 				// Messages are now loaded separately
 				this.setActiveMessages([])
-
-				console.log('ConversationStore: Conversation loaded successfully')
 
 				// Load messages separately
 				await this.loadMessages(uuid)
@@ -275,8 +256,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — GET /api/conversations/{uuid}/messages; observable contract owned by chat-ai.
 		 */
 		async loadMessages(uuid: string, limit = 50, offset = 0) {
-			console.log('ConversationStore: Loading messages', { uuid, limit, offset })
-
 			this.messagesLoading = true
 			this.error = null
 
@@ -308,8 +287,6 @@ export const useConversationStore = defineStore('conversation', {
 				this.messagePagination.total = data.total || 0
 				this.messagePagination.limit = data.limit || 50
 
-				console.log('ConversationStore: Messages loaded successfully', data.results?.length || 0, 'messages')
-
 				return data
 			} catch (error: any) {
 				console.error('Error loading messages:', error)
@@ -330,8 +307,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — POST /api/conversations; observable contract owned by chat-ai.
 		 */
 		async createConversation(agentUuid: string, title?: string) {
-			console.log('ConversationStore: Creating conversation with agent', agentUuid)
-
 			this.loading = true
 			this.error = null
 
@@ -359,8 +334,6 @@ export const useConversationStore = defineStore('conversation', {
 				this.setActiveMessages([])
 				await this.refreshConversationList(true)
 
-				console.log('ConversationStore: Conversation created successfully')
-
 				return data
 			} catch (error: any) {
 				console.error('Error creating conversation:', error)
@@ -381,8 +354,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — PATCH /api/conversations/{uuid}; observable contract owned by chat-ai.
 		 */
 		async updateConversation(uuid: string, updates: Partial<TConversation>) {
-			console.log('ConversationStore: Updating conversation', uuid)
-
 			this.loading = true
 			this.error = null
 
@@ -410,8 +381,6 @@ export const useConversationStore = defineStore('conversation', {
 
 				await this.refreshConversationList(true)
 
-				console.log('ConversationStore: Conversation updated successfully')
-
 				return data
 			} catch (error: any) {
 				console.error('Error updating conversation:', error)
@@ -431,8 +400,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — DELETE /api/conversations/{uuid} (soft-archive); observable contract owned by chat-ai.
 		 */
 		async archiveConversation(uuid: string) {
-			console.log('ConversationStore: Archiving conversation', uuid)
-
 			this.loading = true
 			this.error = null
 
@@ -456,8 +423,6 @@ export const useConversationStore = defineStore('conversation', {
 				// Refresh both active and archived lists
 				await this.refreshConversationList(true)
 				await this.refreshArchivedConversations()
-
-				console.log('ConversationStore: Conversation archived successfully')
 
 				return response
 			} catch (error: any) {
@@ -490,8 +455,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — POST /api/conversations/{uuid}/restore; observable contract owned by chat-ai.
 		 */
 		async restoreConversation(uuid: string) {
-			console.log('ConversationStore: Restoring conversation', uuid)
-
 			this.loading = true
 			this.error = null
 
@@ -510,8 +473,6 @@ export const useConversationStore = defineStore('conversation', {
 
 				await this.refreshConversationList(true)
 				await this.refreshArchivedConversations()
-
-				console.log('ConversationStore: Conversation restored successfully')
 
 				return data
 			} catch (error: any) {
@@ -532,8 +493,6 @@ export const useConversationStore = defineStore('conversation', {
 		 * @spec exclude Thin API passthrough — DELETE /api/conversations/{uuid}/permanent; observable contract owned by chat-ai.
 		 */
 		async deleteConversationPermanent(uuid: string) {
-			console.log('ConversationStore: Permanently deleting conversation', uuid)
-
 			this.loading = true
 			this.error = null
 
@@ -549,8 +508,6 @@ export const useConversationStore = defineStore('conversation', {
 				}
 
 				await this.refreshArchivedConversations()
-
-				console.log('ConversationStore: Conversation permanently deleted')
 
 				return response
 			} catch (error: any) {
@@ -590,12 +547,6 @@ export const useConversationStore = defineStore('conversation', {
 				numSourcesObjects?: number
 			}
 		) {
-			console.log('ConversationStore: Sending message', {
-				views: selectedViews?.length || 0,
-				tools: selectedTools?.length || 0,
-				ragSettings,
-			})
-
 			this.loading = true
 			this.error = null
 
@@ -611,7 +562,6 @@ export const useConversationStore = defineStore('conversation', {
 					created: new Date().toISOString(),
 				}
 				this.addMessage(userMessage)
-				console.log('ConversationStore: Added user message optimistically')
 			}
 
 			try {
@@ -667,8 +617,6 @@ export const useConversationStore = defineStore('conversation', {
 
 				const data = await response.json()
 
-				console.log('ConversationStore: Received response', data)
-
 				// Update active conversation with new conversation UUID if it was created
 				if (data.conversation && !this.activeConversation) {
 					await this.loadConversation(data.conversation)
@@ -677,14 +625,12 @@ export const useConversationStore = defineStore('conversation', {
 				// Add the assistant message to active conversation
 					if (data.message) {
 						this.addMessage(data.message)
-						console.log('ConversationStore: Added assistant message to conversation')
 					}
 
 					// Update conversation title if it was generated
 					if (data.title && this.activeConversation) {
 					// Use Object.assign to ensure reactivity
 						Object.assign(this.activeConversation, { title: data.title })
-						console.log('ConversationStore: Updated conversation title', data.title)
 
 						// Also update in the conversation list
 						const conversationInList = this.conversationList.find(c => c.uuid === this.activeConversation.uuid)
@@ -696,8 +642,6 @@ export const useConversationStore = defineStore('conversation', {
 
 				// Soft refresh the conversation list to update metadata (but keep title changes)
 				await this.refreshConversationList(true)
-
-				console.log('ConversationStore: Message sent successfully')
 
 				return data
 			} catch (error: any) {
@@ -717,7 +661,6 @@ export const useConversationStore = defineStore('conversation', {
 		clearActiveConversation() {
 			this.setActiveConversation(null)
 			this.setActiveMessages([])
-			console.log('Active conversation cleared')
 		},
 
 		/**
@@ -730,7 +673,6 @@ export const useConversationStore = defineStore('conversation', {
 		 */
 		setPagination(page: number, limit = 50) {
 			this.pagination = { ...this.pagination, page, limit }
-			console.info('Pagination set to', { page, limit })
 		},
 	},
 })

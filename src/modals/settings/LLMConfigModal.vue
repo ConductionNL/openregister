@@ -78,8 +78,8 @@
 				<div class="form-group">
 					<label for="openai-model">{{ t('openregister', 'Embedding Model') }}</label>
 					<NcSelect
-						input-label="Openai Config Model"
 						v-model="openaiConfig.model"
+						input-label="Openai Config Model"
 						:options="openaiModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
@@ -122,9 +122,9 @@
 				<div class="form-group">
 					<label for="ollama-model">{{ t('openregister', 'Model Name') }}</label>
 					<NcSelect
-						input-label="Ollama Config Model"
 						id="ollama-model"
 						v-model="ollamaConfig.model"
+						input-label="Ollama Config Model"
 						:options="ollamaModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
@@ -160,8 +160,8 @@
 				<div class="form-group">
 					<label for="fireworks-embedding-model">{{ t('openregister', 'Embedding Model') }}</label>
 					<NcSelect
-						input-label="Fireworks Config Embedding Model"
 						v-model="fireworksConfig.embeddingModel"
+						input-label="Fireworks Config Embedding Model"
 						:options="fireworksEmbeddingModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
@@ -206,8 +206,8 @@
 				<div class="form-group">
 					<label for="openai-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
-						input-label="Openai Config Chat Model"
 						v-model="openaiConfig.chatModel"
+						input-label="Openai Config Chat Model"
 						:options="openaiChatModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select chat model')"
@@ -240,8 +240,8 @@
 				<div class="form-group">
 					<label for="fireworks-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
-						input-label="Fireworks Config Chat Model"
 						v-model="fireworksConfig.chatModel"
+						input-label="Fireworks Config Chat Model"
 						:options="fireworksChatModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select chat model')"
@@ -274,9 +274,9 @@
 				<div class="form-group">
 					<label for="ollama-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
-						input-label="Ollama Config Chat Model"
 						id="ollama-chat-model"
 						v-model="ollamaConfig.chatModel"
+						input-label="Ollama Config Chat Model"
 						:options="ollamaModelOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select model')"
@@ -304,8 +304,8 @@
 				<div class="form-group">
 					<label for="vector-backend">{{ t('openregister', 'Search Method') }}</label>
 					<NcSelect
-						input-label="Selected Vector Backend"
 						v-model="selectedVectorBackend"
+						input-label="Selected Vector Backend"
 						:options="vectorBackendOptions"
 						label="name"
 						:placeholder="t('openregister', 'Select backend')"
@@ -599,6 +599,7 @@ export default {
 	watch: {
 		// Fetch Ollama models when Ollama is selected
 		/**
+		 * @param newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the embedding provider is Ollama.
 		 */
 		selectedEmbeddingProvider(newVal) {
@@ -607,6 +608,7 @@ export default {
 			}
 		},
 		/**
+		 * @param newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
 		 */
 		selectedChatProvider(newVal) {
@@ -711,8 +713,6 @@ export default {
 						feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
 					})
 				}
-
-				console.info('LLM configuration loaded', llmSettings)
 
 				// Fetch Ollama models if Ollama is selected
 				if ((this.selectedEmbeddingProvider?.id === 'ollama' || this.selectedChatProvider?.id === 'ollama') && this.ollamaConfig.url) {

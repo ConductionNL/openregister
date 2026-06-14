@@ -14,8 +14,9 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 			<div class="labelAndShareContainer">
 				<NcSelect
-						input-label="Label Options Value" v-bind="labelOptions"
+					v-bind="labelOptions"
 					v-model="labelOptions.value"
+					input-label="Label Options Value"
 					:disabled="loading || tagsLoading"
 					:loading="tagsLoading"
 					:taggable="true"
@@ -355,6 +356,8 @@ export default {
 	watch: {
 		filesComputed: {
 			/**
+			 * @param newFiles
+			 * @param _oldFiles
 			 * @spec exclude Watcher auto-triggering upload when files are queued; UI reactivity plumbing.
 			 */
 			handler(newFiles, _oldFiles) {
@@ -388,6 +391,7 @@ export default {
 			navigationStore.setModal(false)
 		},
 		/**
+		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		bytesToSize(bytes) {
@@ -400,6 +404,7 @@ export default {
 		},
 
 		/**
+		 * @param fullname
 		 * @spec exclude Splits a filename into name + extension for display; UI presentation helper.
 		 */
 		getFileNameAndExtension(fullname) {
@@ -410,6 +415,7 @@ export default {
 		},
 
 		/**
+		 * @param files
 		 * @spec exclude Flags over-size files in the queue with a status; UI validation helper.
 		 */
 		checkForTooBigFiles(files) {
@@ -430,6 +436,7 @@ export default {
 		},
 
 		/**
+		 * @param option
 		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
 		 */
 		isSelectable(option) {
@@ -500,6 +507,8 @@ export default {
 		},
 
 		/**
+		 * @param file
+		 * @param editedTags
 		 * @spec exclude Applies edited tags to a queued file and re-triggers upload; UI selection plumbing.
 		 */
 		saveTags(file, editedTags) {
@@ -512,6 +521,7 @@ export default {
 		},
 
 		/**
+		 * @param fileName
 		 * @spec exclude Removes a file from the upload queue; UI file-picker plumbing.
 		 */
 		removeFile(fileName) {
@@ -529,6 +539,7 @@ export default {
 		},
 
 		/**
+		 * @param specificFile
 		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
 		 */
 		async addAttachments(specificFile = null) {

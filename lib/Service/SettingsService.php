@@ -413,6 +413,7 @@ class SettingsService
      * @return array Search backend configuration
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getSearchBackendConfig(): array
     {
@@ -428,7 +429,21 @@ class SettingsService
                 ];
             }
 
-            return json_decode($backendConfig, true);
+            $decoded = json_decode($backendConfig, true);
+
+            // BUG-SVC-6: a corrupt/non-object JSON value (e.g. "not-json" or a
+            // bare scalar) decodes to null/scalar. Returning that from an
+            // `: array` method throws a TypeError that the `catch (\Exception)`
+            // below would NOT catch, so guard the shape explicitly and fall
+            // back to the default configuration.
+            if (is_array($decoded) === false) {
+                return [
+                    'active'    => 'solr',
+                    'available' => ['solr', 'elasticsearch'],
+                ];
+            }
+
+            return $decoded;
         } catch (\Exception $e) {
             $this->logger->error(
                 message: '[SettingsService] Failed to retrieve search backend configuration: '.$e->getMessage(),

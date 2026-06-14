@@ -40,7 +40,15 @@ use Psr\Log\LoggerInterface;
  * path: whitelist enforcement, shape validation, diff-awareness, and
  * audit-trail emission. Inherited `find()` / `update()` are mocked.
  *
+ * Carries the task-4.2 (shape validation, persist/rollback ordering) and
+ * task-4.3 (audit-trail emission) traceability that the retired
+ * FileTextControllerAnonymizeTest held: on `development` the `bases` write path
+ * is `updateDecisionMetadata`, not the FileTextController anonymise endpoint
+ * (which no longer accepts a `bases` field), so the coverage lives here.
+ *
  * @spec openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md
+ * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-4.2
+ * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-4.3
  */
 class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase
 {

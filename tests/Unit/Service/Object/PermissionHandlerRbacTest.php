@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -50,6 +51,9 @@ class PermissionHandlerRbacTest extends TestCase
         $this->container = $this->createMock(ContainerInterface::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
 
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturn(true);
+
         $this->handler = new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -57,6 +61,7 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $this->conditionMatcher,
+            $appConfig,
             $this->logger,
             $this->container
         );
@@ -645,6 +650,9 @@ class PermissionHandlerRbacTest extends TestCase
             $operatorEvaluator,
             $this->logger
         );
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturn(true);
+
         return new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -652,6 +660,7 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $realMatcher,
+            $appConfig,
             $this->logger,
             $this->container
         );

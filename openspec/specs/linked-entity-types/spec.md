@@ -326,6 +326,8 @@ Controllers MUST accept entity reference strings instead of numeric link IDs for
 
 ### REQ-001: The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations
 
+The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations.
+
 > Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
 
 `OCA\OpenRegister\Repair\LogDanglingLinkedTypes` implements `OCP\Migration\IRepairStep` and is registered via `appinfo/info.xml`. Nextcloud invokes it on every `occ app:enable` / `occ maintenance:repair` / app upgrade. The step's `getName()` returns `"Log schemas with linkedTypes referencing unregistered integrations"`, which appears in the occ output and the admin Repair UI.

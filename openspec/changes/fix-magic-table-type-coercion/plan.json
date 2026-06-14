@@ -1,0 +1,63 @@
+{
+  "change": "fix-magic-table-type-coercion",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-30",
+  "tracking_issue": 1366,
+  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1366",
+  "specs": [
+    "schema-driven-read-coercion"
+  ],
+  "tasks": [
+    { "id": "1.1", "section": "Pre-implementation audit", "status": "done", "title": "Grep apps-extra for code depending on boolean=0/1", "result": "0 hits in consumer code" },
+    { "id": "1.2", "section": "Pre-implementation audit", "status": "done", "title": "Grep apps-extra for code depending on string-as-decoded-JSON", "result": "0 hits in consumer code" },
+    { "id": "1.3", "section": "Pre-implementation audit", "status": "done", "title": "Confirm proposal capability list matches files", "result": "specs/ contains only schema-driven-read-coercion as listed" },
+
+    { "id": "2.1", "section": "Implement the shared converter", "status": "pending", "title": "Create lib/Service/Object/SchemaTypeConverter.php with convertValue()" },
+    { "id": "2.2", "section": "Implement the shared converter", "status": "pending", "title": "Implement convertString() with array/object compat decode" },
+    { "id": "2.3", "section": "Implement the shared converter", "status": "pending", "title": "Implement convertBoolean() (true/1/yes literals)" },
+    { "id": "2.4", "section": "Implement the shared converter", "status": "pending", "title": "Implement convertInteger() (numeric → int)" },
+    { "id": "2.5", "section": "Implement the shared converter", "status": "pending", "title": "Implement convertNumber() (numeric → float)" },
+    { "id": "2.6", "section": "Implement the shared converter", "status": "pending", "title": "Implement convertArrayOrObject() (JSON-string → array)" },
+    { "id": "2.7", "section": "Implement the shared converter", "status": "pending", "title": "Wire dispatch in convertValue with match{} and null short-circuit" },
+    { "id": "2.8", "section": "Implement the shared converter", "status": "pending", "title": "Add PHPDoc and PHPMD annotations" },
+
+    { "id": "3.1", "section": "Refactor MagicStatisticsHandler", "status": "pending", "title": "Inject SchemaTypeConverter via constructor" },
+    { "id": "3.2", "section": "Refactor MagicStatisticsHandler", "status": "pending", "title": "Replace partial coercion + JSON-decode with converter call" },
+    { "id": "3.3", "section": "Refactor MagicStatisticsHandler", "status": "pending", "title": "Keep DateTimeNormalizer block after converter call" },
+    { "id": "3.4", "section": "Refactor MagicStatisticsHandler", "status": "pending", "title": "Delete now-unused isJsonString helper" },
+
+    { "id": "4.1", "section": "Refactor MagicSearchHandler", "status": "pending", "title": "Inject SchemaTypeConverter via constructor" },
+    { "id": "4.2", "section": "Refactor MagicSearchHandler", "status": "pending", "title": "Replace convertValueByType call with converter call" },
+    { "id": "4.3", "section": "Refactor MagicSearchHandler", "status": "pending", "title": "Delete inline convert*Value private methods" },
+    { "id": "4.4", "section": "Refactor MagicSearchHandler", "status": "pending", "title": "Retarget any other callers of the deleted methods" },
+
+    { "id": "5.1", "section": "Unit tests", "status": "pending", "title": "Create SchemaTypeConverterTest.php" },
+    { "id": "5.2", "section": "Unit tests", "status": "pending", "title": "String coverage tests (8 cases)" },
+    { "id": "5.3", "section": "Unit tests", "status": "pending", "title": "Boolean coverage tests (12 cases)" },
+    { "id": "5.4", "section": "Unit tests", "status": "pending", "title": "Integer coverage tests (5 cases)" },
+    { "id": "5.5", "section": "Unit tests", "status": "pending", "title": "Number coverage tests (4 cases)" },
+    { "id": "5.6", "section": "Unit tests", "status": "pending", "title": "Array/object coverage tests (5 cases)" },
+    { "id": "5.7", "section": "Unit tests", "status": "pending", "title": "Unknown-type fallback tests" },
+    { "id": "5.8", "section": "Unit tests", "status": "pending", "title": "Run PHPUnit and verify green" },
+
+    { "id": "6.1", "section": "Handler-level integration tests", "status": "pending", "title": "MagicStatisticsHandlerTest delegation assertion" },
+    { "id": "6.2", "section": "Handler-level integration tests", "status": "pending", "title": "MagicSearchHandlerTest delegation assertion" },
+    { "id": "6.3", "section": "Handler-level integration tests", "status": "pending", "title": "Date-format ordering regression test" },
+
+    { "id": "7.1", "section": "Quality gates and verification", "status": "pending", "title": "composer check:strict passes" },
+    { "id": "7.2", "section": "Quality gates and verification", "status": "pending", "title": "Full magic-mapper PHPUnit suite passes" },
+    { "id": "7.3", "section": "Quality gates and verification", "status": "pending", "title": "Manual API verification (GET single + list)" },
+    { "id": "7.4", "section": "Quality gates and verification", "status": "pending", "title": "Manual API verification (POST + PUT response bodies)" },
+    { "id": "7.5", "section": "Quality gates and verification", "status": "pending", "title": "Manual search-path regression verification" },
+    { "id": "7.6", "section": "Quality gates and verification", "status": "pending", "title": "OpenConnector downstream spot-check" },
+
+    { "id": "8.1", "section": "Documentation and rollout", "status": "pending", "title": "Update docs/ if API-types section documented the bug" },
+    { "id": "8.2", "section": "Documentation and rollout", "status": "pending", "title": "Release-notes entry" },
+    { "id": "8.3", "section": "Documentation and rollout", "status": "pending", "title": "OpenConnector release-notes mention" },
+
+    { "id": "9.1", "section": "PR and archive", "status": "pending", "title": "Open PR against development" },
+    { "id": "9.2", "section": "PR and archive", "status": "pending", "title": "Run /opsx:verify" },
+    { "id": "9.3", "section": "PR and archive", "status": "pending", "title": "Archive change after merge" }
+  ]
+}
