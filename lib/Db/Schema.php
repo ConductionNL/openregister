@@ -1682,7 +1682,7 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
+        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
