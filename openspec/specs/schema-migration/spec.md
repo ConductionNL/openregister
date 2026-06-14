@@ -24,6 +24,7 @@ be persisted per schema version and retrievable as the schema's
 changelog. Updates that do not modify the definition (metadata-only
 saves) MUST NOT create a changelog entry or version bump.
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Added optional property is compatible
 - GIVEN a schema at version `1.2.0`
 - WHEN an optional property `nickname` (string) is added
@@ -31,6 +32,7 @@ saves) MUST NOT create a changelog entry or version bump.
 - AND the version becomes `1.3.0`
 - AND the changelog lists `added property nickname`
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Type change is breaking
 - GIVEN a schema at version `1.3.0` with property `age` of type `string`
 - WHEN `age` is changed to type `integer`
@@ -38,11 +40,13 @@ saves) MUST NOT create a changelog entry or version bump.
 - AND the version becomes `2.0.0`
 - AND the changelog entry records the old and new type
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: New required property without default is breaking
 - GIVEN a schema where `email` is optional
 - WHEN `email` is added to `required` with no `default`
 - THEN the change is classified `breaking`
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Changelog is queryable per schema
 - GIVEN a schema that has been updated three times
 - WHEN the changelog is requested via the API
@@ -59,23 +63,27 @@ invalid count, per-object validation errors capped per object), and be
 listable per schema. Two concurrent runs on the same schema MUST be
 refused.
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Dry-run against a proposed definition
 - GIVEN a schema with 10,000 objects and a proposed definition that tightens `minLength` on `name`
 - WHEN a revalidation run is started with the proposed definition
 - THEN the run executes in background batches without modifying any object
 - AND the report lists each object whose `name` violates the proposed constraint
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Progress and report are queryable
 - GIVEN a running revalidation
 - WHEN its status is requested
 - THEN processed and total counts are returned
 - AND once finished, the persisted report returns valid/invalid totals and per-object errors
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Concurrent run refused
 - GIVEN a revalidation run in state `running` for a schema
 - WHEN a second run is started for the same schema
 - THEN the request is refused with HTTP 409 referencing the active run
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Dry-run never mutates
 - GIVEN any revalidation run
 - WHEN it completes
@@ -91,17 +99,20 @@ version) without altering object data. Consumers MUST be able to filter
 a schema's objects by validity status and by `schemaVersion` (e.g. "all
 objects last validated before 2.0.0", "all currently invalid objects").
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Write stamps the current schema version
 - GIVEN a schema at version `2.0.0`
 - WHEN an object is created or updated successfully
 - THEN the stored object metadata records `schemaVersion: "2.0.0"`
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Revalidation marks invalid objects
 - GIVEN objects written under version `1.x` and a breaking update to `2.0.0`
 - WHEN a revalidation run against the current definition completes
 - THEN objects failing the new definition are queryable via the validity-status filter
 - AND their data is unchanged
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Filter by schema version
 - GIVEN a mixed population stamped `1.3.0` and `2.0.0`
 - WHEN objects are listed with a `schemaVersion` filter of `1.3.0`
@@ -133,24 +144,28 @@ with reason). A failed object MUST NOT abort the run by default;
 a migration MUST be re-stamped with the schema version they now
 validate against.
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Preview shows before/after without persisting
 - GIVEN a plan `[{rename: fullname → name}, {setDefault: status = "active"}]`
 - WHEN the plan is previewed
 - THEN up to 10 sample objects are returned as before/after pairs
 - AND no object is modified
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Executed run migrates through the save pipeline
 - GIVEN the same plan executed over 5,000 objects
 - WHEN the run completes
 - THEN every modified object has a new content version and an audit trail entry attributing the migration run
 - AND the run report counts migrated, unchanged, and failed objects
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Uncastable value is reported, run continues
 - GIVEN a plan with `cast: age → integer` and one object with `age: "unknown"`
 - WHEN the run executes with default error policy
 - THEN that object is recorded as failed with the cast error
 - AND all other objects are migrated
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: stopOnError halts the run
 - GIVEN the same plan with `stopOnError: true`
 - WHEN the first uncastable value is hit
@@ -169,18 +184,21 @@ after the migration MUST be skipped by rollback and listed in the
 rollback report as conflicts. A rolled-back run enters state
 `rolled-back` and cannot be rolled back twice.
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Rollback restores pre-migration versions
 - GIVEN a completed migration run that modified 100 objects
 - WHEN the run is rolled back
 - THEN each of the 100 objects is restored to its recorded pre-migration version through the save pipeline
 - AND the run state becomes `rolled-back`
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Post-migration edits are conflict-skipped
 - GIVEN one of the migrated objects was edited by a user after the run
 - WHEN the run is rolled back
 - THEN that object is skipped
 - AND the rollback report lists it as a conflict with its current version id
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Double rollback refused
 - GIVEN a run in state `rolled-back`
 - WHEN rollback is requested again
@@ -198,23 +216,27 @@ virtual apps. Compatible changes MUST NOT require acknowledgement. The
 acknowledgement (actor, timestamp) MUST be recorded on the changelog
 entry.
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Unacknowledged breaking change refused
 - GIVEN a schema update that removes property `email`
 - WHEN the update is submitted without `acknowledgeBreaking`
 - THEN the response is HTTP 409
 - AND the body lists the classification `breaking` and the change `removed property email`
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Acknowledged breaking change proceeds
 - GIVEN the same update submitted with `acknowledgeBreaking: true`
 - WHEN it is processed
 - THEN the schema is updated with a major version bump
 - AND the changelog entry records the acknowledging actor
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Runtime schema API is gated identically
 - GIVEN a breaking definition update arriving via the runtime schema API
 - WHEN it lacks `acknowledgeBreaking`
 - THEN it is refused with the same HTTP 409 contract as the direct API
 
+<!-- @e2e exclude API/backend flow verified via Newman (openregister-schema-migration.postman_collection.json) + PHPUnit; no UI in this change (Phase 6.2 deferred). -->
 #### Scenario: Compatible change needs no acknowledgement
 - GIVEN an update adding an optional property
 - WHEN it is submitted without `acknowledgeBreaking`
