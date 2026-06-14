@@ -125,6 +125,7 @@ class Version1Date20260614120000 extends SimpleMigrationStep
             $table->addColumn('message', Types::TEXT, ['notnull' => false]);
             $table->addColumn('pre_version', Types::STRING, ['notnull' => false, 'length' => 64]);
             $table->addColumn('post_version', Types::STRING, ['notnull' => false, 'length' => 64]);
+            $table->addColumn('pre_data', Types::TEXT, ['notnull' => false]);
 
             $table->setPrimaryKey(['id']);
             $table->addIndex(['run_id'], 'idx_or_schrunent_run');

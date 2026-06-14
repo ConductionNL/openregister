@@ -44,6 +44,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPreVersion(?string $preVersion)
  * @method string|null getPostVersion()
  * @method void setPostVersion(?string $postVersion)
+ * @method array|null getPreData()
+ * @method void setPreData(?array $preData)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -105,6 +107,13 @@ class SchemaRunEntry extends Entity implements JsonSerializable
      */
     protected ?string $postVersion = null;
 
+    /**
+     * Pre-migration object data snapshot (restored forward on rollback).
+     *
+     * @var array<string, mixed>|null
+     */
+    protected ?array $preData = null;
+
 
     /**
      * Constructor — registers field types for hydration.
@@ -117,6 +126,7 @@ class SchemaRunEntry extends Entity implements JsonSerializable
         $this->addType(fieldName: 'message', type: 'string');
         $this->addType(fieldName: 'preVersion', type: 'string');
         $this->addType(fieldName: 'postVersion', type: 'string');
+        $this->addType(fieldName: 'preData', type: 'json');
 
     }//end __construct()
 
@@ -136,6 +146,7 @@ class SchemaRunEntry extends Entity implements JsonSerializable
             'message'     => $this->message,
             'preVersion'  => $this->preVersion,
             'postVersion' => $this->postVersion,
+            'preData'     => $this->preData,
         ];
 
     }//end jsonSerialize()
