@@ -326,9 +326,18 @@ function routesFromManifest(manifest) {
 	return routes
 }
 
+// Hash mode (not history): the PHP backend registers exactly one frontend
+// route — `dashboard#page` at `/` (appinfo/routes.php) — and no catch-all that
+// serves the SPA shell for deep sub-paths like `/registers` or `/schemas`. In
+// history mode a full-page load or bookmark to `#/registers` drops the fragment
+// and resolves the base path `/` → the Dashboard surface, so the relocated /
+// grouped index pages render empty (no Add button, no list) on deep-link — the
+// #133 regression. Hash mode keeps every route under the single `/` server
+// route, so `#/registers` etc. resolve client-side to their correct index
+// surface. This also matches the e2e harness contract (tests deep-link via
+// `/index.php/apps/openregister/#/<route>`).
 const router = new VueRouter({
-	mode: 'history',
-	base: '/index.php/apps/openregister/',
+	mode: 'hash',
 	routes: routesFromManifest(mergedManifest),
 })
 
