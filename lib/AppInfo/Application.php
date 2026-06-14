@@ -388,6 +388,18 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Register the data-sync source-fetcher registry pre-loaded with the
+        // built-in REST/OpenRegister fetcher. Apps can register additional
+        // fetchers (OData, SOAP, CSV) by resolving and extending this service.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
+            function ($c) {
+                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
+                return $registry;
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
