@@ -1,7 +1,18 @@
 # unified-search-provider Specification
 
 ## Purpose
-TBD - created by archiving change unified-search-provider. Update Purpose after archive.
+
+OpenRegister provides Nextcloud unified search (top-bar magnifier) over
+register objects for the entire fleet, centrally, via
+`lib/Search/ObjectsProvider.php` (id `openregister_objects`). Leaf apps do
+NOT register their own `OCP\Search\IProvider`; they participate by claiming
+(register, schema) pairs through the deep-link registry, which supplies
+result URLs, icons, and display names. The provider enforces OR RBAC, tenant
+isolation, the published predicate, and schema-level search exposure in one
+place, and returns labeled, excerpted, paginated results.
+
+@e2e exclude The unified-search surface is rendered entirely by Nextcloud's own top-bar search chrome (no OpenRegister Vue component); the provider is a server-side OCP\Search\IProvider. Its observable behaviour is covered by PHPUnit (tests/Unit/Search/ObjectsProviderTest.php) and by Newman against the OCS search endpoint (tests/integration/openregister-unified-search.postman_collection.json), per the Playwright-UI-only / Newman-for-API rule.
+
 ## Requirements
 ### Requirement: OpenRegister MUST be the single fleet-wide unified search provider for register objects
 
