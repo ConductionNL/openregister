@@ -92,15 +92,41 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await page.goto('/index.php/login')
 	await page.locator('input[name="user"]').fill(username)
 	await page.locator('input[name="password"]').fill(password)
+	// Arm the post-login navigation wait BEFORE submitting the form.
+	//
+	// Previously the form was submitted first and `page.waitForURL(...)`
+	// was awaited afterwards. On a busy dev container the login POST +
+	// redirect to /apps/dashboard/ can fully complete (firing its `load`
+	// event) before `waitForURL` registers its listener; `waitForURL`'s
+	// default `waitUntil: 'load'` then blocks waiting for a *fresh* load
+	// event that never comes, and times out at 25s — even though the page
+	// is already authenticated on /apps/dashboard/ (the timeout log shows
+	// `navigated to ".../apps/dashboard/"`). This raced consistently under
+	// container load and failed the whole suite in globalSetup.
+	//
+	// Build the promise first (listener attached synchronously), then
+	// trigger the submit, then await. `waitUntil: 'commit'` resolves as
+	// soon as the navigation to the post-login URL is committed, which is
+	// robust to the redirect having already landed. If the navigation
+	// settled before the wait armed, fall back to the current URL.
+	const leftLogin = page.waitForURL(
+		(url) => !/\/login(\?|$|\/)/.test(url.toString()),
+		{ timeout: 25_000, waitUntil: 'commit' },
+	)
 	// Submit via the form rather than a themed-button .click(): on NC's
-	// themed login the styled submit button can swallow the click, and
-	// #header is also present on the login page itself, so a plain
-	// waitForSelector('#header') races the post-submit navigation and
-	// flakes. Submit the form and wait for the URL to leave /login.
+	// themed login the styled submit button can swallow the click.
 	await page.locator('input[name="password"]').evaluate((el: HTMLInputElement) => {
 		el.form?.requestSubmit()
 	})
-	await page.waitForURL((url) => !/\/login(\?|$|\/)/.test(url.toString()), { timeout: 25_000 })
+	try {
+		await leftLogin
+	} catch (err) {
+		// The navigation may have already settled off /login before the
+		// wait armed — accept that rather than failing the whole suite.
+		if (/\/login(\?|$|\/)/.test(page.url())) {
+			throw err
+		}
+	}
 	// Then confirm an authenticated page rendered (header on a non-login page).
 	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
 	const currentUrl = page.url()

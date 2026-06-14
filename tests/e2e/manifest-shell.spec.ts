@@ -193,6 +193,18 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 test.describe('openregister-app-manifest — navigation sections', () => {
 	test.use({ storageState: STORAGE_STATE })
 
+	// Expand a top-level navigation group (cluster) by clicking its caption.
+	// Since 106fe928 the manifest menu clusters destinations into ≤8
+	// collapsible groups (Data, AI, Integration, Administration, Audit);
+	// a group's child destinations are not in the DOM until the group is
+	// expanded. Returns the group locator for chained assertions.
+	async function expandNavGroup(nav: ReturnType<Page['locator']>, label: string) {
+		const caption = nav.getByText(label, { exact: true }).first()
+		await expect(caption).toBeVisible({ timeout: 15_000 })
+		await caption.click()
+		return caption
+	}
+
 	// @e2e openregister-app-manifest::both-sections-are-populated
 	test('navigation renders both main and settings destinations', async ({
 		page,
@@ -205,38 +217,22 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 			.first()
 		await expect(nav).toBeVisible({ timeout: 25_000 })
 
-		// A "main"-section destination (Registers) and a "settings"-section
-		// destination (Configurations) are both reachable from the rendered nav.
-		const navText = (await nav.innerText()).toLowerCase()
-		expect(navText).toContain('registers')
+		// The manifest clusters destinations into collapsible groups
+		// (section:"main"). A "data" group destination (Registers) and an
+		// "administration" group destination (Configurations) are both
+		// reachable once their groups are expanded.
+		//
+		// Data group → Registers.
+		await expandNavGroup(nav, 'Data')
+		await expect(
+			nav.getByText('Registers', { exact: true }).first(),
+		).toBeVisible({ timeout: 10_000 })
 
-		// Settings cluster destination — Configurations lives in
-		// section:"settings", which the CnAppRoot / NcAppNavigation
-		// shell renders inside a collapsible "Settings" footer control
-		// at the bottom of the nav. Its child destinations are NOT in
-		// the DOM until that control is expanded, so reading
-		// nav.innerText() alone never surfaces "Configurations".
-		// Expand the Settings control first, then assert the cluster
-		// destination is reachable.
-		const settingsToggle = nav
-			.locator('button:has-text("Settings"), [class*="settings"] button')
-			.first()
-		if (await settingsToggle.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await settingsToggle.click()
-			// The expanded settings drawer renders its destination list.
-			await page
-				.locator('text=/configuration/i')
-				.first()
-				.waitFor({ state: 'visible', timeout: 10_000 })
-				.catch(() => {})
-		}
-
-		// Either the settings cluster expanded and now exposes the
-		// Configurations destination, or it is already visible somewhere
-		// in the document. Assert on the page, not just the collapsed nav.
-		await expect(page.locator('text=/configuration/i').first()).toBeVisible({
-			timeout: 10_000,
-		})
+		// Administration group → Configurations.
+		await expandNavGroup(nav, 'Administration')
+		await expect(
+			nav.getByText('Configurations', { exact: true }).first(),
+		).toBeVisible({ timeout: 10_000 })
 	})
 
 	// @e2e openregister-app-manifest::menu-order-is-monotonic-per-section
@@ -249,10 +245,25 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 			.first()
 		await expect(nav).toBeVisible({ timeout: 25_000 })
 
-		const navText = (await nav.innerText()).toLowerCase()
-		// Manifest main order: Chat(10) < Registers(20) < Schemas(30).
-		const idxRegisters = navText.indexOf('registers')
-		const idxSchemas = navText.indexOf('schemas')
+		// Top-level group order follows manifest group order:
+		// Data(20) < AI(70) < Integration(90) < Administration(100).
+		const groupText = (await nav.innerText()).toLowerCase()
+		const idxData = groupText.indexOf('data')
+		const idxAi = groupText.indexOf('ai')
+		const idxAdmin = groupText.indexOf('administration')
+		expect(idxData).toBeGreaterThanOrEqual(0)
+		expect(idxAi).toBeGreaterThan(idxData)
+		expect(idxAdmin).toBeGreaterThan(idxAi)
+
+		// Within the Data group, child order follows the manifest:
+		// Registers(20) < Schemas(30).
+		await expandNavGroup(nav, 'Data')
+		await expect(
+			nav.getByText('Registers', { exact: true }).first(),
+		).toBeVisible({ timeout: 10_000 })
+		const childText = (await nav.innerText()).toLowerCase()
+		const idxRegisters = childText.indexOf('registers')
+		const idxSchemas = childText.indexOf('schemas')
 		expect(idxRegisters).toBeGreaterThanOrEqual(0)
 		expect(idxSchemas).toBeGreaterThan(idxRegisters)
 	})
