@@ -126,6 +126,8 @@ class ObjectsController extends Controller
      * @param LoggerInterface                                 $logger           The logger (optional)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer     $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
      *
      * @return void
      *
@@ -148,7 +150,9 @@ class ObjectsController extends Controller
         private readonly ?WebhookService $webhookService=null,
         private readonly ?LoggerInterface $logger=null,
         private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser=null,
-        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -176,6 +180,93 @@ class ObjectsController extends Controller
         $userGroups = $this->groupManager->getUserGroupIds($user);
         return in_array('admin', $userGroups);
     }//end isCurrentUserAdmin()
+
+
+    /**
+     * Whether the current request asks for JSON-LD output via content negotiation.
+     *
+     * Null-safe: when the JSON-LD services are not wired (e.g. minimal DI in a
+     * test harness) this always returns false and the default JSON path is kept.
+     *
+     * @return bool True when JSON-LD output is requested and available.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function wantsJsonLd(): bool
+    {
+        if ($this->jsonLdSerializer === null) {
+            return false;
+        }
+
+        return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
+    }//end wantsJsonLd()
+
+
+    /**
+     * Decorate an already-rendered single-object array as a JSON-LD JSONResponse.
+     *
+     * The serializer wraps the rendered array only — it introduces no second
+     * data path, so RBAC / multitenancy / field-level security / the published
+     * predicate all remain applied exactly as for the plain-JSON response.
+     *
+     * @param array                                $renderedObject The rendered object array.
+     * @param \OCA\OpenRegister\Db\Register|null    $register       The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null      $schema         The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdObjectResponse(array $renderedObject, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serialize(
+            renderedObject: $renderedObject,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+    }//end jsonLdObjectResponse()
+
+
+    /**
+     * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
+     *
+     * @param array                                $result   The paginated result array.
+     * @param \OCA\OpenRegister\Db\Register|null    $register The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null      $schema   The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdCollectionResponse(array $result, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serializeCollection(
+            paginatedResult: $result,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+    }//end jsonLdCollectionResponse()
+
+
+    /**
+     * Add the JSON-LD content negotiation headers to a response.
+     *
+     * @param JSONResponse $response The response to decorate.
+     *
+     * @return JSONResponse The decorated response.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function withJsonLdHeaders(JSONResponse $response): JSONResponse
+    {
+        $response->addHeader('Content-Type', 'application/ld+json');
+        $response->addHeader('Vary', 'Accept');
+        return $response;
+    }//end withJsonLdHeaders()
 
     /**
      * Normalize form data values by decoding JSON strings.
@@ -1306,6 +1397,16 @@ class ObjectsController extends Controller
                 // path so geo filtering works for both register layouts.
                 $responseData = $this->applyGeoQueryFilters(params: $params, result: $responseData);
 
+                // Content negotiation: JSON-LD @graph for magic-mapped results
+                // (json-ld-output).
+                if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
+                    return $this->jsonLdCollectionResponse(
+                        result: $responseData,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
+                }
+
                 // Return in expected format.
                 $response = new JSONResponse(data: $responseData);
 
@@ -1364,6 +1465,20 @@ class ObjectsController extends Controller
         // and apply the filters to $result['results']. Pure-PHP fallback;
         // PostGIS push-down is tracked in `geo-spatial-queries`.
         $result = $this->applyGeoQueryFilters(params: $params, result: $result);
+
+        // Content negotiation: emit a JSON-LD @graph when requested. Wraps the
+        // already-rendered/RBAC-filtered result — no second data path
+        // (json-ld-output).
+        if ($this->wantsJsonLd() === true
+            && ($resolved['registerEntity'] ?? null) !== null
+            && ($resolved['schemaEntity'] ?? null) !== null
+        ) {
+            return $this->jsonLdCollectionResponse(
+                result: $result,
+                register: $resolved['registerEntity'],
+                schema: $resolved['schemaEntity']
+            );
+        }
 
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
@@ -1906,6 +2021,20 @@ class ObjectsController extends Controller
             );
             if ($includeEmpty === false) {
                 $renderedData = $this->stripEmptyValues(data: $renderedData);
+            }
+
+            // Content negotiation: emit JSON-LD when requested. The serializer
+            // wraps the already-rendered array — no second data path — so all
+            // access control above remains applied (json-ld-output).
+            if ($this->wantsJsonLd() === true
+                && $resolved['registerEntity'] !== null
+                && $resolved['schemaEntity'] !== null
+            ) {
+                return $this->jsonLdObjectResponse(
+                    renderedObject: $renderedData,
+                    register: $resolved['registerEntity'],
+                    schema: $resolved['schemaEntity']
+                );
             }
 
             return new JSONResponse(data: $renderedData);
