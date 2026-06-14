@@ -208,40 +208,6 @@ User explicit preference — every integration gets both surfaces. Enforcing it 
 
 ---
 
-### Requirement: Widget Surfaces
-
-Every registered widget SHALL render correctly in four surfaces: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`. The `surface` SHALL be passed as a prop to the widget component. Optional surface-specific components (`widgetCompact`, `widgetExpanded`, `widgetEntity`) SHALL be used when present; otherwise the registry SHALL fall back to the main `widget`.
-
-#### Scenario: Default widget renders on all surfaces
-
-- **GIVEN** an integration registers only `widget: FooCard` with no surface-specific variants
-- **WHEN** the widget is rendered on any of the four surfaces
-- **THEN** `FooCard` MUST be rendered with the `surface` prop set appropriately
-- **AND** `FooCard` MAY branch on `surface` internally
-
-#### Scenario: Surface-specific widget overrides the default
-
-- **GIVEN** an integration registers `widget: FooCard` AND `widgetEntity: FooChip`
-- **WHEN** the widget is rendered with `surface='single-entity'`
-- **THEN** `FooChip` MUST be rendered (not `FooCard`)
-
-#### Scenario: A new surface added in the future falls back to the main widget
-
-- **GIVEN** a future surface name `email-digest` is added to the registry's surface enum
-- **WHEN** an existing integration that did not declare `widgetEmailDigest` is rendered with `surface='email-digest'`
-- **THEN** the main `widget` component MUST be rendered with `surface='email-digest'`
-- **AND** no error MUST be thrown
-
-#### Scenario: Widget render failure is isolated
-
-- **GIVEN** an integration's widget component throws an error during render
-- **WHEN** it is mounted on a dashboard alongside other widgets
-- **THEN** the failing widget MUST render a fallback "Widget unavailable" state with the integration id and error message
-- **AND** other widgets on the same dashboard MUST continue to render normally
-- **AND** the error MUST be logged for debugging
-
----
-
 ### Requirement: External Integration Routing via OpenConnector
 
 Providers with `getStorageStrategy() === 'external'` SHALL route their CRUD operations through OpenConnector instead of a local storage table. The umbrella SHALL provide an `ExternalIntegrationRouter` service that handles dispatch + auth-status surfacing.
@@ -341,40 +307,6 @@ OCS capabilities is reachable by every authenticated NC user. Without role-based
 - **WHEN** `GET /ocs/v2.php/cloud/capabilities` is called
 - **THEN** the response MUST include `data.capabilities.openregister.integrations` as an array of 8 objects
 - **AND** each object MUST include at minimum the public-block fields documented above
-
----
-
-### Requirement: Reference-Property Auto-Rendering
-
-When a JSON schema property declares `referenceType: <integration-id>`, frontend form and detail components (`CnFormDialog`, `CnDetailGrid`) SHALL render the matching integration's `single-entity` widget surface inline next to the property, passing the entity id as `entityId`.
-
-#### Scenario: Schema property with referenceType renders integration widget
-
-- **GIVEN** a schema with property `assignedHandler: { type: 'string', referenceType: 'contacts' }` and an object with `assignedHandler: 'vcard-uuid-123'`
-- **WHEN** `CnDetailGrid` renders the object
-- **THEN** the `assignedHandler` row MUST contain the `contacts` integration's `single-entity` widget (or fallback `widget`) with `entityId='vcard-uuid-123'`
-- **AND** the widget MUST receive `surface='single-entity'`
-
-#### Scenario: Schema property without referenceType renders normally
-
-- **GIVEN** a schema with property `notes: { type: 'string' }` (no `referenceType`)
-- **WHEN** `CnDetailGrid` renders the object
-- **THEN** the `notes` value MUST be rendered as plain text — no integration widget invoked
-
-#### Scenario: Reference to a missing entity renders a broken-link placeholder
-
-- **GIVEN** a schema property `assignedHandler: { type: 'string', referenceType: 'contacts' }` and an object with `assignedHandler: 'vcard-uuid-deleted'`
-- **AND** the referenced vCard has been deleted from the NC address book
-- **WHEN** `CnDetailGrid` renders the object
-- **THEN** the widget MUST render a "Reference unavailable" placeholder with the id visible to admins (not to end users)
-- **AND** the render MUST NOT throw
-
-#### Scenario: Reference to a provider whose required NC app is uninstalled
-
-- **GIVEN** a schema property with `referenceType: 'deck'` and the NC Deck app is not installed
-- **WHEN** `CnDetailGrid` renders the object
-- **THEN** the widget MUST render a "Deck not installed" placeholder with admin-only install hint
-- **AND** the render MUST NOT throw
 
 ---
 
@@ -541,3 +473,69 @@ The change SHALL preserve the public API of `CnObjectSidebar` and the existing `
 - **WHEN** the schema author edits the list down to `["files", "notes"]`
 - **THEN** the schema MUST save without error
 - **AND** subsequent renders MUST honour the narrower whitelist
+
+## MODIFIED Requirements
+
+### Requirement: Widget Surfaces
+
+Every registered widget SHALL render correctly in four surfaces: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`. The `surface` SHALL be passed as a prop to the widget component. Optional surface-specific components (`widgetCompact`, `widgetExpanded`, `widgetEntity`) SHALL be used when present; otherwise the registry SHALL fall back to the main `widget`.
+
+#### Scenario: Default widget renders on all surfaces
+
+- **GIVEN** an integration registers only `widget: FooCard` with no surface-specific variants
+- **WHEN** the widget is rendered on any of the four surfaces
+- **THEN** `FooCard` MUST be rendered with the `surface` prop set appropriately
+- **AND** `FooCard` MAY branch on `surface` internally
+
+#### Scenario: Surface-specific widget overrides the default
+
+- **GIVEN** an integration registers `widget: FooCard` AND `widgetEntity: FooChip`
+- **WHEN** the widget is rendered with `surface='single-entity'`
+- **THEN** `FooChip` MUST be rendered (not `FooCard`)
+
+#### Scenario: A new surface added in the future falls back to the main widget
+
+- **GIVEN** a future surface name `email-digest` is added to the registry's surface enum
+- **WHEN** an existing integration that did not declare `widgetEmailDigest` is rendered with `surface='email-digest'`
+- **THEN** the main `widget` component MUST be rendered with `surface='email-digest'`
+- **AND** no error MUST be thrown
+
+#### Scenario: Widget render failure is isolated
+
+- **GIVEN** an integration's widget component throws an error during render
+- **WHEN** it is mounted on a dashboard alongside other widgets
+- **THEN** the failing widget MUST render a fallback "Widget unavailable" state with the integration id and error message
+- **AND** other widgets on the same dashboard MUST continue to render normally
+- **AND** the error MUST be logged for debugging
+
+### Requirement: Reference-Property Auto-Rendering
+
+When a JSON schema property declares `referenceType: <integration-id>`, frontend form and detail components (`CnFormDialog`, `CnDetailGrid`) SHALL render the matching integration's `single-entity` widget surface inline next to the property, passing the entity id as `entityId`.
+
+#### Scenario: Schema property with referenceType renders integration widget
+
+- **GIVEN** a schema with property `assignedHandler: { type: 'string', referenceType: 'contacts' }` and an object with `assignedHandler: 'vcard-uuid-123'`
+- **WHEN** `CnDetailGrid` renders the object
+- **THEN** the `assignedHandler` row MUST contain the `contacts` integration's `single-entity` widget (or fallback `widget`) with `entityId='vcard-uuid-123'`
+- **AND** the widget MUST receive `surface='single-entity'`
+
+#### Scenario: Schema property without referenceType renders normally
+
+- **GIVEN** a schema with property `notes: { type: 'string' }` (no `referenceType`)
+- **WHEN** `CnDetailGrid` renders the object
+- **THEN** the `notes` value MUST be rendered as plain text — no integration widget invoked
+
+#### Scenario: Reference to a missing entity renders a broken-link placeholder
+
+- **GIVEN** a schema property `assignedHandler: { type: 'string', referenceType: 'contacts' }` and an object with `assignedHandler: 'vcard-uuid-deleted'`
+- **AND** the referenced vCard has been deleted from the NC address book
+- **WHEN** `CnDetailGrid` renders the object
+- **THEN** the widget MUST render a "Reference unavailable" placeholder with the id visible to admins (not to end users)
+- **AND** the render MUST NOT throw
+
+#### Scenario: Reference to a provider whose required NC app is uninstalled
+
+- **GIVEN** a schema property with `referenceType: 'deck'` and the NC Deck app is not installed
+- **WHEN** `CnDetailGrid` renders the object
+- **THEN** the widget MUST render a "Deck not installed" placeholder with admin-only install hint
+- **AND** the render MUST NOT throw

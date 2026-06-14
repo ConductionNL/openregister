@@ -1,20 +1,12 @@
 ---
-status: proposed
+status: done
 ---
 
-# Integration: XWiki
+# integration-xwiki Specification
 
 ## Purpose
-
-Link XWiki pages to OR objects through external routing. Complements `integration-collectives` (NC-native wiki) with external-platform support.
-
-**Standards**: XWiki REST API, ADR-019
-**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [integration-openproject](../../../integration-openproject/specs/integration-openproject/spec.md), [integration-collectives](../../../integration-collectives/specs/integration-collectives/spec.md)
-
----
-
-## ADDED Requirements
-
+TBD - created by archiving change integration-xwiki. Update Purpose after archive.
+## Requirements
 ### Requirement: XWiki Provider Registration
 
 `XwikiProvider` SHALL register with id='xwiki', group='external', requiredApp=null, storage='external', `getOpenConnectorSource()='xwiki'`.
@@ -110,3 +102,4 @@ The provider SHALL set `requiresPermission() === null`; XWiki's own ACLs govern 
 - **WHEN** the user opens the XWiki tab
 - **THEN** OR MUST NOT block the call at the NC layer
 - **AND** the XWiki backend MUST return its native `403` which the provider surfaces verbatim
+
