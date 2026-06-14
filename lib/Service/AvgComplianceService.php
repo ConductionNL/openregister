@@ -180,7 +180,7 @@ class AvgComplianceService
      */
     public function runAllChecks(): array
     {
-        $unannotated      = $this->findUnannotatedSchemasWithPii();
+        $unannotated       = $this->findUnannotatedSchemasWithPii();
         $unclassifiedReads = $this->countUnclassifiedProcessing();
         return [
             'generated' => date('c'),

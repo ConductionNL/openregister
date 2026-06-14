@@ -61,6 +61,8 @@ use Psr\Log\LoggerInterface;
  * Buffered, fail-soft processing-log writer for object reads/exports.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 class ProcessingLogService
 {
@@ -93,16 +95,15 @@ class ProcessingLogService
      */
     private array $buffer = [];
 
-
     /**
      * Constructor.
      *
-     * @param ProcessingLogMapper         $logMapper   Append-only log mapper.
-     * @param VerwerkingsactiviteitMapper $vrwMapper   Activity resolver + fallback seed.
-     * @param SchemaMapper                $schemaMapper Schema annotation reader.
+     * @param ProcessingLogMapper         $logMapper      Append-only log mapper.
+     * @param VerwerkingsactiviteitMapper $vrwMapper      Activity resolver + fallback seed.
+     * @param SchemaMapper                $schemaMapper   Schema annotation reader.
      * @param RegisterMapper              $registerMapper Register annotation reader (inheritance).
-     * @param IUserSession                $userSession Actor identity.
-     * @param LoggerInterface             $logger      Fail-soft diagnostics.
+     * @param IUserSession                $userSession    Actor identity.
+     * @param LoggerInterface             $logger         Fail-soft diagnostics.
      */
     public function __construct(
         private readonly ProcessingLogMapper $logMapper,
@@ -114,7 +115,6 @@ class ProcessingLogService
     ) {
 
     }//end __construct()
-
 
     /**
      * Record a single object read/export if its schema opts in.
@@ -128,6 +128,8 @@ class ProcessingLogService
      * @param string|null  $actor   Explicit actor (e.g. API client id) or null for the NC user.
      *
      * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function logRead(
         ObjectEntity $object,
@@ -175,7 +177,6 @@ class ProcessingLogService
 
     }//end logRead()
 
-
     /**
      * Record a single collapsed entry for a list/search result.
      *
@@ -190,6 +191,8 @@ class ProcessingLogService
      * @param string|null              $actor   Explicit actor or null.
      *
      * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function logReadList(
         array $objects,
@@ -203,7 +206,7 @@ class ProcessingLogService
 
         try {
             // Anchor on the first object to resolve schema/register opt-in.
-            $first  = $objects[array_key_first($objects)];
+            $first = $objects[array_key_first($objects)];
             if (($first instanceof ObjectEntity) === false) {
                 return;
             }
@@ -246,7 +249,6 @@ class ProcessingLogService
 
     }//end logReadList()
 
-
     /**
      * Flush the in-request buffer as one batched append.
      *
@@ -255,6 +257,8 @@ class ProcessingLogService
      * affected because flush runs after the response.
      *
      * @return int Number of entries persisted (0 on failure or empty buffer).
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function flush(): int
     {
@@ -276,7 +280,6 @@ class ProcessingLogService
 
     }//end flush()
 
-
     /**
      * Number of entries currently buffered (test/diagnostic helper).
      *
@@ -289,7 +292,6 @@ class ProcessingLogService
         return count($this->buffer);
 
     }//end pendingCount()
-
 
     /**
      * Resolve the effective processing config for a schema, inheriting
@@ -313,7 +315,7 @@ class ProcessingLogService
         $effective = ($registerConfig ?? []);
         if ($schemaConfig !== null) {
             $effective = array_merge($effective, $schemaConfig);
-            // attribution merges per-key, schema overriding register.
+            // Attribution merges per-key, schema overriding register.
             $effective['attribution'] = array_merge(
                 ($registerConfig['attribution'] ?? []),
                 ($schemaConfig['attribution'] ?? [])
@@ -323,7 +325,6 @@ class ProcessingLogService
         return $effective;
 
     }//end resolveProcessingConfig()
-
 
     /**
      * Normalise an annotation block from either the new dialect or the
@@ -343,9 +344,9 @@ class ProcessingLogService
         $dialect = ($config[self::ANNOTATION_KEY] ?? null);
         if (is_array($dialect) === true) {
             return [
-                'logReads'    => (($dialect['logReads'] ?? false) === true),
-                'attribution' => (is_array($dialect['attribution'] ?? null) === true ? $dialect['attribution'] : []),
-                'subjectIdFields' => (is_array($dialect['subjectIdFields'] ?? null) === true ? $dialect['subjectIdFields'] : []),
+                'logReads'        => (($dialect['logReads'] ?? false) === true),
+                'attribution'     => $this->asArray(value: ($dialect['attribution'] ?? null)),
+                'subjectIdFields' => $this->asArray(value: ($dialect['subjectIdFields'] ?? null)),
             ];
         }
 
@@ -363,7 +364,6 @@ class ProcessingLogService
 
     }//end readAnnotation()
 
-
     /**
      * Resolve the attributed activity uuid for an action, falling back
      * to the seeded flagged fallback activity when nothing resolves.
@@ -376,7 +376,7 @@ class ProcessingLogService
      */
     private function resolveAttribution(array $config, string $action, string $organisationId): string
     {
-        $attribution = (is_array($config['attribution'] ?? null) === true ? $config['attribution'] : []);
+        $attribution = $this->asArray(value: ($config['attribution'] ?? null));
         $reference   = ($attribution[$action] ?? $attribution['default'] ?? null);
 
         if (is_string($reference) === true && $reference !== '') {
@@ -390,7 +390,6 @@ class ProcessingLogService
         return $this->fallbackActivityUuid(organisationId: $organisationId);
 
     }//end resolveAttribution()
-
 
     /**
      * Whether an activity may receive new attribution.
@@ -408,7 +407,6 @@ class ProcessingLogService
         return in_array($status, ['retired', 'archived'], true) === false;
 
     }//end isAttributable()
-
 
     /**
      * Find-or-create the per-organisation flagged fallback activity.
@@ -437,7 +435,6 @@ class ProcessingLogService
 
     }//end fallbackActivityUuid()
 
-
     /**
      * Extract the data-subject identifier from the object, using the
      * schema-declared `subjectIdFields` map (`{ "BSN": "bsn" }`).
@@ -449,7 +446,7 @@ class ProcessingLogService
      */
     private function extractSubject(ObjectEntity $object, array $config): array
     {
-        $fields = (is_array($config['subjectIdFields'] ?? null) === true ? $config['subjectIdFields'] : []);
+        $fields = $this->asArray(value: ($config['subjectIdFields'] ?? null));
         if ($fields === []) {
             return ['type' => null, 'value' => null];
         }
@@ -466,7 +463,6 @@ class ProcessingLogService
 
     }//end extractSubject()
 
-
     /**
      * Current actor identifier — NC user id, or `system` when none.
      *
@@ -482,7 +478,6 @@ class ProcessingLogService
         return $user->getUID();
 
     }//end currentActor()
-
 
     /**
      * Best-effort channel detection from the runtime.
@@ -503,7 +498,6 @@ class ProcessingLogService
 
     }//end detectChannel()
 
-
     /**
      * Load a schema's configuration array, RBAC/multitenancy bypassed.
      *
@@ -521,7 +515,6 @@ class ProcessingLogService
         return $schema->getConfiguration();
 
     }//end loadSchemaConfig()
-
 
     /**
      * Load a register's configuration array, RBAC/multitenancy bypassed.
@@ -541,5 +534,20 @@ class ProcessingLogService
 
     }//end loadRegisterConfig()
 
+    /**
+     * Coerce a value to an array, returning an empty array when it is not one.
+     *
+     * @param mixed $value Candidate value.
+     *
+     * @return array<array-key, mixed>
+     */
+    private function asArray($value): array
+    {
+        if (is_array($value) === true) {
+            return $value;
+        }
 
+        return [];
+
+    }//end asArray()
 }//end class

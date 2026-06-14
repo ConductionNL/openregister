@@ -82,7 +82,6 @@ class ProcessingLogServiceTest extends TestCase
 
     private ProcessingLogService $service;
 
-
     /**
      * Build the service with mocked collaborators.
      *
@@ -111,7 +110,6 @@ class ProcessingLogServiceTest extends TestCase
 
     }//end setUp()
 
-
     /**
      * Build an ObjectEntity stub.
      *
@@ -130,7 +128,6 @@ class ProcessingLogServiceTest extends TestCase
         return $object;
 
     }//end makeObject()
-
 
     /**
      * Stub the schema config returned by SchemaMapper::find().
@@ -151,7 +148,6 @@ class ProcessingLogServiceTest extends TestCase
 
     }//end stubSchemaConfig()
 
-
     /**
      * Stub a resolvable activity.
      *
@@ -169,7 +165,6 @@ class ProcessingLogServiceTest extends TestCase
 
     }//end stubResolvableActivity()
 
-
     /**
      * Opted-in schema produces one buffered entry with the right shape.
      *
@@ -177,13 +172,15 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testReadOnOptedInSchemaIsBuffered(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => [
-                'logReads'        => true,
-                'attribution'     => ['default' => 'act-omgevingsvergunning'],
-                'subjectIdFields' => ['BSN' => 'bsn'],
-            ],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => [
+                        'logReads'        => true,
+                        'attribution'     => ['default' => 'act-omgevingsvergunning'],
+                        'subjectIdFields' => ['BSN' => 'bsn'],
+                    ],
+                ]
+                );
         $this->stubResolvableActivity('act-uuid-1');
 
         $object = $this->makeObject(['bsn' => '123456789']);
@@ -194,26 +191,29 @@ class ProcessingLogServiceTest extends TestCase
         // Flush asserts the entry shape via the mapper.
         $this->logMapper->expects($this->once())
             ->method('insertBatch')
-            ->willReturnCallback(function (array $entries): int {
-                $this->assertCount(1, $entries);
-                /** @var ProcessingLogEntry $entry */
-                $entry = $entries[0];
-                $this->assertSame('read', $entry->getAction());
-                $this->assertSame('jan', $entry->getActor());
-                $this->assertSame('act-uuid-1', $entry->getActivityId());
-                $this->assertSame('obj-uuid-1', $entry->getObjectUuid());
-                $this->assertSame('BSN', $entry->getSubjectIdType());
-                $this->assertSame('123456789', $entry->getSubjectIdValue());
-                $this->assertSame('org-1', $entry->getOrganisationId());
-                $this->assertSame(1, $entry->getObjectCount());
-                return 1;
-            });
+            ->willReturnCallback(
+                    function (array $entries): int {
+                        $this->assertCount(1, $entries);
+                        /*
+                         * @var ProcessingLogEntry $entry
+                         */
+                        $entry = $entries[0];
+                        $this->assertSame('read', $entry->getAction());
+                        $this->assertSame('jan', $entry->getActor());
+                        $this->assertSame('act-uuid-1', $entry->getActivityId());
+                        $this->assertSame('obj-uuid-1', $entry->getObjectUuid());
+                        $this->assertSame('BSN', $entry->getSubjectIdType());
+                        $this->assertSame('123456789', $entry->getSubjectIdValue());
+                        $this->assertSame('org-1', $entry->getOrganisationId());
+                        $this->assertSame(1, $entry->getObjectCount());
+                        return 1;
+                    }
+                    );
 
         $this->assertSame(1, $this->service->flush());
         $this->assertSame(0, $this->service->pendingCount());
 
     }//end testReadOnOptedInSchemaIsBuffered()
-
 
     /**
      * A schema without the opt-in produces no entry.
@@ -222,9 +222,11 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testNoLoggingWithoutOptIn(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => ['logReads' => false, 'attribution' => ['default' => 'a']],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => ['logReads' => false, 'attribution' => ['default' => 'a']],
+                ]
+                );
 
         $this->service->logRead(object: $this->makeObject(['bsn' => '1']));
 
@@ -233,7 +235,6 @@ class ProcessingLogServiceTest extends TestCase
         $this->assertSame(0, $this->service->flush());
 
     }//end testNoLoggingWithoutOptIn()
-
 
     /**
      * No annotation at all → no entry.
@@ -248,7 +249,6 @@ class ProcessingLogServiceTest extends TestCase
 
     }//end testNoAnnotationNoEntry()
 
-
     /**
      * Unresolvable attribution falls back to the flagged fallback
      * activity, never dropped.
@@ -257,12 +257,14 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testUnresolvedAttributionFallsBackAndIsNotDropped(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => [
-                'logReads'    => true,
-                'attribution' => ['default' => 'dangling-ref'],
-            ],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => [
+                        'logReads'    => true,
+                        'attribution' => ['default' => 'dangling-ref'],
+                    ],
+                ]
+                );
         // resolveReference returns null (dangling) for the default ref.
         $this->vrwMapper->method('resolveReference')->willReturn(null);
         // No existing fallback → it is seeded; insert returns it with a uuid.
@@ -275,14 +277,15 @@ class ProcessingLogServiceTest extends TestCase
 
         $this->assertSame(1, $this->service->pendingCount());
 
-        $this->logMapper->method('insertBatch')->willReturnCallback(function (array $entries): int {
-            $this->assertSame('fallback-uuid', $entries[0]->getActivityId());
-            return 1;
-        });
+        $this->logMapper->method('insertBatch')->willReturnCallback(
+                function (array $entries): int {
+                    $this->assertSame('fallback-uuid', $entries[0]->getActivityId());
+                    return 1;
+                }
+                );
         $this->assertSame(1, $this->service->flush());
 
     }//end testUnresolvedAttributionFallsBackAndIsNotDropped()
-
 
     /**
      * A retired activity is not attributable — falls back.
@@ -291,9 +294,11 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testRetiredActivityFallsBack(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'retired-act']],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'retired-act']],
+                ]
+                );
         $this->stubResolvableActivity('retired-uuid', status: 'retired');
         $fallback = new Verwerkingsactiviteit();
         $fallback->setUuid('fallback-uuid');
@@ -301,14 +306,15 @@ class ProcessingLogServiceTest extends TestCase
 
         $this->service->logRead(object: $this->makeObject());
 
-        $this->logMapper->method('insertBatch')->willReturnCallback(function (array $entries): int {
-            $this->assertSame('fallback-uuid', $entries[0]->getActivityId());
-            return 1;
-        });
+        $this->logMapper->method('insertBatch')->willReturnCallback(
+                function (array $entries): int {
+                    $this->assertSame('fallback-uuid', $entries[0]->getActivityId());
+                    return 1;
+                }
+                );
         $this->assertSame(1, $this->service->flush());
 
     }//end testRetiredActivityFallsBack()
-
 
     /**
      * Per-operation override: export uses the export attribution.
@@ -317,12 +323,14 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testPerOperationExportAttribution(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => [
-                'logReads'    => true,
-                'attribution' => ['default' => 'act-a', 'export' => 'act-b'],
-            ],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => [
+                        'logReads'    => true,
+                        'attribution' => ['default' => 'act-a', 'export' => 'act-b'],
+                    ],
+                ]
+                );
         $exportActivity = new Verwerkingsactiviteit();
         $exportActivity->setUuid('export-uuid');
         $exportActivity->setStatus('published');
@@ -333,15 +341,16 @@ class ProcessingLogServiceTest extends TestCase
 
         $this->service->logRead(object: $this->makeObject(), action: 'export');
 
-        $this->logMapper->method('insertBatch')->willReturnCallback(function (array $entries): int {
-            $this->assertSame('export', $entries[0]->getAction());
-            $this->assertSame('export-uuid', $entries[0]->getActivityId());
-            return 1;
-        });
+        $this->logMapper->method('insertBatch')->willReturnCallback(
+                function (array $entries): int {
+                    $this->assertSame('export', $entries[0]->getAction());
+                    $this->assertSame('export-uuid', $entries[0]->getActivityId());
+                    return 1;
+                }
+                );
         $this->assertSame(1, $this->service->flush());
 
     }//end testPerOperationExportAttribution()
-
 
     /**
      * A list read collapses to a single entry carrying objectCount.
@@ -350,9 +359,11 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testListReadCollapsesToOneEntry(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']],
+                ]
+                );
         $this->stubResolvableActivity('act-uuid');
 
         $objects = [];
@@ -363,15 +374,16 @@ class ProcessingLogServiceTest extends TestCase
         $this->service->logReadList(objects: $objects, action: 'read');
 
         $this->assertSame(1, $this->service->pendingCount());
-        $this->logMapper->method('insertBatch')->willReturnCallback(function (array $entries): int {
-            $this->assertCount(1, $entries);
-            $this->assertSame(50, $entries[0]->getObjectCount());
-            return 1;
-        });
+        $this->logMapper->method('insertBatch')->willReturnCallback(
+                function (array $entries): int {
+                    $this->assertCount(1, $entries);
+                    $this->assertSame(50, $entries[0]->getObjectCount());
+                    return 1;
+                }
+                );
         $this->assertSame(1, $this->service->flush());
 
     }//end testListReadCollapsesToOneEntry()
-
 
     /**
      * A failing flush is fail-soft: it returns 0 and retains the buffer,
@@ -381,9 +393,11 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testFlushIsFailSoft(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']],
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']],
+                ]
+                );
         $this->stubResolvableActivity('act-uuid');
 
         $this->service->logRead(object: $this->makeObject());
@@ -395,7 +409,6 @@ class ProcessingLogServiceTest extends TestCase
         $this->assertSame(1, $this->service->pendingCount());
 
     }//end testFlushIsFailSoft()
-
 
     /**
      * A broken schema lookup is fail-soft: logRead swallows the error.
@@ -415,7 +428,6 @@ class ProcessingLogServiceTest extends TestCase
 
     }//end testCaptureIsFailSoftOnSchemaError()
 
-
     /**
      * Legacy single-string annotation does not enable read logging
      * (reads default off) — back-compat preserved.
@@ -424,14 +436,14 @@ class ProcessingLogServiceTest extends TestCase
      */
     public function testLegacyAnnotationDoesNotEnableReads(): void
     {
-        $this->stubSchemaConfig([
-            'x-openregister-processing-activity' => 'some-activity',
-        ]);
+        $this->stubSchemaConfig(
+                [
+                    'x-openregister-processing-activity' => 'some-activity',
+                ]
+                );
 
         $this->service->logRead(object: $this->makeObject());
         $this->assertSame(0, $this->service->pendingCount());
 
     }//end testLegacyAnnotationDoesNotEnableReads()
-
-
 }//end class

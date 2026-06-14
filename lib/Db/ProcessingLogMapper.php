@@ -40,11 +40,11 @@ use Symfony\Component\Uid\Uuid;
  * Mapper class for ProcessingLogEntry rows.
  *
  * @template-extends QBMapper<ProcessingLogEntry>
+ *
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 class ProcessingLogMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -59,7 +59,6 @@ class ProcessingLogMapper extends QBMapper
         );
 
     }//end __construct()
-
 
     /**
      * Insert a single entry, auto-filling uuid + created.
@@ -85,7 +84,6 @@ class ProcessingLogMapper extends QBMapper
         return parent::insert(entity: $entity);
 
     }//end insert()
-
 
     /**
      * Append a batch of entries in one transaction.
@@ -121,15 +119,14 @@ class ProcessingLogMapper extends QBMapper
 
     }//end insertBatch()
 
-
     /**
      * Find entries by data-subject identifier within a period.
      *
-     * @param string        $idType         Subject identifier type (e.g. `BSN`).
-     * @param string        $idValue        Subject identifier value.
-     * @param DateTime|null $from           Inclusive lower bound.
-     * @param DateTime|null $to             Inclusive upper bound.
-     * @param string|null   $organisationId Tenant scope (null = all, admin only).
+     * @param string        $idType              Subject identifier type (e.g. `BSN`).
+     * @param string        $idValue             Subject identifier value.
+     * @param DateTime|null $from                Inclusive lower bound.
+     * @param DateTime|null $to                  Inclusive upper bound.
+     * @param string|null   $organisationId      Tenant scope (null = all, admin only).
      * @param bool          $includeConfidential Whether to include confidential entries (FG only).
      *
      * @return ProcessingLogEntry[]
@@ -161,7 +158,6 @@ class ProcessingLogMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findBySubject()
-
 
     /**
      * Find entries by an arbitrary filter set (FG inquiry / VNG API).
@@ -213,7 +209,6 @@ class ProcessingLogMapper extends QBMapper
 
     }//end findFiltered()
 
-
     /**
      * Count entries attributed to each activity, optionally per register.
      *
@@ -252,7 +247,6 @@ class ProcessingLogMapper extends QBMapper
 
     }//end countByActivity()
 
-
     /**
      * Hard-delete entries older than the cutoff (retention prune).
      *
@@ -269,7 +263,6 @@ class ProcessingLogMapper extends QBMapper
         return $qb->executeStatement();
 
     }//end deleteCreatedBefore()
-
 
     /**
      * Apply the period + tenant + confidentiality filters shared by the
@@ -315,6 +308,4 @@ class ProcessingLogMapper extends QBMapper
         }
 
     }//end applyCommonFilters()
-
-
 }//end class

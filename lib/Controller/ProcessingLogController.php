@@ -53,6 +53,8 @@ use OCP\IUserSession;
  * REST endpoints for querying and exporting the AVG processing log.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 class ProcessingLogController extends Controller
 {
@@ -85,7 +87,6 @@ class ProcessingLogController extends Controller
      */
     private const MAX_RANGE_KEY = 'processing_export_max_range_days';
 
-
     /**
      * Constructor.
      *
@@ -109,7 +110,6 @@ class ProcessingLogController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * GET /api/avg/verwerkingen — filtered processing-log inquiry.
@@ -156,7 +156,6 @@ class ProcessingLogController extends Controller
         return new JSONResponse(data: ['count' => count($entries), 'results' => $entries]);
 
     }//end index()
-
 
     /**
      * GET /api/avg/verwerkingen/betrokkene — per-subject inzage extract.
@@ -217,7 +216,6 @@ class ProcessingLogController extends Controller
 
     }//end betrokkene()
 
-
     /**
      * Resolve the caller's access posture, or a denial response.
      *
@@ -260,7 +258,6 @@ class ProcessingLogController extends Controller
 
     }//end resolveAccess()
 
-
     /**
      * Active organisation uuid for a non-admin caller, or null.
      *
@@ -280,7 +277,6 @@ class ProcessingLogController extends Controller
 
     }//end callerOrganisationId()
 
-
     /**
      * Configured privacy-officer (FG) group name.
      *
@@ -297,7 +293,6 @@ class ProcessingLogController extends Controller
 
     }//end fgGroup()
 
-
     /**
      * Validate the requested period against the configured maximum range.
      *
@@ -312,7 +307,7 @@ class ProcessingLogController extends Controller
             return null;
         }
 
-        $maxDays = (int) $this->appConfig->getValueInt(self::APP_ID, self::MAX_RANGE_KEY, 366);
+        $maxDays  = (int) $this->appConfig->getValueInt(self::APP_ID, self::MAX_RANGE_KEY, 366);
         $spanDays = (int) floor(($to->getTimestamp() - $from->getTimestamp()) / 86400);
         if ($spanDays > $maxDays) {
             return new JSONResponse(
@@ -327,7 +322,6 @@ class ProcessingLogController extends Controller
         return null;
 
     }//end validateRange()
-
 
     /**
      * Read a request parameter as a non-empty string, or null.
@@ -346,7 +340,6 @@ class ProcessingLogController extends Controller
         return (string) $value;
 
     }//end optionalStringParam()
-
 
     /**
      * Read a request parameter as an ISO-8601 DateTime, or null.
@@ -369,7 +362,6 @@ class ProcessingLogController extends Controller
         }
 
     }//end optionalDateParam()
-
 
     /**
      * Read a bounded integer request parameter.
@@ -395,6 +387,4 @@ class ProcessingLogController extends Controller
         return min($int, $max);
 
     }//end intParam()
-
-
 }//end class

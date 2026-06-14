@@ -66,11 +66,11 @@ use OCP\Migration\SimpleMigrationStep;
  * Create the openregister_processing_log table.
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ *
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 class Version1Date20260614000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change the database schema.
      *
@@ -79,6 +79,8 @@ class Version1Date20260614000000 extends SimpleMigrationStep
      * @param array<array-key, mixed> $options       Migration options
      *
      * @return ISchemaWrapper|null
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -122,6 +124,4 @@ class Version1Date20260614000000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

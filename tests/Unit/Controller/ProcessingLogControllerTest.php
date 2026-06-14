@@ -85,7 +85,6 @@ class ProcessingLogControllerTest extends TestCase
 
     private ProcessingLogController $controller;
 
-
     /**
      * Build the controller with mocked collaborators.
      *
@@ -93,11 +92,11 @@ class ProcessingLogControllerTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->request             = $this->createMock(IRequest::class);
-        $this->logMapper           = $this->createMock(ProcessingLogMapper::class);
-        $this->userSession         = $this->createMock(IUserSession::class);
-        $this->groupManager        = $this->createMock(IGroupManager::class);
-        $this->appConfig           = $this->createMock(IAppConfig::class);
+        $this->request      = $this->createMock(IRequest::class);
+        $this->logMapper    = $this->createMock(ProcessingLogMapper::class);
+        $this->userSession  = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->appConfig    = $this->createMock(IAppConfig::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
 
         $this->appConfig->method('getValueString')->willReturn('privacy-officer');
@@ -114,7 +113,6 @@ class ProcessingLogControllerTest extends TestCase
         );
 
     }//end setUp()
-
 
     /**
      * Set the current user and their groups.
@@ -138,7 +136,6 @@ class ProcessingLogControllerTest extends TestCase
 
     }//end asUser()
 
-
     /**
      * Anonymous access is rejected with 401 and no data.
      *
@@ -154,7 +151,6 @@ class ProcessingLogControllerTest extends TestCase
 
     }//end testAnonymousIsUnauthorized()
 
-
     /**
      * A plain authenticated user (no admin, no FG) is forbidden.
      *
@@ -169,7 +165,6 @@ class ProcessingLogControllerTest extends TestCase
         $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 
     }//end testNonPrivilegedUserIsForbidden()
-
 
     /**
      * The privacy-officer succeeds, is tenant-scoped, and sees
@@ -187,23 +182,24 @@ class ProcessingLogControllerTest extends TestCase
 
         $this->logMapper->expects($this->once())
             ->method('findFiltered')
-            ->willReturnCallback(function (
-                array $filters,
-                $from,
-                $to,
-                ?string $organisationId,
-                bool $includeConfidential
-            ): array {
-                $this->assertSame('org-7', $organisationId);
-                $this->assertTrue($includeConfidential);
-                return [];
-            });
+            ->willReturnCallback(
+                    function (
+                        array $filters,
+                        $from,
+                        $to,
+                        ?string $organisationId,
+                        bool $includeConfidential
+                    ): array {
+                        $this->assertSame('org-7', $organisationId);
+                        $this->assertTrue($includeConfidential);
+                        return [];
+                    }
+                    );
 
         $response = $this->controller->index();
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
 
     }//end testPrivacyOfficerIsScopedAndSeesConfidential()
-
 
     /**
      * Admin succeeds and is unscoped (organisationId null).
@@ -217,23 +213,24 @@ class ProcessingLogControllerTest extends TestCase
 
         $this->logMapper->expects($this->once())
             ->method('findFiltered')
-            ->willReturnCallback(function (
-                array $filters,
-                $from,
-                $to,
-                ?string $organisationId,
-                bool $includeConfidential
-            ): array {
-                $this->assertNull($organisationId);
-                $this->assertTrue($includeConfidential);
-                return [];
-            });
+            ->willReturnCallback(
+                    function (
+                        array $filters,
+                        $from,
+                        $to,
+                        ?string $organisationId,
+                        bool $includeConfidential
+                    ): array {
+                        $this->assertNull($organisationId);
+                        $this->assertTrue($includeConfidential);
+                        return [];
+                    }
+                    );
 
         $response = $this->controller->index();
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
 
     }//end testAdminIsUnscoped()
-
 
     /**
      * Per-subject extract without identifiers is a 400.
@@ -253,7 +250,6 @@ class ProcessingLogControllerTest extends TestCase
 
     }//end testExtractRequiresSubjectIdentifiers()
 
-
     /**
      * A range exceeding the configured maximum is a 422.
      *
@@ -267,18 +263,19 @@ class ProcessingLogControllerTest extends TestCase
         $this->organisationService->method('getUserOrganisations')->willReturn([$org]);
 
         // 500-day span against a 366-day maximum.
-        $this->request->method('getParam')->willReturnMap([
-            ['subjectIdType', null, 'BSN'],
-            ['subjectIdValue', null, '123456789'],
-            ['from', null, '2024-01-01'],
-            ['to', null, '2025-05-15'],
-        ]);
+        $this->request->method('getParam')->willReturnMap(
+                [
+                    ['subjectIdType', null, 'BSN'],
+                    ['subjectIdValue', null, '123456789'],
+                    ['from', null, '2024-01-01'],
+                    ['to', null, '2025-05-15'],
+                ]
+                );
 
         $response = $this->controller->betrokkene();
         $this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 
     }//end testExtractRangeTooWideIs422()
-
 
     /**
      * Append-only by surface: no update/delete-single endpoints exist.
@@ -293,6 +290,4 @@ class ProcessingLogControllerTest extends TestCase
         }
 
     }//end testControllerHasNoMutationEndpoints()
-
-
 }//end class

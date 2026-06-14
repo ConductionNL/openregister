@@ -144,14 +144,14 @@ class ProcessingLogEntry extends Entity implements JsonSerializable
     /**
      * Number of objects covered by this entry (bulk/list collapse).
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $objectCount = 1;
 
     /**
      * Denormalised confidentiality marker from the activity (FG-gating).
      *
-     * @var bool|null
+     * @var boolean|null
      */
     protected ?bool $confidential = false;
 
@@ -168,7 +168,6 @@ class ProcessingLogEntry extends Entity implements JsonSerializable
      * @var DateTime|null
      */
     protected ?DateTime $created = null;
-
 
     /**
      * Register the entity's typed columns.
@@ -191,7 +190,6 @@ class ProcessingLogEntry extends Entity implements JsonSerializable
         $this->addType(fieldName: 'created', type: 'datetime');
 
     }//end __construct()
-
 
     /**
      * Render the entry as the canonical VNG verwerkingsactie JSON shape.
@@ -219,6 +217,4 @@ class ProcessingLogEntry extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

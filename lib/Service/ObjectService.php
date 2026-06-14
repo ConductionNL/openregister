@@ -720,7 +720,6 @@ class ObjectService
         }//end try
     }//end find()
 
-
     /**
      * Record an AVG processing-log entry for a single object read.
      *
@@ -752,7 +751,6 @@ class ObjectService
         }
 
     }//end logProcessingRead()
-
 
     /**
      * Gets an object by its ID without creating an audit trail.
@@ -1346,7 +1344,7 @@ class ObjectService
                     'schema'    => $this->currentSchema?->getId(),
                 ]
             );
-        }
+        }//end try
 
         // Ensure the object has a file-storage folder (belt-and-suspenders for
         // new objects that bypassed the pre-save ensureObjectFolder path).
@@ -3134,7 +3132,7 @@ class ObjectService
                     ]
                 );
             }
-        }
+        }//end if
 
         return $bulkResult;
     }//end saveObjects()
@@ -3257,7 +3255,7 @@ class ObjectService
                 $deletedRegisterId = null;
                 $deletedSchemaId   = null;
                 try {
-                    $preDeleteObject = $this->objectMapper->find(
+                    $preDeleteObject   = $this->objectMapper->find(
                         identifier: $uuid,
                         register: $this->currentRegister,
                         schema: $this->currentSchema,
@@ -3277,7 +3275,7 @@ class ObjectService
                             'error' => $resolveError->getMessage(),
                         ]
                     );
-                }
+                }//end try
 
                 $result = $this->deleteHandler->deleteObject(
                     register: $this->currentRegister,
@@ -3299,15 +3297,19 @@ class ObjectService
                     // BUG-OBJ-5: record the distinct scope pair for invalidation.
                     // CacheHandler expects int ids; entity getters return string ids.
                     if ($deletedSchemaId !== null && $deletedSchemaId !== '') {
-                        $registerIdInt = ($deletedRegisterId !== null && $deletedRegisterId !== '') ? (int) $deletedRegisterId : null;
-                        $schemaIdInt   = (int) $deletedSchemaId;
-                        $pairKey       = ($registerIdInt ?? 'null').':'.$schemaIdInt;
+                        $registerIdInt = null;
+                        if ($deletedRegisterId !== null && $deletedRegisterId !== '') {
+                            $registerIdInt = (int) $deletedRegisterId;
+                        }
+
+                        $schemaIdInt = (int) $deletedSchemaId;
+                        $pairKey     = ($registerIdInt ?? 'null').':'.$schemaIdInt;
                         $invalidationPairs[$pairKey] = [
                             'registerId' => $registerIdInt,
                             'schemaId'   => $schemaIdInt,
                         ];
                     }
-                }
+                }//end if
             } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
                 // RESTRICT blocks should not abort the entire bulk operation.
                 // Log and skip this object, continue with the rest.
@@ -3365,8 +3367,8 @@ class ObjectService
                         ]
                     );
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         return [
             'deleted_uuids' => $deletedObjectIds,
