@@ -109,6 +109,7 @@ DOMAIN_ORDER=(
     "error-matrix"
     "files"
     "referential-integrity"
+    "schema-migration"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -127,6 +128,7 @@ declare -A DOMAIN_COLLECTIONS=(
     [files]="$REPO_ROOT/tests/newman/openregister-files-domain.postman_collection.json"
     [agent-cms]="$REPO_ROOT/tests/newman/agent-cms-testing.postman_collection.json"
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
+    [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
