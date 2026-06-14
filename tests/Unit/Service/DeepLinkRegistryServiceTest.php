@@ -233,6 +233,65 @@ class DeepLinkRegistryServiceTest extends TestCase
         $this->assertSame('my-icon', $result);
     }
 
+    // --- resolveDisplayName ---
+
+    private function wireCasesRegistration(): void
+    {
+        $register = new Register();
+        $reflection = new \ReflectionClass($register);
+        $idProp = $reflection->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($register, 1);
+        $register->setSlug('cases');
+
+        $schema = new Schema();
+        $sReflection = new \ReflectionClass($schema);
+        $sIdProp = $sReflection->getProperty('id');
+        $sIdProp->setAccessible(true);
+        $sIdProp->setValue($schema, 10);
+        $schema->setSlug('case-schema');
+
+        $this->registerMapper->method('findAll')->willReturn([$register]);
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+    }
+
+    public function testResolveDisplayNameReturnsExplicitName(): void
+    {
+        $this->service->register('pipelinq', 'cases', 'case-schema', '/url/{uuid}', '', 'Pipelinq');
+        $this->wireCasesRegistration();
+
+        $this->assertSame('Pipelinq', $this->service->resolveDisplayName(1, 10));
+    }
+
+    public function testResolveDisplayNameFallsBackToAppId(): void
+    {
+        // No displayName provided → falls back to appId.
+        $this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+        $this->wireCasesRegistration();
+
+        $this->assertSame('procest', $this->service->resolveDisplayName(1, 10));
+    }
+
+    public function testResolveDisplayNameReturnsNullForUnclaimedPair(): void
+    {
+        $this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+        $this->registerMapper->method('findAll')->willReturn([]);
+        $this->schemaMapper->method('findAll')->willReturn([]);
+
+        $this->assertNull($this->service->resolveDisplayName(999, 999));
+    }
+
+    public function testRegisterRemainsSourceCompatibleWithoutDisplayName(): void
+    {
+        // Pre-extension argument list must still succeed with displayName = null.
+        $this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+        $this->wireCasesRegistration();
+
+        $registration = $this->service->resolve(1, 10);
+        $this->assertNotNull($registration);
+        $this->assertNull($registration->displayName);
+    }
+
     // --- hasRegistrations ---
 
     public function testHasRegistrationsReturnsFalseWhenEmpty(): void
