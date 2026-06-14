@@ -86,6 +86,8 @@ class JsonLdSerializer
      * @param IRequest $request The current request.
      *
      * @return bool True when JSON-LD output is requested.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function wantsJsonLd(IRequest $request): bool
     {
@@ -141,6 +143,8 @@ class JsonLdSerializer
      * @param Register             $register       The object's register.
      *
      * @return array<string, mixed> The JSON-LD document.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function serialize(array $renderedObject, Schema $schema, Register $register): array
     {
@@ -162,6 +166,8 @@ class JsonLdSerializer
      * @param Register             $register        The collection's register.
      *
      * @return array<string, mixed> The JSON-LD `@graph` document.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function serializeCollection(array $paginatedResult, Schema $schema, Register $register): array
     {

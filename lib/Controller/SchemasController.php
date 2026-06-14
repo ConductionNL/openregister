@@ -368,29 +368,6 @@ class SchemasController extends Controller
     }//end show()
 
     /**
-     * Creates a new schema
-     *
-     * This method creates a new schema based on POST data.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is
-     * repetitive but intentional; extracting it would not reduce cognitive load.
-     *
-     * @return JSONResponse JSON response with created schema or error
-     *
-     * @psalm-return JSONResponse<201, Schema,
-     *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
-     *     array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    /**
      * Validate the optional `configuration.jsonld` vocabulary-mapping block.
      *
      * Term values must be absolute IRIs or compact terms resolvable against a
@@ -434,6 +411,30 @@ class SchemasController extends Controller
     }//end validateJsonLdMapping()
 
 
+    /**
+     * Creates a new schema
+     *
+     * This method creates a new schema based on POST data.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is
+     * repetitive but intentional; extracting it would not reduce cognitive load.
+     *
+     * @return JSONResponse JSON response with created schema or error
+     *
+     * @psalm-return JSONResponse<201, Schema,
+     *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
+     *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
     public function create(): JSONResponse
     {
         // Authorization: creating a schema defines a new data model and is
