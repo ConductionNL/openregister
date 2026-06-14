@@ -37,6 +37,9 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\SchemaService;
+use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -126,7 +129,8 @@ class SchemasController extends Controller
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
         private readonly SchemaVersioningService $schemaVersioningService,
-        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
+        private readonly ?SchemaImportService $schemaImportService=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -986,6 +990,17 @@ class SchemasController extends Controller
             return $phpArray;
         }
 
+        // Dialect resolution: explicit `dialect` parameter wins, otherwise the
+        // document is sniffed. Schema.org / GGM inputs are mapped through the
+        // standards importers; json-schema / openapi flow on unchanged.
+        // Undetectable input fails with HTTP 422 instead of being mis-ingested.
+        $dialectResult = $this->applyDialect(document: $phpArray);
+        if ($dialectResult instanceof JSONResponse) {
+            return $dialectResult;
+        }
+
+        $phpArray = $dialectResult;
+
         // Set default title if not provided or empty.
         if (empty($phpArray['title']) === true) {
             $phpArray['title'] = 'New Schema';
@@ -1433,14 +1448,111 @@ class SchemasController extends Controller
     }//end isPublishedEntity()
 
     /**
-     * Check whether the currently authenticated user is a Nextcloud administrator.
+     * Resolve the dialect of an uploaded schema document and map it.
      *
-     * Used to gate schema creation, where there is no existing entity whose
-     * manage-authorization block could be consulted. User session and group
-     * manager are resolved lazily from the container to avoid widening the
-     * constructor signature.
+     * Explicit `dialect` parameter wins; otherwise the document is sniffed.
+     * `json-schema` and `openapi` documents flow through unchanged (existing
+     * behaviour, now labelled). `schema.org` and `ggm` documents are mapped
+     * through the standards importers into a register-schema array. Input that
+     * matches no dialect (and carries no explicit one) fails with HTTP 422.
      *
-     * @return bool True if a user is signed in and belongs to the admin group.
+     * When the standards import service is unavailable (DI not wired), the
+     * document is returned unchanged so the legacy JSON-Schema path is
+     * preserved.
+     *
+     * @param array<string, mixed> $document The decoded upload document.
+     *
+     * @return array<string, mixed>|JSONResponse The (possibly mapped) schema array, or an error response.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per supported dialect.
+     */
+    private function applyDialect(array $document): array | JSONResponse
+    {
+        if ($this->schemaImportService === null) {
+            return $document;
+        }
+
+        $explicit = $this->request->getParam('dialect');
+        if (is_string($explicit) === false || $explicit === '') {
+            $explicit = null;
+        }
+
+        try {
+            $dialect = $this->schemaImportService->resolveUploadDialect(document: $document, explicitDialect: $explicit);
+        } catch (SchemaImportException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+        }
+
+        // json-schema and openapi documents are ingested as-is (unchanged).
+        if ($dialect === 'json-schema' || $dialect === 'openapi') {
+            return $document;
+        }
+
+        // Standards dialects are mapped via the importer. The reference is the
+        // explicit `reference` parameter, else the document's own type marker.
+        $reference = $this->resolveDialectReference(dialect: $dialect, document: $document);
+        if ($reference === null) {
+            return new JSONResponse(
+                data: ['error' => 'A "reference" identifying the '.$dialect.' type/objecttype to import is required.'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        try {
+            if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
+                // Treat the uploaded body as a normalised GGM intermediate.
+                $imported = $this->schemaImportService->importGgmUpload(
+                    normalised: $document,
+                    reference: $reference,
+                    options: ImportOptions::fromArray($this->request->getParams()),
+                    sourceLabel: 'upload'
+                );
+            } else {
+                $imported = $this->schemaImportService->import(
+                    dialect: $dialect,
+                    reference: $reference,
+                    options: ImportOptions::fromArray($this->request->getParams())
+                );
+            }
+        } catch (SchemaImportException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+        }
+
+        return $imported->toSchemaArray();
+
+    }//end applyDialect()
+
+
+    /**
+     * Resolve the type reference for a standards-dialect upload.
+     *
+     * @param string               $dialect  The resolved dialect.
+     * @param array<string, mixed> $document The decoded document.
+     *
+     * @return string|null The reference, or null when none can be determined.
+     */
+    private function resolveDialectReference(string $dialect, array $document): ?string
+    {
+        $reference = $this->request->getParam('reference');
+        if (is_string($reference) === true && $reference !== '') {
+            return $reference;
+        }
+
+        if ($dialect === 'schema.org' && isset($document['@type']) === true && is_string($document['@type']) === true) {
+            return $document['@type'];
+        }
+
+        return null;
+
+    }//end resolveDialectReference()
+
+
+    /**
+     * Check if the current user is a Nextcloud administrator.
+     *
+     * @return bool True when the current user is an admin.
      */
     private function isCurrentUserAdmin(): bool
     {

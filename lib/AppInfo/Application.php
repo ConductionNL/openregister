@@ -400,6 +400,20 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Register the standards schema-import service with the bundled,
+        // versioned snapshot resources (schema-import-standards). Built
+        // explicitly so the resource root is deterministic; the dialect
+        // registry inside it makes DCAT/SKOS/ZGW importers follow-ups.
+        $context->registerService(
+            \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
+            function () {
+                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
+                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
+                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                );
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
