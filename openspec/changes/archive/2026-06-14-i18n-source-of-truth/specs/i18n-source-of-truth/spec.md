@@ -1,4 +1,3 @@
-i18n-source-of-truth
 ---
 status: draft
 ---
@@ -39,7 +38,7 @@ Schemas MUST accept `sourceLanguage: <bcp47>` on any property where `translatabl
 
 ### Requirement: Objects MAY override `sourceLanguage` per property via `_translationMeta`
 
-Objects MAY include `_translationMeta.<property>.sourceLanguage = "<bcp47>"` in their body. When present, this overrides the schema default for that single object's property. When absent, the schema/register fallback chain applies.
+Objects MAY include `_translationMeta.<property>.sourceLanguage = "<bcp47>"` in their body. When an object provides `_translationMeta`, the system SHALL honor a per-property `sourceLanguage` override, overriding the schema default for that single object's property. When absent, the schema/register fallback chain SHALL apply.
 
 #### Scenario: Object overrides sourceLanguage for a single property
 - GIVEN a schema declaring `title.sourceLanguage = "nl"`
