@@ -19,6 +19,8 @@ excerpted, paginated results.
 Supersedes the per-app search-provider suggestions for pipelinq,
 procest, and planix from `FEATURE-REEVALUATION-2026-06-11/`.
 
+@e2e exclude The unified-search surface is rendered entirely by Nextcloud's own top-bar search chrome (no OpenRegister Vue component); the provider is a server-side OCP\Search\IProvider. Its observable behaviour is covered by PHPUnit (tests/Unit/Search/ObjectsProviderTest.php) and by Newman against the OCS search endpoint (tests/integration/openregister-unified-search.postman_collection.json), per the Playwright-UI-only / Newman-for-API rule.
+
 ## ADDED Requirements
 
 ### Requirement: OpenRegister MUST be the single fleet-wide unified search provider for register objects
