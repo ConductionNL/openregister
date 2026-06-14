@@ -1,4 +1,3 @@
-register-resolver-service
 ---
 status: draft
 ---
@@ -16,7 +15,7 @@ Replaces the duplicated `getValueString(...)` + manual mapper-lookup
 pattern observed in 13 call sites across opencatalogi (5 controllers),
 pipelinq (8 services / jobs), and docudesk (`OpenRegisterResolver`).
 
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: The system MUST expose a `RegisterResolverService` resolving register IDs from app config
 
