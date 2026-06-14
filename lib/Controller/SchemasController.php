@@ -121,7 +121,8 @@ class SchemasController extends Controller
         private readonly FacetCacheHandler $facetCacheSvc,
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger,
-        private readonly ContainerInterface $container
+        private readonly ContainerInterface $container,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -389,6 +390,50 @@ class SchemasController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
+    /**
+     * Validate the optional `configuration.jsonld` vocabulary-mapping block.
+     *
+     * Term values must be absolute IRIs or compact terms resolvable against a
+     * declared `@vocab`. Returns a 400 JSONResponse describing the problem when
+     * the block is invalid, or null when valid / absent (json-ld-output).
+     *
+     * @param array $data The incoming schema request data.
+     *
+     * @return JSONResponse|null A 400 response when invalid, else null.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function validateJsonLdMapping(array $data): ?JSONResponse
+    {
+        if ($this->jsonLdContextService === null) {
+            return null;
+        }
+
+        $configuration = ($data['configuration'] ?? null);
+        if (is_array($configuration) === false) {
+            return null;
+        }
+
+        $jsonld = ($configuration['jsonld'] ?? null);
+        if (is_array($jsonld) === false) {
+            return null;
+        }
+
+        $errors = $this->jsonLdContextService->validateMapping(jsonld: $jsonld);
+        if (empty($errors) === true) {
+            return null;
+        }
+
+        return new JSONResponse(
+            data: [
+                'error'  => 'Invalid jsonld mapping in schema configuration',
+                'errors' => $errors,
+            ],
+            statusCode: 400
+        );
+    }//end validateJsonLdMapping()
+
+
     public function create(): JSONResponse
     {
         // Authorization: creating a schema defines a new data model and is
@@ -426,6 +471,12 @@ class SchemasController extends Controller
         // Remove ID if present to ensure a new record is created.
         if (($data['id'] ?? null) !== null) {
             unset($data['id']);
+        }
+
+        // Validate the optional JSON-LD vocabulary-mapping block (json-ld-output).
+        $jsonLdError = $this->validateJsonLdMapping(data: $data);
+        if ($jsonLdError !== null) {
+            return $jsonLdError;
         }
 
         try {
@@ -560,6 +611,15 @@ class SchemasController extends Controller
                 data: ['error' => 'User does not have permission to manage this schema'],
                 statusCode: 403
             );
+        }
+
+        // Validate the optional JSON-LD vocabulary-mapping block (json-ld-output).
+        // Runs after the manage-permission check so an unauthorized caller can
+        // never probe mapping validation; an invalid mapping leaves the stored
+        // configuration unchanged (no save happens).
+        $jsonLdError = $this->validateJsonLdMapping(data: $data);
+        if ($jsonLdError !== null) {
+            return $jsonLdError;
         }
 
         // Capture prior authorization so a change can be audit-logged below.

@@ -242,6 +242,10 @@ return [
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
         ['name' => 'urn#bulk',    'url' => '/api/urn/bulk',    'verb' => 'POST'],
+        // JSON-LD context document endpoints (json-ld-output). Dereferenceable
+        // @context documents referenced by JSON-LD object serializations.
+        ['name' => 'contexts#register', 'url' => '/api/contexts/{register}',          'verb' => 'GET'],
+        ['name' => 'contexts#schema',   'url' => '/api/contexts/{register}/{schema}', 'verb' => 'GET'],
         // RBAC scope discovery endpoint — clients query effective (register,
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
