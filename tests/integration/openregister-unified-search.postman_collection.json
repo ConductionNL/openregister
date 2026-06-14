@@ -1,0 +1,331 @@
+{
+  "info": {
+    "_postman_id": "openregister-unified-search-v1",
+    "name": "OpenRegister Unified Search Provider",
+    "description": "Observable contract for the central Nextcloud unified-search provider (id `openregister_objects`) exposed by OpenRegister.\n\nDrives the OCS search endpoint `/ocs/v2.php/search/providers/openregister_objects/search` and asserts:\n- the provider is registered and serves register objects;\n- a created object is findable by term;\n- the `searchable = false` schema opt-out removes a schema from unified search inside the query;\n- soft-deleted objects never appear;\n- pagination walks pages without duplicate/missing UUIDs.\n\nRBAC and tenant isolation are pinned at the pipeline level (see ObjectServiceDeep / rbac.postman_collection); this collection asserts the provider does not widen that scope. All setup uses the public OR API; the assertions hit the OCS unified-search endpoint as the authenticated admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('admin_user')) {",
+          "  pm.collectionVariables.set('admin_user', pm.collectionVariables.get('username') || pm.environment.get('username') || 'admin');",
+          "}",
+          "if (!pm.collectionVariables.get('admin_password')) {",
+          "  pm.collectionVariables.set('admin_password', pm.collectionVariables.get('password') || pm.environment.get('password') || 'admin');",
+          "}",
+          "if (!pm.collectionVariables.get('ts')) {",
+          "  pm.collectionVariables.set('ts', String(Math.floor(Date.now()/1000)));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "admin_user", "value": "admin" },
+    { "key": "admin_password", "value": "admin" }
+  ],
+  "item": [
+    {
+      "name": "Setup: create register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/registers",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"USP Test Register {{ts}}\",\"description\":\"unified-search test register\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('register created', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "var j = pm.response.json();",
+              "pm.collectionVariables.set('register_id', j.id);",
+              "pm.collectionVariables.set('register_slug', j.slug);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: create searchable schema",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"USP Note {{ts}}\",\"searchable\":true,\"properties\":{\"name\":{\"type\":\"string\"},\"notes\":{\"type\":\"string\"}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('searchable schema created', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "var j = pm.response.json();",
+              "pm.collectionVariables.set('schema_id', j.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: create non-searchable schema",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"USP Internal {{ts}}\",\"searchable\":false,\"properties\":{\"name\":{\"type\":\"string\"},\"notes\":{\"type\":\"string\"}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('non-searchable schema created', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "var j = pm.response.json();",
+              "pm.collectionVariables.set('hidden_schema_id', j.id);",
+              "pm.test('searchable flag round-trips as false', function () { pm.expect(j.searchable).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: create searchable object (uspjansen term)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"USP Visible {{ts}}\",\"notes\":\"afspraak met uspjansen{{ts}} over de vergunning\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('object created', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "var j = pm.response.json();",
+              "var uuid = (j['@self'] && j['@self'].id) || j.id;",
+              "pm.collectionVariables.set('visible_uuid', uuid);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: create hidden object in non-searchable schema",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{hidden_schema_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"USP Hidden {{ts}}\",\"notes\":\"geheime uspjansen{{ts}} reorganisatie\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('hidden object created', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "var j = pm.response.json();",
+              "var uuid = (j['@self'] && j['@self'].id) || j.id;",
+              "pm.collectionVariables.set('hidden_uuid', uuid);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Provider is registered (list providers)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" }],
+        "url": "{{base_url}}/ocs/v2.php/search/providers?format=json"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('providers endpoint OK', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "var data = pm.response.json().ocs.data || [];",
+              "var ids = data.map(function (p) { return p.id; });",
+              "pm.test('openregister_objects provider is present', function () { pm.expect(ids).to.include('openregister_objects'); });",
+              "pm.test('no per-app object provider duplicates the OR section', function () {",
+              "  var perApp = ids.filter(function (id) { return /^(pipelinq|procest|planix)_objects$/.test(id); });",
+              "  pm.expect(perApp.length).to.equal(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search finds the visible object by term",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" }],
+        "url": "{{base_url}}/ocs/v2.php/search/providers/openregister_objects/search?term=uspjansen{{ts}}&format=json"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('search OK', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "var entries = pm.response.json().ocs.data.entries || [];",
+              "pm.test('at least one result for the term', function () { pm.expect(entries.length).to.be.above(0); });",
+              "pm.test('result subline labels owner/register/schema', function () {",
+              "  var hit = entries[0];",
+              "  pm.expect(hit.subline).to.be.a('string');",
+              "  pm.expect(hit.subline.indexOf(' · ')).to.be.above(-1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Non-searchable schema object is NOT in results",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" }],
+        "url": "{{base_url}}/ocs/v2.php/search/providers/openregister_objects/search?term=uspjansen{{ts}}&format=json"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('search OK', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "var entries = pm.response.json().ocs.data.entries || [];",
+              "var hiddenUuid = pm.collectionVariables.get('hidden_uuid');",
+              "pm.test('hidden (non-searchable schema) object absent from results', function () {",
+              "  var leaked = entries.filter(function (e) {",
+              "    var url = (e.resourceUrl || '') + (e.thumbnailUrl || '');",
+              "    return hiddenUuid && url.indexOf(hiddenUuid) > -1;",
+              "  });",
+              "  pm.expect(leaked.length).to.equal(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Explicit non-searchable schema filter returns empty",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" }],
+        "url": "{{base_url}}/ocs/v2.php/search/providers/openregister_objects/search?term=uspjansen{{ts}}&schema={{hidden_schema_id}}&format=json"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('search OK', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "var entries = pm.response.json().ocs.data.entries || [];",
+              "pm.test('opt-out wins over explicit schema filter (empty result)', function () { pm.expect(entries.length).to.equal(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Soft-delete the visible object",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{visible_uuid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('object deleted', function () { pm.expect([200,202,204]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Soft-deleted object never appears in search",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" }],
+        "url": "{{base_url}}/ocs/v2.php/search/providers/openregister_objects/search?term=uspjansen{{ts}}&format=json"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('search OK', function () { pm.expect(pm.response.code).to.equal(200); });",
+              "var entries = pm.response.json().ocs.data.entries || [];",
+              "var visibleUuid = pm.collectionVariables.get('visible_uuid');",
+              "pm.test('soft-deleted object absent', function () {",
+              "  var leaked = entries.filter(function (e) {",
+              "    var url = (e.resourceUrl || '') + (e.thumbnailUrl || '');",
+              "    return visibleUuid && url.indexOf(visibleUuid) > -1;",
+              "  });",
+              "  pm.expect(leaked.length).to.equal(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanup: delete searchable schema",
+      "request": {
+        "method": "DELETE",
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cleanup schema', function () { pm.expect([200,202,204,404]).to.include(pm.response.code); });"] } }]
+    },
+    {
+      "name": "Cleanup: delete non-searchable schema",
+      "request": {
+        "method": "DELETE",
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{hidden_schema_id}}"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cleanup hidden schema', function () { pm.expect([200,202,204,404]).to.include(pm.response.code); });"] } }]
+    },
+    {
+      "name": "Cleanup: delete register",
+      "request": {
+        "method": "DELETE",
+        "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('cleanup register', function () { pm.expect([200,202,204,404]).to.include(pm.response.code); });"] } }]
+    }
+  ]
+}

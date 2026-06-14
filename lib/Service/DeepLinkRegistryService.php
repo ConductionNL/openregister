@@ -125,20 +125,24 @@ class DeepLinkRegistryService
      * @param string $appId        The consuming app ID (e.g., "procest")
      * @param string $registerSlug The register slug
      * @param string $schemaSlug   The schema slug
-     * @param string $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-     * @param string $icon         Optional icon identifier (defaults to "icon-{appId}")
+     * @param string      $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
+     * @param string      $icon         Optional icon identifier (defaults to "icon-{appId}")
+     * @param string|null $displayName  Optional human-readable label for the app's
+     *                                  unified-search results (defaults to null → app id)
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
+     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
      */
     public function register(
         string $appId,
         string $registerSlug,
         string $schemaSlug,
         string $urlTemplate,
-        string $icon=''
+        string $icon='',
+        ?string $displayName=null
     ): void {
         $key = $registerSlug.'::'.$schemaSlug;
 
@@ -165,6 +169,7 @@ class DeepLinkRegistryService
             schemaSlug: $schemaSlug,
             urlTemplate: $urlTemplate,
             icon: $effectiveIcon,
+            displayName: $displayName,
         );
 
         $this->logger->debug(
@@ -254,6 +259,35 @@ class DeepLinkRegistryService
         $registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
         return $registration?->icon;
     }//end resolveIcon()
+
+    /**
+     * Resolve the display name for a registered (register, schema) pair.
+     *
+     * Returns the registration's explicit `displayName` when set, falling
+     * back to its `appId` for a claimed pair, and `null` for an unclaimed
+     * pair. Used by the unified search provider to label results per owning
+     * app.
+     *
+     * @param int $registerId The register database ID
+     * @param int $schemaId   The schema database ID
+     *
+     * @return string|null The display name, the app id, or null if unclaimed
+     *
+     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
+     */
+    public function resolveDisplayName(int $registerId, int $schemaId): ?string
+    {
+        $registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+        if ($registration === null) {
+            return null;
+        }
+
+        if ($registration->displayName !== null && $registration->displayName !== '') {
+            return $registration->displayName;
+        }
+
+        return $registration->appId;
+    }//end resolveDisplayName()
 
     /**
      * Lazily build the ID↔slug maps from database.

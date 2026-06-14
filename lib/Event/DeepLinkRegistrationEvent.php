@@ -68,20 +68,24 @@ class DeepLinkRegistrationEvent extends Event
      * @param string $appId        The consuming app ID (e.g., "procest")
      * @param string $registerSlug The register slug
      * @param string $schemaSlug   The schema slug
-     * @param string $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-     * @param string $icon         Optional icon identifier
+     * @param string      $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
+     * @param string      $icon         Optional icon identifier
+     * @param string|null $displayName  Optional human-readable label for the app's
+     *                                  unified-search results (defaults to null → app id)
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
      */
     public function register(
         string $appId,
         string $registerSlug,
         string $schemaSlug,
         string $urlTemplate,
-        string $icon=''
+        string $icon='',
+        ?string $displayName=null
     ): void {
-        $this->registry->register($appId, $registerSlug, $schemaSlug, $urlTemplate, $icon);
+        $this->registry->register($appId, $registerSlug, $schemaSlug, $urlTemplate, $icon, $displayName);
     }//end register()
 }//end class
