@@ -637,10 +637,12 @@ optional `throttle`, optional `audit: bool`. Schema-save
 validation MUST verify every reference and reject malformed
 annotations with HTTP 422.
 
-**Channel block format (normative).** Every entry in `channels[]`
-MUST be an object with exactly one mandatory field — `kind` —
-whose value is one of `nc-notification`, `email`, `webhook`,
-`talk`, `activity`. The remaining fields are kind-dependent:
+#### Channel block format (normative)
+
+Every entry in `channels[]` MUST be an object with exactly one
+mandatory field — `kind` — whose value is one of
+`nc-notification`, `email`, `webhook`, `talk`, `activity`. The
+remaining fields are kind-dependent:
 
 | `kind` | Required fields | Optional fields | Notes |
 |---|---|---|---|
@@ -656,17 +658,17 @@ reject unknown keys, missing mandatory fields, or unsupported
 `kind` values with HTTP 422.
 
 #### Scenario: Webhook channel with inline URL is rejected
-- **GIVEN** a notification declares `channels: [{ kind: "webhook", url: "https://attacker.example.com/x" }]`
-- **WHEN** the schema is saved
-- **THEN** the save MUST fail with HTTP 422
-- **AND** the response body MUST include `{ code: "notification-channel-webhook-inline-url-forbidden" }`
+- GIVEN a notification declares `channels: [{ kind: "webhook", url: "https://attacker.example.com/x" }]`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "notification-channel-webhook-inline-url-forbidden" }`
 
 #### Scenario: Webhook channel referencing a registered entity is accepted
-- **GIVEN** an admin has registered a `Webhook` entity with UUID `abc-123` and target URL `https://allowed.example.com/hook`
-- **AND** a notification declares `channels: [{ kind: "webhook", webhookId: "abc-123" }]`
-- **WHEN** the schema is saved
-- **THEN** the save MUST succeed
-- **AND** delivery MUST POST to the URL stored on the registered Webhook entity, NOT to a URL supplied by the schema author
+- GIVEN an admin has registered a `Webhook` entity with UUID `abc-123` and target URL `https://allowed.example.com/hook`
+- AND a notification declares `channels: [{ kind: "webhook", webhookId: "abc-123" }]`
+- WHEN the schema is saved
+- THEN the save MUST succeed
+- AND delivery MUST POST to the URL stored on the registered Webhook entity, NOT to a URL supplied by the schema author
 
 ### Requirement: Throttle window grammar (normative)
 
@@ -682,39 +684,39 @@ implementations MAY add ISO-8601 in v2 but MUST keep the v1
 grammar working unchanged.
 
 #### Scenario: Valid throttle window is accepted
-- **GIVEN** a notification with `throttle: { perRecipient: "1 per day" }`
-- **WHEN** the schema is saved
-- **THEN** validation MUST accept it
+- GIVEN a notification with `throttle: { perRecipient: "1 per day" }`
+- WHEN the schema is saved
+- THEN validation MUST accept it
 
 #### Scenario: ISO-8601 duration is rejected in v1
-- **GIVEN** a notification with `throttle: { perRecipient: "PT24H" }`
-- **WHEN** the schema is saved
-- **THEN** the save MUST fail with HTTP 422
-- **AND** the response body MUST include `{ code: "notification-throttle-invalid-window", value: "PT24H", expected: "{N} per {second|minute|hour|day|week}" }`
+- GIVEN a notification with `throttle: { perRecipient: "PT24H" }`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "notification-throttle-invalid-window", value: "PT24H", expected: "{N} per {second|minute|hour|day|week}" }`
 
 ### Requirement: Trigger types `created` and `updated` MUST be supported
 
 The trigger registry MUST recognise `created` and `updated`
 trigger types (in addition to `transition`, `scheduled`, and
-`threshold` documented elsewhere in this spec).
+`threshold` documented elsewhere).
 
 #### Scenario: `created` trigger fires on object creation; filters see the new state only
-- **GIVEN** a notification with `trigger: { type: "created" }` and `filter: { taskStatus: "open" }`
-- **AND** a new action item is created with `taskStatus: "open"`
-- **WHEN** `ObjectCreatedEvent` fires
-- **THEN** the installer-mapped listener MUST evaluate the filter against the created object's payload (there is no "before" state)
-- **AND** `$before.*` placeholder MUST resolve to `null` and validation MUST reject filters that require a non-null `$before`
-- **AND** the notification MUST dispatch to all resolved recipients
+- GIVEN a notification with `trigger: { type: "created" }` and `filter: { taskStatus: "open" }`
+- AND a new action item is created with `taskStatus: "open"`
+- WHEN `ObjectCreatedEvent` fires
+- THEN the installer-mapped listener MUST evaluate the filter against the created object's payload (there is no "before" state)
+- AND `$before.*` placeholder MUST resolve to `null` and validation MUST reject filters that require a non-null `$before`
+- AND the notification MUST dispatch to all resolved recipients
 
 #### Scenario: `updated` trigger MAY filter on a field-diff (`only_if_changed`)
-- **GIVEN** a notification with `trigger: { type: "updated", only_if_changed: ["assignee"] }`
-- **AND** an existing action item is updated, changing `assignee` from `alice` to `bob`
-- **WHEN** `ObjectUpdatedEvent` fires
-- **THEN** the listener MUST compare the listed fields between before/after state
-- **AND** fire the notification (because `assignee` changed)
-- **WHEN** the same item is later updated, changing only `description`
-- **THEN** the listener MUST NOT fire (no listed field changed)
-- **AND** when `only_if_changed` is omitted, the trigger fires on every update
+- GIVEN a notification with `trigger: { type: "updated", only_if_changed: ["assignee"] }`
+- AND an existing action item is updated, changing `assignee` from `alice` to `bob`
+- WHEN `ObjectUpdatedEvent` fires
+- THEN the listener MUST compare the listed fields between before/after state
+- AND fire the notification (because `assignee` changed)
+- WHEN the same item is later updated, changing only `description`
+- THEN the listener MUST NOT fire (no listed field changed)
+- AND when `only_if_changed` is omitted, the trigger fires on every update
 
 ### Requirement: Scheduled trigger filters MUST support relative-date and inequality operators
 

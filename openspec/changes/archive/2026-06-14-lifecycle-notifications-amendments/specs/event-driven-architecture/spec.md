@@ -14,16 +14,11 @@ reflects the surface that has already shipped on this branch
 `lib/Service/Lifecycle/TransitionEngine.php`,
 `lib/Lifecycle/LifecycleGuardInterface.php`).
 
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Schemas MAY declare a state machine via `x-openregister-lifecycle`
 
-A schema MAY include a top-level `x-openregister-lifecycle` block
-with `field`, `initial`, and a `transitions` map (action →
-`{from[], to, requires?, description?}`). When present, the
-schema-save validator MUST verify the annotation against the
-schema's `properties[field]` enum and reject malformed annotations
-with HTTP 422.
+A schema MAY include a top-level `x-openregister-lifecycle` block with `field`, `initial`, and a `transitions` map (action → `{from[], to, requires?, description?}`), and when present the schema-save validator MUST verify the annotation against the schema's `properties[field]` enum and reject malformed annotations with HTTP 422.
 
 **Uniqueness constraint.** Within a single schema's `transitions`
 map, no two transitions MAY share the same `(from, to)` pair (i.e.
@@ -74,23 +69,9 @@ third-party listeners that already call `setErrors()`.
 - AND `ObjectService::saveObject` MUST translate the stopped event's `getErrors()` into HTTP 422 with that body
 - AND the object's stored value MUST remain `draft`
 
-### Requirement: Initial state MUST be enforced on object creation
-
-The implementation MUST register an `IEventListener` against
-`ObjectCreatingEvent` that, when the schema has an
-`x-openregister-lifecycle` annotation, force-sets
-`object[field] = initial` regardless of the supplied value. The
-override MUST be logged at debug level when the supplied value
-differs from `initial`.
-
 ### Requirement: The system MUST expose a sugar transition endpoint
 
-`POST /apps/openregister/api/objects/{id}/transition?register=<app>&schema=<type>`
-with body `{action: "<name>"}` MUST be a sugar wrapper that loads
-the object, looks up `transitions[action]`, patches
-`field = transitions[action].to`, and saves through
-`ObjectService::saveObject` (so the existing event chain fires,
-audit trail records, RBAC applies).
+The system MUST expose `POST /apps/openregister/api/objects/{id}/transition?register=<app>&schema=<type>` with body `{action: "<name>"}` as a sugar wrapper that loads the object, looks up `transitions[action]`, patches `field = transitions[action].to`, and saves through `ObjectService::saveObject` (so the existing event chain fires, audit trail records, RBAC applies).
 
 **Auth contract.** The endpoint MUST be annotated
 `#[NoAdminRequired]` — accessible to any authenticated Nextcloud
@@ -129,11 +110,43 @@ transition endpoint MUST call the guard before applying the
 transition; a `GuardResult::deny(message)` MUST short-circuit
 with HTTP 403 and the deny message.
 
+#### Scenario: A registered guard denies a transition
+- GIVEN a transition whose `requires` resolves to a registered `LifecycleGuardInterface` that returns `GuardResult::deny("not allowed")`
+- WHEN an authenticated user POSTs that action to the transition endpoint
+- THEN the endpoint MUST call the guard before applying the transition
+- AND the request MUST be short-circuited with HTTP 403 and the deny message `not allowed`
+
+### Requirement: The system MUST expose `available-actions` for UI rendering
+
+The system MUST expose `GET /apps/openregister/api/objects/{id}/available-actions?register=<app>&schema=<type>`, which MUST return the current state, the list of applicable transitions (those whose `from` includes the current state), and per-transition `allowed: bool` (with optional `denyMessage` when a registered guard pre-emptively denies).
+
+#### Scenario: available-actions lists applicable transitions for the current state
+- GIVEN an object whose current lifecycle state is `draft` and a schema declaring `open: {from: ["draft"], to: "opened"}`
+- WHEN an authenticated user GETs the available-actions endpoint for that object
+- THEN the response MUST include the current state `draft`
+- AND the response MUST list the `open` transition with `allowed: true`
+- AND a transition pre-emptively denied by a registered guard MUST carry `allowed: false` with a `denyMessage`
+
+## ADDED Requirements
+
+### Requirement: Initial state MUST be enforced on object creation
+
+The implementation MUST register an `IEventListener` against
+`ObjectCreatingEvent` that, when the schema has an
+`x-openregister-lifecycle` annotation, force-sets
+`object[field] = initial` regardless of the supplied value. The
+override MUST be logged at debug level when the supplied value
+differs from `initial`.
+
+#### Scenario: Initial state is forced on creation
+- GIVEN a schema with `x-openregister-lifecycle` declaring `initial: "draft"`
+- WHEN a client creates an object supplying `lifecycle = "closed"`
+- THEN the listener MUST force-set the stored `lifecycle` value to `draft`
+- AND the override MUST be logged at debug level because the supplied value differed from `initial`
+
 ### Requirement: The system MUST dispatch `ObjectTransitionedEvent` after a successful transition
 
-After a transition is applied via the endpoint OR via a direct
-write that flips the lifecycle field, the implementation MUST
-dispatch `ObjectTransitionedEvent` via
+After a transition is applied via the endpoint OR via a direct write that flips the lifecycle field, the implementation MUST dispatch `ObjectTransitionedEvent` after the successful transition via
 `IEventDispatcher::dispatchTyped()` with payload
 `{object, action, from, to, userId, register, schema}`. The event
 joins the existing event-driven-architecture catalog and is
@@ -157,11 +170,3 @@ lifecycle), the listener MUST have already rejected the save —
 - WHEN the save completes
 - THEN `ObjectTransitionedEvent` MUST fire exactly once
 - AND `event.action` MUST equal `"open"` (resolved deterministically by the (from, to) lookup)
-
-### Requirement: The system MUST expose `available-actions` for UI rendering
-
-`GET /apps/openregister/api/objects/{id}/available-actions?register=<app>&schema=<type>`
-MUST return the current state, the list of applicable transitions
-(those whose `from` includes the current state), and per-transition
-`allowed: bool` (with optional `denyMessage` when a registered
-guard pre-emptively denies).
