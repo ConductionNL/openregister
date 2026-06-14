@@ -83,6 +83,8 @@ class JsonLdContextService
      * @param Schema   $schema   The schema.
      *
      * @return string The absolute context-document URL.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function getSchemaContextUrl(Register $register, Schema $schema): string
     {
@@ -102,6 +104,8 @@ class JsonLdContextService
      * @param Register $register The register.
      *
      * @return string The absolute context-document URL.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function getRegisterContextUrl(Register $register): string
     {
@@ -121,6 +125,8 @@ class JsonLdContextService
      * @param Schema $schema The schema.
      *
      * @return string The `@type` value (class IRI or schema-slug term).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function getTypeForSchema(Schema $schema): string
     {
@@ -147,6 +153,8 @@ class JsonLdContextService
      * @param Schema   $schema   The schema.
      *
      * @return array<string, mixed> The JSON-LD context map.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function buildSchemaContext(Register $register, Schema $schema): array
     {
@@ -211,6 +219,8 @@ class JsonLdContextService
      * @param array<Schema> $schemas  The register's schema entities.
      *
      * @return array<string, mixed> The merged JSON-LD context map.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function buildRegisterContext(Register $register, array $schemas): array
     {
@@ -247,6 +257,8 @@ class JsonLdContextService
      * @param array<string, mixed> $jsonld The `jsonld` configuration block.
      *
      * @return array<int, string> A list of human-readable validation errors (empty when valid).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function validateMapping(array $jsonld): array
     {

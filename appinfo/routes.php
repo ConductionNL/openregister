@@ -304,9 +304,8 @@ return [
 
         // Objects.
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
-        // SEC-CTRL-10: clearBlob removed — blob storage retired; the controller method was a no-op.
-        // ['name' => 'objects#clearBlob', 'url' => '/api/objects/clear-blob', 'verb' => 'DELETE'],
-        // ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'], // DISABLED: Use registers import endpoint instead
+        // SEC-CTRL-10: the clearBlob route was removed — blob storage retired; the controller method was a no-op.
+        // The objects import route was also removed — use the registers import endpoint instead.
         // Lifecycle transitions — MUST precede the wildcard {register}/{schema} routes
         // so /api/objects/{id}/transition isn't grabbed as register=id, schema=transition.
         ['name' => 'transition#transition', 'url' => '/api/objects/{id}/transition', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
