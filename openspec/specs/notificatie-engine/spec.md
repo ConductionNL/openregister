@@ -628,8 +628,8 @@ Before delivering the in-app (`nc-notification`) or `push` channel to a given re
 
 ### Requirement: Schemas MAY declare notifications via `x-openregister-notifications` with a normative channel block format
 
-A schema MAY include a top-level `x-openregister-notifications`
-block: a map of notification name → spec. Each spec declares
+A schema MUST be allowed to include a top-level `x-openregister-notifications` block, which the system MUST treat as a map of notification name → spec.
+Each spec declares
 `trigger` (type + parameters), `filter` (Mongo-style operators
 against the triggering object), `recipients` (one or more
 recipient blocks), `channels` (one or more channel blocks),
@@ -670,9 +670,8 @@ reject unknown keys, missing mandatory fields, or unsupported
 
 ### Requirement: Throttle window grammar (normative)
 
-A notification's optional `throttle` block MAY declare
-`perRecipient`, `perObject`, and / or `global` windows. Each
-throttle value MUST match the regex
+A notification's optional `throttle` block MAY declare `perRecipient`, `perObject`, and / or `global` windows, and the system MUST validate every declared window.
+Each throttle value MUST match the regex
 `^([1-9][0-9]*) per (second|minute|hour|day|week)$`
 (count + literal `per` + unit). Whitespace between tokens is
 exactly one ASCII space. Schema-save validation MUST reject any
@@ -719,9 +718,8 @@ trigger types (in addition to `transition`, `scheduled`, and
 
 ### Requirement: Scheduled trigger filters MUST support relative-date and inequality operators
 
-A `scheduled` trigger's `filter` is a flat map of object-data field
-names to conditions, ANDed together. Each condition MUST be accepted in
-two forms:
+A `scheduled` trigger's `filter` MUST be supported as a flat map of object-data field names to conditions, ANDed together.
+Each condition MUST be accepted in two forms:
 
 - **Scalar (v1, unchanged):** `{"status": "open"}` — strict equality
   against the object's field value, byte-for-byte the existing
