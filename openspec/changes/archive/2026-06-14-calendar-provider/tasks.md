@@ -130,7 +130,7 @@
   - Test auto-detection of allDay from property format
   - Test explicit allDay override
 
-- [ ] Integration test: Calendar visible in Nextcloud Calendar app
+- [~] Integration test: Calendar visible in Nextcloud Calendar app — live-only; requires a running NC with the Calendar app enabled. Provider/transformer/search/RBAC behaviour is covered at the unit level by `tests/Unit/Calendar/RegisterCalendarProviderTest.php`, `RegisterCalendarTest.php`, and `CalendarEventTransformerTest.php`, plus `tests/Service/CalendarProviderIntegrationTest.php`.
   - Enable calendar provider on a test schema
   - Create objects with date fields
   - Verify events appear in the Calendar app via browser test
@@ -139,7 +139,7 @@
 
 ## Documentation
 
-- [ ] Add calendar provider section to schema configuration documentation
+- [x] Add calendar provider section to schema configuration documentation (`docs/features/calendar-provider.md` + `docs/Integrations/calendar.md`)
   - Document all configuration fields with examples
   - Provide common configuration patterns (zaak deadlines, publication dates, event schedules)
   - Document the auto-detection behavior for allDay
