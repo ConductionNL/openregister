@@ -1311,7 +1311,24 @@ class ImportHandler
                 );
             }
 
+            // Register-scoped slugs (DE-COLLISION): a schema slug like "order" is
+            // no longer globally unique — two applications may each declare one.
+            // NEVER overwrite a schema that belongs to a DIFFERENT application;
+            // fall through and create a separate schema for the importing app so
+            // their definitions (and objects) stay independent. Same-application
+            // (or unowned, legacy) schemas are still updated in place, so an app
+            // re-importing its own schema never orphans its existing objects.
+            $existingApplication = null;
             if ($existingSchema !== null) {
+                $existingApplication = $existingSchema->getApplication();
+            }
+
+            $belongsToOtherApp = ($existingSchema !== null
+                && $appId !== null && $appId !== ''
+                && $existingApplication !== null && $existingApplication !== ''
+                && strcasecmp((string) $existingApplication, (string) $appId) !== 0);
+
+            if ($existingSchema !== null && $belongsToOtherApp === false) {
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingSchema->getVersion() ?? '0.0.0';
                 if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
@@ -1334,6 +1351,19 @@ class ImportHandler
 
                 return $this->schemaMapper->update($existingSchema);
             }//end if
+
+            if ($belongsToOtherApp === true) {
+                $this->logger->warning(
+                    message: sprintf(
+                        '[ImportHandler] Schema slug "%s" already exists for application "%s"; creating a separate '
+                        .'schema for "%s" to avoid a cross-application slug collision (register-scoped slugs).',
+                        $data['slug'],
+                        (string) $existingApplication,
+                        (string) $appId
+                    ),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
 
             // Create new schema.
             $schema = $this->schemaMapper->createFromArray($data);

@@ -1014,34 +1014,51 @@ class ObjectsController extends Controller
     private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
     {
         try {
-            // STEP 1: Initial resolution - convert slugs/IDs to numeric IDs.
+            // STEP 1: Resolve the register slug/ID to a numeric ID.
             $objectService->setRegister(register: $register);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // If register not found, throw custom exception.
             throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
         }
 
-        try {
-            $objectService->setSchema(schema: $schema);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // If schema not found, throw custom exception.
-            throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
-        }
-
-        // STEP 2: Get resolved numeric IDs.
         $resolvedRegisterId = $objectService->getRegister();
-        $resolvedSchemaId   = $objectService->getSchema();
 
-        // STEP 3: Fetch entities for magic mapper support.
+        // STEP 2: Fetch the register entity early so the schema slug can be
+        // resolved WITHIN this register's own schemas (register-scoped slugs).
+        // A schema slug like "order" is no longer globally unique — two
+        // registers may each declare an "order" schema — so the same slug under
+        // different registers must resolve to different schemas.
         $registerEntity = null;
-        $schemaEntity   = null;
-
         try {
             $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
             $registerEntity = $registerMapper->find(id: $resolvedRegisterId, _multitenancy: false);
         } catch (\Exception $e) {
             // Log but don't fail - entities are optional.
         }
+
+        // Register-scoped schema resolution: prefer the schema that actually
+        // belongs to this register. Falls back to global resolution (legacy)
+        // when the slug is not a member of the register, or when the register
+        // entity could not be loaded, so existing cross-register references and
+        // numeric IDs keep working unchanged.
+        $schemaToResolve = $schema;
+        if ($registerEntity !== null && is_numeric($schema) === false) {
+            $scopedSchemaId = $this->resolveSchemaSlugInRegister(slug: $schema, registerEntity: $registerEntity);
+            if ($scopedSchemaId !== null) {
+                $schemaToResolve = (string) $scopedSchemaId;
+            }
+        }
+
+        try {
+            $objectService->setSchema(schema: $schemaToResolve);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // If schema not found, throw custom exception.
+            throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
+        }
+
+        // STEP 3: Get resolved numeric IDs and the schema entity.
+        $resolvedSchemaId = $objectService->getSchema();
+        $schemaEntity     = null;
 
         try {
             $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
@@ -1057,6 +1074,47 @@ class ObjectsController extends Controller
             'schemaEntity'   => $schemaEntity,
         ];
     }//end resolveRegisterSchemaIds()
+
+    /**
+     * Resolve a schema slug to a numeric ID among a register's own schemas.
+     *
+     * Implements register-scoped schema slugs: the same slug (e.g. "order") may
+     * be declared by more than one register, so a slug is matched only against
+     * the schemas the given register references. Returns null when the slug is
+     * not a member of the register (the caller then falls back to global
+     * resolution) so numeric IDs and cross-register references are unaffected.
+     *
+     * @param string $slug           The schema slug to resolve.
+     * @param object $registerEntity The resolved register entity (has getSchemas()).
+     *
+     * @return int|null The matching schema ID within the register, or null.
+     */
+    private function resolveSchemaSlugInRegister(string $slug, object $registerEntity): ?int
+    {
+        if (method_exists($registerEntity, 'getSchemas') === false) {
+            return null;
+        }
+
+        $schemaIds = array_values(array_filter(array_map('intval', ($registerEntity->getSchemas() ?? []))));
+        if (empty($schemaIds) === true) {
+            return null;
+        }
+
+        try {
+            $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+            $registerSchemas = $schemaMapper->findMultiple(ids: $schemaIds, _multitenancy: false);
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        foreach ($registerSchemas as $registerSchema) {
+            if (strcasecmp((string) $registerSchema->getSlug(), $slug) === 0) {
+                return (int) $registerSchema->getId();
+            }
+        }
+
+        return null;
+    }//end resolveSchemaSlugInRegister()
 
     /**
      * Retrieves a list of all objects for a specific register and schema
