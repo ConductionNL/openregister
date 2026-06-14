@@ -93,7 +93,7 @@ function readObjecttypes(array $export): array
             }
 
             $attributes[] = $normalised;
-        }
+        }//end foreach
 
         $result[] = [
             'id'               => (string) ($objecttype['id'] ?? strtoupper((string) ($objecttype['naam'] ?? ''))),
@@ -101,7 +101,7 @@ function readObjecttypes(array $export): array
             'definitie'        => (string) ($objecttype['definitie'] ?? ''),
             'attribuutsoorten' => $attributes,
         ];
-    }
+    }//end foreach
 
     return $result;
 }//end readObjecttypes()

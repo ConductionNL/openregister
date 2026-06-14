@@ -51,17 +51,15 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaImportController extends Controller
 {
-
-
     /**
      * Constructor.
      *
-     * @param string              $appName       App name.
-     * @param IRequest            $request       Request.
-     * @param SchemaImportService $importService Standards import orchestrator.
-     * @param SchemaMapper        $schemaMapper  Schema persistence.
+     * @param string              $appName        App name.
+     * @param IRequest            $request        Request.
+     * @param SchemaImportService $importService  Standards import orchestrator.
+     * @param SchemaMapper        $schemaMapper   Schema persistence.
      * @param RegisterMapper      $registerMapper Register lookup/association.
-     * @param LoggerInterface     $logger        Logger.
+     * @param LoggerInterface     $logger         Logger.
      */
     public function __construct(
         string $appName,
@@ -74,7 +72,6 @@ class SchemaImportController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Search importable types/objecttypes for a dialect over the bundled snapshot.
@@ -97,7 +94,6 @@ class SchemaImportController extends Controller
 
     }//end types()
 
-
     /**
      * The bundled snapshot version info for a dialect.
      *
@@ -116,7 +112,6 @@ class SchemaImportController extends Controller
         }
 
     }//end snapshot()
-
 
     /**
      * Import a type/objecttype from a dialect's snapshot, persisting the
@@ -163,7 +158,6 @@ class SchemaImportController extends Controller
         );
 
     }//end import()
-
 
     /**
      * Update an imported schema from its recorded source (three-way merge).
@@ -241,7 +235,6 @@ class SchemaImportController extends Controller
 
     }//end reimport()
 
-
     /**
      * Persist a freshly-imported schema.
      *
@@ -260,7 +253,6 @@ class SchemaImportController extends Controller
 
     }//end persistNewSchema()
 
-
     /**
      * Apply a confirmed merge to an imported schema and persist it.
      *
@@ -277,8 +269,8 @@ class SchemaImportController extends Controller
         // next update-from-source diffs against what was actually applied.
         $configuration = ($schema->getConfiguration() ?? []);
         if (isset($diff['incomingSource']) === true && is_array($diff['incomingSource']) === true) {
-            $incomingSource             = $diff['incomingSource'];
-            $incomingSource['baseline'] = $diff['merged'];
+            $incomingSource = $diff['incomingSource'];
+            $incomingSource['baseline']    = $diff['merged'];
             $configuration['importSource'] = $incomingSource;
         }
 
@@ -291,7 +283,6 @@ class SchemaImportController extends Controller
         return $this->schemaMapper->update($schema);
 
     }//end applyMerge()
-
 
     /**
      * Associate a newly-imported schema with a target register (best-effort).
@@ -324,7 +315,6 @@ class SchemaImportController extends Controller
 
     }//end associateWithRegister()
 
-
     /**
      * Shape the merge result for an API response (drops the merged map).
      *
@@ -344,7 +334,6 @@ class SchemaImportController extends Controller
         ];
 
     }//end previewPayload()
-
 
     /**
      * Log and map a persistence failure to a 500 response.

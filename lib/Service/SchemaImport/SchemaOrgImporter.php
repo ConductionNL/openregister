@@ -62,7 +62,6 @@ class SchemaOrgImporter implements SchemaDialectImporter
         'boolean' => 2,
     ];
 
-
     /**
      * Constructor.
      *
@@ -72,9 +71,10 @@ class SchemaOrgImporter implements SchemaDialectImporter
     {
     }//end __construct()
 
-
     /**
      * {@inheritDoc}
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      *
      * @return string The dialect key.
      */
@@ -83,9 +83,10 @@ class SchemaOrgImporter implements SchemaDialectImporter
         return DialectDetector::DIALECT_SCHEMA_ORG;
     }//end dialect()
 
-
     /**
      * {@inheritDoc}
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      *
      * @return string The snapshot version.
      */
@@ -94,13 +95,14 @@ class SchemaOrgImporter implements SchemaDialectImporter
         return $this->snapshot->version();
     }//end snapshotVersion()
 
-
     /**
      * {@inheritDoc}
      *
      * @param string $query The search term.
      *
      * @return array<int, array<string, mixed>> Candidate type records.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function discover(string $query): array
     {
@@ -124,7 +126,6 @@ class SchemaOrgImporter implements SchemaDialectImporter
         return $results;
     }//end discover()
 
-
     /**
      * {@inheritDoc}
      *
@@ -134,6 +135,8 @@ class SchemaOrgImporter implements SchemaDialectImporter
      * @return ImportedSchema The mapped schema.
      *
      * @throws SchemaImportException When the type is unknown to the snapshot.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function import(string $reference, ImportOptions $options): ImportedSchema
     {
@@ -196,7 +199,6 @@ class SchemaOrgImporter implements SchemaDialectImporter
         );
     }//end import()
 
-
     /**
      * Map one Schema.org property record to a JSON Schema property definition.
      *
@@ -214,7 +216,6 @@ class SchemaOrgImporter implements SchemaDialectImporter
 
         return $definition;
     }//end mapProperty()
-
 
     /**
      * Map a Schema.org range list to a JSON Schema type/format.
@@ -245,7 +246,6 @@ class SchemaOrgImporter implements SchemaDialectImporter
 
         return $this->collapseMostPermissive($mapped);
     }//end mapRanges()
-
 
     /**
      * Map a single Schema.org range (datatype or class) to a JSON fragment.
@@ -285,9 +285,8 @@ class SchemaOrgImporter implements SchemaDialectImporter
                     'format'      => 'uri',
                     'description' => 'Reference to a '.$range.' ('.$this->snapshot->classIri($range).').',
                 ];
-        }
+        }//end switch
     }//end mapSingleRange()
-
 
     /**
      * Collapse a list of mapped fragments to the single most permissive one.

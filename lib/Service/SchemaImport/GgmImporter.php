@@ -40,12 +40,10 @@ use OCA\OpenRegister\Exception\SchemaImportException;
  */
 class GgmImporter implements SchemaDialectImporter
 {
-
-
     /**
      * Constructor.
      *
-     * @param GgmSnapshot $snapshot The indexed GGM snapshot.
+     * @param GgmSnapshot $snapshot    The indexed GGM snapshot.
      * @param string|null $sourceLabel Provenance source label (e.g. 'snapshot' or an upload name).
      */
     public function __construct(
@@ -54,9 +52,10 @@ class GgmImporter implements SchemaDialectImporter
     ) {
     }//end __construct()
 
-
     /**
      * {@inheritDoc}
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      *
      * @return string The dialect key.
      */
@@ -65,9 +64,10 @@ class GgmImporter implements SchemaDialectImporter
         return DialectDetector::DIALECT_GGM;
     }//end dialect()
 
-
     /**
      * {@inheritDoc}
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      *
      * @return string The snapshot version.
      */
@@ -76,13 +76,14 @@ class GgmImporter implements SchemaDialectImporter
         return $this->snapshot->version();
     }//end snapshotVersion()
 
-
     /**
      * {@inheritDoc}
      *
      * @param string $query The search term.
      *
      * @return array<int, array<string, mixed>> Candidate objecttype records.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function discover(string $query): array
     {
@@ -101,7 +102,6 @@ class GgmImporter implements SchemaDialectImporter
         return $results;
     }//end discover()
 
-
     /**
      * {@inheritDoc}
      *
@@ -111,6 +111,8 @@ class GgmImporter implements SchemaDialectImporter
      * @return ImportedSchema The mapped schema.
      *
      * @throws SchemaImportException When the objecttype is unknown to the snapshot.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function import(string $reference, ImportOptions $options): ImportedSchema
     {
@@ -157,7 +159,6 @@ class GgmImporter implements SchemaDialectImporter
         );
     }//end import()
 
-
     /**
      * Restrict the attributes to a requested subset, tracking unknown requests.
      *
@@ -188,7 +189,6 @@ class GgmImporter implements SchemaDialectImporter
         return [$selected, $unknown];
     }//end applySubset()
 
-
     /**
      * Map one GGM attribuutsoort to a JSON Schema property definition.
      *
@@ -214,7 +214,6 @@ class GgmImporter implements SchemaDialectImporter
 
         return $definition;
     }//end mapAttribute()
-
 
     /**
      * Map a GGM attribute type to a JSON Schema type/format fragment.
@@ -242,16 +241,15 @@ class GgmImporter implements SchemaDialectImporter
             case 'relatie':
                 // Relations become a single reference property (string id),
                 // never a recursive import of the target objecttype.
-                $target = (string) ($attribute['doelObjecttype'] ?? '');
+                $target   = (string) ($attribute['doelObjecttype'] ?? '');
                 $fragment = ['type' => 'string', 'format' => 'uri'];
                 if ($target !== '') {
                     $fragment['description'] = 'Reference to GGM objecttype '.$target.'.';
                 }
-
                 return $fragment;
             default:
                 // Unknown GGM type → safest mapping is free-text string.
                 return ['type' => 'string'];
-        }
+        }//end switch
     }//end mapType()
 }//end class

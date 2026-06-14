@@ -50,7 +50,6 @@ class SchemaImportService
      */
     private array $importers = [];
 
-
     /**
      * Constructor.
      *
@@ -84,30 +83,31 @@ class SchemaImportService
         );
     }//end __construct()
 
-
     /**
      * Register a dialect importer (pluggability seam).
      *
      * @param SchemaDialectImporter $importer The importer to register.
      *
      * @return void
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function register(SchemaDialectImporter $importer): void
     {
         $this->importers[$importer->dialect()] = $importer;
     }//end register()
 
-
     /**
      * The registered dialect keys for standards import.
      *
      * @return array<int, string> The dialect keys.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function importableDialects(): array
     {
         return array_keys($this->importers);
     }//end importableDialects()
-
 
     /**
      * Resolve a registered importer by dialect, or fail with 404.
@@ -117,6 +117,8 @@ class SchemaImportService
      * @return SchemaDialectImporter The importer.
      *
      * @throws SchemaImportException When no importer handles the dialect.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function importerFor(string $dialect): SchemaDialectImporter
     {
@@ -130,7 +132,6 @@ class SchemaImportService
         return $this->importers[$dialect];
     }//end importerFor()
 
-
     /**
      * Discover importable types/objecttypes for a dialect.
      *
@@ -140,6 +141,8 @@ class SchemaImportService
      * @return array<string, mixed> { snapshotVersion: string, results: array }
      *
      * @throws SchemaImportException When the dialect is unknown.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function discover(string $dialect, string $query): array
     {
@@ -151,7 +154,6 @@ class SchemaImportService
         ];
     }//end discover()
 
-
     /**
      * The bundled snapshot version metadata for a dialect.
      *
@@ -160,6 +162,8 @@ class SchemaImportService
      * @return array<string, mixed> { dialect, snapshotVersion }
      *
      * @throws SchemaImportException When the dialect is unknown.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function snapshotInfo(string $dialect): array
     {
@@ -169,7 +173,6 @@ class SchemaImportService
             'snapshotVersion' => $importer->snapshotVersion(),
         ];
     }//end snapshotInfo()
-
 
     /**
      * Import a type/objecttype from a dialect's snapshot.
@@ -181,24 +184,27 @@ class SchemaImportService
      * @return ImportedSchema The mapped schema.
      *
      * @throws SchemaImportException When the dialect or reference is unknown.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function import(string $dialect, string $reference, ImportOptions $options): ImportedSchema
     {
         return $this->importerFor($dialect)->import($reference, $options);
     }//end import()
 
-
     /**
      * Import a GGM objecttype from an uploaded export (normalised intermediate).
      *
-     * @param array<string, mixed> $normalised The normalised GGM intermediate.
-     * @param string               $reference  The objecttype id/name to import.
-     * @param ImportOptions        $options    Import options.
+     * @param array<string, mixed> $normalised  The normalised GGM intermediate.
+     * @param string               $reference   The objecttype id/name to import.
+     * @param ImportOptions        $options     Import options.
      * @param string               $sourceLabel A provenance label for the upload.
      *
      * @return ImportedSchema The mapped schema.
      *
      * @throws SchemaImportException When the objecttype is unknown to the upload.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function importGgmUpload(array $normalised, string $reference, ImportOptions $options, string $sourceLabel='upload'): ImportedSchema
     {
@@ -206,19 +212,19 @@ class SchemaImportService
         return $importer->import($reference, $options);
     }//end importGgmUpload()
 
-
     /**
      * Detect the dialect of a decoded upload document.
      *
      * @param array<string, mixed> $document The decoded document.
      *
      * @return string|null The detected dialect, or null when undetectable.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function detectDialect(array $document): ?string
     {
         return $this->detector->detect($document);
     }//end detectDialect()
-
 
     /**
      * Resolve the effective dialect for an upload: explicit wins, else detect,
@@ -230,6 +236,8 @@ class SchemaImportService
      * @return string The resolved dialect.
      *
      * @throws SchemaImportException When the dialect cannot be resolved (422).
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function resolveUploadDialect(array $document, ?string $explicitDialect): string
     {
@@ -249,17 +257,18 @@ class SchemaImportService
         return $detected;
     }//end resolveUploadDialect()
 
-
     /**
      * Compute the classified update-from-source diff for an imported schema.
      *
-     * @param array<string, mixed> $importSource The stored configuration.importSource block (with baseline).
+     * @param array<string, mixed>               $importSource      The stored configuration.importSource block (with baseline).
      * @param array<string, array<string,mixed>> $currentProperties The schema's current properties.
-     * @param array<int, string>   $resolvedConflicts Conflict property names confirmed by the caller.
+     * @param array<int, string>                 $resolvedConflicts Conflict property names confirmed by the caller.
      *
      * @return array<string, mixed> The merge result (added/removed/changed/keptLocal/conflicts/merged/applied).
      *
      * @throws SchemaImportException When the schema has no recorded import source.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function previewUpdateFromSource(array $importSource, array $currentProperties, array $resolvedConflicts=[]): array
     {
@@ -277,13 +286,12 @@ class SchemaImportService
         $fresh    = $this->import($dialect, $reference, new ImportOptions());
         $incoming = $fresh->properties;
 
-        $result                  = $this->merge->compute($baseline, $currentProperties, $incoming, $resolvedConflicts);
+        $result = $this->merge->compute($baseline, $currentProperties, $incoming, $resolvedConflicts);
         $result['incomingSource'] = $fresh->importSource;
         $result['jsonld']         = $fresh->jsonld;
 
         return $result;
     }//end previewUpdateFromSource()
-
 
     /**
      * Read a snapshot version from its version.json, with a fallback.

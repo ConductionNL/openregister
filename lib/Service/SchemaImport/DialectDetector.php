@@ -70,11 +70,12 @@ class DialectDetector
      */
     public const DIALECT_GGM = 'ggm';
 
-
     /**
      * The supported dialect identifiers.
      *
      * @return array<int, string> The dialect keys.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public static function supportedDialects(): array
     {
@@ -86,7 +87,6 @@ class DialectDetector
         ];
     }//end supportedDialects()
 
-
     /**
      * Detect the dialect of a decoded document.
      *
@@ -96,6 +96,8 @@ class DialectDetector
      * @param array<string, mixed> $document The decoded JSON document.
      *
      * @return string|null The detected dialect, or null when undetectable.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each marker check adds one conservative branch.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Each marker check adds one conservative branch.
@@ -136,7 +138,6 @@ class DialectDetector
         return null;
     }//end detect()
 
-
     /**
      * Whether a value is a `@context` that references schema.org.
      *
@@ -163,7 +164,6 @@ class DialectDetector
 
         return false;
     }//end referencesSchemaOrg()
-
 
     /**
      * Whether a decoded document carries GGM export root markers.
@@ -194,7 +194,6 @@ class DialectDetector
 
         return false;
     }//end looksLikeGgm()
-
 
     /**
      * Whether a decoded document looks like a JSON Schema even without an

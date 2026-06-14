@@ -52,7 +52,6 @@ class GgmSnapshot
      */
     private string $loadedVersion = '';
 
-
     /**
      * Constructor.
      *
@@ -70,31 +69,36 @@ class GgmSnapshot
     ) {
     }//end __construct()
 
-
     /**
      * Build a snapshot backed by an in-memory normalised intermediate (upload).
      *
      * @param array<string, mixed> $normalised The normalised intermediate.
      *
      * @return self The snapshot.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public static function fromNormalised(array $normalised): self
     {
         return new self('', (string) ($normalised['version'] ?? 'upload'), $normalised);
     }//end fromNormalised()
 
-
     /**
      * The release version of the loaded snapshot.
      *
      * @return string The version.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function version(): string
     {
         $this->ensureParsed();
-        return ($this->loadedVersion !== '' ? $this->loadedVersion : $this->version);
-    }//end version()
+        if ($this->loadedVersion !== '') {
+            return $this->loadedVersion;
+        }
 
+        return $this->version;
+    }//end version()
 
     /**
      * Resolve an objecttype by id (case-insensitive) or by Dutch name.
@@ -102,6 +106,8 @@ class GgmSnapshot
      * @param string $reference The objecttype id or name.
      *
      * @return array<string, mixed>|null The objecttype record, or null when unknown.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function findObjecttype(string $reference): ?array
     {
@@ -122,13 +128,14 @@ class GgmSnapshot
         return null;
     }//end findObjecttype()
 
-
     /**
      * Search objecttypes by a case-insensitive name/definition term.
      *
      * @param string $query A search term; empty returns all.
      *
      * @return array<int, array<string, mixed>> Matching objecttype records.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function searchObjecttypes(string $query): array
     {
@@ -147,7 +154,6 @@ class GgmSnapshot
 
         return $results;
     }//end searchObjecttypes()
-
 
     /**
      * Parse + index the snapshot once.
