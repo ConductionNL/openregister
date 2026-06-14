@@ -1,8 +1,6 @@
-json-ld-output
----
-status: draft
----
-# JSON-LD Output
+# json-ld-output Specification
+
+status: done
 
 ## Purpose
 
@@ -16,12 +14,15 @@ terms (e.g. Schema.org), and dereferenceable register/schema `@context`
 document endpoints. Scope is read-side output only — JSON-LD ingest is
 explicitly excluded.
 
-## ADDED Requirements
+@e2e exclude Pure read-side serialization / API content-negotiation capability with no UI surface; verified by Newman (tests/integration/openregister-jsonld.postman_collection.json) and PHPUnit (tests/Unit/Service/JsonLd/*, tests/Unit/Controller/ContextsControllerTest.php) per ADR-008 (Playwright is UI-only; API contracts belong in Newman).
 
+## Requirements
 ### Requirement: Object read endpoints MUST serve JSON-LD via content negotiation
 
-`GET /api/objects/{register}/{schema}/{id}` (`objects#show`) and `GET
-/api/objects/{register}/{schema}` (`objects#index`) MUST return a
+The object read endpoints MUST serve JSON-LD when the client negotiates
+for it. Concretely, `GET /api/objects/{register}/{schema}/{id}`
+(`objects#show`) and `GET /api/objects/{register}/{schema}`
+(`objects#index`) MUST return a
 JSON-LD representation when `application/ld+json` is the
 highest-weighted matching media type in the request's `Accept` header.
 JSON-LD responses MUST carry `Content-Type: application/ld+json` and
@@ -107,7 +108,8 @@ key itself MUST NOT appear in JSON-LD output.
 
 ### Requirement: Schemas MUST support property-to-vocabulary mapping with sensible defaults
 
-A schema MAY declare a `jsonld` block in its existing `configuration`
+Schemas MUST support an optional property-to-vocabulary mapping that
+the derived context honours. A schema MAY declare a `jsonld` block in its existing `configuration`
 JSON: `@vocab` (vocabulary base IRI), `type` (class IRI used as the
 object `@type`), and `properties` (map of property name → term IRI,
 e.g. Schema.org). Mapped properties MUST use the declared IRIs in the
@@ -204,3 +206,4 @@ non-JSON-LD RDF serializations are out of scope.
 - GIVEN a PUT request with `Content-Type: application/ld+json`
 - WHEN it reaches the objects API
 - THEN the request is handled exactly as an unsupported/plain body is handled today — no JSON-LD expansion or context processing occurs
+

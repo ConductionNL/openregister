@@ -97,6 +97,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ##
 DOMAIN_ORDER=(
     "crud"
+    "jsonld"
     "register-resolver"
     "graphql"
     "relations"
@@ -111,6 +112,7 @@ DOMAIN_ORDER=(
 
 declare -A DOMAIN_COLLECTIONS=(
     [crud]="$REPO_ROOT/tests/integration/openregister-crud.postman_collection.json"
+    [jsonld]="$REPO_ROOT/tests/integration/openregister-jsonld.postman_collection.json"
     [register-resolver]="$REPO_ROOT/tests/integration/openregister-register-resolver.postman_collection.json"
     [referential-integrity]="$REPO_ROOT/tests/integration/openregister-referential-integrity.postman_collection.json"
     [graphql]="$REPO_ROOT/tests/postman/openregister-graphql-tests.postman_collection.json"
