@@ -16,7 +16,7 @@ This delta adds four typed events — `ApprovalStepInitiatedEvent`, `ApprovalSte
 
 ---
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: The system MUST dispatch a typed event when an approval step transitions to `pending`
 
