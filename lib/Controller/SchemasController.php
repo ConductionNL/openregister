@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
@@ -122,6 +124,7 @@ class SchemasController extends Controller
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
+        private readonly SchemaVersioningService $schemaVersioningService,
         private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null
     ) {
         // Call parent constructor to initialize base controller.
@@ -626,9 +629,63 @@ class SchemasController extends Controller
         // Capture prior authorization so a change can be audit-logged below.
         $oldSchemaAuth = $existingSchema->getAuthorization();
 
+        // Schema versioning gate (schema-versioning-and-object-migration):
+        // classify the incoming definition against the stored one and refuse
+        // an unacknowledged breaking change with the structured HTTP 409
+        // contract. Only runs when the update actually carries a definition.
+        $changeSet    = null;
+        $acknowledged = ($this->request->getParam('acknowledgeBreaking') === true
+            || $this->request->getParam('acknowledgeBreaking') === 'true');
+        if (isset($data['properties']) === true || isset($data['required']) === true) {
+            $proposedDefinition = [
+                'properties' => ($data['properties'] ?? $existingSchema->getProperties() ?? []),
+                'required'   => ($data['required'] ?? $existingSchema->getRequired() ?? []),
+            ];
+
+            $renames = [];
+            if (is_array($this->request->getParam('renames')) === true) {
+                $renames = $this->request->getParam('renames');
+            }
+
+            $changeSet = $this->schemaVersioningService->classify(
+                existing: $existingSchema,
+                newDefinition: $proposedDefinition,
+                renames: $renames
+            );
+
+            try {
+                $this->schemaVersioningService->enforceGate(
+                    changeSet: $changeSet,
+                    acknowledged: $acknowledged,
+                    schemaId: $id
+                );
+            } catch (BreakingSchemaChangeException $e) {
+                return new JSONResponse(data: $e->toResponse(), statusCode: 409);
+            }
+
+            // Apply the classification-driven semantic version bump unless the
+            // caller pinned an explicit version.
+            if (isset($data['version']) === false && $changeSet->hasChanges() === true) {
+                $data['version'] = $this->schemaVersioningService->nextVersion(
+                    existing: $existingSchema,
+                    changeSet: $changeSet
+                );
+            }
+        }//end if
+
         try {
             // Update the schema with the provided data.
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
+
+            // Record the classified changelog entry once the update applied.
+            if ($changeSet !== null) {
+                $this->schemaVersioningService->recordChangelog(
+                    schemaId: $updatedSchema->getId(),
+                    version: $updatedSchema->getVersion(),
+                    changeSet: $changeSet,
+                    acknowledged: $acknowledged
+                );
+            }
 
             // Log authorization change if authorization was modified.
             if (isset($data['authorization']) === true) {

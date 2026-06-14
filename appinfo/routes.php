@@ -732,6 +732,14 @@ return [
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Schema versioning & object migration (schema-versioning-and-object-migration).
+        ['name' => 'schemaMigration#changelog', 'url' => '/api/schemas/{id}/changelog', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+        ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
