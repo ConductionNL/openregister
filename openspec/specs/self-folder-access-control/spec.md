@@ -1,5 +1,11 @@
-## ADDED Requirements
+---
+status: done
+---
+# self-folder-access-control Specification
 
+## Purpose
+TBD - created by archiving change validate-self-folder-access. Update Purpose after archive.
+## Requirements
 ### Requirement: Default-deny invariant for `@self.folder` binds
 
 Every non-empty numeric `@self.folder` write SHALL be denied by default unless an explicit positive read-access check passes. There is no "unknown / fail-open" state: any condition that prevents the system from confirming readability for the acting user (lookup miss, exception during resolution, ambiguous mount state) MUST result in `FolderAccessDeniedException`. This invariant exists so that future refactors of the access-control helper have a clear north-star: anything that doesn't end in "and `isReadable()` returned `true` for this user" is a denial.
@@ -132,6 +138,7 @@ The change SHALL NOT modify `FolderManagementHandler::getNodeById()`'s existing 
 - **WHEN** `createObjectFolderById()` attempts to resolve the ID
 - **THEN** the lookup fails (user-folder miss, no fallback), and `FolderAccessDeniedException` is thrown
 
-### Limitations
+#### Limitations
 
 - **Check-to-bind TOCTOU window.** Access is verified via `Folder::isReadable()` immediately before the bind, but a small time-of-check-to-time-of-use gap exists between that check and the subsequent file writes. An admin revoking a share in the milliseconds between check and bind would leave the object attached to a folder the actor can no longer read. The window is small and Nextcloud's share API does not expose programmatic mid-request revocation, so this is accepted rather than mitigated. Within a single request, the per-request revalidation cache is reset at the entry of each top-level `saveObject` / `saveObjects` call, so cascade-induced folder moves/trashes are re-checked.
+
