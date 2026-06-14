@@ -454,6 +454,8 @@ Computed field evaluation MUST occur BEFORE schema hooks fire on `creating` and 
 
 ### REQ-001: The system SHALL provide an OCC command that re-evaluates and persists every materialised calculation declared by a (register, schema) pair
 
+The system SHALL provide an OCC command that re-evaluates and persists every materialised calculation declared by a (register, schema) pair.
+
 > Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
 
 `occ openregister:rematerialise-calculations <register> <schema> [--dry-run]` iterates every object in the (register, schema) magic table, re-evaluates each materialised calculation declared in the schema's `configuration.x-openregister-calculations` map, and persists the new value when the result differs from the stored value. A calculation is "materialised" when its declaration in the calculations map satisfies `materialise === true`; non-materialised entries are skipped.

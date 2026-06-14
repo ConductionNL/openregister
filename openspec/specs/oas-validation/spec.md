@@ -500,3 +500,26 @@ The security schemes in the generated OAS MUST be structurally valid and consist
 - AND `basicAuth` MUST have `type: "http"` and `scheme: "basic"`
 - AND `oauth2` MUST have `type: "oauth2"` with `authorizationCode` flow
 
+### Requirement: Error responses MUST follow RFC 7807 problem details (API-46)
+
+OpenRegister error responses MUST be emitted as RFC 7807 problem documents.
+`ProblemDetailsBuilder::build()` MUST produce a payload carrying `type`
+(defaulting to `about:blank`), `title`, and `status`, with optional `detail`
+and `instance`, plus free-form extensions (e.g. `errors`, legacy `code`). The
+response MUST carry `Content-Type: application/problem+json`. The `Error`
+schema in `BaseOas.json` MUST document these fields, retaining the legacy
+`error` and `code` aliases for backward compatibility.
+
+#### Scenario: Validation failure returns an RFC 7807 422 document
+- **GIVEN** a request fails OAS schema validation
+- **WHEN** `ProblemDetailsBuilder::validationFailed()` builds the response
+- **THEN** the payload MUST include `type: "about:blank"`, `title: "Validation failed"`, and `status: 422`
+- **AND** the per-field errors MUST be carried in the `errors` extension array
+- **AND** the response MUST be sent with `Content-Type: application/problem+json`
+
+#### Scenario: Not-found error carries problem-details shape
+- **GIVEN** an object lookup misses
+- **WHEN** `ProblemDetailsBuilder::notFound()` builds the response
+- **THEN** the payload MUST include `title: "Not found"` and `status: 404`
+- **AND** the `Error` schema in `BaseOas.json` MUST declare `type`, `title`, `status`, `detail`, and `instance` per RFC 7807
+

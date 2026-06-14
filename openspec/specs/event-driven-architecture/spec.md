@@ -427,12 +427,7 @@ Symmetric to the lock operation, releasing a lock on an object MUST dispatch an 
 
 ### Requirement: Schemas MAY declare a state machine via `x-openregister-lifecycle`
 
-A schema MAY include a top-level `x-openregister-lifecycle` block
-with `field`, `initial`, and a `transitions` map (action →
-`{from[], to, requires?, description?}`). When present, the
-schema-save validator MUST verify the annotation against the
-schema's `properties[field]` enum and reject malformed annotations
-with HTTP 422.
+A schema MAY include a top-level `x-openregister-lifecycle` block with `field`, `initial`, and a `transitions` map (action → `{from[], to, requires?, description?}`), and when present the schema-save validator MUST verify the annotation against the schema's `properties[field]` enum and reject malformed annotations with HTTP 422.
 
 **Uniqueness constraint.** Within a single schema's `transitions`
 map, no two transitions MAY share the same `(from, to)` pair (i.e.
@@ -447,10 +442,10 @@ resolve `event.action` deterministically by looking up the unique
 transition matching `(from, to)`.
 
 #### Scenario: Duplicate (from, to) pair is rejected
-- **GIVEN** a schema declaring `open: {from: ["draft"], to: "opened"}` and `expedite: {from: ["draft"], to: "opened"}`
-- **WHEN** the schema is saved
-- **THEN** the save MUST fail with HTTP 422
-- **AND** the response body MUST include `{ code: "lifecycle-duplicate-from-to", from: "draft", to: "opened", actions: ["open", "expedite"] }`
+- GIVEN a schema declaring `open: {from: ["draft"], to: "opened"}` and `expedite: {from: ["draft"], to: "opened"}`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "lifecycle-duplicate-from-to", from: "draft", to: "opened", actions: ["open", "expedite"] }`
 
 ### Requirement: The pre-save validator MUST reject invalid transitions via `ObjectUpdatingEvent`
 
@@ -467,8 +462,7 @@ structured rejection reason via the existing
 **Rejection-metadata contract.** The implementation reuses the
 existing rejection-metadata API on `ObjectUpdatingEvent`:
 `setErrors(array $errors): void` and `getErrors(): array` (already
-shipped — see "Pre-mutation events MUST support rejection..."
-Requirement above). After `stopPropagation()` is called,
+shipped). After `stopPropagation()` is called,
 `ObjectService::saveObject` MUST detect the stopped event, read
 `getErrors()`, and translate any non-empty value into HTTP 422
 with the array as the response body. The lifecycle listener MUST
@@ -477,12 +471,12 @@ publicly-exposed event API would be a breaking change for
 third-party listeners that already call `setErrors()`.
 
 #### Scenario: An invalid transition is rejected via setErrors
-- **GIVEN** a meeting object with `lifecycle = "draft"` and no transition declares `from: ["draft"], to: "closed"`
-- **WHEN** a client PATCHes `lifecycle = "closed"`
-- **THEN** the lifecycle listener MUST call `event->stopPropagation()`
-- **AND** the listener MUST call `event->setErrors([...])` with `{ code: "invalid-transition", from: "draft", attempted: "closed" }`
-- **AND** `ObjectService::saveObject` MUST translate the stopped event's `getErrors()` into HTTP 422 with that body
-- **AND** the object's stored value MUST remain `draft`
+- GIVEN a meeting object with `lifecycle = "draft"` and no transition declares `from: ["draft"], to: "closed"`
+- WHEN a client PATCHes `lifecycle = "closed"`
+- THEN the lifecycle listener MUST call `event->stopPropagation()`
+- AND the listener MUST call `event->setErrors([...])` with `{ code: "invalid-transition", from: "draft", attempted: "closed" }`
+- AND `ObjectService::saveObject` MUST translate the stopped event's `getErrors()` into HTTP 422 with that body
+- AND the object's stored value MUST remain `draft`
 
 ### Requirement: Initial lifecycle state MUST be enforced on object creation
 
@@ -501,12 +495,7 @@ differs from `initial`.
 
 ### Requirement: The system MUST expose a sugar transition endpoint
 
-`POST /apps/openregister/api/objects/{id}/transition?register=<app>&schema=<type>`
-with body `{action: "<name>"}` MUST be a sugar wrapper that loads
-the object, looks up `transitions[action]`, patches
-`field = transitions[action].to`, and saves through
-`ObjectService::saveObject` (so the existing event chain fires,
-audit trail records, RBAC applies).
+The system MUST expose `POST /apps/openregister/api/objects/{id}/transition?register=<app>&schema=<type>` with body `{action: "<name>"}` as a sugar wrapper that loads the object, looks up `transitions[action]`, patches `field = transitions[action].to`, and saves through `ObjectService::saveObject` (so the existing event chain fires, audit trail records, RBAC applies).
 
 **Auth contract.** The endpoint MUST be annotated
 `#[NoAdminRequired]` — accessible to any authenticated Nextcloud
@@ -526,15 +515,15 @@ unknown action OR from-state mismatch (caught by the listener
 above) OR malformed body.
 
 #### Scenario: Missing CSRF token is rejected by the framework
-- **GIVEN** an authenticated user without a valid CSRF token (no `requesttoken` header / cookie)
-- **WHEN** they POST to the transition endpoint
-- **THEN** Nextcloud's CSRF middleware MUST reject before the controller runs
-- **AND** the controller method MUST NOT carry `@NoCSRFRequired` / `#[NoCSRFRequired]`
+- GIVEN an authenticated user without a valid CSRF token (no `requesttoken` header / cookie)
+- WHEN they POST to the transition endpoint
+- THEN Nextcloud's CSRF middleware MUST reject before the controller runs
+- AND the controller method MUST NOT carry `@NoCSRFRequired` / `#[NoCSRFRequired]`
 
 #### Scenario: Unauthenticated request returns 401
-- **GIVEN** no Nextcloud session is established
-- **WHEN** a client POSTs to the transition endpoint
-- **THEN** Nextcloud's auth middleware MUST reject with HTTP 401 before the controller runs
+- GIVEN no Nextcloud session is established
+- WHEN a client POSTs to the transition endpoint
+- THEN Nextcloud's auth middleware MUST reject with HTTP 401 before the controller runs
 
 ### Requirement: Apps MAY register `LifecycleGuardInterface` implementations for transition-specific authorization
 
@@ -545,20 +534,16 @@ transition endpoint MUST call the guard before applying the
 transition; a `GuardResult::deny(message)` MUST short-circuit
 with HTTP 403 and the deny message.
 
-#### Scenario: A guard denial short-circuits the transition
-- **GIVEN** a transition `archive` with `requires: ["MyApp\\OnlyOwnerCanArchiveGuard"]`
-- **AND** the registered guard returns `GuardResult::deny("Only the owner may archive")`
-- **WHEN** a non-owner POSTs to the transition endpoint with `action: "archive"`
-- **THEN** the response MUST be HTTP 403 with body `{ message: "Only the owner may archive" }`
-- **AND** `ObjectTransitionedEvent` MUST NOT fire
+#### Scenario: A registered guard denies a transition
+- GIVEN a transition whose `requires` resolves to a registered `LifecycleGuardInterface` that returns `GuardResult::deny("not allowed")`
+- WHEN an authenticated user POSTs that action to the transition endpoint
+- THEN the endpoint MUST call the guard before applying the transition
+- AND the request MUST be short-circuited with HTTP 403 and the deny message `not allowed`
 
 ### Requirement: Direct-PATCH lifecycle changes MUST resolve `ObjectTransitionedEvent.action` deterministically via the (from, to) lookup
 
-When `ObjectTransitionedEvent` is dispatched from a direct PATCH
-(not the sugar endpoint, where the client did not supply an
-action name), `event.action` MUST be resolved by looking up the
-unique transition matching the observed `(from, to)` pair in the
-schema's `transitions` map. Because the uniqueness constraint
+When `ObjectTransitionedEvent` is dispatched from a direct PATCH (not the sugar endpoint, where the client did not supply an action name), `event.action` MUST be resolved by looking up the unique transition matching the observed `(from, to)` pair in the schema's `transitions` map.
+Because the uniqueness constraint
 above forbids two transitions sharing the same `(from, to)`, this
 lookup is deterministic. If no transition matches `(from, to)`
 (the field was changed in violation of the lifecycle), the
@@ -574,17 +559,56 @@ listener MUST have already rejected the save —
 
 ### Requirement: The system MUST expose `available-actions` for UI rendering
 
-`GET /apps/openregister/api/objects/{id}/available-actions?register=<app>&schema=<type>`
-MUST return the current state, the list of applicable transitions
-(those whose `from` includes the current state), and per-transition
-`allowed: bool` (with optional `denyMessage` when a registered
-guard pre-emptively denies).
+The system MUST expose `GET /apps/openregister/api/objects/{id}/available-actions?register=<app>&schema=<type>`, which MUST return the current state, the list of applicable transitions (those whose `from` includes the current state), and per-transition `allowed: bool` (with optional `denyMessage` when a registered guard pre-emptively denies).
 
-#### Scenario: Available actions list the applicable transitions
-- **GIVEN** a draft object on a schema with transitions `open: {from: ["draft"], to: "opened"}` and `close: {from: ["opened"], to: "closed"}`
-- **WHEN** a client GETs the `available-actions` endpoint for that object
-- **THEN** the response MUST list `open` with `allowed: true`
-- **AND** the response MUST NOT list `close` (its `from` does not include `"draft"`)
+#### Scenario: available-actions lists applicable transitions for the current state
+- GIVEN an object whose current lifecycle state is `draft` and a schema declaring `open: {from: ["draft"], to: "opened"}`
+- WHEN an authenticated user GETs the available-actions endpoint for that object
+- THEN the response MUST include the current state `draft`
+- AND the response MUST list the `open` transition with `allowed: true`
+- AND a transition pre-emptively denied by a registered guard MUST carry `allowed: false` with a `denyMessage`
+
+### Requirement: Initial state MUST be enforced on object creation
+
+The implementation MUST register an `IEventListener` against
+`ObjectCreatingEvent` that, when the schema has an
+`x-openregister-lifecycle` annotation, force-sets
+`object[field] = initial` regardless of the supplied value. The
+override MUST be logged at debug level when the supplied value
+differs from `initial`.
+
+#### Scenario: Initial state is forced on creation
+- GIVEN a schema with `x-openregister-lifecycle` declaring `initial: "draft"`
+- WHEN a client creates an object supplying `lifecycle = "closed"`
+- THEN the listener MUST force-set the stored `lifecycle` value to `draft`
+- AND the override MUST be logged at debug level because the supplied value differed from `initial`
+
+### Requirement: The system MUST dispatch `ObjectTransitionedEvent` after a successful transition
+
+After a transition is applied via the endpoint OR via a direct write that flips the lifecycle field, the implementation MUST dispatch `ObjectTransitionedEvent` after the successful transition via
+`IEventDispatcher::dispatchTyped()` with payload
+`{object, action, from, to, userId, register, schema}`. The event
+joins the existing event-driven-architecture catalog and is
+automatically routable through the existing
+webhook-payload-mapping infrastructure.
+
+**Action resolution for direct PATCH.** When the event is
+dispatched from a direct PATCH (not the sugar endpoint, where the
+client did not supply an action name), `event.action` MUST be
+resolved by looking up the unique transition matching the observed
+`(from, to)` pair in the schema's `transitions` map. Because the
+uniqueness constraint above forbids two transitions sharing the
+same `(from, to)`, this lookup is deterministic. If no transition
+matches `(from, to)` (the field was changed in violation of the
+lifecycle), the listener MUST have already rejected the save —
+`ObjectTransitionedEvent` MUST NOT fire for invalid transitions.
+
+#### Scenario: A direct lifecycle PATCH dispatches the event with the resolved action
+- GIVEN a schema with `open: {from: ["draft"], to: "opened"}` (the unique transition matching that pair)
+- AND a client PATCHes `lifecycle = "opened"` on a draft object
+- WHEN the save completes
+- THEN `ObjectTransitionedEvent` MUST fire exactly once
+- AND `event.action` MUST equal `"open"` (resolved deterministically by the (from, to) lookup)
 
 ## Current Implementation Status
 - **Implemented:**

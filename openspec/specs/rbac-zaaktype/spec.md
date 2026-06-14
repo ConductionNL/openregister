@@ -7,7 +7,7 @@ Implement role-based access control (RBAC) at the zaaktype (case type) and objec
 
 **Tender demand**: 86% of analyzed government tenders require RBAC per zaaktype.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Authorization policies MUST be configurable per schema
 Each schema in a register MUST support an authorization policy that defines which Nextcloud groups or users may perform CRUD operations on its objects.
@@ -85,6 +85,8 @@ Administrators MUST be able to view and edit permissions in a matrix of schemas 
 - WHEN the admin navigates to the register's authorization settings
 - THEN a matrix MUST be displayed with schemas as rows and groups as columns
 - AND each cell MUST show read/write/delete checkboxes reflecting current permissions
+
+## Analysis
 
 ### Current Implementation Status
 - **Fully implemented — schema-level RBAC**: `PermissionHandler` (`lib/Service/Object/PermissionHandler.php`) enforces authorization policies per schema. It checks group membership for CRUD operations and returns HTTP 403 for unauthorized access.

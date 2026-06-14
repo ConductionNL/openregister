@@ -8,8 +8,20 @@ estimated_effort: large
 
 @e2e exclude internal refactoring spec — no UI surface, covered by PHPUnit
 
-## Goal
+## Purpose
 Eliminate 1,045 PHPMD complexity suppressions by decomposing complex methods into smaller, focused units. Each suppression represents a method or class that exceeds PHPMD's strict thresholds (CC>10, NPath>200, MethodLength>100, ClassLength>1000).
+
+## Requirements
+
+### Requirement: Decompose complex methods to eliminate PHPMD suppressions
+
+Complex methods and classes that exceed PHPMD's strict thresholds SHALL be decomposed into smaller focused units, eliminating or reducing each suppression without introducing new PHPMD violations and without changing behavior.
+
+#### Scenario: A suppressed complex method is decomposed
+- **WHEN** a method carrying a PHPMD complexity suppression (CC>10, NPath>200, MethodLength>100, or ClassLength>1000) is refactored
+- **THEN** the suppression MUST be eliminated or reduced below the threshold
+- **AND** all existing tests MUST continue to pass with no behavioral change
+- **AND** no new PHPMD violations MUST be introduced
 
 ## Current State
 - **CyclomaticComplexity suppressions:** 401 (methods with >10 branches)
