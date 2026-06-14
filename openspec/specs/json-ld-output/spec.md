@@ -14,6 +14,8 @@ terms (e.g. Schema.org), and dereferenceable register/schema `@context`
 document endpoints. Scope is read-side output only — JSON-LD ingest is
 explicitly excluded.
 
+@e2e exclude Pure read-side serialization / API content-negotiation capability with no UI surface; verified by Newman (tests/integration/openregister-jsonld.postman_collection.json) and PHPUnit (tests/Unit/Service/JsonLd/*, tests/Unit/Controller/ContextsControllerTest.php) per ADR-008 (Playwright is UI-only; API contracts belong in Newman).
+
 ## Requirements
 ### Requirement: Object read endpoints MUST serve JSON-LD via content negotiation
 
