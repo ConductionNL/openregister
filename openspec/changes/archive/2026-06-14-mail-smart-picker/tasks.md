@@ -34,7 +34,7 @@
 - [x] Write unit tests for `ObjectReferenceProvider::matchReference()` covering all URL patterns (hash-routed, API, direct, with/without index.php, non-matching URLs)
 - [x] Write unit tests for `ObjectReferenceProvider::resolveReference()` covering successful resolution, object not found (returns null), and authorization error (returns null)
 - [x] Write unit tests for `getCachePrefix()` and `getCacheKey()` verifying correct key generation
-- [ ] Manual test: verify provider appears in Smart Picker modal in Mail compose, Text editor, and Talk
-- [ ] Manual test: verify pasting an OpenRegister object URL in Text produces a rich preview card
-- [ ] Manual test: verify the preview card links to the correct deep-linked URL when a deep link is registered
-- [ ] Manual test: verify updating an object invalidates the cached reference preview
+- [~] Manual test: verify provider appears in Smart Picker modal in Mail compose, Text editor, and Talk — cross-app/live-only; requires running NC with Mail/Text/Talk apps. Provider registration + matching is covered by `tests/Unit/Reference/ObjectReferenceProviderTest.php`.
+- [~] Manual test: verify pasting an OpenRegister object URL in Text produces a rich preview card — live-only; `matchReference()`/`resolveReference()` rich-object output is unit-covered.
+- [~] Manual test: verify the preview card links to the correct deep-linked URL when a deep link is registered — live-only; deep-link resolution is unit-covered via the `DeepLinkRegistryService` path in `resolveReference()` tests.
+- [~] Manual test: verify updating an object invalidates the cached reference preview — live-only; the `IReferenceManager::invalidateCache()` call in `ObjectService::saveObject()` is wired and covered by save-object tests.

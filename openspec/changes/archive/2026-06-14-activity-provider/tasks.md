@@ -73,8 +73,8 @@
 - [x] Write unit tests for `ActivityEventListener::handle()` verifying correct dispatch for all 9 event types
 - [x] Write unit tests for `Filter` verifying identifier, name, icon, filterTypes, and allowedApps
 - [x] Write unit tests for all three Settings verifying identifier, name, group, priority, defaults
-- [ ] Manual test: create an object and verify the activity appears in the Activity app sidebar with correct title, icon, and link
-- [ ] Manual test: update and delete objects, registers, and schemas and verify corresponding activities appear
-- [ ] Manual test: verify the "Open Register" filter in the Activity sidebar correctly filters to only OpenRegister events
-- [ ] Manual test: verify activity settings appear under "Open Register" group in Activity settings page
-- [ ] Manual test: verify activity still functions correctly when opencatalogi and softwarecatalog apps are enabled (no regressions)
+- [~] Manual test: create an object and verify the activity appears in the Activity app sidebar with correct title, icon, and link — live-only; requires a running Nextcloud with the Activity app enabled (covered by `tests/Unit/Service/ActivityServiceTest.php` at the unit level)
+- [~] Manual test: update and delete objects, registers, and schemas and verify corresponding activities appear — live-only; requires running NC + Activity app
+- [~] Manual test: verify the "Open Register" filter in the Activity sidebar correctly filters to only OpenRegister events — live-only; filter logic covered by `tests/Unit/Activity` Filter tests
+- [~] Manual test: verify activity settings appear under "Open Register" group in Activity settings page — live-only; settings covered by `tests/Unit/Activity` Setting tests
+- [~] Manual test: verify activity still functions correctly when opencatalogi and softwarecatalog apps are enabled (no regressions) — cross-app/live-only; requires multi-app NC instance

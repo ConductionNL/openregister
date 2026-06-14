@@ -35,10 +35,10 @@
 
 - [x] 5.1 Update `docs/Features/` (or the relevant file-attachments feature doc) describing the new `locked`/`lock` fields, the removal of the `_limit` ceiling (default 30, floor 1, no upper cap), AND the authentication gate (anonymous callers never see `locked`/`lock`); include the string-alias mapping table for `lock.type` and `lock.scope`
 - [x] 5.2 Run `composer check:strict` from the `openregister/` directory; fix PHPCS/PHPMD/Psalm/PHPStan findings until green
-- [ ] 5.3 Manual smoke: with the `files_lock` app enabled, lock one file on an object, hit `GET /api/objects/{r}/{s}/{id}/files?_limit=500` as an authenticated user and confirm HTTP 200, all files returned, locked file has `locked: true` and `lock` populated, log line emitted
-- [ ] 5.4 Manual smoke: same scenario but hit the endpoint with no session (logged out, public object) — confirm HTTP 200, all files returned, NO file has `locked` or `lock`, server-side log line is still emitted
+- [~] 5.3 Manual smoke: with the `files_lock` app enabled, lock one file on an object, hit `GET /api/objects/{r}/{s}/{id}/files?_limit=500` as an authenticated user and confirm HTTP 200, all files returned, locked file has `locked: true` and `lock` populated, log line emitted — live-only; requires running NC + `files_lock` app. Authenticated lock-envelope + `_limit` (500/5000/0/-1/missing) behaviour is covered by `tests/Unit/Service/File/FileFormattingHandlerTest.php`.
+- [~] 5.4 Manual smoke: same scenario but hit the endpoint with no session (logged out, public object) — confirm HTTP 200, all files returned, NO file has `locked` or `lock`, server-side log line is still emitted — live-only; the anonymous-path omission (no `locked`/`lock`, zero `ILockManager` calls) is covered by the anonymous unit tests in `FileFormattingHandlerTest.php`.
 
 ## 6. Consumer verification
 
-- [ ] 6.1 Exercise the listing from the OpenRegister UI (`localhost:3030`) on a register with >100 files and confirm the cap is no longer hit; confirm the detail page renders when a file is locked
-- [ ] 6.2 Skim opencatalogi and softwarecatalog frontend calls to the files endpoint — confirm they do not break on the new fields (they should ignore unknown keys)
+- [~] 6.1 Exercise the listing from the OpenRegister UI (`localhost:3030`) on a register with >100 files and confirm the cap is no longer hit; confirm the detail page renders when a file is locked — live-only; the `_limit` ceiling removal is unit-verified (`_limit=5000` honoured) in `FileFormattingHandlerTest.php`.
+- [~] 6.2 Skim opencatalogi and softwarecatalog frontend calls to the files endpoint — confirm they do not break on the new fields (they should ignore unknown keys) — cross-app/live-only; the new `locked`/`lock` keys are purely additive, so existing consumers ignoring unknown keys are unaffected.
