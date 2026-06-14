@@ -44,20 +44,20 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  */
 class ThreeWayMerge
 {
-
-
     /**
      * Compute the classified diff + merged result for an update-from-source.
      *
-     * @param array<string, array<string,mixed>> $baseline    Imported baseline property definitions.
-     * @param array<string, array<string,mixed>> $current     Current schema property definitions.
-     * @param array<string, array<string,mixed>> $incoming    Freshly-imported property definitions.
-     * @param array<int, string>                 $resolved    Conflicting property names the caller confirmed to apply.
+     * @param array<string, array<string,mixed>> $baseline Imported baseline property definitions.
+     * @param array<string, array<string,mixed>> $current  Current schema property definitions.
+     * @param array<string, array<string,mixed>> $incoming Freshly-imported property definitions.
+     * @param array<int, string>                 $resolved Conflicting property names the caller confirmed to apply.
      *
      * @return array<string, mixed> {
      *     added: string[], removed: string[], changed: string[], keptLocal: string[],
      *     conflicts: string[], merged: array<string, array<string,mixed>>, applied: bool
      * }
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) The merge table is inherently branchy; each branch is one table row.
      * @SuppressWarnings(PHPMD.NPathComplexity)      The merge table is inherently branchy; each branch is one table row.
@@ -105,8 +105,8 @@ class ThreeWayMerge
 
             // Present in both current and incoming → compare against baseline.
             if ($inCurrent === true && $inIncoming === true) {
-                $localModified  = ($inBaseline === false || $this->differs($baseline[$name] ?? null, $current[$name]));
-                $sourceChanged  = ($inBaseline === false || $this->differs($baseline[$name] ?? null, $incoming[$name]));
+                $localModified = ($inBaseline === false || $this->differs($baseline[$name] ?? null, $current[$name]));
+                $sourceChanged = ($inBaseline === false || $this->differs($baseline[$name] ?? null, $incoming[$name]));
 
                 if ($sourceChanged === false) {
                     // Source unchanged → keep local (covers local mods + identical).
@@ -128,7 +128,7 @@ class ThreeWayMerge
                 } else {
                     $conflicts[] = $name;
                 }
-            }
+            }//end if
         }//end foreach
 
         return [
@@ -142,7 +142,6 @@ class ThreeWayMerge
         ];
     }//end compute()
 
-
     /**
      * Whether two property definitions differ (order-insensitive deep compare).
      *
@@ -155,7 +154,6 @@ class ThreeWayMerge
     {
         return $this->canonical($a) !== $this->canonical($b);
     }//end differs()
-
 
     /**
      * Canonicalise a value for a stable, order-insensitive comparison.

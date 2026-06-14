@@ -36,8 +36,6 @@ use Throwable;
  */
 class SchemaImportException extends RuntimeException
 {
-
-
     /**
      * Constructor.
      *
@@ -53,7 +51,6 @@ class SchemaImportException extends RuntimeException
         parent::__construct($message, 0, $previous);
     }//end __construct()
 
-
     /**
      * The HTTP status hint for this failure.
      *
@@ -63,7 +60,6 @@ class SchemaImportException extends RuntimeException
     {
         return $this->httpStatus;
     }//end getHttpStatus()
-
 
     /**
      * Build a 404 "unknown reference" exception.
@@ -80,7 +76,6 @@ class SchemaImportException extends RuntimeException
             404
         );
     }//end unknownReference()
-
 
     /**
      * Build a 422 "undetectable / unsupported dialect" exception.

@@ -34,14 +34,12 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  */
 final class ImportOptions
 {
-
-
     /**
      * Constructor.
      *
      * @param array<int, string> $propertySubset   Explicit property names to import; empty = all direct properties.
-     * @param bool                $includeAncestors When true, inherited (ancestor) properties are also imported.
-     * @param int|null            $targetRegister   Register id the resulting schema should be associated with, or null.
+     * @param bool               $includeAncestors When true, inherited (ancestor) properties are also imported.
+     * @param int|null           $targetRegister   Register id the resulting schema should be associated with, or null.
      */
     public function __construct(
         public readonly array $propertySubset=[],
@@ -50,13 +48,14 @@ final class ImportOptions
     ) {
     }//end __construct()
 
-
     /**
      * Build options from a loosely-typed request payload.
      *
      * @param array<string, mixed> $payload The request body / parameters.
      *
      * @return self The constructed options.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public static function fromArray(array $payload): self
     {
@@ -85,7 +84,6 @@ final class ImportOptions
             targetRegister: $targetRegister
         );
     }//end fromArray()
-
 
     /**
      * Whether an explicit property subset was requested.

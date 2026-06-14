@@ -59,7 +59,6 @@ class SchemaOrgSnapshot
      */
     private ?array $properties = null;
 
-
     /**
      * Constructor.
      *
@@ -72,17 +71,17 @@ class SchemaOrgSnapshot
     ) {
     }//end __construct()
 
-
     /**
      * The snapshot version identifier.
      *
      * @return string The version.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function version(): string
     {
         return $this->version;
     }//end version()
-
 
     /**
      * Resolve a class (type) by IRI or bare name.
@@ -90,6 +89,8 @@ class SchemaOrgSnapshot
      * @param string $reference The class IRI or bare name.
      *
      * @return array<string, mixed>|null The class record, or null when unknown.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function findClass(string $reference): ?array
     {
@@ -98,13 +99,14 @@ class SchemaOrgSnapshot
         return ($this->classes[$name] ?? null);
     }//end findClass()
 
-
     /**
      * The direct properties whose domain includes the given class.
      *
      * @param string $className The bare class name.
      *
      * @return array<string, array<string, mixed>> Property records keyed by bare name.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function directPropertiesOf(string $className): array
     {
@@ -120,13 +122,14 @@ class SchemaOrgSnapshot
         return $result;
     }//end directPropertiesOf()
 
-
     /**
      * The properties of a class plus all its ancestors' properties.
      *
      * @param string $className The bare class name.
      *
      * @return array<string, array<string, mixed>> Property records keyed by bare name.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function propertiesWithAncestors(string $className): array
     {
@@ -144,13 +147,14 @@ class SchemaOrgSnapshot
         return $result;
     }//end propertiesWithAncestors()
 
-
     /**
      * The class chain from the given class up to its root ancestor.
      *
      * @param string $className The bare class name.
      *
      * @return array<int, string> Bare class names, the class itself first.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function ancestryOf(string $className): array
     {
@@ -162,13 +166,17 @@ class SchemaOrgSnapshot
         while ($current !== null && isset($this->classes[$current]) === true && $guard < 50) {
             $chain[] = $current;
             $parent  = $this->classes[$current]['parent'];
-            $current = ($parent !== null ? $this->bareName($parent) : null);
+            if ($parent !== null) {
+                $current = $this->bareName($parent);
+            } else {
+                $current = null;
+            }
+
             $guard++;
         }
 
         return $chain;
     }//end ancestryOf()
-
 
     /**
      * Search classes by a case-insensitive name/comment substring.
@@ -177,6 +185,8 @@ class SchemaOrgSnapshot
      * @param int    $limit Maximum number of results.
      *
      * @return array<int, array<string, mixed>> Matching class records.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function searchClasses(string $query, int $limit=50): array
     {
@@ -200,13 +210,14 @@ class SchemaOrgSnapshot
         return $results;
     }//end searchClasses()
 
-
     /**
      * The bare term name from an IRI or `schema:`-prefixed term.
      *
      * @param string $reference The IRI / prefixed term / bare name.
      *
      * @return string The bare name.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function bareName(string $reference): string
     {
@@ -226,19 +237,19 @@ class SchemaOrgSnapshot
         return $reference;
     }//end bareName()
 
-
     /**
      * The canonical class IRI for a bare class name.
      *
      * @param string $className The bare class name.
      *
      * @return string The class IRI.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function classIri(string $className): string
     {
         return self::NAMESPACE.$className;
     }//end classIri()
-
 
     /**
      * Parse + index the release file once.
@@ -283,7 +294,6 @@ class SchemaOrgSnapshot
         }
     }//end ensureParsed()
 
-
     /**
      * Index a class node.
      *
@@ -308,7 +318,6 @@ class SchemaOrgSnapshot
         ];
     }//end indexClass()
 
-
     /**
      * Index a property node.
      *
@@ -329,7 +338,6 @@ class SchemaOrgSnapshot
             'ranges'  => $this->idList($node['schema:rangeIncludes'] ?? null),
         ];
     }//end indexProperty()
-
 
     /**
      * Extract bare names from a single `{"@id":...}` or a list of them.
@@ -358,7 +366,6 @@ class SchemaOrgSnapshot
 
         return $names;
     }//end idList()
-
 
     /**
      * Normalise a JSON-LD `@type` to a list of strings.

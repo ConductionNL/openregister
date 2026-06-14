@@ -35,17 +35,15 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  */
 final class ImportedSchema
 {
-
-
     /**
      * Constructor.
      *
-     * @param string                            $title          The schema title.
-     * @param string                            $description    The schema description.
-     * @param array<string, array<string,mixed>> $properties     JSON Schema property definitions keyed by name.
-     * @param array<string, mixed>              $jsonld         The `configuration.jsonld` block (@vocab, type, properties map).
-     * @param array<string, mixed>              $importSource   The `configuration.importSource` provenance block.
-     * @param array<int, string>                $unknownRequested Requested property names not present on the source type.
+     * @param string                             $title            The schema title.
+     * @param string                             $description      The schema description.
+     * @param array<string, array<string,mixed>> $properties       JSON Schema property definitions keyed by name.
+     * @param array<string, mixed>               $jsonld           The `configuration.jsonld` block (@vocab, type, properties map).
+     * @param array<string, mixed>               $importSource     The `configuration.importSource` provenance block.
+     * @param array<int, string>                 $unknownRequested Requested property names not present on the source type.
      */
     public function __construct(
         public readonly string $title,
@@ -57,7 +55,6 @@ final class ImportedSchema
     ) {
     }//end __construct()
 
-
     /**
      * Render the schema payload ready for SchemaMapper hydration / upload.
      *
@@ -67,6 +64,8 @@ final class ImportedSchema
      * @param array<string, mixed> $baseConfiguration Existing configuration to merge into (e.g. on update).
      *
      * @return array<string, mixed> The schema array (title, description, properties, configuration).
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
      */
     public function toSchemaArray(array $baseConfiguration=[]): array
     {
