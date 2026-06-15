@@ -6118,7 +6118,9 @@ class ImportHandlerTest extends TestCase
         $this->objectEntityMapper->method('insert')
             ->willThrowException(new Exception('Insert failed'));
 
-        $this->logger->expects($this->atLeastOnce())->method('error');
+        // Per-entity-resilience: a failing seed object is skipped with a WARNING
+        // (not an error) and the import continues.
+        $this->logger->expects($this->atLeastOnce())->method('warning');
 
         $data = [
             'appId'   => 'myapp',
@@ -6147,6 +6149,8 @@ class ImportHandlerTest extends TestCase
         );
 
         $this->assertIsArray($result);
+        // The failing seed object is counted as skipped for observability.
+        $this->assertSame(1, $result['skipped']['seedObjects']);
 
     }//end testImportSeedDataContinuesWhenInsertThrows()
 

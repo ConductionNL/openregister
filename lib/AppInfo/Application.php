@@ -741,6 +741,22 @@ class Application extends App implements IBootstrap
                 $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
             }
 
+            // Optional: group/user managers used to resolve a fallback admin
+            // acting user when import runs without a logged-in session
+            // (occ/installer/cron). Wrapped so a missing dependency never
+            // breaks import.
+            try {
+                $importHandler->setGroupManager($container->get('OCP\IGroupManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IGroupManager unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setUserManager($container->get('OCP\IUserManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IUserManager unavailable for ImportHandler: '.$e->getMessage());
+            }
+
             return $importHandler;
         };
 
