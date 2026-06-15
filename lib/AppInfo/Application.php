@@ -1405,6 +1405,66 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // CaseTokenService — mint/resolve/revoke public "track your case"
+        // token links (the SharesProvider create()/delete() public-token
+        // surface). ObjectService is resolved lazily through the container
+        // (same pattern as ShareLinkService) so the resolve path runs the
+        // canonical RBAC-respecting read; the token never bypasses RBAC.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CaseTokenService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CaseTokenService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // CaseTokenController — anonymous public resolve endpoint.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\CaseTokenController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\CaseTokenController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
+                );
+            }
+        );
+
+        // AnalyticsSeriesService — register/fetch page-level pre-computed
+        // chart series (the leaf-foundation SLA-dashboard render surface).
+        // RBAC-scoped; (re)declares its page widget on the registry.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\AnalyticsSeriesService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
+                    registry: $container->get(IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                );
+            }
+        );
+
+        // AnalyticsSeriesController — register/fetch HTTP surface a leaf
+        // calls to feed a dashboard chart widget.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\AnalyticsSeriesController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
+                );
+            }
+        );
+
         // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
         // Replaces the original `or:{uuid}` tag-marker convention with a
         // proper persistence layer; the wrapping BookmarkLinkService owns
