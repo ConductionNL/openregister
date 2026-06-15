@@ -1999,7 +1999,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Anonymous guard + admin bypass + literal-vs-role entry handling are each one irreducible branch.
      *
-     * @spec openspec/changes/rbac-and-lifecycle-enforcement/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
      */
     public function isTransitionAuthorized(array $authorizationList, ?string $userId, Schema $schema): bool
     {
