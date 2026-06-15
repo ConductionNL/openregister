@@ -90,6 +90,10 @@ class AnalyticsSeriesController extends Controller
         $params = $this->request->getParams();
 
         try {
+            // Authz guard (visible at the endpoint boundary): registering
+            // a series is a write — it requires an authenticated user.
+            $this->seriesService->ensureCanRegister();
+
             $stored = $this->seriesService->register(
                 seriesKey: (string) ($params['seriesKey'] ?? ''),
                 labels: (array) ($params['labels'] ?? []),
@@ -124,7 +128,10 @@ class AnalyticsSeriesController extends Controller
     #[NoAdminRequired]
     public function fetch(string $seriesKey): JSONResponse
     {
-        $series = $this->seriesService->fetch($seriesKey);
+        // Authz guard (visible at the endpoint boundary): the read is
+        // RBAC-scoped inside the service; a disallowed/unknown read
+        // returns null → uniform 404 (no enumeration oracle).
+        $series = $this->seriesService->ensureReadableOrNull($seriesKey);
         if ($series === null) {
             return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
         }

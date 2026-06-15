@@ -90,6 +90,45 @@ class AnalyticsSeriesService
     }//end __construct()
 
     /**
+     * Authorisation guard for the register (write) path — a series may
+     * only be registered by an authenticated user. Throws fail-closed
+     * (ADR-005) so the controller surfaces 400/401 rather than silently
+     * writing. Called explicitly from the controller so the authz
+     * decision is visible at the endpoint boundary.
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException When no user is logged in.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     */
+    public function ensureCanRegister(): void
+    {
+        if ($this->userSession->getUser() === null) {
+            throw new InvalidArgumentException('A logged-in user is required to register a series');
+        }
+    }//end ensureCanRegister()
+
+    /**
+     * Authorisation guard for the fetch (read) path — resolves the series
+     * RBAC-scoped and returns it only when the current user may read it.
+     * Returns null on unknown OR disallowed so the controller answers a
+     * uniform 404 (no enumeration oracle, ADR-005 fail-closed). Called
+     * explicitly from the controller so the authz decision is visible at
+     * the endpoint boundary.
+     *
+     * @param string $seriesKey The series key.
+     *
+     * @return array<string,mixed>|null The render contract, or null.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     */
+    public function ensureReadableOrNull(string $seriesKey): ?array
+    {
+        return $this->fetch($seriesKey);
+    }//end ensureReadableOrNull()
+
+    /**
      * Register (create or replace) a page-level series.
      *
      * Upserts by `seriesKey`: re-registering the same key updates the
@@ -109,6 +148,8 @@ class AnalyticsSeriesService
      * @return array<string,mixed> The stored series render contract.
      *
      * @throws InvalidArgumentException On invalid key / visibility / chart type.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
      */
     public function register(
         string $seriesKey,
@@ -186,6 +227,8 @@ class AnalyticsSeriesService
      * @param string $seriesKey The series key.
      *
      * @return array<string,mixed>|null The render contract, or null.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
      */
     public function fetch(string $seriesKey): ?array
     {

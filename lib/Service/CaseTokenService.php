@@ -118,6 +118,8 @@ class CaseTokenService
      *
      * @throws InvalidArgumentException When objectUuid is empty or the
      *                                  minter is anonymous.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
      */
     public function mint(
         string $objectUuid,
@@ -183,6 +185,8 @@ class CaseTokenService
      * @return array<string,mixed>|null The public-safe object view, or
      *                                  null when the token cannot be
      *                                  resolved.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
      */
     public function resolve(string $token): ?array
     {
@@ -260,6 +264,8 @@ class CaseTokenService
      * @param string $tokenOrId The opaque token, or its numeric row id.
      *
      * @return bool True when a token was revoked, false when none matched.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
      */
     public function revoke(string $tokenOrId): bool
     {
@@ -288,6 +294,8 @@ class CaseTokenService
      * @param string $objectUuid Object uuid.
      *
      * @return array<int,array<string,mixed>> Token metadata rows.
+     *
+     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
      */
     public function listForObject(string $objectUuid): array
     {
@@ -358,6 +366,8 @@ class CaseTokenService
              * @param string $id Service id.
              *
              * @return object
+             *
+             * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
              */
             public function get(string $id): object
             {
@@ -370,6 +380,8 @@ class CaseTokenService
              * @param string $id Service id.
              *
              * @return bool
+             *
+             * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
              */
             public function has(string $id): bool
             {
