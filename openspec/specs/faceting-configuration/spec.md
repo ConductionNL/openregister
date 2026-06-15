@@ -1,8 +1,6 @@
 ---
-status: in-progress
+status: active
 ---
-# Faceting Configuration
-
 # Faceting Configuration
 ## Purpose
 
@@ -10,7 +8,7 @@ status: in-progress
 Provides a comprehensive, backend-agnostic faceting system for OpenRegister that enables per-property facet definition on schema properties, supports multiple facet types (terms, date histogram, range), and delivers configurable facet metadata (title, description, order, aggregation control) through the REST and GraphQL APIs. The system is designed to solve the fundamental conflict between pagination and facet computation by calculating facets on the full filtered dataset independently of pagination, while maintaining backward compatibility with the legacy boolean `facetable` flag and offering intelligent caching at multiple layers (in-memory, APCu/distributed, and database-persistent) to ensure sub-200ms facet response times even on large datasets.
 
 **OpenSpec changes**
-- `fix-date-histogram-mariadb` (active) — adds explicit cross-DB correctness requirements for `date_histogram` facets: MariaDB platform branching, ISO-week alignment, correct week-bucket bounds.
+- `fix-date-histogram-mariadb` (archived 2026-05-02) — adds explicit cross-DB correctness requirements for `date_histogram` facets: MariaDB platform branching, ISO-week alignment, correct week-bucket bounds.
 ## Requirements
 ### Requirement: Facetable config object support with backward compatibility
 The system MUST accept the `facetable` property on schema properties as either a boolean (`true`/`false`) or a configuration object. When a configuration object is provided, it MUST support the fields `aggregated` (boolean), `title` (string), `description` (string), `order` (integer), `type` (string: `terms`, `date_range`, or `date_histogram`), and `options` (object with type-specific settings). All fields in the configuration object MUST be optional with sensible defaults. The `FacetHandler.normalizeFacetConfig()` method (line ~1119) MUST normalize both formats into a standard internal representation. Boolean `true` MUST be treated as `{ aggregated: true, title: null, description: null, order: null }`.

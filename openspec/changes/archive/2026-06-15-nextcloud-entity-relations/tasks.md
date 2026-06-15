@@ -56,12 +56,15 @@
 - [x] Register event listeners for cleanup
 
 ## Frontend
-- [ ] Create EmailsTab.vue component for object detail
-- [ ] Create EventsTab.vue component for object detail
-- [ ] Create ContactsTab.vue component for object detail
-- [ ] Create DeckTab.vue component for object detail
-- [ ] Create RelationsTab.vue unified timeline component
-- [ ] Add entity stores for email/event/contact/deck links
+- [x] Create EmailsTab.vue component for object detail (`src/components/object-relations/EmailsTab.vue`)
+- [x] Create EventsTab.vue component for object detail (`src/components/object-relations/EventsTab.vue`)
+- [x] Create ContactsTab.vue component for object detail (`src/components/object-relations/ContactsTab.vue`)
+- [x] Create DeckTab.vue component for object detail (`src/components/object-relations/DeckTab.vue`)
+- [x] Create RelationsTab.vue unified timeline component (`src/components/object-relations/RelationsTab.vue`)
+- [x] Add entity stores for email/event/contact/deck links (`src/store/modules/object-relations/{emails,events,contacts,deck}.js`)
+
+## Routing fix (gate-14 route-reachability)
+- [x] Route the schema-level sticky default board endpoints `deckLinks#getDefault` (GET) and `deckLinks#setDefault` (PUT) at `/api/integrations/deck/default/{schema}`; both were implemented but unrouted (dead code). Added `@no-admin-idor-exempt` annotations (schema-level config, no per-object resource to scope).
 
 ## Testing
 - [x] Unit tests for EmailService
@@ -69,6 +72,6 @@
 - [x] Unit tests for ContactService
 - [x] Unit tests for DeckCardService
 - [x] Unit tests for RelationsController
-- [ ] Integration tests with Greenmail (email linking)
-- [ ] Integration tests with CalDAV (event creation)
-- [ ] Integration tests with CardDAV (contact linking)
+- [x] Integration tests with Greenmail (email linking) — `tests/Service/GreenmailSmtpIntegrationTest.php`
+- [x] Integration tests with CalDAV (event creation) — `tests/Service/CalDavIntegrationTest.php`
+- [x] Integration tests with CardDAV (contact linking) — `tests/Service/CardDavIntegrationTest.php`
