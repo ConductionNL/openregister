@@ -89,6 +89,8 @@ APCu-based counters MUST be flushed to the `openregister_tenant_usage` database 
 
 ### REQ-001: The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses
 
+The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses.
+
 > Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
 
 `OCA\OpenRegister\Middleware\TenantQuotaMiddleware::afterException(controller, methodName, \Exception $exception)` is the Nextcloud controller-middleware exception hook. When the request pipeline throws — including from `beforeController()` (status / quota checks) and from controller bodies — the framework invokes `afterException`. The middleware translates two exception families into 4xx responses and re-throws everything else.

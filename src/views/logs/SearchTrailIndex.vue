@@ -565,6 +565,7 @@ export default {
 		},
 		formatBytes,
 		/**
+		 * @param checked
 		 * @spec exclude list-view select-all checkbox plumbing
 		 */
 		toggleSelectAll(checked) {
@@ -575,6 +576,8 @@ export default {
 			}
 		},
 		/**
+		 * @param id
+		 * @param checked
 		 * @spec exclude list-view single-row selection toggle plumbing
 		 */
 		toggleSearchTrailSelection(id, checked) {

@@ -37,13 +37,14 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 
 			<div class="ASP-selectContainer">
 				<NcSelect
-						input-label="Properties Type" v-bind="typeOptions"
-					v-model="properties.type" />
+					v-bind="typeOptions"
+					v-model="properties.type"
+					input-label="Properties Type" />
 
 				<NcSelect
-						input-label="Properties Format"
 					v-bind="formatOptions"
 					v-model="properties.format"
+					input-label="Properties Format"
 					:disabled="properties.type !== 'string'" />
 			</div>
 			<!-- TYPE : OBJECT -->
@@ -52,8 +53,8 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 					{{ t('openregister', 'Object Configuration:') }}
 				</div>
 				<NcSelect
-						input-label="Properties Object Configuration Handling"
 					v-model="properties.objectConfiguration.handling"
+					input-label="Properties Object Configuration Handling"
 					v-bind="objectConfiguration.handling" />
 				<NcSelect
 					:disabled="loading"
@@ -107,9 +108,9 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
 				<NcSelect
-						input-label="Properties File Configuration Handling"
 					v-bind="fileConfiguration.handling"
 					v-model="properties.fileConfiguration.handling"
+					input-label="Properties File Configuration Handling"
 					:label="t('openregister', 'File Handling')" />
 				<NcSelect
 					v-model="properties.fileConfiguration.allowedMimeTypes"
@@ -458,8 +459,9 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 
 				<div class="ASP-selectContainer">
 					<NcSelect
-						input-label="Properties Items Type" v-bind="itemsTypeOptions"
-						v-model="properties.items.type" />
+						v-bind="itemsTypeOptions"
+						v-model="properties.items.type"
+						input-label="Properties Items Type" />
 				</div>
 
 				<!-- type array and sub type object only -->
@@ -468,8 +470,8 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						{{ t('openregister', 'Array Object Configuration:') }}
 					</div>
 					<NcSelect
-						input-label="Properties Object Configuration Handling"
 						v-model="properties.objectConfiguration.handling"
+						input-label="Properties Object Configuration Handling"
 						v-bind="objectConfiguration.handling" />
 					<NcSelect
 						:disabled="loading || !properties.items.register"
@@ -876,6 +878,8 @@ export default {
 		schemaProperty: {
 			deep: true,
 			/**
+			 * @param newVal
+			 * @param oldVal
 			 * @spec exclude UI watcher — resets type-specific form fields when the property type changes.
 			 */
 			handler(newVal, oldVal) {
@@ -914,6 +918,7 @@ export default {
 			this.properties.oneOf.push({ type: '', format: '' })
 		},
 		/**
+		 * @param index
 		 * @spec exclude Form-field binding — removes a oneOf entry by index.
 		 */
 		removeOneOfEntry(index) {
@@ -921,6 +926,7 @@ export default {
 			this.properties.oneOf.splice(index, 1)
 		},
 		/**
+		 * @param option
 		 * @spec exclude Form-field binding — sets the active facet type.
 		 */
 		updateFacetType(option) {
@@ -933,6 +939,7 @@ export default {
 			this.facetCustomRanges.push({ label: '', from: '', to: '' })
 		},
 		/**
+		 * @param index
 		 * @spec exclude Form-field binding — removes a custom facet range by index.
 		 */
 		removeCustomRange(index) {
@@ -1149,6 +1156,7 @@ export default {
 				})
 		},
 		/**
+		 * @param jsonInput
 		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
 		 */
 		verifyJsonValidity(jsonInput) {
@@ -1186,6 +1194,7 @@ export default {
 		},
 
 		/**
+		 * @param ref
 		 * @spec exclude UI lookup helper — resolves a schema object from a $ref string.
 		 */
 		getSchemaFromRef(ref) {
@@ -1201,6 +1210,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude Form-field binding — sets register ref and clears dependent fields.
 		 */
 		handleRegisterChange(register) {
@@ -1223,6 +1233,7 @@ export default {
 		},
 
 		/**
+		 * @param schema
 		 * @spec exclude Form-field binding — sets schema ref and clears dependent fields.
 		 */
 		handleSchemaChange(schema) {
@@ -1243,6 +1254,7 @@ export default {
 		},
 
 		/**
+		 * @param property
 		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
 		 */
 		handleInversedByChange(property) {

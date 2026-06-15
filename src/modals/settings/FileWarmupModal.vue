@@ -63,7 +63,8 @@ import { translate as t } from '@nextcloud/l10n'
 				<div class="form-group">
 					<label>{{ t('openregister', 'File Types to Process') }}</label>
 					<NcSelect
-						input-label="Config Selected File Types" v-model="config.selectedFileTypes"
+						v-model="config.selectedFileTypes"
+						input-label="Config Selected File Types"
 						:options="fileTypeOptions"
 						:multiple="true"
 						:label-outside="true"
@@ -243,6 +244,7 @@ export default {
 		open: {
 			immediate: true,
 			/**
+			 * @param newVal
 			 * @spec exclude watcher syncing dialog state and loading stats
 			 */
 			handler(newVal) {

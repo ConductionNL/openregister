@@ -53,6 +53,7 @@ export default {
 	methods: {
 		t,
 		/**
+		 * @param org
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
 		 */
 		isActive(org) {

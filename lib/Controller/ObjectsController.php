@@ -126,6 +126,10 @@ class ObjectsController extends Controller
      * @param LoggerInterface                                 $logger           The logger (optional)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer     $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder           $pdokGeocoder         Optional PDOK geocoder (null-safe)
      *
      * @return void
      *
@@ -148,7 +152,11 @@ class ObjectsController extends Controller
         private readonly ?WebhookService $webhookService=null,
         private readonly ?LoggerInterface $logger=null,
         private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser=null,
-        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -176,6 +184,93 @@ class ObjectsController extends Controller
         $userGroups = $this->groupManager->getUserGroupIds($user);
         return in_array('admin', $userGroups);
     }//end isCurrentUserAdmin()
+
+
+    /**
+     * Whether the current request asks for JSON-LD output via content negotiation.
+     *
+     * Null-safe: when the JSON-LD services are not wired (e.g. minimal DI in a
+     * test harness) this always returns false and the default JSON path is kept.
+     *
+     * @return bool True when JSON-LD output is requested and available.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function wantsJsonLd(): bool
+    {
+        if ($this->jsonLdSerializer === null) {
+            return false;
+        }
+
+        return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
+    }//end wantsJsonLd()
+
+
+    /**
+     * Decorate an already-rendered single-object array as a JSON-LD JSONResponse.
+     *
+     * The serializer wraps the rendered array only — it introduces no second
+     * data path, so RBAC / multitenancy / field-level security / the published
+     * predicate all remain applied exactly as for the plain-JSON response.
+     *
+     * @param array                                $renderedObject The rendered object array.
+     * @param \OCA\OpenRegister\Db\Register|null    $register       The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null      $schema         The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdObjectResponse(array $renderedObject, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serialize(
+            renderedObject: $renderedObject,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+    }//end jsonLdObjectResponse()
+
+
+    /**
+     * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
+     *
+     * @param array                                $result   The paginated result array.
+     * @param \OCA\OpenRegister\Db\Register|null    $register The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null      $schema   The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdCollectionResponse(array $result, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serializeCollection(
+            paginatedResult: $result,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+    }//end jsonLdCollectionResponse()
+
+
+    /**
+     * Add the JSON-LD content negotiation headers to a response.
+     *
+     * @param JSONResponse $response The response to decorate.
+     *
+     * @return JSONResponse The decorated response.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function withJsonLdHeaders(JSONResponse $response): JSONResponse
+    {
+        $response->addHeader('Content-Type', 'application/ld+json');
+        $response->addHeader('Vary', 'Accept');
+        return $response;
+    }//end withJsonLdHeaders()
 
     /**
      * Normalize form data values by decoding JSON strings.
@@ -1306,6 +1401,16 @@ class ObjectsController extends Controller
                 // path so geo filtering works for both register layouts.
                 $responseData = $this->applyGeoQueryFilters(params: $params, result: $responseData);
 
+                // Content negotiation: JSON-LD @graph for magic-mapped results
+                // (json-ld-output).
+                if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
+                    return $this->jsonLdCollectionResponse(
+                        result: $responseData,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
+                }
+
                 // Return in expected format.
                 $response = new JSONResponse(data: $responseData);
 
@@ -1364,6 +1469,20 @@ class ObjectsController extends Controller
         // and apply the filters to $result['results']. Pure-PHP fallback;
         // PostGIS push-down is tracked in `geo-spatial-queries`.
         $result = $this->applyGeoQueryFilters(params: $params, result: $result);
+
+        // Content negotiation: emit a JSON-LD @graph when requested. Wraps the
+        // already-rendered/RBAC-filtered result — no second data path
+        // (json-ld-output).
+        if ($this->wantsJsonLd() === true
+            && ($resolved['registerEntity'] ?? null) !== null
+            && ($resolved['schemaEntity'] ?? null) !== null
+        ) {
+            return $this->jsonLdCollectionResponse(
+                result: $result,
+                register: $resolved['registerEntity'],
+                schema: $resolved['schemaEntity']
+            );
+        }
 
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
@@ -1438,6 +1557,208 @@ class ObjectsController extends Controller
         return new JSONResponse(data: $payload);
 
     }//end geoSearch()
+
+    /**
+     * Export a register/schema's objects as a GeoJSON FeatureCollection.
+     *
+     * Reuses the standard listing path (`index()`), so the result is
+     * already scoped to the objects the caller may read — this endpoint
+     * adds no new data access and therefore no IDOR surface (the listing
+     * applies per-object RBAC). Objects without a geometry are omitted.
+     *
+     * Supports `?_fields=title,status` to restrict Feature properties
+     * (geometry is always retained), `?geo.property=` to pick the geo
+     * property, and the standard geo filter params (REQ-GEO-008).
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse A GeoJSON FeatureCollection (application/geo+json).
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read access is enforced by the delegated index()
+     *   listing (per-object RBAC via scopedGeoRows()); this method only
+     *   reshapes the already-scoped rows and accesses no object by id.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    public function geoJson(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFeatureBuilder === null) {
+            return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
+        }
+
+        $params  = $this->request->getParams();
+        $rows    = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+        $fields  = $this->parseFieldsParam(params: $params);
+        $geoProp = ($params['geo.property'] ?? null);
+
+        $collection = $this->geoFeatureBuilder->buildFeatureCollection(
+            rows: $rows,
+            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            fields: $fields,
+            includeArea: true
+        );
+
+        // Body is a valid GeoJSON FeatureCollection. The default
+        // application/json content type is kept (NC's Content-Type
+        // override requires the full container); the @self envelope is
+        // omitted so the body is consumable directly by GIS clients.
+        return new JSONResponse(data: $collection);
+
+    }//end geoJson()
+
+    /**
+     * WFS GetFeature-compatible endpoint (REQ-GEO-008).
+     *
+     * Returns a GeoJSON FeatureCollection compatible with WFS 2.0
+     * `outputFormat=application/json`. Supports `count`/`maxFeatures`
+     * caps. Reuses the RBAC-scoped listing path (no new IDOR surface).
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse A WFS-compatible GeoJSON FeatureCollection.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read access is enforced by the delegated index()
+     *   listing (per-object RBAC via scopedGeoRows()); this method only
+     *   reshapes the already-scoped rows and accesses no object by id.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    public function wfs(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFeatureBuilder === null) {
+            return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
+        }
+
+        $params = $this->request->getParams();
+        $rows   = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+
+        $maxFeatures = null;
+        $rawMax      = ($params['count'] ?? ($params['maxFeatures'] ?? null));
+        if ($rawMax !== null && is_numeric($rawMax) === true) {
+            $maxFeatures = (int) $rawMax;
+        }
+
+        $geoProp  = ($params['geo.property'] ?? null);
+        $response = $this->geoFeatureBuilder->buildWfsResponse(
+            rows: $rows,
+            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            maxFeatures: $maxFeatures
+        );
+
+        return new JSONResponse(data: $response);
+
+    }//end wfs()
+
+    /**
+     * Forward / reverse geocoding via PDOK Locatieserver (REQ-GEO-005).
+     *
+     * `?q=<address>` performs forward geocoding; `?lon=&lat=` performs
+     * reverse geocoding. Degrades gracefully: when OpenConnector / PDOK
+     * is unavailable an empty suggestion list is returned with a flag,
+     * never an error (geocoding is non-blocking, REQ-GEO-005).
+     *
+     * @return JSONResponse Geocoding suggestions and availability flag.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Stateless PDOK address-lookup proxy: accesses no
+     *   OpenRegister object and takes no object id, so there is no IDOR
+     *   surface. Authenticated-user access is enforced by NoAdminRequired.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     */
+    public function geocode(): JSONResponse
+    {
+        if ($this->pdokGeocoder === null) {
+            return new JSONResponse(data: ['available' => false, 'suggestions' => []]);
+        }
+
+        $params    = $this->request->getParams();
+        $available = $this->pdokGeocoder->isAvailable();
+
+        $query = ($params['q'] ?? null);
+        if ($query !== null && trim((string) $query) !== '') {
+            $bagOnly     = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
+            $suggestions = $this->pdokGeocoder->geocodeFree(
+                query: (string) $query,
+                maxItems: 5,
+                bagOnly: $bagOnly
+            );
+            return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
+        }
+
+        $lon = ($params['lon'] ?? null);
+        $lat = ($params['lat'] ?? null);
+        if (is_numeric($lon) === true && is_numeric($lat) === true) {
+            $address = $this->pdokGeocoder->reverseGeocode(longitude: (float) $lon, latitude: (float) $lat);
+            return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+        }
+
+        return new JSONResponse(
+            data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='],
+            statusCode: 422
+        );
+
+    }//end geocode()
+
+    /**
+     * Fetch the RBAC-scoped listing rows for a register/schema.
+     *
+     * Delegates to the standard `index()` listing — which enforces
+     * per-object read access — then returns just the `results`. Geo
+     * endpoints build on this so they can never widen access.
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return array The RBAC-scoped result rows.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    private function scopedGeoRows(string $register, string $schema, ObjectService $objectService): array
+    {
+        $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+        $payload = (array) $listing->getData();
+        $rows    = ($payload['results'] ?? []);
+        return (is_array($rows) === true) ? $rows : [];
+
+    }//end scopedGeoRows()
+
+    /**
+     * Parse a `?_fields=a,b,c` allow-list into an array (null = all).
+     *
+     * @param array $params The request params.
+     *
+     * @return string[]|null
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    private function parseFieldsParam(array $params): ?array
+    {
+        $raw = ($params['_fields'] ?? null);
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (is_array($raw) === true) {
+            return array_values(array_map('strval', $raw));
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn($v) => $v !== ''));
+
+    }//end parseFieldsParam()
 
     /**
      * Apply geo query-param filters to a listing result.
@@ -1906,6 +2227,20 @@ class ObjectsController extends Controller
             );
             if ($includeEmpty === false) {
                 $renderedData = $this->stripEmptyValues(data: $renderedData);
+            }
+
+            // Content negotiation: emit JSON-LD when requested. The serializer
+            // wraps the already-rendered array — no second data path — so all
+            // access control above remains applied (json-ld-output).
+            if ($this->wantsJsonLd() === true
+                && $resolved['registerEntity'] !== null
+                && $resolved['schemaEntity'] !== null
+            ) {
+                return $this->jsonLdObjectResponse(
+                    renderedObject: $renderedData,
+                    register: $resolved['registerEntity'],
+                    schema: $resolved['schemaEntity']
+                );
             }
 
             return new JSONResponse(data: $renderedData);

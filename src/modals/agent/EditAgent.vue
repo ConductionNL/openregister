@@ -540,24 +540,28 @@ export default {
 			this.error = null
 		},
 		/**
+		 * @param type
 		 * @spec exclude Form-field binding — sets agent type from select input.
 		 */
 		updateType(type) {
 			this.agentItem.type = type ? type.value : 'chat'
 		},
 		/**
+		 * @param mode
 		 * @spec exclude Form-field binding — sets RAG search mode from select input.
 		 */
 		updateRagSearchMode(mode) {
 			this.agentItem.ragSearchMode = mode ? mode.value : 'hybrid'
 		},
 		/**
+		 * @param groups
 		 * @spec exclude Form-field binding — maps selected groups to id array.
 		 */
 		updateGroups(groups) {
 			this.agentItem.groups = groups ? groups.map(g => g.id) : []
 		},
 		/**
+		 * @param group
 		 * @spec exclude Form-field binding — removes a group from the selection.
 		 */
 		removeGroup(group) {
@@ -565,6 +569,7 @@ export default {
 			this.agentItem.groups = this.selectedGroups.map(g => g.id)
 		},
 		/**
+		 * @param views
 		 * @spec exclude Form-field binding — maps selected views to id array.
 		 */
 		updateViews(views) {
@@ -585,6 +590,7 @@ export default {
 			this.newUserInput = ''
 		},
 		/**
+		 * @param username
 		 * @spec exclude Form-field binding — removes a username from the invited-users list.
 		 */
 		removeInvitedUser(username) {
@@ -687,12 +693,15 @@ export default {
 			}
 		},
 		/**
+		 * @param selectedUser
 		 * @spec exclude Form-field binding — sets the agent owner from the user picker.
 		 */
 		updateUser(selectedUser) {
 			this.agentItem.user = selectedUser ? selectedUser.id : ''
 		},
 		/**
+		 * @param toolId
+		 * @param _event
 		 * @spec exclude UI event handler — toggles a tool when its card is clicked.
 		 */
 		handleCardClick(toolId, _event) {
@@ -701,6 +710,8 @@ export default {
 			this.toggleTool(toolId, !currentState)
 		},
 		/**
+		 * @param toolId
+		 * @param newValue
 		 * @spec exclude UI event handler — toggles a tool when its switch is changed.
 		 */
 		handleToggleChange(toolId, newValue) {
@@ -708,6 +719,8 @@ export default {
 			this.toggleTool(toolId, newValue)
 		},
 		/**
+		 * @param toolId
+		 * @param enabled
 		 * @spec exclude Form-field binding — adds/removes a tool id in the agent's tools array.
 		 */
 		toggleTool(toolId, enabled) {
@@ -732,6 +745,7 @@ export default {
 			}
 		},
 		/**
+		 * @param toolId
 		 * @spec exclude UI state helper — reports whether a tool id is currently selected.
 		 */
 		isToolChecked(toolId) {
@@ -832,6 +846,7 @@ export default {
 			navigationStore.setModal(null)
 		},
 		/**
+		 * @param open
 		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
 		 */
 		handleDialogClose(open) {

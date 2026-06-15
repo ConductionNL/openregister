@@ -709,6 +709,7 @@ export default {
 		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
 		'$root.registerStore.registerList': {
 			/**
+			 * @param newList
 			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
 			 */
 			handler(newList) {
@@ -724,6 +725,7 @@ export default {
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
 			/**
+			 * @param newSchema
 			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
 			 */
 			handler(newSchema) {
@@ -739,6 +741,8 @@ export default {
 		// Watch for selected schemas changes to auto-expand new schemas
 		selectedSchemas: {
 			/**
+			 * @param newSchemas
+			 * @param oldSchemas
 			 * @spec exclude Vue watch handler plumbing; auto-expands newly selected schema groups in the UI.
 			 */
 			handler(newSchemas, oldSchemas) {
@@ -759,6 +763,7 @@ export default {
 		// Watch for active view changes to sync the name input
 		'viewsStore.activeView': {
 			/**
+			 * @param newView
 			 * @spec exclude Vue watch handler plumbing; mirrors the active view's name into the editable name input.
 			 */
 			handler(newView) {
@@ -927,7 +932,19 @@ export default {
 				this.selectedSchemas = schemaIds.filter(id => schemaStore.schemaList.some(s => s.id === id))
 				return true
 			}
-			// Try apply now, or retry shortly if lists not yet loaded
+			// Try apply now, or retry shortly if lists not yet loaded.
+			//
+			// The register list (`GET /api/registers?_extend=schemas&stats`)
+			// takes 3–4.5s on a populated instance — longer than the former
+			// 10×200ms (2s) budget — so a `/tables?register=…&schema=…`
+			// deep-link gave up before the list arrived and the table stayed
+			// on "No objects found. Select registers and schemas…", never
+			// firing the search. The `$root.registerStore.registerList`
+			// watcher was meant to cover this but did not re-trigger the
+			// search reliably. Extend the retry window to 40×200ms (8s) so it
+			// comfortably outlasts the real list-load time. Verified via the
+			// e2e investigation in tests/e2e/spec-coverage/
+			// {entity-management-modals, saved-search-views}.
 			const tryApply = (attempt = 0) => {
 				const regOk = applyRegisters()
 				const schOk = applySchemas()
@@ -939,7 +956,7 @@ export default {
 					}
 					return
 				}
-				if (attempt < 10) {
+				if (attempt < 40) {
 					setTimeout(() => tryApply(attempt + 1), 200)
 				}
 			}

@@ -17,6 +17,7 @@ use OCP\Search\FilterDefinition;
 use OCP\Search\IFilter;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
+use OCP\Search\SearchResultEntry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -29,6 +30,7 @@ class ObjectsProviderTest extends TestCase
     private ObjectService&MockObject $objectService;
     private LoggerInterface&MockObject $logger;
     private DeepLinkRegistryService&MockObject $deepLinkRegistry;
+    private SchemaMapper&MockObject $schemaMapper;
 
     protected function setUp(): void
     {
@@ -44,6 +46,11 @@ class ObjectsProviderTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->deepLinkRegistry = $this->createMock(DeepLinkRegistryService::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+
+        // Default: no schema opts out of search.
+        $this->schemaMapper->method('findNonSearchableIds')->willReturn([]);
+        $this->schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
 
         $this->provider = new ObjectsProvider(
             $this->l10n,
@@ -51,10 +58,33 @@ class ObjectsProviderTest extends TestCase
             $this->objectService,
             $this->logger,
             $this->deepLinkRegistry,
-            $this->createMock(SchemaMapper::class),
+            $this->schemaMapper,
             $this->createMock(RegisterMapper::class)
         );
     }
+
+    /**
+     * Build a mocked ISearchQuery returning the given filters/limit/cursor.
+     *
+     * @param array<string, string> $filters Filter name => value.
+     */
+    private function mockQuery(array $filters, int $limit = 25, $cursor = null): ISearchQuery
+    {
+        $query = $this->createMock(ISearchQuery::class);
+        $query->method('getFilter')->willReturnCallback(function (string $name) use ($filters) {
+            if (array_key_exists($name, $filters) === false) {
+                return null;
+            }
+            $filter = $this->createMock(IFilter::class);
+            $filter->method('get')->willReturn($filters[$name]);
+            return $filter;
+        });
+        $query->method('getLimit')->willReturn($limit);
+        $query->method('getCursor')->willReturn($cursor);
+        return $query;
+    }
+
+    // --- Provider identity -------------------------------------------------
 
     public function testGetId(): void
     {
@@ -95,11 +125,12 @@ class ObjectsProviderTest extends TestCase
         $this->assertInstanceOf(FilterDefinition::class, $filters[1]);
     }
 
+    // --- Empty / short-circuit --------------------------------------------
+
     public function testSearchWithNoResults(): void
     {
         $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
+        $query = $this->mockQuery([]);
 
         $this->objectService->method('searchObjectsPaginated')
             ->willReturn(['results' => [], 'total' => 0]);
@@ -109,52 +140,68 @@ class ObjectsProviderTest extends TestCase
         $this->assertInstanceOf(SearchResult::class, $result);
     }
 
-    public function testSearchWithTermFilter(): void
+    // --- Delegation / RBAC contract ---------------------------------------
+
+    public function testSearchAlwaysDelegatesWithRbacAndMultitenancyTrue(): void
     {
         $user = $this->createMock(IUser::class);
-
-        $termFilter = $this->createMock(IFilter::class);
-        $termFilter->method('get')->willReturn('test search');
-
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturnCallback(function (string $name) use ($termFilter) {
-            return $name === 'term' ? $termFilter : null;
-        });
+        $query = $this->mockQuery(['term' => 'test search']);
 
         $this->objectService->expects($this->once())
             ->method('searchObjectsPaginated')
             ->with(
                 $this->callback(function (array $q) {
-                    return $q['_search'] === 'test search' && $q['_limit'] === 25;
+                    return $q['_search'] === 'test search' && $q['_limit'] === 25 && $q['_offset'] === 0;
                 }),
-                $this->isTrue(),
-                $this->isTrue()
+                $this->isTrue(),  // _rbac MUST always be true
+                $this->isTrue()   // _multitenancy MUST always be true
             )
             ->willReturn(['results' => [], 'total' => 0]);
 
         $this->provider->search($user, $query);
     }
 
+    public function testSearchProviderAppliesNoSecondAccessFilter(): void
+    {
+        // The provider must pass results through verbatim — it must not
+        // drop objects the pipeline returned (no second access filter).
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'Jansen']);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['title' => 'Client Jansen', '@self' => ['id' => 'c1', 'register' => 1, 'schema' => 2]],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/c1');
+
+        $result = $this->provider->search($user, $query);
+        // The granted client object is present; the pipeline already
+        // excluded anything the user may not read.
+        $this->assertCount(1, $result->jsonSerialize()['entries']);
+    }
+
+    public function testSearchFailsSoftOnPipelineError(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'boom']);
+
+        $this->objectService->method('searchObjectsPaginated')
+            ->willThrowException(new \RuntimeException('register broken'));
+
+        $result = $this->provider->search($user, $query);
+        $this->assertInstanceOf(SearchResult::class, $result);
+        $this->assertSame([], $result->jsonSerialize()['entries']);
+    }
+
     public function testSearchWithRegisterAndSchemaFilters(): void
     {
         $user = $this->createMock(IUser::class);
-
-        $registerFilter = $this->createMock(IFilter::class);
-        $registerFilter->method('get')->willReturn('1');
-
-        $schemaFilter = $this->createMock(IFilter::class);
-        $schemaFilter->method('get')->willReturn('2');
-
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturnCallback(function (string $name) use ($registerFilter, $schemaFilter) {
-            if ($name === 'register') {
-                return $registerFilter;
-            }
-            if ($name === 'schema') {
-                return $schemaFilter;
-            }
-            return null;
-        });
+        $query = $this->mockQuery(['register' => '1', 'schema' => '2']);
 
         $this->objectService->expects($this->once())
             ->method('searchObjectsPaginated')
@@ -174,23 +221,7 @@ class ObjectsProviderTest extends TestCase
     public function testSearchWithDateFilters(): void
     {
         $user = $this->createMock(IUser::class);
-
-        $sinceFilter = $this->createMock(IFilter::class);
-        $sinceFilter->method('get')->willReturn('2024-01-01');
-
-        $untilFilter = $this->createMock(IFilter::class);
-        $untilFilter->method('get')->willReturn('2024-12-31');
-
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturnCallback(function (string $name) use ($sinceFilter, $untilFilter) {
-            if ($name === 'since') {
-                return $sinceFilter;
-            }
-            if ($name === 'until') {
-                return $untilFilter;
-            }
-            return null;
-        });
+        $query = $this->mockQuery(['since' => '2024-01-01', 'until' => '2024-12-31']);
 
         $this->objectService->expects($this->once())
             ->method('searchObjectsPaginated')
@@ -210,14 +241,7 @@ class ObjectsProviderTest extends TestCase
     public function testSearchWithUntilFilterOnly(): void
     {
         $user = $this->createMock(IUser::class);
-
-        $untilFilter = $this->createMock(IFilter::class);
-        $untilFilter->method('get')->willReturn('2024-12-31');
-
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturnCallback(function (string $name) use ($untilFilter) {
-            return $name === 'until' ? $untilFilter : null;
-        });
+        $query = $this->mockQuery(['until' => '2024-12-31']);
 
         $this->objectService->expects($this->once())
             ->method('searchObjectsPaginated')
@@ -234,188 +258,419 @@ class ObjectsProviderTest extends TestCase
         $this->provider->search($user, $query);
     }
 
-    public function testSearchWithResults(): void
+    // --- Schema searchable opt-out ----------------------------------------
+
+    public function testNonSearchableSchemasConstrainedToAllowList(): void
     {
         $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
+        $query = $this->mockQuery(['term' => 'x']);
 
-        $this->objectService->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [
-                    [
-                        'title' => 'Test Object',
-                        '@self' => [
-                            'id' => 'uuid-123',
-                            'register' => 1,
-                            'schema' => 2,
-                            'name' => 'test',
-                        ],
-                    ],
-                ],
-                'total' => 1,
-            ]);
+        // Schema 9 opted out; allow-list is 1,2,3.
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('findNonSearchableIds')->willReturn([9]);
+        $schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
 
-        $this->deepLinkRegistry->method('resolveUrl')
-            ->willReturn('https://example.com/object/uuid-123');
-        $this->deepLinkRegistry->method('resolveIcon')
-            ->willReturn('icon-custom');
+        $provider = new ObjectsProvider(
+            $this->l10n,
+            $this->urlGenerator,
+            $this->objectService,
+            $this->logger,
+            $this->deepLinkRegistry,
+            $schemaMapper,
+            $this->createMock(RegisterMapper::class)
+        );
+
+        $this->objectService->expects($this->once())
+            ->method('searchObjectsPaginated')
+            ->with(
+                $this->callback(function (array $q) {
+                    return ($q['@self']['schema'] ?? null) === [1, 2, 3];
+                }),
+                $this->isTrue(),
+                $this->isTrue()
+            )
+            ->willReturn(['results' => [], 'total' => 0]);
+
+        $provider->search($user, $query);
+    }
+
+    public function testExplicitSchemaFilterCannotBypassOptOut(): void
+    {
+        $user = $this->createMock(IUser::class);
+        // Explicitly target schema 17, which is non-searchable.
+        $query = $this->mockQuery(['schema' => '17', 'term' => 'reorganisatie']);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('findNonSearchableIds')->willReturn([17]);
+        $schemaMapper->method('findSearchableIds')->willReturn([1, 2]);
+
+        $provider = new ObjectsProvider(
+            $this->l10n,
+            $this->urlGenerator,
+            $this->objectService,
+            $this->logger,
+            $this->deepLinkRegistry,
+            $schemaMapper,
+            $this->createMock(RegisterMapper::class)
+        );
+
+        // Opt-out wins: pipeline must NOT be queried at all.
+        $this->objectService->expects($this->never())->method('searchObjectsPaginated');
+
+        $result = $provider->search($user, $query);
+        $this->assertSame([], $result->jsonSerialize()['entries']);
+    }
+
+    public function testDefaultSchemasRemainSearchable(): void
+    {
+        // No opt-out: query carries no schema allow-list constraint.
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'x']);
+
+        $this->objectService->expects($this->once())
+            ->method('searchObjectsPaginated')
+            ->with(
+                $this->callback(function (array $q) {
+                    return isset($q['@self']['schema']) === false;
+                }),
+                $this->isTrue(),
+                $this->isTrue()
+            )
+            ->willReturn(['results' => [], 'total' => 0]);
+
+        $this->provider->search($user, $query);
+    }
+
+    // --- Labeling matrix ---------------------------------------------------
+
+    public function testClaimedResultCarriesAppLabelAndRoundedIcon(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery([]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['title' => 'Acme', '@self' => ['id' => 'u1', 'register' => 1, 'schema' => 2]],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn('/apps/pipelinq/#/clients/u1');
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn('icon-pipelinq');
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn('Pipelinq');
 
         $result = $this->provider->search($user, $query);
-
-        $this->assertInstanceOf(SearchResult::class, $result);
+        $entries = $result->jsonSerialize()['entries'];
+        $this->assertStringStartsWith('Pipelinq · ', $entries[0]->jsonSerialize()['subline']);
+        $this->assertTrue($entries[0]->jsonSerialize()['rounded']);
+        $this->assertSame('icon-pipelinq', $entries[0]->jsonSerialize()['icon']);
     }
+
+    public function testDisplayNameDefaultsAreOwnerLabel(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery([]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['title' => 'Case 1', '@self' => ['id' => 'u2', 'register' => 1, 'schema' => 2]],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn('/apps/procest/#/cases/u2');
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn('icon-procest');
+        // No displayName set → service returns appId.
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn('procest');
+
+        $result = $this->provider->search($user, $query);
+        $entries = $result->jsonSerialize()['entries'];
+        $this->assertStringStartsWith('procest · ', $entries[0]->jsonSerialize()['subline']);
+    }
+
+    public function testUnclaimedResultKeepsOpenRegisterLabel(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery([]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['title' => 'Audit', '@self' => ['id' => 'u3', 'register' => 1, 'schema' => 5]],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/u3');
+
+        $result = $this->provider->search($user, $query);
+        $entries = $result->jsonSerialize()['entries'];
+        $serialised = $entries[0]->jsonSerialize();
+        $this->assertStringStartsWith('Open Register · ', $serialised['subline']);
+        $this->assertSame('icon-openregister', $serialised['icon']);
+        $this->assertFalse($serialised['rounded']);
+    }
+
+    public function testUnclaimedResultUrlFallsBackToObjectsShow(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery([]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['title' => 'Audit', '@self' => ['id' => 'u3', 'register' => 1, 'schema' => 5]],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->expects($this->once())
+            ->method('linkToRoute')
+            ->with('openregister.objects.show', $this->anything())
+            ->willReturn('/objects/u3');
+
+        $result = $this->provider->search($user, $query);
+        $this->assertCount(1, $result->jsonSerialize()['entries']);
+    }
+
+    public function testMixedPageLabelsEachEntryByItsOwner(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery([]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['title' => 'Client', '@self' => ['id' => 'a', 'register' => 1, 'schema' => 2]],
+                ['title' => 'Case', '@self' => ['id' => 'b', 'register' => 3, 'schema' => 4]],
+                ['title' => 'Audit', '@self' => ['id' => 'c', 'register' => 3, 'schema' => 5]],
+            ],
+            'total' => 3,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturnCallback(function (int $r, int $s) {
+            return $s === 5 ? null : 'icon-app';
+        });
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturnCallback(function (int $r, int $s) {
+            if ($s === 2) {
+                return 'Pipelinq';
+            }
+            if ($s === 4) {
+                return 'procest';
+            }
+            return null;
+        });
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/x');
+
+        $result = $this->provider->search($user, $query);
+        $entries = $result->jsonSerialize()['entries'];
+        $this->assertStringStartsWith('Pipelinq · ', $entries[0]->jsonSerialize()['subline']);
+        $this->assertStringStartsWith('procest · ', $entries[1]->jsonSerialize()['subline']);
+        $this->assertStringStartsWith('Open Register · ', $entries[2]->jsonSerialize()['subline']);
+    }
+
+    // --- Excerpts ----------------------------------------------------------
+
+    public function testExcerptAroundMatchedTerm(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'Jansen']);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                [
+                    'title' => 'Obj',
+                    'notes' => 'afspraak met mevrouw Jansen over de vergunning volgende week',
+                    '@self' => ['id' => 'e1', 'register' => 1, 'schema' => 2],
+                ],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/e1');
+
+        $subline = $this->provider->search($user, $query)->jsonSerialize()['entries'][0]->jsonSerialize()['subline'];
+        $this->assertStringContainsString('Jansen', $subline);
+    }
+
+    public function testExcerptFallsBackToSummaryWhenMatchNotInString(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => '42']);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                [
+                    'title' => 'Obj',
+                    'amount' => 42,
+                    'summary' => 'Kapvergunning eik Kerkstraat',
+                    '@self' => ['id' => 'e2', 'register' => 1, 'schema' => 2],
+                ],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/e2');
+
+        $subline = $this->provider->search($user, $query)->jsonSerialize()['entries'][0]->jsonSerialize()['subline'];
+        $this->assertStringEndsWith('Kapvergunning eik Kerkstraat', $subline);
+    }
+
+    public function testExcerptMultibyteSafe(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'café']);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                [
+                    'title' => 'Obj',
+                    'notes' => str_repeat('é', 80).' bezoek aan het café in de buurt '.str_repeat('ü', 80),
+                    '@self' => ['id' => 'e3', 'register' => 1, 'schema' => 2],
+                ],
+            ],
+            'total' => 1,
+        ]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/e3');
+
+        $subline = $this->provider->search($user, $query)->jsonSerialize()['entries'][0]->jsonSerialize()['subline'];
+        $this->assertStringContainsString('café', $subline);
+        // Ellipsis present on both truncated edges.
+        $this->assertStringContainsString('…', $subline);
+    }
+
+    // --- Pagination --------------------------------------------------------
+
+    public function testFullFirstPageReturnsCursor(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'x'], 25, null);
+
+        $results = [];
+        for ($i = 0; $i < 25; $i++) {
+            $results[] = ['title' => 'O'.$i, '@self' => ['id' => 'p'.$i, 'register' => 1, 'schema' => 2]];
+        }
+        $this->objectService->method('searchObjectsPaginated')->willReturn(['results' => $results, 'total' => 60]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/p');
+
+        $serialised = $this->provider->search($user, $query)->jsonSerialize();
+        $this->assertCount(25, $serialised['entries']);
+        $this->assertSame(25, $serialised['cursor']);
+        $this->assertTrue($serialised['isPaginated']);
+    }
+
+    public function testSecondPageUsesCursorOffset(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'x'], 25, '25');
+
+        $this->objectService->expects($this->once())
+            ->method('searchObjectsPaginated')
+            ->with(
+                $this->callback(function (array $q) {
+                    return $q['_offset'] === 25 && $q['_limit'] === 25;
+                }),
+                $this->isTrue(),
+                $this->isTrue()
+            )
+            ->willReturn(['results' => [], 'total' => 60]);
+
+        $this->provider->search($user, $query);
+    }
+
+    public function testShortPageCompletesResult(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $query = $this->mockQuery(['term' => 'x'], 25, null);
+
+        $results = [
+            ['title' => 'O1', '@self' => ['id' => 's1', 'register' => 1, 'schema' => 2]],
+        ];
+        $this->objectService->method('searchObjectsPaginated')->willReturn(['results' => $results, 'total' => 1]);
+        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/s1');
+
+        $serialised = $this->provider->search($user, $query)->jsonSerialize();
+        $this->assertCount(1, $serialised['entries']);
+        $this->assertFalse($serialised['isPaginated']);
+    }
+
+    // --- ObjectEntity normalisation + title fallbacks ---------------------
 
     public function testSearchWithObjectEntityResults(): void
     {
         $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
+        $query = $this->mockQuery([]);
 
         $objectEntity = $this->createMock(ObjectEntity::class);
         $objectEntity->method('jsonSerialize')->willReturn([
             'title' => 'Entity Object',
-            '@self' => [
-                'id' => 'uuid-456',
-                'register' => 1,
-                'schema' => 2,
-            ],
+            '@self' => ['id' => 'uuid-456', 'register' => 1, 'schema' => 2],
         ]);
 
         $this->objectService->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [$objectEntity],
-                'total' => 1,
-            ]);
+            ->willReturn(['results' => [$objectEntity], 'total' => 1]);
 
         $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
         $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
         $this->urlGenerator->method('linkToRoute')->willReturn('/openregister/objects/uuid-456');
 
         $result = $this->provider->search($user, $query);
-
-        $this->assertInstanceOf(SearchResult::class, $result);
+        $entries = $result->jsonSerialize()['entries'];
+        $this->assertSame('Entity Object', $entries[0]->jsonSerialize()['title']);
     }
 
     public function testSearchResultWithNameFallback(): void
     {
         $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
+        $query = $this->mockQuery([]);
 
-        $this->objectService->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [
-                    [
-                        '@self' => [
-                            'id' => 'uuid-789',
-                            'register' => 1,
-                            'schema' => 2,
-                            'name' => 'My Object Name',
-                        ],
-                    ],
-                ],
-                'total' => 1,
-            ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['@self' => ['id' => 'uuid-789', 'register' => 1, 'schema' => 2, 'name' => 'My Object Name']],
+            ],
+            'total' => 1,
+        ]);
 
         $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
         $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
         $this->urlGenerator->method('linkToRoute')->willReturn('/objects/uuid-789');
 
         $result = $this->provider->search($user, $query);
-
-        $this->assertInstanceOf(SearchResult::class, $result);
+        $this->assertSame('My Object Name', $result->jsonSerialize()['entries'][0]->jsonSerialize()['title']);
     }
 
     public function testSearchResultWithUuidFallback(): void
     {
         $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
+        $query = $this->mockQuery([]);
 
-        $this->objectService->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [
-                    [
-                        '@self' => [
-                            'id' => 'uuid-fallback',
-                            'register' => 1,
-                            'schema' => 2,
-                        ],
-                    ],
-                ],
-                'total' => 1,
-            ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
+                ['@self' => ['id' => 'uuid-fallback', 'register' => 1, 'schema' => 2]],
+            ],
+            'total' => 1,
+        ]);
 
         $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
         $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+        $this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
         $this->urlGenerator->method('linkToRoute')->willReturn('/objects/uuid-fallback');
 
         $result = $this->provider->search($user, $query);
-
-        $this->assertInstanceOf(SearchResult::class, $result);
-    }
-
-    public function testSearchResultWithDescription(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
-
-        $this->objectService->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [
-                    [
-                        'title' => 'Test',
-                        'description' => str_repeat('a', 150),
-                        '@self' => [
-                            'id' => 'uuid-desc',
-                            'register' => 1,
-                            'schema' => 2,
-                            'updated' => '2024-06-15 10:30:00',
-                        ],
-                    ],
-                ],
-                'total' => 1,
-            ]);
-
-        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
-        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
-        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/uuid-desc');
-
-        $result = $this->provider->search($user, $query);
-
-        $this->assertInstanceOf(SearchResult::class, $result);
-    }
-
-    public function testSearchResultWithSummary(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $query = $this->createMock(ISearchQuery::class);
-        $query->method('getFilter')->willReturn(null);
-
-        $this->objectService->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [
-                    [
-                        'title' => 'Test',
-                        'summary' => 'Short summary',
-                        '@self' => [
-                            'id' => 'uuid-sum',
-                            'register' => 1,
-                            'schema' => 2,
-                        ],
-                    ],
-                ],
-                'total' => 1,
-            ]);
-
-        $this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
-        $this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
-        $this->urlGenerator->method('linkToRoute')->willReturn('/objects/uuid-sum');
-
-        $result = $this->provider->search($user, $query);
-
-        $this->assertInstanceOf(SearchResult::class, $result);
+        $this->assertSame('uuid-fallback', $result->jsonSerialize()['entries'][0]->jsonSerialize()['title']);
     }
 }

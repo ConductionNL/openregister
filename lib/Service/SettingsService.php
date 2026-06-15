@@ -413,6 +413,7 @@ class SettingsService
      * @return array Search backend configuration
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getSearchBackendConfig(): array
     {

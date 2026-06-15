@@ -130,6 +130,7 @@ export default {
 
 	methods: {
 		/**
+		 * @param name
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
 		 */
 		formatComponentName(name) {
@@ -137,6 +138,7 @@ export default {
 		},
 
 		/**
+		 * @param key
 		 * @spec exclude display helper formatting detail label
 		 */
 		formatDetailLabel(key) {
@@ -144,6 +146,7 @@ export default {
 		},
 
 		/**
+		 * @param value
 		 * @spec exclude display helper formatting detail value
 		 */
 		formatDetailValue(value) {

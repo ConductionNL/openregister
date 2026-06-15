@@ -154,6 +154,46 @@ class FilesController extends Controller
     }//end isAnonymousRequest()
 
     /**
+     * Enforce object-level RBAC before a file action runs (ADR-005 / gate-7).
+     *
+     * The file-action endpoints carry `@NoAdminRequired`, so without an explicit
+     * body guard any authenticated user could invoke them against an arbitrary
+     * object id (classic IDOR, OWASP A01:2021). This mirrors the SEC-CTRL-5
+     * hardening already applied to {@see self::show()}: for authenticated callers
+     * we re-resolve the object through `ObjectService::find(..., _rbac: true)`,
+     * which applies the read-permission check and throws
+     * {@see \OCA\OpenRegister\Exception\NotAuthorizedException} (mapped to HTTP 403
+     * by the caller) when the user may not access this object. Anonymous callers
+     * are gated separately by the per-endpoint published-file checks, so this
+     * helper is a no-op for them.
+     *
+     * The method name is prefixed `ensure` so gate-7 (no-admin-idor) recognises
+     * it as an authorisation guard in the calling method's body.
+     *
+     * @param string $register The register slug or identifier.
+     * @param string $schema   The schema slug or identifier.
+     * @param string $id       The object UUID or identifier.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
+     *                                                            authenticated caller may not access the object.
+     */
+    private function ensureObjectAccess(string $register, string $schema, string $id): void
+    {
+        // Anonymous callers are gated by the per-endpoint published-file checks;
+        // the RBAC read check only applies to authenticated sessions.
+        if ($this->isAnonymousRequest() === true) {
+            return;
+        }
+
+        // find(_rbac: true) applies the object read-permission check and throws
+        // NotAuthorizedException when the caller may not read this object.
+        $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
+
+    }//end ensureObjectAccess()
+
+    /**
      * Record a download event: bump the OR-side download counter and
      * write an audit-trail row. Best-effort — failures here MUST NOT
      * break the underlying file response. Logs at warn-level on a
@@ -450,6 +490,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before adding files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
 
@@ -490,6 +533,8 @@ class FilesController extends Controller
                 tags: $tags
             );
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => 'You do not have access to this object'], statusCode: 403);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
@@ -532,6 +577,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before saving files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
 
@@ -596,6 +644,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => 'You do not have access to this object'], statusCode: 403);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
@@ -626,6 +676,9 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             // Validate object exists.
             $object = $this->validateAndGetObject(
                 register: $register,
@@ -660,6 +713,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse($formattedFiles['results']);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(['error' => 'You do not have access to this object'], 403);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
@@ -948,6 +1003,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before mutating files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
 
             $data = $this->request->getParams();
@@ -966,6 +1024,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => 'You do not have access to this object'], statusCode: 403);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
@@ -1004,6 +1064,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before deleting files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
 
             $result = $this->fileService->deleteFile(
@@ -1012,6 +1075,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: ['success' => $result]);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => 'You do not have access to this object'], statusCode: 403);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
@@ -1269,6 +1334,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before mutating files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1298,6 +1366,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "already exists") => 409,
@@ -1332,6 +1402,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC on the source object.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $sourceObject = $this->objectService->getObject();
             if ($sourceObject === null) {
@@ -1346,6 +1419,9 @@ class FilesController extends Controller
             if (empty($targetObjectId) === true) {
                 return new JSONResponse(data: ["error" => "Target object ID is required"], statusCode: 400);
             }
+
+            // ADR-005 / gate-7: the caller must also have access to the target object.
+            $this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
 
             // Load target object.
             $this->objectService->setSchema($targetSchema);
@@ -1393,6 +1469,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1424,6 +1502,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC on the source object.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $sourceObject = $this->objectService->getObject();
             if ($sourceObject === null) {
@@ -1438,6 +1519,9 @@ class FilesController extends Controller
             if (empty($targetObjectId) === true) {
                 return new JSONResponse(data: ["error" => "Target object ID is required"], statusCode: 400);
             }
+
+            // ADR-005 / gate-7: the caller must also have access to the target object.
+            $this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
 
             $this->objectService->setSchema($targetSchema);
             $this->objectService->setRegister($targetRegister);
@@ -1484,6 +1568,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($movedFile));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "not found") => 404,
@@ -1516,6 +1602,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: object read access required to list versions.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1530,6 +1619,8 @@ class FilesController extends Controller
             $result = $this->fileService->getVersioningHandler()->listVersions($file);
 
             return new JSONResponse(data: $result);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }
@@ -1562,6 +1653,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before restoring.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1592,6 +1686,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1623,6 +1719,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before locking.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1648,6 +1747,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $result);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'locked') === true) {
@@ -1679,6 +1780,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before unlocking.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1712,6 +1816,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $result);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "Only the lock owner") => 403,
@@ -1743,6 +1849,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1768,6 +1877,8 @@ class FilesController extends Controller
             }
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1812,6 +1923,10 @@ class FilesController extends Controller
                 }
             }
 
+            // ADR-005 / gate-7: authenticated callers must have object read access.
+            // Anonymous callers were already gated by the published-file check above.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1834,6 +1949,8 @@ class FilesController extends Controller
             $response->addHeader("Content-Length", (string) $preview->getSize());
 
             return $response;
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             $fallbackIcon = "/core/img/filetypes/file.svg";
             return new JSONResponse(
@@ -1864,6 +1981,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
@@ -1886,6 +2006,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => "You do not have access to this object"], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try

@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -32,6 +34,9 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\Security\ICrypto;
+use Symfony\Component\Uid\Uuid;
+use DateTime;
+use Throwable;
 
 /**
  * Class SourcesController
@@ -54,7 +59,9 @@ class SourcesController extends Controller
      * @param IL10N         $l10n         The localization service
      * @param IUserSession  $userSession  User session for admin checks
      * @param IGroupManager $groupManager Group manager for admin checks
-     * @param ICrypto       $crypto       Crypto service for databaseUrl encryption
+     * @param ICrypto                $crypto          Crypto service for databaseUrl encryption
+     * @param SourceFetcherRegistry  $fetcherRegistry Resolves the transport for a source type
+     * @param HarvestPipelineService $pipeline        Harvest pipeline orchestrator
      *
      * @return void
      */
@@ -66,7 +73,9 @@ class SourcesController extends Controller
         private readonly IL10N $l10n,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
-        private readonly ICrypto $crypto
+        private readonly ICrypto $crypto,
+        private readonly SourceFetcherRegistry $fetcherRegistry,
+        private readonly HarvestPipelineService $pipeline
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -323,6 +332,124 @@ class SourcesController extends Controller
         // Return an empty response.
         return new JSONResponse(data: []);
     }//end destroy()
+
+    /**
+     * Trigger an immediate sync for a source ("Sync Now").
+     *
+     * Admin-only and organisation-scoped: the source is loaded via
+     * SourceMapper::find(), which applies the organisation filter, so a
+     * non-owning admin receives a 404 rather than acting on another tenant's
+     * source (per-object guard, no IDOR). The harvest pipeline runs inline
+     * when a transport is available; sources without a registered fetcher are
+     * rejected rather than silently dropped.
+     *
+     * @param int $id The source id to sync
+     *
+     * @return JSONResponse The sync execution summary
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+     *   organisation-scoped: the source is loaded via SourceMapper::find(),
+     *   which applies the active-organisation filter and 404s on a foreign
+     *   tenant's id, so a caller cannot trigger sync on an object outside
+     *   their organisation.
+     *
+     * @spec openspec/specs/data-sync-harvesting/spec.md
+     */
+    public function syncNow(int $id): JSONResponse
+    {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
+        try {
+            $source = $this->sourceMapper->find(id: $id);
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+        }
+
+        $fetcher = $this->fetcherRegistry->get((string) $source->getType());
+        if ($fetcher === null) {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('No sync transport available for this source type')],
+                statusCode: 422
+            );
+        }
+
+        $executionId = (string) Uuid::v4();
+
+        try {
+            $summary = $this->pipeline->run(
+                source: $source,
+                fetcher: $fetcher,
+                executionId: $executionId,
+                since: null
+            );
+
+            $source->setLastSyncStatus((string) ($summary['status'] ?? 'success'));
+            $source->setLastSyncDate(new DateTime());
+            $this->sourceMapper->update($source);
+
+            return new JSONResponse(data: $summary);
+        } catch (Throwable $e) {
+            $source->setLastSyncStatus('failed');
+            $source->setLastSyncDate(new DateTime());
+            $this->sourceMapper->update($source);
+
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Sync failed'), 'message' => $e->getMessage()],
+                statusCode: 500
+            );
+        }//end try
+    }//end syncNow()
+
+    /**
+     * Return the current sync status for a source.
+     *
+     * Organisation-scoped via SourceMapper::find() (per-object guard). Any
+     * authenticated member of the owning organisation may read sync status;
+     * no credentials are exposed.
+     *
+     * @param int $id The source id
+     *
+     * @return JSONResponse The sync status payload
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Organisation-scoped read: the source is loaded via
+     *   SourceMapper::find(), which applies the active-organisation filter and
+     *   404s on a foreign tenant's id. Only non-sensitive sync status is
+     *   returned (no credentials), so any authenticated member of the owning
+     *   organisation may read it.
+     *
+     * @spec openspec/specs/data-sync-harvesting/spec.md
+     */
+    public function syncStatus(int $id): JSONResponse
+    {
+        try {
+            $source = $this->sourceMapper->find(id: $id);
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+        }
+
+        $lastSyncDate = $source->getLastSyncDate();
+
+        return new JSONResponse(
+            data: [
+                'id'             => $source->getId(),
+                'uuid'           => $source->getUuid(),
+                'syncEnabled'    => $source->getSyncEnabled(),
+                'status'         => ($source->getLastSyncStatus() ?? 'never'),
+                'lastSyncDate'   => ($lastSyncDate !== null ? $lastSyncDate->format('c') : null),
+                'syncInterval'   => $source->getSyncInterval(),
+            ]
+        );
+    }//end syncStatus()
 
     /**
      * Get integer parameter from params array or return null

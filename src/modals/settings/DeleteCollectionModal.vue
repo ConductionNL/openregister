@@ -212,6 +212,7 @@ export default {
 
 	watch: {
 		/**
+		 * @param newValue
 		 * @spec exclude Watcher resetting modal state when the show prop opens; UI reactivity plumbing.
 		 */
 		show(newValue) {

@@ -165,6 +165,7 @@ export default {
 					: ''
 			},
 			/**
+			 * @param value
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
 			 */
 			set(value) {
@@ -184,6 +185,7 @@ export default {
 					: ''
 			},
 			/**
+			 * @param value
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
 			 */
 			set(value) {
@@ -199,6 +201,7 @@ export default {
 		/**
 		 * Seed the form from an existing activity or with Art-30 defaults.
 		 *
+		 * @param activity
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
 		 */
 		makeForm(activity) {

@@ -178,6 +178,74 @@ class EmptyStringDateConversionIntegrationTest extends TestCase
         $this->assertNull($data['publishedAt'], 'whitespace-only must normalise to null');
     }
 
+    public function testBulkImportEmptyStringDateNotSubstitutedWithNow(): void
+    {
+        // Task 6.4 — the bulk path (MagicBulkHandler::formatDateTimeForDatabase)
+        // delegates to the normaliser, so empty-string date values in a bulk
+        // import must NOT be silently replaced with the moment of import.
+        $bulkHandler = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler::class);
+        $tableName   = $this->objectMapper->getTableNameForRegisterSchema($this->testRegister, $this->testSchema);
+
+        $objects = [
+            [
+                'title'       => 'BulkEmpty',
+                'publishedAt' => '',
+                '@self'       => ['id' => Uuid::v4()->toRfc4122()],
+            ],
+        ];
+
+        $result = $bulkHandler->bulkUpsert($objects, $this->testRegister, $this->testSchema, $tableName);
+        $uuid   = $objects[0]['@self']['id'];
+        $this->createdObjectUuids[] = $uuid;
+
+        $fetched = $this->objectMapper->find($uuid);
+        $data    = $fetched->getObject() ?? [];
+
+        $this->assertArrayHasKey('publishedAt', $data, 'bulk-imported empty-string field should still appear in object data');
+        $this->assertNull($data['publishedAt'], 'bulk import of empty-string date must round-trip as null, not as the current datetime');
+    }
+
+    public function testMetadataEmptyExpiresPersistsAsNull(): void
+    {
+        // Task 6.6 — a metadata datetime field (`expires`) supplied as an empty
+        // string must persist as null, not as the moment of save.
+        $saved = $this->saveTestObject([
+            'title' => 'MetaEmptyExpires',
+            '@self' => ['expires' => ''],
+        ]);
+
+        $fetched = $this->objectMapper->find($saved->getUuid());
+
+        $this->assertNull(
+            $fetched->getExpires(),
+            'empty-string @self.expires must persist as null, not as the current datetime'
+        );
+    }
+
+    public function testMetadataAbsentCreatedDefaultsToNow(): void
+    {
+        // Task 6.7 — the default-to-now behaviour for absent `created`/`updated`
+        // metadata must be preserved by the normaliser change. Only the empty/
+        // garbage-string case normalises to null; an absent key still defaults
+        // to the current datetime.
+        $before = new \DateTimeImmutable('-1 minute');
+
+        $saved = $this->saveTestObject([
+            'title' => 'MetaAbsentCreated',
+        ]);
+
+        $fetched = $this->objectMapper->find($saved->getUuid());
+        $created = $fetched->getCreated();
+
+        $this->assertNotNull($created, 'absent created metadata must still default to now');
+        $createdImmutable = \DateTimeImmutable::createFromInterface($created);
+        $this->assertGreaterThan(
+            $before->getTimestamp(),
+            $createdImmutable->getTimestamp(),
+            'absent created metadata must default to a recent "now", preserving existing behaviour'
+        );
+    }
+
     private function saveTestObject(array $data): \OCA\OpenRegister\Db\ObjectEntity
     {
         $result = $this->saveHandler->saveObject(

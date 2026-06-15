@@ -127,6 +127,7 @@ export default {
 			objectStore.setAuditTrailItem(null)
 		},
 		/**
+		 * @param value
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		formatValue(value) {

@@ -407,6 +407,8 @@ The `updated` trigger MUST additionally accept an optional non-numeric field-cha
 
 The evaluator MUST fail closed: when the old-versus-new object data is unavailable in the dispatch context, a `condition`-bearing `updated` rule MUST NOT fire — consistent with the existing `calculatedChange` behaviour. An `updated` rule that declares NO `condition` MUST continue to fire on every update (back-compatible). The non-numeric field-change condition is evaluated by a string-condition evaluator distinct from the existing numeric `calculatedChange` evaluator; numeric `calculatedChange` semantics are unchanged.
 
+The engine MUST additionally be able to dispatch these trigger types for OpenRegister's **own system entities** (`synchronization`, `import`, `schema`, `configuration`, `source`, `agent`, `webhook`, `register`). A system-event bridge MUST route create/update/transition signals from the relevant system entities through the same `AnnotationNotificationListener` → dispatcher path used for stored register objects, populating the old-versus-new object data so the field-change `condition` block is available for system schemas as well. Operational notifications on system schemas MUST reuse the existing channels, recipient resolvers, rate-limiting, coalescing, per-user preference overrides, and bilingual (nl/en) i18n unchanged; only the rule source and event source are extended to cover system schemas.
+
 #### Scenario: Workflow completion triggers notification
 - GIVEN an n8n workflow `vergunning-beoordeling` completes with output `{"result": "goedgekeurd"}`
 - AND a notification rule listens for event `workflow.completed` with condition `{"workflowName": "vergunning-beoordeling"}`
@@ -441,12 +443,6 @@ The evaluator MUST fail closed: when the old-versus-new object data is unavailab
 - WHEN the dispatcher evaluates the rule
 - THEN the rule MUST fire because the old value (`open`) differs from the new value (`closed`)
 
-#### Scenario: updated trigger with `changed` condition does not fire when the field value is unchanged
-- GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "changed"}`
-- AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "open"}`
-- WHEN the dispatcher evaluates the rule
-- THEN the rule MUST NOT fire because the old value equals the new value
-
 #### Scenario: updated trigger with `equals` condition fires only when the new value matches
 - GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "equals", "value": "closed"}`
 - AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "closed"}`
@@ -454,23 +450,24 @@ The evaluator MUST fail closed: when the old-versus-new object data is unavailab
 - THEN the rule MUST fire because the new value equals `closed`
 - AND GIVEN instead a new object data of `{"status": "pending"}`, the rule MUST NOT fire
 
-#### Scenario: updated trigger with optional `from` requires the prior value
-- GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "equals", "value": "closed", "from": "open"}`
-- AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "closed"}`
-- WHEN the dispatcher evaluates the rule
-- THEN the rule MUST fire because the new value equals `closed` AND the old value equals `open`
-- AND GIVEN instead an old object data of `{"status": "pending"}`, the rule MUST NOT fire because the prior value does not equal `open`
+#### Scenario: System synchronization failure dispatches an operational notification
+- GIVEN OpenRegister's `synchronization` system schema declares an `x-openregister-notifications` rule that fires on the synchronization-failed event (via `transition`→`failed` or `updated`+`condition` `{"field":"status","operator":"equals","value":"failed"}`) with recipients `{"kind":"groups","groups":["admin"]}`
+- WHEN a synchronization run transitions to `failed`
+- THEN the system-event bridge MUST route the failure through the same listener/dispatcher path used for stored register objects
+- AND a notification MUST be delivered to the configured admin/integration-ops group on the configured channel
+- AND the subject MUST be metadata-only (no synchronization payload contents) and available in both `nl` and `en`
 
-#### Scenario: condition-bearing updated rule fails closed when old/new data is unavailable
-- GIVEN an `updated` rule whose `trigger` declares any field-change `condition`
-- AND the dispatch context does NOT carry the old and new object data (e.g. no previous object was available)
-- WHEN the dispatcher evaluates the rule
-- THEN the rule MUST NOT fire, matching the fail-closed behaviour of `calculatedChange`
+#### Scenario: System schema/configuration change dispatches an operational notification
+- GIVEN OpenRegister's `configuration` system schema declares an `updated` rule with recipients `{"kind":"groups","groups":["admin"]}`
+- WHEN a configuration record is updated
+- THEN the system-event bridge MUST dispatch the rule through the existing dispatcher path
+- AND a notification MUST be delivered to the admin group, reusing the existing rate-limiting, coalescing and per-user preference-override behaviour unchanged
 
-#### Scenario: updated rule with no condition still fires on every update
-- GIVEN an `updated` rule whose `trigger` declares NO `condition` block
-- WHEN any update occurs on the object
-- THEN the rule MUST fire on every update, preserving backwards compatibility with existing condition-less rules
+#### Scenario: System source/agent health threshold dispatches an operational notification
+- GIVEN OpenRegister's `source` system schema declares a `threshold` rule on consecutive failures (or an `updated`+`condition` rule on a health field)
+- WHEN the source becomes unhealthy per the configured threshold/condition
+- THEN a notification MUST be delivered to the configured integration-ops group
+- AND the dispatch MUST reuse the existing threshold/condition evaluation, numeric `calculatedChange` semantics being unchanged
 
 ### Requirement: Notification grouping MUST reduce noise for related events
 Multiple notifications about the same object or related objects MUST be grouped to avoid flooding the user's notification panel.
@@ -548,6 +545,8 @@ The system MUST enforce rate limits on notification delivery per recipient, per 
 ### Requirement: Notification rules MUST be sourced ONLY from the schema annotation, evaluated at dispatch time
 The system MUST treat `configuration['x-openregister-notifications']` on the `Schema` as the single, authoritative source of notification rules. Because the schema is ALWAYS loaded whenever anything happens to an object, the dispatcher MUST evaluate the notification rules directly from the already-loaded schema annotation at dispatch time. The system MUST NOT persist notification rules in any separate rule table, and MUST NOT introduce a `NotificationRule` entity or `oc_openregister_notification_rules` table. (ADR-031: `x-openregister-notifications` is the declarative replacement for app-local notification service code.)
 
+OpenRegister's **own system schemas** (`register`, `schema`, `configuration`, `source`, `synchronization`, `import`, `webhook`, `agent`) MUST also be able to declare `x-openregister-notifications` rules for operational events. The dispatcher MUST resolve rules for a system entity through the same annotation-sourced path it uses for stored register objects — either by representing the system entities as schema-backed objects whose schema carries the annotation, or by a system-schema rule source that returns the same rule shape — so that no separate notification-rule table is introduced for system schemas either.
+
 #### Scenario: Dispatcher reads rules from the loaded schema, not a rule table
 - **WHEN** an object lifecycle event fires for an object whose schema declares an `x-openregister-notifications` rule on `object.created`
 - **THEN** the dispatcher MUST evaluate that rule from the schema annotation already loaded for the object
@@ -557,6 +556,12 @@ The system MUST treat `configuration['x-openregister-notifications']` on the `Sc
 - **WHEN** an administrator updates `x-openregister-notifications` on a schema to add a new `object.updated` rule and saves the schema
 - **THEN** the next `object.updated` event on that schema MUST be evaluated against the new rule
 - **AND** no rule-table row creation, migration, or rebuild step is required for the change to take effect
+
+#### Scenario: A system schema declares rules sourced through the same annotation path
+- **GIVEN** OpenRegister's `synchronization` system schema declares an `x-openregister-notifications` rule for its failure event
+- **WHEN** a synchronization run fails
+- **THEN** the dispatcher MUST resolve that rule through the annotation-sourced path (schema-backed object or system-schema rule source), NOT from any notification-rule table
+- **AND** the system MUST NOT introduce a notification-rule table for system schemas
 
 ### Requirement: User notification preferences MUST be override-only values stored in Nextcloud per-user app config
 The system MUST store a user's notification preferences as per-user app-config values under the `openregister` app via `OCP\IConfig::setUserValue`. A stored user value MUST act ONLY as an override that flips the schema-declared default (on/off, and optionally channel) for a single `(schema, notification-key)` pair. The system MUST NOT introduce a `NotificationPreference` table or rely on a `NotificationSubscription` table for preference resolution.
@@ -628,8 +633,8 @@ Before delivering the in-app (`nc-notification`) or `push` channel to a given re
 
 ### Requirement: Schemas MAY declare notifications via `x-openregister-notifications` with a normative channel block format
 
-A schema MAY include a top-level `x-openregister-notifications`
-block: a map of notification name → spec. Each spec declares
+A schema MUST be allowed to include a top-level `x-openregister-notifications` block, which the system MUST treat as a map of notification name → spec.
+Each spec declares
 `trigger` (type + parameters), `filter` (Mongo-style operators
 against the triggering object), `recipients` (one or more
 recipient blocks), `channels` (one or more channel blocks),
@@ -637,10 +642,12 @@ optional `throttle`, optional `audit: bool`. Schema-save
 validation MUST verify every reference and reject malformed
 annotations with HTTP 422.
 
-**Channel block format (normative).** Every entry in `channels[]`
-MUST be an object with exactly one mandatory field — `kind` —
-whose value is one of `nc-notification`, `email`, `webhook`,
-`talk`, `activity`. The remaining fields are kind-dependent:
+#### Channel block format (normative)
+
+Every entry in `channels[]` MUST be an object with exactly one
+mandatory field — `kind` — whose value is one of
+`nc-notification`, `email`, `webhook`, `talk`, `activity`. The
+remaining fields are kind-dependent:
 
 | `kind` | Required fields | Optional fields | Notes |
 |---|---|---|---|
@@ -656,23 +663,22 @@ reject unknown keys, missing mandatory fields, or unsupported
 `kind` values with HTTP 422.
 
 #### Scenario: Webhook channel with inline URL is rejected
-- **GIVEN** a notification declares `channels: [{ kind: "webhook", url: "https://attacker.example.com/x" }]`
-- **WHEN** the schema is saved
-- **THEN** the save MUST fail with HTTP 422
-- **AND** the response body MUST include `{ code: "notification-channel-webhook-inline-url-forbidden" }`
+- GIVEN a notification declares `channels: [{ kind: "webhook", url: "https://attacker.example.com/x" }]`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "notification-channel-webhook-inline-url-forbidden" }`
 
 #### Scenario: Webhook channel referencing a registered entity is accepted
-- **GIVEN** an admin has registered a `Webhook` entity with UUID `abc-123` and target URL `https://allowed.example.com/hook`
-- **AND** a notification declares `channels: [{ kind: "webhook", webhookId: "abc-123" }]`
-- **WHEN** the schema is saved
-- **THEN** the save MUST succeed
-- **AND** delivery MUST POST to the URL stored on the registered Webhook entity, NOT to a URL supplied by the schema author
+- GIVEN an admin has registered a `Webhook` entity with UUID `abc-123` and target URL `https://allowed.example.com/hook`
+- AND a notification declares `channels: [{ kind: "webhook", webhookId: "abc-123" }]`
+- WHEN the schema is saved
+- THEN the save MUST succeed
+- AND delivery MUST POST to the URL stored on the registered Webhook entity, NOT to a URL supplied by the schema author
 
 ### Requirement: Throttle window grammar (normative)
 
-A notification's optional `throttle` block MAY declare
-`perRecipient`, `perObject`, and / or `global` windows. Each
-throttle value MUST match the regex
+A notification's optional `throttle` block MAY declare `perRecipient`, `perObject`, and / or `global` windows, and the system MUST validate every declared window.
+Each throttle value MUST match the regex
 `^([1-9][0-9]*) per (second|minute|hour|day|week)$`
 (count + literal `per` + unit). Whitespace between tokens is
 exactly one ASCII space. Schema-save validation MUST reject any
@@ -683,45 +689,44 @@ implementations MAY add ISO-8601 in v2 but MUST keep the v1
 grammar working unchanged.
 
 #### Scenario: Valid throttle window is accepted
-- **GIVEN** a notification with `throttle: { perRecipient: "1 per day" }`
-- **WHEN** the schema is saved
-- **THEN** validation MUST accept it
+- GIVEN a notification with `throttle: { perRecipient: "1 per day" }`
+- WHEN the schema is saved
+- THEN validation MUST accept it
 
 #### Scenario: ISO-8601 duration is rejected in v1
-- **GIVEN** a notification with `throttle: { perRecipient: "PT24H" }`
-- **WHEN** the schema is saved
-- **THEN** the save MUST fail with HTTP 422
-- **AND** the response body MUST include `{ code: "notification-throttle-invalid-window", value: "PT24H", expected: "{N} per {second|minute|hour|day|week}" }`
+- GIVEN a notification with `throttle: { perRecipient: "PT24H" }`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "notification-throttle-invalid-window", value: "PT24H", expected: "{N} per {second|minute|hour|day|week}" }`
 
 ### Requirement: Trigger types `created` and `updated` MUST be supported
 
 The trigger registry MUST recognise `created` and `updated`
 trigger types (in addition to `transition`, `scheduled`, and
-`threshold` documented elsewhere in this spec).
+`threshold` documented elsewhere).
 
 #### Scenario: `created` trigger fires on object creation; filters see the new state only
-- **GIVEN** a notification with `trigger: { type: "created" }` and `filter: { taskStatus: "open" }`
-- **AND** a new action item is created with `taskStatus: "open"`
-- **WHEN** `ObjectCreatedEvent` fires
-- **THEN** the installer-mapped listener MUST evaluate the filter against the created object's payload (there is no "before" state)
-- **AND** `$before.*` placeholder MUST resolve to `null` and validation MUST reject filters that require a non-null `$before`
-- **AND** the notification MUST dispatch to all resolved recipients
+- GIVEN a notification with `trigger: { type: "created" }` and `filter: { taskStatus: "open" }`
+- AND a new action item is created with `taskStatus: "open"`
+- WHEN `ObjectCreatedEvent` fires
+- THEN the installer-mapped listener MUST evaluate the filter against the created object's payload (there is no "before" state)
+- AND `$before.*` placeholder MUST resolve to `null` and validation MUST reject filters that require a non-null `$before`
+- AND the notification MUST dispatch to all resolved recipients
 
 #### Scenario: `updated` trigger MAY filter on a field-diff (`only_if_changed`)
-- **GIVEN** a notification with `trigger: { type: "updated", only_if_changed: ["assignee"] }`
-- **AND** an existing action item is updated, changing `assignee` from `alice` to `bob`
-- **WHEN** `ObjectUpdatedEvent` fires
-- **THEN** the listener MUST compare the listed fields between before/after state
-- **AND** fire the notification (because `assignee` changed)
-- **WHEN** the same item is later updated, changing only `description`
-- **THEN** the listener MUST NOT fire (no listed field changed)
-- **AND** when `only_if_changed` is omitted, the trigger fires on every update
+- GIVEN a notification with `trigger: { type: "updated", only_if_changed: ["assignee"] }`
+- AND an existing action item is updated, changing `assignee` from `alice` to `bob`
+- WHEN `ObjectUpdatedEvent` fires
+- THEN the listener MUST compare the listed fields between before/after state
+- AND fire the notification (because `assignee` changed)
+- WHEN the same item is later updated, changing only `description`
+- THEN the listener MUST NOT fire (no listed field changed)
+- AND when `only_if_changed` is omitted, the trigger fires on every update
 
 ### Requirement: Scheduled trigger filters MUST support relative-date and inequality operators
 
-A `scheduled` trigger's `filter` is a flat map of object-data field
-names to conditions, ANDed together. Each condition MUST be accepted in
-two forms:
+A `scheduled` trigger's `filter` MUST be supported as a flat map of object-data field names to conditions, ANDed together.
+Each condition MUST be accepted in two forms:
 
 - **Scalar (v1, unchanged):** `{"status": "open"}` — strict equality
   against the object's field value, byte-for-byte the existing

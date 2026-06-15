@@ -521,6 +521,7 @@ export default {
 		},
 
 		/**
+		 * @param agent
 		 * @spec exclude chat UI selection state setter for the chosen agent
 		 */
 		selectAgent(agent) {
@@ -565,6 +566,7 @@ export default {
 		},
 
 		/**
+		 * @param conversation
 		 * @spec exclude chat UI wiring; loads a conversation + its agent via the store (ai-chat-companion contract)
 		 */
 		async selectConversation(conversation) {
@@ -587,6 +589,7 @@ export default {
 		},
 
 		/**
+		 * @param conversation
 		 * @spec exclude chat UI wiring; confirms then delegates to store delete/permanent-delete (ai-chat-companion contract)
 		 */
 		async deleteConversation(conversation) {
@@ -611,6 +614,7 @@ export default {
 		},
 
 		/**
+		 * @param conversation
 		 * @spec exclude chat UI wiring; delegates to conversationStore.restoreConversation (ai-chat-companion contract)
 		 */
 		async restoreConversation(conversation) {
@@ -778,6 +782,8 @@ export default {
 		},
 
 		/**
+		 * @param message
+		 * @param feedback
 		 * @spec exclude chat UI wiring; posts thumbs up/down feedback for a message (ai-chat-companion contract)
 		 */
 		async sendFeedback(message, feedback) {
@@ -818,6 +824,7 @@ export default {
 		},
 
 		/**
+		 * @param message
 		 * @spec exclude chat UI wiring; posts an optional feedback comment for a message (ai-chat-companion contract)
 		 */
 		async saveFeedbackComment(message) {
@@ -842,6 +849,7 @@ export default {
 		},
 
 		/**
+		 * @param source
 		 * @spec exclude chat UI source-navigation stub (logs only; not yet implemented)
 		 */
 		viewSource(_source) {
@@ -849,6 +857,7 @@ export default {
 		},
 
 		/**
+		 * @param content
 		 * @spec exclude chat UI markdown-to-HTML rendering helper for display only
 		 */
 		formatMessage(content) {
@@ -857,6 +866,7 @@ export default {
 		},
 
 		/**
+		 * @param timestamp
 		 * @spec exclude chat UI relative-timestamp formatting helper for display only
 		 */
 		formatTime(timestamp) {
@@ -901,6 +911,9 @@ export default {
 		},
 
 		/**
+		 * @param app
+		 * @param text
+		 * @param vars
 		 * @spec exclude chat UI translation/interpolation placeholder helper
 		 */
 		t(app, text, vars) {

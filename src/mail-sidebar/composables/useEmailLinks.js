@@ -3,7 +3,7 @@
  * sidebar's Objects + Link data flow (cache, abort, sender-suggestion
  * de-dup against linked uuids).
  *
- * @package OpenRegister
+ * @package
  *
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
  */
@@ -50,7 +50,7 @@ export function useEmailLinks() {
 	 * @param {number} accountId The mail account ID.
 	 * @param {number} messageId The mail message ID.
 	 * @param {string} [sender] The sender email address for discovery.
-	 * @param {boolean} [useCache=true] Whether to use cached results.
+	 * @param {boolean} [useCache] Whether to use cached results.
 	 */
 	async function loadForMessage(accountId, messageId, sender, useCache = true) {
 		const key = cacheKey(accountId, messageId)

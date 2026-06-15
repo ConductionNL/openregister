@@ -38,12 +38,14 @@ export const useNavigationStore = defineStore('ui', {
 			this.modal = modal
 		},
 		/**
+		 * @param dialog
 		 * @spec exclude Pure client UI-state setter — toggles the single active dialog. No backend contract.
 		 */
 		setDialog(dialog) {
 			this.dialog = dialog
 		},
 		/**
+		 * @param data
 		 * @spec exclude Pure client UI-state setter — stashes cross-component transfer payload. No backend contract.
 		 */
 		setTransferData(data) {

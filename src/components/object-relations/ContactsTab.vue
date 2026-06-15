@@ -168,6 +168,7 @@ export default {
 		objectId: {
 			immediate: true,
 			/**
+			 * @param newId
 			 * @spec exclude watcher refetching contacts on objectId change, UI plumbing
 			 */
 			handler(newId) {
@@ -204,6 +205,7 @@ export default {
 		},
 
 		/**
+		 * @param contact
 		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
 		 */
 		async unlinkContact(contact) {

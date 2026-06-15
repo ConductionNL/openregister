@@ -14,6 +14,8 @@
  *   - DELETE /api/objects/{register}/{schema}/{id}/deck/{cardId} — unlink
  *   - GET  /api/integrations/deck/boards                         — list boards
  *   - GET  /api/integrations/deck/boards/{boardId}/stacks        — list stacks
+ *   - GET  /api/integrations/deck/schemas/{schema}/default       — get sticky default
+ *   - PUT  /api/integrations/deck/schemas/{schema}/default       — set sticky default
  *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
@@ -32,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -52,12 +55,14 @@ class DeckLinksController extends Controller
      * @param IRequest        $request         HTTP request.
      * @param DeckLinkService $deckLinkService Backing service.
      * @param ObjectService   $objectService   OR object resolver.
+     * @param SettingsService $settingsService Settings service for sticky default.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly DeckLinkService $deckLinkService,
         private readonly ObjectService $objectService,
+        private readonly SettingsService $settingsService,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -224,6 +229,13 @@ class DeckLinksController extends Controller
                 $duedateStr
             );
 
+            // AD-1: persist sticky schema-level default after each successful create.
+            $this->settingsService->setDeckDefault(
+                schemaSlug: $schema,
+                boardId: $boardId,
+                stackId: $stackId,
+            );
+
             return new JSONResponse($link->jsonSerialize(), 201);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
@@ -319,6 +331,68 @@ class DeckLinksController extends Controller
         $stacks = $this->deckLinkService->getStacksForBoard((int) $boardId);
         return new JSONResponse(['results' => $stacks, 'total' => count($stacks)]);
     }//end stacks()
+
+    /**
+     * Get the schema-level sticky default board+stack.
+     *
+     * Returns `{boardId: null, stackId: null}` when no default has been saved.
+     *
+     * @param string $schema Schema slug.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Operates on schema-level Deck configuration (the
+     *   sticky default board+stack for a schema), not on a user-owned object.
+     *   There is no per-object resource to scope; the value is shared config
+     *   for everyone authoring objects of this schema.
+     *
+     * @spec openspec/changes/nextcloud-entity-relations/tasks.md#deck-card-relations
+     */
+    public function getDefault(string $schema): JSONResponse
+    {
+        $default = $this->settingsService->getDeckDefaultBoard(schemaSlug: $schema);
+        return new JSONResponse($default);
+    }//end getDefault()
+
+    /**
+     * Set (or update) the schema-level sticky default board+stack.
+     *
+     * Body: `{ boardId: int, stackId: int }`.
+     *
+     * @param string $schema Schema slug.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Operates on schema-level Deck configuration (the
+     *   sticky default board+stack for a schema), not on a user-owned object.
+     *   There is no per-object resource to scope; the value is shared config
+     *   for everyone authoring objects of this schema.
+     *
+     * @spec openspec/changes/nextcloud-entity-relations/tasks.md#deck-card-relations
+     */
+    public function setDefault(string $schema): JSONResponse
+    {
+        $boardId = (int) $this->request->getParam('boardId', 0);
+        $stackId = (int) $this->request->getParam('stackId', 0);
+
+        if ($boardId === 0 || $stackId === 0) {
+            return new JSONResponse(['error' => 'boardId and stackId are required'], 400);
+        }
+
+        $this->settingsService->setDeckDefault(
+            schemaSlug: $schema,
+            boardId: $boardId,
+            stackId: $stackId,
+        );
+
+        return new JSONResponse(['boardId' => $boardId, 'stackId' => $stackId]);
+    }//end setDefault()
 
     /**
      * Resolve an OR object from register/schema/id.

@@ -6,6 +6,8 @@ status: draft
 
 @e2e exclude CI/test infrastructure spec — no UI surface
 
+## Purpose
+
 Achieve 100% API route coverage with Newman integration tests and measure server-side code coverage from those tests using PCOV. Every API route defined in `appinfo/routes.php` SHALL have at least one Newman test covering the success path and one covering the error path.
 
 ## Current State

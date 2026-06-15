@@ -26,30 +26,35 @@ export const useOrganisationStore = defineStore('organisation', {
 	},
 	actions: {
 		/**
+		 * @param mode
 		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
 		},
 		/**
+		 * @param organisationItem
 		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
 		 */
 		setOrganisationItem(organisationItem) {
 			this.organisationItem = organisationItem && new Organisation(organisationItem)
 		},
 		/**
+		 * @param organisations
 		 * @spec exclude Client state mutator — maps the organisation list to entities. No backend contract.
 		 */
 		setOrganisationList(organisations) {
 			this.organisationList = organisations.map(organisation => new Organisation(organisation))
 		},
 		/**
+		 * @param activeOrganisation
 		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
 		 */
 		setActiveOrganisation(activeOrganisation) {
 			this.activeOrganisation = activeOrganisation && new Organisation(activeOrganisation)
 		},
 		/**
+		 * @param stats
 		 * @spec exclude Client state mutator — maps the user-org stats response into entities. No backend contract.
 		 */
 		setUserStats(stats) {
@@ -122,6 +127,8 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		// Function to get a single organisation
 		/**
+		 * @param uuid
+		 * @param options
 		 * @spec exclude Thin API passthrough — GET /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
 		 */
 		async getOrganisation(uuid, options = { setItem: false }) {
@@ -144,6 +151,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		// Set active organisation
 		/**
+		 * @param uuid
 		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/set-active; observable contract owned by tenant-lifecycle.
 		 */
 		async setActiveOrganisationById(uuid) {
@@ -212,6 +220,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		// Leave an organisation
 		/**
+		 * @param uuid
 		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/leave; observable contract owned by tenant-lifecycle.
 		 */
 		async leaveOrganisation(uuid) {
@@ -239,6 +248,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		// Delete an organisation (owner only)
 		/**
+		 * @param organisationItem
 		 * @spec exclude Thin API passthrough — DELETE /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
 		 */
 		async deleteOrganisation(organisationItem) {
@@ -262,6 +272,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		// Create a new organisation
 		/**
+		 * @param organisationData
 		 * @spec exclude Thin API passthrough — POST /api/organisations; observable contract owned by tenant-lifecycle.
 		 */
 		async createOrganisation(organisationData) {
@@ -299,6 +310,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 		// Update an existing organisation
 		/**
+		 * @param organisationData
 		 * @spec exclude Thin API passthrough — PUT /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
 		 */
 		async updateOrganisation(organisationData) {
@@ -355,6 +367,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 		// Create or update an organisation (legacy method for backward compatibility)
 		/**
+		 * @param organisationItem
 		 * @spec exclude Client-side create/update dispatcher — delegates to createOrganisation/updateOrganisation passthroughs. No standalone backend contract.
 		 */
 		async saveOrganisation(organisationItem) {
@@ -368,6 +381,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		// Clean organisation data for saving - remove read-only fields
 		/**
+		 * @param organisationItem
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanOrganisationForSave(organisationItem) {

@@ -33,6 +33,7 @@
  *
  * @spec openspec/changes/oas-validation/tasks.md "API-46 Problem Details (RFC 7807)"
  * @spec openspec/changes/oas-validation/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
+ * @spec openspec/changes/retrofit-2026-05-24-b3a-geo-fieldtypes-oas/specs/oas-validation/spec.md "API-46 RFC 7807 — retrofit cross-ref"
  */
 
 declare(strict_types=1);
@@ -43,6 +44,7 @@ namespace OCA\OpenRegister\Service\Oas;
  * Builds RFC 7807 problem-details response payloads.
  *
  * @spec openspec/changes/oas-validation/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
+ * @spec openspec/changes/retrofit-2026-05-24-b3a-geo-fieldtypes-oas/specs/oas-validation/spec.md "API-46 RFC 7807 — retrofit cross-ref"
  */
 class ProblemDetailsBuilder
 {

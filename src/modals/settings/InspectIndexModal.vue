@@ -40,8 +40,8 @@ import { translate as t } from '@nextcloud/l10n'
 
 				<div class="filter-row">
 					<NcSelect
-						input-label="Selected Fields"
 						v-model="selectedFields"
+						input-label="Selected Fields"
 						:options="availableFields"
 						:label="t('openregister', 'Fields to Display')"
 						multiple
@@ -301,6 +301,7 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param newVal
 		 * @spec exclude watcher loading fields / resetting modal on open change
 		 */
 		show(newVal) {

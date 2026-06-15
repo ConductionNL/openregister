@@ -388,6 +388,32 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Register the data-sync source-fetcher registry pre-loaded with the
+        // built-in REST/OpenRegister fetcher. Apps can register additional
+        // fetchers (OData, SOAP, CSV) by resolving and extending this service.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
+            function ($c) {
+                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
+                return $registry;
+            }
+        );
+
+        // Register the standards schema-import service with the bundled,
+        // versioned snapshot resources (schema-import-standards). Built
+        // explicitly so the resource root is deterministic; the dialect
+        // registry inside it makes DCAT/SKOS/ZGW importers follow-ups.
+        $context->registerService(
+            \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
+            function () {
+                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
+                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
+                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                );
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
@@ -938,6 +964,29 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\TimeEntryService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\TimeEntryService(
+                    timeLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeLinkMapper::class),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\TimeProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\TimeProvider(
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
             }
         );
@@ -1700,6 +1749,59 @@ class Application extends App implements IBootstrap
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Schema versioning & object migration services (schema-versioning-and-object-migration).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaDiffService();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaVersioningService(
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaRevalidationService(
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    validateObject: $container->get(\OCA\OpenRegister\Service\Object\ValidateObject::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationService(
+                    planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }

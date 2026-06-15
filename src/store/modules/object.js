@@ -126,6 +126,7 @@ function openregisterObjectPlugin() {
 			// becomes available. The new schema-aware property store
 			// handles this elsewhere; a no-op keeps the call site safe.
 			/**
+			 * @param _schema
 			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the schema-aware property store.
 			 */
 			initializeProperties(_schema) {

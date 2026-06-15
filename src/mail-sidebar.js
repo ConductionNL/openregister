@@ -4,7 +4,7 @@
  * This script is injected into the Nextcloud Mail app via OCP\Util::addScript().
  * It creates a container element and mounts the Vue sidebar component.
  *
- * @package OpenRegister
+ * @package
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-5

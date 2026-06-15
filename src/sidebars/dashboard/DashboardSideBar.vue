@@ -339,6 +339,7 @@ export default {
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
 			/**
+			 * @param newSchema
 			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
 			 */
 			handler(newSchema) {

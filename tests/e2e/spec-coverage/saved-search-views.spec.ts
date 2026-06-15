@@ -519,6 +519,13 @@ test.describe('saved-search-views — the-default-view-is-applied-on-mount', () 
 
 	// @e2e openspec/specs/saved-search-views/spec.md#the-default-view-is-applied-on-mount
 	test('default view is applied when the sidebar mounts after page reload', async ({ page, request }) => {
+		// `selectRegisterAndSchema` waits up to 30s for the register-list
+		// fetch (`_extend=schemas&_extend=@self.stats`) to enable the
+		// combobox on a busy dev/CI env; combined with the `/tables` reload
+		// chain (gotoTablesPage) and a second navigation below, the default
+		// 30s test budget is too tight. The helper's own comment assumes a
+		// 60s budget — set it here (as the copy-object test already does).
+		test.setTimeout(60_000)
 		// Step 1: Navigate to /tables and select a register+schema.
 		await gotoTablesPage(page)
 
@@ -641,6 +648,11 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 
 	// @e2e openspec/specs/saved-search-views/spec.md#the-view-list-is-filtered-and-favorite-sorted
 	test('typing in the view search box filters the view list by name', async ({ page }) => {
+		// `selectRegisterAndSchema` waits up to 30s for the register-list
+		// fetch to enable the combobox; with the `/tables` reload chain that
+		// exceeds the default 30s test budget on a busy env. Match the 60s
+		// budget the helper assumes (and the copy-object test uses).
+		test.setTimeout(60_000)
 		await gotoTablesPage(page)
 
 		const selected = await selectRegisterAndSchema(page)

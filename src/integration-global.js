@@ -13,7 +13,7 @@
  * Kept tiny + idempotent (ensureIntegrationRegistry guards re-entry), so
  * loading it alongside OpenRegister's own main bundle is harmless.
  *
- * @package OpenRegister
+ * @package
  *
  * @license EUPL-1.2
  *

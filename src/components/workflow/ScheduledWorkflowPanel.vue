@@ -105,6 +105,7 @@ export default {
 			}
 		},
 		/**
+		 * @param seconds
 		 * @spec exclude computed interval-format display helper, UI plumbing
 		 */
 		formatInterval(seconds) {

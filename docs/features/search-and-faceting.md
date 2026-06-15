@@ -158,6 +158,47 @@ POST /api/views                         Create a saved view
 GET /api/views/{id}                     Execute a saved view
 ```
 
+## Nextcloud Unified Search
+
+OpenRegister exposes a single, fleet-wide Nextcloud **unified search** provider
+(the top-bar magnifier) over register objects, implemented by
+`OCA\OpenRegister\Search\ObjectsProvider` (id `openregister_objects`). This is
+the one place register objects surface in unified search for the entire fleet —
+consuming apps (Pipelinq, Procest, …) do **not** register their own search
+provider. They participate by claiming `(register, schema)` pairs through the
+deep-link registry, which supplies each result's URL, icon, and display label.
+
+Key behaviours:
+
+- **Central access control** — the provider delegates to
+  `ObjectService::searchObjectsPaginated(query, _rbac: true, _multitenancy: true)`
+  and applies no second access filter of its own. Results contain only objects
+  the searching user may read: RBAC-granted objects plus objects readable
+  through the published predicate. Soft-deleted objects never appear, and tenant
+  isolation is enforced. The provider can only narrow this set further (it never
+  widens it).
+- **`searchable` flag governs unified-search exposure** — the schema-level
+  `searchable` boolean (default `true`, editable via the schemas API and schema
+  edit modal) now controls whether a schema's objects appear in Nextcloud
+  unified search. Setting `searchable = false` removes a schema from the
+  magnifier; the exclusion is applied inside the search query (not by
+  post-filtering a page). An explicit `schema` filter that targets a
+  non-searchable schema returns an empty result set (opt-out wins).
+- **Per-app labeling** — each result entry is labeled
+  `{App} · {Register} · {Schema}` and carries the owning app's rounded icon for
+  claimed pairs; unclaimed pairs keep the `Open Register · …` label and the
+  OpenRegister icon.
+- **Excerpts** — the result subline ends with an excerpt around the first match
+  of the search term, falling back to the object's `summary`/`description`.
+  Excerpts come from the rendered object the user may read, so field-level
+  security applies to excerpt content.
+- **Pagination** — results paginate with a cursor (integer offset), 25 per page,
+  so "load more" works for registers with thousands of objects.
+
+Apps declare their result URLs, icons, and display names via the boot-time
+deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
+`displayName` is what labels an app's unified-search results.
+
 ## Related Features
 
 - [Registers & Schemas](registers-and-schemas.md) — facet configuration lives on schema properties

@@ -1605,6 +1605,12 @@ class Schema extends Entity implements JsonSerializable
      *   toggle on the attachment upload dialog. true seeds the toggle on; absent
      *   or false keeps it off. Users can always override per upload.
      *   See: ConductionNL/opencatalogi#577
+     * - 'mailObjectTemplate': (array) Field map used by the Mail-sidebar
+     *   "create from email" action. Keys are schema property names, string
+     *   values may contain {{subject}}/{{sender}}/{{senderName}}/{{date}}/
+     *   {{date30}}/{{datetime}}/{{preview}}/{{messageId}}/{{mailRef}}
+     *   placeholders; non-string values pass through verbatim. Only schemas
+     *   declaring this template get a create-from-email button.
      *
      * @param array|string|null $configuration The configuration array/string to validate and set
      *
@@ -1676,7 +1682,7 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
+        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
@@ -1698,6 +1704,12 @@ class Schema extends Entity implements JsonSerializable
 
             if ($key === 'linkedTypes') {
                 $this->validateLinkedTypesValue(value: $value);
+                $validatedConfig[$key] = $value;
+                continue;
+            }
+
+            if ($key === 'mailObjectTemplate') {
+                $this->validateMailObjectTemplateValue(value: $value);
                 $validatedConfig[$key] = $value;
                 continue;
             }
@@ -1950,6 +1962,41 @@ class Schema extends Entity implements JsonSerializable
             }
         }
     }//end validateLinkedTypesValue()
+
+    /**
+     * Validate the mailObjectTemplate configuration value
+     *
+     * The template is a flat map of schema property name => prefill value
+     * used by the Mail-sidebar "create from email" action. String values
+     * may contain {{placeholder}} tokens; scalar non-string values pass
+     * through verbatim.
+     *
+     * @param mixed $value The mailObjectTemplate value to validate
+     *
+     * @throws InvalidArgumentException If the template is not a flat map of scalar values
+     *
+     * @return void
+     */
+    private function validateMailObjectTemplateValue(mixed $value): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        if (is_array($value) === false) {
+            throw new InvalidArgumentException("Configuration 'mailObjectTemplate' must be an object or null");
+        }
+
+        foreach ($value as $field => $template) {
+            if (is_string($field) === false || $field === '') {
+                throw new InvalidArgumentException("All keys in 'mailObjectTemplate' must be non-empty property names");
+            }
+
+            if (is_scalar($template) === false) {
+                throw new InvalidArgumentException("Value for '$field' in 'mailObjectTemplate' must be a scalar");
+            }
+        }
+    }//end validateMailObjectTemplateValue()
 
     /**
      * Legacy linked-type id allow-list — internal implementation detail.

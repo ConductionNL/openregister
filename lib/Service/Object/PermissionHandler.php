@@ -382,6 +382,8 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission checks require multiple conditional paths
      * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
     private function evaluatePermission(
         Schema $schema,
@@ -478,6 +480,24 @@ class PermissionHandler
             if ($verdict !== null) {
                 return $verdict;
             }
+        }
+
+        // User-level override (delegation) check — evaluated independently of
+        // group membership so a user with NO groups can still receive a
+        // delegated grant. Uses the sentinel group id '' which never matches a
+        // real group; only the user-override branch inside hasGroupPermission
+        // can grant here. Additive and fail-closed (see userOverrideMatches()).
+        if ($this->hasGroupPermission(
+                authorization: $authorization,
+                groupId: '',
+                action: $action,
+                userId: $userId,
+                objectOwner: $objectOwner,
+                objectData: $objectData,
+                objectOrganisation: $objectOrganisation
+            ) === true
+        ) {
+            return true;
         }
 
         // Check schema permissions for each user group.
@@ -1000,6 +1020,23 @@ class PermissionHandler
 
         // Check each authorization entry for this action.
         foreach ($authorization[$action] as $entry) {
+            // User-level override entry (delegation): a bare string `user:<uid>`
+            // or a complex entry `{ "user": "<uid>", "match": {...} }` grants the
+            // action to that one user independent of group membership. This is the
+            // zaaktype-scoped DELEGATION primitive (rbac-zaaktype): it is purely
+            // ADDITIVE — it can only WIDEN access for the named user and never
+            // affects group rules. Fail-closed: only an exact uid match is honoured.
+            if ($this->userOverrideMatches(
+                    entry: $entry,
+                    action: $action,
+                    userId: $userId,
+                    objectData: $objectData,
+                    objectOrganisation: $objectOrganisation
+                ) === true
+            ) {
+                return true;
+            }
+
             // Simple string entry: direct group match.
             if (is_string($entry) === true) {
                 if ($entry === $groupId) {
@@ -1043,6 +1080,103 @@ class PermissionHandler
 
         return false;
     }//end hasGroupPermission()
+
+    /**
+     * Determine whether an authorization entry is a user-level override that
+     * grants the current user the requested action.
+     *
+     * User-level overrides implement zaaktype-scoped DELEGATION (rbac-zaaktype):
+     * a permission granted to an individual user independent of group membership,
+     * used for external advisors, temporary replacements, and escalation paths.
+     * They are expressed inside the same schema `authorization[$action]` list as
+     * either:
+     *   - a bare string `"user:<uid>"`; or
+     *   - a complex entry `{ "user": "<uid>", "match": { ... } }` whose optional
+     *     `match` clause is evaluated by the shared {@see ConditionMatcher} (so an
+     *     expiry can be encoded as e.g. `{ "_expires": { "$gt": "$now" } }` on the
+     *     object, or any other object-data predicate).
+     *
+     * SECURITY — fail closed and never widen group access:
+     *   - Only an EXACT uid match grants. A missing/blank uid, a non-matching uid,
+     *     or a malformed entry returns false.
+     *   - Anonymous principals (userId === null) can never match a user override.
+     *   - The override is purely additive: returning false here lets the normal
+     *     group/owner/public rule chain decide, so an override can only ADD access
+     *     for the named user and can never remove a group's existing grant.
+     *
+     * @param mixed       $entry              A single authorization entry for the action.
+     * @param string      $action             The CRUD action being checked (for match-create filtering).
+     * @param string|null $userId             The current user ID (null = anonymous).
+     * @param array|null  $objectData         Optional object data for conditional matching.
+     * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation).
+     *
+     * @return bool True only when the entry is a user override for the current user
+     *              and any attached match clause is satisfied.
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
+     */
+    private function userOverrideMatches(
+        mixed $entry,
+        string $action,
+        ?string $userId,
+        ?array $objectData=null,
+        ?string $objectOrganisation=null
+    ): bool {
+        // Anonymous principals can never match a user-level override.
+        if ($userId === null || $userId === '') {
+            return false;
+        }
+
+        $targetUid = null;
+        $match     = null;
+
+        // Bare string form: "user:<uid>".
+        if (is_string($entry) === true) {
+            if (str_starts_with($entry, 'user:') === false) {
+                return false;
+            }
+
+            $targetUid = substr($entry, strlen('user:'));
+        } else if (is_array($entry) === true && isset($entry['user']) === true && is_string($entry['user']) === true) {
+            // Complex form: { "user": "<uid>", "match": {...} }.
+            $targetUid = $entry['user'];
+            $match     = ($entry['match'] ?? null);
+        } else {
+            return false;
+        }
+
+        // Exact uid match required (fail closed on blank / mismatch).
+        if ($targetUid === '' || $targetUid !== $userId) {
+            return false;
+        }
+
+        // No match clause: the user override alone is sufficient.
+        if ($match === null || is_array($match) === false || empty($match) === true) {
+            return true;
+        }
+
+        // On create there is no existing object to match organisation against;
+        // strip organisation predicates exactly as the group path relies on
+        // ConditionMatcher to do elsewhere.
+        if ($action === 'create') {
+            $match = $this->conditionMatcher->filterOrganisationMatchForCreate(match: $match);
+            if ($match === []) {
+                return true;
+            }
+        }
+
+        // Evaluate the match clause via the shared ConditionMatcher (ADR-011) —
+        // same envelope construction as the group path so _organisation resolves.
+        $envelope = ($objectData ?? []);
+        if ($objectOrganisation !== null) {
+            $envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+        }
+
+        return $this->conditionMatcher->objectMatchesConditions(
+            object: $envelope,
+            match: $match
+        );
+    }//end userOverrideMatches()
 
     /**
      * Determine whether the `public` group is EXPLICITLY granted an action.
