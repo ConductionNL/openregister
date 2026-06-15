@@ -202,6 +202,46 @@ class MapsOverviewService
 
 
     /**
+     * Authorisation guard for the points (read) path — RBAC-scopes the
+     * marker query and returns only the points the current user may read.
+     *
+     * This is the named authz seam the controller calls so the read
+     * decision is visible at the endpoint boundary (ADR-005). It delegates
+     * to {@see queryPoints()}, which runs the canonical OR read path with
+     * `_rbac: true` for non-admins — an anonymous / low-privilege caller
+     * only ever sees public-readable objects (fail-closed, no leak). The
+     * register/schema scope keys are caller-immutable.
+     *
+     * @param string|int          $register    Register slug or id to query.
+     * @param string|int          $schema      Schema slug or id to query.
+     * @param array<string,mixed> $filters     Extra object filters (property=value).
+     * @param string|null         $geoProperty Geometry property name; null = auto-detect.
+     * @param int|null            $limit       Max markers (capped at MAX_POINTS).
+     *
+     * @return array<int,array<string,mixed>> The RBAC-scoped marker point set.
+     *
+     * @throws InvalidArgumentException On empty register / schema.
+     *
+     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     */
+    public function ensureReadablePoints(
+        string | int $register,
+        string | int $schema,
+        array $filters=[],
+        ?string $geoProperty=null,
+        ?int $limit=null
+    ): array {
+        return $this->queryPoints(
+            register: $register,
+            schema: $schema,
+            filters: $filters,
+            geoProperty: $geoProperty,
+            limit: $limit
+        );
+    }//end ensureReadablePoints()
+
+
+    /**
      * Query the marker point set for a register/schema, RBAC-scoped.
      *
      * Runs the canonical OpenRegister read path with `_rbac: true` for

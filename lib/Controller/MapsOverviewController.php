@@ -145,7 +145,7 @@ class MapsOverviewController extends Controller
             // query is RBAC-scoped inside the service — it runs the
             // canonical OR read path with _rbac:true for non-admins, so a
             // caller only ever sees objects they may read (fail-closed).
-            $points = $this->overviewService->queryPoints(
+            $points = $this->overviewService->ensureReadablePoints(
                 register: $register,
                 schema: $schema,
                 filters: (array) ($params['filters'] ?? $this->nonReservedParams($params)),
