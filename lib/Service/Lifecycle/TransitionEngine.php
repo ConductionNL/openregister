@@ -131,7 +131,7 @@ class TransitionEngine
             );
         }
 
-        $field       = (string) ($annotation['field'] ?? '');
+        $field       = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
         $transitions = (array) ($annotation['transitions'] ?? []);
 
         if (isset($transitions[$action]) === false || is_array($transitions[$action]) === false) {
@@ -247,7 +247,7 @@ class TransitionEngine
             return [];
         }
 
-        $field        = (string) ($annotation['field'] ?? '');
+        $field        = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
         $transitions  = (array) ($annotation['transitions'] ?? []);
         $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
