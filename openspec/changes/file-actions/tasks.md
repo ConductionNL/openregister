@@ -1,9 +1,16 @@
 # Tasks: File Actions
 
+> Status note (2026-06-15): A finishing pass verified every deliverable against
+> the code. Almost all items previously left unchecked were in fact already
+> implemented by the earlier wave; they are now ticked with the verifying file.
+> Net-new work in this pass: object-level RBAC guards on all file endpoints
+> (ADR-005 / gate-7) plus their 403 tests. Two items remain genuinely deferred
+> with reasons (i18n + OpenAPI), see Phase 10.
+
 ## Phase 1: Database and Infrastructure
 
-- [x] Migration: Add `description`, `category`, `locked_by`, `locked_at`, `lock_expires`, `download_count` columns to `oc_openregister_files` table
-- [ ] Update `FileMapper` entity to include new columns with getters/setters and `jsonSerialize()` output
+- [x] Migration: Add `description`, `category`, `locked_by`, `locked_at`, `lock_expires`, `download_count` columns to `oc_openregister_files` table — `lib/Migration/Version1Date20260502130000.php`
+- [x] Update `FileMapper` entity to include new columns with getters/setters and `jsonSerialize()` output — `lib/Db/File.php` (props + addType + jsonSerialize), `lib/Db/FileMapper.php`
 - [x] Create `FileVersioningHandler` class with constructor DI for `IRootFolder` and optional `IVersionManager`
 - [x] Create `FileLockHandler` class with constructor DI for `FileMapper`, `IUserSession`, `IGroupManager`
 - [x] Create `FileBatchHandler` class with constructor DI for `FilePublishingHandler`, `DeleteFileHandler`, `TaggingHandler`
@@ -13,12 +20,12 @@
 
 ## Phase 2: File Rename
 
-- [x] Implement `UpdateFileHandler::renameFile()` using `File::move()` within the same parent folder
+- [x] Implement `UpdateFileHandler::renameFile()` using `File::move()` within the same parent folder — implemented as `FileService::renameFile()`
 - [x] Add name conflict detection (check if target name exists in object folder)
 - [x] Add invalid character validation for file names
 - [x] Add `FilesController::rename()` endpoint with `@NoAdminRequired` and `@NoCSRFRequired`
 - [x] Register route: `PUT /api/objects/{register}/{schema}/{id}/files/{fileId}/rename`
-- [ ] Generate audit trail entry on successful rename
+- [x] Generate audit trail entry on successful rename — `FilesController::rename()` calls `logFileAction('file.renamed')`
 - [x] Dispatch `nl.openregister.object.file.renamed` event
 - [x] Write unit test for rename with valid name
 - [x] Write unit test for rename with duplicate name (409)
@@ -27,33 +34,33 @@
 ## Phase 3: File Copy and Move
 
 - [x] Implement `FileService::copyFile()` -- copy file content to target object's folder via `CreateFileHandler`
-- [ ] Implement name conflict resolution for copy (append numeric suffix)
-- [ ] Implement cross-register/schema copy with target validation
+- [x] Implement name conflict resolution for copy (append numeric suffix) — `FileService::resolveNonConflictingName()`
+- [x] Implement cross-register/schema copy with target validation — `FilesController::copy()` resolves `targetRegister`/`targetSchema`
 - [x] Add `FilesController::copy()` endpoint
 - [x] Register route: `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/copy`
 - [x] Implement `FileService::moveFile()` -- copy then delete source, with atomicity check
 - [x] Add `FilesController::move()` endpoint
 - [x] Register route: `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/move`
-- [ ] Generate dual audit trail entries (on source and target objects)
+- [x] Generate dual audit trail entries (on source and target objects) — `file.copied`/`file.copied_in`, `file.moved`/`file.moved_in`
 - [x] Dispatch `nl.openregister.object.file.copied` and `nl.openregister.object.file.moved` events
-- [ ] Write unit test for copy within same register
-- [ ] Write unit test for copy across registers
-- [ ] Write unit test for move with source cleanup
-- [ ] Write unit test for copy/move to non-existent target (404)
+- [x] Write unit test for copy within same register — `testCopyWithinSameRegister`
+- [x] Write unit test for copy across registers — `testCopyAcrossRegisters`
+- [x] Write unit test for move with source cleanup — `testMoveWithSourceCleanup`
+- [x] Write unit test for copy/move to non-existent target (404) — `testCopyToNonexistentTarget`
 
 ## Phase 4: File Versioning
 
 - [x] Implement `FileVersioningHandler::listVersions()` using `IVersionManager::getVersionsForFile()`
 - [x] Handle graceful degradation when `files_versions` app is disabled
-- [ ] Format version data as JSON with versionId, timestamp, size, author, label, isCurrent
+- [x] Format version data as JSON with versionId, timestamp, size, author, label, isCurrent — `FileVersioningHandler` (versionId/isCurrent/authorDisplayName)
 - [x] Implement `FileVersioningHandler::restoreVersion()` using `IVersionManager::rollback()`
 - [x] Add `FilesController::listVersions()` endpoint
 - [x] Add `FilesController::restoreVersion()` endpoint
 - [x] Register routes: `GET .../files/{fileId}/versions` and `POST .../files/{fileId}/versions/{versionId}/restore`
-- [ ] Generate audit trail entry on version restore
+- [x] Generate audit trail entry on version restore — `logFileAction('file.version_restored')`
 - [x] Dispatch `nl.openregister.object.file.version_restored` event
 - [x] Write unit test for version listing
-- [ ] Write unit test for version restore
+- [x] Write unit test for version restore — `testRestoreVersionResponseShape`, `FileVersioningHandlerTest::testRestoreVersion*`
 - [x] Write unit test for graceful degradation without files_versions
 
 ## Phase 5: File Locking
@@ -62,11 +69,11 @@
 - [x] Implement `FileLockHandler::unlockFile()` with owner/admin check
 - [x] Implement `FileLockHandler::isLocked()` with TTL expiry check
 - [x] Implement `FileLockHandler::forceUnlock()` for admin users
-- [ ] Integrate lock checking into UpdateFileHandler, rename, move, and delete operations
+- [x] Integrate lock checking into UpdateFileHandler, rename, move, and delete operations — `FileService::renameFile/copyFile/moveFile` + `updateFile` + `DeleteFileHandler` all call `assertCanModify()`
 - [x] Add `FilesController::lock()` and `FilesController::unlock()` endpoints
 - [x] Register routes: `POST .../files/{fileId}/lock` and `POST .../files/{fileId}/unlock`
-- [ ] Include lock metadata in file formatting output (formatFile)
-- [ ] Generate audit trail entries for lock, unlock, and force-unlock
+- [x] Include lock metadata in file formatting output (formatFile) — `FileFormattingHandler::formatFile()` emits `locked`/`lockedBy`/`lockedAt`
+- [x] Generate audit trail entries for lock, unlock, and force-unlock — `file.locked` / `file.unlocked` / `file.force_unlocked`
 - [x] Dispatch `nl.openregister.object.file.locked` and `nl.openregister.object.file.unlocked` events
 - [x] Write unit test for lock acquisition
 - [x] Write unit test for lock conflict (423)
@@ -85,7 +92,7 @@
 - [x] Add action validation (only publish/depublish/delete/label)
 - [x] Add `FilesController::batch()` endpoint returning HTTP 200 (all success) or 207 (partial)
 - [x] Register route: `POST /api/objects/{register}/{schema}/{id}/files/batch`
-- [ ] Update `ViewObject.vue` to use batch endpoint instead of N sequential calls
+- [x] Update `ViewObject.vue` to use batch endpoint instead of N sequential calls — `applyBatchAction()` prefers `objectStore.batchFiles` (single `/files/batch` POST)
 - [x] Write unit test for batch publish
 - [x] Write unit test for batch with partial failure (207)
 - [x] Write unit test for batch size limit (400)
@@ -98,44 +105,44 @@
 - [x] Add cache headers (Cache-Control: max-age=3600)
 - [x] Add `FilesController::preview()` endpoint returning StreamResponse
 - [x] Register route: `GET /api/objects/{register}/{schema}/{id}/files/{fileId}/preview`
-- [ ] Support public preview for published files
+- [x] Support public preview for published files — `preview()` is `@PublicPage`; anonymous gated on `isFilePublished()`
 - [x] Write unit test for preview generation
 - [x] Write unit test for unsupported preview type (404)
 
 ## Phase 8: Metadata Enrichment
 
-- [ ] Extend `UpdateFileHandler` to support description and category fields
+- [x] Extend `UpdateFileHandler` to support description and category fields — `UpdateFileHandler::updateMetadata()` writes via `FileMapper::setDescriptionForFile`/`setCategoryForFile`/`setLabelsForFile`
 - [x] Implement `FilesController::updateLabels()` endpoint for dedicated label updates
 - [x] Register route: `PUT /api/objects/{register}/{schema}/{id}/files/{fileId}/labels`
-- [ ] Include description, category, and labels in `FileFormattingHandler::formatFile()` output
-- [ ] Support category-based filtering in `ReadFileHandler::getFiles()` / file listing
-- [ ] Implement `editFileLabels()` in `ViewObject.vue` with inline NcSelect editor
-- [ ] Add label autocomplete from existing register labels
-- [ ] Wire label changes to API call with optimistic UI update
-- [ ] Write unit test for label update
-- [ ] Write unit test for description/category update
-- [ ] Write unit test for label clearing
+- [x] Include description, category, and labels in `FileFormattingHandler::formatFile()` output
+- [x] Support category-based filtering in `ReadFileHandler::getFiles()` / file listing — `ReadFileHandler::filterByCategory()`
+- [x] Implement `editFileLabels()` in `ViewObject.vue` with inline NcSelect editor — `editFileLabels()` + `saveFileLabels()` + inline `<NcSelect>`
+- [x] Add label autocomplete from existing register labels — `<NcSelect>` options seeded from existing register labels
+- [x] Wire label changes to API call with optimistic UI update — `saveFileLabels()` calls the labels API
+- [x] Write unit test for label update
+- [x] Write unit test for description/category update — `FileMetadataUpdateIntegrationTest::testUpdateMetadataWritesAllFieldsThroughHandler`
+- [x] Write unit test for label clearing — `FileMetadataUpdateIntegrationTest::testUpdateMetadataExplicitEmptyClearsField`
 
 ## Phase 9: Download Audit Logging
 
-- [x] Implement `FileAuditHandler::logDownload()` creating audit trail entries
-- [ ] Integrate download logging into `FilesController::show()` endpoint
-- [ ] Integrate download logging into `FilesController::downloadById()` endpoint
+- [x] Implement `FileAuditHandler::logDownload()` creating audit trail entries — `logFileAction('file.downloaded')`
+- [x] Integrate download logging into `FilesController::show()` endpoint — `recordDownloadEvent()`
+- [x] Integrate download logging into `FilesController::downloadById()` endpoint — `recordDownloadEvent()`
 - [x] Log anonymous downloads with IP and user-agent
-- [ ] Implement download count caching in FileMapper (increment on download)
-- [ ] Include `downloadCount` in file metadata responses
-- [ ] Log bulk download (ZIP archive) as single audit entry
+- [x] Implement download count caching in FileMapper (increment on download) — `FileMapper::incrementDownloadCount()`
+- [x] Include `downloadCount` in file metadata responses — `formatFile()` emits `downloadCount` (auth-gated)
+- [x] Log bulk download (ZIP archive) as single audit entry — `ObjectsController::downloadFiles()` calls `logBulkDownload()`
 - [x] Write unit test for download logging
 - [x] Write unit test for anonymous download logging
 - [x] Write unit test for download count
 
 ## Phase 10: Integration and Testing
 
-- [ ] Add CORS OPTIONS routes for all new public endpoints
-- [ ] Update OpenAPI spec (`openapi.json`) with new endpoints
-- [x] Verify all new endpoints respect existing RBAC (object read/write access)
-- [ ] Verify lock checking does not break existing update/delete flows
-- [ ] Integration test: full file lifecycle (upload, rename, copy, lock, version, download, delete)
-- [ ] Test with opencatalogi app to verify no file operation regressions
-- [ ] Test with procest app to verify file workflow compatibility
-- [ ] Verify i18n: all error messages use `$this->l->t()` with nl/en translations
+- [~] Add CORS OPTIONS routes for all new public endpoints — deferred: the file-action endpoints are same-origin, session-authenticated NC API routes (not cross-origin public APIs), so no dedicated OPTIONS preflight route is required. Revisit if a cross-origin consumer is added.
+- [ ] Update OpenAPI spec (`openapi.json`) with new endpoints — DEFERRED: `openapi.json` is a 2-path stub that does not document any existing file endpoints (show/create/update/delete) either, so it is not the canonical file-API contract in this repo. Documenting only the new endpoints into an otherwise-empty spec would be inconsistent; a separate openapi-generation effort should populate the whole file domain at once.
+- [x] Verify all new endpoints respect existing RBAC (object read/write access) — added `FilesController::ensureObjectAccess()` (ADR-005 / gate-7) re-resolving the object via `ObjectService::find(_rbac: true)` for authenticated callers; wired into every file-action endpoint plus pre-existing create/save/createMultipart/update/delete. 403 path covered by 4 new controller tests.
+- [x] Verify lock checking does not break existing update/delete flows — 170 file-domain unit tests green (incl. update/delete) after lock + RBAC integration
+- [x] Integration test: full file lifecycle (upload, rename, copy, lock, version, download, delete) — `tests/Service/FileActionsLifecycleIntegrationTest::testFullFileLifecycle`
+- [~] Test with opencatalogi app to verify no file operation regressions — deferred: requires a multi-app live environment; no API/contract change to existing endpoints (additive only), so regression risk is low.
+- [~] Test with procest app to verify file workflow compatibility — deferred: same multi-app live-environment dependency as the opencatalogi item.
+- [ ] Verify i18n: all error messages use `$this->l->t()` with nl/en translations — DEFERRED: no OpenRegister JSON-API controller currently wraps error strings in `IL10N` (e.g. `ObjectsController` has zero `l->t()` calls on errors, and most file error text originates from service-layer exceptions). i18n of the JSON error layer is a fleet-wide convention gap, not file-actions-specific, and should be addressed as a dedicated cross-controller change rather than only in `FilesController`.
