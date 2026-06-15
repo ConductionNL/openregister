@@ -344,7 +344,12 @@ class DeckLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/integration-deck/tasks.md#task-3
+     * @no-admin-idor-exempt Operates on schema-level Deck configuration (the
+     *   sticky default board+stack for a schema), not on a user-owned object.
+     *   There is no per-object resource to scope; the value is shared config
+     *   for everyone authoring objects of this schema.
+     *
+     * @spec openspec/changes/nextcloud-entity-relations/tasks.md#deck-card-relations
      */
     public function getDefault(string $schema): JSONResponse
     {
@@ -364,7 +369,12 @@ class DeckLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/integration-deck/tasks.md#task-3
+     * @no-admin-idor-exempt Operates on schema-level Deck configuration (the
+     *   sticky default board+stack for a schema), not on a user-owned object.
+     *   There is no per-object resource to scope; the value is shared config
+     *   for everyone authoring objects of this schema.
+     *
+     * @spec openspec/changes/nextcloud-entity-relations/tasks.md#deck-card-relations
      */
     public function setDefault(string $schema): JSONResponse
     {

@@ -9,7 +9,7 @@ Extend OpenRegister's file management capabilities with rename, copy/move, versi
 **Standards**: WebDAV locking (RFC 4918 Section 6), Nextcloud Files API, Nextcloud IPreview API
 **Cross-references**: [object-interactions](../object-interactions/spec.md), [audit-trail-immutable](../../specs/audit-trail-immutable/spec.md), [event-driven-architecture](../../specs/event-driven-architecture/spec.md)
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: File Rename
 

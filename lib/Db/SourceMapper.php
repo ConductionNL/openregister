@@ -218,6 +218,34 @@ class SourceMapper extends QBMapper
     }//end findAll()
 
     /**
+     * Find all sources that have scheduled sync enabled.
+     *
+     * Intended for the SyncDataJob background context which runs as the
+     * system actor across all organisations; therefore RBAC and the
+     * organisation filter are intentionally NOT applied here. Each
+     * returned source still carries its `organisation` field so the
+     * harvest pipeline can scope the objects it creates.
+     *
+     * @return Source[] Sources with sync_enabled = true
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Source>
+     *
+     * @spec openspec/specs/data-sync-harvesting/spec.md
+     */
+    public function findBySyncEnabled(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_sources')
+            ->where(
+                $qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+            );
+
+        return $this->findEntities(query: $qb);
+    }//end findBySyncEnabled()
+
+    /**
      * Insert a new source
      *
      * @param Entity $entity Source entity to insert

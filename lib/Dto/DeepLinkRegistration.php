@@ -37,13 +37,18 @@ class DeepLinkRegistration
     /**
      * Constructor for DeepLinkRegistration.
      *
-     * @param string $appId        The consuming app ID (e.g., "procest")
-     * @param string $registerSlug The register slug
-     * @param string $schemaSlug   The schema slug
-     * @param string $urlTemplate  URL template with placeholders
-     * @param string $icon         Optional icon identifier
+     * @param string      $appId        The consuming app ID (e.g., "procest")
+     * @param string      $registerSlug The register slug
+     * @param string      $schemaSlug   The schema slug
+     * @param string      $urlTemplate  URL template with placeholders
+     * @param string      $icon         Optional icon identifier
+     * @param string|null $displayName  Optional human-readable label for the
+     *                                  owning app, used to label unified-search
+     *                                  results (defaults to null → app id)
      *
      * @return void
+     *
+     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
      */
     public function __construct(
         public readonly string $appId,
@@ -51,6 +56,7 @@ class DeepLinkRegistration
         public readonly string $schemaSlug,
         public readonly string $urlTemplate,
         public readonly string $icon='',
+        public readonly ?string $displayName=null,
     ) {
     }//end __construct()
 

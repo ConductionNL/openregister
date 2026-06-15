@@ -402,6 +402,32 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Register the data-sync source-fetcher registry pre-loaded with the
+        // built-in REST/OpenRegister fetcher. Apps can register additional
+        // fetchers (OData, SOAP, CSV) by resolving and extending this service.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
+            function ($c) {
+                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
+                return $registry;
+            }
+        );
+
+        // Register the standards schema-import service with the bundled,
+        // versioned snapshot resources (schema-import-standards). Built
+        // explicitly so the resource root is deterministic; the dialect
+        // registry inside it makes DCAT/SKOS/ZGW importers follow-ups.
+        $context->registerService(
+            \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
+            function () {
+                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
+                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
+                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                );
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
@@ -727,6 +753,22 @@ class Application extends App implements IBootstrap
                 $importHandler->setUserSession($container->get('OCP\IUserSession'));
             } catch (\Throwable $e) {
                 $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            // Optional: group/user managers used to resolve a fallback admin
+            // acting user when import runs without a logged-in session
+            // (occ/installer/cron). Wrapped so a missing dependency never
+            // breaks import.
+            try {
+                $importHandler->setGroupManager($container->get('OCP\IGroupManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IGroupManager unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setUserManager($container->get('OCP\IUserManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IUserManager unavailable for ImportHandler: '.$e->getMessage());
             }
 
             return $importHandler;
@@ -1393,6 +1435,66 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // CaseTokenService — mint/resolve/revoke public "track your case"
+        // token links (the SharesProvider create()/delete() public-token
+        // surface). ObjectService is resolved lazily through the container
+        // (same pattern as ShareLinkService) so the resolve path runs the
+        // canonical RBAC-respecting read; the token never bypasses RBAC.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CaseTokenService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CaseTokenService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // CaseTokenController — anonymous public resolve endpoint.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\CaseTokenController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\CaseTokenController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
+                );
+            }
+        );
+
+        // AnalyticsSeriesService — register/fetch page-level pre-computed
+        // chart series (the leaf-foundation SLA-dashboard render surface).
+        // RBAC-scoped; (re)declares its page widget on the registry.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\AnalyticsSeriesService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
+                    registry: $container->get(IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                );
+            }
+        );
+
+        // AnalyticsSeriesController — register/fetch HTTP surface a leaf
+        // calls to feed a dashboard chart widget.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\AnalyticsSeriesController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
+                );
+            }
+        );
+
         // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
         // Replaces the original `or:{uuid}` tag-marker convention with a
         // proper persistence layer; the wrapping BookmarkLinkService owns
@@ -1737,6 +1839,59 @@ class Application extends App implements IBootstrap
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Schema versioning & object migration services (schema-versioning-and-object-migration).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaDiffService();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaVersioningService(
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaRevalidationService(
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    validateObject: $container->get(\OCA\OpenRegister\Service\Object\ValidateObject::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationService(
+                    planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }

@@ -13,7 +13,7 @@ Execute health checks and Prometheus metrics declared as JSON in a host app's `s
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Declarative Health Execution
 

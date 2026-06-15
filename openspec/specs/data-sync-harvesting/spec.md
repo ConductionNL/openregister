@@ -3,7 +3,21 @@
 ## Purpose
 
 @e2e exclude backend sync/harvesting service — covered by PHPUnit
-TBD - created by archiving change data-sync-harvesting. Update Purpose after archive.
+
+A robust, multi-source data synchronization and harvesting pipeline that pulls
+data from external APIs (REST, OData, SOAP), file feeds, other OpenRegister
+instances, and Dutch government base registrations into register schemas. The
+pipeline follows CKAN's three-stage pattern (gather, fetch, import) with
+per-record status tracking (`openregister_sync_records`), scheduled execution
+via the `SyncDataJob` `TimedJob`, configurable conflict resolution, incremental
+sync via last-modified / change-token checkpoints, encrypted credential storage,
+and multi-tenant organisation isolation — reusing the existing `Source`,
+`Mapping`, and `ObjectService` infrastructure. Conflict, scheduling, and
+status-transition logic live in pure injectable services
+(`SyncConflictResolver`, `SyncScheduleService`, `SyncRecordStatus`) and are
+exhaustively unit-tested; transport is decoupled behind `SourceFetcherInterface`
+(`RestApiSourceFetcher` is the built-in REST/OpenRegister transport).
+
 ## Requirements
 ### Requirement: The system MUST support configurable sync source definitions with connection details, authentication, and scheduling
 Administrators MUST be able to define external data sources specifying the source type, endpoint URL or file path, authentication credentials, target register and schema, field mapping reference, sync schedule (cron expression or interval), and conflict resolution strategy. The `Source` entity (`lib/Db/Source.php`) MUST be extended with sync-specific fields: `syncEnabled` (boolean), `syncSchedule` (string, cron expression), `syncInterval` (integer, hours), `lastSyncDate` (datetime), `lastSyncStatus` (string: `success|partial|failed|running`), `authType` (string: `none|apikey|basic|oauth2|certificate`), `authConfig` (json, encrypted credentials), `mappingId` (integer, reference to `Mapping` entity), `conflictStrategy` (string: `source-wins|local-wins|newest-wins|manual`), and `deleteStrategy` (string: `soft-delete|hard-delete|ignore`). This mirrors the sync fields already present on the `Configuration` entity (`syncEnabled`, `syncInterval`, `lastSyncDate`).

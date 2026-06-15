@@ -3242,4 +3242,75 @@ class SchemaMapper extends QBMapper
 
         return $extendedByMap;
     }//end findAllExtendedBy()
+
+    /**
+     * Return the IDs of all schemas whose `searchable` flag is false.
+     *
+     * Used by the unified search provider to exclude opted-out schemas from
+     * Nextcloud unified search inside the query (rather than post-filtering a
+     * result page, which would leak counts and break pagination). The lookup
+     * is intentionally RBAC/tenant-agnostic: it only answers "which schemas
+     * declared themselves non-searchable", the access filtering happens in the
+     * object search itself.
+     *
+     * @return int[] List of schema IDs with `searchable = false`.
+     *
+     * @psalm-return   list<int>
+     * @phpstan-return array<int, int>
+     *
+     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     */
+    public function findNonSearchableIds(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: false, type: IQueryBuilder::PARAM_BOOL)));
+
+        $ids    = [];
+        $result = $qb->executeQuery();
+        while (($row = $result->fetch()) !== false) {
+            if (isset($row['id']) === true) {
+                $ids[] = (int) $row['id'];
+            }
+        }
+
+        $result->closeCursor();
+
+        return $ids;
+    }//end findNonSearchableIds()
+
+    /**
+     * Return the IDs of all schemas whose `searchable` flag is true (default).
+     *
+     * The unified search provider passes this allow-list as the `@self.schema`
+     * IN-filter so that only searchable schemas contribute results, applied
+     * inside the query.
+     *
+     * @return int[] List of schema IDs with `searchable = true`.
+     *
+     * @psalm-return   list<int>
+     * @phpstan-return array<int, int>
+     *
+     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     */
+    public function findSearchableIds(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+
+        $ids    = [];
+        $result = $qb->executeQuery();
+        while (($row = $result->fetch()) !== false) {
+            if (isset($row['id']) === true) {
+                $ids[] = (int) $row['id'];
+            }
+        }
+
+        $result->closeCursor();
+
+        return $ids;
+    }//end findSearchableIds()
 }//end class

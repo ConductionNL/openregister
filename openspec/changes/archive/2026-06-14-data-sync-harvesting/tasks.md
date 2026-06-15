@@ -1,0 +1,24 @@
+# Tasks: Data Sync and Harvesting
+
+- [x] Implement: The system MUST support configurable sync source definitions with connection details, authentication, and scheduling
+- [x] Implement: The sync pipeline MUST follow a three-stage pattern (gather, fetch, import) with per-record status tracking
+- [x] Implement: The system MUST support incremental sync using last-modified tracking or change tokens
+- [x] Implement: The system MUST support field mapping and transformation via the existing Mapping entity
+- [x] Implement: Sync MUST support create, update, and delete operations with configurable strategies
+- [x] Implement: Sync MUST support conflict resolution with configurable strategies
+- [~] Implement: Sync executions MUST produce detailed monitoring reports and maintain execution history
+  - Per-record status, counts and an execution summary are produced and persisted per record in `openregister_sync_records`; the `syncStatus` endpoint exposes current status. A dedicated execution-report entity + history UI with trend analysis is deferred (cross-app UI work).
+- [x] Implement: The system MUST handle errors gracefully with partial failure support and automatic retry
+  - Partial-failure isolation + attempt counter implemented; exponential-backoff requeue reuses the established `HookRetryJob` pattern and is wired at the source-level retry policy (record-level backoff job deferred).
+- [x] Implement: Authentication credentials for external sources MUST be stored securely
+- [x] Implement: Imported data MUST be validated against the target schema before persistence
+- [~] Implement: The system MUST maintain a complete sync audit trail integrated with the existing audit system
+  - Imports go through `ObjectService::saveObject`, which writes the existing audit trail; sync-actor stamping (`system/sync/<uuid>`) and `_syncSourceId` metadata enrichment is a follow-up on the audit-trail surface.
+- [~] Implement: The system MUST support bi-directional sync for federated OpenRegister instances
+  - Inbound OpenRegister federation is supported by `RestApiSourceFetcher`; outbound push + anti-loop headers are specified and deferred to a federation transport.
+- [~] Implement: The system MUST support webhook-triggered and event-triggered sync in addition to scheduled sync
+  - Manual one-click trigger (`syncNow`) + scheduled trigger implemented; webhook/event entry points are deferred (reuse existing `WebhookService` + event-driven-architecture listeners).
+- [x] Implement: Sync performance MUST be optimized with configurable batch sizes, throttling, and concurrency limits
+  - Configurable `batchSize` on the source + pagination/rate-limit handling in the REST fetcher; ReactPHP concurrent fetch follows the `ImportService` pattern (single-flight default retained for determinism).
+- [x] Implement: Sync MUST respect multi-tenant organisation isolation
+- [x] Implement: Scheduled sync MUST use Nextcloud's BackgroundJob infrastructure with configurable intervals

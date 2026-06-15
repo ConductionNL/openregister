@@ -7,6 +7,8 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\SourcesController;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -55,7 +57,9 @@ class SourcesControllerTest extends TestCase
             $l10n,
             $userSession,
             $groupManager,
-            $this->createMock(\OCP\Security\ICrypto::class)
+            $this->createMock(\OCP\Security\ICrypto::class),
+            $this->createMock(SourceFetcherRegistry::class),
+            $this->createMock(HarvestPipelineService::class)
         );
     }
 

@@ -59,27 +59,27 @@
 					until {{ new Date(objectStore.objectItem.locked.expiration).toLocaleString() }}
 				</NcNoteCard>
 
-				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
+				<span><b>Uri:</b> {{ objectStore.objectItem['@self']?.uri || objectStore.objectItem.uri }}</span>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
 						<b>Register:</b>
-						<p>{{ objectStore.objectItem.register }}</p>
+						<p>{{ objectStore.objectItem['@self']?.register || objectStore.objectItem.register }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Schema:</b>
-						<p>{{ objectStore.objectItem.schema }}</p>
+						<p>{{ objectStore.objectItem['@self']?.schema || objectStore.objectItem.schema }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Folder:</b>
-						<p>{{ objectStore.objectItem.folder || '-' }}</p>
+						<p>{{ objectStore.objectItem['@self']?.folder || objectStore.objectItem.folder || '-' }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Updated:</b>
-						<p>{{ objectStore.objectItem.updated }}</p>
+						<p>{{ objectStore.objectItem['@self']?.updated || objectStore.objectItem.updated }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Created:</b>
-						<p>{{ objectStore.objectItem.created }}</p>
+						<p>{{ objectStore.objectItem['@self']?.created || objectStore.objectItem.created }}</p>
 					</div>
 				</div>
 
