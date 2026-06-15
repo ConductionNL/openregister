@@ -12,7 +12,7 @@ OpenRegister's own `/api/health` and `/api/metrics` run on the AppHost declarati
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Self-Hosted Declarative Observability
 
