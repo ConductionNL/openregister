@@ -7,7 +7,7 @@
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField
 				:value.sync="form.naam"
-				:label="t('openregister', 'Naam *')"
+				:label="t('openregister', 'Name *')"
 				required />
 
 			<NcTextField
@@ -15,12 +15,12 @@
 				:label="t('openregister', 'Code (short readable key, e.g. v-2026-001)')" />
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Beschrijving') }}</span>
+				<span>{{ t('openregister', 'Description') }}</span>
 				<textarea v-model="form.beschrijving" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Doelbinding *') }}</span>
+				<span>{{ t('openregister', 'Purpose limitation *') }}</span>
 				<textarea v-model="form.doelbinding"
 					rows="3"
 					class="avgTextarea"
@@ -31,13 +31,13 @@
 				v-model="form.rechtsgrond"
 				:options="rechtsgrondOptions"
 				:label-outside="false"
-				input-label="Rechtsgrond *"
+				:input-label="t('openregister', 'Legal basis *')"
 				:reduce="(o) => o.value"
 				required />
 
 			<NcTextField
 				:value.sync="form.bewaartermijn"
-				:label="t('openregister', 'Bewaartermijn (ISO-8601 duration, e.g. P10Y, P30D)')" />
+				:label="t('openregister', 'Retention period (ISO-8601 duration, e.g. P10Y, P30D)')" />
 
 			<NcSelect
 				v-model="form.status"
@@ -47,22 +47,22 @@
 				:reduce="(o) => o.value" />
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Categorieën betrokkenen (één per regel)') }}</span>
+				<span>{{ t('openregister', 'Categories of data subjects (one per line)') }}</span>
 				<textarea v-model="categorieenBetrokkenenText" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Categorieën persoonsgegevens (één per regel)') }}</span>
+				<span>{{ t('openregister', 'Categories of personal data (one per line)') }}</span>
 				<textarea v-model="categorieenPersoonsgegevensText" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Technische maatregelen') }}</span>
+				<span>{{ t('openregister', 'Technical measures') }}</span>
 				<textarea v-model="form.technischeMaatregelen" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Organisatorische maatregelen') }}</span>
+				<span>{{ t('openregister', 'Organisational measures') }}</span>
 				<textarea v-model="form.organisatorischeMaatregelen" rows="3" class="avgTextarea" />
 			</label>
 
@@ -140,8 +140,8 @@ export default {
 		 */
 		dialogTitle() {
 			return this.activity
-				? t('openregister', 'Edit verwerkingsactiviteit')
-				: t('openregister', 'New verwerkingsactiviteit')
+				? t('openregister', 'Edit processing activity')
+				: t('openregister', 'New processing activity')
 		},
 		/**
 		 * @spec exclude Presentation glue: maps the rechtsgrond vocabulary to select options; no standalone behavioural contract.
@@ -165,6 +165,7 @@ export default {
 					: ''
 			},
 			/**
+			 * @param value
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
 			 */
 			set(value) {
@@ -184,6 +185,7 @@ export default {
 					: ''
 			},
 			/**
+			 * @param value
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
 			 */
 			set(value) {
@@ -199,6 +201,7 @@ export default {
 		/**
 		 * Seed the form from an existing activity or with Art-30 defaults.
 		 *
+		 * @param activity
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
 		 */
 		makeForm(activity) {

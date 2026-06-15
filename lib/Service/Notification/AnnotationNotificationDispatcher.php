@@ -1186,8 +1186,11 @@ class AnnotationNotificationDispatcher
                 'lte' => $numeric && (float) $value <= (float) $threshold,
                 'gt'  => $numeric && (float) $value > (float) $threshold,
                 'gte' => $numeric && (float) $value >= (float) $threshold,
-                'eq'  => (string) $value === (string) $threshold,
-                'ne'  => (string) $value !== (string) $threshold,
+                // BUG-SVC-8: when both sides are numeric, compare as floats so
+                // numerically-equal-but-differently-formatted values match
+                // (e.g. `1.0` eq `1`). Fall back to string compare otherwise.
+                'eq'  => $numeric === true ? ((float) $value === (float) $threshold) : ((string) $value === (string) $threshold),
+                'ne'  => $numeric === true ? ((float) $value !== (float) $threshold) : ((string) $value !== (string) $threshold),
                 default => false,
             };
 

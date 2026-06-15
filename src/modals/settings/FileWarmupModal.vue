@@ -63,7 +63,8 @@ import { translate as t } from '@nextcloud/l10n'
 				<div class="form-group">
 					<label>{{ t('openregister', 'File Types to Process') }}</label>
 					<NcSelect
-						input-label="Config Selected File Types" v-model="config.selectedFileTypes"
+						v-model="config.selectedFileTypes"
+						input-label="Config Selected File Types"
 						:options="fileTypeOptions"
 						:multiple="true"
 						:label-outside="true"
@@ -243,14 +244,12 @@ export default {
 		open: {
 			immediate: true,
 			/**
+			 * @param newVal
 			 * @spec exclude watcher syncing dialog state and loading stats
 			 */
 			handler(newVal) {
-				console.info('🔍 FileWarmupModal: open prop changed to:', newVal)
 				this.showDialog = newVal
-				console.info('🔍 FileWarmupModal: showDialog set to:', this.showDialog)
 				if (newVal) {
-					console.info('📊 FileWarmupModal: Loading stats...')
 					this.loadStats()
 				}
 			},
@@ -263,15 +262,11 @@ export default {
 		 */
 		async loadStats() {
 			try {
-				console.info('📊 FileWarmupModal: Fetching extraction stats...')
 				// Get extraction stats
 				const extractionResponse = await axios.get(generateUrl('/apps/openregister/api/files/extraction/stats'))
-				console.info('✅ FileWarmupModal: Extraction stats loaded:', extractionResponse.data)
 
-				console.info('📊 FileWarmupModal: Fetching SOLR index stats...')
 				// Get index stats
 				const indexResponse = await axios.get(generateUrl('/apps/openregister/api/solr/files/stats'))
-				console.info('✅ FileWarmupModal: SOLR stats loaded:', indexResponse.data)
 
 				this.stats = {
 					total_extracted: extractionResponse.data.stats?.completed || 0,
@@ -279,7 +274,6 @@ export default {
 					pending_extraction: extractionResponse.data.stats?.pending || 0,
 					pending_indexing: extractionResponse.data.stats?.completed - indexResponse.data.unique_files || 0,
 				}
-				console.info('✅ FileWarmupModal: Combined stats:', this.stats)
 			} catch (error) {
 				console.error('❌ FileWarmupModal: Failed to load stats:', error)
 			}
@@ -354,7 +348,6 @@ export default {
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogUpdate(isOpen) {
-			console.info('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
 			if (!isOpen) {
 				this.handleClose()
 			}
@@ -365,7 +358,6 @@ export default {
 		 * @spec exclude modal close handler emitting close events
 		 */
 		handleClose() {
-			console.info('❌ FileWarmupModal: Closing dialog...')
 			this.showDialog = false
 			this.$emit('update:open', false)
 			this.$emit('close')

@@ -750,4 +750,48 @@ class SchemaTest extends TestCase
         $this->assertSame('Test Schema', $json['title']);
         $this->assertContains('name', $json['required']);
     }
+
+    // --- Authorization validation ---
+
+    public function testValidateAuthorizationAcceptsCrudActions(): void
+    {
+        $this->schema->setAuthorization([
+            'create' => ['admin'],
+            'read'   => ['public'],
+            'update' => ['admin'],
+            'delete' => ['admin'],
+        ]);
+        $this->assertTrue($this->schema->validateAuthorization());
+    }
+
+    public function testValidateAuthorizationAcceptsInheritFromPublicFlag(): void
+    {
+        // Regression: inheritFromPublic is a reserved cascade flag, not a CRUD
+        // action. Schemas carrying it must still validate (and thus import).
+        $this->schema->setAuthorization([
+            'inheritFromPublic' => true,
+            'read'              => ['public'],
+        ]);
+        $this->assertTrue($this->schema->validateAuthorization());
+    }
+
+    public function testValidateAuthorizationRejectsNonBooleanInheritFromPublic(): void
+    {
+        $this->schema->setAuthorization([
+            'inheritFromPublic' => ['public'],
+        ]);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Authorization flag 'inheritFromPublic' in schema must be a boolean");
+        $this->schema->validateAuthorization();
+    }
+
+    public function testValidateAuthorizationRejectsUnknownAction(): void
+    {
+        $this->schema->setAuthorization([
+            'frobnicate' => ['admin'],
+        ]);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid authorization action 'frobnicate'");
+        $this->schema->validateAuthorization();
+    }
 }

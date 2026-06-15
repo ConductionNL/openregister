@@ -35,6 +35,7 @@ export class Schema implements TSchema {
 	public stats?: TSchema['stats']
 
 	/**
+	 * @param schema
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(schema: TSchema) {

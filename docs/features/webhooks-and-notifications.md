@@ -126,7 +126,7 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 | `created` | Object created. |
 | `updated` | Object updated. |
 | `transition` | Object transitioned via the lifecycle state machine. Optional `trigger.action` filters to a specific action. |
-| `scheduled` | Periodic. Requires `trigger.intervalSec >= 60`. The 60s `ScheduledNotificationJob` iterates the schema, optionally narrowed by `trigger.filter` (flat equality match on object data), and dispatches once per interval. |
+| `scheduled` | Periodic. Requires `trigger.intervalSec >= 60`. The 60s `ScheduledNotificationJob` iterates the schema, optionally narrowed by `trigger.filter` (flat equality, relative-date and inequality operators — see below), and dispatches **at most once per object per dedup fingerprint** until the watched fields change (see *Scheduled trigger filters & per-object dedup* below). |
 | `threshold` | Aggregation crossed a threshold. Requires `trigger.aggregation` (declared on the same schema), `trigger.op` ∈ `[gt, gte, lt, lte, eq, ne]`, and `trigger.value`. `AggregationThresholdListener` re-runs the aggregation on object-write events and dispatches once per below→above transition. |
 
 #### Recipient kinds
@@ -173,6 +173,61 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
   }
 }
 ```
+
+#### Scheduled trigger filters & per-object dedup
+
+The `scheduled` trigger's `filter` is a flat `field => spec` map ANDed together. Each entry accepts either a **scalar** (strict equality, v1 behaviour) or an **operator object**:
+
+| Operator | Value form | Meaning |
+|----------|------------|---------|
+| `equals` | scalar | Strict equality. Same as the scalar shorthand. |
+| `notEquals` | scalar | Strict inequality. A missing/`null` field satisfies `notEquals` for any non-null value. |
+| `withinNext` | ISO-8601 duration (e.g. `PT24H`, `P7D`) | Field is a date or date-time in the half-open window `(now, now + duration]`. |
+| `olderThan` | ISO-8601 duration | Field is a date or date-time strictly before `now − duration`. |
+
+Relative-date operators **fail closed**: unparsable values do not match, and the engine logs at debug only. All entries must hold for the object to match (AND semantics). The annotation validator rejects unknown operators, missing values, and malformed durations with HTTP 422.
+
+**Per-object dedup.** A scheduled rule dispatches at most once per `(schema, rule key, object, watched-field fingerprint)`. The fingerprint is a SHA-1 over the object's current values of the rule's **watched fields**:
+
+- By default, the watched fields are the filter fields that use a relative-date operator (`withinNext` / `olderThan`).
+- Override with `trigger.dedupeFields: ["field1", "field2", …]` — a non-empty array of field names. Validated at save time on the same 422 contract as the operator grammar.
+- When there are neither relative-date operators nor `dedupeFields`, the fingerprint is constant — the rule fires exactly once per object until pruned.
+
+Dedup state lives in `oc_openregister_notification_dedupe` (durable across cache flushes and worker restarts) and is pruned automatically when:
+
+- the object is deleted (`ObjectDeletedEvent` → `NotificationDedupePruneListener`);
+- a rule key is removed/renamed in the schema annotation (`SchemaCreatedEvent`/`SchemaUpdatedEvent` → `NotificationDedupeAnnotationSyncListener`);
+- a state row has not been re-evaluated for `notification_dedupe_retention_days` (default 90), reclaimed by the retention sweep that runs inside the scheduled job.
+
+The per-rule `intervalSec` throttle is unchanged: it bounds **scan frequency**, not delivery count.
+
+##### Worked example — `taskDueSoon`
+
+```json
+{
+  "x-openregister-notifications": {
+    "taskDueSoon": {
+      "trigger": {
+        "type": "scheduled",
+        "intervalSec": 3600,
+        "filter": {
+          "dueDate": {"operator": "withinNext", "value": "PT24H"},
+          "status":  {"operator": "notEquals",  "value": "done"}
+        }
+      },
+      "recipients": [{"kind": "field", "field": "assignee"}],
+      "channels":   ["nc-notification", "email"],
+      "subject":    "Task '{{title}}' is due within 24h"
+    }
+  }
+}
+```
+
+- The job re-evaluates every hour. Tasks whose `dueDate` is within the next 24h **and** `status` is anything other than `done` match.
+- The watched-field set is `["dueDate"]` (the only relative-date field). Each matching task dispatches exactly once for a given `dueDate`. Reschedule a task → new fingerprint → exactly one new reminder. Mark it `done` → no more matches; sweep eventually reclaims the dedup row.
+- To re-arm whenever the assignee changes too, add `"dedupeFields": ["dueDate", "assignee"]` to the `trigger`.
+
+The `updated` trigger's field-change `only_if_changed` filter — documented earlier in this page — is independent of scheduled dedup; both pipelines stay decoupled.
 
 #### Rendering
 

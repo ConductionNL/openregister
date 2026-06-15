@@ -89,6 +89,8 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  */
 class ObjectsController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
 
     /**
      * Export service for handling data exports
@@ -124,6 +126,10 @@ class ObjectsController extends Controller
      * @param LoggerInterface                                 $logger           The logger (optional)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer     $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder           $pdokGeocoder         Optional PDOK geocoder (null-safe)
      *
      * @return void
      *
@@ -146,7 +152,11 @@ class ObjectsController extends Controller
         private readonly ?WebhookService $webhookService=null,
         private readonly ?LoggerInterface $logger=null,
         private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser=null,
-        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -174,6 +184,93 @@ class ObjectsController extends Controller
         $userGroups = $this->groupManager->getUserGroupIds($user);
         return in_array('admin', $userGroups);
     }//end isCurrentUserAdmin()
+
+
+    /**
+     * Whether the current request asks for JSON-LD output via content negotiation.
+     *
+     * Null-safe: when the JSON-LD services are not wired (e.g. minimal DI in a
+     * test harness) this always returns false and the default JSON path is kept.
+     *
+     * @return bool True when JSON-LD output is requested and available.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function wantsJsonLd(): bool
+    {
+        if ($this->jsonLdSerializer === null) {
+            return false;
+        }
+
+        return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
+    }//end wantsJsonLd()
+
+
+    /**
+     * Decorate an already-rendered single-object array as a JSON-LD JSONResponse.
+     *
+     * The serializer wraps the rendered array only — it introduces no second
+     * data path, so RBAC / multitenancy / field-level security / the published
+     * predicate all remain applied exactly as for the plain-JSON response.
+     *
+     * @param array                                $renderedObject The rendered object array.
+     * @param \OCA\OpenRegister\Db\Register|null    $register       The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null      $schema         The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdObjectResponse(array $renderedObject, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serialize(
+            renderedObject: $renderedObject,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+    }//end jsonLdObjectResponse()
+
+
+    /**
+     * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
+     *
+     * @param array                                $result   The paginated result array.
+     * @param \OCA\OpenRegister\Db\Register|null    $register The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null      $schema   The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdCollectionResponse(array $result, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serializeCollection(
+            paginatedResult: $result,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+    }//end jsonLdCollectionResponse()
+
+
+    /**
+     * Add the JSON-LD content negotiation headers to a response.
+     *
+     * @param JSONResponse $response The response to decorate.
+     *
+     * @return JSONResponse The decorated response.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function withJsonLdHeaders(JSONResponse $response): JSONResponse
+    {
+        $response->addHeader('Content-Type', 'application/ld+json');
+        $response->addHeader('Vary', 'Accept');
+        return $response;
+    }//end withJsonLdHeaders()
 
     /**
      * Normalize form data values by decoding JSON strings.
@@ -751,43 +848,50 @@ class ObjectsController extends Controller
         $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
         $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
-        // Build register+schema pairs.
-        $pairs = [];
-        foreach ($registers as $registerId) {
-            foreach ($schemas as $schemaId) {
-                try {
-                    // Resolve register and schema entities.
-                    $registerEntity = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
-                    $schemaEntity   = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
+        // PERF-14: resolve each register and schema exactly once up front instead of
+        // re-running find() for every register×schema combination in the inner loop.
+        $registerEntities = [];
+        foreach (array_unique($registers) as $registerId) {
+            try {
+                $registerEntities[(string) $registerId] = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectsController] Invalid register in cross-table search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId, 'error' => $e->getMessage()]
+                );
+            }
+        }
 
-                    // Check if magic mapping is enabled for this combination.
-                    // Uses Register::isMagicMappingEnabledForSchema() which supports both
-                    // new format {"schemas": {"slug": {"magicMapping": true}}} and
-                    // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
-                    if ($registerEntity->isMagicMappingEnabledForSchema(
-                        schemaId: $schemaEntity->getId(),
-                        schemaSlug: $schemaEntity->getSlug()
-                    ) === true
-                    ) {
-                        $pairs[] = [
-                            'register' => $registerEntity,
-                            'schema'   => $schemaEntity,
-                        ];
-                    }
-                } catch (\Exception $e) {
-                    // Skip invalid register/schema combinations.
-                    $this->logger->warning(
-                        message: '[ObjectsController] Invalid register/schema in cross-table search',
-                        context: [
-                            'file'     => __FILE__,
-                            'line'     => __LINE__,
-                            'register' => $registerId,
-                            'schema'   => $schemaId,
-                            'error'    => $e->getMessage(),
-                        ]
-                    );
-                    continue;
-                }//end try
+        $schemaEntities = [];
+        foreach (array_unique($schemas) as $schemaId) {
+            try {
+                $schemaEntities[(string) $schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectsController] Invalid schema in cross-table search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        // Build register+schema pairs from the pre-resolved entities.
+        $pairs = [];
+        foreach ($registerEntities as $registerEntity) {
+            foreach ($schemaEntities as $schemaEntity) {
+                // Check if magic mapping is enabled for this combination.
+                // Uses Register::isMagicMappingEnabledForSchema() which supports both
+                // new format {"schemas": {"slug": {"magicMapping": true}}} and
+                // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
+                if ($registerEntity->isMagicMappingEnabledForSchema(
+                    schemaId: $schemaEntity->getId(),
+                    schemaSlug: $schemaEntity->getSlug()
+                ) === true
+                ) {
+                    $pairs[] = [
+                        'register' => $registerEntity,
+                        'schema'   => $schemaEntity,
+                    ];
+                }
             }//end foreach
         }//end foreach
 
@@ -805,6 +909,18 @@ class ObjectsController extends Controller
         // Build search query WITHOUT register/schema to avoid filtering.
         // Cross-table search handles multiple register+schema pairs internally.
         $query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
+
+        // SEC-CTRL-1: This path does NOT read rbac/multi from the request, so the
+        // request-controlled bypass does not apply here. Derive the posture from
+        // admin status for completeness and forward it on the query.
+        // TODO(SEC-CTRL-1): MagicMapper::searchAcrossMultipleTables() and its
+        // union/sequential builders currently apply NO RBAC or multitenancy filter
+        // (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
+        // lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
+        // be wired there before cross-table search is exposed to non-admins.
+        $isAdmin                = $this->isCurrentUserAdmin();
+        $query['_rbac']         = ($isAdmin === false);
+        $query['_multitenancy'] = ($isAdmin === false);
 
         // Remove all register/schema context from query to prevent filtering.
         unset(
@@ -840,14 +956,34 @@ class ObjectsController extends Controller
         }
 
         // Calculate pagination.
-        $limit  = $query['_limit'] ?? 20;
-        $offset = $query['_offset'] ?? 0;
-        $total  = count($serializedResults);
-        $pages  = 1;
-        $page   = 1;
+        $limit  = (int) ($query['_limit'] ?? 20);
+        $offset = (int) ($query['_offset'] ?? 0);
+
+        // PERF-6: the per-table merge can return up to limit×tableCount rows. Slice
+        // down to the requested page window so the response honours _limit/_offset
+        // instead of returning every fetched row.
+        // NOTE: an exact cross-table total still requires a per-table COUNT(*) in SQL
+        // (MagicMapper, out of this controller's scope); $fetchedCount is the best
+        // available bound here. TODO(PERF-6): sum per-table COUNT(*) in MagicMapper.
+        $fetchedCount = count($serializedResults);
         if ($limit > 0) {
-            $pages = (int) ceil($total / $limit);
-            $page  = (int) floor($offset / $limit) + 1;
+            $serializedResults = array_slice($serializedResults, $offset, $limit);
+        } else if ($offset > 0) {
+            $serializedResults = array_slice($serializedResults, $offset);
+        }
+
+        // PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
+        $wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $total     = ($wantTotal === true) ? $fetchedCount : null;
+
+        $pages = 1;
+        $page  = 1;
+        if ($limit > 0) {
+            if ($total !== null) {
+                $pages = (int) ceil($total / $limit);
+            }
+
+            $page = (int) floor($offset / $limit) + 1;
         }
 
         return new JSONResponse(
@@ -1018,10 +1154,15 @@ class ObjectsController extends Controller
 
         // Extract filtering parameters from request.
         $params = $this->request->getParams();
-        $rbac   = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        // Check both _multi and multi params (URL uses _multi, but we also support multi).
-        $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
-        $multi   = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        // SEC-CTRL-1: RBAC and multitenancy posture MUST be derived from the
+        // caller's admin status, never from request parameters. This endpoint is
+        // reachable anonymously (@PublicPage); honouring ?rbac=false&_multi=false
+        // would let any caller list every object across all organisations/ACLs.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = ($isAdmin === false);
+        $multi   = ($isAdmin === false);
+        // No longer request-controlled: never treat _multi as explicitly set by the client.
+        $multiExplicitlySet = false;
         $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
@@ -1112,20 +1253,34 @@ class ObjectsController extends Controller
                     $offset = (int) ($offset ?? 0);
                 }
 
-                // Build count query (same filters, no pagination).
-                $countQuery = $query;
-                unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
-
-                // Get actual total count.
-                $total = $magicMapper->countObjectsInRegisterSchemaTable(
-                    query: $countQuery,
-                    register: $registerEntity,
-                    schema: $schemaEntity
+                // PERF-10: allow callers to skip the extra COUNT(*) query when they
+                // don't need the grand total (e.g. infinite scroll). _count=false /
+                // _noTotal=true returns total:null and skips the count round-trip.
+                $wantTotal = filter_var(
+                    $params['_count'] ?? (($params['_noTotal'] ?? false) ? false : true),
+                    FILTER_VALIDATE_BOOLEAN
                 );
+
+                $total = null;
+                if ($wantTotal === true) {
+                    // Build count query (same filters, no pagination).
+                    $countQuery = $query;
+                    unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+
+                    // Get actual total count.
+                    $total = $magicMapper->countObjectsInRegisterSchemaTable(
+                        query: $countQuery,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
+                }
 
                 $pages = 1;
                 if ($limit > 0) {
-                    $pages = (int) ceil($total / $limit);
+                    if ($total !== null) {
+                        $pages = (int) ceil($total / $limit);
+                    }
+
                     // Calculate page from offset if not explicitly provided.
                     if ($page === null) {
                         $page = (int) floor($offset / $limit) + 1;
@@ -1246,6 +1401,16 @@ class ObjectsController extends Controller
                 // path so geo filtering works for both register layouts.
                 $responseData = $this->applyGeoQueryFilters(params: $params, result: $responseData);
 
+                // Content negotiation: JSON-LD @graph for magic-mapped results
+                // (json-ld-output).
+                if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
+                    return $this->jsonLdCollectionResponse(
+                        result: $responseData,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
+                }
+
                 // Return in expected format.
                 $response = new JSONResponse(data: $responseData);
 
@@ -1304,6 +1469,20 @@ class ObjectsController extends Controller
         // and apply the filters to $result['results']. Pure-PHP fallback;
         // PostGIS push-down is tracked in `geo-spatial-queries`.
         $result = $this->applyGeoQueryFilters(params: $params, result: $result);
+
+        // Content negotiation: emit a JSON-LD @graph when requested. Wraps the
+        // already-rendered/RBAC-filtered result — no second data path
+        // (json-ld-output).
+        if ($this->wantsJsonLd() === true
+            && ($resolved['registerEntity'] ?? null) !== null
+            && ($resolved['schemaEntity'] ?? null) !== null
+        ) {
+            return $this->jsonLdCollectionResponse(
+                result: $result,
+                register: $resolved['registerEntity'],
+                schema: $resolved['schemaEntity']
+            );
+        }
 
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
@@ -1378,6 +1557,208 @@ class ObjectsController extends Controller
         return new JSONResponse(data: $payload);
 
     }//end geoSearch()
+
+    /**
+     * Export a register/schema's objects as a GeoJSON FeatureCollection.
+     *
+     * Reuses the standard listing path (`index()`), so the result is
+     * already scoped to the objects the caller may read — this endpoint
+     * adds no new data access and therefore no IDOR surface (the listing
+     * applies per-object RBAC). Objects without a geometry are omitted.
+     *
+     * Supports `?_fields=title,status` to restrict Feature properties
+     * (geometry is always retained), `?geo.property=` to pick the geo
+     * property, and the standard geo filter params (REQ-GEO-008).
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse A GeoJSON FeatureCollection (application/geo+json).
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read access is enforced by the delegated index()
+     *   listing (per-object RBAC via scopedGeoRows()); this method only
+     *   reshapes the already-scoped rows and accesses no object by id.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    public function geoJson(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFeatureBuilder === null) {
+            return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
+        }
+
+        $params  = $this->request->getParams();
+        $rows    = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+        $fields  = $this->parseFieldsParam(params: $params);
+        $geoProp = ($params['geo.property'] ?? null);
+
+        $collection = $this->geoFeatureBuilder->buildFeatureCollection(
+            rows: $rows,
+            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            fields: $fields,
+            includeArea: true
+        );
+
+        // Body is a valid GeoJSON FeatureCollection. The default
+        // application/json content type is kept (NC's Content-Type
+        // override requires the full container); the @self envelope is
+        // omitted so the body is consumable directly by GIS clients.
+        return new JSONResponse(data: $collection);
+
+    }//end geoJson()
+
+    /**
+     * WFS GetFeature-compatible endpoint (REQ-GEO-008).
+     *
+     * Returns a GeoJSON FeatureCollection compatible with WFS 2.0
+     * `outputFormat=application/json`. Supports `count`/`maxFeatures`
+     * caps. Reuses the RBAC-scoped listing path (no new IDOR surface).
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse A WFS-compatible GeoJSON FeatureCollection.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read access is enforced by the delegated index()
+     *   listing (per-object RBAC via scopedGeoRows()); this method only
+     *   reshapes the already-scoped rows and accesses no object by id.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    public function wfs(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFeatureBuilder === null) {
+            return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
+        }
+
+        $params = $this->request->getParams();
+        $rows   = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+
+        $maxFeatures = null;
+        $rawMax      = ($params['count'] ?? ($params['maxFeatures'] ?? null));
+        if ($rawMax !== null && is_numeric($rawMax) === true) {
+            $maxFeatures = (int) $rawMax;
+        }
+
+        $geoProp  = ($params['geo.property'] ?? null);
+        $response = $this->geoFeatureBuilder->buildWfsResponse(
+            rows: $rows,
+            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            maxFeatures: $maxFeatures
+        );
+
+        return new JSONResponse(data: $response);
+
+    }//end wfs()
+
+    /**
+     * Forward / reverse geocoding via PDOK Locatieserver (REQ-GEO-005).
+     *
+     * `?q=<address>` performs forward geocoding; `?lon=&lat=` performs
+     * reverse geocoding. Degrades gracefully: when OpenConnector / PDOK
+     * is unavailable an empty suggestion list is returned with a flag,
+     * never an error (geocoding is non-blocking, REQ-GEO-005).
+     *
+     * @return JSONResponse Geocoding suggestions and availability flag.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Stateless PDOK address-lookup proxy: accesses no
+     *   OpenRegister object and takes no object id, so there is no IDOR
+     *   surface. Authenticated-user access is enforced by NoAdminRequired.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     */
+    public function geocode(): JSONResponse
+    {
+        if ($this->pdokGeocoder === null) {
+            return new JSONResponse(data: ['available' => false, 'suggestions' => []]);
+        }
+
+        $params    = $this->request->getParams();
+        $available = $this->pdokGeocoder->isAvailable();
+
+        $query = ($params['q'] ?? null);
+        if ($query !== null && trim((string) $query) !== '') {
+            $bagOnly     = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
+            $suggestions = $this->pdokGeocoder->geocodeFree(
+                query: (string) $query,
+                maxItems: 5,
+                bagOnly: $bagOnly
+            );
+            return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
+        }
+
+        $lon = ($params['lon'] ?? null);
+        $lat = ($params['lat'] ?? null);
+        if (is_numeric($lon) === true && is_numeric($lat) === true) {
+            $address = $this->pdokGeocoder->reverseGeocode(longitude: (float) $lon, latitude: (float) $lat);
+            return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+        }
+
+        return new JSONResponse(
+            data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='],
+            statusCode: 422
+        );
+
+    }//end geocode()
+
+    /**
+     * Fetch the RBAC-scoped listing rows for a register/schema.
+     *
+     * Delegates to the standard `index()` listing — which enforces
+     * per-object read access — then returns just the `results`. Geo
+     * endpoints build on this so they can never widen access.
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return array The RBAC-scoped result rows.
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    private function scopedGeoRows(string $register, string $schema, ObjectService $objectService): array
+    {
+        $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+        $payload = (array) $listing->getData();
+        $rows    = ($payload['results'] ?? []);
+        return (is_array($rows) === true) ? $rows : [];
+
+    }//end scopedGeoRows()
+
+    /**
+     * Parse a `?_fields=a,b,c` allow-list into an array (null = all).
+     *
+     * @param array $params The request params.
+     *
+     * @return string[]|null
+     *
+     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    private function parseFieldsParam(array $params): ?array
+    {
+        $raw = ($params['_fields'] ?? null);
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (is_array($raw) === true) {
+            return array_values(array_map('strval', $raw));
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn($v) => $v !== ''));
+
+    }//end parseFieldsParam()
 
     /**
      * Apply geo query-param filters to a listing result.
@@ -1848,6 +2229,20 @@ class ObjectsController extends Controller
                 $renderedData = $this->stripEmptyValues(data: $renderedData);
             }
 
+            // Content negotiation: emit JSON-LD when requested. The serializer
+            // wraps the already-rendered array — no second data path — so all
+            // access control above remains applied (json-ld-output).
+            if ($this->wantsJsonLd() === true
+                && $resolved['registerEntity'] !== null
+                && $resolved['schemaEntity'] !== null
+            ) {
+                return $this->jsonLdObjectResponse(
+                    renderedObject: $renderedData,
+                    register: $resolved['registerEntity'],
+                    schema: $resolved['schemaEntity']
+                );
+            }
+
             return new JSONResponse(data: $renderedData);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
@@ -2142,7 +2537,8 @@ class ObjectsController extends Controller
                         'trace'     => $exception->getTraceAsString(),
                     ]
                     );
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($exception);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -2384,7 +2780,8 @@ class ObjectsController extends Controller
                         'trace'     => $exception->getTraceAsString(),
                     ]
                     );
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($exception);
         }//end try
     }//end patch()
 
@@ -2516,7 +2913,8 @@ class ObjectsController extends Controller
             // See the `self-folder-access-control` spec.
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($exception);
         }//end try
     }//end postPatch()
 
@@ -2990,7 +3388,8 @@ class ObjectsController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (\Throwable $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse($e);
         }//end try
     }//end lock()
 
@@ -3133,100 +3532,6 @@ class ObjectsController extends Controller
     }//end export()
 
     /**
-     * Import objects into a register
-     *
-     * @param int $register The ID of the register to import into
-     *
-     * @return JSONResponse JSON response with import result or error.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @psalm-suppress NoValue
-     *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
-     */
-    public function import(int $register): JSONResponse
-    {
-        try {
-            // Get the uploaded file.
-            $uploadedFile = $this->request->getUploadedFile('file');
-            if ($uploadedFile === null) {
-                return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
-            }
-
-            // Find the register.
-            $registerEntity = $this->registerMapper->find($register);
-
-            // Get optional schema for CSV (can be null, Excel auto-resolves per sheet).
-            $schemaId = $this->request->getParam(key: 'schema');
-            $schema   = null;
-            if ($schemaId !== null && $schemaId !== '') {
-                $schema = $this->schemaMapper->find($schemaId);
-            }
-
-            // Get optional parameters with sensible defaults.
-            $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
-            $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
-            $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
-            $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
-            $enrich     = filter_var($this->request->getParam(key: 'enrich', default: true), FILTER_VALIDATE_BOOLEAN);
-
-            // Determine the import type from the uploaded file extension.
-            $filename  = ($uploadedFile['name'] ?? '');
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-            // Route to the real ImportService. CSV requires a specific schema;
-            // Excel auto-resolves schemas per sheet.
-            if ($extension === 'csv') {
-                if ($schema === null) {
-                    return new JSONResponse(
-                        data: ['error' => 'Schema parameter is required for CSV imports.'],
-                        statusCode: 400
-                    );
-                }
-
-                $result = $this->importService->importFromCsv(
-                    filePath: $uploadedFile['tmp_name'],
-                    register: $registerEntity,
-                    schema: $schema,
-                    validation: $validation,
-                    events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    publish: $publish,
-                    currentUser: $this->userSession->getUser(),
-                    enrich: $enrich
-                );
-            } else {
-                $result = $this->importService->importFromExcel(
-                    filePath: $uploadedFile['tmp_name'],
-                    register: $registerEntity,
-                    schema: $schema,
-                    validation: $validation,
-                    events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    publish: $publish,
-                    currentUser: $this->userSession->getUser(),
-                    enrich: $enrich
-                );
-            }//end if
-
-            return new JSONResponse(
-                data: [
-                    'message' => 'Import successful',
-                    'summary' => $result,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }//end try
-    }//end import()
-
-    /**
      * Merge two objects
      *
      * This method merges object A into object B within the same register and schema.
@@ -3281,7 +3586,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to merge objects: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3351,7 +3656,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to migrate objects: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3456,7 +3761,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to create ZIP file: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3501,7 +3806,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3545,7 +3850,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3589,7 +3894,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3813,34 +4118,6 @@ class ObjectsController extends Controller
     {
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
     }//end isUuid()
-
-    /**
-     * Clear all blob storage objects (deprecated)
-     *
-     * The blob objects table has been retired. All objects now live in per-schema
-     * magic tables. This endpoint is kept for backwards compatibility but is a no-op.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response indicating the operation is no longer applicable
-     *
-     * @psalm-return JSONResponse
-     *
-     * @deprecated Blob storage has been retired; this endpoint is a no-op.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
-     */
-    public function clearBlob(): JSONResponse
-    {
-        return new JSONResponse(
-            data: [
-                'success' => true,
-                'deleted' => 0,
-                'message' => 'Blob storage has been retired. All objects now use magic tables.',
-            ]
-        );
-    }//end clearBlob()
 
     /**
      * Recursively strips empty values (null, empty string, empty array) from an array.

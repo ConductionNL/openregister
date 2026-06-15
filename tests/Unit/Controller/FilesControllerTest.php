@@ -132,7 +132,8 @@ class FilesControllerTest extends TestCase
         $result = $this->controller->index('reg1', 'schema1', 'obj1');
 
         $this->assertEquals(500, $result->getStatus());
-        $this->assertEquals(['error' => 'General error'], $result->getData());
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertEquals(['error' => 'Internal server error'], $result->getData());
     }
 
     public function testIndexWithFilesReturnsFormattedData(): void
@@ -1134,7 +1135,8 @@ class FilesControllerTest extends TestCase
 
         $this->assertInstanceOf(JSONResponse::class, $result);
         $this->assertEquals(500, $result->getStatus());
-        $this->assertEquals(['error' => 'Server error'], $result->getData());
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertEquals(['error' => 'Internal server error'], $result->getData());
     }
 
     // ==================== Private method tests via reflection ====================

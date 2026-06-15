@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Aggregation;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -49,6 +50,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
 
@@ -107,6 +109,7 @@ class AggregationRunner
         private readonly PermissionHandler $permissionHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
+        private readonly ?LoggerInterface $logger=null,
         private readonly ?SearchBackendInterface $searchBackend=null
     ) {
     }//end __construct()
@@ -321,6 +324,16 @@ class AggregationRunner
             } catch (\Throwable $e) {
                 // External backend errored — fall through to native /
                 // PHP path so a flaky Solr/ES never breaks aggregations.
+                // BUG-SVC-11: log the failure so a persistently broken backend
+                // is observable instead of silently degrading to the DB path.
+                $this->logger?->warning(
+                    '[AggregationRunner] External aggregation backend failed, falling back to native/PHP path',
+                    [
+                        'backend' => $backendName,
+                        'metric'  => $metric,
+                        'error'   => $e->getMessage(),
+                    ]
+                );
             }//end try
         }//end if
 
@@ -985,7 +998,18 @@ class AggregationRunner
             foreach ($filter as $field => $criterion) {
                 $value = $row[$field] ?? null;
                 if (is_array($criterion) === false) {
-                    if ($value !== $criterion) {
+                    // BUG-SVC-9: magic-table column values come back as strings,
+                    // while the criterion may be int/bool/float. A strict !==
+                    // then drops rows the Postgres path would keep (e.g. "1" vs
+                    // 1). Compare as strings when both sides are scalar so the
+                    // PHP fallback matches the native equality semantics; keep
+                    // strict comparison for non-scalars (null/array/object).
+                    if (is_scalar($value) === true && is_scalar($criterion) === true) {
+                        if ((string) $value !== (string) $criterion) {
+                            $keep = false;
+                            break;
+                        }
+                    } else if ($value !== $criterion) {
                         $keep = false;
                         break;
                     }
@@ -1119,6 +1143,16 @@ class AggregationRunner
         }
 
         if (in_array($metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
+            return null;
+        }
+
+        // BUG-SVC-7: value metrics (sum/avg/min/max) operate on a column, so a
+        // null/empty $field would build malformed SQL (e.g. SUM(NULLIF(::text,
+        // ''))). Bail to the PHP fallback when no field is supplied for a
+        // value metric; only `count` is valid without a field.
+        if (in_array($metric, ['sum', 'avg', 'min', 'max'], true) === true
+            && ($field === null || $field === '')
+        ) {
             return null;
         }
 
@@ -1392,8 +1426,25 @@ class AggregationRunner
             return (string) $raw;
         }
 
-        // Try strtotime then format — defensive but covers every Postgres
-        // text-cast shape we'll see.
+        // BUG-SVC-4: Postgres emits date/timestamp text WITHOUT a timezone
+        // designator (e.g. "2026-06-01 00:00:00"). strtotime() parses such
+        // offset-less text in the SERVER timezone, then gmdate() re-expresses
+        // it as UTC, shifting every bucket label by the server's UTC offset
+        // (e.g. CET buckets land an hour early). Parse offset-less shapes as
+        // UTC explicitly; only fall back to strtotime for offset-bearing text.
+        $hasTimezone = (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
+        if ($hasTimezone === false) {
+            $formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', 'Y-m-d'];
+            foreach ($formats as $format) {
+                $parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
+                if ($parsed !== false) {
+                    return $parsed->format('Y-m-d\TH:i:s\Z');
+                }
+            }
+        }
+
+        // Offset-bearing (or otherwise unhandled) shapes: strtotime understands
+        // the embedded offset, so converting to UTC via gmdate is correct here.
         $stamp = strtotime($raw);
         if ($stamp === false) {
             return $raw;

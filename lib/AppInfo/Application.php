@@ -150,6 +150,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
@@ -157,6 +158,8 @@ use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
+use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
+use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
@@ -372,6 +375,44 @@ class Application extends App implements IBootstrap
         // identity+trusted-IP) and pre-emptively blocks locked-out callers.
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
+
+        // Bind the dormant Path B PDF anonymisation fallback bridge to its
+        // null implementation. Tenants enabling Path B replace this binding
+        // with a concrete NcOfficeConverterInterface implementation that
+        // talks to Collabora Online / Code (per the
+        // `pdf-anonymisation-odt-fallback` scaffold).
+        $context->registerService(
+            \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
+            function () {
+                return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+            }
+        );
+
+        // Register the data-sync source-fetcher registry pre-loaded with the
+        // built-in REST/OpenRegister fetcher. Apps can register additional
+        // fetchers (OData, SOAP, CSV) by resolving and extending this service.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
+            function ($c) {
+                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
+                return $registry;
+            }
+        );
+
+        // Register the standards schema-import service with the bundled,
+        // versioned snapshot resources (schema-import-standards). Built
+        // explicitly so the resource root is deterministic; the dialect
+        // registry inside it makes DCAT/SKOS/ZGW importers follow-ups.
+        $context->registerService(
+            \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
+            function () {
+                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
+                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
+                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                );
+            }
+        );
 
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
@@ -923,6 +964,29 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\TimeEntryService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\TimeEntryService(
+                    timeLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeLinkMapper::class),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\TimeProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\TimeProvider(
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
             }
         );
@@ -1689,6 +1753,59 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Schema versioning & object migration services (schema-versioning-and-object-migration).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaDiffService();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaVersioningService(
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaRevalidationService(
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    validateObject: $container->get(\OCA\OpenRegister\Service\Object\ValidateObject::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationService(
+                    planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
     }//end registerBuiltinIntegrationProviders()
 
     /**
@@ -1775,6 +1892,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
 
+        // Scheduled-notification per-object dedup pruning (Phase 3.4):
+        // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
+        // - drop dedup rows for rule keys removed/renamed in the schema annotation
+        //   so orphan state does not pile up after edits.
+        $context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+
         // Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
@@ -1790,7 +1915,30 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
         // WebhookEventListener for webhook delivery.
+        // OPS-2: register for EVERY event the listener's extractPayload() handles,
+        // not just create — otherwise update/delete/lock/revert/register/schema
+        // webhooks silently never deliver.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
+
+        // OPS-1: ActionListener drives the event-driven Actions feature. It is
+        // event-agnostic (resolves the payload from the dispatched event), so it
+        // must be wired to the object lifecycle events or configured Actions
+        // never fire.
+        $context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, ActionListener::class);
 
         // GraphQL subscription event listeners.
         $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);

@@ -85,6 +85,16 @@ class MagicSearchHandler
     private ?bool $hasPgTrgm = null;
 
     /**
+     * PERF-4: request-scoped memo of the per-schema property-type and
+     * column-to-property maps, keyed by schema id. Building these ran
+     * sanitizeColumnName for every property on every row; memoising it makes
+     * it once-per-schema instead of once-per-row.
+     *
+     * @var array<int, array{types: array<string, string>, columns: array<string, string>}>
+     */
+    private array $schemaColumnMapCache = [];
+
+    /**
      * Constructor for MagicSearchHandler
      *
      * @param IDBConnection            $db                  Database connection for queries
@@ -247,6 +257,12 @@ class MagicSearchHandler
         // indexes for ORDER BY … LIMIT instead of sorting the full result set.
         if (empty($order) === false) {
             $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
+        } else {
+            // BUG-DB-4: without an explicit order, LIMIT/OFFSET pagination is
+            // non-deterministic (the database may return rows in any order),
+            // causing duplicates/gaps across pages. Add a stable default order
+            // on the monotonically increasing primary key.
+            $queryBuilder->addOrderBy('t._id', 'ASC');
         }
 
         $queryBuilder->setMaxResults($limit)
@@ -710,19 +726,43 @@ class MagicSearchHandler
                 $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
                     if (isset($value['gte']) === true) {
-                        $conditions[] = "{$quotedCol} >= ".$connection->quote((string) $value['gte']);
+                        $colRef       = $this->buildFilterColumnRef(
+                            columnRef: $quotedCol,
+                            propertyType: $propertyType,
+                            value: $value['gte'],
+                            isPostgres: $isPostgres
+                        );
+                        $conditions[] = "{$colRef} >= ".$connection->quote((string) $value['gte']);
                     }
 
                     if (isset($value['lte']) === true) {
-                        $conditions[] = "{$quotedCol} <= ".$connection->quote((string) $value['lte']);
+                        $colRef       = $this->buildFilterColumnRef(
+                            columnRef: $quotedCol,
+                            propertyType: $propertyType,
+                            value: $value['lte'],
+                            isPostgres: $isPostgres
+                        );
+                        $conditions[] = "{$colRef} <= ".$connection->quote((string) $value['lte']);
                     }
 
                     if (isset($value['gt']) === true) {
-                        $conditions[] = "{$quotedCol} > ".$connection->quote((string) $value['gt']);
+                        $colRef       = $this->buildFilterColumnRef(
+                            columnRef: $quotedCol,
+                            propertyType: $propertyType,
+                            value: $value['gt'],
+                            isPostgres: $isPostgres
+                        );
+                        $conditions[] = "{$colRef} > ".$connection->quote((string) $value['gt']);
                     }
 
                     if (isset($value['lt']) === true) {
-                        $conditions[] = "{$quotedCol} < ".$connection->quote((string) $value['lt']);
+                        $colRef       = $this->buildFilterColumnRef(
+                            columnRef: $quotedCol,
+                            propertyType: $propertyType,
+                            value: $value['lt'],
+                            isPostgres: $isPostgres
+                        );
+                        $conditions[] = "{$colRef} < ".$connection->quote((string) $value['lt']);
                     }
 
                     if (isset($value['in']) === true) {
@@ -731,22 +771,42 @@ class MagicSearchHandler
                             $inValues = $value['in'];
                         }
 
+                        $colRef       = $this->buildFilterColumnRef(
+                            columnRef: $quotedCol,
+                            propertyType: $propertyType,
+                            value: $inValues,
+                            isPostgres: $isPostgres
+                        );
                         $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
-                        $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
+                        $conditions[] = "{$colRef} IN (".implode(', ', $quotedValues).')';
                     }
                 } else if (empty($value) === false) {
+                    $colRef       = $this->buildFilterColumnRef(
+                        columnRef: $quotedCol,
+                        propertyType: $propertyType,
+                        value: $value,
+                        isPostgres: $isPostgres
+                    );
                     $quotedValues = array_map(
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
-                    $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
+                    $conditions[] = "{$colRef} IN (".implode(', ', $quotedValues).')';
                 }//end if
 
                 continue;
             }//end if
 
-            // Simple equality filter.
-            $conditions[] = "{$quotedCol} = ".$connection->quote((string) $value);
+            // Simple equality filter. Cast numeric columns to text when filtered
+            // by a non-numeric (e.g. UUID) value so PostgreSQL does not abort the
+            // whole UNION query with SQLSTATE[22P02].
+            $colRef       = $this->buildFilterColumnRef(
+                columnRef: $quotedCol,
+                propertyType: $propertyType,
+                value: $value,
+                isPostgres: $isPostgres
+            );
+            $conditions[] = "{$colRef} = ".$connection->quote((string) $value);
         }//end foreach
 
         return $conditions;
@@ -1090,6 +1150,7 @@ class MagicSearchHandler
     private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void
     {
         $properties = $schema->getProperties();
+        $isPostgres = $this->isPostgresPlatform();
 
         foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
@@ -1133,9 +1194,17 @@ class MagicSearchHandler
             if (is_array($value) === true) {
                 $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
+                    // Cast numeric columns to text when filtered by non-numeric
+                    // (e.g. UUID) values so PostgreSQL does not abort with 22P02.
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $value,
+                        isPostgres: $isPostgres
+                    );
                     $qb->andWhere(
                         $qb->expr()->in(
-                            "t.{$columnName}",
+                            $columnRef,
                             $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
@@ -1143,19 +1212,43 @@ class MagicSearchHandler
                 }
 
                 if (isset($value['gte']) === true) {
-                    $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $value['gte'],
+                        isPostgres: $isPostgres
+                    );
+                    $qb->andWhere($qb->expr()->gte($columnRef, $qb->createNamedParameter($value['gte'])));
                 }
 
                 if (isset($value['lte']) === true) {
-                    $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $value['lte'],
+                        isPostgres: $isPostgres
+                    );
+                    $qb->andWhere($qb->expr()->lte($columnRef, $qb->createNamedParameter($value['lte'])));
                 }
 
                 if (isset($value['gt']) === true) {
-                    $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $value['gt'],
+                        isPostgres: $isPostgres
+                    );
+                    $qb->andWhere($qb->expr()->gt($columnRef, $qb->createNamedParameter($value['gt'])));
                 }
 
                 if (isset($value['lt']) === true) {
-                    $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $value['lt'],
+                        isPostgres: $isPostgres
+                    );
+                    $qb->andWhere($qb->expr()->lt($columnRef, $qb->createNamedParameter($value['lt'])));
                 }
 
                 if (isset($value['in']) === true) {
@@ -1164,9 +1257,15 @@ class MagicSearchHandler
                         $inValues = $value['in'];
                     }
 
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $inValues,
+                        isPostgres: $isPostgres
+                    );
                     $qb->andWhere(
                         $qb->expr()->in(
-                            "t.{$columnName}",
+                            $columnRef,
                             $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
@@ -1175,7 +1274,16 @@ class MagicSearchHandler
                 continue;
             }//end if
 
-            $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
+            // Cast numeric columns to text when filtered by a non-numeric
+            // (e.g. UUID) value so PostgreSQL does not abort the query with
+            // SQLSTATE[22P02]; numeric values keep the indexed numeric path.
+            $columnRef = $this->buildFilterColumnRef(
+                columnRef: "t.{$columnName}",
+                propertyType: $propertyType,
+                value: $value,
+                isPostgres: $isPostgres
+            );
+            $qb->andWhere($qb->expr()->eq($columnRef, $qb->createNamedParameter($value)));
         }//end foreach
     }//end applyObjectFilters()
 
@@ -1594,6 +1702,42 @@ class MagicSearchHandler
     }//end executeSearchQuery()
 
     /**
+     * Build (and memoise) the property-type and column-to-property maps for a schema.
+     *
+     * PERF-4: computing these maps ran sanitizeColumnName() for every property on
+     * every row. Memoising per schema id makes it once-per-schema-per-request.
+     *
+     * @param Schema $schema The schema to build maps for.
+     *
+     * @return array{types: array<string, string>, columns: array<string, string>}
+     */
+    private function getSchemaColumnMaps(Schema $schema): array
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId !== null && isset($this->schemaColumnMapCache[$schemaId]) === true) {
+            return $this->schemaColumnMapCache[$schemaId];
+        }
+
+        $propertyTypes       = [];
+        $columnToPropertyMap = [];
+        $properties          = $schema->getProperties();
+        if (is_array($properties) === true) {
+            foreach ($properties as $propName => $propDef) {
+                $propertyTypes[$propName] = ($propDef['type'] ?? 'string');
+                $columnName = $this->sanitizeColumnName(name: $propName);
+                $columnToPropertyMap[$columnName] = $propName;
+            }
+        }
+
+        $maps = ['types' => $propertyTypes, 'columns' => $columnToPropertyMap];
+        if ($schemaId !== null) {
+            $this->schemaColumnMapCache[$schemaId] = $maps;
+        }
+
+        return $maps;
+    }//end getSchemaColumnMaps()
+
+    /**
      * Convert database row from dynamic table to ObjectEntity
      *
      * @param array    $row       Database row data
@@ -1601,7 +1745,7 @@ class MagicSearchHandler
      * @param Schema   $schema    Schema context
      * @param string   $tableName Target dynamic table name
      *
-     * @return ObjectEntity|null ObjectEntity object or null if conversion fails
+     * @return ObjectEntity|null
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -1623,13 +1767,11 @@ class MagicSearchHandler
             // Build property type map and column-to-property mapping from schema.
             // The column-to-property mapping allows us to restore original property names
             // (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
-            $propertyTypes       = [];
-            $columnToPropertyMap = [];
-            foreach ($schema->getProperties() as $propName => $propDef) {
-                $propertyTypes[$propName] = $propDef['type'] ?? 'string';
-                $columnName = $this->sanitizeColumnName(name: $propName);
-                $columnToPropertyMap[$columnName] = $propName;
-            }
+            // PERF-4: memoised per schema id so sanitizeColumnName runs once per
+            // schema rather than once per property per row.
+            $schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);
+            $propertyTypes       = $schemaMaps['types'];
+            $columnToPropertyMap = $schemaMaps['columns'];
 
             foreach ($row as $column => $value) {
                 if (str_starts_with($column, '_') === true) {
@@ -1866,6 +2008,96 @@ class MagicSearchHandler
     {
         return stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
     }//end isPostgresPlatform()
+
+    /**
+     * Whether a JSON-Schema property type maps onto a numeric SQL column.
+     *
+     * MagicMapper::mapSchemaPropertyToColumn() materialises `integer` as
+     * smallint/integer/bigint and `number` as decimal. Filtering such a column
+     * with a non-numeric value (e.g. a UUID — common when a relational key was
+     * mistakenly declared `type: integer` in the schema) makes PostgreSQL reject
+     * the whole query with `SQLSTATE[22P02] invalid input syntax for type
+     * integer`, taking down the endpoint rather than returning zero rows.
+     *
+     * @param string $propertyType The declared JSON-Schema property type.
+     *
+     * @return bool True when the backing column is numeric-typed.
+     */
+    private function isNumericColumnType(string $propertyType): bool
+    {
+        return $propertyType === 'integer' || $propertyType === 'number';
+    }//end isNumericColumnType()
+
+    /**
+     * Whether a filter value is a non-numeric scalar that would break a numeric
+     * column comparison.
+     *
+     * A UUID, slug or any other non-numeric string bound against an integer /
+     * decimal column triggers a database type-coercion error. When this returns
+     * true the caller must cast the column to text so the comparison degrades to
+     * a safe (always-false) string match instead of crashing the query.
+     *
+     * @param mixed $value The raw filter value.
+     *
+     * @return bool True when $value is a scalar that is not numeric.
+     */
+    private function isNonNumericScalar(mixed $value): bool
+    {
+        return is_scalar($value) === true && is_numeric($value) === false;
+    }//end isNonNumericScalar()
+
+    /**
+     * Build the left-hand column reference for an object-field comparison,
+     * casting numeric columns to text when the supplied value(s) cannot be
+     * compared numerically.
+     *
+     * This is the core guard against `SQLSTATE[22P02]`: a UUID-valued filter on
+     * a column the schema declared `integer`/`number` must compare as text, not
+     * be coerced into the column's numeric type. Numeric values on numeric
+     * columns are left untouched so ordinary integer filters keep using the
+     * indexed numeric comparison.
+     *
+     * @param string $columnRef    The already-qualified, quoted column reference
+     *                             (e.g. `t."amount"` or `t.amount`).
+     * @param string $propertyType The declared JSON-Schema property type.
+     * @param mixed  $value        The filter value (scalar or array of scalars).
+     * @param bool   $isPostgres   Whether the active platform is PostgreSQL.
+     *
+     * @return string The (optionally text-cast) column reference.
+     */
+    private function buildFilterColumnRef(
+        string $columnRef,
+        string $propertyType,
+        mixed $value,
+        bool $isPostgres
+    ): string {
+        if ($this->isNumericColumnType(propertyType: $propertyType) === false) {
+            return $columnRef;
+        }
+
+        // Determine whether any value in play is a non-numeric scalar.
+        $needsTextCast = false;
+        if (is_array($value) === true) {
+            foreach ($value as $candidate) {
+                if ($this->isNonNumericScalar(value: $candidate) === true) {
+                    $needsTextCast = true;
+                    break;
+                }
+            }
+        } else {
+            $needsTextCast = $this->isNonNumericScalar(value: $value);
+        }
+
+        if ($needsTextCast === false) {
+            return $columnRef;
+        }
+
+        if ($isPostgres === true) {
+            return $columnRef.'::text';
+        }
+
+        return 'CAST('.$columnRef.' AS CHAR)';
+    }//end buildFilterColumnRef()
 
     /**
      * Quote a column or identifier name for the current database platform.

@@ -49,6 +49,15 @@ phpqa_output.log
 **/implements *
 **/ALL *
 **/endpoints *
+**/*Analysis*
+!**/*Analysis*.php
+**/*references*
+**/*encoding*
+**/ter
+**/clearCache*
+**/update*Settings*
+**/rebase*
+**/setup*
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
@@ -59,6 +68,7 @@ test-solr-connection.php
 *.bak2
 *.bak3
 *.orig
+*.backup_*
 
 phpqa/
 

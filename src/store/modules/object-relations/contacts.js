@@ -30,6 +30,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 
 	actions: {
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
 		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
 		 */
 		_url(register, schema, id, suffix = '') {
@@ -41,6 +45,9 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
 		 */
 		async fetch(register, schema, id) {
@@ -75,6 +82,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
 		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
 		 */
 		async createOrLink(register, schema, id, payload) {
@@ -84,6 +95,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param contactUid
 		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
 		 */
 		async unlink(register, schema, id, contactUid) {
@@ -95,6 +110,9 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
 		 */
 		get(register, schema, id) {

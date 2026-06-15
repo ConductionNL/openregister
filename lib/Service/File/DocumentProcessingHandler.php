@@ -20,12 +20,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
+use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AnonymisationLog;
+use OCA\OpenRegister\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\FileService;
+use Throwable;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -90,13 +94,19 @@ class DocumentProcessingHandler
      *                                                                        flags during the redaction pass
      *                                                                        (see `entity-relation-grondslagen`).
      * @param OfficeDocumentSanitizer                   $sanitizer            Office document sanitiser (DOCX / ODT).
+     * @param AnonymisationLogMapper|null               $anonymisationLogMapper
+     *                                                                        Mapper for persisting per-run anonymisation
+     *                                                                        log rows (carries the sanitisation report).
+     *                                                                        Nullable so the handler stays construct-safe
+     *                                                                        for tests that do not need persistence.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
         private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
-        private readonly OfficeDocumentSanitizer $sanitizer
+        private readonly OfficeDocumentSanitizer $sanitizer,
+        private readonly ?AnonymisationLogMapper $anonymisationLogMapper=null
     ) {
     }//end __construct()
 
@@ -344,8 +354,97 @@ class DocumentProcessingHandler
             }
         }
 
+        // Persist a per-run anonymisation log row carrying the sanitisation
+        // report when a sanitisable Office document was processed. PDF /
+        // plain-text runs intentionally leave `sanitization = null` per
+        // spec `office-document-sanitization`. The log write is best-effort
+        // — a persistence failure MUST NOT mask a successful redaction.
+        $this->persistAnonymisationLog(
+            node: $node,
+            fileId: $fileId,
+            replacements: $replacements
+        );
+
         return $anonymizedFile;
     }//end anonymizeDocument()
+
+    /**
+     * Persist a per-run anonymisation log row.
+     *
+     * Best-effort: the file is already written; a DB-side failure is logged
+     * (PII-free) and swallowed. The row carries the JSON-serialised
+     * sanitisation report when an Office document was sanitised; non-Office
+     * runs leave `sanitization = null` (spec invariant).
+     *
+     * @param Node                  $node         The source file node.
+     * @param int                   $fileId       The NC file id (0 when absent).
+     * @param array<string, string> $replacements The substitution map applied.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     */
+    private function persistAnonymisationLog(Node $node, int $fileId, array $replacements): void
+    {
+        if ($this->anonymisationLogMapper === null) {
+            return;
+        }
+
+        $entity = new AnonymisationLog();
+        $entity->setFileId($fileId);
+
+        $mimeType = '';
+        if ($node instanceof File) {
+            try {
+                $mimeType = (string) $node->getMimeType();
+            } catch (Throwable $ignored) {
+                $mimeType = '';
+            }
+        }
+
+        $entity->setMimeType($mimeType);
+        $entity->setEngine($this->resolveEngineName(mimeType: $mimeType));
+        $entity->setStatus(AnonymisationLog::STATUS_SUCCESS);
+        $entity->setReplacements(count($replacements));
+
+        if ($this->lastSanitizationReport !== null) {
+            $encoded = json_encode($this->lastSanitizationReport->jsonSerialize());
+            if (is_string($encoded) === true) {
+                $entity->setSanitization($encoded);
+            }
+        }
+
+        $entity->setCreated(new DateTime());
+
+        try {
+            $this->anonymisationLogMapper->insert(entity: $entity);
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                'DocumentProcessingHandler: AnonymisationLog persistence failed',
+                ['fileId' => $fileId, 'error' => $e->getMessage()]
+            );
+        }
+    }//end persistAnonymisationLog()
+
+    /**
+     * Resolve a stable engine label for the anonymisation log row.
+     *
+     * @param string $mimeType The MIME type of the source file (when known).
+     *
+     * @return string The engine class short name used for the run.
+     */
+    private function resolveEngineName(string $mimeType): string
+    {
+        if ($this->sanitizer->isSanitizable($mimeType) === true) {
+            return 'OfficeDocumentSanitizer';
+        }
+
+        if ($mimeType === 'application/pdf') {
+            return 'PdfTextReplacer';
+        }
+
+        return 'TextReplacer';
+    }//end resolveEngineName()
 
     /**
      * Anonymise a sanitisable Office document (DOCX / ODT).

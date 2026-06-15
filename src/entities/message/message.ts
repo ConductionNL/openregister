@@ -22,6 +22,7 @@ export class Message implements TMessage {
 	public created?: string
 
 	/**
+	 * @param message
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(message: TMessage) {

@@ -11,7 +11,7 @@ Implement formal decision management (besluiten) conforming to the ZGW BRC (Besl
 
 **Source**: ZGW API standard requirement; gap identified in cross-platform analysis.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Decisions MUST be first-class register objects
 Decisions (besluiten) MUST be stored as OpenRegister objects with a dedicated schema conforming to the ZGW BRC data model.
@@ -93,6 +93,8 @@ Decisions with `publicatieIndicatie: true` MUST be flagged for publication in ex
 - THEN the decision MUST be available via the public API
 - AND the publication date and besluit content MUST be accessible without authentication
 - AND personal data in the decision MUST be redacted in the public view
+
+## Analysis
 
 ### Current Implementation Status
 - **NOT implemented:** No dedicated besluiten (decisions) management exists in the codebase.

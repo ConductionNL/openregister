@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index\Backends\Solr;
 
 use Exception;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -58,11 +60,27 @@ class SolrQueryExecutor
     private readonly LoggerInterface $logger;
 
     /**
+     * Organisation service (multitenancy resolution).
+     *
+     * @var OrganisationService
+     */
+    private readonly OrganisationService $organisationService;
+
+    /**
+     * User session (RBAC owner resolution).
+     *
+     * @var IUserSession
+     */
+    private readonly IUserSession $userSession;
+
+    /**
      * Constructor
      *
-     * @param SolrHttpClient        $httpClient        HTTP client
-     * @param SolrCollectionManager $collectionManager Collection manager
-     * @param LoggerInterface       $logger            Logger
+     * @param SolrHttpClient        $httpClient          HTTP client
+     * @param SolrCollectionManager $collectionManager   Collection manager
+     * @param LoggerInterface       $logger              Logger
+     * @param OrganisationService   $organisationService Organisation service
+     * @param IUserSession          $userSession         User session
      *
      * @return void
      *
@@ -71,11 +89,15 @@ class SolrQueryExecutor
     public function __construct(
         SolrHttpClient $httpClient,
         SolrCollectionManager $collectionManager,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        OrganisationService $organisationService,
+        IUserSession $userSession
     ) {
-        $this->httpClient        = $httpClient;
-        $this->collectionManager = $collectionManager;
-        $this->logger            = $logger;
+        $this->httpClient          = $httpClient;
+        $this->collectionManager   = $collectionManager;
+        $this->logger              = $logger;
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
     }//end __construct()
 
     /**
@@ -175,10 +197,35 @@ class SolrQueryExecutor
                 $filters[] = '-deleted:true';
             }
 
+            // BUG-SVC-3: multitenancy — restrict to the caller's active
+            // organisation. Fail closed: with no active organisation, match a
+            // sentinel that never exists so no cross-tenant docs leak.
+            if ($_multitenancy === true) {
+                $activeOrg = $this->organisationService->getActiveOrganisation();
+                $orgUuid   = $activeOrg?->getUuid();
+                if (empty($orgUuid) === true) {
+                    $orgUuid = '__no_active_org__';
+                }
+
+                $filters[] = 'organisation:'.$this->escapeSolrQuery(value: (string) $orgUuid);
+            }
+
+            // BUG-SVC-3: RBAC — non-admin callers may only see their own
+            // documents. Mirror MagicRbacHandler's owner predicate. Fail
+            // closed when there is no authenticated user.
+            if ($_rbac === true) {
+                $userId = $this->userSession->getUser()?->getUID();
+                if (empty($userId) === true) {
+                    $userId = '__no_authenticated_user__';
+                }
+
+                $filters[] = 'owner:'.$this->escapeSolrQuery(value: (string) $userId);
+            }
+
             if (empty($filters) === false) {
                 $solrQuery['fq'] = array_merge($solrQuery['fq'] ?? [], $filters);
             }
-        }
+        }//end if
 
         $solrQuery['wt'] = 'json';
 
@@ -204,8 +251,16 @@ class SolrQueryExecutor
      */
     private function buildSolrQuery(array $query): array
     {
+        // BUG-SVC-10: Lucene-escape the user-supplied search term so special
+        // characters (e.g. `:`, `(`, `&&`) can't alter query semantics or
+        // trigger Solr parse errors. A literal `*:*` (no _search) is left as-is.
+        $searchTerm = '*:*';
+        if (isset($query['_search']) === true && $query['_search'] !== '' && $query['_search'] !== '*:*') {
+            $searchTerm = $this->escapeSolrQuery(value: (string) $query['_search']);
+        }
+
         $solrQuery = [
-            'q'     => $query['_search'] ?? '*:*',
+            'q'     => $searchTerm,
             'start' => (int) ($query['_offset'] ?? $query['_start'] ?? 0),
             'rows'  => (int) ($query['_limit'] ?? $query['_rows'] ?? 30),
         ];
@@ -225,6 +280,51 @@ class SolrQueryExecutor
 
         return $solrQuery;
     }//end buildSolrQuery()
+
+    /**
+     * Escape Lucene/Solr query special characters.
+     *
+     * Backslash-escapes every character in the Lucene special set so a
+     * user-supplied value can be used as a literal term or filter value
+     * without altering query semantics or causing a Solr parse error.
+     *
+     * @param string $value Raw user-supplied value.
+     *
+     * @return string The escaped value.
+     *
+     * @spec exclude Internal query-string escaping helper; no business rule.
+     */
+    private function escapeSolrQuery(string $value): string
+    {
+        // Lucene special characters: + - && || ! ( ) { } [ ] ^ " ~ * ? : \ /
+        $special = [
+            '\\',
+            '+',
+            '-',
+            '&',
+            '|',
+            '!',
+            '(',
+            ')',
+            '{',
+            '}',
+            '[',
+            ']',
+            '^',
+            '"',
+            '~',
+            '*',
+            '?',
+            ':',
+            '/',
+        ];
+
+        foreach ($special as $char) {
+            $value = str_replace($char, '\\'.$char, $value);
+        }
+
+        return $value;
+    }//end escapeSolrQuery()
 
     /**
      * Translate sort field to Solr format.

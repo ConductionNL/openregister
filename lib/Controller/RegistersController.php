@@ -1295,10 +1295,11 @@ class RegistersController extends Controller
             switch ($type) {
                 case 'excel':
                     // Import from Excel and get summary (now returns sheet-based format).
-                    // Get additional performance parameters with enhanced boolean parsing.
-                    $rbac  = $this->parseBooleanParam(paramName: 'rbac', default: true);
-                    $multi = $this->parseBooleanParam(paramName: 'multi', default: true);
-                    // Use optimized default.
+                    // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
+                    // manager pass ?multi=false to write objects across organisation boundaries.
+                    // Derive RBAC from admin status and always keep imports tenant-scoped.
+                    $rbac  = ($this->isCurrentUserAdmin() === false);
+                    $multi = true;
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
@@ -1326,10 +1327,11 @@ class RegistersController extends Controller
 
                     $schema = $this->schemaMapper->find($schemaId);
 
-                    // Get additional performance parameters with enhanced boolean parsing.
-                    $rbac  = $this->parseBooleanParam(paramName: 'rbac', default: true);
-                    $multi = $this->parseBooleanParam(paramName: 'multi', default: true);
-                    // Use optimized default.
+                    // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
+                    // manager pass ?multi=false to write objects across organisation boundaries.
+                    // Derive RBAC from admin status and always keep imports tenant-scoped.
+                    $rbac  = ($this->isCurrentUserAdmin() === false);
+                    $multi = true;
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,

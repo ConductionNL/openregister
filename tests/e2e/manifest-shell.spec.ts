@@ -141,9 +141,13 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 	}) => {
 		requireAuth()
 		// A detail route with a param resolves via CnPageRenderer (props :id from
-		// the URL). The id need not exist — we assert the shell renders, not data.
+		// the URL). RegisterDetail is store-driven: when no register is selected in
+		// the store (a cold deep-link), its mounted() guard bounces back to the
+		// list at #/registers. Either way the route resolved through the manifest
+		// router into a registry component and the app-content shell renders — the
+		// scenario asserts the dispatch + shell, not that an unknown id stays put.
 		await gotoRoute(page, '/registers/e2e-probe-id')
-		await expect(page).toHaveURL(/#\/registers\/e2e-probe-id$/)
+		await expect(page).toHaveURL(/#\/registers(\/e2e-probe-id)?$/)
 		await expect(page.locator('main, .app-content').first()).toBeVisible()
 	})
 
@@ -205,38 +209,15 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 			.first()
 		await expect(nav).toBeVisible({ timeout: 25_000 })
 
-		// A "main"-section destination (Registers) and a "settings"-section
-		// destination (Configurations) are both reachable from the rendered nav.
-		const navText = (await nav.innerText()).toLowerCase()
-		expect(navText).toContain('registers')
-
-		// Settings cluster destination — Configurations lives in
-		// section:"settings", which the CnAppRoot / NcAppNavigation
-		// shell renders inside a collapsible "Settings" footer control
-		// at the bottom of the nav. Its child destinations are NOT in
-		// the DOM until that control is expanded, so reading
-		// nav.innerText() alone never surfaces "Configurations".
-		// Expand the Settings control first, then assert the cluster
-		// destination is reachable.
-		const settingsToggle = nav
-			.locator('button:has-text("Settings"), [class*="settings"] button')
-			.first()
-		if (await settingsToggle.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await settingsToggle.click()
-			// The expanded settings drawer renders its destination list.
-			await page
-				.locator('text=/configuration/i')
-				.first()
-				.waitFor({ state: 'visible', timeout: 10_000 })
-				.catch(() => {})
-		}
-
-		// Either the settings cluster expanded and now exposes the
-		// Configurations destination, or it is already visible somewhere
-		// in the document. Assert on the page, not just the collapsed nav.
-		await expect(page.locator('text=/configuration/i').first()).toBeVisible({
-			timeout: 10_000,
-		})
+		// The menu is clustered into collapsible groups (Data / AI / Integration /
+		// Administration / Audit — see src/menu-layout.json). A collapsed group's
+		// leaf children are still in the DOM as stable `cn-nav-entry-<id>` entries,
+		// so we assert on those canonical entries rather than the group's visible
+		// innerText (which omits collapsed children).
+		// A data-cluster destination (Registers) and an administration-cluster
+		// destination (Configurations) are both present in the rendered nav.
+		await expect(page.locator('[data-testid="cn-nav-entry-Registers"]')).toHaveCount(1)
+		await expect(page.locator('[data-testid="cn-nav-entry-Configurations"]')).toHaveCount(1)
 	})
 
 	// @e2e openregister-app-manifest::menu-order-is-monotonic-per-section
@@ -249,10 +230,17 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 			.first()
 		await expect(nav).toBeVisible({ timeout: 25_000 })
 
-		const navText = (await nav.innerText()).toLowerCase()
-		// Manifest main order: Chat(10) < Registers(20) < Schemas(30).
-		const idxRegisters = navText.indexOf('registers')
-		const idxSchemas = navText.indexOf('schemas')
+		// Within the Data cluster the leaves keep their manifest order
+		// (Registers order:20 < Schemas order:30). Collapsed-group children stay
+		// in the DOM as `cn-nav-entry-<id>` entries, so we read DOM document order
+		// of those canonical entries rather than the group's visible innerText.
+		const entryIds = await nav
+			.locator('[data-testid^="cn-nav-entry-"]')
+			.evaluateAll((els) =>
+				els.map((e) => e.getAttribute('data-testid') || ''),
+			)
+		const idxRegisters = entryIds.indexOf('cn-nav-entry-Registers')
+		const idxSchemas = entryIds.indexOf('cn-nav-entry-Schemas')
 		expect(idxRegisters).toBeGreaterThanOrEqual(0)
 		expect(idxSchemas).toBeGreaterThan(idxRegisters)
 	})

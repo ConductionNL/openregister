@@ -38,8 +38,8 @@
 						<div class="assignment-card">
 							<label>{{ t('openregister', 'Object Collection') }}</label>
 							<NcSelect
-						input-label="Selected Object Collection"
 								v-model="selectedObjectCollection"
+								input-label="Selected Object Collection"
 								:options="collectionOptions"
 								:placeholder="t('openregister', 'Select collection for objects')"
 								:label-outside="true"
@@ -56,8 +56,8 @@
 						<div class="assignment-card">
 							<label>{{ t('openregister', 'File Collection') }}</label>
 							<NcSelect
-						input-label="Selected File Collection"
 								v-model="selectedFileCollection"
+								input-label="Selected File Collection"
 								:options="collectionOptions"
 								:placeholder="t('openregister', 'Select collection for files')"
 								:label-outside="true"
@@ -199,8 +199,8 @@
 					<div class="form-group">
 						<label>{{ t('openregister', 'ConfigSet') }}*</label>
 						<NcSelect
-						input-label="New Collection Data Config Set"
 							v-model="newCollectionData.configSet"
+							input-label="New Collection Data Config Set"
 							:options="configSetOptions"
 							:placeholder="t('openregister', 'Select ConfigSet')"
 							:label-outside="true" />
@@ -484,11 +484,6 @@ export default {
 							this.selectedFileCollection = fileCol.name
 						}
 					}
-
-					console.info('📦 Loaded current assignments:', {
-						objectCollection: this.selectedObjectCollection,
-						fileCollection: this.selectedFileCollection,
-					})
 				}
 			} catch (error) {
 				console.error('Failed to load current assignments:', error)
@@ -561,7 +556,6 @@ export default {
 		 * @spec exclude event-listener handler reloading config sets
 		 */
 		handleConfigSetUpdate() {
-			console.info('📦 ConfigSet updated, reloading ConfigSets list')
 			this.loadConfigSets()
 		},
 
@@ -616,6 +610,7 @@ export default {
 		},
 
 		/**
+		 * @param collection
 		 * @spec exclude sub-dialog open handler seeding copy form
 		 */
 		openCopyDialog(collection) {
@@ -663,6 +658,8 @@ export default {
 		},
 
 		/**
+		 * @param name
+		 * @param maxLength
 		 * @spec exclude display helper truncating name
 		 */
 		truncateName(name, maxLength = 35) {
@@ -671,6 +668,7 @@ export default {
 		},
 
 		/**
+		 * @param num
 		 * @spec exclude display helper formatting number
 		 */
 		formatNumber(num) {
@@ -679,6 +677,7 @@ export default {
 		},
 
 		/**
+		 * @param collection
 		 * @spec exclude action handler reindexing a collection via API
 		 */
 		async reindexCollection(collection) {
@@ -707,6 +706,7 @@ export default {
 		},
 
 		/**
+		 * @param collection
 		 * @spec exclude action handler clearing a collection via API
 		 */
 		async clearCollection(collection) {
@@ -731,6 +731,7 @@ export default {
 		},
 
 		/**
+		 * @param collection
 		 * @spec exclude action handler deleting a collection via API
 		 */
 		async deleteCollection(collection) {

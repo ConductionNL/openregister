@@ -63,6 +63,13 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
     private const TABLE = 'openregister_notification_subscriptions';
 
     /**
+     * Appconfig marker key. Once set, the migration has already run and must not
+     * run again — re-running would force enabled:true and resurrect overrides a
+     * user has since manually disabled (OPS-8).
+     */
+    private const DONE_KEY = 'notification_subscription_migration_done';
+
+    /**
      * Constructor.
      *
      * @param ContainerInterface $container DI container — used to lazily resolve
@@ -105,6 +112,17 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
     {
         $output->info('[OpenRegister] Migrating legacy notification subscriptions to user-config...');
 
+        // Run-once guard: if the marker is set the migration already executed on a
+        // previous upgrade. Re-running would force enabled:true and re-enable
+        // overrides the user has since manually disabled (OPS-8).
+        $appConfig = $this->resolveAppConfig();
+        if ($appConfig !== null
+            && $appConfig->getValueBool('openregister', self::DONE_KEY, false) === true
+        ) {
+            $output->info('[OpenRegister] Notification subscription migration already completed — skipping.');
+            return;
+        }
+
         $rows = $this->loadSubscriptionRows();
         if ($rows === null) {
             $output->info('[OpenRegister] Subscription table unavailable — migration skipped (normal on first install).');
@@ -113,6 +131,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
 
         if ($rows === []) {
             $output->info('[OpenRegister] No notification subscriptions to migrate.');
+            $this->markDone($appConfig);
             return;
         }
 
@@ -162,7 +181,50 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
         }//end foreach
 
         $output->info(sprintf('[OpenRegister] Migrated %d notification subscription override(s).', $migrated));
+        $this->markDone($appConfig);
     }//end run()
+
+    /**
+     * Persist the run-once marker so subsequent upgrades skip the migration (OPS-8).
+     *
+     * @param \OCP\IAppConfig|null $appConfig The app-config service, or null when unresolvable.
+     *
+     * @return void
+     */
+    private function markDone(?\OCP\IAppConfig $appConfig): void
+    {
+        if ($appConfig === null) {
+            return;
+        }
+
+        try {
+            $appConfig->setValueBool('openregister', self::DONE_KEY, true);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[OpenRegister] Could not persist notification-migration marker',
+                ['exception' => $e]
+            );
+        }
+    }//end markDone()
+
+    /**
+     * Lazily resolve the app-config service.
+     *
+     * @return \OCP\IAppConfig|null The service, or null when unresolvable.
+     */
+    private function resolveAppConfig(): ?\OCP\IAppConfig
+    {
+        try {
+            $appConfig = $this->container->get(\OCP\IAppConfig::class);
+            if ($appConfig instanceof \OCP\IAppConfig) {
+                return $appConfig;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveAppConfig()
 
     /**
      * Read the legacy subscription rows directly. Returns null when the

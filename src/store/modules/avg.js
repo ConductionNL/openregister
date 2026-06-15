@@ -20,7 +20,6 @@
  * @license   EUPL-1.2
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -248,6 +247,9 @@ export const useAvgStore = defineStore('avg', {
 		 *
 		 * @param {object} params {subject, type?, mode?}
 		 *
+		 * @param params.subject
+		 * @param params.type
+		 * @param params.mode
 		 * @spec exclude Thin API passthrough — GET /api/avg/inzage (Art 15 DSAR); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runInzage({ subject, type, mode }) {
@@ -276,6 +278,9 @@ export const useAvgStore = defineStore('avg', {
 		 *
 		 * @param {object} params {subject, type?, dryRun?}
 		 *
+		 * @param params.subject
+		 * @param params.type
+		 * @param params.dryRun
 		 * @spec exclude Thin API passthrough — POST /api/avg/vergetelheid (Art 17 erasure); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runVergetelheid({ subject, type, dryRun = false }) {
@@ -303,6 +308,8 @@ export const useAvgStore = defineStore('avg', {
 		 *
 		 * @param {object} params {subject, type?}
 		 *
+		 * @param params.subject
+		 * @param params.type
 		 * @spec exclude Thin API passthrough — GET /api/avg/portabiliteit (Art 20 portability); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runPortabiliteit({ subject, type }) {

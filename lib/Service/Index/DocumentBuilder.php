@@ -113,14 +113,19 @@ class DocumentBuilder
         );
 
         // Build basic Solr document from object.
+        // BUG-SVC-3: index owner + organisation so the query layer can apply
+        // RBAC (owner) and multitenancy (organisation) filter queries. Without
+        // these fields the fq predicates would match nothing (fail-closed).
         $doc = [
-            'id'        => (string) $object->getUuid(),
-            'object_id' => $object->getId(),
-            'uuid'      => $object->getUuid(),
-            'schema'    => $object->getSchema(),
-            'register'  => $object->getRegister(),
-            'created'   => $object->getCreated()?->format('Y-m-d\TH:i:s\Z'),
-            'updated'   => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
+            'id'           => (string) $object->getUuid(),
+            'object_id'    => $object->getId(),
+            'uuid'         => $object->getUuid(),
+            'schema'       => $object->getSchema(),
+            'register'     => $object->getRegister(),
+            'owner'        => $object->getOwner(),
+            'organisation' => $object->getOrganisation(),
+            'created'      => $object->getCreated()?->format('Y-m-d\TH:i:s\Z'),
+            'updated'      => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
         ];
 
         // Add object data.

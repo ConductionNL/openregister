@@ -118,7 +118,9 @@ import { translate as t } from '@nextcloud/l10n'
 				:key="'bulk-' + register.id"
 				class="bulk-actions">
 				<h4>{{ t('openregister', 'Bulk Role Assignment: {title}', { title: register.title || 'Register #' + register.id }) }}</h4>
-				<p class="bulk-description">{{ t('openregister', 'Apply a role to all schemas in this register that do not have explicit authorization overrides.') }}</p>
+				<p class="bulk-description">
+					{{ t('openregister', 'Apply a role to all schemas in this register that do not have explicit authorization overrides.') }}
+				</p>
 				<div class="bulk-controls">
 					<NcSelect
 						v-model="bulkRole[register.id]"
@@ -215,6 +217,7 @@ export default {
 		},
 
 		/**
+		 * @param registerId
 		 * @spec exclude settings-matrix row expand/collapse toggle plumbing
 		 */
 		toggleRegister(registerId) {
@@ -222,6 +225,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude settings-matrix lookup helper; resolves a register's schemas for display
 		 */
 		getRegisterSchemas(register) {
@@ -230,6 +234,8 @@ export default {
 		},
 
 		/**
+		 * @param register
+		 * @param action
 		 * @spec exclude settings-matrix authorization-read helper; extracts group names for an action (auth-system contract)
 		 */
 		getRegisterGroups(register, action) {
@@ -243,6 +249,9 @@ export default {
 		},
 
 		/**
+		 * @param schema
+		 * @param register
+		 * @param action
 		 * @spec exclude settings-matrix display helper; resolves effective (direct or inherited) groups
 		 */
 		getEffectiveGroups(schema, register, action) {
@@ -260,6 +269,8 @@ export default {
 		},
 
 		/**
+		 * @param schema
+		 * @param register
 		 * @spec exclude settings-matrix display helper; resolves the effective authorization object
 		 */
 		getEffectiveAuth(schema, register) {
@@ -271,6 +282,9 @@ export default {
 		},
 
 		/**
+		 * @param schema
+		 * @param register
+		 * @param action
 		 * @spec exclude settings-matrix CSS-class helper for direct/inherited permission cells
 		 */
 		getPermissionClass(schema, register, action) {
@@ -285,6 +299,9 @@ export default {
 		},
 
 		/**
+		 * @param schema
+		 * @param register
+		 * @param action
 		 * @spec exclude settings-matrix tooltip-text display helper
 		 */
 		getEffectiveTooltip(schema, register, action) {
@@ -300,6 +317,7 @@ export default {
 		},
 
 		/**
+		 * @param groups
 		 * @spec exclude settings-matrix groups-tooltip display helper
 		 */
 		getGroupsTooltip(groups) {
@@ -308,6 +326,7 @@ export default {
 		},
 
 		/**
+		 * @param groups
 		 * @spec exclude settings-matrix groups-label truncation display helper
 		 */
 		formatGroups(groups) {
@@ -317,6 +336,7 @@ export default {
 		},
 
 		/**
+		 * @param authorization
 		 * @spec exclude settings-matrix public-access detection display helper
 		 */
 		isPublicAccess(authorization) {
@@ -329,6 +349,8 @@ export default {
 		},
 
 		/**
+		 * @param register
+		 * @param enabled
 		 * @spec exclude settings-matrix toggle wiring; mutates register read-auth and persists via store (auth-system contract)
 		 */
 		async togglePublicAccess(register, enabled) {
@@ -353,6 +375,9 @@ export default {
 		},
 
 		/**
+		 * @param schema
+		 * @param register
+		 * @param enabled
 		 * @spec exclude settings-matrix toggle wiring; mutates schema read-auth and persists via store (auth-system contract)
 		 */
 		async toggleSchemaPublicAccess(schema, register, enabled) {
@@ -380,6 +405,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude settings-matrix select-option helper; maps a register's configured roles
 		 */
 		getRoleOptions(register) {
@@ -421,6 +447,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude settings-matrix bulk-action wiring; applies a role to a register's schemas via store (auth-system contract)
 		 */
 		async applyBulkRole(register) {

@@ -7,6 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
@@ -83,6 +84,43 @@ class FilesControllerFileActionsTest extends TestCase
         $object->setUuid('abc-123');
         return $object;
     }//end createObjectMock()
+
+    /**
+     * Rebuild the controller with an authenticated user session whose
+     * ObjectService::find() throws NotAuthorizedException, so the
+     * ensureObjectAccess() RBAC guard fires and the endpoint returns 403.
+     *
+     * @return void
+     */
+    private function arrangeRbacDenied(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('mallory');
+
+        $userSession = $this->createMock(IUserSession::class);
+        // Non-null user => isAnonymousRequest() === false => RBAC guard runs.
+        $userSession->method('getUser')->willReturn($user);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('find')
+            ->willThrowException(new NotAuthorizedException('forbidden'));
+
+        // Rebuild the controller with the authenticated user session wired in.
+        // The audit handler is irrelevant on the denied path (never reached).
+        $this->controller = new FilesController(
+            'openregister',
+            $this->request,
+            $this->fileService,
+            $this->objectService,
+            $this->rootFolder,
+            $this->userManager,
+            $this->eventDispatcher,
+            null,
+            $this->createMock(FileAuditHandler::class),
+            $userSession
+        );
+    }//end arrangeRbacDenied()
 
     /**
      * Test rename returns 200 on success.
@@ -666,4 +704,67 @@ class FilesControllerFileActionsTest extends TestCase
         $this->assertEquals(200, $response->getStatus());
         $this->assertEquals($expected, $response->getData());
     }//end testRestoreVersionResponseShape()
+
+    /**
+     * ADR-005 / gate-7: rename must reject an authenticated caller who lacks
+     * object access with HTTP 403 (IDOR guard via ensureObjectAccess()).
+     */
+    public function testRenameDeniedForUnauthorizedUserReturns403(): void
+    {
+        $this->arrangeRbacDenied();
+        $this->request->method('getParams')->willReturn(['name' => 'new.pdf']);
+
+        $response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
+
+        $this->assertEquals(403, $response->getStatus());
+    }//end testRenameDeniedForUnauthorizedUserReturns403()
+
+    /**
+     * ADR-005 / gate-7: batch must reject an unauthorized caller with 403
+     * before any batch handler runs.
+     */
+    public function testBatchDeniedForUnauthorizedUserReturns403(): void
+    {
+        $this->arrangeRbacDenied();
+        $this->request->method('getParams')
+            ->willReturn(['action' => 'delete', 'fileIds' => [1, 2]]);
+
+        // The batch handler must never be reached on the denied path.
+        $this->fileService->expects($this->never())->method('getBatchHandler');
+
+        $response = $this->controller->batch('reg', 'sch', 'abc-123');
+
+        $this->assertEquals(403, $response->getStatus());
+    }//end testBatchDeniedForUnauthorizedUserReturns403()
+
+    /**
+     * ADR-005 / gate-7: updateLabels must reject an unauthorized caller with 403.
+     */
+    public function testUpdateLabelsDeniedForUnauthorizedUserReturns403(): void
+    {
+        $this->arrangeRbacDenied();
+        $this->request->method('getParams')->willReturn(['labels' => ['x']]);
+
+        // The file mutation must never be reached on the denied path.
+        $this->fileService->expects($this->never())->method('updateFile');
+
+        $response = $this->controller->updateLabels('reg', 'sch', 'abc-123', 42);
+
+        $this->assertEquals(403, $response->getStatus());
+    }//end testUpdateLabelsDeniedForUnauthorizedUserReturns403()
+
+    /**
+     * ADR-005 / gate-7: listVersions (read endpoint) must also reject an
+     * unauthorized authenticated caller with 403.
+     */
+    public function testListVersionsDeniedForUnauthorizedUserReturns403(): void
+    {
+        $this->arrangeRbacDenied();
+
+        $this->fileService->expects($this->never())->method('getVersioningHandler');
+
+        $response = $this->controller->listVersions('reg', 'sch', 'abc-123', 42);
+
+        $this->assertEquals(403, $response->getStatus());
+    }//end testListVersionsDeniedForUnauthorizedUserReturns403()
 }//end class

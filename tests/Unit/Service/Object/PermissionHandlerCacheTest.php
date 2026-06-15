@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -83,6 +84,9 @@ class PermissionHandlerCacheTest extends TestCase
         $this->container          = $this->createMock(ContainerInterface::class);
         $this->registerMapper     = $this->createMock(RegisterMapper::class);
 
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturn(true);
+
         $this->handler = new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -90,6 +94,7 @@ class PermissionHandlerCacheTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $this->conditionMatcher,
+            $appConfig,
             $this->logger,
             $this->container
         );

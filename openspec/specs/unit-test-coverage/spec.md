@@ -6,6 +6,8 @@ status: active
 
 @e2e exclude test infrastructure spec — no UI surface, covered by PHPUnit
 
+## Purpose
+
 Achieve 100% unit test code coverage for all PHP source files in `lib/` (excluding `Migration/` and `AppInfo/Application.php`). Tests SHALL exercise every code path — not just the happy flow, but all branches, error paths, edge cases, and boundary conditions.
 
 ## Current State
@@ -14,6 +16,17 @@ Achieve 100% unit test code coverage for all PHP source files in `lib/` (excludi
 - **361 source files** in scope, **30 test files** exist
 - Coverage threshold is set at 75% (`composer coverage:check`)
 - Phase 2 (write ~136 new test files for ~330 untested source files) is planned
+
+## Requirements
+
+### Requirement: Achieve 100% unit test coverage of all in-scope source files
+
+All PHP source files in `lib/` (excluding `Migration/` and `AppInfo/Application.php`) SHALL reach 100% unit test coverage, with tests exercising every branch, error path, edge case, and boundary condition.
+
+#### Scenario: Full code-path coverage for an in-scope source file
+- **WHEN** the unit test suite runs against any in-scope source file
+- **THEN** the system MUST report 100% line and branch coverage for that file
+- **AND** the suite MUST cover happy-flow, error, edge-case, and boundary conditions
 
 ## Testing Standards
 

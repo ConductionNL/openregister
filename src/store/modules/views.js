@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 /**
@@ -103,7 +102,6 @@ export const useViewsStore = defineStore('views', {
 		 */
 		setActiveView(view) {
 			this.activeView = view
-			console.info('Active view set:', view)
 		},
 
 		/**
@@ -114,7 +112,6 @@ export const useViewsStore = defineStore('views', {
 		 */
 		clearActiveView() {
 			this.activeView = null
-			console.info('Active view cleared')
 		},
 
 		/**
@@ -141,8 +138,6 @@ export const useViewsStore = defineStore('views', {
 
 				const data = await response.json()
 				this.viewsList = data.results || []
-
-				console.info('Views fetched successfully:', this.viewsList.length, 'views')
 			} catch (error) {
 				console.error('Error fetching views:', error)
 				this.error = error.message
@@ -180,7 +175,6 @@ export const useViewsStore = defineStore('views', {
 				// API returns { view: {...} }, so unwrap it
 				const view = data.view || data
 
-				console.info('View fetched successfully:', view)
 				return view
 			} catch (error) {
 				console.error('Error fetching view:', error)
@@ -223,7 +217,6 @@ export const useViewsStore = defineStore('views', {
 				// Add to views list
 				this.viewsList.push(newView)
 
-				console.info('View created successfully:', newView)
 				return newView
 			} catch (error) {
 				console.error('Error creating view:', error)
@@ -278,7 +271,6 @@ export const useViewsStore = defineStore('views', {
 					this.activeView = updatedView
 				}
 
-				console.info('View updated successfully:', updatedView)
 				return updatedView
 			} catch (error) {
 				console.error('Error updating view:', error)
@@ -338,8 +330,6 @@ export const useViewsStore = defineStore('views', {
 				if (this.activeView && (this.activeView.id === id || this.activeView.uuid === id)) {
 					this.activeView = null
 				}
-
-				console.info('View deleted successfully')
 			} catch (error) {
 				console.error('Error deleting view:', error)
 				this.error = error.message
@@ -359,7 +349,6 @@ export const useViewsStore = defineStore('views', {
 		 */
 		applyView(view, searchStore) {
 			if (!view || !view.configuration) {
-				console.warn('Invalid view provided to applyView')
 				return
 			}
 
@@ -414,8 +403,6 @@ export const useViewsStore = defineStore('views', {
 			}
 
 			this.setActiveView(view)
-
-			console.info('View applied successfully:', view.name)
 		},
 
 		/**

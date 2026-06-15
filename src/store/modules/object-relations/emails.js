@@ -39,6 +39,10 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		/**
 		 * Build the email-link endpoint URL for an object.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
 		 * @spec exclude private URL-builder helper (no client state)
 		 */
 		_url(register, schema, id, suffix = '') {
@@ -53,6 +57,9 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * Fetch and cache email links for an object, falling back to an empty
 		 * state when the Mail app is unavailable (HTTP 501).
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async fetch(register, schema, id) {
@@ -84,6 +91,10 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * Unlink an email, optimistically pruning it from the cached list for
 		 * that object key without refetching.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param emailId
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async unlink(register, schema, id, emailId) {
@@ -97,6 +108,9 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		/**
 		 * Read the cached email links for an object key.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec exclude store getter (reads local per-key cache)
 		 */
 		get(register, schema, id) {

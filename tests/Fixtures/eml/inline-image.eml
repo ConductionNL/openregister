@@ -1,0 +1,20 @@
+From: Alice Bakker <alice@example.com>
+To: Bob de Vries <bob@example.com>
+Subject: Email with inline image
+Date: Thu, 01 Jan 2026 12:00:00 +0000
+Content-Type: multipart/related; boundary="related_boundary"
+
+--related_boundary
+Content-Type: text/html; charset=UTF-8
+
+<html><body><p>See image: <img src="cid:image1@example.com"></p></body></html>
+
+--related_boundary
+Content-Type: image/png
+Content-Disposition: inline
+Content-ID: <image1@example.com>
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+
+--related_boundary--

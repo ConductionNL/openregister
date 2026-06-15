@@ -269,6 +269,7 @@ export default {
 
 	methods: {
 		/**
+		 * @param step
 		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
 		 */
 		getStepStatus(step) {
@@ -279,6 +280,7 @@ export default {
 		},
 
 		/**
+		 * @param step
 		 * @spec exclude Maps a step status to a display icon; UI presentation helper.
 		 */
 		getStepIcon(step) {
@@ -289,6 +291,7 @@ export default {
 		},
 
 		/**
+		 * @param step
 		 * @spec exclude Maps a step status to display text; UI presentation helper.
 		 */
 		getStepStatusText(step) {
@@ -300,6 +303,7 @@ export default {
 		},
 
 		/**
+		 * @param key
 		 * @spec exclude Humanizes a detail key for display; UI presentation helper.
 		 */
 		formatDetailLabel(key) {
@@ -307,6 +311,7 @@ export default {
 		},
 
 		/**
+		 * @param value
 		 * @spec exclude Stringifies a detail value for display; UI presentation helper.
 		 */
 		formatDetailValue(value) {

@@ -667,16 +667,6 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['success']);
     }
 
-    public function testClearBlobReturnsRetiredMessage(): void
-    {
-        $result = $this->controller->clearBlob();
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertSame(0, $data['deleted']);
-    }
-
     public function testContractsReturnsPaginatedResults(): void
     {
         $this->request->method('getParams')->willReturn([]);
@@ -776,64 +766,6 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
 
         $this->assertSame(403, $result->getStatus());
-    }
-
-    public function testImportReturns400WhenNoFile(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn(null);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('No file uploaded', $result->getData()['error']);
-    }
-
-    public function testImportSuccess(): void
-    {
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-
-        // Excel upload routes through ImportService::importFromExcel
-        // (no schema param required — Excel auto-resolves per sheet).
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'import.xlsx',
-            'tmp_name' => '/tmp/import.xlsx',
-            'size' => 1024,
-        ]);
-        $this->request->method('getParam')->willReturn(null);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->importService->expects($this->once())->method('importFromExcel')->willReturn([
-            'imported' => 10,
-            'failed' => 0,
-        ]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame('Import successful', $data['message']);
-    }
-
-    public function testImportReturns500OnException(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'import.csv',
-            'tmp_name' => '/tmp/import.csv',
-        ]);
-
-        $this->registerMapper->method('find')
-            ->willThrowException(new DBException('Register not found'));
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(500, $result->getStatus());
     }
 
     // --- index() tests: register/schema not found ---
@@ -1152,71 +1084,6 @@ class ObjectsControllerTest extends TestCase
 
     // --- import() register-level additional tests ---
 
-    public function testImportReturnsSuccessWithValidFile(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-            'error' => 0,
-        ]);
-        // CSV import requires a schema; provide one so the import proceeds.
-        $this->request->method('getParam')->willReturnMap([
-            ['schema', null, '5'],
-        ]);
-
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-        $register->setTitle('Test Register');
-
-        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->importService->expects($this->once())->method('importFromCsv')->willReturn([
-            'created' => 5,
-            'updated' => 2,
-            'errors' => 0,
-        ]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame('Import successful', $data['message']);
-    }
-
-    public function testImportCatchesRegisterNotFound(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-            'error' => 0,
-        ]);
-        $this->request->method('getParam')->willReturn(null);
-
-        $this->registerMapper->method('find')
-            ->willThrowException(new Exception('Register not found'));
-
-        // import() catches Exception and returns 500
-        try {
-            $result = $this->controller->import(999);
-            $this->assertInstanceOf(JSONResponse::class, $result);
-            $this->assertSame(500, $result->getStatus());
-        } catch (Exception $e) {
-            // If exception propagates, that is also valid behavior
-            $this->assertSame('Register not found', $e->getMessage());
-        }
-    }
-
     // --- lock() with duration ---
 
     public function testLockWithDurationParameter(): void
@@ -1330,18 +1197,6 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
 
         $this->assertSame(400, $result->getStatus());
-    }
-
-    // --- import() with no file returns 400 (duplicate guard) ---
-
-    public function testImportWithNoFileReturns400(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn(null);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('No file uploaded', $result->getData()['error']);
     }
 
     // =========================================================================
@@ -2072,7 +1927,8 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame(500, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('error', $data);
-        $this->assertStringContainsString('Database connection lost', $data['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $data['error']);
     }
 
     /**
@@ -2757,61 +2613,6 @@ class ObjectsControllerTest extends TestCase
         $this->assertTrue($data['success']);
         $this->assertSame(50, $data['statistics']['processed']);
         $this->assertArrayHasKey('pagination', $data);
-    }
-
-    // =========================================================================
-    // import() — with schema parameter
-    // =========================================================================
-
-    public function testImportWithSchemaParameter(): void
-    {
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-
-        $schema = new \OCA\OpenRegister\Db\Schema();
-        $refS = new \ReflectionClass($schema);
-        $propS = $refS->getProperty('id');
-        $propS->setAccessible(true);
-        $propS->setValue($schema, 5);
-
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-        ]);
-        $this->request->method('getParam')->willReturnMap([
-            ['schema', null, '5'],
-            ['validation', false, false],
-            ['events', false, false],
-            ['rbac', true, true],
-            ['multi', true, true],
-            ['publish', false, false],
-        ]);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        // CSV upload with explicit schema routes through importFromCsv,
-        // forwarding the resolved register + schema.
-        $this->importService->expects($this->once())
-            ->method('importFromCsv')
-            ->with(
-                $this->equalTo('/tmp/data.csv'),
-                $this->identicalTo($register),
-                $this->identicalTo($schema)
-            )
-            ->willReturn(['imported' => 8]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame('Import successful', $data['message']);
     }
 
     // =========================================================================
@@ -5442,60 +5243,6 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
-    // import() — with optional boolean parameters
-    // =========================================================================
-
-    public function testImportWithAllBooleanParams(): void
-    {
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-
-        // Excel upload (no schema needed) so we can assert that the
-        // request's boolean params are parsed and forwarded verbatim to
-        // ImportService::importFromExcel.
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.xlsx',
-            'tmp_name' => '/tmp/data.xlsx',
-            'size' => 1024,
-        ]);
-        $this->request->method('getParam')->willReturnMap([
-            ['schema', null, null],
-            ['validation', false, 'true'],
-            ['events', false, 'true'],
-            ['rbac', true, 'false'],
-            ['multi', true, 'false'],
-            ['publish', false, 'true'],
-        ]);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        // Signature: (filePath, register, schema, validation, events,
-        // _rbac, _multitenancy, publish, currentUser, enrich).
-        $this->importService->expects($this->once())
-            ->method('importFromExcel')
-            ->with(
-                $this->equalTo('/tmp/data.xlsx'),
-                $this->identicalTo($register),
-                $this->isNull(),
-                $this->isTrue(),   // validation
-                $this->isTrue(),   // events
-                $this->isFalse(),  // _rbac
-                $this->isFalse(),  // _multitenancy
-                $this->isTrue()    // publish
-            )
-            ->willReturn(['imported' => 3]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    // =========================================================================
     // patch() — with multipart form data normalization
     // =========================================================================
 
@@ -6299,7 +6046,8 @@ class ObjectsControllerTest extends TestCase
         $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
         $this->assertSame(500, $result->getStatus());
         $data = $result->getData();
-        $this->assertStringContainsString('Disk full', $data['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $data['error']);
     }
 
     // =========================================================================

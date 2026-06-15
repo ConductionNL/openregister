@@ -689,6 +689,46 @@ class WebhookService
         try {
             $response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload);
 
+            // BUG-SVC-1: http_errors is disabled on the Guzzle client, so a 4xx/5xx
+            // response does NOT throw — it lands here. Treat any non-2xx status as a
+            // delivery failure (log it, record failed statistics, schedule a retry)
+            // instead of silently recording it as a successful delivery.
+            $statusCode = (int) ($response['status_code'] ?? 0);
+            if ($statusCode < 200 || $statusCode >= 300) {
+                $webhookLog->setSuccess(false);
+                $webhookLog->setStatusCode($statusCode);
+                $webhookLog->setResponseBody($this->capResponseBody(body: (string) ($response['body'] ?? '')));
+                $webhookLog->setErrorMessage('Webhook endpoint returned non-2xx status: '.$statusCode);
+                $webhookLog->setRequestBody(json_encode($webhookPayload));
+
+                $this->logger->error(
+                    message: '[WebhookService] Webhook delivery failed with non-2xx status',
+                    context: [
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
+                        'webhook_id'   => $webhook->getId(),
+                        'webhook_name' => $webhook->getName(),
+                        'event'        => $eventName,
+                        'status_code'  => $statusCode,
+                        'attempt'      => $attempt,
+                        'max_retries'  => $webhook->getMaxRetries(),
+                    ]
+                );
+
+                $this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
+
+                // Schedule retry if within retry limit.
+                if ($attempt < $webhook->getMaxRetries()) {
+                    $nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
+                    $webhookLog->setNextRetryAt($nextRetryAt);
+                    $this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
+                }
+
+                $this->webhookLogMapper->insert($webhookLog);
+
+                return false;
+            }//end if
+
             // Log success.
             $webhookLog->setSuccess(true);
             $webhookLog->setStatusCode($response['status_code']);

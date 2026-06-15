@@ -579,7 +579,18 @@ class RegisterService
             $unionQueries = [];
 
             foreach ($schemas as $schema) {
-                $schemaId = $schema['id'] ?? null;
+                // $schemas may arrive as hydrated Schema objects (the
+                // `_extend[]=schemas` + `@self.stats` path via
+                // resolveSchemasForStats()/schemaMapper->find()), as plain
+                // arrays, or as scalar ids — resolve the id from any shape.
+                if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                    $schemaId = $schema->getId();
+                } else if (is_array($schema) === true) {
+                    $schemaId = $schema['id'] ?? null;
+                } else {
+                    $schemaId = is_numeric($schema) === true ? (int) $schema : null;
+                }
+
                 if ($schemaId === null) {
                     $this->logger->warning(
                         message: '[RegisterService] Schema without ID found, skipping',

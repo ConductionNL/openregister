@@ -32,7 +32,6 @@ use Psr\Log\LoggerInterface;
 use DateTime;
 use DateInterval;
 use Symfony\Component\HttpFoundation\Response;
-use OCP\AppFramework\Http\JSONResponse;
 
 /**
  * Trait MultiTenancyTrait

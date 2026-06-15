@@ -22,7 +22,7 @@
 					class="or-mail-link-dialog__search"
 					:placeholder="t('openregister', 'Search by title or UUID...')"
 					:aria-label="t('openregister', 'Search by title or UUID...')"
-					@input="onSearchInput" />
+					@input="onSearchInput">
 				<div v-if="searching" class="or-mail-loading">
 					<span class="icon-loading-small" />
 				</div>
@@ -98,6 +98,7 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param val
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		visible(val) {
@@ -154,6 +155,7 @@ export default {
 			return this.linkedObjectUuids.includes(result.uuid)
 		},
 		/**
+		 * @param result
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		selectResult(result) {
@@ -163,6 +165,7 @@ export default {
 			this.selectedResult = result
 		},
 		/**
+		 * @param result
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		resultAriaLabel(result) {

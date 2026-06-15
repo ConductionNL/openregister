@@ -1,7 +1,6 @@
 /**
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
  */
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -80,7 +79,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		setSearchTrailList(searchTrailList) {
 			// Ensure we have a clean array without reactive references
 			this.searchTrailList = Array.isArray(searchTrailList) ? [...searchTrailList] : []
-			console.info('Search trail list set to:', this.searchTrailList.length, 'items')
 		},
 
 		/**
@@ -91,7 +89,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setSearchTrailItem(searchTrailItem) {
 			this.searchTrailItem = searchTrailItem
-			console.info('Search trail item set to:', searchTrailItem)
 		},
 
 		/**
@@ -105,7 +102,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				...this.searchTrailPagination,
 				...pagination,
 			}
-			console.info('Search trail pagination set to:', this.searchTrailPagination)
 		},
 
 		/**
@@ -132,7 +128,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 					complex: 0,
 				},
 			}
-			console.info('Search trail statistics set to:', this.statistics)
 		},
 
 		/**
@@ -145,7 +140,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			// Handle response structure from API
 			const terms = response?.results || response?.terms || response
 			this.popularTerms = Array.isArray(terms) ? [...terms] : []
-			console.info('Popular terms set to:', this.popularTerms.length, 'items')
 		},
 
 		/**
@@ -172,7 +166,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 					this.activity[period] = []
 				}
 			})
-			console.info('Search trail activity set to:', this.activity)
 		},
 
 		/**
@@ -185,7 +178,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			// Handle response structure from API
 			const stats = response?.results || response?.statistics || response
 			this.registerSchemaStats = Array.isArray(stats) ? [...stats] : []
-			console.info('Register schema stats set to:', this.registerSchemaStats.length, 'items')
 		},
 
 		/**
@@ -198,7 +190,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			// Handle response structure from API
 			const stats = response?.results || response?.user_agents || response
 			this.userAgentStats = Array.isArray(stats) ? [...stats] : []
-			console.info('User agent stats set to:', this.userAgentStats.length, 'items')
 		},
 
 		/**
@@ -209,7 +200,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setSearchTrailFilters(filters) {
 			this.searchTrailFilters = filters
-			console.info('Search trail filters set to:', filters)
 		},
 
 		/**
@@ -220,7 +210,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setSearchTrailSearch(search) {
 			this.searchTrailSearch = search
-			console.info('Search trail search set to:', search)
 		},
 
 		/**
@@ -234,8 +223,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.searchTrailLoading = true
 
 			try {
-				console.info('Fetching search trails with options:', options)
-
 				// Build query parameters
 				const params = new URLSearchParams()
 
@@ -266,7 +253,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				}
 
 				const url = `${apiUrl}/search-trails?${params.toString()}`
-				console.info('Fetching from URL:', url)
 
 				const response = await fetch(url, {
 					method: 'GET',
@@ -277,7 +263,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Search trail fetch response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch search trails')
@@ -312,8 +297,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.statisticsLoading = true
 
 			try {
-				console.info('Fetching search trail statistics')
-
 				const response = await fetch(`${apiUrl}/search-trails/statistics`, {
 					method: 'GET',
 					headers: {
@@ -323,7 +306,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Search trail statistics response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch statistics')
@@ -350,8 +332,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.popularTermsLoading = true
 
 			try {
-				console.info('Fetching popular search terms')
-
 				const response = await fetch(`${apiUrl}/search-trails/popular-terms?limit=${limit}`, {
 					method: 'GET',
 					headers: {
@@ -361,7 +341,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Popular terms response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch popular terms')
@@ -388,8 +367,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.activityLoading = true
 
 			try {
-				console.info('Fetching search activity for period:', period)
-
 				const response = await fetch(`${apiUrl}/search-trails/activity?interval=${period}`, {
 					method: 'GET',
 					headers: {
@@ -399,7 +376,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Activity response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch activity data')
@@ -423,8 +399,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchRegisterSchemaStats() {
 			try {
-				console.info('Fetching register schema statistics')
-
 				const response = await fetch(`${apiUrl}/search-trails/register-schema-stats`, {
 					method: 'GET',
 					headers: {
@@ -434,7 +408,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Register schema stats response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch register schema statistics')
@@ -456,8 +429,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchUserAgentStats() {
 			try {
-				console.info('Fetching user agent statistics')
-
 				const response = await fetch(`${apiUrl}/search-trails/user-agent-stats`, {
 					method: 'GET',
 					headers: {
@@ -467,7 +438,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('User agent stats response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch user agent statistics')
@@ -490,8 +460,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async cleanupSearchTrails(days = 30) {
 			try {
-				console.info('Cleaning up search trails older than', days, 'days')
-
 				const response = await fetch(`${apiUrl}/search-trails/cleanup`, {
 					method: 'POST',
 					headers: {
@@ -502,7 +470,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Cleanup response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to cleanup search trails')
@@ -665,7 +632,6 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.userAgentStats = []
 			this.searchTrailFilters = {}
 			this.searchTrailSearch = ''
-			console.info('Search trail store cleared')
 		},
 	},
 })

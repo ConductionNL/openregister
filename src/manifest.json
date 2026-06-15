@@ -256,60 +256,68 @@
 	],
 	"menu": [
 		{
-			"id": "Chat",
-			"label": "AI Chat",
-			"icon": "MessageTextOutline",
-			"route": "chat",
-			"section": "main",
-			"order": 10
-		},
-		{
-			"id": "Registers",
-			"label": "Registers",
+			"id": "DataGroup",
+			"label": "Data",
 			"icon": "DatabaseOutline",
-			"route": "registers",
 			"section": "main",
-			"order": 20
+			"order": 20,
+			"children": [
+				{ "id": "Registers", "label": "Registers", "icon": "DatabaseOutline", "route": "registers", "order": 20 },
+				{ "id": "Schemas", "label": "Schemas", "icon": "FileTreeOutline", "route": "schemas", "order": 30 },
+				{ "id": "Templates", "label": "Templates", "icon": "FileOutline", "route": "templates", "order": 40 },
+				{ "id": "Tables", "label": "Search / views", "icon": "Magnify", "route": "tables", "order": 50 },
+				{ "id": "Files", "label": "Files", "icon": "FileDocumentMultipleOutline", "route": "files", "order": 60 }
+			]
 		},
 		{
-			"id": "Schemas",
-			"label": "Schemas",
-			"icon": "FileTreeOutline",
-			"route": "schemas",
-			"section": "main",
-			"order": 30
-		},
-		{
-			"id": "Templates",
-			"label": "Templates",
-			"icon": "FileOutline",
-			"route": "templates",
-			"section": "main",
-			"order": 40
-		},
-		{
-			"id": "Tables",
-			"label": "Search / views",
-			"icon": "Magnify",
-			"route": "tables",
-			"section": "main",
-			"order": 50
-		},
-		{
-			"id": "Files",
-			"label": "Files",
-			"icon": "FileDocumentMultipleOutline",
-			"route": "files",
-			"section": "main",
-			"order": 60
-		},
-		{
-			"id": "Agents",
-			"label": "Agents",
+			"id": "AiGroup",
+			"label": "AI",
 			"icon": "RobotOutline",
-			"route": "agents",
 			"section": "main",
-			"order": 70
+			"order": 70,
+			"children": [
+				{ "id": "Chat", "label": "AI Chat", "icon": "MessageTextOutline", "route": "chat", "order": 10 },
+				{ "id": "Agents", "label": "Agents", "icon": "RobotOutline", "route": "agents", "order": 70 }
+			]
+		},
+		{
+			"id": "IntegrationGroup",
+			"label": "Integration",
+			"icon": "Api",
+			"section": "main",
+			"order": 90,
+			"children": [
+				{ "id": "Organisations", "label": "Organisations", "icon": "OfficeBuildingOutline", "route": "organisation", "order": 91 },
+				{ "id": "Applications", "label": "Applications", "icon": "ApplicationOutline", "route": "applications", "order": 92 },
+				{ "id": "Sources", "label": "Data sources", "icon": "DatabaseArrowRightOutline", "route": "sources", "order": 93 },
+				{ "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "endpoints", "order": 94 },
+				{ "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "webhooks", "order": 95 }
+			]
+		},
+		{
+			"id": "AdministrationGroup",
+			"label": "Administration",
+			"icon": "CogOutline",
+			"section": "main",
+			"order": 100,
+			"children": [
+				{ "id": "Configurations", "label": "Configurations", "icon": "CogOutline", "route": "configurations", "order": 94 },
+				{ "id": "Entities", "label": "Entities", "icon": "AccountOutline", "route": "entities", "order": 95 },
+				{ "id": "Avg", "label": "AVG / Verwerkingsregister", "icon": "ShieldLockOutline", "route": "avg", "order": 100 },
+				{ "id": "Reports", "label": "Reports", "icon": "ChartBoxOutline", "route": "reports", "order": 101 }
+			]
+		},
+		{
+			"id": "AuditGroup",
+			"label": "Audit",
+			"icon": "TextBoxOutline",
+			"section": "main",
+			"order": 110,
+			"children": [
+				{ "id": "Deleted", "label": "Deleted", "icon": "DeleteRestore", "route": "deleted", "order": 96 },
+				{ "id": "AuditTrails", "label": "Audit Trails", "icon": "TextBoxOutline", "route": "audit-trails", "order": 97 },
+				{ "id": "SearchTrails", "label": "Search Trails", "icon": "MagnifyPlus", "route": "search-trails", "order": 98 }
+			]
 		},
 		{
 			"id": "Documentation",
@@ -326,102 +334,6 @@
 			"route": "features-roadmap",
 			"section": "footer",
 			"order": 2
-		},
-		{
-			"id": "Organisations",
-			"label": "Organisations",
-			"icon": "OfficeBuildingOutline",
-			"route": "organisation",
-			"section": "settings",
-			"order": 91
-		},
-		{
-			"id": "Applications",
-			"label": "Applications",
-			"icon": "ApplicationOutline",
-			"route": "applications",
-			"section": "settings",
-			"order": 92
-		},
-		{
-			"id": "Sources",
-			"label": "Data sources",
-			"icon": "DatabaseArrowRightOutline",
-			"route": "sources",
-			"section": "settings",
-			"order": 93
-		},
-		{
-			"id": "Configurations",
-			"label": "Configurations",
-			"icon": "CogOutline",
-			"route": "configurations",
-			"section": "settings",
-			"order": 94
-		},
-		{
-			"id": "Entities",
-			"label": "Entities",
-			"icon": "AccountOutline",
-			"route": "entities",
-			"section": "settings",
-			"order": 95
-		},
-		{
-			"id": "Deleted",
-			"label": "Deleted",
-			"icon": "DeleteRestore",
-			"route": "deleted",
-			"section": "settings",
-			"order": 96
-		},
-		{
-			"id": "AuditTrails",
-			"label": "Audit Trails",
-			"icon": "TextBoxOutline",
-			"route": "audit-trails",
-			"section": "settings",
-			"order": 97
-		},
-		{
-			"id": "SearchTrails",
-			"label": "Search Trails",
-			"icon": "MagnifyPlus",
-			"route": "search-trails",
-			"section": "settings",
-			"order": 98
-		},
-		{
-			"id": "Webhooks",
-			"label": "Webhooks",
-			"icon": "Webhook",
-			"route": "webhooks",
-			"section": "settings",
-			"order": 99
-		},
-		{
-			"id": "Avg",
-			"label": "AVG / Verwerkingsregister",
-			"icon": "ShieldLockOutline",
-			"route": "avg",
-			"section": "settings",
-			"order": 100
-		},
-		{
-			"id": "Reports",
-			"label": "Reports",
-			"icon": "ChartBoxOutline",
-			"route": "reports",
-			"section": "settings",
-			"order": 101
-		},
-		{
-			"id": "Endpoints",
-			"label": "Endpoints",
-			"icon": "Api",
-			"route": "endpoints",
-			"section": "settings",
-			"order": 102
 		}
 	]
 }

@@ -149,10 +149,9 @@ class GitHubHandler
             $this->logger->debug(
                 message: '[GitHubHandler] Using GitHub API token for authentication',
                 context: [
-                    'file'         => __FILE__,
-                    'line'         => __LINE__,
-                    'token_length' => strlen($token),
-                    'token_prefix' => substr($token, 0, 8).'...',
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'has_token' => true,
                 ]
             );
         }
@@ -524,8 +523,35 @@ class GitHubHandler
     public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
         try {
+            // SEC-SVC-8: percent-encode each path segment so a crafted owner/
+            // repo/branch/path cannot inject extra path traversal, query, or
+            // host components into the raw.githubusercontent.com URL. Reject
+            // any segment containing '..' or control characters outright.
+            $encodeSegments = static function (string $value): string {
+                $segments = explode('/', $value);
+                $encoded  = [];
+                foreach ($segments as $segment) {
+                    if ($segment === '') {
+                        continue;
+                    }
+
+                    if ($segment === '..' || preg_match('/[\x00-\x1f\x7f]/', $segment) === 1) {
+                        throw new \InvalidArgumentException('Invalid path segment.');
+                    }
+
+                    $encoded[] = rawurlencode($segment);
+                }
+
+                return implode('/', $encoded);
+            };
+
+            $safeOwner  = $encodeSegments($owner);
+            $safeRepo   = $encodeSegments($repo);
+            $safeBranch = $encodeSegments($branch);
+            $safePath   = $encodeSegments($path);
+
             // Use raw.githubusercontent.com - doesn't count against API rate limit.
-            $rawUrl = "https://raw.githubusercontent.com/{$owner}/{$repo}/{$branch}/{$path}";
+            $rawUrl = "https://raw.githubusercontent.com/{$safeOwner}/{$safeRepo}/{$safeBranch}/{$safePath}";
 
             $this->logger->debug(
                 message: '[GitHubHandler] Enriching configuration details from raw URL',
@@ -543,6 +569,7 @@ class GitHubHandler
                     'headers' => [
                         'Accept' => 'application/json',
                     ],
+                    'allow_redirects' => false,
                 ]
             );
 

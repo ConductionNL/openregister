@@ -145,6 +145,7 @@ export default {
 	},
 	methods: {
 		/**
+		 * @param candidate
 		 * @spec exclude client-side BCP-47/duplicate validation helper, UI plumbing
 		 */
 		validateDraft(candidate) {
@@ -170,6 +171,7 @@ export default {
 			this.draft = ''
 		},
 		/**
+		 * @param reason
 		 * @spec exclude computed validation-error message display helper, UI plumbing
 		 */
 		errorMessageFor(reason) {
@@ -181,6 +183,7 @@ export default {
 			}
 		},
 		/**
+		 * @param idx
 		 * @spec exclude list-editor remove emitting v-model input; languages contract owned by register-i18n capability
 		 */
 		remove(idx) {
@@ -190,6 +193,8 @@ export default {
 			this.$emit('input', next)
 		},
 		/**
+		 * @param from
+		 * @param to
 		 * @spec exclude list-editor reorder emitting v-model input; languages contract owned by register-i18n capability
 		 */
 		move(from, to) {

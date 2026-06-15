@@ -711,7 +711,8 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->show(1);
 
         $this->assertSame(500, $result->getStatus());
-        $this->assertSame('Unexpected error', $result->getData()['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $result->getData()['error']);
     }//end testShowReturns500OnGenericException()
 
     public function testShowWithExtendStats(): void
@@ -1048,7 +1049,8 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->stats(1);
 
         $this->assertSame(500, $result->getStatus());
-        $this->assertSame('Database connection lost', $result->getData()['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $result->getData()['error']);
     }//end testStatsReturns500OnGenericException()
 
     // NOTE: publish()/depublish() branch-coverage tests removed — endpoints

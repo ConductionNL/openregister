@@ -1,12 +1,18 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-10T11:49:21.541Z",
+  "generatedAt": "2026-06-14T11:10:46.844Z",
   "features": [
     {
       "slug": "activity-provider",
       "title": "Activity Provider",
       "summary": "Integrate OpenRegister with Nextcloud's Activity app so that all CRUD operations on Objects, Registers, and Schemas are visible in the standard Nextcloud activity stream, dashboard activity widget, and (optionally) email notifications. This gives users and administrators a clear, auditable timeline of who changed what and when, using the standard `OCP\\Activity` API (IManager, IProvider, IFilter, ActivitySettings).",
       "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/activity-provider/spec.md"
+    },
+    {
+      "slug": "admin-settings",
+      "title": "admin-settings Specification",
+      "summary": "The OpenRegister admin settings surface renders in the Nextcloud admin panel and exposes operational status sections — including the realtime push-notifications (notify_push) status probe — without instantiating runtime queue services during render. Backed by `lib/Settings/OpenRegisterAdmin.php` and the admin settings Vue component.",
+      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/admin-settings/spec.md"
     },
     {
       "slug": "ai-mcp",
@@ -17,7 +23,7 @@
     {
       "slug": "approval-workflow",
       "title": "Approval Workflow",
-      "summary": "Approval Workflow provides multi-step, role-gated approval chains for OpenRegister objects. Administrators configure named chains with ordered steps, each bound to a Nextcloud group (the \"role\"). When an object enters a chain, one `ApprovalStep` record per chain step is created — step 1 starts as `pending`, all others as `waiting`. Authorised users approve or reject the pending step; on approval the next waiting step is automatically advanced to `pending`. Each decision is persisted to the workflow execution history.",
+      "summary": "Approval Workflow provides multi-step, role-gated approval chains for OpenRegister objects. Administrators configure named chains with ordered steps, each bound to a Nextcloud group (the \"role\"). When an object enters a chain, one `ApprovalStep` record per chain step is created — step 1 starts as `pending`, all others as `waiting`. Authorised users approve or reject the pending step; on approval the next waiting step is automatically advanced to `pending`. Each decision is persisted to the workflow execution history. ## Requirements",
       "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/approval-workflow/spec.md"
     },
     {
@@ -85,12 +91,6 @@
       "title": "Linked Entity Types",
       "summary": "Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities. Provides schema-level `configuration.linkedTypes` declarations, Nc\\* property types for typed field-level references, lean `_` metadata columns on both magic and entity tables, a generic API for ad-hoc linking and reverse lookups, read-time enrichment via `_extend`, and sidebar injection based on linkedTypes.",
       "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/linked-entity-types/spec.md"
-    },
-    {
-      "slug": "mail-sidebar",
-      "title": "Mail Sidebar",
-      "summary": "Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister objects related to the currently viewed email. This enables case handlers to see at a glance which cases, applications, or records are associated with an email -- and to create new associations -- without leaving the Mail app. The integration builds on the `openregister_email_links` table and `EmailService` established by the nextcloud-entity-relations spec.",
-      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/mail-sidebar/spec.md"
     },
     {
       "slug": "mail-smart-picker",

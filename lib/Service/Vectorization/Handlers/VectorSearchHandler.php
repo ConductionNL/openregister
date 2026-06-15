@@ -131,7 +131,10 @@ class VectorSearchHandler
                 $results = [];
                 foreach ($vectors as $vector) {
                     try {
-                        $storedEmbedding = unserialize($vector['embedding']);
+                        // SEC-SVC-9: embeddings are plain float arrays; never
+                        // allow object instantiation during unserialize to
+                        // avoid PHP object-injection from a tampered blob.
+                        $storedEmbedding = unserialize($vector['embedding'], ['allowed_classes' => false]);
 
                         if (is_array($storedEmbedding) === false) {
                             continue;

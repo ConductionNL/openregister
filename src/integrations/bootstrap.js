@@ -19,6 +19,7 @@ import {
 	registerBuiltinIntegrations,
 	registerLeafIntegrations,
 } from '@conduction/nextcloud-vue'
+import { registerBookmarksIntegration } from './builtin/bookmarks.js'
 
 let bootstrapped = false
 
@@ -31,6 +32,10 @@ let bootstrapped = false
  * app's useIntegrationRegistry (which reads the same shared instance)
  * sees them — including when this bootstrap runs from the global
  * init-script on a foreign app's page (e.g. an OpenCatalogi publication).
+ *
+ * Leaf integrations that require `referenceType` for property auto-rendering
+ * (e.g. bookmarks) are registered via their own builtin module AFTER
+ * registerLeafIntegrations so the idempotent guard can skip duplicates.
  */
 export function ensureIntegrationRegistry() {
 	if (bootstrapped) {
@@ -39,5 +44,6 @@ export function ensureIntegrationRegistry() {
 	const registry = getSharedRegistry(window)
 	registerBuiltinIntegrations(registry)
 	registerLeafIntegrations(registry)
+	registerBookmarksIntegration(registry)
 	bootstrapped = true
 }

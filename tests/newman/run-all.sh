@@ -97,6 +97,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ##
 DOMAIN_ORDER=(
     "crud"
+    "unified-search"
+    "jsonld"
     "register-resolver"
     "graphql"
     "relations"
@@ -107,10 +109,13 @@ DOMAIN_ORDER=(
     "error-matrix"
     "files"
     "referential-integrity"
+    "schema-migration"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
     [crud]="$REPO_ROOT/tests/integration/openregister-crud.postman_collection.json"
+    [unified-search]="$REPO_ROOT/tests/integration/openregister-unified-search.postman_collection.json"
+    [jsonld]="$REPO_ROOT/tests/integration/openregister-jsonld.postman_collection.json"
     [register-resolver]="$REPO_ROOT/tests/integration/openregister-register-resolver.postman_collection.json"
     [referential-integrity]="$REPO_ROOT/tests/integration/openregister-referential-integrity.postman_collection.json"
     [graphql]="$REPO_ROOT/tests/postman/openregister-graphql-tests.postman_collection.json"
@@ -123,6 +128,8 @@ declare -A DOMAIN_COLLECTIONS=(
     [files]="$REPO_ROOT/tests/newman/openregister-files-domain.postman_collection.json"
     [agent-cms]="$REPO_ROOT/tests/newman/agent-cms-testing.postman_collection.json"
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
+    [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
+    [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

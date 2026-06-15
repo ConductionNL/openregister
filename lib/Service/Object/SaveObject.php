@@ -5007,7 +5007,11 @@ class SaveObject
         }
 
         // Handle file properties - process them and replace content with file IDs.
-        $filePropsProcessed = false;
+        // BUG-OBJ-8: collect the names of the properties the file handler rewrote so
+        // we can overlay ONLY those file-id replacements onto the merged/prepared body
+        // below, instead of clobbering the whole object with the raw partial $data.
+        $filePropsProcessed     = false;
+        $processedFileProperties = [];
         foreach ($data as $propertyName => $value) {
             $isFileProperty = $this->filePropertyHandler->isFileProperty(
                 value: $value,
@@ -5021,13 +5025,27 @@ class SaveObject
                     propertyName: $propertyName,
                     schema: $schema
                 );
-                $filePropsProcessed = true;
+                $filePropsProcessed        = true;
+                $processedFileProperties[] = $propertyName;
             }
         }
 
         // Update the object with the modified data (file IDs instead of content).
         if ($filePropsProcessed === true) {
-            $updatedEntity->setObject($data);
+            // BUG-OBJ-8: build the post-file body from the MERGED/prepared object that
+            // was just persisted (which contains computed fields, defaults, cascaded
+            // sub-objects, null-fills, and previously-stored fields not present in this
+            // request), then overlay only the file-id replacements computed by the file
+            // handler. Using the raw partial $data here would drop every field absent
+            // from the request — data loss that depends on payload shape.
+            $mergedObject = $updatedEntity->getObject() ?? [];
+            foreach ($processedFileProperties as $fileProperty) {
+                if (array_key_exists($fileProperty, $data) === true) {
+                    $mergedObject[$fileProperty] = $data[$fileProperty];
+                }
+            }
+
+            $updatedEntity->setObject($mergedObject);
 
             // Clear image metadata if objectImageField points to a file property.
             // This ensures the image URL is extracted from the file object during rendering.

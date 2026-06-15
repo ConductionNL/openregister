@@ -23,7 +23,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableRegisters.length > 1" class="field-group">
 								<label for="register-select">{{ t('openregister', 'Register') }}</label>
 								<NcSelect
-						input-label="Selected Register For New Object"
+									input-label="Selected Register For New Object"
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
 									:options="availableRegisters"
@@ -36,7 +36,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableSchemas.length > 1" class="field-group">
 								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
 								<NcSelect
-						input-label="Selected Schema For New Object"
+									input-label="Selected Schema For New Object"
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
 									:options="availableSchemas"
@@ -622,6 +622,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { stringToDate, dateToString } from '../../services/dateUtils.js'
+import { showWarning } from '@nextcloud/dialogs'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -740,23 +741,13 @@ export default {
 		 * @spec exclude computed display helper building property rows from schema
 		 */
 		objectProperties() {
-			console.info('objectProperties computed called:', {
-				objectItem: objectStore?.objectItem,
-				currentSchema: this.currentSchema,
-				isNewObject: this.isNewObject,
-				schemaId: this.currentSchema?.id,
-				schemaProperties: this.currentSchema?.properties,
-			})
-
 			// For new objects, show schema properties with default values
 			if (!objectStore?.objectItem) {
 				const schemaProperties = this.currentSchema?.properties
 				if (!schemaProperties) {
-					console.info('No schema properties available')
 					return []
 				}
 
-				console.info('Schema properties found:', Object.keys(schemaProperties))
 				const defaultProperties = []
 
 				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
@@ -785,7 +776,6 @@ export default {
 					defaultProperties.push([key, defaultValue])
 				}
 
-				console.info('objectProperties returning default properties:', defaultProperties)
 				return defaultProperties
 			}
 
@@ -901,12 +891,6 @@ export default {
 		 * @spec exclude computed display helper merging schema + object fields
 		 */
 		formFields() {
-			console.info('formFields computed called:', {
-				currentSchema: this.currentSchema,
-				hasProperties: this.currentSchema?.properties,
-				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0,
-			})
-
 			// Combine schema properties and object properties
 			const fields = {}
 
@@ -942,7 +926,6 @@ export default {
 				}
 			}
 
-			console.info('formFields returning:', fields)
 			return fields
 		},
 		/**
@@ -1079,8 +1062,6 @@ export default {
 			 * @spec exclude watcher re-resolving schema and re-initializing data
 			 */
 			async handler(newSchema) {
-				console.info('Schema changed in ViewObject:', newSchema)
-
 				// The schema list endpoint returns un-resolved schemas — for schemas
 				// using composition (allOf/oneOf/anyOf) `properties` is empty until
 				// the detail endpoint merges in the parent's properties. When the
@@ -1095,8 +1076,8 @@ export default {
 						try {
 							await schemaStore.getSchema(newSchema.id, { setItem: true })
 							return
-						} catch (error) {
-							console.warn('Failed to fetch resolved schema:', error)
+						} catch {
+							// Fall through to use the un-resolved schema if the detail fetch fails
 						}
 					}
 				}
@@ -1116,7 +1097,6 @@ export default {
 			 * @spec exclude watcher re-initializing data on register change
 			 */
 			handler(newRegister) {
-				console.info('Register changed in ViewObject:', newRegister)
 				if (newRegister && this.isNewObject) {
 					// Re-initialize data when register becomes available for new objects
 					this.initializeData()
@@ -1150,14 +1130,6 @@ export default {
 	 * @spec exclude Vue lifecycle hook initializing modal data
 	 */
 	async mounted() {
-		// Debug: Log current state when modal opens
-		console.info('ViewObject mounted:', {
-			objectItem: objectStore.objectItem,
-			schemaItem: schemaStore.schemaItem,
-			registerItem: registerStore.registerItem,
-			isNewObject: this.isNewObject,
-		})
-
 		// Refetch the active schema by id so the store holds the resolved version
 		// (with allOf/oneOf/anyOf composition merged in by the backend). The schema
 		// list endpoint returns raw schemas with empty properties for extended
@@ -1165,8 +1137,8 @@ export default {
 		if (schemaStore.schemaItem?.id) {
 			try {
 				await schemaStore.getSchema(schemaStore.schemaItem.id, { setItem: true })
-			} catch (error) {
-				console.warn('Failed to fetch resolved schema:', error)
+			} catch {
+				// Fall through to use the un-resolved schema if the detail fetch fails
 			}
 		}
 
@@ -1213,11 +1185,6 @@ export default {
 
 			registerStore.setRegisterItem(selectedRegister)
 			schemaStore.setSchemaItem(selectedSchema)
-
-			console.info('Register and schema selected:', {
-				register: selectedRegister?.title,
-				schema: selectedSchema?.title,
-			})
 
 			// Confirm selection so we show the properties
 			this.registerSchemaSelectionConfirmed = true
@@ -1373,15 +1340,6 @@ export default {
 		 * @spec exclude form-state initializer seeding formData/jsonData
 		 */
 		initializeData() {
-			console.info('initializeData called:', {
-				objectItem: objectStore.objectItem,
-				currentSchema: this.currentSchema,
-				currentSchemaProperties: this.currentSchema?.properties,
-				currentRegister: this.currentRegister,
-				hasSchema: !!this.currentSchema,
-				hasRegister: !!this.currentRegister,
-			})
-
 			// Initialize with empty data for new objects
 			if (!objectStore.objectItem) {
 				const initialData = {
@@ -1403,7 +1361,6 @@ export default {
 
 				// Add schema properties with default values
 				if (this.currentSchema?.properties) {
-					console.info('Adding schema properties to initial data:', Object.keys(this.currentSchema.properties))
 					for (const [key, property] of Object.entries(this.currentSchema.properties)) {
 						// Set default value based on property type
 						let defaultValue = null
@@ -1425,7 +1382,6 @@ export default {
 
 				this.formData = initialData
 				this.jsonData = JSON.stringify(initialData, null, 2)
-				console.info('Initialized new object with data:', initialData)
 				return
 			}
 
@@ -1483,7 +1439,6 @@ export default {
 				if (data) objectStore.setObjectItem(data)
 				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
 				objectStore.refetchSearchCollection()
-				console.info('Save object data:', data)
 				this.success = !!data
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
@@ -1944,7 +1899,7 @@ export default {
 				// Show warning for non-editable properties
 				const warning = this.getEditabilityWarning(key, value)
 				if (warning) {
-					this.showWarningNotification(warning)
+					showWarning(warning)
 				}
 				return
 			}
@@ -1958,7 +1913,7 @@ export default {
 				this.selectProperty(key)
 			} else {
 				// Show info for unsupported types
-				this.showWarningNotification(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
+				showWarning(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
 			}
 		},
 		/**
@@ -2283,48 +2238,6 @@ export default {
 
 			// Otherwise use the original value
 			return value
-		},
-		/**
-		 * @spec exclude toast notification UI helper for warnings
-		 */
-		showWarningNotification(warning) {
-			// Clear any existing toasts before showing a new one
-			this.clearAllToasts()
-
-			// Create a warning notification
-			const notification = document.createElement('div')
-			notification.className = 'property-warning-toast'
-			notification.style.cssText = `
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				background: var(--color-warning);
-				color: white;
-				padding: 12px 16px;
-				border-radius: 6px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-				z-index: 10000;
-				font-size: 14px;
-				max-width: 350px;
-				line-height: 1.4;
-			`
-			notification.innerHTML = `
-				<div style="display: flex; align-items: center; gap: 8px;">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A1.25,1.25 0 0,1 13.25,8.25A1.25,1.25 0 0,1 12,9.5A1.25,1.25 0 0,1 10.75,8.25A1.25,1.25 0 0,1 12,7M11,11H13V17H11V11Z"/>
-					</svg>
-					<span>${warning}</span>
-				</div>
-			`
-
-			document.body.appendChild(notification)
-
-			// Remove notification after 5 seconds (longer for warnings)
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.parentNode.removeChild(notification)
-				}
-			}, 5000)
 		},
 	},
 }

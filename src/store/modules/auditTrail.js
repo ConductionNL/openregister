@@ -1,7 +1,6 @@
 /**
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  */
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -53,7 +52,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		setAuditTrailList(auditTrailList) {
 			// Ensure we have a clean array without reactive references
 			this.auditTrailList = Array.isArray(auditTrailList) ? [...auditTrailList] : []
-			console.info('Audit trail list set to:', this.auditTrailList.length, 'items')
 		},
 
 		/**
@@ -64,7 +62,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem
-			console.info('Audit trail item set to:', auditTrailItem)
 		},
 
 		/**
@@ -78,7 +75,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				...this.auditTrailPagination,
 				...pagination,
 			}
-			console.info('Audit trail pagination set to:', this.auditTrailPagination)
 		},
 
 		/**
@@ -92,7 +88,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				...this.statistics,
 				...stats,
 			}
-			console.info('Statistics set to:', this.statistics)
 		},
 
 		/**
@@ -103,7 +98,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		setAuditTrailFilters(filters) {
 			this.auditTrailFilters = filters
-			console.info('Audit trail filters set to:', filters)
 		},
 
 		/**
@@ -114,7 +108,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		setAuditTrailSearch(search) {
 			this.auditTrailSearch = search
-			console.info('Audit trail search set to:', search)
 		},
 
 		/**
@@ -128,8 +121,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.auditTrailLoading = true
 
 			try {
-				console.info('Fetching audit trails with options:', options)
-
 				// Build query parameters
 				const params = new URLSearchParams()
 
@@ -160,7 +151,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				}
 
 				const url = `${apiUrl}/audit-trails?${params.toString()}`
-				console.info('Fetching from URL:', url)
 
 				const response = await fetch(url, {
 					method: 'GET',
@@ -171,7 +161,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Audit trail fetch response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch audit trails')
@@ -206,8 +195,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			this.statisticsLoading = true
 
 			try {
-				console.info('Fetching audit trail statistics')
-
 				const response = await fetch(`${apiUrl}/audit-trails/statistics`, {
 					method: 'GET',
 					headers: {
@@ -217,7 +204,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Statistics response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch statistics')
@@ -242,8 +228,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		async deleteAuditTrail(id) {
 			try {
-				console.info('Deleting audit trail:', id)
-
 				const response = await fetch(`${apiUrl}/audit-trails/${id}`, {
 					method: 'DELETE',
 					headers: {
@@ -253,7 +237,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Delete response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to delete audit trail')
@@ -278,8 +261,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		async deleteMultipleAuditTrails(ids) {
 			try {
-				console.info('Deleting multiple audit trails:', ids)
-
 				const response = await fetch(`${apiUrl}/audit-trails`, {
 					method: 'DELETE',
 					headers: {
@@ -290,7 +271,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Bulk delete response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to delete audit trails')
@@ -422,7 +402,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			}
 			this.auditTrailFilters = {}
 			this.auditTrailSearch = ''
-			console.info('Audit trail store cleared')
 		},
 	},
 })

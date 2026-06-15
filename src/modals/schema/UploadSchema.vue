@@ -144,6 +144,7 @@ export default {
 			})
 		},
 		/**
+		 * @param json
 		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
 		 */
 		validateJson(json) {

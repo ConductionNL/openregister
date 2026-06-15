@@ -296,8 +296,12 @@ class SecurityServiceTest extends TestCase
         $this->assertSame('192.168.1.1', $result);
     }
 
-    public function testGetClientIpAddressUsesForwardedHeader(): void
+    public function testGetClientIpAddressIgnoresSpoofedForwardedHeader(): void
     {
+        // SEC-SVC-11: client-supplied forwarding headers (X-Forwarded-For,
+        // X-Real-IP, CF-Connecting-IP) are no longer trusted. The resolver must
+        // defer to IRequest::getRemoteAddress(), which is trusted-proxy aware,
+        // so a spoofed CF-Connecting-IP cannot bypass per-IP rate limiting.
         $request = $this->createMock(IRequest::class);
         $request->method('getRemoteAddress')->willReturn('192.168.1.1');
         $request->method('getHeader')->willReturnCallback(function (string $header) {
@@ -308,7 +312,8 @@ class SecurityServiceTest extends TestCase
         });
 
         $result = $this->service->getClientIpAddress($request);
-        $this->assertSame('8.8.8.8', $result);
+        // The spoofed 8.8.8.8 must be ignored; the platform remote address wins.
+        $this->assertSame('192.168.1.1', $result);
     }
 
     public function testGetClientIpAddressIgnoresPrivateForwardedIps(): void

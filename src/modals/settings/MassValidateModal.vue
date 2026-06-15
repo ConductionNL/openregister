@@ -412,6 +412,7 @@ export default {
 	watch: {
 		config: {
 			/**
+			 * @param newConfig
 			 * @spec exclude Watcher syncing the incoming config prop into local state; UI reactivity plumbing.
 			 */
 			handler(newConfig) {
@@ -421,6 +422,7 @@ export default {
 		},
 		localConfig: {
 			/**
+			 * @param newConfig
 			 * @spec exclude Watcher emitting config changes to the parent; UI reactivity plumbing.
 			 */
 			handler(newConfig) {

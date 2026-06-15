@@ -36,7 +36,9 @@ use OCP\ICacheFactory;
 use OCP\ICache;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 use Twig\TemplateWrapper;
 
 /**
@@ -107,8 +109,11 @@ class MappingService
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger
     ) {
-        $loader     = new ArrayLoader([]);
-        $this->twig = new Environment($loader);
+        $loader = new ArrayLoader([]);
+        // Autoescape disabled — mappings transform data (not HTML), and the
+        // sandbox SecurityPolicy below does not allow the `escape` filter that
+        // autoescaping injects into every output expression.
+        $this->twig = new Environment($loader, ['autoescape' => false]);
         $this->twig->addExtension(new MappingExtension());
         $this->twig->addRuntimeLoader(
             new MappingRuntimeLoader(
@@ -116,6 +121,58 @@ class MappingService
                 mappingMapper: $this->mappingMapper,
             )
         );
+
+        // SSTI hardening (SEC-SVC-3): user-authored mapping templates are
+        // compiled and rendered here, so they MUST run inside a Twig sandbox.
+        // Only the tags, filters and functions actually used by mappings are
+        // allowlisted; method/property access on objects is denied entirely.
+        $policy = new SecurityPolicy(
+            allowedTags: [
+                'if',
+                'for',
+                'set',
+                'apply',
+            ],
+            allowedFilters: [
+                'date',
+                'date_modify',
+                'upper',
+                'lower',
+                'trim',
+                'length',
+                'default',
+                'number_format',
+                'round',
+                'abs',
+                'split',
+                'join',
+                'slice',
+                'first',
+                'last',
+                'replace',
+                'format',
+                'merge',
+                'keys',
+                'escape',
+                'raw',
+                'b64enc',
+                'b64dec',
+                'json_decode',
+                'zgw_enum',
+                'zgw_enum_reverse',
+                'zgw_extract_uuid',
+            ],
+            allowedMethods: [],
+            allowedProperties: [],
+            allowedFunctions: [
+                'max',
+                'min',
+                'range',
+                'executeMapping',
+                'generateUuid',
+            ]
+        );
+        $this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
         // Initialize distributed cache for mapping entity lookups.
         try {

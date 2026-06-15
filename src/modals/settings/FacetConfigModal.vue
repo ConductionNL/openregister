@@ -416,6 +416,7 @@ export default {
 	watch: {
 		show: {
 			/**
+			 * @param newVal
 			 * @spec exclude UI watcher — loads facets when shown, resets when hidden.
 			 */
 			handler(newVal) {
@@ -435,17 +436,14 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
 		 */
 		async loadFacets() {
-			console.info('🚀 FacetConfigModal: loadFacets called')
 			this.loading = true
 			this.error = null
 
 			try {
 				// Use the new unified endpoint that merges discovery with configuration
 				const url = generateUrl('/apps/openregister/api/solr/facet-config')
-				console.info('📡 FacetConfigModal: Making API call to:', url)
 
 				const response = await axios.get(url)
-				console.info('✅ FacetConfigModal: API response received:', response.data)
 
 				if (response.data && response.data.success) {
 					this.facetsData = response.data
@@ -493,9 +491,6 @@ export default {
 						this.metadataFacets.sort((a, b) => a.config.order - b.config.order)
 					}
 
-					console.info(`✅ FacetConfigModal: Processed ${this.metadataFacets.length} metadata facets`)
-					console.info(`✅ FacetConfigModal: Processed ${this.objectFieldFacets.length} object field facets`)
-					console.info('✅ FacetConfigModal: Facets loaded with existing configuration')
 				} else {
 					throw new Error('Invalid response format: ' + JSON.stringify(response.data))
 				}
@@ -532,7 +527,6 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
 		 */
 		async saveFacetConfiguration() {
-			console.info('💾 Saving facet configuration...')
 			this.loading = true
 
 			try {
@@ -552,8 +546,6 @@ export default {
 					facetConfig.facets[facet.fieldName] = facet.config
 				})
 
-				console.info('💾 Facet configuration to save:', facetConfig)
-
 				// Make API call to save configuration using the new unified endpoint
 				const url = generateUrl('/apps/openregister/api/solr/facet-config')
 				const response = await axios.post(url, facetConfig)
@@ -561,7 +553,6 @@ export default {
 				// Check if the response is successful
 				if (response.data && response.data.success) {
 					showSuccess(t('openregister', 'Successfully saved configuration for {count} facets!', { count: Object.keys(facetConfig.facets).length }))
-					console.info('✅ Facet configuration saved successfully:', response.data)
 				} else {
 					throw new Error(response.data?.message || response.data?.error || 'Failed to save configuration')
 				}

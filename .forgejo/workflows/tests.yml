@@ -97,6 +97,92 @@ jobs:
         run: node tests/l10n/check-l10n.js
 
   # ---------------------------------------------------------------------------
+  # COVERAGE GATE A — PHPUnit COVERAGE RATCHET.
+  #
+  # Re-measures backend LINE coverage and FAILS the PR if it drops below
+  # tests/.coverage-baseline.json `phpunit` minus tolerance (~0.5%). openregister
+  # carries a red 13k-test unit suite on baseline (unit-gating=false in
+  # api-test-coverage / app-tests.yml), so this job inherits continue-on-error:
+  # it RECORDS the number (currently ~54.55%) but does not block until the unit
+  # suite is green. The clover is still produced from the green subset.
+  #
+  # Coverage driver: run under PCOV (pecl install pcov + docker-php-ext-enable
+  # in the step; no-op if the image already bakes pcov/xdebug). See
+  # TESTING-CI-ROLLOUT.md "Coverage driver".
+  # ---------------------------------------------------------------------------
+  phpunit-coverage-ratchet:
+    name: PHPUnit coverage ratchet (${{ inputs.app-id }})
+    runs-on: codeberg-small
+    container:
+      image: code.forgejo.org/oci/ci-php:8.3
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Ensure a coverage driver (PCOV)
+        run: |
+          if ! php -m | grep -qiE 'pcov|xdebug'; then
+            (pecl install pcov && docker-php-ext-enable pcov) \
+              || echo "WARN: could not install pcov — coverage step may report no driver"
+          fi
+          php -m | grep -qiE 'pcov|xdebug' && echo "coverage driver: present" \
+            || echo "coverage driver: ABSENT (ratchet will no-op; see TESTING-CI-ROLLOUT.md)"
+
+      - name: Install composer deps
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run unit suite WITH coverage (clover)
+        run: |
+          php -d pcov.enabled=1 -d pcov.directory=lib \
+            ./vendor/bin/phpunit --configuration phpunit-unit.xml \
+            --coverage-clover coverage/clover.xml --colors=never || true
+          test -f coverage/clover.xml || { echo "no clover.xml (driver absent?) — skipping ratchet"; exit 0; }
+
+      - name: Coverage ratchet (records; flip to gating once unit suite is green)
+        run: |
+          test -f coverage/clover.xml || exit 0
+          bash tests/coverage-ratchet.sh phpunit coverage/clover.xml
+
+  # ---------------------------------------------------------------------------
+  # COVERAGE GATE B — FRONTEND COVERAGE RATCHET (Jest, istanbul json-summary).
+  #
+  # openregister's frontend suite is Jest (not Vitest). `npm run test` is green
+  # (195 tests), but `--coverage` currently dies in babel-plugin-istanbul with
+  # "minimatch is not a function" (a hoisted minimatch v10 vs test-exclude's
+  # required minimatch@3). Until that dep is pinned the coverage run cannot
+  # produce a summary, so the ratchet SEEDS (vitest=null) without blocking. Once
+  # the dep is fixed (e.g. package.json overrides: { "minimatch": "3.1.2" } for
+  # test-exclude, or upgrade babel-plugin-istanbul), the first --update run
+  # records the baseline and the gate arms. See TESTING-CI-ROLLOUT.md.
+  # ---------------------------------------------------------------------------
+  frontend-coverage-ratchet:
+    name: Frontend coverage ratchet (${{ inputs.app-id }})
+    runs-on: codeberg-small
+    container:
+      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Install npm deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Run Jest WITH coverage (json-summary)
+        run: |
+          npx jest --silent --coverage \
+            --coverageReporters=json-summary --coverageReporters=text-summary \
+            --coverageDirectory=coverage-frontend || true
+          test -f coverage-frontend/coverage-summary.json \
+            || { echo "no coverage-summary.json — Jest coverage blocked (minimatch dep; see TESTING-CI-ROLLOUT.md). Skipping ratchet."; exit 0; }
+
+      - name: Coverage ratchet (seeds vitest baseline once coverage is unblocked)
+        run: |
+          test -f coverage-frontend/coverage-summary.json || exit 0
+          bash tests/coverage-ratchet.sh vitest coverage-frontend/coverage-summary.json
+
+  # ---------------------------------------------------------------------------
   # SCAFFOLD — deep e2e (Playwright tests/e2e/workflows/). Opt-in via run-e2e.
   #
   # TODO(nc-in-ci): wire a live Nextcloud before flipping this to gating:

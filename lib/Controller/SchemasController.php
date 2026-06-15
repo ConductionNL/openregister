@@ -34,10 +34,16 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\SchemaService;
+use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception as DBException;
@@ -82,6 +88,8 @@ use Psr\Log\LoggerInterface;
  */
 class SchemasController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
     /**
      * Constructor
      *
@@ -119,7 +127,10 @@ class SchemasController extends Controller
         private readonly FacetCacheHandler $facetCacheSvc,
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger,
-        private readonly ContainerInterface $container
+        private readonly ContainerInterface $container,
+        private readonly SchemaVersioningService $schemaVersioningService,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
+        private readonly ?SchemaImportService $schemaImportService=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -360,9 +371,53 @@ class SchemasController extends Controller
                     'error_message' => $e->getMessage(),
                 ]
             );
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end show()
+
+    /**
+     * Validate the optional `configuration.jsonld` vocabulary-mapping block.
+     *
+     * Term values must be absolute IRIs or compact terms resolvable against a
+     * declared `@vocab`. Returns a 400 JSONResponse describing the problem when
+     * the block is invalid, or null when valid / absent (json-ld-output).
+     *
+     * @param array $data The incoming schema request data.
+     *
+     * @return JSONResponse|null A 400 response when invalid, else null.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function validateJsonLdMapping(array $data): ?JSONResponse
+    {
+        if ($this->jsonLdContextService === null) {
+            return null;
+        }
+
+        $configuration = ($data['configuration'] ?? null);
+        if (is_array($configuration) === false) {
+            return null;
+        }
+
+        $jsonld = ($configuration['jsonld'] ?? null);
+        if (is_array($jsonld) === false) {
+            return null;
+        }
+
+        $errors = $this->jsonLdContextService->validateMapping(jsonld: $jsonld);
+        if (empty($errors) === true) {
+            return null;
+        }
+
+        return new JSONResponse(
+            data: [
+                'error'  => 'Invalid jsonld mapping in schema configuration',
+                'errors' => $errors,
+            ],
+            statusCode: 400
+        );
+    }//end validateJsonLdMapping()
+
 
     /**
      * Creates a new schema
@@ -386,6 +441,7 @@ class SchemasController extends Controller
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     * @spec openspec/specs/json-ld-output/spec.md
      */
     public function create(): JSONResponse
     {
@@ -395,7 +451,7 @@ class SchemasController extends Controller
         if ($this->isCurrentUserAdmin() === false) {
             return new JSONResponse(
                 data: ['error' => 'Only administrators may create schemas'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
@@ -424,6 +480,12 @@ class SchemasController extends Controller
         // Remove ID if present to ensure a new record is created.
         if (($data['id'] ?? null) !== null) {
             unset($data['id']);
+        }
+
+        // Validate the optional JSON-LD vocabulary-mapping block (json-ld-output).
+        $jsonLdError = $this->validateJsonLdMapping(data: $data);
+        if ($jsonLdError !== null) {
+            return $jsonLdError;
         }
 
         try {
@@ -496,7 +558,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end create()
 
@@ -556,16 +618,79 @@ class SchemasController extends Controller
         if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
             return new JSONResponse(
                 data: ['error' => 'User does not have permission to manage this schema'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
+        }
+
+        // Validate the optional JSON-LD vocabulary-mapping block (json-ld-output).
+        // Runs after the manage-permission check so an unauthorized caller can
+        // never probe mapping validation; an invalid mapping leaves the stored
+        // configuration unchanged (no save happens).
+        $jsonLdError = $this->validateJsonLdMapping(data: $data);
+        if ($jsonLdError !== null) {
+            return $jsonLdError;
         }
 
         // Capture prior authorization so a change can be audit-logged below.
         $oldSchemaAuth = $existingSchema->getAuthorization();
 
+        // Schema versioning gate (schema-versioning-and-object-migration):
+        // classify the incoming definition against the stored one and refuse
+        // an unacknowledged breaking change with the structured HTTP 409
+        // contract. Only runs when the update actually carries a definition.
+        $changeSet    = null;
+        $acknowledged = ($this->request->getParam('acknowledgeBreaking') === true
+            || $this->request->getParam('acknowledgeBreaking') === 'true');
+        if (isset($data['properties']) === true || isset($data['required']) === true) {
+            $proposedDefinition = [
+                'properties' => ($data['properties'] ?? $existingSchema->getProperties() ?? []),
+                'required'   => ($data['required'] ?? $existingSchema->getRequired() ?? []),
+            ];
+
+            $renames = [];
+            if (is_array($this->request->getParam('renames')) === true) {
+                $renames = $this->request->getParam('renames');
+            }
+
+            $changeSet = $this->schemaVersioningService->classify(
+                existing: $existingSchema,
+                newDefinition: $proposedDefinition,
+                renames: $renames
+            );
+
+            try {
+                $this->schemaVersioningService->enforceGate(
+                    changeSet: $changeSet,
+                    acknowledged: $acknowledged,
+                    schemaId: $id
+                );
+            } catch (BreakingSchemaChangeException $e) {
+                return new JSONResponse(data: $e->toResponse(), statusCode: 409);
+            }
+
+            // Apply the classification-driven semantic version bump unless the
+            // caller pinned an explicit version.
+            if (isset($data['version']) === false && $changeSet->hasChanges() === true) {
+                $data['version'] = $this->schemaVersioningService->nextVersion(
+                    existing: $existingSchema,
+                    changeSet: $changeSet
+                );
+            }
+        }//end if
+
         try {
             // Update the schema with the provided data.
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
+
+            // Record the classified changelog entry once the update applied.
+            if ($changeSet !== null) {
+                $this->schemaVersioningService->recordChangelog(
+                    schemaId: $updatedSchema->getId(),
+                    version: $updatedSchema->getVersion(),
+                    changeSet: $changeSet,
+                    acknowledged: $acknowledged
+                );
+            }
 
             // Log authorization change if authorization was modified.
             if (isset($data['authorization']) === true) {
@@ -645,7 +770,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end update()
 
@@ -659,6 +784,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with patched schema or error
+     *
+     * @no-admin-idor-exempt Pure delegation to update(), which performs the checkSchemaManagePermission() guard; this method has no body of its own.
      *
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
@@ -714,7 +841,7 @@ class SchemasController extends Controller
             if ($this->checkSchemaManagePermission(schema: $schemaToDelete) === false) {
                 return new JSONResponse(
                     data: ['error' => 'User does not have permission to manage this schema'],
-                    statusCode: 403
+                    statusCode: Http::STATUS_FORBIDDEN
                 );
             }
 
@@ -770,7 +897,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
         } catch (\Exception $e) {
             // Return 500 for other errors.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end destroy()
 
@@ -790,6 +917,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Pure delegation to upload(), which performs the checkSchemaManagePermission() guard for update paths; this method has no body of its own.
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
@@ -843,14 +972,14 @@ class SchemasController extends Controller
         if ($id !== null && $this->checkSchemaManagePermission(schema: $schema) === false) {
             return new JSONResponse(
                 data: ['error' => 'You do not have permission to update this schema'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
         if ($id === null && $this->isCurrentUserAdmin() === false) {
             return new JSONResponse(
                 data: ['error' => 'Admin privileges required to upload new schemas'],
-                statusCode: 403
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
@@ -860,6 +989,17 @@ class SchemasController extends Controller
             // Return any error response from the upload service.
             return $phpArray;
         }
+
+        // Dialect resolution: explicit `dialect` parameter wins, otherwise the
+        // document is sniffed. Schema.org / GGM inputs are mapped through the
+        // standards importers; json-schema / openapi flow on unchanged.
+        // Undetectable input fails with HTTP 422 instead of being mis-ingested.
+        $dialectResult = $this->applyDialect(document: $phpArray);
+        if ($dialectResult instanceof JSONResponse) {
+            return $dialectResult;
+        }
+
+        $phpArray = $dialectResult;
 
         // Set default title if not provided or empty.
         if (empty($phpArray['title']) === true) {
@@ -950,7 +1090,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end upload()
 
@@ -966,6 +1106,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read-only export of a shared schema *definition* (not a user-owned object); schema metadata is public-readable by design, matching the @PublicPage index/show endpoints. No per-user data, no IDOR vector.
      *
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<404,
@@ -1003,6 +1145,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read-only discovery of which shared schema *definitions* reference this one; returns schema metadata only (public-readable by design, like @PublicPage index/show). No per-user data, no IDOR vector.
      *
      * @return JSONResponse JSON response with related schemas
      *
@@ -1057,7 +1201,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions.
-            return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end related()
 
@@ -1071,6 +1215,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read-only aggregate counts for a shared schema *definition* (object totals, not object contents); exposes no per-object or per-user data, matching the @PublicPage read posture. No IDOR vector.
      *
      * @return JSONResponse JSON response with schema statistics
      *
@@ -1117,7 +1263,7 @@ class SchemasController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end stats()
 
@@ -1144,6 +1290,23 @@ class SchemasController extends Controller
     public function explore(int $id): JSONResponse
     {
         try {
+            // Authorization: exploration scans the schema's object population to
+            // surface undefined properties — a schema-introspection operation that
+            // MUST require manage permission (same authority as editing the schema),
+            // so an arbitrary user cannot probe another schema's data shape (IDOR).
+            try {
+                $existingSchema = $this->schemaMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+            }
+
+            if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             $this->logger->info(
                 message: '[SchemasController] Starting schema exploration for schema ID: '.$id,
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1162,7 +1325,7 @@ class SchemasController extends Controller
                 message: '[SchemasController] Schema exploration failed: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end explore()
 
@@ -1187,6 +1350,23 @@ class SchemasController extends Controller
     public function updateFromExploration(int $id): JSONResponse
     {
         try {
+            // Authorization: writing exploration results back into a schema's
+            // definition is a schema mutation and MUST require manage permission,
+            // exactly like update()/upload(). Without this guard any authenticated
+            // user could rewrite an arbitrary schema's properties (IDOR).
+            try {
+                $existingSchema = $this->schemaMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+            }
+
+            if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             // Get property updates from request.
             $propertyUpdates = $this->request->getParam(key: 'properties', default: []);
 
@@ -1225,7 +1405,7 @@ class SchemasController extends Controller
                 message: '[SchemasController] Failed to update schema from exploration: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            return $this->errorResponse($e);
         }//end try
     }//end updateFromExploration()
 
@@ -1268,14 +1448,111 @@ class SchemasController extends Controller
     }//end isPublishedEntity()
 
     /**
-     * Check whether the currently authenticated user is a Nextcloud administrator.
+     * Resolve the dialect of an uploaded schema document and map it.
      *
-     * Used to gate schema creation, where there is no existing entity whose
-     * manage-authorization block could be consulted. User session and group
-     * manager are resolved lazily from the container to avoid widening the
-     * constructor signature.
+     * Explicit `dialect` parameter wins; otherwise the document is sniffed.
+     * `json-schema` and `openapi` documents flow through unchanged (existing
+     * behaviour, now labelled). `schema.org` and `ggm` documents are mapped
+     * through the standards importers into a register-schema array. Input that
+     * matches no dialect (and carries no explicit one) fails with HTTP 422.
      *
-     * @return bool True if a user is signed in and belongs to the admin group.
+     * When the standards import service is unavailable (DI not wired), the
+     * document is returned unchanged so the legacy JSON-Schema path is
+     * preserved.
+     *
+     * @param array<string, mixed> $document The decoded upload document.
+     *
+     * @return array<string, mixed>|JSONResponse The (possibly mapped) schema array, or an error response.
+     *
+     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per supported dialect.
+     */
+    private function applyDialect(array $document): array | JSONResponse
+    {
+        if ($this->schemaImportService === null) {
+            return $document;
+        }
+
+        $explicit = $this->request->getParam('dialect');
+        if (is_string($explicit) === false || $explicit === '') {
+            $explicit = null;
+        }
+
+        try {
+            $dialect = $this->schemaImportService->resolveUploadDialect(document: $document, explicitDialect: $explicit);
+        } catch (SchemaImportException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+        }
+
+        // json-schema and openapi documents are ingested as-is (unchanged).
+        if ($dialect === 'json-schema' || $dialect === 'openapi') {
+            return $document;
+        }
+
+        // Standards dialects are mapped via the importer. The reference is the
+        // explicit `reference` parameter, else the document's own type marker.
+        $reference = $this->resolveDialectReference(dialect: $dialect, document: $document);
+        if ($reference === null) {
+            return new JSONResponse(
+                data: ['error' => 'A "reference" identifying the '.$dialect.' type/objecttype to import is required.'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        try {
+            if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
+                // Treat the uploaded body as a normalised GGM intermediate.
+                $imported = $this->schemaImportService->importGgmUpload(
+                    normalised: $document,
+                    reference: $reference,
+                    options: ImportOptions::fromArray($this->request->getParams()),
+                    sourceLabel: 'upload'
+                );
+            } else {
+                $imported = $this->schemaImportService->import(
+                    dialect: $dialect,
+                    reference: $reference,
+                    options: ImportOptions::fromArray($this->request->getParams())
+                );
+            }
+        } catch (SchemaImportException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+        }
+
+        return $imported->toSchemaArray();
+
+    }//end applyDialect()
+
+
+    /**
+     * Resolve the type reference for a standards-dialect upload.
+     *
+     * @param string               $dialect  The resolved dialect.
+     * @param array<string, mixed> $document The decoded document.
+     *
+     * @return string|null The reference, or null when none can be determined.
+     */
+    private function resolveDialectReference(string $dialect, array $document): ?string
+    {
+        $reference = $this->request->getParam('reference');
+        if (is_string($reference) === true && $reference !== '') {
+            return $reference;
+        }
+
+        if ($dialect === 'schema.org' && isset($document['@type']) === true && is_string($document['@type']) === true) {
+            return $document['@type'];
+        }
+
+        return null;
+
+    }//end resolveDialectReference()
+
+
+    /**
+     * Check if the current user is a Nextcloud administrator.
+     *
+     * @return bool True when the current user is an admin.
      */
     private function isCurrentUserAdmin(): bool
     {

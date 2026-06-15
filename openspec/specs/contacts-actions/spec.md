@@ -1,4 +1,5 @@
 ---
+status: done
 retrofit_extensions:
   - REQ-010
   - REQ-011
@@ -231,7 +232,7 @@ All user-visible strings in the `ContactsMenuProvider` and `ContactMatchingServi
 
 ### REQ-010: The system SHALL provide per-object contact-link CRUD via dual storage (link table + vCard custom properties)
 
-OpenRegister objects may be linked to existing Nextcloud vCard contacts or to newly created contacts via the `ContactsController` REST surface backed by `ContactService`. Each link is materialised in **two places** so the relationship survives deletion of either side independently:
+The system SHALL provide per-object contact-link CRUD via dual storage (link table + vCard custom properties). OpenRegister objects may be linked to existing Nextcloud vCard contacts or to newly created contacts via the `ContactsController` REST surface backed by `ContactService`. Each link is materialised in **two places** so the relationship survives deletion of either side independently:
 
 1. A row in `openregister_contact_links` (`ContactLink` entity), carrying `objectUuid`, `registerId`, `contactUid`, `addressbookId`, `contactUri`, cached `displayName` / `email`, an optional `role`, plus the `linkedBy` user UID and `linkedAt` timestamp.
 2. Two custom properties on the vCard itself: `X-OPENREGISTER-OBJECT` (the object UUID) and, when set, `X-OPENREGISTER-ROLE` (the role label).
@@ -303,7 +304,7 @@ The supporting service methods on `ContactService`:
 
 ### REQ-011: The system SHALL provide reverse lookup of OpenRegister objects linked to a contact
 
-A contact-centric endpoint returns every OpenRegister object linked to a given vCard contact UID, enabling consuming surfaces (e.g. the contacts-menu provider, future reverse-lookup flyouts) to list "what is this contact involved in" without iterating object-by-object.
+The system SHALL provide reverse lookup of OpenRegister objects linked to a contact. A contact-centric endpoint returns every OpenRegister object linked to a given vCard contact UID, enabling consuming surfaces (e.g. the contacts-menu provider, future reverse-lookup flyouts) to list "what is this contact involved in" without iterating object-by-object.
 
 Endpoint: `GET /api/contacts/{contactUid}/objects` (`ContactsController::objects`, `@NoAdminRequired`, `@NoCSRFRequired`).
 
@@ -383,7 +384,7 @@ The supporting helper `ContactMatchingService::getRelatedObjectCounts(matches)` 
 
 ### REQ-013: The system SHALL expose contacts via the generic-integrations IntegrationProvider contract
 
-A `ContactsProvider` (extending `AbstractIntegrationProvider`) adapts `ContactService` to the generic-integrations registry so any consuming surface (UI tabs, dashboards, MCP tools, future agents) can list/update/delete contact links uniformly across all configured integrations without coupling to `ContactsController`.
+The system SHALL expose contacts via the generic-integrations IntegrationProvider contract. A `ContactsProvider` (extending `AbstractIntegrationProvider`) adapts `ContactService` to the generic-integrations registry so any consuming surface (UI tabs, dashboards, MCP tools, future agents) can list/update/delete contact links uniformly across all configured integrations without coupling to `ContactsController`.
 
 Provider metadata:
 
@@ -443,7 +444,7 @@ The provider intentionally does **not** implement `create()` — the consuming U
 
 ### REQ-014: The frontend SHALL render a ContactsTab with graceful degradation when the Contacts app is missing
 
-A Vue component (`src/components/object-relations/ContactsTab.vue`) renders linked contacts for an OpenRegister object in the detail view, backed by a Pinia store (`src/store/modules/object-relations/contacts.js`) that wraps the per-object endpoints registered under `appinfo/routes.php` as `contacts#…`.
+The frontend SHALL render a ContactsTab with graceful degradation when the Contacts app is missing. A Vue component (`src/components/object-relations/ContactsTab.vue`) renders linked contacts for an OpenRegister object in the detail view, backed by a Pinia store (`src/store/modules/object-relations/contacts.js`) that wraps the per-object endpoints registered under `appinfo/routes.php` as `contacts#…`.
 
 Store responsibilities (`useContactRelationsStore`):
 

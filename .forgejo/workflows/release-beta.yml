@@ -1,0 +1,17 @@
+name: Beta Release
+
+on:
+  push:
+    branches: [beta]
+  workflow_dispatch:
+
+jobs:
+  release:
+    uses: https://codeberg.org/Conduction/.github/.forgejo/workflows/release-beta.yml@main
+    with:
+      app-name: openregister
+    secrets:
+      CODEBERG_TOKEN:             ${{ secrets.CODEBERG_TOKEN }}
+      NEXTCLOUD_SIGNING_KEY:      ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
+      NEXTCLOUD_SIGNING_CERT:     ${{ secrets.NEXTCLOUD_SIGNING_CERT }}
+      NEXTCLOUD_APPSTORE_TOKEN:   ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}

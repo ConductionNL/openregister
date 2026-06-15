@@ -6,11 +6,15 @@ namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\NotificationDedupeState;
+use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -37,6 +41,8 @@ class ScheduledNotificationJobTest extends TestCase
     private ICacheFactory&MockObject $cacheFactory;
     private ICache&MockObject $stateCache;
     private ITimeFactory&MockObject $time;
+    private NotificationDedupeStateMapper&MockObject $dedupeMapper;
+    private IAppConfig&MockObject $appConfig;
 
     protected function setUp(): void
     {
@@ -48,10 +54,17 @@ class ScheduledNotificationJobTest extends TestCase
         $this->cacheFactory = $this->createMock(ICacheFactory::class);
         $this->stateCache   = $this->createMock(ICache::class);
         $this->time         = $this->createMock(ITimeFactory::class);
+        $this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
+        $this->appConfig    = $this->createMock(IAppConfig::class);
 
         $this->cacheFactory->method('createDistributed')
             ->with('openregister_scheduled_notifs')
             ->willReturn($this->stateCache);
+
+        // Default: no prior dedup state — every match is treated as a fresh
+        // dispatch. Per-test overrides exercise the dedup paths.
+        $this->dedupeMapper->method('findOne')->willReturn(null);
+        $this->appConfig->method('getValueString')->willReturnArgument(2);
     }
 
     public function testFiresWhenIntervalElapsed(): void
@@ -242,7 +255,10 @@ class ScheduledNotificationJobTest extends TestCase
             $this->objectMapper,
             $this->dispatcher,
             $this->logger,
-            $this->cacheFactory
+            $this->cacheFactory,
+            new ScheduledFilterEvaluator(logger: $this->logger),
+            $this->dedupeMapper,
+            $this->appConfig
         );
         $reflection = new \ReflectionClass($job);
         $method     = $reflection->getMethod('run');
@@ -278,5 +294,197 @@ class ScheduledNotificationJobTest extends TestCase
         $object->setRegister('r');
         $object->setSchema($schemaSlug);
         return $object;
+    }
+
+    // ---- Phase 3 — per-object dedup ----
+
+    public function testFirstMatchDispatchesAndUpsertsState(): void
+    {
+        $schema = $this->scheduledWithDedupeFields('inbox', 60, ['status']);
+        $object = $this->object('inbox');
+        $object->setObject(['status' => 'open']);
+
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn([$object]);
+        $this->stateCache->method('get')->willReturn(null);
+
+        // First time: findOne returns null → dispatch + upsert(dispatched=true).
+        $this->dedupeMapper->expects($this->once())
+            ->method('upsert')
+            ->with(
+                $this->equalTo(1),
+                $this->equalTo('scheduled-test'),
+                $this->equalTo($object->getUuid()),
+                $this->isType('string'),
+                $this->isInstanceOf(\DateTime::class),
+                $this->equalTo(true)
+            );
+        $this->dispatcher->expects($this->once())->method('dispatch');
+
+        $this->runJob();
+    }
+
+    public function testFingerprintEqualSkipsDispatch(): void
+    {
+        $schema = $this->scheduledWithDedupeFields('inbox', 60, ['status']);
+        $object = $this->object('inbox');
+        $object->setObject(['status' => 'open']);
+
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn([$object]);
+        $this->stateCache->method('get')->willReturn(null);
+
+        // Pre-existing dedup row with a fingerprint that matches what the
+        // job will compute for ['status' => 'open'].
+        $fingerprint = sha1(json_encode(['status' => 'open']));
+        $row         = new NotificationDedupeState();
+        $row->setSchemaId(1);
+        $row->setRuleKey('scheduled-test');
+        $row->setObjectUuid((string) $object->getUuid());
+        $row->setFingerprint($fingerprint);
+        $row->setDispatchedAt(new \DateTime('-1 hour'));
+        $row->setSeenAt(new \DateTime('-1 hour'));
+
+        $this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
+        $this->dedupeMapper->method('findOne')->willReturn($row);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getValueString')->willReturnArgument(2);
+
+        // Dispatch must be skipped; upsert is still called to touch seen_at.
+        $this->dispatcher->expects($this->never())->method('dispatch');
+        $this->dedupeMapper->expects($this->atLeastOnce())
+            ->method('upsert')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(false)
+            );
+
+        $this->runJob();
+    }
+
+    public function testFingerprintChangeReArmsDispatch(): void
+    {
+        $schema = $this->scheduledWithDedupeFields('inbox', 60, ['status']);
+        $object = $this->object('inbox');
+        $object->setObject(['status' => 'open']);
+
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn([$object]);
+        $this->stateCache->method('get')->willReturn(null);
+
+        // Stored fingerprint is for an older ['status' => 'done'] payload.
+        $oldFingerprint = sha1(json_encode(['status' => 'done']));
+        $row            = new NotificationDedupeState();
+        $row->setSchemaId(1);
+        $row->setRuleKey('scheduled-test');
+        $row->setObjectUuid((string) $object->getUuid());
+        $row->setFingerprint($oldFingerprint);
+        $row->setDispatchedAt(new \DateTime('-1 hour'));
+        $row->setSeenAt(new \DateTime('-1 hour'));
+
+        $this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
+        $this->dedupeMapper->method('findOne')->willReturn($row);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getValueString')->willReturnArgument(2);
+
+        $this->dispatcher->expects($this->once())->method('dispatch');
+        $this->dedupeMapper->expects($this->once())
+            ->method('upsert')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(true)
+            );
+
+        $this->runJob();
+    }
+
+    public function testDedupeFieldsOverrideWatchedSet(): void
+    {
+        // Filter has a withinNext on dueAt; dedupeFields forces status only.
+        $schema = $this->scheduledSchema('inbox', 60, [
+            'dueAt' => ['operator' => 'withinNext', 'value' => 'PT24H'],
+        ]);
+        $cfg = $schema->getConfiguration();
+        $cfg['x-openregister-notifications']['scheduled-test']['trigger']['dedupeFields'] = ['status'];
+        $schema->setConfiguration($cfg);
+
+        $object = $this->object('inbox');
+        // dueAt changes between scans, but dedupeFields excludes it from the fingerprint.
+        $object->setObject([
+            'status' => 'open',
+            'dueAt'  => (new \DateTimeImmutable('+12 hours'))->format(\DateTimeImmutable::ATOM),
+        ]);
+
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn([$object]);
+        $this->stateCache->method('get')->willReturn(null);
+
+        $fingerprint = sha1(json_encode(['status' => 'open']));
+        $row         = new NotificationDedupeState();
+        $row->setSchemaId(1);
+        $row->setRuleKey('scheduled-test');
+        $row->setObjectUuid((string) $object->getUuid());
+        $row->setFingerprint($fingerprint);
+        $row->setDispatchedAt(new \DateTime('-1 hour'));
+        $row->setSeenAt(new \DateTime('-1 hour'));
+
+        $this->dedupeMapper = $this->createMock(NotificationDedupeStateMapper::class);
+        $this->dedupeMapper->method('findOne')->willReturn($row);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getValueString')->willReturnArgument(2);
+
+        // Status unchanged → fingerprint match → no dispatch.
+        $this->dispatcher->expects($this->never())->method('dispatch');
+
+        $this->runJob();
+    }
+
+    public function testRetentionSweepRunsAfterScan(): void
+    {
+        $schema = $this->scheduledSchema('inbox', 60, []);
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn([]);
+        $this->stateCache->method('get')->willReturn(null);
+
+        $this->dedupeMapper->expects($this->once())
+            ->method('deleteSeenBefore')
+            ->with($this->isInstanceOf(\DateTime::class));
+
+        $this->runJob();
+    }
+
+    public function testRetentionSweepRespectsZeroDays(): void
+    {
+        $schema = $this->scheduledSchema('inbox', 60, []);
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn([]);
+        $this->stateCache->method('get')->willReturn(null);
+
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getValueString')->willReturn('0');
+
+        $this->dedupeMapper->expects($this->never())->method('deleteSeenBefore');
+
+        $this->runJob();
+    }
+
+    /**
+     * @param array<int, string> $dedupeFields
+     */
+    private function scheduledWithDedupeFields(string $slug, int $intervalSec, array $dedupeFields): Schema
+    {
+        $schema = $this->scheduledSchema($slug, $intervalSec, []);
+        $cfg    = $schema->getConfiguration();
+        $cfg['x-openregister-notifications']['scheduled-test']['trigger']['dedupeFields'] = $dedupeFields;
+        $schema->setConfiguration($cfg);
+        return $schema;
     }
 }

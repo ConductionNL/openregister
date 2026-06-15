@@ -619,84 +619,138 @@ class ObjectService
         // was 500-ing because `objectService->find(id: $uuid)` from
         // `TransitionEngine::transition()` inherited a stale schema and
         // hit the wrong magic table).
-        $callRegister = null;
-        $callSchema   = null;
-        if ($register !== null) {
-            $this->setRegister(register: $register);
-            $callRegister = $this->currentRegister;
-        }
+        // BUG-OBJ-13 (openregister#1520): find() is a read operation and
+        // MUST NOT leave the shared `currentRegister` / `currentSchema`
+        // instance state mutated for the next caller. We snapshot the
+        // previous context here and restore it in a `finally` below, so any
+        // re-anchoring done for this call's rendering / RBAC is local to
+        // this invocation only.
+        $previousRegister = $this->currentRegister;
+        $previousSchema   = $this->currentSchema;
 
-        if ($schema !== null) {
-            $this->setSchema(schema: $schema);
-            $callSchema = $this->currentSchema;
-        }
-
-        // Retrieve the object — when both call args are null, MagicMapper
-        // falls back to its `findAcrossAllMagicTables` path.
-        $object = $this->getHandler->find(
-            id: $id,
-            register: $callRegister,
-            schema: $callSchema,
-            _extend: $_extend,
-            files: $files,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
-
-        // If the object is not found, return null (@psalm-suppress TypeDoesNotContainNull).
-        if ($object === null) {
-            return null;
-        }
-
-        // When the caller did NOT specify register/schema we just did a
-        // cross-table find. Re-anchor `currentSchema` / `currentRegister`
-        // to the freshly-resolved object so the downstream rendering /
-        // RBAC code points at the right context — never at the stale
-        // leftover from a previous call.
-        if ($callSchema === null) {
-            $this->setSchema(schema: $object->getSchema());
-        }
-
-        if ($callRegister === null) {
-            $registerRef = $object->getRegister();
-            if ($registerRef !== null && $registerRef !== '') {
-                $this->setRegister(register: $registerRef);
+        try {
+            $callRegister = null;
+            $callSchema   = null;
+            if ($register !== null) {
+                $this->setRegister(register: $register);
+                $callRegister = $this->currentRegister;
             }
-        }
 
-        // Check user has permission to read this specific object (includes object owner check).
-        // Publication visibility is now handled by RBAC conditional rules with $now variable.
-        $this->checkPermission(
-            schema: $this->currentSchema,
-            action: 'read',
-            userId: null,
-            objectOwner: $object->getOwner(),
-            _rbac: $_rbac,
-            object: $object
-        );
+            if ($schema !== null) {
+                $this->setSchema(schema: $schema);
+                $callSchema = $this->currentSchema;
+            }
 
-        // Render the object before returning.
-        $registers = null;
-        if ($this->currentRegister !== null) {
-            $registers = [$this->currentRegister->getId() => $this->currentRegister];
-        }
+            // Retrieve the object — when both call args are null, MagicMapper
+            // falls back to its `findAcrossAllMagicTables` path.
+            $object = $this->getHandler->find(
+                id: $id,
+                register: $callRegister,
+                schema: $callSchema,
+                _extend: $_extend,
+                files: $files,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
 
-        // Always use the current schema (either provided or derived from object).
-        if ($this->currentSchema === null) {
-            throw new RuntimeException('Schema must be set before rendering entity.');
-        }
+            // If the object is not found, return null (@psalm-suppress TypeDoesNotContainNull).
+            if ($object === null) {
+                return null;
+            }
 
-        $schemas = [$this->currentSchema->getId() => $this->currentSchema];
+            // When the caller did NOT specify register/schema we just did a
+            // cross-table find. Re-anchor `currentSchema` / `currentRegister`
+            // to the freshly-resolved object so the downstream rendering /
+            // RBAC code points at the right context — never at the stale
+            // leftover from a previous call. This mutation is undone by the
+            // `finally` block before returning to the caller.
+            if ($callSchema === null) {
+                $this->setSchema(schema: $object->getSchema());
+            }
 
-        return $this->renderHandler->renderEntity(
-            entity: $object,
-            _extend: $_extend,
-            registers: $registers,
-            schemas: $schemas,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
+            if ($callRegister === null) {
+                $registerRef = $object->getRegister();
+                if ($registerRef !== null && $registerRef !== '') {
+                    $this->setRegister(register: $registerRef);
+                }
+            }
+
+            // Check user has permission to read this specific object (includes object owner check).
+            // Publication visibility is now handled by RBAC conditional rules with $now variable.
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'read',
+                userId: null,
+                objectOwner: $object->getOwner(),
+                _rbac: $_rbac,
+                object: $object
+            );
+
+            // Render the object before returning.
+            $registers = null;
+            if ($this->currentRegister !== null) {
+                $registers = [$this->currentRegister->getId() => $this->currentRegister];
+            }
+
+            // Always use the current schema (either provided or derived from object).
+            if ($this->currentSchema === null) {
+                throw new RuntimeException('Schema must be set before rendering entity.');
+            }
+
+            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
+
+            // AVG / GDPR per-access read logging (verwerkingenlogging).
+            // Fail-soft and gated on the schema's `x-openregister-processing`
+            // opt-in inside ProcessingLogService — never blocks the read.
+            $this->logProcessingRead(object: $object);
+
+            return $this->renderHandler->renderEntity(
+                entity: $object,
+                _extend: $_extend,
+                registers: $registers,
+                schemas: $schemas,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+        } finally {
+            // BUG-OBJ-13: restore the caller's context so find() has no
+            // observable side-effect on shared instance state.
+            $this->currentRegister = $previousRegister;
+            $this->currentSchema   = $previousSchema;
+        }//end try
     }//end find()
+
+    /**
+     * Record an AVG processing-log entry for a single object read.
+     *
+     * Lazily resolves ProcessingLogService from the container (mirrors
+     * the audit-trail attribution resolver) so this stays an additive,
+     * fail-soft hook with no new constructor dependency and no circular
+     * risk. The service itself gates on the schema opt-in and swallows
+     * its own errors; the wrapping try/catch is belt-and-braces so a
+     * misconfigured container can never break a read.
+     *
+     * @param ObjectEntity $object The object that was read.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
+     */
+    private function logProcessingRead(ObjectEntity $object): void
+    {
+        try {
+            $service = $this->container->get(\OCA\OpenRegister\Service\ProcessingLogService::class);
+            $service->logRead(object: $object, action: 'read');
+            $service->flush();
+        } catch (\Throwable $e) {
+            // Fail-soft: read logging never breaks or slows the read path.
+            $this->logger->debug(
+                message: '[AVG] processing-log read hook skipped',
+                context: ['exception' => $e->getMessage()]
+            );
+        }
+
+    }//end logProcessingRead()
 
     /**
      * Gets an object by its ID without creating an audit trail.
@@ -1209,6 +1263,18 @@ class ObjectService
             );
         }
 
+        // BUG-OBJ-4: applyAlwaysDefaults() and validateObjectIfRequired()
+        // both dereference $this->currentSchema (non-nullable param /
+        // ->getHardValidation()). If the schema could not be resolved from
+        // the request we would otherwise emit a raw TypeError 500 here.
+        // Throw a structured ValidationException instead, which the
+        // controllers translate into a clean 400 via handleValidationException().
+        if ($this->currentSchema === null) {
+            throw new ValidationException(
+                message: 'Schema could not be resolved for this object; provide a valid register/schema.'
+            );
+        }
+
         // Apply "always" defaults BEFORE validation.
         // This ensures computed/derived properties (e.g., dienstType from type) are set
         // before validation runs, allowing them to override invalid incoming values.
@@ -1249,19 +1315,36 @@ class ObjectService
         );
 
         // Invalidate contact matching cache for objects with email properties.
+        // BUG-OBJ-9: invalidate against the SAVED object's data (final UUID +
+        // applied defaults), not the pre-save input array, so an email value
+        // injected by a default/computed property is also invalidated.
         try {
             $container = \OC::$server;
             if ($container !== null) {
                 $contactMatchingService = $container->get(
                     \OCA\OpenRegister\Service\ContactMatchingService::class
                 );
-                $contactMatchingService->invalidateCacheForObject($object);
+                $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
             }
         } catch (\Throwable $e) {
-            // ContactMatchingService not available — skip cache invalidation.
-            // Catches Error too so a partially-wired container in tests (or
-            // any transitive DI failure) doesn't abort the save path.
-        }
+            // BUG-OBJ-9 / BUG-OBJ-14: contact-match cache invalidation is a
+            // non-essential post-save side-effect and must NEVER fail the save.
+            // Catch \Throwable (the invalidation path can raise a runtime Error,
+            // e.g. an unavailable SystemTag subsystem, not just a container
+            // exception) but log it with object context so the miss stays
+            // visible instead of being silently swallowed.
+            $this->logger->warning(
+                message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e->getMessage(),
+                    'uuid'      => $savedObject->getUuid(),
+                    'register'  => $this->currentRegister?->getId(),
+                    'schema'    => $this->currentSchema?->getId(),
+                ]
+            );
+        }//end try
 
         // Ensure the object has a file-storage folder (belt-and-suspenders for
         // new objects that bypassed the pre-save ensureObjectFolder path).
@@ -1439,6 +1522,16 @@ class ObjectService
      */
     private function validateObjectIfRequired(array $object): void
     {
+        // BUG-OBJ-4: guard against a null schema reaching the
+        // ->getHardValidation() dereference (raw TypeError 500). Callers
+        // should already have thrown the structured ValidationException in
+        // saveObject(); this is a belt-and-suspenders 400 for any other path.
+        if ($this->currentSchema === null) {
+            throw new ValidationException(
+                message: 'Schema could not be resolved for this object; provide a valid register/schema.'
+            );
+        }
+
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
             $result = $this->validateHandler->validateObject(
@@ -3059,15 +3152,18 @@ class ObjectService
                     schemaId: $this->currentSchema?->getId()
                 );
             } catch (\Exception $e) {
+                // BUG-OBJ-14: include register/schema context in the warning.
                 $this->logger->warning(
                     message: '[ObjectService] Bulk save cache invalidation failed',
                     context: [
                         'error'         => $e->getMessage(),
                         'totalAffected' => $totalAffected,
+                        'registerId'    => $this->currentRegister?->getId(),
+                        'schemaId'      => $this->currentSchema?->getId(),
                     ]
                 );
             }
-        }
+        }//end if
 
         return $bulkResult;
     }//end saveObjects()
@@ -3174,8 +3270,44 @@ class ObjectService
         $deletedObjectIds  = [];
         $skippedUuids      = [];
         $totalCascadeCount = 0;
+        // BUG-OBJ-5: collect the distinct (registerId, schemaId) pairs of the
+        // objects we actually delete so we can invalidate the per-schema query
+        // cache for each of them. A bulk delete may span multiple registers /
+        // schemas (cross-table), and CacheHandler::clearSchemaRelatedCaches()
+        // only clears the distributed query cache when schemaId !== null —
+        // passing null/null below left those caches stale.
+        $invalidationPairs = [];
         foreach ($filteredUuids as $uuid) {
             try {
+                // BUG-OBJ-5: resolve the object's register/schema BEFORE deleting
+                // it (the delete handler returns only a bool). Uses the mapper's
+                // find (no read audit trail) and includes already-soft-deleted
+                // rows so a hard-delete of a trashed object still yields its scope.
+                $deletedRegisterId = null;
+                $deletedSchemaId   = null;
+                try {
+                    $preDeleteObject   = $this->objectMapper->find(
+                        identifier: $uuid,
+                        register: $this->currentRegister,
+                        schema: $this->currentSchema,
+                        includeDeleted: true,
+                        _rbac: $_rbac,
+                        _multitenancy: $_multitenancy
+                    );
+                    $deletedRegisterId = $preDeleteObject->getRegister();
+                    $deletedSchemaId   = $preDeleteObject->getSchema();
+                } catch (\Throwable $resolveError) {
+                    // BUG-OBJ-14: scope resolution failed (object already gone or
+                    // not visible) — log and fall back to a broad invalidation.
+                    $this->logger->warning(
+                        message: '[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation',
+                        context: [
+                            'uuid'  => $uuid,
+                            'error' => $resolveError->getMessage(),
+                        ]
+                    );
+                }//end try
+
                 $result = $this->deleteHandler->deleteObject(
                     register: $this->currentRegister,
                     schema: $this->currentSchema,
@@ -3186,8 +3318,29 @@ class ObjectService
                 );
                 if ($result === true) {
                     $deletedObjectIds[] = $uuid;
+                    // BUG-OBJ-10: read the cascade count EXACTLY ONCE per
+                    // successful delete. The handler resets lastCascadeCount to 0
+                    // at the start of every root delete (originalObjectId === null,
+                    // which is always the case here), so each read reflects only
+                    // this object's cascade and accumulates correctly.
                     $totalCascadeCount += $this->deleteHandler->getLastCascadeCount();
-                }
+
+                    // BUG-OBJ-5: record the distinct scope pair for invalidation.
+                    // CacheHandler expects int ids; entity getters return string ids.
+                    if ($deletedSchemaId !== null && $deletedSchemaId !== '') {
+                        $registerIdInt = null;
+                        if ($deletedRegisterId !== null && $deletedRegisterId !== '') {
+                            $registerIdInt = (int) $deletedRegisterId;
+                        }
+
+                        $schemaIdInt = (int) $deletedSchemaId;
+                        $pairKey     = ($registerIdInt ?? 'null').':'.$schemaIdInt;
+                        $invalidationPairs[$pairKey] = [
+                            'registerId' => $registerIdInt,
+                            'schemaId'   => $schemaIdInt,
+                        ];
+                    }
+                }//end if
             } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
                 // RESTRICT blocks should not abort the entire bulk operation.
                 // Log and skip this object, continue with the rest.
@@ -3213,24 +3366,40 @@ class ObjectService
         }//end foreach
 
         // Invalidate collection caches after bulk delete operations.
+        // BUG-OBJ-5: invalidate per distinct (register, schema) pair gathered
+        // from the deleted objects, so CacheHandler::clearSchemaRelatedCaches()
+        // actually clears the per-schema distributed query cache (it no-ops when
+        // schemaId is null). Falls back to a broad null/null invalidation only
+        // when no scope could be resolved for any deleted object.
         if (empty($deletedObjectIds) === false) {
-            try {
-                $this->cacheHandler->invalidateForObjectChange(
-                    object: null,
-                    operation: 'bulk_delete',
-                    registerId: null,
-                    schemaId: null
-                );
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    message: '[ObjectService] Bulk delete cache invalidation failed',
-                    context: [
-                        'error'        => $e->getMessage(),
-                        'deletedCount' => count($deletedObjectIds),
-                    ]
-                );
+            $pairsToInvalidate = $invalidationPairs;
+            if (empty($pairsToInvalidate) === true) {
+                $pairsToInvalidate = [['registerId' => null, 'schemaId' => null]];
             }
-        }
+
+            foreach ($pairsToInvalidate as $pair) {
+                try {
+                    $this->cacheHandler->invalidateForObjectChange(
+                        object: null,
+                        operation: 'bulk_delete',
+                        registerId: $pair['registerId'],
+                        schemaId: $pair['schemaId']
+                    );
+                } catch (\Exception $e) {
+                    // BUG-OBJ-14: log with register/schema context instead of
+                    // silently swallowing the invalidation failure.
+                    $this->logger->warning(
+                        message: '[ObjectService] Bulk delete cache invalidation failed',
+                        context: [
+                            'error'        => $e->getMessage(),
+                            'deletedCount' => count($deletedObjectIds),
+                            'registerId'   => $pair['registerId'],
+                            'schemaId'     => $pair['schemaId'],
+                        ]
+                    );
+                }
+            }//end foreach
+        }//end if
 
         return [
             'deleted_uuids' => $deletedObjectIds,

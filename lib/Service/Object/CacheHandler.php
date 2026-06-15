@@ -288,7 +288,12 @@ class CacheHandler
      */
     public function getObject(int | string $identifier): ?ObjectEntity
     {
-        $key = (string) $identifier;
+        // BUG-OBJ-6: the in-memory object cache is keyed per active-organisation so a
+        // cached entity loaded under one tenant's context can never be served to a
+        // different tenant within the same request lifecycle. The underlying find()
+        // already applies RBAC + multitenancy on a cache miss; the tenant-scoped key
+        // closes the cache-hit bypass.
+        $key = $this->buildObjectCacheKey(rawKey: (string) $identifier);
 
         // Check cache first.
         if (($this->objectCache[$key] ?? null) !== null) {
@@ -296,7 +301,7 @@ class CacheHandler
             return $this->objectCache[$key];
         }
 
-        // Cache miss - load from database.
+        // Cache miss - load from database (RBAC + multitenancy enforced by find()).
         $this->stats['misses']++;
 
         try {
@@ -310,6 +315,51 @@ class CacheHandler
             return null;
         }
     }//end getObject()
+
+    /**
+     * Build a tenant-scoped key for the in-memory object cache (BUG-OBJ-6).
+     *
+     * Prefixes the raw id/uuid with the caller's active organisation so a cached
+     * entity is never shared across tenants. Falls back to a stable sentinel when
+     * no active organisation can be resolved (anonymous / system context).
+     *
+     * @param string $rawKey The raw cache key (object id or uuid)
+     *
+     * @return string The tenant-scoped cache key
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     */
+    private function buildObjectCacheKey(string $rawKey): string
+    {
+        return $this->getActiveOrganisationCacheScope().'|'.$rawKey;
+    }//end buildObjectCacheKey()
+
+    /**
+     * Resolve the active-organisation discriminator for object-cache keys (BUG-OBJ-6).
+     *
+     * @return string The active organisation UUID, or a sentinel for no/unknown org
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     */
+    private function getActiveOrganisationCacheScope(): string
+    {
+        try {
+            $user = $this->userSession?->getUser();
+            if ($user === null) {
+                return '__no_org__';
+            }
+
+            $organisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+            if ($organisation === null || $organisation === '') {
+                return '__no_org__';
+            }
+
+            return $organisation;
+        } catch (\Throwable $e) {
+            // Never let cache-key resolution abort a read; isolate on a safe sentinel.
+            return '__no_org__';
+        }
+    }//end getActiveOrganisationCacheScope()
 
     // ========================================.
     // SEARCH INDEX INTEGRATION METHODS.
@@ -555,17 +605,17 @@ class CacheHandler
             return [];
         }
 
-        // Filter out already cached objects.
+        // Filter out already cached objects (BUG-OBJ-6: tenant-scoped keys).
         $identifiersToLoad = array_filter(
             array_unique($identifiers),
-            fn($id) => isset($this->objectCache[(string) $id]) === false
+            fn($id) => isset($this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $id)]) === false
         );
 
         if (empty($identifiersToLoad) === true) {
             // All objects already cached.
             return array_filter(
                 array_map(
-                    fn($id) => $this->objectCache[(string) $id] ?? null,
+                    fn($id) => $this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $id)] ?? null,
                     $identifiers
                 ),
                 fn($obj) => $obj !== null
@@ -613,18 +663,28 @@ class CacheHandler
     private function cacheObject(ObjectEntity $object): void
     {
         // Check cache size and evict oldest entries if necessary.
+        // PERF-9: unset the oldest keys in a tight loop instead of rebuilding the whole
+        // cache with array_slice() (which reallocates the entire array on every insert
+        // once the cap is reached). PHP arrays preserve insertion order, so the leading
+        // keys returned by array_keys() are the oldest.
         if (count($this->objectCache) >= $this->maxCacheSize) {
-            // Simple cache eviction - remove first 20% of entries.
-            $entriesToRemove   = (int) ($this->maxCacheSize * 0.2);
-            $this->objectCache = array_slice($this->objectCache, $entriesToRemove, null, true);
+            $entriesToRemove = (int) ($this->maxCacheSize * 0.2);
+            if ($entriesToRemove < 1) {
+                $entriesToRemove = 1;
+            }
+
+            $oldestKeys = array_slice(array_keys($this->objectCache), 0, $entriesToRemove);
+            foreach ($oldestKeys as $oldestKey) {
+                unset($this->objectCache[$oldestKey]);
+            }
         }
 
-        // Cache with ID.
-        $this->objectCache[$object->getId()] = $object;
+        // Cache with ID (BUG-OBJ-6: tenant-scoped key).
+        $this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $object->getId())] = $object;
 
         // Also cache with UUID if available.
         if (($object->getUuid() !== null) === true) {
-            $this->objectCache[$object->getUuid()] = $object;
+            $this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $object->getUuid())] = $object;
         }
     }//end cacheObject()
 
@@ -866,6 +926,12 @@ class CacheHandler
             // Clear individual object from cache.
             $this->clearObjectFromCache(object: $object);
 
+            // BUG-OBJ-7: drop any stale cached name for this object up-front, regardless
+            // of the operation label. The create/update branch below re-writes the fresh
+            // name; for any other (or unknown) operation the stale name is at least
+            // invalidated so a rename can never serve a stale value from cache.
+            $this->clearObjectNameFromCache(object: $object);
+
             // **INDEX INTEGRATION**: Index or remove from search index based on operation.
             if ($operation === 'create' || $operation === 'update') {
                 // Index the object with immediate commit for instant visibility.
@@ -943,15 +1009,22 @@ class CacheHandler
      */
     private function clearObjectFromCache(ObjectEntity $object): void
     {
-        // Remove by ID. Ensure ID is string for array key.
-        $objectId    = $object->getId();
-        $objectIdKey = (string) $objectId;
-
-        unset($this->objectCache[$objectIdKey]);
-
-        // Remove by UUID if available.
+        // BUG-OBJ-6: object-cache keys are tenant-scoped ("<org>|<rawKey>"). The active
+        // organisation at invalidation time may differ from the one in effect when the
+        // entry was written, so remove every scope's entry for this id/uuid by matching
+        // the raw-key suffix rather than a single scoped key.
+        $rawKeys = [(string) $object->getId()];
         if (($object->getUuid() !== null) === true) {
-            unset($this->objectCache[$object->getUuid()]);
+            $rawKeys[] = (string) $object->getUuid();
+        }
+
+        foreach ($rawKeys as $rawKey) {
+            $suffix = '|'.$rawKey;
+            foreach (array_keys($this->objectCache) as $cacheKey) {
+                if ($cacheKey === $rawKey || str_ends_with((string) $cacheKey, $suffix) === true) {
+                    unset($this->objectCache[$cacheKey]);
+                }
+            }
         }
 
         $this->logger->debug(
@@ -964,6 +1037,50 @@ class CacheHandler
             ]
         );
     }//end clearObjectFromCache()
+
+    /**
+     * Remove an object's cached name entries (in-memory + distributed) — BUG-OBJ-7.
+     *
+     * Drops the name cached under both the object's UUID and id so a subsequent
+     * read recomputes the current name (fixing stale names after a rename).
+     *
+     * @param ObjectEntity $object The object whose cached name must be cleared
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     */
+    private function clearObjectNameFromCache(ObjectEntity $object): void
+    {
+        $keys = [];
+        if ($object->getUuid() !== null) {
+            $keys[] = (string) $object->getUuid();
+        }
+
+        if ($object->getId() !== null) {
+            $keys[] = (string) $object->getId();
+        }
+
+        foreach ($keys as $key) {
+            unset($this->nameCache[$key]);
+
+            if ($this->nameDistributedCache !== null) {
+                try {
+                    $this->nameDistributedCache->remove('name_'.$key);
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[CacheHandler] Failed to clear object name from distributed cache',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'identifier' => $key,
+                            'error'      => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+        }//end foreach
+    }//end clearObjectNameFromCache()
 
     /**
      * Clear all caches (Administrative Operation)

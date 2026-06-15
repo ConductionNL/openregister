@@ -49,6 +49,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -89,16 +90,33 @@ class MagicBulkHandler
      * @param LoggerInterface    $logger             Logger for debugging and error reporting
      * @param IEventDispatcher   $eventDispatcher    Event dispatcher for business logic hooks
      * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime input
+     * @param IConfig            $config             Nextcloud config for reading the table prefix
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly IEventDispatcher $eventDispatcher,
-        private readonly DateTimeNormalizer $dateTimeNormalizer
+        private readonly DateTimeNormalizer $dateTimeNormalizer,
+        private readonly IConfig $config
     ) {
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
     }//end __construct()
+
+    /**
+     * Build the full, prefixed table name for a bare magic table name.
+     *
+     * Uses the configured `dbtableprefix` rather than a hardcoded `oc_` so
+     * raw-SQL paths work on installs with a custom prefix (BUG-DB-3).
+     *
+     * @param string $tableName The bare table name (without prefix).
+     *
+     * @return string The full table name including the configured prefix.
+     */
+    private function getFullTableName(string $tableName): string
+    {
+        return ((string) $this->config->getSystemValue('dbtableprefix', 'oc_')).$tableName;
+    }//end getFullTableName()
 
     /**
      * Prepare objects for dynamic table structure
@@ -372,12 +390,33 @@ class MagicBulkHandler
         $allResults = [];
 
         // Process each chunk.
+        // BUG-DB-5: wrap each chunk in a transaction so a mid-chunk failure
+        // (e.g. a constraint violation on one row) rolls back the whole chunk
+        // instead of leaving a partial, inconsistent set of rows persisted.
         foreach ($chunks as $chunkIndex => $chunk) {
-            $chunkResults = $this->executeUpsertChunk(
-                chunk: $chunk,
-                tableName: $tableName,
-                chunkNumber: ($chunkIndex + 1)
-            );
+            $this->db->beginTransaction();
+            try {
+                $chunkResults = $this->executeUpsertChunk(
+                    chunk: $chunk,
+                    tableName: $tableName,
+                    chunkNumber: ($chunkIndex + 1)
+                );
+
+                $this->db->commit();
+            } catch (\Throwable $e) {
+                $this->db->rollBack();
+                $this->logger->error(
+                    message: '[MagicBulkHandler] Rolled back bulk upsert chunk after failure',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'chunk' => ($chunkIndex + 1),
+                        'table' => $tableName,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                throw $e;
+            }//end try
 
             $allResults = array_merge($allResults, $chunkResults);
         }
@@ -450,19 +489,29 @@ class MagicBulkHandler
         $seenUuids         = [];
         foreach ($filteredChunk as $objectData) {
             $uuid = $objectData['_uuid'] ?? null;
-            if ($uuid !== null) {
-                // Keep track of the position to allow overwriting.
-                if (isset($seenUuids[$uuid]) === true) {
-                    // Replace previous occurrence with this one (keep last).
-                    $deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
-                    continue;
-                }
-
-                // Add new object.
-                $index = count($deduplicatedChunk);
-                $deduplicatedChunk[$index] = $objectData;
-                $seenUuids[$uuid]          = $index;
+            if ($uuid === null || $uuid === '') {
+                // BUG-DB-6: previously objects without a _uuid were silently
+                // dropped. Generate a UUID so the row is persisted instead of
+                // disappearing without trace.
+                $uuid                  = Uuid::v4()->toRfc4122();
+                $objectData['_uuid']   = $uuid;
+                $this->logger->debug(
+                    message: '[MagicBulkHandler] Generated missing _uuid for bulk object',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+                );
             }
+
+            // Keep track of the position to allow overwriting.
+            if (isset($seenUuids[$uuid]) === true) {
+                // Replace previous occurrence with this one (keep last).
+                $deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
+                continue;
+            }
+
+            // Add new object.
+            $index = count($deduplicatedChunk);
+            $deduplicatedChunk[$index] = $objectData;
+            $seenUuids[$uuid]          = $index;
         }
 
         // Re-index array after deduplication.
@@ -487,8 +536,8 @@ class MagicBulkHandler
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
-        // Get full table name with hardcoded prefix.
-        $fullTableName = 'oc_'.$tableName;
+        // Get full table name with the configured database prefix.
+        $fullTableName = $this->getFullTableName($tableName);
 
         // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
         // This allows us to correctly classify created vs updated regardless of timestamp values.
@@ -703,8 +752,8 @@ class MagicBulkHandler
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
-            // Get full table name with hardcoded prefix.
-            $fullTableName = 'oc_'.$tableName;
+            // Get full table name with the configured database prefix.
+            $fullTableName = $this->getFullTableName($tableName);
 
             // MySQL/MariaDB: use SHOW COLUMNS.
             $sql = "SHOW COLUMNS FROM `$fullTableName`";

@@ -279,6 +279,7 @@ export default {
 
 	watch: {
 		/**
+		 * @param newValue
 		 * @spec exclude watcher reloading file types when modal opens
 		 */
 		show(newValue) {
@@ -307,7 +308,6 @@ export default {
 				const response = await axios.get(generateUrl('/apps/openregister/api/files/types'))
 				if (response.data.success) {
 					this.fileTypes = response.data.data
-					console.info('[FileVectorizationModal] Loaded file types:', this.fileTypes)
 				}
 			} catch (error) {
 				console.error('[FileVectorizationModal] Failed to load file types:', error)

@@ -32,15 +32,25 @@
 
 <script>
 /**
- * Entities tab — surfaces NLP-extracted entities (PERSON / ORGANIZATION /
- * EMAIL / PHONE / LOCATION / ADDRESS / DATE / IBAN) from the email body via
- * /apps/openregister/api/entities?emailId={messageId}.
+ * Entities tab — surfaces the entities found *in this email*: the people and
+ * addresses on the envelope (from / to / cc) plus email addresses, phone
+ * numbers, IBANs and links detected in the message body. Everything is
+ * extracted from the message itself (via Mail's
+ * /apps/mail/api/messages/{id}/body) so the list always reflects the open
+ * email — never global PII from other messages.
  *
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-4
  */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+
+// Grounded extraction patterns — kept conservative to avoid false positives.
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
+const IBAN_RE = /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,8}\b/g
+const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/gi
+// Phone: optional +/00 country code, then 9–13 digits with spaces/dashes/parens.
+const PHONE_RE = /(?:(?:\+|00)\d{1,3}[\s-]?)?(?:\(0\)|0)?(?:[\s-]?\d){8,12}\d/g
 
 export default {
 	name: 'EntitiesTab',
@@ -84,23 +94,24 @@ export default {
 	methods: {
 		t,
 		/**
+		 * @param type
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
 		 */
 		formatType(type) {
 			const labels = {
-				PERSON: t('openregister', 'Persons'),
-				ORGANIZATION: t('openregister', 'Organizations'),
+				PERSON: t('openregister', 'People'),
 				EMAIL: t('openregister', 'Email Addresses'),
 				PHONE: t('openregister', 'Phone Numbers'),
-				LOCATION: t('openregister', 'Locations'),
-				ADDRESS: t('openregister', 'Addresses'),
-				DATE: t('openregister', 'Dates'),
 				IBAN: t('openregister', 'IBANs'),
+				URL: t('openregister', 'Links'),
 				unknown: t('openregister', 'Other'),
 			}
 			return labels[type] || type
 		},
 		/**
+		 * Extract the entities present in the current email — envelope people
+		 * and addresses plus body-level emails / phones / IBANs / links.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
 		 */
 		async loadEntities() {
@@ -111,21 +122,59 @@ export default {
 
 			this.loading = true
 			try {
-				// Query entities that have relations to this email
-				// The entity relations have an emailId field
-				const url = generateUrl('/apps/openregister/api/entities')
-				const response = await axios.get(url, {
-					params: { emailId: this.messageId, limit: 50 },
-					timeout: 10000,
-				})
-				const data = response.data
-				this.entities = data?.data || data?.results || []
+				const url = generateUrl('/apps/mail/api/messages/{id}/body', { id: this.messageId })
+				const response = await axios.get(url, { timeout: 10000 })
+				const envelope = response.data?.data || response.data || {}
+				this.entities = this.extractEntities(envelope)
 			} catch (err) {
 				console.error('[EntitiesTab] Load failed:', err)
 				this.entities = []
 			} finally {
 				this.loading = false
 			}
+		},
+		/**
+		 * Build the deduplicated entity list from one message envelope.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
+		extractEntities(envelope) {
+			const seen = new Set()
+			const out = []
+			const add = (type, value) => {
+				const clean = (value || '').trim()
+				if (!clean) return
+				const key = `${type}:${clean.toLowerCase()}`
+				if (seen.has(key)) return
+				seen.add(key)
+				out.push({ id: key, type, value: clean })
+			}
+
+			// Envelope participants — people (display names) and their addresses.
+			const participants = [
+				...(envelope.from || []),
+				...(envelope.to || []),
+				...(envelope.cc || []),
+			]
+			for (const p of participants) {
+				if (p?.email) add('EMAIL', p.email)
+				if (p?.label && p.label !== p.email) add('PERSON', p.label)
+			}
+
+			// Body — plain text (strip HTML when needed).
+			let body = envelope.body || ''
+			if (envelope.hasHtmlBody) {
+				body = new DOMParser().parseFromString(body, 'text/html').body.textContent || ''
+			}
+			for (const m of body.match(EMAIL_RE) || []) add('EMAIL', m)
+			for (const m of body.match(IBAN_RE) || []) add('IBAN', m.replace(/\s+/g, ''))
+			for (const m of body.match(URL_RE) || []) add('URL', m)
+			for (const m of body.match(PHONE_RE) || []) {
+				// Require at least 9 digits to weed out times / short numbers.
+				if ((m.replace(/\D/g, '').length) >= 9) add('PHONE', m.trim())
+			}
+
+			return out
 		},
 	},
 }

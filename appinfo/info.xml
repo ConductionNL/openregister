@@ -16,7 +16,7 @@
 - **Role-based access control** — Fine-grained permissions with organization-level multitenancy
 - **Event-driven architecture** — React to data changes with events for tasks, notifications, and integrations
 - **CalDAV tasks and notes** — Attach Nextcloud tasks and comments directly to your data objects
-- **JSON-LD and Linked Data** — Standards-compliant data that connects to the broader open data ecosystem
+- **JSON-LD and Linked Data** — Opt-in read-side JSON-LD output (via `Accept: application/ld+json` content negotiation) with canonical `@id`, schema-derived `@context`, and dereferenceable context documents; Schema.org alignment is per-schema opt-in mapping. Read-side only (no JSON-LD ingest)
 - **Source synchronization** — Keep your registers in sync with external data sources
 
 Open Register powers apps like OpenCatalogi, Procest, Pipelinq, and Software Catalogus, giving them a shared, federated data backbone.
@@ -33,14 +33,14 @@ Free and open source under the EUPL license.
 - **Rolgebaseerde toegangscontrole** — Fijnmazige rechten met multitenancy op organisatieniveau
 - **Event-driven architectuur** — Reageer op datawijzigingen met events voor taken, notificaties en integraties
 - **CalDAV taken en notities** — Koppel Nextcloud-taken en opmerkingen direct aan je dataobjecten
-- **JSON-LD en Linked Data** — Data conform standaarden die aansluit op het bredere open data ecosysteem
+- **JSON-LD en Linked Data** — Optionele read-side JSON-LD-uitvoer (via `Accept: application/ld+json` content-negotiation) met canonieke `@id`, een uit het schema afgeleide `@context` en dereferenceerbare context-documenten; Schema.org-uitlijning is een per-schema opt-in mapping. Alleen lezen (geen JSON-LD-import)
 - **Bronsynchronisatie** — Houd je registers in sync met externe databronnen
 
 Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Catalogus aan en geeft ze een gedeelde, gefedereerde data-backbone.
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.13-unstable.89</version>
+    <version>0.2.16-unstable.1</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -91,7 +91,8 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
 		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
+		<job>OCA\OpenRegister\Cron\SyncConfigurationsJob</job>
+		<job>OCA\OpenRegister\Cron\SyncDataJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>

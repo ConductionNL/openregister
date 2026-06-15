@@ -143,16 +143,16 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Confidence Level') }}</label>
 						<NcSelect
-						input-label="Confidence Filter"
 							v-model="confidenceFilter"
+							input-label="Confidence Filter"
 							:options="confidenceFilterOptions" />
 					</div>
 
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Property Type') }}</label>
 						<NcSelect
-						input-label="Type Filter"
 							v-model="typeFilter"
+							input-label="Type Filter"
 							:options="typeFilterOptions" />
 					</div>
 				</div>
@@ -738,10 +738,8 @@ export default {
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.info('Loaded detailed schema stats for exploration:', stats)
 				}
-			} catch (error) {
-				console.warn('Could not fetch object count:', error)
+			} catch {
 				this.objectCount = 0
 				this.objectStats = null
 			}
@@ -817,6 +815,7 @@ export default {
 			}
 		},
 		/**
+		 * @param propertyName
 		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
 		 */
 		togglePropertySelection(propertyName) {
@@ -954,6 +953,7 @@ export default {
 			}
 		},
 		/**
+		 * @param value
 		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
 		 */
 		formatExample(value) {
@@ -972,6 +972,7 @@ export default {
 			return String(value)
 		},
 		/**
+		 * @param page
 		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
 		 */
 		onPageChanged(page) {
@@ -984,6 +985,7 @@ export default {
 			}
 		},
 		/**
+		 * @param pageSize
 		 * @spec exclude UI pagination handler — sets page size and resets to page one.
 		 */
 		onPageSizeChanged(pageSize) {
@@ -998,6 +1000,7 @@ export default {
 			this.resetDialog()
 		},
 		/**
+		 * @param issues
 		 * @spec exclude UI display helper — maps issue-type strings to display objects.
 		 */
 		getIssueDetails(issues) {
@@ -1010,6 +1013,7 @@ export default {
 			})
 		},
 		/**
+		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
 		 */
 		getIssueType(issueType) {
@@ -1030,6 +1034,7 @@ export default {
 			return typeMap[issueType] || 'general'
 		},
 		/**
+		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue category to a translated label.
 		 */
 		getIssueLabel(issueType) {
@@ -1046,6 +1051,7 @@ export default {
 			return labelMap[issueType] || this.t('openregister', 'Issue')
 		},
 		/**
+		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
 		 */
 		getIssueDescription(issueType) {

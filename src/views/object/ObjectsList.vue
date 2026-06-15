@@ -5,94 +5,92 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 <template>
 	<NcAppContentList>
-		<ul>
-			<div class="listHeader">
-				<div class="searchListHeader">
-					<NcTextField
-						:value.sync="search"
-						:show-trailing-button="search !== ''"
-						:label="t('openregister', 'Search')"
-						class="searchField"
-						trailing-button-icon="close"
-						@trailing-button-click="search = ''">
-						<Magnify :size="20" />
-					</NcTextField>
-					<NcActions>
-						<NcActionButton close-after-click @click="objectStore.refreshObjectList({ search: search, page: 1 })">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							Refresh
-						</NcActionButton>
-						<NcActionButton close-after-click @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
-							<template #icon>
-								<Upload :size="20" />
-							</template>
-							Upload
-						</NcActionButton>
-						<NcActionButton close-after-click @click="addObject">
-							<template #icon>
-								<Plus :size="20" />
-							</template>
-							Add Object
-						</NcActionButton>
-					</NcActions>
-				</div>
-				<div v-if="objectStore.getCollection(objectStore.currentType).length > 0 && objectStore.getPagination(objectStore.currentType).total > limit">
-					<span>Page {{ currentPage }} of {{ objectStore.getPagination(objectStore.currentType).pages }}</span>
-					<BPagination v-model="currentPage"
-						class="listPagination"
-						:total-rows="objectStore.getPagination(objectStore.currentType).total"
-						:per-page="limit" />
-				</div>
+		<div class="listHeader">
+			<div class="searchListHeader">
+				<NcTextField
+					:value.sync="search"
+					:show-trailing-button="search !== ''"
+					:label="t('openregister', 'Search')"
+					class="searchField"
+					trailing-button-icon="close"
+					@trailing-button-click="search = ''">
+					<Magnify :size="20" />
+				</NcTextField>
+				<NcActions>
+					<NcActionButton close-after-click @click="objectStore.refreshObjectList({ search: search, page: 1 })">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Refresh
+					</NcActionButton>
+					<NcActionButton close-after-click @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
+						<template #icon>
+							<Upload :size="20" />
+						</template>
+						Upload
+					</NcActionButton>
+					<NcActionButton close-after-click @click="addObject">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						Add Object
+					</NcActionButton>
+				</NcActions>
 			</div>
-			<div v-if="objectStore.getCollection(objectStore.currentType) && objectStore.getCollection(objectStore.currentType).length > 0 && !loading">
-				<NcListItem v-for="(object, i) in objectStore.getCollection(objectStore.currentType)"
-					:key="`${object}${i}`"
-					:name="object.id?.toString()"
-					:active="objectStore.objectItem?.id === object?.id"
-					:force-display-actions="true"
-					@click="objectStore.setObjectItem(object)">
-					<template #icon>
-						<CubeOutline :class="objectStore.objectItem?.id === object.id && 'selectedObjectIcon'"
-							disable-menu
-							:size="44" />
-					</template>
-					<template #subname>
-						{{ object.uuid }}
-					</template>
-					<template #actions>
-						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('viewObject')">
-							<template #icon>
-								<Pencil />
-							</template>
-							Edit
-						</NcActionButton>
-						<NcActionButton v-if="!object.locked"
-							close-after-click
-							@click="objectStore.setObjectItem(object); navigationStore.setModal('lockObject')">
-							<template #icon>
-								<LockOutline />
-							</template>
-							Lock
-						</NcActionButton>
-						<NcActionButton v-if="object.locked"
-							close-after-click
-							@click="objectStore.unlockObject(objectStore.objectItem.id)">
-							<template #icon>
-								<LockOpenOutline />
-							</template>
-							Unlock
-						</NcActionButton>
-						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
-							<template #icon>
-								<TrashCanOutline />
-							</template>
-							Delete
-						</NcActionButton>
-					</template>
-				</NcListItem>
+			<div v-if="objectStore.getCollection(objectStore.currentType).length > 0 && objectStore.getPagination(objectStore.currentType).total > limit">
+				<span>Page {{ currentPage }} of {{ objectStore.getPagination(objectStore.currentType).pages }}</span>
+				<BPagination v-model="currentPage"
+					class="listPagination"
+					:total-rows="objectStore.getPagination(objectStore.currentType).total"
+					:per-page="limit" />
 			</div>
+		</div>
+		<ul v-if="objectStore.getCollection(objectStore.currentType) && objectStore.getCollection(objectStore.currentType).length > 0 && !loading">
+			<NcListItem v-for="(object, i) in objectStore.getCollection(objectStore.currentType)"
+				:key="`${object}${i}`"
+				:name="object.id?.toString()"
+				:active="objectStore.objectItem?.id === object?.id"
+				:force-display-actions="true"
+				@click="objectStore.setObjectItem(object)">
+				<template #icon>
+					<CubeOutline :class="objectStore.objectItem?.id === object.id && 'selectedObjectIcon'"
+						disable-menu
+						:size="44" />
+				</template>
+				<template #subname>
+					{{ object.uuid }}
+				</template>
+				<template #actions>
+					<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('viewObject')">
+						<template #icon>
+							<Pencil />
+						</template>
+						Edit
+					</NcActionButton>
+					<NcActionButton v-if="!object.locked"
+						close-after-click
+						@click="objectStore.setObjectItem(object); navigationStore.setModal('lockObject')">
+						<template #icon>
+							<LockOutline />
+						</template>
+						Lock
+					</NcActionButton>
+					<NcActionButton v-if="object.locked"
+						close-after-click
+						@click="objectStore.unlockObject(objectStore.objectItem.id)">
+						<template #icon>
+							<LockOpenOutline />
+						</template>
+						Unlock
+					</NcActionButton>
+					<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
+						<template #icon>
+							<TrashCanOutline />
+						</template>
+						Delete
+					</NcActionButton>
+				</template>
+			</NcListItem>
 		</ul>
 
 		<NcLoadingIcon v-if="loading"
@@ -150,6 +148,7 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param newVal
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
 		 */
 		currentPage(newVal) {
@@ -159,6 +158,7 @@ export default {
 			})
 		},
 		/**
+		 * @param newVal
 		 * @spec exclude list-view watcher; debounced reload of the object list on search change (object-lifecycle contract)
 		 */
 		search(newVal) {

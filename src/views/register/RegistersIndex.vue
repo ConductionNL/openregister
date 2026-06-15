@@ -333,6 +333,7 @@ export default {
 		},
 
 		/**
+		 * @param page
 		 * @spec exclude list-view pagination page-change handler
 		 */
 		onPageChanged(page) {
@@ -340,6 +341,7 @@ export default {
 		},
 
 		/**
+		 * @param pageSize
 		 * @spec exclude list-view pagination page-size-change handler
 		 */
 		onPageSizeChanged(pageSize) {
@@ -347,6 +349,7 @@ export default {
 		},
 
 		/**
+		 * @param ids
 		 * @spec exclude list-view row-selection state setter
 		 */
 		onSelect(ids) {
@@ -354,6 +357,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view row CSS-class helper based on managing-configuration state
 		 */
 		getRowClass(register) {
@@ -363,6 +367,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view lookup helper; finds the configuration managing a register
 		 */
 		getManagingConfiguration(register) {
@@ -373,6 +378,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view display predicate; whether a register is externally managed
 		 */
 		isManagedByExternalConfig(register) {
@@ -382,6 +388,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view display predicate; whether a register is locally managed
 		 */
 		isManagedByLocalConfig(register) {
@@ -391,6 +398,7 @@ export default {
 		},
 
 		/**
+		 * @param schemas
 		 * @spec exclude list-view form-control mapping helper; resolves schema ids to select options
 		 */
 		getSchemaSelectValue(schemas) {
@@ -403,6 +411,7 @@ export default {
 		},
 
 		/**
+		 * @param formData
 		 * @spec exclude list-view form-submit wiring; delegates to registerStore.saveRegister (registers-management contract)
 		 */
 		async onSaveRegister(formData) {
@@ -418,6 +427,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view row-action; router-navigates to the register detail page
 		 */
 		viewRegisterDetails(register) {
@@ -426,6 +436,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
 		 */
 		async downloadOas(register) {
@@ -448,6 +459,7 @@ export default {
 		},
 
 		/**
+		 * @param register
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {

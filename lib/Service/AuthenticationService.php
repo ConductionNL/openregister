@@ -33,7 +33,9 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Service for handling authentication against external services.
@@ -96,6 +98,52 @@ class AuthenticationService
     public function __construct(ArrayLoader $loader)
     {
         $this->twig = new Environment($loader);
+
+        // SSTI hardening (SEC-SVC-4): the JWT payload template is user-authored
+        // source configuration, so it MUST be compiled inside a Twig sandbox.
+        // Only the tags/filters/functions needed to build a JWT claim set are
+        // allowlisted; method/property access on objects is denied entirely.
+        $policy = new SecurityPolicy(
+            allowedTags: [
+                'if',
+                'for',
+                'set',
+                'apply',
+            ],
+            allowedFilters: [
+                'date',
+                'date_modify',
+                'upper',
+                'lower',
+                'trim',
+                'length',
+                'default',
+                'number_format',
+                'round',
+                'abs',
+                'split',
+                'join',
+                'slice',
+                'first',
+                'last',
+                'replace',
+                'format',
+                'merge',
+                'keys',
+                'escape',
+                'raw',
+                'json_encode',
+            ],
+            allowedMethods: [],
+            allowedProperties: [],
+            allowedFunctions: [
+                'max',
+                'min',
+                'range',
+                'date',
+            ]
+        );
+        $this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
     }//end __construct()
 
@@ -334,7 +382,32 @@ class AuthenticationService
      */
     private function getJWTPayload(array $configuration): array
     {
-        $renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($configuration);
+        // SEC-SVC-4: never expose secret material to the payload template
+        // context. Strip credential-bearing keys so a crafted payload template
+        // cannot echo adjacent secrets into the rendered claim set.
+        $secretKeys = [
+            'secret',
+            'clientSecret',
+            'client_secret',
+            'password',
+            'privateKey',
+            'private_key',
+            'apiKey',
+            'api_key',
+            'token',
+            'accessToken',
+            'access_token',
+            'refreshToken',
+            'refresh_token',
+            'authorization',
+        ];
+
+        $context = $configuration;
+        foreach ($secretKeys as $secretKey) {
+            unset($context[$secretKey]);
+        }
+
+        $renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($context);
 
         return json_decode(json: $renderedPayload, associative: true);
 

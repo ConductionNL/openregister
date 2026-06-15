@@ -218,19 +218,16 @@ export default {
 		 * @spec exclude dialog-open UI handler for config-set creation
 		 */
 		openCreateDialog() {
-			console.info('🔵 Opening create dialog, setting navigationStore.dialog to "createConfigSet"')
 			navigationStore.setDialog('createConfigSet')
-			console.info('🔵 navigationStore.dialog is now:', navigationStore.dialog)
 		},
 
 		/**
+		 * @param configSet
 		 * @spec exclude dialog-open UI handler for config-set deletion
 		 */
 		openDeleteDialog(configSet) {
-			console.info('🔴 Opening delete dialog for configSet:', configSet)
 			navigationStore.setTransferData(configSet)
 			navigationStore.setDialog('deleteConfigSet')
-			console.info('🔴 navigationStore.dialog is now:', navigationStore.dialog)
 		},
 	},
 }

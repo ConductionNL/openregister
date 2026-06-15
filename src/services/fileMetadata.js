@@ -23,7 +23,7 @@ const BASE = '/index.php/apps/openregister/api/objects'
  * @param {string|number} schemaId The schema id
  * @param {string} objectId The parent object id
  * @param {string|number} fileId The file id
- * @param {string} [suffix=''] Optional suffix (e.g. '/labels')
+ * @param {string} [suffix] Optional suffix (e.g. '/labels')
  * @return {string} The full endpoint URL
  */
 function buildFileUrl(registerId, schemaId, objectId, fileId, suffix = '') {

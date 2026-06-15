@@ -96,6 +96,21 @@ class PdfAnonymisationException extends \Exception
     public const REASON_INTERNAL_ERROR = 'internal_error';
 
     /**
+     * Path A's strict-mode validation gate failed AND the dormant Path B
+     * (NC Office ODT round-trip — `pdf-anonymisation-odt-fallback`) was
+     * attempted but also failed to produce a clean output. Controller maps
+     * to HTTP 500 with the structured diagnostic body, identical to
+     * REASON_VALIDATION_FAILED's mapping.
+     *
+     * Only raised when `pdf-anonymisation.path-b-enabled` is true AND a
+     * Path B attempt was made. Until the feature flag flips on this reason
+     * code is reserved (no caller produces it).
+     *
+     * @var string
+     */
+    public const REASON_VALIDATION_FAILED_AFTER_FALLBACK = 'validation_failed_after_fallback';
+
+    /**
      * The structured reason code (one of the REASON_* constants).
      *
      * @var string

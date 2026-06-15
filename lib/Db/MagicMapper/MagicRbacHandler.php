@@ -220,13 +220,17 @@ class MagicRbacHandler
             );
         }
 
+        // Resolve whether authenticated users inherit `public` rights once.
+        $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+
         // Process each authorization rule.
         foreach ($rules as $rule) {
             $ruleCondition = $this->processAuthorizationRule(
                 qb: $qb,
                 rule: $rule,
                 userGroups: $userGroups,
-                userId: $userId
+                userId: $userId,
+                inheritFromPublic: $inheritFromPublic
             );
 
             if ($ruleCondition === true) {
@@ -261,29 +265,98 @@ class MagicRbacHandler
     }//end applyRbacFilters()
 
     /**
+     * Resolve whether authenticated users inherit `public` group rights for a schema.
+     *
+     * Delegates to PermissionHandler::resolveInheritFromPublic() (cascade:
+     * schema → register → IAppConfig → true) via the container so the SQL
+     * emitters and the PHP-side check honour the flag identically. Fails safe
+     * to `true` (the pre-flag behaviour) if resolution errors.
+     *
+     * @param Schema $schema The schema being filtered.
+     *
+     * @return bool True when authenticated users inherit `public` rights.
+     *
+     * @spec openspec/changes/rbac-disable-public-inheritance/tasks.md
+     */
+    private function authenticatedInheritsPublic(Schema $schema): bool
+    {
+        try {
+            return $this->container->get(PermissionHandler::class)->resolveInheritFromPublic(schema: $schema);
+        } catch (\Throwable $e) {
+            // Fail to the configured tenant posture rather than a hard-coded
+            // grant, so a cluster-wide lock-down (rbac.inherit_from_public_default
+            // = false) is not silently softened on this code path. Symmetric with
+            // PermissionHandler::resolveInheritFromPublic()'s own fail-safe.
+            $fallback = true;
+            try {
+                $fallback = $this->container->get(PermissionHandler::class)->inheritFromPublicTenantDefault();
+            } catch (\Throwable $inner) {
+                $fallback = $this->appConfig->getValueBool(
+                    app: 'openregister',
+                    key: 'rbac.inherit_from_public_default',
+                    default: true
+                );
+            }
+
+            $this->logger->error(
+                message: '[MagicRbacHandler] inheritFromPublic resolution failed; falling back to tenant default',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'default' => $fallback, 'error' => $e->getMessage()]
+            );
+            return $fallback;
+        }//end try
+    }//end authenticatedInheritsPublic()
+
+    /**
+     * Decide whether the current principal qualifies for a `public` rule.
+     *
+     * Anonymous users (no userId) always qualify for `public`. Authenticated
+     * users qualify only when public inheritance is enabled for the schema.
+     *
+     * @param string|null $userId            Current user ID (null = anonymous).
+     * @param bool        $inheritFromPublic Resolved inheritFromPublic value.
+     *
+     * @return bool True when the principal qualifies for the `public` group.
+     */
+    private function qualifiesForPublic(?string $userId, bool $inheritFromPublic): bool
+    {
+        return $userId === null || $inheritFromPublic === true;
+    }//end qualifiesForPublic()
+
+    /**
      * Process a single authorization rule
      *
-     * @param IQueryBuilder $qb         Query builder
-     * @param mixed         $rule       Authorization rule (string or array)
-     * @param array         $userGroups User's group IDs
-     * @param string|null   $userId     Current user ID
+     * @param IQueryBuilder $qb                Query builder
+     * @param mixed         $rule              Authorization rule (string or array)
+     * @param array         $userGroups        User's group IDs
+     * @param string|null   $userId            Current user ID
+     * @param bool          $inheritFromPublic Whether auth users inherit public rights
      *
      * @return mixed True if unconditional access, SQL expression for conditional, null/false if no access
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
     private function processAuthorizationRule(
         IQueryBuilder $qb,
         mixed $rule,
         array $userGroups,
-        ?string $userId
+        ?string $userId,
+        bool $inheritFromPublic
     ): mixed {
         // Simple rule: just a group name string.
         if (is_string($rule) === true) {
-            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId);
+            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
         }
 
-        // Conditional rule: object with 'group' and optional 'match'.
-        if (is_array($rule) === true && isset($rule['group']) === true) {
-            return $this->processConditionalRule(qb: $qb, rule: $rule, userGroups: $userGroups, userId: $userId);
+        // Conditional rule: object with 'group' (or a 'user' override) and
+        // optional 'match'.
+        if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
+            return $this->processConditionalRule(
+                qb: $qb,
+                rule: $rule,
+                userGroups: $userGroups,
+                userId: $userId,
+                inheritFromPublic: $inheritFromPublic
+            );
         }
 
         // Invalid rule format.
@@ -297,22 +370,34 @@ class MagicRbacHandler
     /**
      * Process a simple (unconditional) authorization rule
      *
-     * @param string      $rule       Group name
-     * @param array       $userGroups User's group IDs
-     * @param string|null $userId     Current user ID
+     * @param string      $rule              Group name
+     * @param array       $userGroups        User's group IDs
+     * @param string|null $userId            Current user ID
+     * @param bool        $inheritFromPublic Whether auth users inherit public rights
      *
      * @return bool True if user has access, false otherwise
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
-    private function processSimpleRule(string $rule, array $userGroups, ?string $userId): bool
+    private function processSimpleRule(string $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool
     {
-        // 'public' grants access to anyone, including unauthenticated users.
+        // 'public' grants access to anonymous users always; authenticated users
+        // only when public inheritance is enabled (inheritFromPublic).
         if ($rule === 'public') {
-            return true;
+            return $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
         }
 
         // 'authenticated' grants access to any logged-in user.
         if ($rule === 'authenticated') {
             return $userId !== null;
+        }
+
+        // User-level override (delegation): a bare `user:<uid>` rule grants the
+        // action to that one user on the LIST path, mirroring PermissionHandler's
+        // single-object verdict (rbac-zaaktype). Fail closed: anonymous users and
+        // non-matching uids never qualify. Additive — never widens group access.
+        if ($this->matchesUserOverride(rule: $rule, userId: $userId) === true) {
+            return true;
         }
 
         // Check if user is in the specified group.
@@ -324,32 +409,70 @@ class MagicRbacHandler
     }//end processSimpleRule()
 
     /**
+     * Determine whether a bare authorization rule is a `user:<uid>` override
+     * that grants access to the current user.
+     *
+     * Shared by the QueryBuilder, raw-SQL, and multitenancy-bypass paths so the
+     * three LIST emitters agree with PermissionHandler's single-object verdict.
+     * SECURITY: exact-uid match only; anonymous principals never match; the
+     * `user:` prefix with a blank uid never matches.
+     *
+     * @param string      $rule   Authorization rule string.
+     * @param string|null $userId Current user ID (null = anonymous).
+     *
+     * @return bool True when the rule is a user override for the current user.
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
+     */
+    private function matchesUserOverride(string $rule, ?string $userId): bool
+    {
+        if ($userId === null || $userId === '') {
+            return false;
+        }
+
+        if (str_starts_with($rule, 'user:') === false) {
+            return false;
+        }
+
+        $targetUid = substr($rule, strlen('user:'));
+        return $targetUid !== '' && $targetUid === $userId;
+    }//end matchesUserOverride()
+
+    /**
      * Process a conditional authorization rule
      *
-     * @param IQueryBuilder $qb         Query builder
-     * @param array         $rule       Rule with 'group' and optional 'match'
-     * @param array         $userGroups User's group IDs
-     * @param string|null   $userId     Current user ID
+     * @param IQueryBuilder $qb                Query builder
+     * @param array         $rule              Rule with 'group' and optional 'match'
+     * @param array         $userGroups        User's group IDs
+     * @param string|null   $userId            Current user ID
+     * @param bool          $inheritFromPublic Whether auth users inherit public rights
      *
      * @return mixed True if unconditional access, SQL expression for conditional, false if no access
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
     private function processConditionalRule(
         IQueryBuilder $qb,
         array $rule,
         array $userGroups,
-        ?string $userId
+        ?string $userId,
+        bool $inheritFromPublic
     ): mixed {
-        $group = $rule['group'];
+        $group = ($rule['group'] ?? null);
         $match = $rule['match'] ?? null;
 
-        // Check if user qualifies for this group.
+        // Check if user qualifies for this group OR is the named user override.
         $userQualifies = false;
-        if ($group === 'public') {
-            // Public group means anyone can access, including unauthenticated users.
-            $userQualifies = true;
+        if (isset($rule['user']) === true && is_string($rule['user']) === true) {
+            // User-level override (delegation): { "user": "<uid>", "match": {...} }.
+            $userQualifies = $this->matchesUserOverride(rule: 'user:'.$rule['user'], userId: $userId);
+        } else if ($group === 'public') {
+            // Anonymous users always qualify for public; authenticated users
+            // only when public inheritance is enabled (inheritFromPublic).
+            $userQualifies = $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
         } else if ($group === 'authenticated' && $userId !== null) {
             $userQualifies = true;
-        } else if (in_array($group, $userGroups, true) === true) {
+        } else if ($group !== null && in_array($group, $userGroups, true) === true) {
             $userQualifies = true;
         }
 
@@ -718,6 +841,8 @@ class MagicRbacHandler
      * @return bool True if user has permission
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Inlined dispatch keeps the ConditionMatcher delegation in one place.
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
     public function hasPermission(
         Schema $schema,
@@ -768,20 +893,33 @@ class MagicRbacHandler
         // (applyRbacFilters → buildMatchConditions → buildPropertyCondition)
         // handles the row-level path; ConditionMatcher handles the PHP-side
         // path for this method and for PermissionHandler/PropertyRbacHandler.
+        // Resolve whether authenticated users inherit `public` rights once;
+        // anonymous users always qualify for `public`.
+        $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+
         foreach ($rules as $rule) {
-            // Simple string rule: direct group match.
+            // Simple string rule: direct group match or `user:<uid>` override.
             if (is_string($rule) === true) {
-                if ($rule === 'public' || in_array($rule, $userGroups, true) === true) {
+                if (($rule === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
+                    || $this->matchesUserOverride(rule: $rule, userId: $userId) === true
+                    || in_array($rule, $userGroups, true) === true
+                ) {
                     return true;
                 }
 
                 continue;
             }
 
-            // Conditional rule: array with 'group' and optional 'match'.
-            if (is_array($rule) === true && isset($rule['group']) === true) {
-                $group         = $rule['group'];
-                $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
+            // Conditional rule: array with 'group' (or 'user' override) and optional 'match'.
+            if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
+                if (isset($rule['user']) === true && is_string($rule['user']) === true) {
+                    $userQualifies = $this->matchesUserOverride(rule: 'user:'.$rule['user'], userId: $userId);
+                } else {
+                    $group         = ($rule['group'] ?? null);
+                    $userQualifies = (($group === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
+                        || ($group !== null && in_array($group, $userGroups, true) === true));
+                }
+
                 if ($userQualifies === false) {
                     continue;
                 }
@@ -870,12 +1008,16 @@ class MagicRbacHandler
             $conditions[]   = "_owner = {$quotedSystemId}";
         }
 
+        // Resolve whether authenticated users inherit `public` rights once.
+        $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+
         // Process each authorization rule.
         foreach ($rules as $rule) {
             $ruleResult = $this->processAuthorizationRuleSql(
                 rule: $rule,
                 userGroups: $userGroups,
-                userId: $userId
+                userId: $userId,
+                inheritFromPublic: $inheritFromPublic
             );
 
             if ($ruleResult === true) {
@@ -896,22 +1038,26 @@ class MagicRbacHandler
     /**
      * Process a single authorization rule for raw SQL output.
      *
-     * @param mixed       $rule       Authorization rule (string or array).
-     * @param array       $userGroups User's group IDs.
-     * @param string|null $userId     Current user ID.
+     * @param mixed       $rule              Authorization rule (string or array).
+     * @param array       $userGroups        User's group IDs.
+     * @param string|null $userId            Current user ID.
+     * @param bool        $inheritFromPublic Whether auth users inherit public rights.
      *
      * @return mixed True if unconditional access, SQL string for conditional, false if no access.
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
-    private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId): mixed
+    private function processAuthorizationRuleSql(mixed $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): mixed
     {
         // Simple rule: just a group name string.
         if (is_string($rule) === true) {
-            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId);
+            return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
         }
 
-        // Conditional rule: object with 'group' and optional 'match'.
-        if (is_array($rule) === true && isset($rule['group']) === true) {
-            return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId);
+        // Conditional rule: object with 'group' (or a 'user' override) and
+        // optional 'match'.
+        if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
+            return $this->processConditionalRuleSql(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
         }
 
         return false;
@@ -920,24 +1066,30 @@ class MagicRbacHandler
     /**
      * Process a conditional authorization rule for raw SQL output.
      *
-     * @param array       $rule       Rule with 'group' and optional 'match'.
-     * @param array       $userGroups User's group IDs.
-     * @param string|null $userId     Current user ID.
+     * @param array       $rule              Rule with 'group' and optional 'match'.
+     * @param array       $userGroups        User's group IDs.
+     * @param string|null $userId            Current user ID.
+     * @param bool        $inheritFromPublic Whether auth users inherit public rights.
      *
      * @return mixed True if unconditional access, SQL string for conditional, false if no access.
      *
-     * @psalm-suppress UnusedParam $userId reserved for user-specific match conditions in future RBAC rules
+     * @spec openspec/specs/rbac-zaaktype/spec.md
      */
-    private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId): mixed
+    private function processConditionalRuleSql(array $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): mixed
     {
-        $group = $rule['group'];
+        $group = ($rule['group'] ?? null);
         $match = $rule['match'] ?? null;
 
-        // Check if user qualifies for this group.
+        // Check if user qualifies for this group OR is the named user override.
         $userQualifies = false;
-        if ($group === 'public') {
-            $userQualifies = true;
-        } else if (in_array($group, $userGroups, true) === true) {
+        if (isset($rule['user']) === true && is_string($rule['user']) === true) {
+            // User-level override (delegation): { "user": "<uid>", "match": {...} }.
+            $userQualifies = $this->matchesUserOverride(rule: 'user:'.$rule['user'], userId: $userId);
+        } else if ($group === 'public') {
+            // Anonymous users always qualify; authenticated users only when
+            // public inheritance is enabled (inheritFromPublic).
+            $userQualifies = $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
+        } else if ($group !== null && in_array($group, $userGroups, true) === true) {
             $userQualifies = true;
         }
 
@@ -1281,12 +1433,26 @@ class MagicRbacHandler
             return false;
         }
 
+        // Resolve the public-inheritance gate for this schema. A `public` rule
+        // only grants an authenticated user a cross-tenant bypass when public
+        // inheritance is enabled; anonymous users always qualify. Threading this
+        // through keeps the bypass decision consistent with applyRbacFilters /
+        // buildRbacConditionsSql / hasPermission, which already gate `public`.
+        $userId            = $user?->getUID();
+        $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+
         // Check if user qualifies for any rule that should bypass multitenancy.
         // This includes:
         // 1. Simple rules (group name strings) - user in group can see ALL records.
         // 2. Conditional rules with non-_organisation match fields - RBAC handles filtering.
         foreach ($rules as $rule) {
-            if ($this->ruleBypassesMultitenancy(rule: $rule, userGroups: $userGroups) === true) {
+            if ($this->ruleBypassesMultitenancy(
+                    rule: $rule,
+                    userGroups: $userGroups,
+                    userId: $userId,
+                    inheritFromPublic: $inheritFromPublic
+                ) === true
+            ) {
                 return true;
             }
         }//end foreach
@@ -1297,23 +1463,35 @@ class MagicRbacHandler
     /**
      * Check if a single rule should bypass multitenancy for the current user
      *
-     * @param mixed $rule       Authorization rule (string or array)
-     * @param array $userGroups User's group IDs
+     * @param mixed       $rule              Authorization rule (string or array)
+     * @param array       $userGroups        User's group IDs
+     * @param string|null $userId            Current user ID (null = anonymous)
+     * @param bool        $inheritFromPublic Whether auth users inherit public rights
      *
      * @return bool True if this rule bypasses multitenancy
      */
-    private function ruleBypassesMultitenancy(mixed $rule, array $userGroups): bool
+    private function ruleBypassesMultitenancy(mixed $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool
     {
         // Check simple rules (just group names).
         // If user qualifies for a simple rule, they can see ALL records,
         // so multitenancy should be bypassed.
         if (is_string($rule) === true) {
-            return $this->simpleRuleBypassesMultitenancy(rule: $rule, userGroups: $userGroups);
+            return $this->simpleRuleBypassesMultitenancy(
+                rule: $rule,
+                userGroups: $userGroups,
+                userId: $userId,
+                inheritFromPublic: $inheritFromPublic
+            );
         }
 
         // Check conditional rules.
         if (is_array($rule) === true && isset($rule['group']) === true && isset($rule['match']) === true) {
-            return $this->conditionalRuleBypassesMultitenancy(rule: $rule, userGroups: $userGroups);
+            return $this->conditionalRuleBypassesMultitenancy(
+                rule: $rule,
+                userGroups: $userGroups,
+                userId: $userId,
+                inheritFromPublic: $inheritFromPublic
+            );
         }
 
         return false;
@@ -1322,15 +1500,22 @@ class MagicRbacHandler
     /**
      * Check if a simple (group name) rule bypasses multitenancy
      *
-     * @param string $rule       Group name
-     * @param array  $userGroups User's group IDs
+     * @param string      $rule              Group name
+     * @param array       $userGroups        User's group IDs
+     * @param string|null $userId            Current user ID (null = anonymous)
+     * @param bool        $inheritFromPublic Whether auth users inherit public rights
      *
      * @return bool True if this simple rule bypasses multitenancy
      */
-    private function simpleRuleBypassesMultitenancy(string $rule, array $userGroups): bool
+    private function simpleRuleBypassesMultitenancy(string $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool
     {
+        // A `public` rule only grants a cross-tenant bypass to principals who
+        // actually qualify for `public`: anonymous users always, authenticated
+        // users only when public inheritance is enabled. Otherwise the bypass
+        // would expose other-tenant rows to an authenticated user whose access
+        // was meant to come from a different (e.g. `authenticated`) rule.
         if ($rule === 'public') {
-            return true;
+            return $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
         }
 
         return in_array($rule, $userGroups, true);
@@ -1342,18 +1527,25 @@ class MagicRbacHandler
      * A conditional rule bypasses multitenancy when the user qualifies for the
      * group and the match conditions include fields other than _organisation.
      *
-     * @param array $rule       Rule with 'group' and 'match'
-     * @param array $userGroups User's group IDs
+     * @param array       $rule              Rule with 'group' and 'match'
+     * @param array       $userGroups        User's group IDs
+     * @param string|null $userId            Current user ID (null = anonymous)
+     * @param bool        $inheritFromPublic Whether auth users inherit public rights
      *
      * @return bool True if this conditional rule bypasses multitenancy
      */
-    private function conditionalRuleBypassesMultitenancy(array $rule, array $userGroups): bool
+    private function conditionalRuleBypassesMultitenancy(array $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool
     {
         $group = $rule['group'];
         $match = $rule['match'];
 
-        // Check if user qualifies for this group.
-        $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
+        // Check if user qualifies for this group. A `public` group only qualifies
+        // an authenticated user when public inheritance is enabled (anonymous
+        // users always qualify), consistent with the simple-rule path above.
+        $userQualifies = (
+            ($group === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
+            || in_array($group, $userGroups, true) === true
+        );
 
         // If user qualifies and match contains non-_organisation fields, multitenancy should be bypassed.
         if ($userQualifies === true && is_array($match) === true) {

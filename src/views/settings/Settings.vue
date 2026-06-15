@@ -74,7 +74,6 @@
 </template>
 
 <script>
-/* eslint-disable no-console */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
@@ -147,8 +146,6 @@ export default {
 	 * @return {Promise<void>}
 	 */
 	async created() {
-		console.log('🔧 Settings component created - loading data from store')
-
 		try {
 			// Load all settings data through the store
 			await this.settingsStore.loadSettings()
@@ -158,8 +155,6 @@ export default {
 				this.settingsStore.loadStats(),
 				this.settingsStore.loadCacheStats(),
 			])
-
-			console.log('✅ Settings data loaded successfully')
 		} catch (error) {
 			console.error('❌ Failed to load settings data:', error)
 		}

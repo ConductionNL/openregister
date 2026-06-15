@@ -246,7 +246,18 @@ class SchemaMapper extends QBMapper
             $mtFlag = '1';
         }
 
-        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
+        // BUG-DB-10: $published changes which rows are visible, so it MUST be part
+        // of the cache key; otherwise a published-only lookup could return a
+        // result cached from an unfiltered lookup (or vice versa).
+        $publishedFlag = 'n';
+        if ($published === true) {
+            $publishedFlag = '1';
+        } else if ($published === false) {
+            $publishedFlag = '0';
+        }
+
+        $cacheSuffix = ':'.$rbacFlag.':'.$mtFlag.':'.$publishedFlag;
+        $cacheKey    = strtolower((string) $id).$cacheSuffix;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
         }
@@ -275,12 +286,26 @@ class SchemaMapper extends QBMapper
         );
 
         if (is_numeric($id) === true) {
+            $idParam = $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT);
             $orConditions->add(
-                $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT))
+                $qb->expr()->eq('id', $idParam)
             );
         }
 
         $qb->where($orConditions);
+
+        // BUG-DB-10: when the identifier is numeric it is ambiguous (it could be a
+        // primary key id OR a numeric uuid/slug). Prefer the exact primary-key
+        // match by ordering an `id = ?` hit first, so a row whose slug happens to
+        // be "5" never shadows the row with id 5.
+        if (is_numeric($id) === true) {
+            $qb->addOrderBy(
+                $qb->createFunction(
+                    'CASE WHEN id = '.$idParam.' THEN 0 ELSE 1 END'
+                ),
+                'ASC'
+            );
+        }
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
@@ -315,22 +340,19 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        $rbacChar = '0';
-        if ($_rbac === true) {
-            $rbacChar = '1';
-        }
-
-        $mtChar = '0';
-        if ($_multitenancy === true) {
-            $mtChar = '1';
-        }
-
-        $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
+        // BUG-DB-10: reuse the exact same suffix (rbac + multitenancy + published)
+        // as the read-side key so cache writes and reads stay consistent.
         $this->findCache[$cacheKey] = $schema;
-        $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
-        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix] = $schema;
+        $this->findCache[(string) $schema->getId().$cacheSuffix] = $schema;
+
+        // BUG-DB-10: guard against a null uuid before strtolower().
+        $schemaUuid = $schema->getUuid();
+        if ($schemaUuid !== null) {
+            $this->findCache[strtolower($schemaUuid).$cacheSuffix] = $schema;
+        }
+
         if ($schema->getSlug() !== null) {
-            $this->findCache[strtolower($schema->getSlug()).$rbacSuffix] = $schema;
+            $this->findCache[strtolower($schema->getSlug()).$cacheSuffix] = $schema;
         }
 
         return $schema;
@@ -692,8 +714,18 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Lifecycle is ADVISORY metadata (a state-machine hint), not a storage
+        // requirement: a schema with a malformed or non-canonical lifecycle block
+        // still stores objects correctly. Rejecting the whole schema import over an
+        // advisory annotation breaks register imports for every app that ships a
+        // partial / different-dialect lifecycle block. Degrade to a non-fatal
+        // warning and import the schema (the lifecycle simply won't drive a status
+        // workflow) instead of throwing.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-lifecycle: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-lifecycle annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (no status workflow applied): '.implode(' ', $messages)
+        );
     }//end validateLifecycleAnnotation()
 
     /**
@@ -723,8 +755,15 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Aggregations are ADVISORY report-metadata, not a storage requirement.
+        // A malformed / empty / non-canonical aggregation block must not abort the
+        // whole schema import — the schema still stores objects, the aggregation
+        // simply won't be runnable. Degrade to a non-fatal warning.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-aggregations: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-aggregations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (aggregation not registered): '.implode(' ', $messages)
+        );
     }//end validateAggregationsAnnotation()
 
     /**
@@ -754,8 +793,16 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Calculations are ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed / non-canonical calculation block (e.g. a type
+        // outside the canonical set, or a missing expression) must not abort the
+        // whole schema import — the schema still stores objects, the calculation
+        // simply won't be evaluated. Degrade to a non-fatal warning.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-calculations: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-calculations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (calculation not evaluated): '.implode(' ', $messages)
+        );
     }//end validateCalculationsAnnotation()
 
     /**
@@ -3195,4 +3242,75 @@ class SchemaMapper extends QBMapper
 
         return $extendedByMap;
     }//end findAllExtendedBy()
+
+    /**
+     * Return the IDs of all schemas whose `searchable` flag is false.
+     *
+     * Used by the unified search provider to exclude opted-out schemas from
+     * Nextcloud unified search inside the query (rather than post-filtering a
+     * result page, which would leak counts and break pagination). The lookup
+     * is intentionally RBAC/tenant-agnostic: it only answers "which schemas
+     * declared themselves non-searchable", the access filtering happens in the
+     * object search itself.
+     *
+     * @return int[] List of schema IDs with `searchable = false`.
+     *
+     * @psalm-return   list<int>
+     * @phpstan-return array<int, int>
+     *
+     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     */
+    public function findNonSearchableIds(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: false, type: IQueryBuilder::PARAM_BOOL)));
+
+        $ids    = [];
+        $result = $qb->executeQuery();
+        while (($row = $result->fetch()) !== false) {
+            if (isset($row['id']) === true) {
+                $ids[] = (int) $row['id'];
+            }
+        }
+
+        $result->closeCursor();
+
+        return $ids;
+    }//end findNonSearchableIds()
+
+    /**
+     * Return the IDs of all schemas whose `searchable` flag is true (default).
+     *
+     * The unified search provider passes this allow-list as the `@self.schema`
+     * IN-filter so that only searchable schemas contribute results, applied
+     * inside the query.
+     *
+     * @return int[] List of schema IDs with `searchable = true`.
+     *
+     * @psalm-return   list<int>
+     * @phpstan-return array<int, int>
+     *
+     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     */
+    public function findSearchableIds(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+
+        $ids    = [];
+        $result = $qb->executeQuery();
+        while (($row = $result->fetch()) !== false) {
+            if (isset($row['id']) === true) {
+                $ids[] = (int) $row['id'];
+            }
+        }
+
+        $result->closeCursor();
+
+        return $ids;
+    }//end findSearchableIds()
 }//end class

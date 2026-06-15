@@ -345,8 +345,14 @@ class RegisterMapper extends QBMapper
 
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
-            $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;
-            $this->findCache[strtolower($register->getUuid()).$rbacSuffix] = $register;
+            $this->findCache[(string) $register->getId().$rbacSuffix] = $register;
+
+            // BUG-DB-10: guard against a null uuid before strtolower().
+            $registerUuid = $register->getUuid();
+            if ($registerUuid !== null) {
+                $this->findCache[strtolower($registerUuid).$rbacSuffix] = $register;
+            }
+
             if ($register->getSlug() !== null) {
                 $this->findCache[strtolower($register->getSlug()).$rbacSuffix] = $register;
             }
@@ -484,8 +490,8 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[]
      *
-     * @psalm-return                                  list<OCA\OpenRegister\Db\Register>
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @psalm-return                                list<OCA\OpenRegister\Db\Register>
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,
@@ -689,9 +695,7 @@ class RegisterMapper extends QBMapper
         // Set or update the version.
         if (isset($object['version']) === false) {
             $currentVersion = $register->getVersion() ?? '0.0.0';
-            $version        = explode('.', $currentVersion);
-            $version[2]     = ((int) $version[2] + 1);
-            $register->setVersion(implode('.', $version));
+            $register->setVersion($this->bumpPatchVersion($currentVersion));
         }
 
         $register->hydrate(object: $object);
@@ -703,6 +707,34 @@ class RegisterMapper extends QBMapper
 
         return $register;
     }//end updateFromArray()
+
+    /**
+     * Increment the patch component of a semantic version string.
+     *
+     * BUG-DB-12: the previous naive `explode('.')` + `(int)` bump turned a
+     * pre-release like `1.0.0-beta` into `1.0.1`, silently dropping the
+     * `-beta` suffix. This parser preserves any pre-release/build suffix and
+     * pads missing segments so a bare `1` or `1.2` still bumps cleanly.
+     *
+     * @param string $version The current version string (e.g. `1.0.0-beta`).
+     *
+     * @return string The version with its patch component incremented.
+     */
+    private function bumpPatchVersion(string $version): string
+    {
+        // Capture: major.minor.patch followed by an optional -prerelease/+build suffix.
+        if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) === 1) {
+            $major  = (int) $matches[1];
+            $minor  = (int) ($matches[2] ?? 0);
+            $patch  = (int) ($matches[3] ?? 0);
+            $suffix = $matches[4] ?? '';
+
+            return $major.'.'.$minor.'.'.($patch + 1).$suffix;
+        }
+
+        // Fall back to a safe default when the version is unparsable.
+        return '0.0.1';
+    }//end bumpPatchVersion()
 
     /**
      * Delete a register only if no objects are attached
@@ -802,6 +834,25 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
+        $matches = $this->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+        return ($matches[0] ?? null);
+    }//end getFirstRegisterWithSchema()
+
+    /**
+     * Retrieves the IDs of all registers that include the given schema ID.
+     *
+     * A schema may be referenced by more than one register. Callers that make a
+     * security decision off register-level configuration (e.g. the
+     * inheritFromPublic cascade) must consider every register rather than an
+     * arbitrary first match, so the verdict is deterministic across nodes and
+     * restores. IDs are returned in ascending order for stability.
+     *
+     * @param int $schemaId The ID of the schema to search for.
+     *
+     * @return int[] The IDs of all matching registers (empty when none found).
+     */
+    public function getAllRegisterIdsWithSchema(int $schemaId): array
+    {
         // Three platforms in production: SQLite (no REGEXP function),
         // MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
         // but stores the `schemas` column as `json`, which doesn't
@@ -819,18 +870,22 @@ class RegisterMapper extends QBMapper
 
         $candidates = $qb->executeQuery()->fetchAllAssociative();
         $needle     = (string) $schemaId;
+        $matches    = [];
 
         foreach ($candidates as $row) {
             $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
             foreach ($schemas as $candidate) {
                 if ((string) $candidate === $needle) {
-                    return (int) $row['id'];
+                    $matches[] = (int) $row['id'];
+                    break;
                 }
             }
         }
 
-        return null;
-    }//end getFirstRegisterWithSchema()
+        sort($matches);
+
+        return $matches;
+    }//end getAllRegisterIdsWithSchema()
 
     /**
      * Decode the persisted `schemas` column into a flat ID list.

@@ -86,6 +86,7 @@ export default {
 	watch: {
 		fileId: {
 			/**
+			 * @param newVal
 			 * @spec exclude watcher refetching objects on fileId change, UI plumbing
 			 */
 			handler(newVal) {

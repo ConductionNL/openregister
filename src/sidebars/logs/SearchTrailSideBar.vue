@@ -324,9 +324,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<div class="filterGroup">
 					<label for="activityPeriodSelect">{{ t('openregister', 'Activity Period') }}</label>
 					<NcSelect
-						input-label="Selected Activity Period"
 						id="activityPeriodSelect"
 						v-model="selectedActivityPeriod"
+						input-label="Selected Activity Period"
 						:options="activityPeriodOptions"
 						:placeholder="t('openregister', 'Select period')"
 						@input="loadActivityData">

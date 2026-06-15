@@ -77,12 +77,25 @@ class DedupeRegistersCommand extends Command
             ->setDescription(
                 'Detect and merge duplicate registers sharing a slug (keeps the lowest-id canonical register).'
             )
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Report duplicates without deleting anything')
+            ->addOption(
+                'apply',
+                null,
+                InputOption::VALUE_NONE,
+                'Actually delete the duplicate registers. Without this flag the command runs in '
+                .'dry-run mode and only reports what it WOULD delete.'
+            )
+            ->addOption(
+                'dry-run',
+                null,
+                InputOption::VALUE_NONE,
+                'Report duplicates without deleting anything (this is the default; kept for clarity)'
+            )
             ->addOption(
                 'force',
                 null,
                 InputOption::VALUE_NONE,
-                'Also delete duplicate registers that still own objects (DANGEROUS — drops those objects)'
+                'Also delete duplicate registers that still own objects (DANGEROUS — drops those objects). '
+                .'Has no effect without --apply.'
             );
     }//end configure()
 
@@ -100,8 +113,18 @@ class DedupeRegistersCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $dryRun = (bool) $input->getOption('dry-run');
+        // Default to dry-run: a destructive sweep must be opted into with --apply (OPS-9).
+        // --dry-run is accepted as an explicit no-op alias for the default behaviour.
+        $apply  = (bool) $input->getOption('apply');
+        $dryRun = ($apply === false);
         $force  = (bool) $input->getOption('force');
+
+        if ($dryRun === true) {
+            $output->writeln(
+                '<comment>Running in DRY-RUN mode — no registers will be deleted. '
+                .'Re-run with --apply to perform deletions.</comment>'
+            );
+        }
 
         $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 

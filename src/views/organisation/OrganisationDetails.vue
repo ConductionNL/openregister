@@ -320,6 +320,7 @@ export default {
 			}
 		},
 		/**
+		 * @param userId
 		 * @spec exclude detail-view member-removal stub (confirm + toast; API endpoint not yet implemented)
 		 */
 		async removeMember(userId) {
@@ -349,6 +350,7 @@ export default {
 			}
 		},
 		/**
+		 * @param text
 		 * @spec exclude detail-view clipboard helper with success/error toast
 		 */
 		async copyToClipboard(text) {
@@ -361,6 +363,7 @@ export default {
 			}
 		},
 		/**
+		 * @param dateString
 		 * @spec exclude detail-view date-formatting display helper
 		 */
 		formatDate(dateString) {
@@ -374,6 +377,7 @@ export default {
 			})
 		},
 		/**
+		 * @param bytes
 		 * @spec exclude detail-view byte-size formatting display helper
 		 */
 		formatBytes(bytes) {

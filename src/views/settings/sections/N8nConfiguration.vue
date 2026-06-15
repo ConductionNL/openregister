@@ -585,8 +585,9 @@ export default {
 		 * @return {void}
 		 */
 		openN8nEditor() {
-			if (this.n8nUrl) {
-				window.open(this.n8nUrl, '_blank')
+			// Only open http(s) URLs to prevent javascript:/data: scheme injection
+			if (this.n8nUrl && /^https?:\/\//i.test(this.n8nUrl)) {
+				window.open(this.n8nUrl, '_blank', 'noopener')
 			}
 		},
 	},

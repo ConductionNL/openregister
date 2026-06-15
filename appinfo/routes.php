@@ -30,6 +30,11 @@ return [
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#patch', 'url' => '/api/sources/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+
+        // Data sync / harvesting — manual trigger + status (data-sync-harvesting spec).
+        ['name' => 'sources#syncNow',    'url' => '/api/sources/{id}/sync',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'sources#syncStatus', 'url' => '/api/sources/{id}/sync-status', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+
         ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'agents#patch', 'url' => '/api/agents/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -242,6 +247,10 @@ return [
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
         ['name' => 'urn#bulk',    'url' => '/api/urn/bulk',    'verb' => 'POST'],
+        // JSON-LD context document endpoints (json-ld-output). Dereferenceable
+        // @context documents referenced by JSON-LD object serializations.
+        ['name' => 'contexts#register', 'url' => '/api/contexts/{register}',          'verb' => 'GET'],
+        ['name' => 'contexts#schema',   'url' => '/api/contexts/{register}/{schema}', 'verb' => 'GET'],
         // RBAC scope discovery endpoint — clients query effective (register,
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
@@ -259,6 +268,10 @@ return [
         ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
         ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
         ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
+        // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
+        // admin-default + FG-delegated, append-only by surface (no write routes).
+        ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
+        ['name' => 'processingLog#betrokkene', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
         // Realtime cursor-based polling endpoints.
         ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
         ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
@@ -288,19 +301,20 @@ return [
         // Linked entities (mail sidebar, contacts sidebar, etc.).
         // Must be before objects/{register}/{schema} routes to avoid wildcard matching.
         ['name' => 'linked_entity#addObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-        ['name' => 'linked_entity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'linked_entity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '.+']],
         ['name' => 'linked_entity#addRegisterLink', 'url' => '/api/registers/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
         ['name' => 'linked_entity#addSchemaLink', 'url' => '/api/schemas/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-        // Note: entityId uses [^/]+ (not .+) to prevent slashes in captured values. Entity IDs are
-        // opaque (UUIDs / external IDs) and should never contain path separators. The legacy underscore-
+        // Note: entityId uses .+ (not [^/]+) because mail entity refs are `{accountId}/{messageId}`
+        // with a RAW slash — the sidebar deliberately does not URL-encode it (Apache rejects %2F in
+        // paths unless AllowEncodedSlashes is on; see commit d8acb45f0). The legacy underscore-
         // prefixed variant below (linkedEntity#reverseLookup on /api/linked/_{type}/{entityId}) coexists
         // for backwards compatibility with older mail-sidebar clients; deduplicate in a future cleanup.
-        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '.+']],
 
         // Objects.
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
-        ['name' => 'objects#clearBlob', 'url' => '/api/objects/clear-blob', 'verb' => 'DELETE'],
-        // ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'], // DISABLED: Use registers import endpoint instead
+        // SEC-CTRL-10: the clearBlob route was removed — blob storage retired; the controller method was a no-op.
+        // The objects import route was also removed — use the registers import endpoint instead.
         // Lifecycle transitions — MUST precede the wildcard {register}/{schema} routes
         // so /api/objects/{id}/transition isn't grabbed as register=id, schema=transition.
         ['name' => 'transition#transition', 'url' => '/api/objects/{id}/transition', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -363,6 +377,9 @@ return [
         ['name' => 'deckLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/deck/{cardId}',     'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'cardId' => '[0-9]+']],
         ['name' => 'deckLinks#boards',    'url' => '/api/integrations/deck/boards',                           'verb' => 'GET'],
         ['name' => 'deckLinks#stacks',    'url' => '/api/integrations/deck/boards/{boardId}/stacks',          'verb' => 'GET',    'requirements' => ['boardId' => '[0-9]+']],
+        // Schema-level sticky default board+stack (per-schema config, not object data).
+        ['name' => 'deckLinks#getDefault', 'url' => '/api/integrations/deck/default/{schema}',                 'verb' => 'GET'],
+        ['name' => 'deckLinks#setDefault', 'url' => '/api/integrations/deck/default/{schema}',                 'verb' => 'PUT'],
         // Tier-1 legacy endpoints (superseded by deckLinks; kept for back-compat).
         ['name' => 'deck#index',          'url' => '/api/objects/{register}/{schema}/{id}/deck/cards',         'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'deck#create',         'url' => '/api/objects/{register}/{schema}/{id}/deck/cards',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -571,10 +588,10 @@ return [
 
         // Linked-entity-types — generic per-{type} link API (mail / event / contact / deck).
         ['name' => 'linkedEntity#addObjectLink',    'url' => '/api/objects/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
-        ['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_{type}/{entityId}','verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+', 'entityId' => '[^/]+']],
+        ['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_{type}/{entityId}','verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+', 'entityId' => '.+']],
         ['name' => 'linkedEntity#addRegisterLink',  'url' => '/api/registers/{uuid}/_{type}',         'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
         ['name' => 'linkedEntity#addSchemaLink',    'url' => '/api/schemas/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
-        ['name' => 'linkedEntity#reverseLookup',    'url' => '/api/linked/_{type}/{entityId}',        'verb' => 'GET',    'requirements' => ['type' => '[a-z]+', 'entityId' => '[^/]+']],
+        ['name' => 'linkedEntity#reverseLookup',    'url' => '/api/linked/_{type}/{entityId}',        'verb' => 'GET',    'requirements' => ['type' => '[a-z]+', 'entityId' => '.+']],
 
         // TMLO metadata export endpoints (declarative archival metadata per Dutch TMLO standard).
         ['name' => 'tmlo#summary',      'url' => '/api/tmlo/{register}/{schema}/summary',                'verb' => 'GET'],
@@ -599,6 +616,9 @@ return [
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
 
         ['name' => 'objects#geoSearch', 'url' => '/api/objects/{register}/{schema}/geo-search', 'verb' => 'POST'],
+        ['name' => 'objects#geoJson', 'url' => '/api/geo/{register}/{schema}/geojson', 'verb' => 'GET'],
+        ['name' => 'objects#wfs', 'url' => '/api/geo/{register}/{schema}/wfs', 'verb' => 'GET'],
+        ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
@@ -718,6 +738,19 @@ return [
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Schema versioning & object migration (schema-versioning-and-object-migration).
+        ['name' => 'schemaMigration#changelog', 'url' => '/api/schemas/{id}/changelog', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+        ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+        // Schema import from external standards (schema-import-standards). Admin-gated by NC framework default.
+        ['name' => 'schemaImport#types', 'url' => '/api/schema-import/{dialect}/types', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
+        ['name' => 'schemaImport#snapshot', 'url' => '/api/schema-import/{dialect}/snapshot', 'verb' => 'GET', 'requirements' => ['dialect' => '[^/]+']],
+        ['name' => 'schemaImport#import', 'url' => '/api/schema-import/{dialect}', 'verb' => 'POST', 'requirements' => ['dialect' => '[^/]+']],
+        ['name' => 'schemaImport#reimport', 'url' => '/api/schemas/{id}/reimport', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

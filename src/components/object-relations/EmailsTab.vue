@@ -135,6 +135,7 @@ export default {
 		objectId: {
 			immediate: true,
 			/**
+			 * @param newId
 			 * @spec exclude watcher refetching emails on objectId change, UI plumbing
 			 */
 			handler(newId) {
@@ -179,6 +180,7 @@ export default {
 		},
 
 		/**
+		 * @param email
 		 * @spec exclude API passthrough unlinking email + change emit; email-relations contract owned by integration-email capability
 		 */
 		async unlinkEmail(email) {
@@ -200,6 +202,7 @@ export default {
 		},
 
 		/**
+		 * @param value
 		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formatDate(value) {

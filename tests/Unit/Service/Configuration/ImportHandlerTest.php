@@ -153,6 +153,60 @@ class ImportHandlerTest extends TestCase
 
 
     /**
+     * Build an ImportHandler whose appDataPath resolves to a real, deep base
+     * directory under the system temp dir, so importFromFilePath()'s SEC-SVC-7
+     * containment (appDataPath/../../../) yields a normal base dir (not "/").
+     *
+     * A contained config file written at "<base>/config.json" and referenced by
+     * the relative path "config.json" then exercises the legitimate accepted path.
+     *
+     * @return array{0: ImportHandler, 1: string} The handler and its base dir.
+     */
+    private function makeContainedHandler(): array
+    {
+        // <base>/a/b/c is the appDataPath; /../../../ collapses back to <base>.
+        $base        = sys_get_temp_dir().'/or_import_'.uniqid('', true);
+        $appDataPath = $base.'/a/b/c';
+        mkdir($appDataPath, 0777, true);
+
+        $handler = new ImportHandler(
+            schemaMapper:        $this->schemaMapper,
+            registerMapper:      $this->registerMapper,
+            objectEntityMapper:  $this->objectEntityMapper,
+            configurationMapper: $this->configurationMapper,
+            mappingMapper:       $this->mappingMapper,
+            client:              $this->client,
+            appConfig:           $this->appConfig,
+            logger:              $this->logger,
+            appDataPath:         $appDataPath,
+            uploadHandler:       $this->uploadHandler,
+            objectService:       $this->objectService
+        );
+
+        return [$handler, $base];
+
+    }//end makeContainedHandler()
+
+
+    /**
+     * Remove the temporary base directory created by makeContainedHandler().
+     */
+    private function cleanupContainedHandler(string $base): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $path) {
+            $path->isDir() === true ? rmdir($path->getPathname()) : unlink($path->getPathname());
+        }
+
+        rmdir($base);
+
+    }//end cleanupContainedHandler()
+
+
+    /**
      * Set the integer id on an Entity instance via reflection.
      */
     private function setEntityId(object $entity, int $id): void
@@ -1862,10 +1916,15 @@ class ImportHandlerTest extends TestCase
      */
     public function testImportFromFilePathInjectsSourceMetadata(): void
     {
-        // Write valid JSON to a temp file.
-        // Include 'description' to avoid PHP undefined array key warning in ImportHandler::importFromApp (line 2188).
-        $tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_or_');
-        file_put_contents($tmpFile, json_encode(['description' => 'test config', 'components' => []]));
+        // SEC-SVC-7: importFromFilePath now contains the resolved file inside the
+        // Nextcloud root (appDataPath/../../../). Use a realistic deep appDataPath
+        // and a config file that lives *under* the resulting base directory, so
+        // the fixture exercises the legitimate contained-path branch (a real
+        // relative config path is accepted; only traversal/out-of-base is denied).
+        [$handler, $base] = $this->makeContainedHandler();
+
+        // Include 'description' to avoid PHP undefined array key warning in ImportHandler::importFromApp.
+        file_put_contents($base.'/config.json', json_encode(['description' => 'test config', 'components' => []]));
 
         // Arrange: configuration mapper returns nothing for insert.
         $config = $this->makeConfiguration(1, 'myapp', '1.0.0');
@@ -1880,17 +1939,16 @@ class ImportHandlerTest extends TestCase
 
         // We cannot easily assert what data importFromApp received without deep mocking,
         // but we can verify the call chain completes without error.
-        $relativePath = ltrim($tmpFile, '/');
-        $result = $this->handler->importFromFilePath(
+        $result = $handler->importFromFilePath(
             appId:    'myapp',
-            filePath: $relativePath,
+            filePath: 'config.json',
             version:  '1.0.0'
         );
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('registers', $result);
 
-        unlink($tmpFile);
+        $this->cleanupContainedHandler($base);
 
     }//end testImportFromFilePathInjectsSourceMetadata()
 
@@ -6233,16 +6291,18 @@ class ImportHandlerTest extends TestCase
      */
     public function testImportFromFilePathDoesNotOverwriteExistingSourceMetadata(): void
     {
-        // Write valid JSON with existing x-openregister metadata.
-        $tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_or_');
-        $data    = [
+        // SEC-SVC-7: contained relative path under the Nextcloud root (see
+        // testImportFromFilePathInjectsSourceMetadata for the containment note).
+        [$handler, $base] = $this->makeContainedHandler();
+
+        $data = [
             'description'    => 'test config',
             'x-openregister' => [
                 'sourceUrl'  => 'https://existing.com/config.json',
                 'sourceType' => 'github',
             ],
         ];
-        file_put_contents($tmpFile, json_encode($data));
+        file_put_contents($base.'/config.json', json_encode($data));
 
         $config = $this->makeConfiguration(1, 'myapp', '1.0.0');
 
@@ -6253,16 +6313,15 @@ class ImportHandlerTest extends TestCase
         $this->appConfig->method('setValueString')->willReturn(true);
         $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
 
-        $relativePath = ltrim($tmpFile, '/');
-        $result       = $this->handler->importFromFilePath(
+        $result = $handler->importFromFilePath(
             appId:    'myapp',
-            filePath: $relativePath,
+            filePath: 'config.json',
             version:  '1.0.0'
         );
 
         $this->assertIsArray($result);
 
-        unlink($tmpFile);
+        $this->cleanupContainedHandler($base);
 
     }//end testImportFromFilePathDoesNotOverwriteExistingSourceMetadata()
 

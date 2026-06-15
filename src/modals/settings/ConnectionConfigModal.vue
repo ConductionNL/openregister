@@ -394,6 +394,7 @@ export default {
 			immediate: true,
 			deep: true,
 			/**
+			 * @param newConfig
 			 * @spec exclude watcher syncing local config copy from prop
 			 */
 			handler(newConfig) {
