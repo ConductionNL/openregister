@@ -255,6 +255,306 @@
                         "description": "ISO-8601 timestamp when GitHub's rate-limit window resets. Present on github_rate_limited responses."
                     }
                 }
+            },
+            "FileError": {
+                "type": "object",
+                "description": "Error envelope returned by the object file-action endpoints. The message is wrapped in IL10N on the server so it is localised to the caller's language.",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Human-readable, localised error message.",
+                        "example": "Object not found"
+                    }
+                }
+            },
+            "FilePreviewError": {
+                "type": "object",
+                "description": "Error envelope returned by the preview endpoint. Carries a fallback icon URL so the client can render a placeholder when no thumbnail is available.",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "example": "File not found"
+                    },
+                    "fallbackIcon": {
+                        "type": "string",
+                        "description": "Relative URL of a generic file-type icon the client may render instead of a thumbnail.",
+                        "example": "/core/img/filetypes/file.svg"
+                    }
+                }
+            },
+            "File": {
+                "type": "object",
+                "description": "A file attached to an object, as returned by FileFormattingHandler::formatFile(). Fields gated on authentication (downloadCount, orLock) are omitted for anonymous callers.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Nextcloud filecache file id.",
+                        "example": 4211
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "report.pdf"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "example": 184320
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "application/pdf"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "OR-managed file description (Phase 8 metadata enrichment).",
+                        "nullable": true
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "OR-managed file category (Phase 8 metadata enrichment).",
+                        "nullable": true
+                    },
+                    "labels": {
+                        "type": "array",
+                        "description": "Merged tag-backed + OR-managed labels.",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "downloadCount": {
+                        "type": "integer",
+                        "description": "Monotonic download counter. Authenticated callers only.",
+                        "example": 7
+                    },
+                    "published": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Public-share publication timestamp, when the file has been shared."
+                    }
+                }
+            },
+            "FileList": {
+                "type": "object",
+                "description": "Paginated list of files attached to an object.",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/File"
+                        }
+                    },
+                    "total": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "pages": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                }
+            },
+            "FileRenameRequest": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "New file name. Must not contain invalid filesystem characters and must not collide with an existing name in the object folder.",
+                        "example": "renamed-report.pdf"
+                    }
+                }
+            },
+            "FileCopyMoveRequest": {
+                "type": "object",
+                "required": [
+                    "targetObjectId"
+                ],
+                "properties": {
+                    "targetObjectId": {
+                        "type": "string",
+                        "description": "UUID or id of the object the file is copied/moved into.",
+                        "example": "9f1c2b7e-8a3d-4c5e-bf21-1234567890ab"
+                    },
+                    "targetRegister": {
+                        "type": "string",
+                        "description": "Target register slug or id. Defaults to the source register when omitted.",
+                        "example": "publications"
+                    },
+                    "targetSchema": {
+                        "type": "string",
+                        "description": "Target schema slug or id. Defaults to the source schema when omitted.",
+                        "example": "attachment"
+                    }
+                }
+            },
+            "FileVersion": {
+                "type": "object",
+                "properties": {
+                    "versionId": {
+                        "type": "string",
+                        "example": "1700000000"
+                    },
+                    "timestamp": {
+                        "type": "integer",
+                        "example": 1700000000
+                    },
+                    "size": {
+                        "type": "integer",
+                        "example": 184320
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "alice"
+                    },
+                    "authorDisplayName": {
+                        "type": "string",
+                        "example": "Alice Example"
+                    },
+                    "label": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isCurrent": {
+                        "type": "boolean",
+                        "example": false
+                    }
+                }
+            },
+            "FileVersionList": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/FileVersion"
+                }
+            },
+            "FileLockResponse": {
+                "type": "object",
+                "properties": {
+                    "lockedBy": {
+                        "type": "string",
+                        "example": "alice"
+                    },
+                    "lockedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "lockExpires": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "FileUnlockRequest": {
+                "type": "object",
+                "properties": {
+                    "force": {
+                        "type": "boolean",
+                        "description": "When true, an administrator force-unlocks a file locked by another user.",
+                        "default": false
+                    }
+                }
+            },
+            "FileBatchRequest": {
+                "type": "object",
+                "required": [
+                    "action",
+                    "fileIds"
+                ],
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "publish",
+                            "depublish",
+                            "delete",
+                            "label"
+                        ],
+                        "description": "Batch action to apply to each file id."
+                    },
+                    "fileIds": {
+                        "type": "array",
+                        "description": "File ids to operate on. Max 100 per request.",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "maxItems": 100,
+                        "example": [
+                            4211,
+                            4212
+                        ]
+                    },
+                    "labels": {
+                        "type": "array",
+                        "description": "Labels to apply. Used only when action = label.",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "FileBatchResponse": {
+                "type": "object",
+                "description": "Per-file batch result. HTTP 200 when every file succeeded, HTTP 207 when at least one failed.",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "fileId": {
+                                    "type": "integer"
+                                },
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "error": {
+                                    "type": "string",
+                                    "nullable": true
+                                }
+                            }
+                        }
+                    },
+                    "summary": {
+                        "type": "object",
+                        "properties": {
+                            "total": {
+                                "type": "integer"
+                            },
+                            "succeeded": {
+                                "type": "integer"
+                            },
+                            "failed": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "FileLabelsRequest": {
+                "type": "object",
+                "required": [
+                    "labels"
+                ],
+                "properties": {
+                    "labels": {
+                        "type": "array",
+                        "description": "Replacement label set. An empty array clears all labels.",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         }
     },
@@ -575,12 +875,1377 @@
                     }
                 }
             }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-index",
+                "summary": "List the files attached to an object",
+                "description": "Returns the paginated list of files attached to the object. Anonymous callers (PublicPage) see only published (publicly shared) files; authenticated callers are subject to object-level read RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File list.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileList"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found or the object folder is missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "files-create",
+                "summary": "Attach a new file to an object (base64/text content)",
+                "description": "Creates a file from an inline `content` payload. Enforces object-level write RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "report.pdf"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "description": "File content (base64-encoded for binary files)."
+                                    },
+                                    "share": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "File created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing file name or content.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "description": "Nextcloud filecache file id.",
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-show",
+                "summary": "Stream a file attached to an object",
+                "description": "Streams the file content inline. Records a best-effort download event (counter + audit). Anonymous callers may only fetch published files.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Binary file stream.",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden — anonymous access to an unpublished file, or read RBAC denial.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object or file not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "files-update",
+                "summary": "Update file content and/or tags",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "description": "Optional new content; omit for a metadata-only update."
+                                    },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "files-delete",
+                "summary": "Delete a file from an object",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/rename": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "put": {
+                "operationId": "files-rename",
+                "summary": "Rename a file within its object folder",
+                "description": "Renames the file. Writes an audit-trail entry and dispatches the `nl.openregister.object.file.renamed` event.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileRenameRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Renamed file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Name required, or contains invalid characters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "A file with the target name already exists in the object folder.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "423": {
+                        "description": "File is locked by another user.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/copy": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-copy",
+                "summary": "Copy a file into another object",
+                "description": "Copies the file into the target object's folder, resolving name conflicts with a numeric suffix. Writes dual audit-trail entries (`file.copied` on the source, `file.copied_in` on the target) and dispatches `nl.openregister.object.file.copied`.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileCopyMoveRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Copied file (in the target object).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Target object id missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the source or target object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Source or target object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/move": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-move",
+                "summary": "Move a file into another object",
+                "description": "Copies the file to the target object then deletes the source. Writes dual audit-trail entries (`file.moved` / `file.moved_in`) and dispatches `nl.openregister.object.file.moved`.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileCopyMoveRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Moved file (in the target object).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Target object id missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the source or target object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Source or target object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "423": {
+                        "description": "Source file is locked.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/versions": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-list-versions",
+                "summary": "List versions of a file",
+                "description": "Lists historical versions via the Nextcloud `files_versions` app. Degrades gracefully (current version only) when that app is disabled.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Version list.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileVersionList"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object or file not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                },
+                {
+                    "name": "versionId",
+                    "in": "path",
+                    "required": true,
+                    "description": "Identifier of the version to restore.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-restore-version",
+                "summary": "Restore a previous version of a file",
+                "description": "Rolls the file back to the named version. Writes a `file.version_restored` audit entry and dispatches `nl.openregister.object.file.version_restored`.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Restored file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object, file, or version not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/lock": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-lock",
+                "summary": "Lock a file",
+                "description": "Acquires a distributed-cache-backed lock. Writes a `file.locked` audit entry and dispatches `nl.openregister.object.file.locked`.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lock metadata.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileLockResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "423": {
+                        "description": "File is already locked by another user.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-unlock",
+                "summary": "Unlock a file",
+                "description": "Releases a lock. The lock owner may unlock; an administrator may force-unlock another user's lock via `force: true`. Writes `file.unlocked` or `file.force_unlocked` audit entries and dispatches `nl.openregister.object.file.unlocked`.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileUnlockRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unlock result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileLockResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Only the lock owner or an administrator may unlock the file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/batch": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-batch",
+                "summary": "Run a batch action over multiple files",
+                "description": "Applies publish/depublish/delete/label to up to 100 files in one request, collecting per-file results. Returns HTTP 200 when every file succeeded and HTTP 207 when at least one failed.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileBatchRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "All files processed successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileBatchResponse"
+                                }
+                            }
+                        }
+                    },
+                    "207": {
+                        "description": "Partial success — at least one file failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileBatchResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid action, or batch size over the 100-file limit.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/preview": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                },
+                {
+                    "name": "width",
+                    "in": "query",
+                    "required": false,
+                    "schema": {
+                        "type": "integer",
+                        "default": 256
+                    }
+                },
+                {
+                    "name": "height",
+                    "in": "query",
+                    "required": false,
+                    "schema": {
+                        "type": "integer",
+                        "default": 256
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-preview",
+                "summary": "Get a file thumbnail/preview",
+                "description": "Streams a preview image (cached `max-age=3600`). Anonymous callers may only preview published files; on an unsupported type the response is a 404 carrying a `fallbackIcon` URL.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Preview image stream.",
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Anonymous preview of an unpublished file, or read RBAC denial.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object/file not found or preview unsupported.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FilePreviewError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/labels": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "put": {
+                "operationId": "files-update-labels",
+                "summary": "Replace a file's labels",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileLabelsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/download": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-download-zip",
+                "summary": "Download all (or selected) object files as a ZIP",
+                "description": "Streams a ZIP archive of the object's files and writes a single `file.bulk_downloaded` audit entry capturing the archive contents.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ZIP archive stream.",
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/files/{fileId}/download": {
+            "parameters": [
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "description": "Nextcloud filecache file id.",
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-download-by-id",
+                "summary": "Download a file by its id (object-agnostic)",
+                "description": "Streams a single file by numeric id without needing the register/schema/object. Records a best-effort download counter increment. Anonymous callers may only download published files.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Binary file stream.",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Anonymous download of an unpublished file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "File not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "tags": [
         {
             "name": "github-issues",
             "description": "GitHub issues proxy backing the Features & Roadmap menu component."
+        },
+        {
+            "name": "files",
+            "description": "Object file actions: upload, download, rename, copy, move, version, lock, batch, preview, and label management."
         }
     ]
 }
