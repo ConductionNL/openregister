@@ -1021,6 +1021,249 @@
                 }
             }
         },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/save": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-save",
+                "summary": "Upsert a file on an object",
+                "description": "Creates a new file or updates the existing file with the same name (upsert). Body requires `name` and `content`. Auth posture: `#[NoAdminRequired] #[NoCSRFRequired]` with object-level write RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "report.pdf"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "description": "File content (base64-encoded for binary files)."
+                                    },
+                                    "share": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "tags": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            {
+                                                "type": "string",
+                                                "description": "Comma-separated list."
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "File created or updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing file name or content.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller may not access the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-create-multipart",
+                "summary": "Upload one or more files via multipart form",
+                "description": "Accepts `multipart/form-data` with a single `file` field or a `files[]` array, plus optional `share` and `tags`. Auth posture: `#[NoAdminRequired] #[NoCSRFRequired]` with object-level write RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "files": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "share": {
+                                        "type": "boolean"
+                                    },
+                                    "tags": {
+                                        "type": "string",
+                                        "description": "Comma-separated list."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Files uploaded.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/File"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No file uploaded or upload error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller may not access the object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}": {
             "parameters": [
                 {
