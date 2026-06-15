@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
+use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -116,8 +117,14 @@ class DeleteFileHandler
         // Reject when the file is locked by someone else.
         $this->fileLockHandler->assertCanModify($file->getId());
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+        // Assert the session can reach the file (owned or shared).
         $this->fileValidHandler->checkOwnership($file);
+
+        // Deleting additionally requires delete permission. NC enforces this
+        // natively on delete(), but we fail fast with a clear message.
+        if ($file->isDeletable() === false) {
+            throw new NotPermittedException("File {$file->getName()} is not deletable by the current session");
+        }
 
         try {
             $file->delete();

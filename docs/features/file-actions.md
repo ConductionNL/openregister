@@ -18,6 +18,7 @@ Extended file operations for register objects beyond basic CRUD. Provides versio
 - **Thumbnail Preview** -- Generate and serve thumbnail previews for supported file types. Returns a stream response for direct embedding.
 - **Download Audit** -- All file downloads (via `downloadById`) are tracked for compliance and audit trail purposes.
 - **Label Management** -- Attach, update, or remove classification labels on files (`updateLabels`). Supports arbitrary key-value label sets.
+- **Permission-based Access** -- File access is authorized by Nextcloud node permissions, not ownership: read permission to list/view, write permission to update, delete permission to delete. Objects may link files owned by any user (including files reached via a share); a file is not force-transferred to the OpenRegister system user when the current user already has write access. Ownership follows the containing folder's owner.
 
 ## API Endpoints
 
