@@ -13,6 +13,15 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Web Push channel (openregister-web-push-engine).
+        // VAPID public key (browser subscribe key) + current-user subscription CRUD
+        // (owner-scoped, no IDOR) + per-originApp cobalt-hex notification icon/badge.
+        ['name' => 'webPush#vapidPublicKey', 'url' => '/webpush/vapid-public-key', 'verb' => 'GET'],
+        ['name' => 'webPush#subscribe',      'url' => '/webpush/subscription',     'verb' => 'POST'],
+        ['name' => 'webPush#unsubscribe',    'url' => '/webpush/subscription',     'verb' => 'DELETE'],
+        ['name' => 'webPush#hexIcon',  'url' => '/webpush/icon/{app}',  'verb' => 'GET', 'requirements' => ['app' => '[a-z0-9_-]+']],
+        ['name' => 'webPush#hexBadge', 'url' => '/webpush/badge/{app}', 'verb' => 'GET', 'requirements' => ['app' => '[a-z0-9_-]+']],
+
         // Integration registry (read-only discovery API) —
         // pluggable-integration-registry task 4.3 / tasks.md#task-20.
         ['name' => 'integrations#index', 'url' => '/api/integrations', 'verb' => 'GET'],

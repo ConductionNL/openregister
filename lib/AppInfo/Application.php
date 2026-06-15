@@ -388,6 +388,20 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Web Push hex-icon service (openregister-web-push-engine): needs an
+        // app-scoped IAppData for its rendered-PNG cache, which is not
+        // auto-wirable, so resolve it via IAppDataFactory here.
+        $context->registerService(
+            \OCA\OpenRegister\Service\WebPush\HexIconService::class,
+            function (\Psr\Container\ContainerInterface $c): \OCA\OpenRegister\Service\WebPush\HexIconService {
+                return new \OCA\OpenRegister\Service\WebPush\HexIconService(
+                    $c->get(\OCP\App\IAppManager::class),
+                    $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
+                    $c->get(\Psr\Log\LoggerInterface::class)
+                );
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
@@ -1889,6 +1903,15 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
             \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
+        );
+
+        // PushClientScriptListener loads the always-on, opt-in Web Push
+        // subscribe client on EVERY full-page render (openregister-web-push-engine).
+        // The client never prompts on load — it only subscribes on a user
+        // gesture / settings toggle.
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\PushClientScriptListener::class
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
