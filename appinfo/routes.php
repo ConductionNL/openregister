@@ -535,6 +535,15 @@ return [
         ['name' => 'analyticsSeries#register', 'url' => '/api/integrations/analytics/series',              'verb' => 'POST'],
         ['name' => 'analyticsSeries#fetch',    'url' => '/api/integrations/analytics/series/{seriesKey}',  'verb' => 'GET',  'requirements' => ['seriesKey' => '[^/]+']],
 
+        // Maps page-level overview — multi-object "cases on map" render
+        // surface (procest issue #112). register declares a `map` page
+        // widget; points queries the RBAC-scoped marker set for a
+        // register/schema. RBAC enforced inside MapsOverviewService via the
+        // canonical OR read path (_rbac:true for non-admins, fail-closed).
+        // @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md.
+        ['name' => 'mapsOverview#register', 'url' => '/api/integrations/maps/overviews',                            'verb' => 'POST'],
+        ['name' => 'mapsOverview#points',   'url' => '/api/integrations/maps/overviews/{register}/{schema}/points', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+
         // Public "track your case" token resolve — anonymous, RBAC-scoped
         // public-safe object view minted via the Shares integration
         // provider. Fails closed (404) on unknown/revoked/expired tokens.
