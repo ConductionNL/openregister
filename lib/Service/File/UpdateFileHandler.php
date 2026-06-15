@@ -445,8 +445,14 @@ class UpdateFileHandler
                 // Security: Block executable files.
                 $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
 
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+                // Assert the session can reach the file (owned or shared).
                 $this->fileValidHandler->checkOwnership($file);
+
+                // Writing additionally requires write permission. NC enforces this
+                // natively on putContent(), but we fail fast with a clear message.
+                if ($file->isUpdateable() === false) {
+                    throw new NotPermittedException("File {$file->getName()} is not writable by the current session");
+                }
 
                 $file->putContent(data: $content);
                 $this->logger->info(
