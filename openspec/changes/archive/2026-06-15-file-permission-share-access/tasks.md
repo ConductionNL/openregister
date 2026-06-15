@@ -26,11 +26,11 @@
 - [x] 5.1 phpcs clean on changed files
 - [x] 5.2 phpmd clean on changed files (CC within threshold)
 - [x] 5.3 psalm / phpstan report no new errors on changed files
-- [ ] 5.4 Re-run whole-app phpstan + `test:all` with `COMPOSER_PROCESS_TIMEOUT=0` for a complete gate (optional; per-file checks already pass)
+- [~] 5.4 Whole-app phpstan + `test:all` gate — NOT run; the whole-app suite has a large pre-existing baseline (phpcs/psalm/phpmd) unrelated to this change. Per-file phpcs/phpmd/psalm/phpstan + the affected unit tests all pass. (Optional, out of scope.)
 
 ## 6. Spec & verification
 
 - [x] 6.1 Author delta spec at `openspec/changes/file-permission-share-access/specs/file-actions/spec.md`
 - [x] 6.2 `/opsx:verify` the change
 - [x] 6.3 API-verify the originating flow on the live instance: create→show→update→delete file on an object all return 200 (404 after delete), no "not owned by the current session" error, file stays owned by the uploading user
-- [ ] 6.4 `/opsx:archive` to sync the delta into `openspec/specs/file-actions/spec.md`
+- [x] 6.4 `/opsx:archive` to sync the delta into `openspec/specs/file-actions/spec.md`
