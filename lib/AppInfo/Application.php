@@ -388,6 +388,20 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Web Push hex-icon service (openregister-web-push-engine): needs an
+        // app-scoped IAppData for its rendered-PNG cache, which is not
+        // auto-wirable, so resolve it via IAppDataFactory here.
+        $context->registerService(
+            \OCA\OpenRegister\Service\WebPush\HexIconService::class,
+            function (\Psr\Container\ContainerInterface $c): \OCA\OpenRegister\Service\WebPush\HexIconService {
+                return new \OCA\OpenRegister\Service\WebPush\HexIconService(
+                    $c->get(\OCP\App\IAppManager::class),
+                    $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
+                    $c->get(\Psr\Log\LoggerInterface::class)
+                );
+            }
+        );
+
         // Register the data-sync source-fetcher registry pre-loaded with the
         // built-in REST/OpenRegister fetcher. Apps can register additional
         // fetchers (OData, SOAP, CSV) by resolving and extending this service.
@@ -739,6 +753,22 @@ class Application extends App implements IBootstrap
                 $importHandler->setUserSession($container->get('OCP\IUserSession'));
             } catch (\Throwable $e) {
                 $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            // Optional: group/user managers used to resolve a fallback admin
+            // acting user when import runs without a logged-in session
+            // (occ/installer/cron). Wrapped so a missing dependency never
+            // breaks import.
+            try {
+                $importHandler->setGroupManager($container->get('OCP\IGroupManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IGroupManager unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setUserManager($container->get('OCP\IUserManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IUserManager unavailable for ImportHandler: '.$e->getMessage());
             }
 
             return $importHandler;
@@ -1405,6 +1435,66 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // CaseTokenService — mint/resolve/revoke public "track your case"
+        // token links (the SharesProvider create()/delete() public-token
+        // surface). ObjectService is resolved lazily through the container
+        // (same pattern as ShareLinkService) so the resolve path runs the
+        // canonical RBAC-respecting read; the token never bypasses RBAC.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CaseTokenService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CaseTokenService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // CaseTokenController — anonymous public resolve endpoint.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\CaseTokenController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\CaseTokenController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
+                );
+            }
+        );
+
+        // AnalyticsSeriesService — register/fetch page-level pre-computed
+        // chart series (the leaf-foundation SLA-dashboard render surface).
+        // RBAC-scoped; (re)declares its page widget on the registry.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\AnalyticsSeriesService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
+                    registry: $container->get(IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                );
+            }
+        );
+
+        // AnalyticsSeriesController — register/fetch HTTP surface a leaf
+        // calls to feed a dashboard chart widget.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\AnalyticsSeriesController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
+                );
+            }
+        );
+
         // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
         // Replaces the original `or:{uuid}` tag-marker convention with a
         // proper persistence layer; the wrapping BookmarkLinkService owns
@@ -1968,6 +2058,15 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
             \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
+        );
+
+        // PushClientScriptListener loads the always-on, opt-in Web Push
+        // subscribe client on EVERY full-page render (openregister-web-push-engine).
+        // The client never prompts on load — it only subscribes on a user
+        // gesture / settings toggle.
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\PushClientScriptListener::class
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.

@@ -13,6 +13,15 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Web Push channel (openregister-web-push-engine).
+        // VAPID public key (browser subscribe key) + current-user subscription CRUD
+        // (owner-scoped, no IDOR) + per-originApp cobalt-hex notification icon/badge.
+        ['name' => 'webPush#vapidPublicKey', 'url' => '/webpush/vapid-public-key', 'verb' => 'GET'],
+        ['name' => 'webPush#subscribe',      'url' => '/webpush/subscription',     'verb' => 'POST'],
+        ['name' => 'webPush#unsubscribe',    'url' => '/webpush/subscription',     'verb' => 'DELETE'],
+        ['name' => 'webPush#hexIcon',  'url' => '/webpush/icon/{app}',  'verb' => 'GET', 'requirements' => ['app' => '[a-z0-9_-]+']],
+        ['name' => 'webPush#hexBadge', 'url' => '/webpush/badge/{app}', 'verb' => 'GET', 'requirements' => ['app' => '[a-z0-9_-]+']],
+
         // Integration registry (read-only discovery API) —
         // pluggable-integration-registry task 4.3 / tasks.md#task-20.
         ['name' => 'integrations#index', 'url' => '/api/integrations', 'verb' => 'GET'],
@@ -526,6 +535,29 @@ return [
         ['name' => 'analyticsLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/analytics/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'analyticsLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'analyticsLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/analytics/{reportId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'reportId' => '[0-9]+']],
+
+        // Analytics page-level series — leaf-foundation render surface.
+        // A leaf (procest SLA dashboard) registers a pre-computed series
+        // (labels + datasets); the render layer fetches it as a chart
+        // widget. RBAC-scoped inside AnalyticsSeriesService.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        ['name' => 'analyticsSeries#register', 'url' => '/api/integrations/analytics/series',              'verb' => 'POST'],
+        ['name' => 'analyticsSeries#fetch',    'url' => '/api/integrations/analytics/series/{seriesKey}',  'verb' => 'GET',  'requirements' => ['seriesKey' => '[^/]+']],
+
+        // Maps page-level overview — multi-object "cases on map" render
+        // surface (procest issue #112). register declares a `map` page
+        // widget; points queries the RBAC-scoped marker set for a
+        // register/schema. RBAC enforced inside MapsOverviewService via the
+        // canonical OR read path (_rbac:true for non-admins, fail-closed).
+        // @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md.
+        ['name' => 'mapsOverview#register', 'url' => '/api/integrations/maps/overviews',                            'verb' => 'POST'],
+        ['name' => 'mapsOverview#points',   'url' => '/api/integrations/maps/overviews/{register}/{schema}/points', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+
+        // Public "track your case" token resolve — anonymous, RBAC-scoped
+        // public-safe object view minted via the Shares integration
+        // provider. Fails closed (404) on unknown/revoked/expired tokens.
+        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface

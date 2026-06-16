@@ -621,6 +621,126 @@ class SharesProviderTest extends TestCase
 
 
     /**
+     * `create()` with `type: 'public-token'` mints a case token via the
+     * lazily-resolved CaseTokenService and returns its result.
+     *
+     * @return void
+     */
+    public function testCreateMintsPublicCaseToken(): void
+    {
+        $tokenService = new class {
+
+            /**
+             * @var array<string,mixed>
+             */
+            public array $lastArgs = [];
+
+            public function mint(
+                string $objectUuid,
+                ?int $registerId=null,
+                ?int $schemaId=null,
+                ?string $label=null,
+                ?int $ttlSeconds=null
+            ): array {
+                $this->lastArgs = [
+                    'objectUuid' => $objectUuid,
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                    'label'      => $label,
+                    'ttlSeconds' => $ttlSeconds,
+                ];
+                return ['token' => 'MINTED', 'url' => 'https://nc/x/MINTED'];
+            }//end mint()
+        };
+
+        $container = $this->buildContainer([
+            'OCA\\OpenRegister\\Service\\CaseTokenService' => $tokenService,
+        ]);
+
+        $provider = new SharesProvider(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager(),
+            l10n: $this->buildL10n(),
+            container: $container,
+        );
+
+        $result = $provider->create('3', '9', 'obj-uuid', [
+            'type'       => 'public-token',
+            'label'      => 'Track your case',
+            'ttlSeconds' => 7200,
+        ]);
+
+        $this->assertSame('MINTED', $result['token']);
+        $this->assertSame('obj-uuid', $tokenService->lastArgs['objectUuid']);
+        $this->assertSame(3, $tokenService->lastArgs['registerId'], 'numeric register coerced to int');
+        $this->assertSame(9, $tokenService->lastArgs['schemaId']);
+        $this->assertSame('Track your case', $tokenService->lastArgs['label']);
+        $this->assertSame(7200, $tokenService->lastArgs['ttlSeconds']);
+    }//end testCreateMintsPublicCaseToken()
+
+
+    /**
+     * `create()` falls back to NotImplementedException (501 contract)
+     * when the CaseTokenService can't be resolved — preserving backward
+     * compatibility on builds without the token service.
+     *
+     * @return void
+     */
+    public function testCreateFallsBackToNotImplementedWhenServiceMissing(): void
+    {
+        $provider = new SharesProvider(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager(),
+            l10n: $this->buildL10n(),
+            container: $this->buildContainer([]),
+        );
+
+        $this->expectException(NotImplementedException::class);
+        $provider->create('reg', 'sch', 'obj-uuid', ['type' => 'public-token']);
+    }//end testCreateFallsBackToNotImplementedWhenServiceMissing()
+
+
+    /**
+     * `delete()` with a `token:` prefix revokes a case token via the
+     * CaseTokenService rather than deleting an NC file share.
+     *
+     * @return void
+     */
+    public function testDeleteRevokesCaseToken(): void
+    {
+        $tokenService = new class {
+
+            public ?string $revoked = null;
+
+            public function revoke(string $tokenOrId): bool
+            {
+                $this->revoked = $tokenOrId;
+                return true;
+            }//end revoke()
+        };
+
+        // The NC share manager MUST NOT be touched for a token: revoke.
+        $shareManager = $this->createMock(IManager::class);
+        $shareManager->expects($this->never())->method('deleteShare');
+
+        $container = $this->buildContainer([
+            'OCA\\OpenRegister\\Service\\CaseTokenService' => $tokenService,
+            'OCP\\Share\\IManager'                         => $shareManager,
+        ]);
+
+        $provider = new SharesProvider(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager(),
+            l10n: $this->buildL10n(),
+            container: $container,
+        );
+
+        $provider->delete('reg', 'sch', 'obj-uuid', 'token:abc123');
+        $this->assertSame('abc123', $tokenService->revoked);
+    }//end testDeleteRevokesCaseToken()
+
+
+    /**
      * When the ObjectEntityMapper can't resolve the uuid (entity
      * deleted etc.), the provider must still fall back to the uuid
      * string — preserving the pre-fix degraded path so behaviour is
