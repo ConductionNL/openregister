@@ -2714,14 +2714,19 @@ class MagicMapper extends AbstractObjectMapper
             // Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+            $isSqlite   = ($platform instanceof \Doctrine\DBAL\Platforms\SqlitePlatform);
 
             // Get database table prefix from Nextcloud config.
             $tablePrefix   = $this->config->getSystemValue('dbtableprefix', 'oc_');
             $fullTableName = $tablePrefix.$tableName;
 
             // Build column definitions.
-            $columnDefs        = [];
-            $primaryKey        = null;
+            $columnDefs             = [];
+            $primaryKey             = null;
+            // SQLite auto-increments an INTEGER PRIMARY KEY column declared
+            // inline; when that path is taken the separate PRIMARY KEY(...)
+            // table constraint must be suppressed (one primary key only).
+            $sqliteInlinePrimaryKey = false;
             $uniqueConstraints = [];
 
             foreach ($columns as $column) {
@@ -2768,6 +2773,13 @@ class MagicMapper extends AbstractObjectMapper
                     if ($isPostgres === true) {
                         // PostgreSQL uses BIGSERIAL.
                         $def = $colName.' BIGSERIAL';
+                    } else if ($isSqlite === true) {
+                        // SQLite auto-increments an INTEGER PRIMARY KEY column
+                        // declared inline; AUTO_INCREMENT is a syntax error and
+                        // a separate PRIMARY KEY(...) constraint would stop the
+                        // column from aliasing rowid.
+                        $def                    = $colName.' INTEGER PRIMARY KEY AUTOINCREMENT';
+                        $sqliteInlinePrimaryKey = true;
                     }
                 }
 
@@ -2793,8 +2805,9 @@ class MagicMapper extends AbstractObjectMapper
             $sql  = 'CREATE TABLE IF NOT EXISTS '.$tableNameQuoted.' (';
             $sql .= implode(', ', $columnDefs);
 
-            // Add PRIMARY KEY constraint.
-            if ($primaryKey !== null) {
+            // Add PRIMARY KEY constraint (skipped on SQLite when the
+            // autoincrement column already declared an inline PRIMARY KEY).
+            if ($primaryKey !== null && $sqliteInlinePrimaryKey === false) {
                 $sql .= ', PRIMARY KEY ('.$primaryKey.')';
             }
 
