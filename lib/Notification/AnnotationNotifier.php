@@ -158,10 +158,17 @@ class AnnotationNotifier implements INotifier
         // Render declared action buttons when the rule provided any; otherwise
         // keep the implicit single "View" action (back-compat — existing rules
         // are unchanged).
-        $actions = ($params['_actions'] ?? []);
+        $actions  = ($params['_actions'] ?? []);
+        $rendered = 0;
         if (is_array($actions) === true && count($actions) > 0) {
-            $this->addDeclaredActions(notification: $notification, actions: $actions, languageCode: $languageCode);
-        } else {
+            $rendered = $this->addDeclaredActions(notification: $notification, actions: $actions, languageCode: $languageCode);
+        }
+
+        // Fall back to the implicit "View" action when no declared action was
+        // rendered — either none were declared (back-compat) or every declared
+        // action resolved to an empty link. This guarantees a notification
+        // never ships with zero actions when an object-detail target exists.
+        if ($rendered === 0) {
             $this->addViewAction(notification: $notification, params: $params, label: $l->t('View'));
         }
 
@@ -180,12 +187,13 @@ class AnnotationNotifier implements INotifier
      * @param array<int, mixed> $actions      Resolved actions (each element validated at runtime).
      * @param string            $languageCode Active recipient locale.
      *
-     * @return void
+     * @return int The number of action buttons actually rendered.
      *
      * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
      */
-    private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): void
+    private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): int
     {
+        $rendered = 0;
         foreach ($actions as $action) {
             if (is_array($action) === false) {
                 continue;
@@ -214,7 +222,10 @@ class AnnotationNotifier implements INotifier
                 ->setPrimary((bool) ($action['primary'] ?? false))
                 ->setLink($url, 'GET');
             $notification->addAction($actionObject);
+            $rendered++;
         }//end foreach
+
+        return $rendered;
     }//end addDeclaredActions()
 
     /**

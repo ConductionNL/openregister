@@ -96,6 +96,7 @@ class AnnotationNotificationDispatcher
      * @param IURLGenerator|null                                       $urlGenerator        URL generator for action-target deeplinks.
      * @param RegisterMapper|null                                      $registerMapper      Register mapper used for the default originApp.
      * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService       Object resolver for relation-target deeplinks (RBAC).
+     * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry    Canonical per-app deeplink resolver.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -119,7 +120,8 @@ class AnnotationNotificationDispatcher
         private readonly ?IJobList $jobList=null,
         private readonly ?IURLGenerator $urlGenerator=null,
         private readonly ?RegisterMapper $registerMapper=null,
-        private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null
+        private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null,
+        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null
     ) {
     }//end __construct()
 
@@ -2195,6 +2197,26 @@ class AnnotationNotificationDispatcher
     {
         if ($registerId === '' || $schemaId === '' || $objectUuid === '') {
             return null;
+        }
+
+        // Prefer the canonical per-app deeplink registered via
+        // DeepLinkRegistrationEvent (e.g. pipelinq::client →
+        // /apps/pipelinq/clients/{uuid}). This is the app-correct route the
+        // rest of the platform uses; the openregister hash-route below is only
+        // a fallback for schemas no leaf app has registered a deeplink for.
+        if ($this->deepLinkRegistry !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
+            $registered = $this->deepLinkRegistry->resolveUrl(
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId,
+                objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+            );
+            if ($registered !== null && $registered !== '') {
+                if ($this->urlGenerator !== null && str_starts_with($registered, 'http') === false) {
+                    return $this->urlGenerator->getAbsoluteURL($registered);
+                }
+
+                return $registered;
+            }
         }
 
         return $this->appRouteBase(app: $originApp)

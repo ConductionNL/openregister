@@ -123,7 +123,13 @@ class WebPushDispatchJob extends QueuedJob
         $body      = (string) ($argument['body'] ?? '');
         $tag       = (string) ($argument['tag'] ?? '');
 
+        // Two parallel structures matching the Service Worker contract
+        // (js/openregister-push-sw.js): `actions` is [{action, title}] passed to
+        // showNotification() to render the buttons; `data.actions` is a
+        // { actionId: url } map used by notificationclick to route a clicked
+        // button, and `data.url` routes a click on the notification body.
         $actions     = [];
+        $actionUrls  = [];
         $topLevelUrl = '';
         $rawActions  = ($argument['actions'] ?? []);
         if (is_array($rawActions) === true) {
@@ -157,11 +163,9 @@ class WebPushDispatchJob extends QueuedJob
                     $label = (string) ($action['label']['en'] ?? $fallbackLabel);
                 }
 
-                $actions[] = [
-                    'action' => 'action-'.(string) $idx,
-                    'title'  => $label,
-                    'url'    => $url,
-                ];
+                $actionKey = 'action-'.(string) $idx;
+                $actions[] = ['action' => $actionKey, 'title' => $label];
+                $actionUrls[$actionKey] = $url;
             }//end foreach
         }//end if
 
@@ -171,8 +175,11 @@ class WebPushDispatchJob extends QueuedJob
             'icon'    => '/index.php/apps/openregister/webpush/icon/'.rawurlencode($originApp),
             'badge'   => '/index.php/apps/openregister/webpush/badge/'.rawurlencode($originApp),
             'tag'     => $tag,
-            'url'     => $topLevelUrl,
             'actions' => $actions,
+            'data'    => [
+                'url'     => $topLevelUrl,
+                'actions' => $actionUrls,
+            ],
         ];
     }//end buildPayload()
 }//end class
