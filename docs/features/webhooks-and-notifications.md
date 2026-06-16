@@ -293,23 +293,77 @@ they self-heal when the user re-enables the toggle (which re-subscribes against 
 new key); the server prunes stale subscriptions on the first `404`/`410` response
 from the push service.
 
-### Opt-in (user)
+### Enabling browser notifications (user guide)
 
-Browser push is **opt-in only** — OpenRegister never prompts for notification
-permission on page load (per Chrome's abuse rules). Users enable it via the
-**"Enable browser notifications"** toggle in personal settings, which requests
-permission, registers the Service Worker (`js/openregister-push-sw.js`), and
-subscribes (`pushManager.subscribe({ userVisibleOnly: true, … })`). Subscriptions
-are stored per user + browser in the `openregister_push_subscriptions` table
-(an infra table — not an OpenRegister object).
+Browser push is **opt-in** — OpenRegister never prompts for notification
+permission on page load. To turn it on:
+
+1. Click your avatar (top-right) → **Settings**.
+2. Open the **Notifications** section under *Personal*.
+3. Find **Browser notifications** and switch on **"Enable browser notifications"**.
+4. Your browser asks to show notifications — click **Allow**.
+
+![The "Enable browser notifications" toggle on the personal Notifications settings page](web-push-enable-toggle.png)
+
+When it is on, the line under the toggle reads **"Notification permission:
+granted"**. From then on OpenRegister sends you a native notification — with the
+originating app's icon and any action buttons (for example *Open client*) —
+whenever a notification rule you are a recipient of fires, **even when no
+Nextcloud tab is open**.
+
+To stop receiving them, switch the toggle **off** (this removes the browser
+subscription).
+
+> Behind the scenes the toggle requests permission, registers the Service Worker
+> (`js/openregister-push-sw.js`), and subscribes
+> (`pushManager.subscribe({ userVisibleOnly: true, … })`). The subscription is
+> stored per user + browser in the `openregister_push_subscriptions` table
+> (infrastructure state — not an OpenRegister object).
 
 ### Browser support / degradation
 
 | Browser | Background Web Push |
 |---------|---------------------|
-| Chrome / Edge | Full — delivers with the browser closed |
-| Firefox | Full — delivers with the browser closed |
+| Chrome / Edge | Supported — delivered while the browser keeps a background process alive (see below) |
+| Firefox | Supported — delivered while the browser keeps a background process alive (see below) |
 | Safari (macOS/iOS) | Only when the site is an **installed PWA**; otherwise no background push — degrades to the foreground `nc-notification` popup |
+
+### Receiving notifications when the browser is closed
+
+Browser push is delivered over your browser's **background connection** to its
+push service (Chrome → FCM, Firefox → Mozilla autopush). The notification arrives
+**without any Nextcloud tab open**, but a **browser process must be running**:
+
+| State | Result |
+|-------|--------|
+| A browser window is open (any site — no Nextcloud tab needed) | Arrives immediately |
+| Browser running in the background (window closed, tray process alive) | Arrives immediately — *if* the browser is actually maintaining its push connection (see the reality check) |
+| Browser fully closed / process asleep | The push is **queued** by the push service and delivered the moment you next open the browser — nothing is lost |
+
+This is standard browser/OS behaviour shared by every web-push site (Slack,
+Gmail, …) — it is not specific to OpenRegister. For notifications that arrive
+with **no browser running at all**, use the native Nextcloud desktop or mobile
+apps, which have their own push channel.
+
+#### Keep Chrome receiving with all windows closed
+
+For Chrome to receive a push with no window open, it has to keep a background
+process running. On Windows:
+
+1. Open Chrome **Settings → System** (or paste `chrome://settings/system` into the address bar).
+2. Turn on **"Continue running background apps when Google Chrome is closed."**
+
+Microsoft Edge has the same option at `edge://settings/system`.
+
+> **Reality check.** This setting is *necessary but not sufficient*. Even with it
+> on, whether a push is delivered while every window is closed depends on whether
+> Chrome is actually keeping its background connection alive — Windows power
+> management, how you closed Chrome, and Chrome's own throttling can still let the
+> process sleep. When that happens the push is simply **queued and delivered the
+> instant you reopen the browser** (no Nextcloud tab required, nothing lost). The
+> only reliably-instant states are *a browser window open* or *the browser
+> actively running in the background*. For guaranteed always-on delivery, use the
+> native Nextcloud desktop/mobile apps.
 
 ### Duplicate suppression
 
