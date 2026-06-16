@@ -77,11 +77,11 @@ class Bootstrap
     private const GENERIC_SETTINGS_SECTION       = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
     private const GENERIC_DEEPLINK_LISTENER      = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
 
-    private const OBSERVABILITY_MANIFEST_LOADER  = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
-    private const OBSERVABILITY_EXECUTOR         = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
-    private const OBSERVABILITY_METRICS_ENGINE   = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
+    private const OBSERVABILITY_MANIFEST_LOADER = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
+    private const OBSERVABILITY_EXECUTOR        = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
+    private const OBSERVABILITY_METRICS_ENGINE  = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
 
-    private const DEEPLINK_EVENT                 = 'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent';
+    private const DEEPLINK_EVENT = 'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent';
 
     /**
      * Register all standard AppHost plumbing for a leaf app.
@@ -89,27 +89,27 @@ class Bootstrap
      * @param IRegistrationContext $context The leaf app's registration context.
      * @param string               $appId   The leaf app id (e.g. 'petstore').
      * @param array<string, mixed> $options Optional overrides:
-     *                                       - 'namespace' (string): the leaf app's `OCA\X` base namespace
-     *                                         (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
-     *                                         namespaces are not derivable from the app id (petstore →
-     *                                         PetStore, opencatalogi → OpenCatalogi, decidesk → Decidesk),
-     *                                         so pass it explicitly. When omitted, a StudlyCase guess from
-     *                                         the app id is used as a last-resort fallback.
-     *                                       - 'controllerNamespace' (string): override just the controller namespace.
-     *                                       - 'repairNamespace' (string): override just the repair namespace.
-     *                                       - 'settingsNamespace' (string): override just the settings namespace.
-     *                                       - 'sectionsNamespace' (string): override just the sections namespace.
-     *                                       - 'listenerNamespace' (string): override just the listener namespace.
-     *                                       - 'serviceNamespace' (string): override just the service namespace.
-     *                                       - 'sectionId' (string): admin section id, default `$appId`.
-     *                                       - 'sectionName' (string): admin section display name, default StudlyAppId.
-     *                                       - 'sectionIcon' (string): icon file, default 'app-dark.svg'.
-     *                                       - 'sectionPriority' (int): default 75.
-     *                                       - 'adminPriority' (int): default 10.
-     *                                       - 'dashboardWidgets' (string[]): widget classes to register.
-     *                                       - 'mcpProvider' (string): MCP tool provider class to alias.
-     *                                       - 'deepLinks' (bool): register the deep-link listener, default true.
-     *                                       - 'observability' (bool): alias health/metrics controllers, default true.
+     *                                      - 'namespace' (string): the leaf app's `OCA\X` base namespace
+     *                                      (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
+     *                                      namespaces are not derivable from the app id (petstore →
+     *                                      PetStore, opencatalogi → OpenCatalogi, decidesk → Decidesk),
+     *                                      so pass it explicitly. When omitted, a StudlyCase guess from
+     *                                      the app id is used as a last-resort fallback.
+     *                                      - 'controllerNamespace' (string): override just the controller namespace.
+     *                                      - 'repairNamespace' (string): override just the repair namespace.
+     *                                      - 'settingsNamespace' (string): override just the settings namespace.
+     *                                      - 'sectionsNamespace' (string): override just the sections namespace.
+     *                                      - 'listenerNamespace' (string): override just the listener namespace.
+     *                                      - 'serviceNamespace' (string): override just the service namespace.
+     *                                      - 'sectionId' (string): admin section id, default `$appId`.
+     *                                      - 'sectionName' (string): admin section display name, default StudlyAppId.
+     *                                      - 'sectionIcon' (string): icon file, default 'app-dark.svg'.
+     *                                      - 'sectionPriority' (int): default 75.
+     *                                      - 'adminPriority' (int): default 10.
+     *                                      - 'dashboardWidgets' (string[]): widget classes to register.
+     *                                      - 'mcpProvider' (string): MCP tool provider class to alias.
+     *                                      - 'deepLinks' (bool): register the deep-link listener, default true.
+     *                                      - 'observability' (bool): alias health/metrics controllers, default true.
      *
      * @return void
      *
@@ -117,22 +117,22 @@ class Bootstrap
      */
     public static function register(IRegistrationContext $context, string $appId, array $options=[]): void
     {
-        $studly             = self::studly($appId);
-        $base               = rtrim((string) ($options['namespace'] ?? ('OCA\\'.$studly)), '\\');
-        $controllerNs       = (string) ($options['controllerNamespace'] ?? ($base.'\\Controller'));
-        $repairNs           = (string) ($options['repairNamespace'] ?? ($base.'\\Repair'));
-        $settingsNs         = (string) ($options['settingsNamespace'] ?? ($base.'\\Settings'));
-        $sectionsNs         = (string) ($options['sectionsNamespace'] ?? ($base.'\\Sections'));
-        $listenerNs         = (string) ($options['listenerNamespace'] ?? ($base.'\\Listener'));
-        $serviceNs          = (string) ($options['serviceNamespace'] ?? ($base.'\\Service'));
+        $studly       = self::studly(appId: $appId);
+        $base         = rtrim(string: (string) ($options['namespace'] ?? ('OCA\\'.$studly)), characters: '\\');
+        $controllerNs = (string) ($options['controllerNamespace'] ?? ($base.'\\Controller'));
+        $repairNs     = (string) ($options['repairNamespace'] ?? ($base.'\\Repair'));
+        $settingsNs   = (string) ($options['settingsNamespace'] ?? ($base.'\\Settings'));
+        $sectionsNs   = (string) ($options['sectionsNamespace'] ?? ($base.'\\Sections'));
+        $listenerNs   = (string) ($options['listenerNamespace'] ?? ($base.'\\Listener'));
+        $serviceNs    = (string) ($options['serviceNamespace'] ?? ($base.'\\Service'));
 
-        $sectionId          = (string) ($options['sectionId'] ?? $appId);
-        $sectionName        = (string) ($options['sectionName'] ?? $studly);
-        $sectionIcon        = (string) ($options['sectionIcon'] ?? 'app-dark.svg');
-        $sectionPriority    = (int) ($options['sectionPriority'] ?? 75);
-        $adminPriority      = (int) ($options['adminPriority'] ?? 10);
-        $registerDeepLinks  = ($options['deepLinks'] ?? true) !== false;
-        $registerObserv     = ($options['observability'] ?? true) !== false;
+        $sectionId         = (string) ($options['sectionId'] ?? $appId);
+        $sectionName       = (string) ($options['sectionName'] ?? $studly);
+        $sectionIcon       = (string) ($options['sectionIcon'] ?? 'app-dark.svg');
+        $sectionPriority   = (int) ($options['sectionPriority'] ?? 75);
+        $adminPriority     = (int) ($options['adminPriority'] ?? 10);
+        $registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
+        $registerObserv    = ($options['observability'] ?? true) !== false;
 
         self::registerControllers(context: $context, appId: $appId, controllerNs: $controllerNs, observability: $registerObserv);
         self::registerServices(context: $context, appId: $appId, serviceNs: $serviceNs);
@@ -418,11 +418,15 @@ class Bootstrap
      */
     private static function studly(string $appId): string
     {
-        $parts  = preg_split('/[_\-]+/', $appId) ?: [$appId];
+        $parts = preg_split(pattern: '/[_\-]+/', subject: $appId);
+        if ($parts === false || count($parts) === 0) {
+            $parts = [$appId];
+        }
+
         $studly = '';
         foreach ($parts as $part) {
             $studly .= ucfirst($part);
-        }
+        }//end foreach
 
         return $studly;
     }//end studly()

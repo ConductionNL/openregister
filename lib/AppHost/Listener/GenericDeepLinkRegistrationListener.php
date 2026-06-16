@@ -106,7 +106,7 @@ class GenericDeepLinkRegistrationListener implements IEventListener
                 icon: (string) ($link['icon'] ?? ''),
                 displayName: $displayName
             );
-        }
+        }//end foreach
     }//end handle()
 
     /**
@@ -149,6 +149,13 @@ class GenericDeepLinkRegistrationListener implements IEventListener
         }
 
         // Keep only array entries.
-        return array_values(array_filter($links, static fn ($link): bool => is_array($link)));
+        $entries = [];
+        foreach ($links as $link) {
+            if (is_array($link) === true) {
+                $entries[] = $link;
+            }
+        }//end foreach
+
+        return $entries;
     }//end loadDeepLinks()
 }//end class

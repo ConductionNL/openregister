@@ -72,7 +72,7 @@ class Routes
      */
     public static function standard(array $extra=[]): array
     {
-        self::assertNoDuplicateNames($extra);
+        self::assertNoDuplicateNames(extra: $extra);
 
         $extraNames = [];
         foreach ($extra as $route) {
@@ -92,7 +92,7 @@ class Routes
             $canonical[] = $route;
         }
 
-        $merged = array_merge($canonical, $extra);
+        $merged   = array_merge($canonical, $extra);
         $merged[] = self::catchAllRoute();
 
         return ['routes' => $merged];

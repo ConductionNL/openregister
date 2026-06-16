@@ -57,8 +57,8 @@ class GenericActionAuthService
      * Constructor.
      *
      * @param string        $appId        The calling (leaf) app id.
-     * @param IAppConfig     $appConfig    App config store for the matrix.
-     * @param IGroupManager  $groupManager Group manager for resolving user groups.
+     * @param IAppConfig    $appConfig    App config store for the matrix.
+     * @param IGroupManager $groupManager Group manager for resolving user groups.
      */
     public function __construct(
         private readonly string $appId,
