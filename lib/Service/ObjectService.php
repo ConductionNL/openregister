@@ -1346,9 +1346,13 @@ class ObjectService
             );
         }//end try
 
-        // Ensure the object has a file-storage folder (belt-and-suspenders for
-        // new objects that bypassed the pre-save ensureObjectFolder path).
-        $this->ensureObjectFolderExists(entity: $savedObject);
+        // Lazy folder creation: intentionally do NOT create a file-storage
+        // folder here. An object only needs a folder once a file is attached;
+        // the folder is created on demand on the first upload
+        // (CreateFileHandler → getObjectFolder, which creates-if-missing). This
+        // avoids cluttering the Files tree with an empty folder per object and
+        // avoids binding system/seed-created objects to a folder a later editor
+        // can't access (the folder_access_denied case).
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -1666,13 +1670,18 @@ class ObjectService
                     return null;
                 }
 
-                // Empty / legacy non-numeric binding → auto-create. The object
-                // can function without a folder, so swallow failures.
-                try {
-                    $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
-                } catch (Exception $e) {
-                    // Log error but continue - object can function without folder.
-                }
+                // Lazy folder creation: do NOT create a Files folder for an
+                // object that has none. Most objects never get a file attached,
+                // so eagerly creating a per-object folder on every save (a)
+                // clutters the Files tree with thousands of empty folders and
+                // (b) can bind the object to a folder created in a
+                // no-session/system context (e.g. config-import seeding) that a
+                // later editor cannot access — which then denies the edit with
+                // folder_access_denied. The folder is created on demand the
+                // first time a file is actually uploaded to the object
+                // (CreateFileHandler → getObjectFolder, which creates-if-missing).
+                // Leave $folderId null; the object functions fine without one.
+                $folderId = null;
             } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
                 // Propagate folder-access denials up to the controller.
                 throw $e;
