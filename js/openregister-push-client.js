@@ -19,7 +19,11 @@
 	'use strict'
 
 	var SW_URL = OC.filePath('openregister', 'js', 'openregister-push-sw.js')
-	var SW_SCOPE = OC.generateUrl('/apps/openregister/js/')
+	// A Service Worker can only claim a scope at or below its own served path.
+	// The SW is served from .../custom_apps/openregister/js/, so derive the scope
+	// from SW_URL's own directory rather than the /apps/ route (a different path,
+	// which makes register() throw a SecurityError → subscription never created).
+	var SW_SCOPE = SW_URL.replace(/[^/]*$/, '')
 
 	function isSupported() {
 		return (typeof navigator !== 'undefined'
@@ -104,7 +108,10 @@
 				applicationServerKey: urlBase64ToUint8Array(vapid.publicKey),
 			})
 		}).then(function(subscription) {
-			return postSubscription(subscription).then(function() { return true })
+			return postSubscription(subscription).then(function() {
+				suppressStockOpenRegisterPopups()
+				return true
+			})
 		})
 	}
 
@@ -134,6 +141,41 @@
 		})
 	}
 
+	var stockPopupsSuppressed = false
+
+	/**
+	 * Suppress the stock notifications-app foreground popup for OpenRegister
+	 * notifications once web-push is active. The stock app calls
+	 * `new Notification()` for every nc-notification while a tab is open; for our
+	 * notifications the Service Worker already shows a richer version (with the
+	 * "Open client" action), so the stock one is a duplicate. We identify ours by
+	 * the hex notification icon URL and drop only those — every other app's
+	 * notifications and the Notification permission API are left untouched.
+	 *
+	 * @return {void}
+	 */
+	function suppressStockOpenRegisterPopups() {
+		if (stockPopupsSuppressed || typeof window.Notification !== 'function') {
+			return
+		}
+		var Native = window.Notification
+		var Patched = function(title, options) {
+			options = options || {}
+			if (String(options.icon || '').indexOf('/openregister/webpush/icon') !== -1) {
+				// Our Service Worker shows this one — swallow the stock duplicate.
+				return { close: function() {}, addEventListener: function() {}, removeEventListener: function() {} }
+			}
+			return new Native(title, options)
+		}
+		// Preserve the static Notification API the rest of Nextcloud relies on.
+		Object.defineProperty(Patched, 'permission', { get: function() { return Native.permission } })
+		Patched.requestPermission = function() { return Native.requestPermission.apply(Native, arguments) }
+		Patched.maxActions = Native.maxActions
+		try { Patched.prototype = Native.prototype } catch (e) { /* non-fatal */ }
+		window.Notification = Patched
+		stockPopupsSuppressed = true
+	}
+
 	window.OCA = window.OCA || {}
 	window.OCA.OpenRegister = window.OCA.OpenRegister || {}
 	window.OCA.OpenRegister.WebPush = {
@@ -143,5 +185,14 @@
 		permission: function() {
 			return ('Notification' in window) ? Notification.permission : 'unsupported'
 		},
+	}
+
+	// On every page load, if a push subscription is already active, suppress the
+	// stock foreground duplicate so the user only sees the rich SW notification.
+	if (isSupported()) {
+		navigator.serviceWorker.getRegistration(SW_SCOPE)
+			.then(function(reg) { return reg ? reg.pushManager.getSubscription() : null })
+			.then(function(sub) { if (sub) { suppressStockOpenRegisterPopups() } })
+			.catch(function() {})
 	}
 }())
