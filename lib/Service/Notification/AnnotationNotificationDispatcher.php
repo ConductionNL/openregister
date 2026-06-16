@@ -2211,13 +2211,28 @@ class AnnotationNotificationDispatcher
                 objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
             );
             if ($registered !== null && $registered !== '') {
-                if ($this->urlGenerator !== null && str_starts_with($registered, 'http') === false) {
-                    return $this->urlGenerator->getAbsoluteURL($registered);
+                // Return a RELATIVE path so the Service Worker / browser resolves
+                // it against the real page origin (preserving a non-standard port
+                // such as :8080). Wrapping with getAbsoluteURL() injects
+                // overwrite.cli.url, which can drop the port (e.g. http://localhost
+                // instead of http://localhost:8080) and 404 the deeplink.
+                if (str_starts_with($registered, 'http') === true) {
+                    $parts = parse_url($registered);
+                    $path  = ($parts['path'] ?? '/');
+                    if (isset($parts['query']) === true) {
+                        $path .= '?'.$parts['query'];
+                    }
+
+                    if (isset($parts['fragment']) === true) {
+                        $path .= '#'.$parts['fragment'];
+                    }
+
+                    return $path;
                 }
 
                 return $registered;
-            }
-        }
+            }//end if
+        }//end if
 
         return $this->appRouteBase(app: $originApp)
             .sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
