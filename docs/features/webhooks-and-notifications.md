@@ -293,15 +293,32 @@ they self-heal when the user re-enables the toggle (which re-subscribes against 
 new key); the server prunes stale subscriptions on the first `404`/`410` response
 from the push service.
 
-### Opt-in (user)
+### Enabling browser notifications (user guide)
 
-Browser push is **opt-in only** — OpenRegister never prompts for notification
-permission on page load (per Chrome's abuse rules). Users enable it via the
-**"Enable browser notifications"** toggle in personal settings, which requests
-permission, registers the Service Worker (`js/openregister-push-sw.js`), and
-subscribes (`pushManager.subscribe({ userVisibleOnly: true, … })`). Subscriptions
-are stored per user + browser in the `openregister_push_subscriptions` table
-(an infra table — not an OpenRegister object).
+Browser push is **opt-in** — OpenRegister never prompts for notification
+permission on page load. To turn it on:
+
+1. Click your avatar (top-right) → **Settings**.
+2. Open the **Notifications** section under *Personal*.
+3. Find **Browser notifications** and switch on **"Enable browser notifications"**.
+4. Your browser asks to show notifications — click **Allow**.
+
+![The "Enable browser notifications" toggle on the personal Notifications settings page](web-push-enable-toggle.png)
+
+When it is on, the line under the toggle reads **"Notification permission:
+granted"**. From then on OpenRegister sends you a native notification — with the
+originating app's icon and any action buttons (for example *Open client*) —
+whenever a notification rule you are a recipient of fires, **even when no
+Nextcloud tab is open**.
+
+To stop receiving them, switch the toggle **off** (this removes the browser
+subscription).
+
+> Behind the scenes the toggle requests permission, registers the Service Worker
+> (`js/openregister-push-sw.js`), and subscribes
+> (`pushManager.subscribe({ userVisibleOnly: true, … })`). The subscription is
+> stored per user + browser in the `openregister_push_subscriptions` table
+> (infrastructure state — not an OpenRegister object).
 
 ### Browser support / degradation
 
@@ -310,6 +327,36 @@ are stored per user + browser in the `openregister_push_subscriptions` table
 | Chrome / Edge | Full — delivers with the browser closed |
 | Firefox | Full — delivers with the browser closed |
 | Safari (macOS/iOS) | Only when the site is an **installed PWA**; otherwise no background push — degrades to the foreground `nc-notification` popup |
+
+### Receiving notifications when the browser is closed
+
+Browser push is delivered over your browser's **background connection** to its
+push service (Chrome → FCM, Firefox → Mozilla autopush). The notification arrives
+**without any Nextcloud tab open**, but a **browser process must be running**:
+
+| State | Result |
+|-------|--------|
+| Tab closed, browser still running | Notification arrives immediately |
+| Browser fully quit (no background process) | The push is **queued** by the push service and delivered the moment you next open the browser — nothing is lost |
+| All windows closed but browser kept alive in the background | Arrives immediately (see the setting below) |
+
+This is standard browser/OS behaviour shared by every web-push site (Slack,
+Gmail, …) — it is not specific to OpenRegister. For notifications that arrive
+with **no browser running at all**, use the native Nextcloud desktop or mobile
+apps, which have their own push channel.
+
+#### Keep Chrome receiving with all windows closed
+
+By default Chrome on Windows exits when you close the last window, which stops
+push delivery until you reopen it. To keep notifications arriving with no window
+open, let Chrome run in the background:
+
+1. Open Chrome **Settings → System** (or paste `chrome://settings/system` into the address bar).
+2. Turn on **"Continue running background apps when Google Chrome is closed."**
+
+Chrome then keeps a small process alive in the system tray after you close all
+windows, so OpenRegister pushes arrive instantly. Microsoft Edge has the same
+option at `edge://settings/system`.
 
 ### Duplicate suppression
 
