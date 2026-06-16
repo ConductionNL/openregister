@@ -2431,6 +2431,13 @@ class Application extends App implements IBootstrap
         // the host here lifts the block instance-wide for any app that
         // proxies GitHub issues through OpenRegister.
         $this->relaxCspForGithubAvatars(server: $server);
+
+        // Allow registering the Web Push Service Worker (openregister-web-push-engine).
+        // Nextcloud's default CSP uses a nonce-based script-src, which a Service
+        // Worker script cannot carry, so navigator.serviceWorker.register() is
+        // rejected with "violates the Content Security Policy". Adding
+        // `worker-src 'self'` lets the same-origin SW register.
+        $this->relaxCspForWebPushWorker(server: $server);
     }//end boot()
 
     /**
@@ -2457,6 +2464,32 @@ class Application extends App implements IBootstrap
             // avatars). Stay silent rather than fail the boot.
         }
     }//end relaxCspForGithubAvatars()
+
+    /**
+     * Allow the same-origin Web Push Service Worker to register by adding
+     * `worker-src 'self'` to Nextcloud's default Content-Security-Policy via
+     * `IContentSecurityPolicyManager::addDefaultPolicy()`. NC's nonce-based
+     * script-src otherwise rejects `navigator.serviceWorker.register()` with a
+     * CSP violation (a SW script cannot carry a request nonce). Idempotent —
+     * NC merges policies additively, never narrowing.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+     */
+    private function relaxCspForWebPushWorker($server): void
+    {
+        try {
+            $cspManager = $server->get(IContentSecurityPolicyManager::class);
+            $policy     = new ContentSecurityPolicy();
+            $policy->addAllowedWorkerSrcDomain("'self'");
+            $cspManager->addDefaultPolicy($policy);
+        } catch (\Throwable $e) {
+            // CSP manager unavailable (rare). Stay silent rather than fail boot.
+        }
+    }//end relaxCspForWebPushWorker()
 
     /**
      * Resolve every BuiltinProviders/* class and register it with the
