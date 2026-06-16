@@ -194,18 +194,25 @@ class HexIconService
             if ($badge === false) {
                 $hex = new \Imagick();
                 $hex->setBackgroundColor(new \ImagickPixel('transparent'));
-                $hexSvg = sprintf(
+                // The brand hex is a regular pointy-top hexagon with a 100:115
+                // (width:height) ratio. Rendering it into a square canvas would
+                // stretch it ~15% horizontally and distort the shape, so fit it
+                // to the canvas height and centre it horizontally instead.
+                $hexHeight = $size;
+                $hexWidth  = (int) round($size * (100 / 115));
+                $hexSvg    = sprintf(
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 115" width="%d" height="%d">'
                     .'<polygon points="50,0 100,28.75 100,86.25 50,115 0,86.25 0,28.75" fill="%s"/></svg>',
-                    $size,
-                    $size,
+                    $hexWidth,
+                    $hexHeight,
                     self::COBALT
                 );
                 $hex->readImageBlob($hexSvg);
                 $hex->setImageFormat('png');
-                $canvas->compositeImage($hex, \Imagick::COMPOSITE_OVER, 0, 0);
+                $hexX = (int) (($size - $hexWidth) / 2);
+                $canvas->compositeImage($hex, \Imagick::COMPOSITE_OVER, $hexX, 0);
                 $hex->clear();
-            }
+            }//end if
 
             // The app glyph, tinted white, scaled to ~60% of the canvas and centred.
             $glyph = new \Imagick();

@@ -119,8 +119,11 @@ class WebPushDispatchJobTest extends TestCase
         $this->assertIsArray($captured);
         $this->assertCount(1, $captured['actions']);
         $this->assertSame('Open client', $captured['actions'][0]['title']);
-        $this->assertSame('https://example-host.test/apps/pipelinq/#/clients/1', $captured['actions'][0]['url']);
+        $this->assertSame('action-0', $captured['actions'][0]['action']);
+        // Click-routing URLs live under data, matching the Service Worker contract
+        // (js/openregister-push-sw.js reads data.actions[event.action] + data.url).
+        $this->assertSame('https://example-host.test/apps/pipelinq/#/clients/1', $captured['data']['actions']['action-0']);
         // The primary action drives the top-level body-click deeplink.
-        $this->assertSame('https://example-host.test/apps/pipelinq/#/clients/1', $captured['url']);
+        $this->assertSame('https://example-host.test/apps/pipelinq/#/clients/1', $captured['data']['url']);
     }
 }
