@@ -56,7 +56,6 @@ use OCP\IUserSession;
  */
 class WebPushController extends Controller
 {
-
     /**
      * Constructor.
      *
@@ -103,7 +102,7 @@ class WebPushController extends Controller
      * Body: `{ endpoint, keys: { p256dh, auth } }` (the browser PushSubscription
      * JSON). The owner is ALWAYS the session user — no uid is read from the body.
      *
-     * @param string             $endpoint The push endpoint URL.
+     * @param string              $endpoint The push endpoint URL.
      * @param array<string,mixed> $keys     The client keys (p256dh + auth).
      *
      * @return JSONResponse The stored subscription summary, or an error.
@@ -129,7 +128,7 @@ class WebPushController extends Controller
             endpoint: $endpoint,
             p256dh: $p256dh,
             auth: $auth,
-            userAgent: (string) ($this->request->getHeader('User-Agent') ?? '')
+            userAgent: $this->request->getHeader('User-Agent')
         );
 
         return new JSONResponse($subscription->jsonSerialize(), Http::STATUS_CREATED);

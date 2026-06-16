@@ -176,9 +176,9 @@ class AnnotationNotifier implements INotifier
      * through OR RBAC). The recipient's locale label wins, falling back to
      * `en` then the first available locale.
      *
-     * @param INotification                    $notification Notification to attach actions to.
-     * @param array<int, array<string, mixed>> $actions      Resolved actions.
-     * @param string                           $languageCode Active recipient locale.
+     * @param INotification     $notification Notification to attach actions to.
+     * @param array<int, mixed> $actions      Resolved actions (each element validated at runtime).
+     * @param string            $languageCode Active recipient locale.
      *
      * @return void
      *
@@ -201,10 +201,13 @@ class AnnotationNotifier implements INotifier
                 $labelMap = [];
             }
 
-            $label = (string) (
-                $labelMap[$languageCode]
-                ?? ($labelMap['en'] ?? (reset($labelMap) !== false ? reset($labelMap) : 'Open'))
-            );
+            $fallbackLabel = 'Open';
+            $firstLabel    = reset($labelMap);
+            if ($firstLabel !== false) {
+                $fallbackLabel = $firstLabel;
+            }
+
+            $label = (string) ($labelMap[$languageCode] ?? ($labelMap['en'] ?? $fallbackLabel));
 
             $actionObject = $notification->createAction();
             $actionObject->setLabel($label)
