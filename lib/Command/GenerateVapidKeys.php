@@ -123,8 +123,5 @@ class GenerateVapidKeys extends Command
         $output->writeln('<comment>The private key is stored as a sensitive app value and is never printed.</comment>');
 
         return Command::SUCCESS;
-
     }//end execute()
-
-
 }//end class

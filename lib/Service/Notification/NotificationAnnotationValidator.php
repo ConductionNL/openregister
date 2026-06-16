@@ -176,9 +176,9 @@ final class NotificationAnnotationValidator
                             foreach ($entryErrors as $entryError) {
                                 $errors[] = $entryError;
                             }
-                        }
-                    }
-                }
+                        }//end foreach
+                    }//end if
+                }//end if
 
                 if (is_array($trigger) === true && isset($trigger['dedupeFields']) === true) {
                     $dedupeFields = $trigger['dedupeFields'];
@@ -208,10 +208,10 @@ final class NotificationAnnotationValidator
                                 ];
                                 break;
                             }
-                        }
-                    }
-                }
-            }//end scheduled
+                        }//end foreach
+                    }//end if
+                }//end if
+            }//end if
 
             if ($triggerType === 'threshold') {
                 $aggregation = '';
@@ -689,9 +689,7 @@ final class NotificationAnnotationValidator
         }//end foreach
 
         return $errors;
-
     }//end validateActions()
-
 
     /**
      * Validate the optional `organisation` rule-level gate.
@@ -756,9 +754,7 @@ final class NotificationAnnotationValidator
                 $name
             ),
         ];
-
     }//end validateOrganisationGate()
-
 
     /**
      * Validate a single scheduled-trigger filter entry.
@@ -856,12 +852,9 @@ final class NotificationAnnotationValidator
                         ),
                     ],
                 ];
-            }
-        }
+            }//end try
+        }//end if
 
         return [];
-
     }//end validateScheduledFilterEntry()
-
-
 }//end class

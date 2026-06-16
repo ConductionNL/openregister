@@ -39,7 +39,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\Activity\IManager as IActivityManager;
-use OCP\App\IAppManager;
 use OCP\BackgroundJob\IJobList;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
@@ -95,9 +94,9 @@ class AnnotationNotificationDispatcher
      * @param NotificationPreferenceService|null                       $preferenceService   Override-only preference resolver (delivery gate).
      * @param IJobList|null                                            $jobList             Job list used to enqueue the web-push dispatch job.
      * @param IURLGenerator|null                                       $urlGenerator        URL generator for action-target deeplinks.
-     * @param IAppManager|null                                         $appManager          App manager used to resolve named app routes.
      * @param RegisterMapper|null                                      $registerMapper      Register mapper used for the default originApp.
      * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService       Object resolver for relation-target deeplinks (RBAC).
+     * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry    Canonical per-app deeplink resolver.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -120,9 +119,9 @@ class AnnotationNotificationDispatcher
         private readonly ?NotificationPreferenceService $preferenceService=null,
         private readonly ?IJobList $jobList=null,
         private readonly ?IURLGenerator $urlGenerator=null,
-        private readonly ?IAppManager $appManager=null,
         private readonly ?RegisterMapper $registerMapper=null,
-        private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null
+        private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null,
+        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null
     ) {
     }//end __construct()
 
@@ -323,8 +322,8 @@ class AnnotationNotificationDispatcher
             // app owning the schema's register) and the per-action deeplinks
             // once per rule — these drive the icon + action buttons in the
             // emitted notification and the web-push payload.
-            $originApp        = $this->resolveOriginApp(spec: $spec, object: $object);
-            $resolvedActions  = $this->resolveActions(
+            $originApp       = $this->resolveOriginApp(spec: $spec, object: $object);
+            $resolvedActions = $this->resolveActions(
                 spec: $spec,
                 object: $object,
                 data: $data,
@@ -484,7 +483,7 @@ class AnnotationNotificationDispatcher
                         subject: $recipientSubject,
                         locale: $recipientLocale
                     );
-                }
+                }//end if
 
                 if (in_array('email', $effectiveChannels, true) === true) {
                     $this->emitEmail(
@@ -1244,24 +1243,31 @@ class AnnotationNotificationDispatcher
     private function numericConditionMatches(mixed $value, array $operators): bool
     {
         foreach ($operators as $op => $threshold) {
-            $numeric = is_numeric($value) === true && is_numeric($threshold) === true;
-            $result  = match ((string) $op) {
+            $numeric = (is_numeric($value) === true && is_numeric($threshold) === true);
+
+            // BUG-SVC-8: when both sides are numeric, compare as floats so
+            // numerically-equal-but-differently-formatted values match
+            // (e.g. `1.0` eq `1`). Fall back to string compare otherwise.
+            if ($numeric === true) {
+                $equals = ((float) $value === (float) $threshold);
+            } else {
+                $equals = ((string) $value === (string) $threshold);
+            }
+
+            $result = match ((string) $op) {
                 'lt'  => $numeric && (float) $value < (float) $threshold,
                 'lte' => $numeric && (float) $value <= (float) $threshold,
                 'gt'  => $numeric && (float) $value > (float) $threshold,
                 'gte' => $numeric && (float) $value >= (float) $threshold,
-                // BUG-SVC-8: when both sides are numeric, compare as floats so
-                // numerically-equal-but-differently-formatted values match
-                // (e.g. `1.0` eq `1`). Fall back to string compare otherwise.
-                'eq'  => $numeric === true ? ((float) $value === (float) $threshold) : ((string) $value === (string) $threshold),
-                'ne'  => $numeric === true ? ((float) $value !== (float) $threshold) : ((string) $value !== (string) $threshold),
+                'eq'  => $equals,
+                'ne'  => ($equals === false),
                 default => false,
             };
 
             if ($result === false) {
                 return false;
             }
-        }
+        }//end foreach
 
         return true;
     }//end numericConditionMatches()
@@ -1288,8 +1294,8 @@ class AnnotationNotificationDispatcher
             return false;
         }
 
-        $operator = (string) ($filter['operator'] ?? 'equals');
-        $actual   = ($data[$field] ?? null);
+        $operator  = (string) ($filter['operator'] ?? 'equals');
+        $actual    = ($data[$field] ?? null);
         $actualStr = '';
         if (is_scalar($actual) === true) {
             $actualStr = (string) $actual;
@@ -1301,10 +1307,22 @@ class AnnotationNotificationDispatcher
                 return false;
             }
 
-            $haystack = array_map(static fn ($v): string => is_scalar($v) === true ? (string) $v : '', $values);
-            $present  = in_array($actualStr, $haystack, true);
-            return ($operator === 'in') ? $present : ($present === false);
-        }
+            $haystack = [];
+            foreach ($values as $candidate) {
+                if (is_scalar($candidate) === true) {
+                    $haystack[] = (string) $candidate;
+                } else {
+                    $haystack[] = '';
+                }
+            }
+
+            $present = in_array($actualStr, $haystack, true);
+            if ($operator === 'in') {
+                return $present;
+            }
+
+            return ($present === false);
+        }//end if
 
         // Default: equals.
         return $actualStr === (string) ($filter['value'] ?? '');
@@ -1941,10 +1959,15 @@ class AnnotationNotificationDispatcher
         }
 
         // Default: the app that owns the schema's register.
-        $registerId = $object->getRegister();
-        if ($this->registerMapper !== null && $registerId !== null && (string) $registerId !== '') {
+        $registerId     = $object->getRegister();
+        $registerMapper = $this->registerMapper;
+        if ($registerMapper !== null && $registerId !== null && (string) $registerId !== '') {
             try {
-                $register = $this->registerMapper->find($registerId, null, false, false);
+                $register  = $registerMapper->find(
+                    $registerId,
+                    _rbac: false,
+                    _multitenancy: false
+                );
                 $owningApp = $register->getApplication();
                 if (is_string($owningApp) === true && $owningApp !== '') {
                     return $owningApp;
@@ -1957,9 +1980,7 @@ class AnnotationNotificationDispatcher
         }
 
         return 'openregister';
-
     }//end resolveOriginApp()
-
 
     /**
      * Resolve declared `actions[]` to concrete, server-side deeplinks.
@@ -2015,9 +2036,7 @@ class AnnotationNotificationDispatcher
         }//end foreach
 
         return $resolved;
-
     }//end resolveActions()
-
 
     /**
      * Resolve a single action `target` to an absolute deeplink.
@@ -2081,7 +2100,7 @@ class AnnotationNotificationDispatcher
             );
 
             return $this->appRouteBase(app: $app).ltrim((string) $interpolated, '/');
-        }
+        }//end if
 
         if ($kind === 'object-detail') {
             $relationSpec = ($target['object'] ?? null);
@@ -2103,9 +2122,7 @@ class AnnotationNotificationDispatcher
         }//end if
 
         return null;
-
     }//end resolveActionTarget()
-
 
     /**
      * Resolve a relation-field deeplink ("Open client") through OR RBAC.
@@ -2129,7 +2146,7 @@ class AnnotationNotificationDispatcher
             return null;
         }
 
-        $raw = ($data[$field] ?? null);
+        $raw    = ($data[$field] ?? null);
         $lookup = null;
         if (is_string($raw) === true && $raw !== '') {
             $lookup = $raw;
@@ -2164,9 +2181,7 @@ class AnnotationNotificationDispatcher
             schemaId: (string) ($related->getSchema() ?? ''),
             objectUuid: (string) ($related->getUuid() ?? '')
         );
-
     }//end resolveRelationDeeplink()
-
 
     /**
      * Build an object-detail deeplink against the originApp frontend route.
@@ -2184,11 +2199,29 @@ class AnnotationNotificationDispatcher
             return null;
         }
 
+        // Prefer the canonical per-app deeplink registered via
+        // DeepLinkRegistrationEvent (e.g. pipelinq::client →
+        // /apps/pipelinq/clients/{uuid}). This is the app-correct route the
+        // rest of the platform uses; the openregister hash-route below is only
+        // a fallback for schemas no leaf app has registered a deeplink for.
+        if ($this->deepLinkRegistry !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
+            $registered = $this->deepLinkRegistry->resolveUrl(
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId,
+                objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+            );
+            if ($registered !== null && $registered !== '') {
+                if ($this->urlGenerator !== null && str_starts_with($registered, 'http') === false) {
+                    return $this->urlGenerator->getAbsoluteURL($registered);
+                }
+
+                return $registered;
+            }
+        }
+
         return $this->appRouteBase(app: $originApp)
             .sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
-
     }//end buildObjectDetailLink()
-
 
     /**
      * Resolve the absolute frontend route base for an app id.
@@ -2216,10 +2249,9 @@ class AnnotationNotificationDispatcher
         } catch (\Throwable $e) {
             // App has no dashboard.page route — fall back to the app base path.
             return $this->urlGenerator->getAbsoluteURL('/index.php/apps/'.$app.'/');
-        }
+        }//end try
 
     }//end appRouteBase()
-
 
     /**
      * Enqueue a background web-push dispatch job per recipient.
@@ -2229,7 +2261,7 @@ class AnnotationNotificationDispatcher
      * immediately. Anonymous / non-uid recipients are skipped (web-push is
      * user+browser scoped).
      *
-     * @param array<int, string>               $recipients Resolved recipient uids.
+     * @param array<int, mixed>                $recipients Resolved recipient uids (validated at runtime).
      * @param string                           $ruleId     The rule id.
      * @param string                           $originApp  The resolved origin app id.
      * @param string                           $subject    The notification subject text.
@@ -2254,7 +2286,12 @@ class AnnotationNotificationDispatcher
         }
 
         $objectUuid = (string) ($object->getUuid() ?? '');
-        $tag        = sprintf('openregister-%s-%s', $ruleId, ($objectUuid !== '' ? $objectUuid : $ruleId));
+        $tagSuffix  = $ruleId;
+        if ($objectUuid !== '') {
+            $tagSuffix = $objectUuid;
+        }
+
+        $tag = sprintf('openregister-%s-%s', $ruleId, $tagSuffix);
 
         foreach ($recipients as $uid) {
             if (is_string($uid) === false || $uid === '' || $this->userExists(uid: $uid) === false) {
@@ -2273,10 +2310,8 @@ class AnnotationNotificationDispatcher
                     'actions'   => $actions,
                 ]
             );
-        }
-
+        }//end foreach
     }//end enqueueWebPush()
-
 
     /**
      * Persist + dispatch a single in-app Nextcloud notification row.
@@ -2291,15 +2326,15 @@ class AnnotationNotificationDispatcher
      * Push delivery needs no extra code: `notify_push` auto-intercepts this
      * same `IManager::notify()` call and relays it to connected devices.
      *
-     * @param string                    $uid           Recipient user UID.
-     * @param ObjectEntity              $object        The object the event happened on.
-     * @param string                    $subjectKey    Canonical subject identifier (object_created/_updated/_transitioned).
-     * @param string                    $name          Annotation rule name (notification type identifier).
-     * @param string                    $subject       Pre-interpolated subject text.
-     * @param array<string, mixed>      $context       Trigger context (action, from, to).
-     * @param string                    $originApp     Resolved originApp (declared or register-owning app).
-     * @param array<int, array<string, mixed>> $actions Resolved action buttons (label map + deeplink url + primary).
-     * @param bool                      $webPushActive Whether the rule also delivers over web-push (drives duplicate suppression).
+     * @param string                           $uid           Recipient user UID.
+     * @param ObjectEntity                     $object        The object the event happened on.
+     * @param string                           $subjectKey    Canonical subject identifier (object_created/_updated/_transitioned).
+     * @param string                           $name          Annotation rule name (notification type identifier).
+     * @param string                           $subject       Pre-interpolated subject text.
+     * @param array<string, mixed>             $context       Trigger context (action, from, to).
+     * @param string                           $originApp     Resolved originApp (declared or register-owning app).
+     * @param array<int, array<string, mixed>> $actions       Resolved action buttons (label map + deeplink url + primary).
+     * @param bool                             $webPushActive Whether the rule also delivers over web-push (drives duplicate suppression).
      *
      * @return void
      *
@@ -2317,21 +2352,26 @@ class AnnotationNotificationDispatcher
         bool $webPushActive=false
     ): void {
         $objectUuid = (string) ($object->getUuid() ?? '');
+        $tagSuffix  = $name;
+        if ($objectUuid !== '') {
+            $tagSuffix = $objectUuid;
+        }
+
         $linkParams = [
-            'objectTitle' => (string) ($object->getName() ?? $objectUuid),
-            'registerId'  => $object->getRegister(),
-            'schemaId'    => $object->getSchema(),
-            'objectUuid'  => $objectUuid,
+            'objectTitle'              => (string) ($object->getName() ?? $objectUuid),
+            'registerId'               => $object->getRegister(),
+            'schemaId'                 => $object->getSchema(),
+            'objectUuid'               => $objectUuid,
             // The resolved origin app drives the notifier icon (originApp hex
             // composite) and the deeplink base for declared actions.
-            'originApp'   => $originApp,
+            'originApp'                => $originApp,
             // Declared, server-resolved action buttons. The notifier renders
             // these via addAction(); an empty array keeps the implicit "View".
-            '_actions'    => $actions,
+            '_actions'                 => $actions,
             // Stable notification tag used by the Service Worker / foreground
             // client to COLLAPSE the web-push and the stock popup so the
             // recipient never sees a duplicate. Keyed by (rule, object).
-            '_tag'        => sprintf('openregister-%s-%s', $name, ($objectUuid !== '' ? $objectUuid : $name)),
+            '_tag'                     => sprintf('openregister-%s-%s', $name, $tagSuffix),
             // Foreground-suppression flag: when web-push is active for this
             // rule, an open tab that holds an active push subscription
             // declines to render the plain duplicate popup for this tag

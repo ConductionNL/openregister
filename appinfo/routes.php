@@ -252,6 +252,13 @@ return [
         ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
         // Health check endpoint.
         ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+        // AppHost declarative observability engine (ADR-040) — OpenRegister
+        // self-dogfood. Adopting leaf apps alias their own /api/health and
+        // /api/metrics routes at these generic controllers from their own
+        // routes.php; OR exposes them under /api/apphost/* so its own
+        // hand-written /api/health + /api/metrics keep working in parallel.
+        ['name' => 'AppHost\Controller\GenericHealth#index', 'url' => '/api/apphost/health', 'verb' => 'GET'],
+        ['name' => 'AppHost\Controller\GenericMetrics#index', 'url' => '/api/apphost/metrics', 'verb' => 'GET'],
         // URN resolution endpoints (RFC 8141 system-independent identifiers).
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],

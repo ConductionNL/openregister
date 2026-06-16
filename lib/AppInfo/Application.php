@@ -439,6 +439,7 @@ class Application extends App implements IBootstrap
         $this->registerIntegrationRegistry(context: $context);
         $this->registerEventListeners(context: $context);
         $this->registerMcpToolProviders(context: $context);
+        $this->registerAppHostObservability(context: $context);
 
         // Register the annotation-driven INotifier so notifications fired by
         // AnnotationNotificationDispatcher get a parsed subject — without
@@ -2087,6 +2088,115 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
         $context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
     }//end registerEventListeners()
+
+    /**
+     * Register the AppHost declarative observability engine (ADR-040).
+     *
+     * Wires the manifest loader, the health-check executor, the four metric
+     * sources, the Prometheus renderer and the metrics engine. The generic
+     * controllers are auto-resolved by Nextcloud's container (their `$appName`
+     * is supplied by the alias registration in each adopting leaf app's own
+     * Application.php). Services that need the DI container itself (lazy
+     * orAvailable + IMetricsProvider/IHealthCheckProvider alias discovery) get
+     * explicit factory closures; the rest auto-wire.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md
+     */
+    private function registerAppHostObservability(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\ManifestLoader::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\ManifestLoader(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor(
+                    db: $container->get('OCP\IDBConnection'),
+                    tempManager: $container->get('OCP\ITempManager'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource(
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource(
+                    db: $container->get('OCP\IDBConnection'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource(
+                    appConfig: $container->get('OCP\IAppConfig')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource(
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer();
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\MetricsEngine::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\MetricsEngine(
+                    objectSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class),
+                    tableSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class),
+                    appConfigSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class),
+                    providerSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class),
+                    renderer: $container->get(\OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class),
+                    manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    config: $container->get('OCP\IConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+    }//end registerAppHostObservability()
 
     /**
      * Register MCP tool providers (built-ins first).
