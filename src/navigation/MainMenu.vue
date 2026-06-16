@@ -87,3 +87,13 @@ export default {
 	},
 }
 </script>
+
+<style>
+/* The NcAppNavigationNew (active-org button) sits in .app-navigation__body,
+   which Nextcloud Vue sets to overflow-y:scroll — causing a permanent
+   scrollbar on Windows even though the body holds just one button.
+   Override to auto so the scrollbar only appears when content overflows. */
+.app-navigation .app-navigation__body {
+	overflow: hidden !important;
+}
+</style>

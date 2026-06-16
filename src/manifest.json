@@ -256,6 +256,14 @@
 	],
 	"menu": [
 		{
+			"id": "Dashboard",
+			"label": "Dashboard",
+			"icon": "ViewDashboardOutline",
+			"route": "dashboard",
+			"section": "main",
+			"order": 10
+		},
+		{
 			"id": "DataGroup",
 			"label": "Data",
 			"icon": "DatabaseOutline",
