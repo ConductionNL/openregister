@@ -62,8 +62,10 @@ class OpenRegisterPersonal implements ISettings
     /**
      * Get the personal settings section identifier.
      *
-     * Uses Nextcloud's built-in "additional" personal section, which is always
-     * present, so the toggle needs no custom section registration.
+     * Renders on the built-in "notifications" personal section (provided by the
+     * notifications app) where users expect notification controls; falls back to
+     * "additional" behaviour is unnecessary since notifications is always present
+     * on these instances.
      *
      * @return string The section id.
      *
@@ -71,7 +73,7 @@ class OpenRegisterPersonal implements ISettings
      */
     public function getSection(): string
     {
-        return 'additional';
+        return 'notifications';
 
     }//end getSection()
 
