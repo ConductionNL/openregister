@@ -39,6 +39,8 @@ use Throwable;
 
 /**
  * Runs declarative health checks and resolves the response status + code.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.1
  */
 class HealthCheckExecutor
 {
@@ -74,6 +76,8 @@ class HealthCheckExecutor
      * @param ObservabilityManifest $manifest The app's observability config.
      *
      * @return HealthResult
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.2
      */
     public function execute(ObservabilityManifest $manifest): HealthResult
     {
@@ -81,8 +85,8 @@ class HealthCheckExecutor
         $worstStatus = self::STATUS_OK;
 
         foreach ($manifest->checks as $descriptor) {
-            [$ok, $message] = $this->runCheck(appId: $manifest->appId, descriptor: $descriptor);
-            $checks[$descriptor->id] = $ok === true ? self::STATUS_OK : ('failed'.($message === '' ? '' : ': '.$message));
+            [$ok, $message]          = $this->runCheck(appId: $manifest->appId, descriptor: $descriptor);
+            $checks[$descriptor->id] = $this->formatCheckResult(ok: $ok, message: $message);
 
             if ($ok === false) {
                 $worstStatus = $this->escalate(current: $worstStatus, severity: $descriptor->severity);
@@ -97,8 +101,8 @@ class HealthCheckExecutor
                 $severity = 'critical';
             }
 
-            $message      = (string) ($result['message'] ?? '');
-            $checks[$id]  = $ok === true ? self::STATUS_OK : ('failed'.($message === '' ? '' : ': '.$message));
+            $message     = (string) ($result['message'] ?? '');
+            $checks[$id] = $this->formatCheckResult(ok: $ok, message: $message);
             if ($ok === false) {
                 $worstStatus = $this->escalate(current: $worstStatus, severity: $severity);
             }
@@ -138,13 +142,41 @@ class HealthCheckExecutor
             }
         } catch (Throwable $e) {
             // Log internals; return a generic message so health never leaks.
+            $logMessage = sprintf(
+                '[AppHost\\Health] Check "%s" (%s) for app "%s" threw: %s',
+                $descriptor->id,
+                $descriptor->type,
+                $appId,
+                $e->getMessage()
+            );
             $this->logger->warning(
-                message: sprintf('[AppHost\\Health] Check "%s" (%s) for app "%s" threw: %s', $descriptor->id, $descriptor->type, $appId, $e->getMessage()),
+                message: $logMessage,
                 context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId]
             );
             return [false, 'check error'];
         }//end try
     }//end runCheck()
+
+    /**
+     * Format a check outcome for the `checks` response map.
+     *
+     * @param bool   $ok      Whether the check passed.
+     * @param string $message Generic failure message (only used on failure).
+     *
+     * @return string "ok" or "failed[: message]".
+     */
+    private function formatCheckResult(bool $ok, string $message): string
+    {
+        if ($ok === true) {
+            return self::STATUS_OK;
+        }
+
+        if ($message === '') {
+            return 'failed';
+        }
+
+        return 'failed: '.$message;
+    }//end formatCheckResult()
 
     /**
      * `SELECT 1` round-trip.
@@ -173,9 +205,13 @@ class HealthCheckExecutor
 
         $bytes = file_put_contents($path, 'ok');
         $ok    = ($bytes !== false);
-        // ITempManager cleans its files on shutdown; unlink eagerly anyway.
+        // The ITempManager cleans its files on shutdown; unlink eagerly anyway.
         @unlink($path);
-        return [$ok, $ok === true ? '' : 'temp write failed'];
+        if ($ok === true) {
+            return [true, ''];
+        }
+
+        return [false, 'temp write failed'];
     }//end checkFilesystem()
 
     /**
@@ -188,7 +224,11 @@ class HealthCheckExecutor
     private function checkAppEnabled(string $app): array
     {
         $enabled = $this->appManager->isInstalled($app);
-        return [$enabled, $enabled === true ? '' : 'app not enabled'];
+        if ($enabled === true) {
+            return [true, ''];
+        }
+
+        return [false, 'app not enabled'];
     }//end checkAppEnabled()
 
     /**
@@ -225,7 +265,11 @@ class HealthCheckExecutor
     private function checkOrAvailable(): array
     {
         $service = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-        return [$service !== null, $service !== null ? '' : 'openregister unavailable'];
+        if ($service !== null) {
+            return [true, ''];
+        }
+
+        return [false, 'openregister unavailable'];
     }//end checkOrAvailable()
 
     /**
@@ -248,8 +292,7 @@ class HealthCheckExecutor
                 return [];
             }
 
-            $results = $provider->check();
-            return is_array($results) === true ? $results : [];
+            return $provider->check();
         } catch (Throwable $e) {
             $this->logger->warning(
                 message: sprintf('[AppHost\\Health] Provider for app "%s" threw: %s', $appId, $e->getMessage()),
@@ -274,7 +317,11 @@ class HealthCheckExecutor
         }
 
         // Degraded failure cannot downgrade an already-error status.
-        return $current === self::STATUS_ERROR ? self::STATUS_ERROR : self::STATUS_DEGRADED;
+        if ($current === self::STATUS_ERROR) {
+            return self::STATUS_ERROR;
+        }
+
+        return self::STATUS_DEGRADED;
     }//end escalate()
 
     /**
@@ -291,7 +338,12 @@ class HealthCheckExecutor
             return Http::STATUS_OK;
         }
 
-        // adr006: 503 only when a critical check failed (status === error).
-        return $status === self::STATUS_ERROR ? Http::STATUS_SERVICE_UNAVAILABLE : Http::STATUS_OK;
+        // The adr006 policy returns 503 only when a critical check failed
+        // (status === error); everything else stays 200.
+        if ($status === self::STATUS_ERROR) {
+            return Http::STATUS_SERVICE_UNAVAILABLE;
+        }
+
+        return Http::STATUS_OK;
     }//end resolveHttpCode()
 }//end class

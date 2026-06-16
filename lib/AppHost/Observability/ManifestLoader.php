@@ -33,6 +33,8 @@ use Throwable;
 
 /**
  * Loads + decodes an app's manifest and parses its observability config.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.2
  */
 class ManifestLoader
 {
@@ -59,6 +61,8 @@ class ManifestLoader
      * @return ObservabilityManifest
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.2
      */
     public function load(string $appId): ObservabilityManifest
     {
@@ -78,17 +82,18 @@ class ManifestLoader
      * @return string The version string, or 'unknown'.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.6
      */
     public function appVersion(string $appId): string
     {
         try {
             $version = $this->appManager->getAppVersion($appId);
-            // getAppVersion historically returned an array on multi-<version> info.xml.
-            if (is_array($version) === true) {
-                $version = (string) reset($version);
+            if ($version === '') {
+                return 'unknown';
             }
 
-            return $version === '' ? 'unknown' : (string) $version;
+            return $version;
         } catch (Throwable $e) {
             return 'unknown';
         }

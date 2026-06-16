@@ -40,6 +40,8 @@ interface IHealthCheckProvider
      *   Map of check id => result. `ok` drives status; optional `severity`
      *   (critical|degraded, default critical) drives the HTTP code; optional
      *   `message` is shown only on failure and MUST NOT leak internals.
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.4
      */
     public function check(): array;
 }//end interface

@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\AppHost\Observability;
 
 /**
  * Raised on a malformed observability descriptor (manifest-validation time).
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
  */
 class ObservabilityValidationException extends \InvalidArgumentException
 {

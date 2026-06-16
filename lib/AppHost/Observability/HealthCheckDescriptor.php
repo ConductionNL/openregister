@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\AppHost\Observability;
  * diagnostic rather than a runtime 500.
  *
  * @psalm-immutable
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
  */
 final class HealthCheckDescriptor
 {
@@ -92,20 +94,24 @@ final class HealthCheckDescriptor
      * @return self
      *
      * @throws ObservabilityValidationException When the entry is malformed.
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
      */
     public static function fromArray(array $raw, int $index=0): self
     {
         $type = $raw['type'] ?? null;
         if (is_string($type) === false || in_array($type, self::TYPES, true) === false) {
+            $allowed = implode(', ', self::TYPES);
             throw new ObservabilityValidationException(
-                sprintf('Unknown health check type "%s" (allowed: %s).', is_scalar($type) === true ? (string) $type : gettype($type), implode(', ', self::TYPES))
+                sprintf('Unknown health check type "%s" (allowed: %s).', self::describe(value: $type), $allowed)
             );
         }
 
         $severity = $raw['severity'] ?? 'critical';
         if (is_string($severity) === false || in_array($severity, self::SEVERITIES, true) === false) {
+            $allowed = implode(', ', self::SEVERITIES);
             throw new ObservabilityValidationException(
-                sprintf('Invalid severity "%s" for health check (allowed: %s).', is_scalar($severity) === true ? (string) $severity : gettype($severity), implode(', ', self::SEVERITIES))
+                sprintf('Invalid severity "%s" for health check (allowed: %s).', self::describe(value: $severity), $allowed)
             );
         }
 
@@ -133,8 +139,9 @@ final class HealthCheckDescriptor
 
             $assert = $raw['assert'] ?? 'present';
             if (is_string($assert) === false || in_array($assert, self::ASSERTIONS, true) === false) {
+                $allowed = implode(', ', self::ASSERTIONS);
                 throw new ObservabilityValidationException(
-                    sprintf('Invalid appConfig assert "%s" (allowed: %s).', is_scalar($assert) === true ? (string) $assert : gettype($assert), implode(', ', self::ASSERTIONS))
+                    sprintf('Invalid appConfig assert "%s" (allowed: %s).', self::describe(value: $assert), $allowed)
                 );
             }
         }
@@ -148,4 +155,21 @@ final class HealthCheckDescriptor
             assert: $assert
         );
     }//end fromArray()
+
+    /**
+     * Render a raw (possibly non-scalar) value as a short string for an
+     * error message, without leaking object internals.
+     *
+     * @param mixed $value Raw value.
+     *
+     * @return string
+     */
+    private static function describe(mixed $value): string
+    {
+        if (is_scalar($value) === true) {
+            return (string) $value;
+        }
+
+        return gettype($value);
+    }//end describe()
 }//end class

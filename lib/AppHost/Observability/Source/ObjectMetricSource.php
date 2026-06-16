@@ -38,14 +38,16 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * objectCount / objectSum source via OR's portable aggregation layer.
+ * Object-count / object-sum source via OR's portable aggregation layer.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
  */
 class ObjectMetricSource implements MetricSourceInterface
 {
     /**
      * Constructor.
      *
-     * @param ObjectService   $objectService OR object service (aggregation).
+     * @param ObjectService   $objectService  OR object service (aggregation).
      * @param RegisterMapper  $registerMapper Slug → register id.
      * @param SchemaMapper    $schemaMapper   Slug → schema id.
      * @param LoggerInterface $logger         PSR logger.
@@ -62,6 +64,8 @@ class ObjectMetricSource implements MetricSourceInterface
      * {@inheritDoc}
      *
      * @return string
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
      */
     public function kind(): string
     {
@@ -76,6 +80,8 @@ class ObjectMetricSource implements MetricSourceInterface
      * @param MetricDescriptor $descriptor The metric descriptor.
      *
      * @return MetricSample[]
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
      */
     public function collect(string $appId, MetricDescriptor $descriptor): array
     {
@@ -85,15 +91,24 @@ class ObjectMetricSource implements MetricSourceInterface
         try {
             $baseQuery = $this->buildBaseQuery(source: $source);
         } catch (Throwable $e) {
+            $logMessage = sprintf(
+                '[AppHost\\Metrics] objectCount "%s" (app %s) could not resolve register/schema: %s',
+                $descriptor->name,
+                $appId,
+                $e->getMessage()
+            );
             $this->logger->warning(
-                message: sprintf('[AppHost\\Metrics] objectCount "%s" (app %s) could not resolve register/schema: %s', $descriptor->name, $appId, $e->getMessage()),
+                message: $logMessage,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: [])];
         }
 
         $groupBy = $source['groupBy'] ?? [];
-        $field   = $descriptor->kind === 'objectSum' ? (string) $source['field'] : null;
+        $field   = null;
+        if ($descriptor->kind === 'objectSum') {
+            $field = (string) $source['field'];
+        }
 
         if (is_array($groupBy) === true && $groupBy !== []) {
             $samples = $this->collectGrouped(baseQuery: $baseQuery, groupBy: array_values($groupBy), field: $field);
@@ -115,11 +130,12 @@ class ObjectMetricSource implements MetricSourceInterface
      */
     private function buildBaseQuery(array $source): array
     {
-        $schemaId = $this->schemaMapper->find($source['schema'], null, false, false)->getId();
+        $schemaId = $this->schemaMapper->find($source['schema'], _rbac: false, _multitenancy: false)->getId();
 
         $self = ['schema' => $schemaId];
         if (isset($source['register']) === true && $source['register'] !== '') {
-            $self['register'] = $this->registerMapper->find($source['register'], null, false, false)->getId();
+            $registerId       = $this->registerMapper->find($source['register'], _rbac: false, _multitenancy: false)->getId();
+            $self['register'] = $registerId;
         }
 
         $query = ['@self' => $self];
@@ -159,8 +175,8 @@ class ObjectMetricSource implements MetricSourceInterface
             case 'lte':
             case 'gt':
             case 'gte':
-                $query[$field]              = ($query[$field] ?? []);
-                $query[$field][$operator]   = $resolved;
+                $query[$field]            = ($query[$field] ?? []);
+                $query[$field][$operator] = $resolved;
                 break;
             case 'like':
                 $query[$field] = ['like' => $resolved];
@@ -202,11 +218,12 @@ class ObjectMetricSource implements MetricSourceInterface
             return $this->objectService->countSearchObjects(query: $query, _rbac: false, _multitenancy: false);
         }
 
-        // objectSum: portable SUM via the search layer, summing the numeric JSON field.
+        // The objectSum kind sums a numeric JSON field portably via the search
+        // layer (no dialect-specific SUM SQL leaks into this engine).
         $objects = $this->objectService->searchObjects(query: $query, _rbac: false, _multitenancy: false);
         $sum     = 0.0;
         foreach ($objects as $object) {
-            $data  = is_array($object) === true ? $object : (method_exists($object, 'getObject') === true ? $object->getObject() : []);
+            $data  = $this->extractObjectData(object: $object);
             $value = $data[$field] ?? 0;
             if (is_numeric($value) === true) {
                 $sum += (float) $value;
@@ -215,6 +232,30 @@ class ObjectMetricSource implements MetricSourceInterface
 
         return $sum;
     }//end aggregate()
+
+    /**
+     * Extract the data array from a search result row, which may be a plain
+     * array or an ObjectEntity exposing getObject().
+     *
+     * @param mixed $object Search result row.
+     *
+     * @return array<string, mixed>
+     */
+    private function extractObjectData(mixed $object): array
+    {
+        if (is_array($object) === true) {
+            return $object;
+        }
+
+        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+            $data = $object->getObject();
+            if (is_array($data) === true) {
+                return $data;
+            }
+        }
+
+        return [];
+    }//end extractObjectData()
 
     /**
      * Collect grouped samples by faceting over the groupBy fields.
@@ -246,7 +287,11 @@ class ObjectMetricSource implements MetricSourceInterface
     {
         if ($remaining === []) {
             $value = $this->aggregate(query: $query, field: $field);
-            return $value === 0 || $value === 0.0 ? [] : [['labels' => $labels, 'value' => $value]];
+            if ($value === 0 || $value === 0.0) {
+                return [];
+            }
+
+            return [['labels' => $labels, 'value' => $value]];
         }
 
         $groupField = array_shift($remaining);
@@ -254,7 +299,7 @@ class ObjectMetricSource implements MetricSourceInterface
 
         $samples = [];
         foreach ($buckets as $bucketValue) {
-            $scoped              = $query;
+            $scoped = $query;
             $scoped[$groupField] = $bucketValue;
             $childLabels         = ($labels + [$groupField => (string) $bucketValue]);
             foreach ($this->expandGroups(query: $scoped, remaining: $remaining, labels: $childLabels, field: $field) as $sample) {

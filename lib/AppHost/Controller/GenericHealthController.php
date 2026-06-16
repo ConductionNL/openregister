@@ -41,6 +41,8 @@ use OCP\IRequest;
  * Public, declarative health endpoint for AppHost-adopting apps.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.3
  */
 class GenericHealthController extends Controller
 {

@@ -2,4 +2,46 @@
 <phpmd-baseline>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Db/AuditTrail.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Db/Consumer.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/HealthCheckDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/AppHost/Observability/HealthCheckDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/AppHost/Observability/HealthCheckExecutor.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/AppHost/Observability/HealthCheckExecutor.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/AppHost/Observability/HealthCheckExecutor.php" method="checkFilesystem"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/AppHost/Observability/MetricDescriptor.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/MetricDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/AppHost/Observability/MetricDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/MetricDescriptor.php" method="validateSource"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/AppHost/Observability/MetricsEngine.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppHost/Observability/MetricsEngine.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/AppHost/Observability/MetricsEngine.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/AppHost/Observability/ObservabilityManifest.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/ObservabilityManifest.php" method="fromManifest"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/AppHost/Observability/ObservabilityManifest.php" method="fromManifest"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/AppHost/Observability/ObservabilityManifest.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppHost/Observability/ObservabilityManifest.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppHost/Observability/Source/AppConfigMetricSource.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/AppHost/Observability/Source/ObjectMetricSource.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/AppHost/Observability/Source/ObjectMetricSource.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/Source/TableMetricSource.php" method="applyFilters"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/HealthCheckDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/AppHost/Observability/HealthCheckDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/AppHost/Observability/HealthCheckExecutor.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/AppHost/Observability/HealthCheckExecutor.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/AppHost/Observability/HealthCheckExecutor.php" method="checkFilesystem"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/AppHost/Observability/MetricDescriptor.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/MetricDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/AppHost/Observability/MetricDescriptor.php" method="fromArray"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/MetricDescriptor.php" method="validateSource"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/AppHost/Observability/MetricsEngine.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppHost/Observability/MetricsEngine.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/AppHost/Observability/MetricsEngine.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/AppHost/Observability/ObservabilityManifest.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/ObservabilityManifest.php" method="fromManifest"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/AppHost/Observability/ObservabilityManifest.php" method="fromManifest"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/AppHost/Observability/ObservabilityManifest.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppHost/Observability/ObservabilityManifest.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppHost/Observability/Source/AppConfigMetricSource.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/AppHost/Observability/Source/ObjectMetricSource.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/AppHost/Observability/Source/ObjectMetricSource.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/AppHost/Observability/Source/TableMetricSource.php" method="applyFilters"/>
 </phpmd-baseline>

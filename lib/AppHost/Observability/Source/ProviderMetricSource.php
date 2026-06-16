@@ -37,7 +37,9 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * provider escape-hatch source via container-alias discovery.
+ * Provider escape-hatch source via container-alias discovery.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.5
  */
 class ProviderMetricSource implements MetricSourceInterface
 {
@@ -57,6 +59,8 @@ class ProviderMetricSource implements MetricSourceInterface
      * {@inheritDoc}
      *
      * @return string
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.5
      */
     public function kind(): string
     {
@@ -70,6 +74,8 @@ class ProviderMetricSource implements MetricSourceInterface
      * @param MetricDescriptor $descriptor The metric descriptor (no params).
      *
      * @return MetricSample[]
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.5
      */
     public function collect(string $appId, MetricDescriptor $descriptor): array
     {

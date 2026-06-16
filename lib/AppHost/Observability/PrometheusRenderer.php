@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\AppHost\Observability;
 
 /**
  * Renders metric samples to Prometheus text exposition format 0.0.4.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
  */
 class PrometheusRenderer
 {
@@ -44,6 +46,8 @@ class PrometheusRenderer
      * @param MetricSample[] $samples Metric families.
      *
      * @return string Prometheus text exposition.
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
      */
     public function render(string $appId, array $samples): string
     {
@@ -51,18 +55,18 @@ class PrometheusRenderer
         $lines  = [];
 
         foreach ($samples as $sample) {
-            if (($sample instanceof MetricSample) === false) {
-                continue;
+            $metricName = $prefix.'_'.$this->sanitizeMetricName(name: $sample->name);
+            $metricType = 'gauge';
+            if ($sample->type === 'counter') {
+                $metricType = 'counter';
             }
 
-            $metricName = $prefix.'_'.$this->sanitizeMetricName(name: $sample->name);
-
             $lines[] = '# HELP '.$metricName.' '.$this->escapeHelp(text: $sample->help);
-            $lines[] = '# TYPE '.$metricName.' '.($sample->type === 'counter' ? 'counter' : 'gauge');
+            $lines[] = '# TYPE '.$metricName.' '.$metricType;
 
             foreach ($sample->samples as $point) {
-                $labels = $point['labels'] ?? [];
-                $value  = $point['value'] ?? 0;
+                $labels  = $point['labels'];
+                $value   = $point['value'];
                 $lines[] = $metricName.$this->renderLabels(labels: $labels).' '.$this->renderValue(value: $value);
             }
 

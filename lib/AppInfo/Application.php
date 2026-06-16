@@ -2191,7 +2191,6 @@ class Application extends App implements IBootstrap
                     renderer: $container->get(\OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class),
                     manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
-                    appManager: $container->get('OCP\App\IAppManager'),
                     config: $container->get('OCP\IConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );

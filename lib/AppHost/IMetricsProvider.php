@@ -44,6 +44,8 @@ interface IMetricsProvider
      * metrics, so providers never emit raw exposition text themselves.
      *
      * @return MetricSample[] The provider's samples.
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.5
      */
     public function metrics(): array;
 }//end interface

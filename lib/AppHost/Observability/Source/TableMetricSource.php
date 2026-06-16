@@ -39,7 +39,9 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * tableCount source via QueryBuilder (aggregate-only, allowlisted table).
+ * Table-count source via QueryBuilder (aggregate-only, allowlisted table).
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.3
  */
 class TableMetricSource implements MetricSourceInterface
 {
@@ -59,6 +61,8 @@ class TableMetricSource implements MetricSourceInterface
      * {@inheritDoc}
      *
      * @return string
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.3
      */
     public function kind(): string
     {
@@ -72,6 +76,8 @@ class TableMetricSource implements MetricSourceInterface
      * @param MetricDescriptor $descriptor The metric descriptor.
      *
      * @return MetricSample[]
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.3
      */
     public function collect(string $appId, MetricDescriptor $descriptor): array
     {
@@ -83,7 +89,8 @@ class TableMetricSource implements MetricSourceInterface
         // QueryBuilder. The descriptor validator already rejects others; this is
         // defence in depth so the source can never be misused in isolation.
         if (preg_match(MetricDescriptor::TABLE_REGEX, $table) !== 1) {
-            throw new ObservabilityValidationException(sprintf('tableCount table "%s" is not allowlisted.', $table));
+            $errorMessage = sprintf('tableCount table "%s" is not allowlisted.', $table);
+            throw new ObservabilityValidationException(message: $errorMessage);
         }
 
         // Graceful zero-emission when the table does not exist (drained-table parity).
@@ -97,8 +104,9 @@ class TableMetricSource implements MetricSourceInterface
 
         try {
             if ($groupBy === []) {
-                $value = $this->countAll(table: $table, filter: $source['filter'] ?? []);
-                return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: [['labels' => [], 'value' => $value]])];
+                $value   = $this->countAll(table: $table, filter: $source['filter'] ?? []);
+                $samples = [['labels' => [], 'value' => $value]];
+                return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
             }
 
             $samples = $this->countGrouped(
@@ -172,15 +180,24 @@ class TableMetricSource implements MetricSourceInterface
         foreach ($result->fetchAll() as $row) {
             $labels = [];
             foreach ($groupBy as $column) {
-                $column   = (string) $column;
-                $raw      = $row[$column] ?? null;
-                $value    = ($raw === null || $raw === '') ? ($labelDefaults[$column] ?? '') : $raw;
-                $labelKey = isset($labelMap[$column]) === true ? (string) $labelMap[$column] : $column;
+                $column = (string) $column;
+                $raw    = $row[$column] ?? null;
+
+                $value = $raw;
+                if ($raw === null || $raw === '') {
+                    $value = ($labelDefaults[$column] ?? '');
+                }
+
+                $labelKey = $column;
+                if (isset($labelMap[$column]) === true) {
+                    $labelKey = (string) $labelMap[$column];
+                }
+
                 $labels[$labelKey] = (string) $value;
             }
 
             $samples[] = ['labels' => $labels, 'value' => (int) ($row['cnt'] ?? 0)];
-        }
+        }//end foreach
 
         $result->closeCursor();
         return $samples;
@@ -222,9 +239,9 @@ class TableMetricSource implements MetricSourceInterface
                     case 'like':
                         $qb->andWhere($qb->expr()->like((string) $column, $param));
                         break;
-                }
-            }
-        }
+                }//end switch
+            }//end foreach
+        }//end foreach
     }//end applyFilters()
 
     /**
@@ -239,7 +256,8 @@ class TableMetricSource implements MetricSourceInterface
     private function assertColumn(string $column): void
     {
         if (preg_match('/^[a-zA-Z0-9_]+$/', $column) !== 1) {
-            throw new ObservabilityValidationException(sprintf('Unsafe column identifier "%s".', $column));
+            $errorMessage = sprintf('Unsafe column identifier "%s".', $column);
+            throw new ObservabilityValidationException(message: $errorMessage);
         }
     }//end assertColumn()
 }//end class

@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\AppHost\Observability;
 
 /**
  * Validated observability configuration for a single host app.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.2
  */
 final class ObservabilityManifest
 {
@@ -51,12 +53,12 @@ final class ObservabilityManifest
     /**
      * Constructor.
      *
-     * @param string                   $appId            Calling app id.
-     * @param HealthCheckDescriptor[]   $checks          Parsed health checks.
-     * @param MetricDescriptor[]        $metrics         Parsed metrics.
-     * @param string                   $statusCodePolicy adr006|always200.
-     * @param bool                     $cors             Emit CORS headers when true.
-     * @param string[]                 $diagnostics     Validation diagnostics (block fell back to defaults).
+     * @param string                  $appId            Calling app id.
+     * @param HealthCheckDescriptor[] $checks           Parsed health checks.
+     * @param MetricDescriptor[]      $metrics          Parsed metrics.
+     * @param string                  $statusCodePolicy adr006|always200.
+     * @param bool                    $cors             Emit CORS headers when true.
+     * @param string[]                $diagnostics      Validation diagnostics (block fell back to defaults).
      */
     public function __construct(
         public readonly string $appId,
@@ -79,6 +81,8 @@ final class ObservabilityManifest
      * @param array<string, mixed> $manifest Decoded manifest.json.
      *
      * @return self
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.2
      */
     public static function fromManifest(string $appId, array $manifest): self
     {
@@ -91,9 +95,9 @@ final class ObservabilityManifest
 
         // Health section.
         $statusCodePolicy = self::POLICY_ADR006;
-        $cors             = false;
-        $checks           = [];
-        $healthValid      = true;
+        $cors        = false;
+        $checks      = [];
+        $healthValid = true;
 
         $health = $block['health'] ?? null;
         if (is_array($health) === true) {
@@ -101,7 +105,12 @@ final class ObservabilityManifest
             if (is_string($policy) === true && in_array($policy, self::POLICIES, true) === true) {
                 $statusCodePolicy = $policy;
             } else {
-                $diagnostics[] = sprintf('Invalid statusCodePolicy "%s"; defaulting to adr006.', is_scalar($policy) === true ? (string) $policy : gettype($policy));
+                $shownPolicy = gettype($policy);
+                if (is_scalar($policy) === true) {
+                    $shownPolicy = (string) $policy;
+                }
+
+                $diagnostics[] = sprintf('Invalid statusCodePolicy "%s"; defaulting to adr006.', $shownPolicy);
             }
 
             $cors = ($health['cors'] ?? false) === true;
@@ -126,7 +135,7 @@ final class ObservabilityManifest
                 $diagnostics[] = 'observability.health.checks must be an array.';
                 $healthValid   = false;
             }
-        }
+        }//end if
 
         // If the health block was malformed enough to lose checks, fall back to default health.
         if ($healthValid === false || $checks === []) {
@@ -173,6 +182,8 @@ final class ObservabilityManifest
      * @param array<string, mixed> $manifest Decoded manifest.json.
      *
      * @return self
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.2
      */
     public static function defaults(string $appId, array $manifest): self
     {

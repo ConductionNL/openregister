@@ -32,7 +32,9 @@ use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
 use OCP\IAppConfig;
 
 /**
- * appConfig integer-value source.
+ * AppConfig integer-value source.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.4
  */
 class AppConfigMetricSource implements MetricSourceInterface
 {
@@ -50,6 +52,8 @@ class AppConfigMetricSource implements MetricSourceInterface
      * {@inheritDoc}
      *
      * @return string
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.4
      */
     public function kind(): string
     {
@@ -63,6 +67,8 @@ class AppConfigMetricSource implements MetricSourceInterface
      * @param MetricDescriptor $descriptor The metric descriptor.
      *
      * @return MetricSample[]
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.4
      */
     public function collect(string $appId, MetricDescriptor $descriptor): array
     {

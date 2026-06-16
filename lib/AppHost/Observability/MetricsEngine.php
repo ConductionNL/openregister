@@ -32,7 +32,6 @@ use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
-use OCP\App\IAppManager;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -40,6 +39,8 @@ use Throwable;
 
 /**
  * Renders an app's declarative + implicit metrics to Prometheus text.
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
  */
 class MetricsEngine
 {
@@ -53,7 +54,6 @@ class MetricsEngine
      * @param PrometheusRenderer    $renderer        Text renderer.
      * @param ManifestLoader        $manifestLoader  App version resolution.
      * @param ICacheFactory         $cacheFactory    Distributed cache (cacheTtl).
-     * @param IAppManager           $appManager      App version (implicit info).
      * @param IConfig               $config          NC version (implicit info).
      * @param LoggerInterface       $logger          PSR logger.
      */
@@ -65,7 +65,6 @@ class MetricsEngine
         private readonly PrometheusRenderer $renderer,
         private readonly ManifestLoader $manifestLoader,
         private readonly ICacheFactory $cacheFactory,
-        private readonly IAppManager $appManager,
         private readonly IConfig $config,
         private readonly LoggerInterface $logger
     ) {
@@ -77,6 +76,8 @@ class MetricsEngine
      * @param ObservabilityManifest $manifest The app's observability config.
      *
      * @return string Prometheus text 0.0.4.
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
      */
     public function render(ObservabilityManifest $manifest): string
     {
@@ -146,8 +147,15 @@ class MetricsEngine
                     return [];
             }
         } catch (Throwable $e) {
+            $logMessage = sprintf(
+                '[AppHost\\Metrics] metric "%s" (kind %s, app %s) failed: %s',
+                $descriptor->name,
+                $descriptor->kind,
+                $appId,
+                $e->getMessage()
+            );
             $this->logger->warning(
-                message: sprintf('[AppHost\\Metrics] metric "%s" (kind %s, app %s) failed: %s', $descriptor->name, $descriptor->kind, $appId, $e->getMessage()),
+                message: $logMessage,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return [];
@@ -163,7 +171,7 @@ class MetricsEngine
      */
     private function implicitMetrics(string $appId): array
     {
-        $version = $this->manifestLoader->appVersion(appId: $appId);
+        $version   = $this->manifestLoader->appVersion(appId: $appId);
         $ncVersion = $this->config->getSystemValueString('version', 'unknown');
 
         $info = new MetricSample(
@@ -229,11 +237,16 @@ class MetricsEngine
                 return null;
             }
 
+            $rowSamples = [];
+            if (is_array($row['samples']) === true) {
+                $rowSamples = $row['samples'];
+            }
+
             $samples[] = new MetricSample(
                 name: (string) $row['name'],
                 type: (string) $row['type'],
                 help: (string) ($row['help'] ?? ''),
-                samples: is_array($row['samples']) === true ? $row['samples'] : []
+                samples: $rowSamples
             );
         }
 

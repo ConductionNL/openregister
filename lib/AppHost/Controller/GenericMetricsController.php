@@ -47,6 +47,8 @@ use OCP\IRequest;
  * callers get the NC login redirect / 401, never metric data.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.8
  */
 class GenericMetricsController extends Controller
 {

@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\AppHost\Observability;
  * ADR-040 and enforced here at manifest-validation time.
  *
  * @psalm-immutable
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
  */
 final class MetricDescriptor
 {
@@ -97,6 +99,8 @@ final class MetricDescriptor
      * @return self
      *
      * @throws ObservabilityValidationException When the entry is malformed.
+     *
+     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
      */
     public static function fromArray(array $raw): self
     {
@@ -107,8 +111,9 @@ final class MetricDescriptor
 
         $type = $raw['type'] ?? 'gauge';
         if (is_string($type) === false || in_array($type, self::METRIC_TYPES, true) === false) {
+            $allowed = implode(', ', self::METRIC_TYPES);
             throw new ObservabilityValidationException(
-                sprintf('Invalid metric type "%s" (allowed: %s).', is_scalar($type) === true ? (string) $type : gettype($type), implode(', ', self::METRIC_TYPES))
+                sprintf('Invalid metric type "%s" (allowed: %s).', self::describe(value: $type), $allowed)
             );
         }
 
@@ -119,8 +124,9 @@ final class MetricDescriptor
 
         $kind = $source['kind'] ?? null;
         if (is_string($kind) === false || in_array($kind, self::KINDS, true) === false) {
+            $allowed = implode(', ', self::KINDS);
             throw new ObservabilityValidationException(
-                sprintf('Unknown metric source kind "%s" (allowed: %s).', is_scalar($kind) === true ? (string) $kind : gettype($kind), implode(', ', self::KINDS))
+                sprintf('Unknown metric source kind "%s" (allowed: %s).', self::describe(value: $kind), $allowed)
             );
         }
 
@@ -170,8 +176,12 @@ final class MetricDescriptor
                     throw new ObservabilityValidationException(sprintf('Metric "%s" "register" must be a slug string.', $name));
                 }
 
-                if ($kind === 'objectSum' && (isset($source['field']) === false || is_string($source['field']) === false || $source['field'] === '')) {
-                    throw new ObservabilityValidationException(sprintf('Metric "%s" objectSum source requires a numeric "field".', $name));
+                if ($kind === 'objectSum') {
+                    $field        = $source['field'] ?? null;
+                    $fieldInvalid = (is_string($field) === false || $field === '');
+                    if ($fieldInvalid === true) {
+                        throw new ObservabilityValidationException(sprintf('Metric "%s" objectSum source requires a numeric "field".', $name));
+                    }
                 }
 
                 self::validateGroupBy(name: $name, source: $source);
@@ -181,8 +191,9 @@ final class MetricDescriptor
             case 'tableCount':
                 $table = $source['table'] ?? null;
                 if (is_string($table) === false || preg_match(self::TABLE_REGEX, $table) !== 1) {
+                    $shown = self::describe(value: $table);
                     throw new ObservabilityValidationException(
-                        sprintf('Metric "%s" tableCount "table" must match %s (got "%s").', $name, self::TABLE_REGEX, is_scalar($table) === true ? (string) $table : gettype($table))
+                        sprintf('Metric "%s" tableCount "table" must match %s (got "%s").', $name, self::TABLE_REGEX, $shown)
                     );
                 }
 
@@ -226,7 +237,8 @@ final class MetricDescriptor
 
         foreach ($source['groupBy'] as $field) {
             if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
-                throw new ObservabilityValidationException(sprintf('Metric "%s" groupBy field "%s" is invalid.', $name, is_scalar($field) === true ? (string) $field : gettype($field)));
+                $shown = self::describe(value: $field);
+                throw new ObservabilityValidationException(sprintf('Metric "%s" groupBy field "%s" is invalid.', $name, $shown));
             }
         }
     }//end validateGroupBy()
@@ -254,7 +266,8 @@ final class MetricDescriptor
 
         foreach ($source['filter'] as $field => $ops) {
             if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
-                throw new ObservabilityValidationException(sprintf('Metric "%s" filter field "%s" is invalid.', $name, is_scalar($field) === true ? (string) $field : gettype($field)));
+                $shown = self::describe(value: $field);
+                throw new ObservabilityValidationException(sprintf('Metric "%s" filter field "%s" is invalid.', $name, $shown));
             }
 
             if (is_array($ops) === false) {
@@ -263,8 +276,10 @@ final class MetricDescriptor
 
             foreach (array_keys($ops) as $operator) {
                 if (in_array($operator, self::FILTER_OPERATORS, true) === false) {
+                    $shown   = self::describe(value: $operator);
+                    $allowed = implode(', ', self::FILTER_OPERATORS);
                     throw new ObservabilityValidationException(
-                        sprintf('Metric "%s" filter operator "%s" is not allowed (allowed: %s).', $name, is_scalar($operator) === true ? (string) $operator : gettype($operator), implode(', ', self::FILTER_OPERATORS))
+                        sprintf('Metric "%s" filter operator "%s" is not allowed (allowed: %s).', $name, $shown, $allowed)
                     );
                 }
             }
@@ -294,7 +309,8 @@ final class MetricDescriptor
 
         foreach ($source[$key] as $column => $value) {
             if (is_string($column) === false || preg_match('/^[a-zA-Z0-9_]+$/', $column) !== 1) {
-                throw new ObservabilityValidationException(sprintf('Metric "%s" %s column "%s" is invalid.', $name, $key, is_scalar($column) === true ? (string) $column : gettype($column)));
+                $shown = self::describe(value: $column);
+                throw new ObservabilityValidationException(sprintf('Metric "%s" %s column "%s" is invalid.', $name, $key, $shown));
             }
 
             if (is_scalar($value) === false) {
@@ -302,4 +318,21 @@ final class MetricDescriptor
             }
         }
     }//end validateColumnMap()
+
+    /**
+     * Render a raw (possibly non-scalar) value as a short string for an
+     * error message, without leaking object internals.
+     *
+     * @param mixed $value Raw value.
+     *
+     * @return string
+     */
+    private static function describe(mixed $value): string
+    {
+        if (is_scalar($value) === true) {
+            return (string) $value;
+        }
+
+        return gettype($value);
+    }//end describe()
 }//end class

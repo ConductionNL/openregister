@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\AppHost\Observability;
  * Health execution outcome.
  *
  * @psalm-immutable
+ *
+ * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.2
  */
 final class HealthResult
 {

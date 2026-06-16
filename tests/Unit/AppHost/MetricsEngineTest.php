@@ -27,7 +27,6 @@ use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
-use OCP\App\IAppManager;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
@@ -71,7 +70,6 @@ class MetricsEngineTest extends TestCase
             new PrometheusRenderer(),
             $this->manifestLoader,
             $this->cacheFactory,
-            $this->createMock(IAppManager::class),
             $config,
             $this->createMock(LoggerInterface::class)
         );
