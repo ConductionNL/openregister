@@ -19,7 +19,11 @@
 	'use strict'
 
 	var SW_URL = OC.filePath('openregister', 'js', 'openregister-push-sw.js')
-	var SW_SCOPE = OC.generateUrl('/apps/openregister/js/')
+	// A Service Worker can only claim a scope at or below its own served path.
+	// The SW is served from .../custom_apps/openregister/js/, so derive the scope
+	// from SW_URL's own directory rather than the /apps/ route (a different path,
+	// which makes register() throw a SecurityError → subscription never created).
+	var SW_SCOPE = SW_URL.replace(/[^/]*$/, '')
 
 	function isSupported() {
 		return (typeof navigator !== 'undefined'
