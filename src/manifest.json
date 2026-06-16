@@ -335,5 +335,101 @@
 			"section": "footer",
 			"order": 2
 		}
-	]
+	],
+	"observability": {
+		"_note": "OpenRegister dogfoods its own AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index in appinfo/routes.php, so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract; documented intentional improvements are the added health `app` field, the implicit `nextcloud_version` info label, and the objects_total register/schema labels now carrying numeric ids (engine tableCount groupBy) rather than titles.",
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "database", "type": "database", "severity": "critical" },
+				{ "id": "filesystem", "type": "filesystem", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "registers_total",
+				"type": "gauge",
+				"help": "Total number of registers",
+				"source": { "kind": "tableCount", "table": "openregister_registers" }
+			},
+			{
+				"name": "schemas_total",
+				"type": "gauge",
+				"help": "Total number of schemas",
+				"source": { "kind": "tableCount", "table": "openregister_schemas" }
+			},
+			{
+				"name": "objects_total",
+				"type": "gauge",
+				"help": "Total objects by register and schema",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_objects",
+					"groupBy": ["register", "schema"]
+				}
+			},
+			{
+				"name": "search_requests_total",
+				"type": "counter",
+				"help": "Total search requests",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_metrics",
+					"filter": { "metric_type": { "like": "search_%" } }
+				}
+			},
+			{
+				"name": "objects_created_total",
+				"type": "counter",
+				"help": "Total object create operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "create" } }
+				}
+			},
+			{
+				"name": "objects_updated_total",
+				"type": "counter",
+				"help": "Total object update operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "update" } }
+				}
+			},
+			{
+				"name": "objects_deleted_total",
+				"type": "counter",
+				"help": "Total object delete operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "delete" } }
+				}
+			},
+			{
+				"name": "objects_read_total",
+				"type": "counter",
+				"help": "Total object read operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "read" } }
+				}
+			},
+			{
+				"name": "webhook_deliveries_total",
+				"type": "counter",
+				"help": "Total webhook delivery attempts grouped by status",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_webhook_logs",
+					"groupBy": ["success"],
+					"labelMap": { "success": "status" },
+					"labelDefaults": { "success": "failure" }
+				}
+			}
+		]
+	}
 }
