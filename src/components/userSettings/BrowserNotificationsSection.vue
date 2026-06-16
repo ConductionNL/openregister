@@ -114,13 +114,17 @@ export default {
 		 * @return {void}
 		 */
 		refreshState() {
-			const client = this.client()
-			if (client === null) {
-				this.supported = false
-				return
-			}
-			this.supported = client.isSupported()
-			this.permission = client.permission()
+			// Feature-detect directly rather than via the (deferred) push-client
+			// script: the client may not have executed yet when this component
+			// mounts, and depending on it would wrongly report "not supported".
+			// The client global is only needed for the enable/disable actions,
+			// by which point the deferred script has long since run.
+			this.supported = (typeof navigator !== 'undefined'
+				&& 'serviceWorker' in navigator
+				&& typeof window !== 'undefined'
+				&& 'PushManager' in window
+				&& 'Notification' in window)
+			this.permission = ('Notification' in window) ? Notification.permission : 'unsupported'
 			// A granted permission does not guarantee an active subscription, but
 			// it is the only non-async signal we have without a network call; the
 			// authoritative enable/disable result comes from the toggle handlers.
@@ -138,6 +142,7 @@ export default {
 		async onToggle(checked) {
 			const client = this.client()
 			if (client === null) {
+				this.error = this.t('openregister', 'Browser notification client is still loading — please try again in a moment.')
 				return
 			}
 			this.busy = true

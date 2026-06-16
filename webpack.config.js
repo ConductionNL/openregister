@@ -204,4 +204,11 @@ webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
 // preventing the nextcloud-vue submodule's nested deps (Vue 3) from leaking in.
 webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
 
+// The base config sets `output.clean: true`, which wipes js/ on every build.
+// The Web Push Service Worker + opt-in client (openregister-push-client.js /
+// openregister-push-sw.js) are hand-written static assets served as-is — NOT
+// webpack entries — so keep them through the clean, otherwise the build deletes
+// them and the toggle reports "browser does not support web push".
+webpackConfig.output.clean = { keep: (asset) => asset.includes('openregister-push-') }
+
 module.exports = webpackConfig
