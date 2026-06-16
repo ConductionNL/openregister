@@ -22,10 +22,20 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\AppHost\Controller\GenericDashboardController;
+use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
+use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\AppHost\Controller\GenericSettingsController;
+use OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener;
+use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
+use OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
+use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
+use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
@@ -65,6 +75,13 @@ class BootstrapFactoryChainTest extends TestCase
             'OCP\\AppFramework\\Services\\IInitialState'     => $this->createMock(IInitialState::class),
             'Psr\\Log\\LoggerInterface'                      => $this->createMock(LoggerInterface::class),
         ];
+
+        // The observability factories only ask the container for these three
+        // already-built engine services (never their dependency trees), so a
+        // mock instance of each is enough to resolve health/metrics aliases.
+        $map[ManifestLoader::class]      = $this->createMock(ManifestLoader::class);
+        $map[HealthCheckExecutor::class] = $this->createMock(HealthCheckExecutor::class);
+        $map[MetricsEngine::class]       = $this->createMock(MetricsEngine::class);
 
         $container = $this->createMock(ContainerInterface::class);
         $container->method('get')->willReturnCallback(
@@ -139,4 +156,127 @@ class BootstrapFactoryChainTest extends TestCase
         $instance = $context->factories['OCA\\PetStore\\Service\\SettingsService']($this->resolvingContainer());
         $this->assertInstanceOf(AppHostSettingsService::class, $instance);
     }//end testSettingsServiceFactoryResolves()
+
+    /**
+     * The regression guard for the missing-generic defect: register a leaf with
+     * EVERY standard option enabled (observability + deep links), then resolve
+     * every aliased factory through a container and assert each produces a real
+     * generic instance. A dangling alias (e.g. a Bootstrap constant pointing at
+     * a class that was never shipped — as `GenericPreferencesController` was)
+     * makes the corresponding factory throw on resolution, failing this test.
+     *
+     * @return void
+     */
+    public function testAllFactoriesResolveToRealClassesWithFullOptions(): void
+    {
+        $context = new RecordingRegistrationContext();
+        Bootstrap::register($context, 'petstore', [
+            'namespace'    => 'OCA\\PetStore',
+            'observability' => true,
+            'deepLinks'     => true,
+        ]);
+
+        $container = $this->resolvingContainer();
+
+        // Leaf alias name => expected generic class produced by its factory.
+        $expected = [
+            'OCA\\PetStore\\Controller\\DashboardController'             => GenericDashboardController::class,
+            'OCA\\PetStore\\Controller\\PreferencesController'           => GenericPreferencesController::class,
+            'OCA\\PetStore\\Controller\\SettingsController'              => GenericSettingsController::class,
+            'OCA\\PetStore\\Controller\\HealthController'                => GenericHealthController::class,
+            'OCA\\PetStore\\Controller\\MetricsController'               => GenericMetricsController::class,
+            'OCA\\PetStore\\Service\\SettingsService'                    => AppHostSettingsService::class,
+            'OCA\\PetStore\\Service\\ActionAuthService'                  => GenericActionAuthService::class,
+            'OCA\\PetStore\\Repair\\InitializeSettings'                  => GenericInitializeSettings::class,
+            'OCA\\PetStore\\Repair\\InitializeActions'                   => GenericInitializeActions::class,
+            'OCA\\PetStore\\Settings\\AdminSettings'                     => GenericAdminSettings::class,
+            'OCA\\PetStore\\Sections\\SettingsSection'                   => GenericSettingsSection::class,
+            'OCA\\PetStore\\Listener\\DeepLinkRegistrationListener'      => GenericDeepLinkRegistrationListener::class,
+        ];
+
+        foreach ($expected as $alias => $class) {
+            $this->assertArrayHasKey(
+                $alias,
+                $context->factories,
+                'Bootstrap::register did not register a factory for '.$alias
+            );
+
+            $instance = $context->factories[$alias]($container);
+            $this->assertInstanceOf(
+                $class,
+                $instance,
+                $alias.' must resolve to a real '.$class.' — a dangling/missing generic would throw here'
+            );
+        }
+    }//end testAllFactoriesResolveToRealClassesWithFullOptions()
+
+    /**
+     * The resolved GenericPreferencesController behaves like the bespoke leaf
+     * PreferencesController: a per-user write then read round-trips the value,
+     * scoped to the leaf appId, and an anonymous request is rejected.
+     *
+     * @return void
+     */
+    public function testPreferencesControllerRoundTripsPerUserValue(): void
+    {
+        $context = new RecordingRegistrationContext();
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+
+        // Build a controller against a real (in-memory) config + a session user.
+        $user = $this->createMock(\OCP\IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($user);
+
+        $store  = [];
+        $config = $this->createMock(IConfig::class);
+        $config->method('setUserValue')->willReturnCallback(
+            function ($uid, $app, $key, $value) use (&$store): void {
+                $store[$uid.'|'.$app.'|'.$key] = $value;
+            }
+        );
+        $config->method('getUserValue')->willReturnCallback(
+            function ($uid, $app, $key, $default = '') use (&$store) {
+                return ($store[$uid.'|'.$app.'|'.$key] ?? $default);
+            }
+        );
+        $config->method('deleteUserValue')->willReturnCallback(
+            function ($uid, $app, $key) use (&$store): void {
+                unset($store[$uid.'|'.$app.'|'.$key]);
+            }
+        );
+
+        $controller = new GenericPreferencesController(
+            'petstore',
+            $this->createMock(IRequest::class),
+            $config,
+            $userSession
+        );
+
+        // Write then read round-trips the value.
+        $set = $controller->setPreference('support-dialog-seen', '1');
+        $this->assertSame(['value' => '1'], $set->getData());
+
+        $get = $controller->getPreference('support-dialog-seen');
+        $this->assertSame(['value' => '1'], $get->getData());
+
+        // It is stored under the LEAF app namespace, not OpenRegister's.
+        $this->assertArrayHasKey('alice|petstore|pref_support-dialog-seen', $store);
+
+        // Empty value clears it.
+        $clear = $controller->setPreference('support-dialog-seen', '');
+        $this->assertSame(['value' => null], $clear->getData());
+        $this->assertSame(['value' => null], $controller->getPreference('support-dialog-seen')->getData());
+
+        // Anonymous request is rejected (no IDOR / no cross-user reach).
+        $anon = $this->createMock(IUserSession::class);
+        $anon->method('getUser')->willReturn(null);
+        $anonController = new GenericPreferencesController(
+            'petstore',
+            $this->createMock(IRequest::class),
+            $config,
+            $anon
+        );
+        $this->assertSame(401, $anonController->getPreference('x')->getStatus());
+    }//end testPreferencesControllerRoundTripsPerUserValue()
 }//end class
