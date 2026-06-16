@@ -116,7 +116,7 @@ class PushSubscriptionMapper extends QBMapper
             $existing->setP256dh($p256dh);
             $existing->setAuth($auth);
             $existing->setUserAgent($userAgent);
-            return $this->update($existing);
+            return $this->update(entity: $existing);
         }
 
         $entity = new PushSubscription();
@@ -127,7 +127,7 @@ class PushSubscriptionMapper extends QBMapper
         $entity->setUserAgent($userAgent);
         $entity->setCreatedAt(new DateTime());
 
-        return $this->insert($entity);
+        return $this->insert(entity: $entity);
     }//end store()
 
     /**

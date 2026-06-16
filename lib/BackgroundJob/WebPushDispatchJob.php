@@ -48,7 +48,6 @@ use Psr\Log\LoggerInterface;
  */
 class WebPushDispatchJob extends QueuedJob
 {
-
     /**
      * Constructor.
      *
@@ -124,9 +123,9 @@ class WebPushDispatchJob extends QueuedJob
         $body      = (string) ($argument['body'] ?? '');
         $tag       = (string) ($argument['tag'] ?? '');
 
-        $actions    = [];
+        $actions     = [];
         $topLevelUrl = '';
-        $rawActions = ($argument['actions'] ?? []);
+        $rawActions  = ($argument['actions'] ?? []);
         if (is_array($rawActions) === true) {
             foreach ($rawActions as $idx => $action) {
                 if (is_array($action) === false) {
@@ -149,7 +148,13 @@ class WebPushDispatchJob extends QueuedJob
 
                 $label = '';
                 if (is_array($action['label'] ?? null) === true) {
-                    $label = (string) ($action['label']['en'] ?? (reset($action['label']) !== false ? reset($action['label']) : ''));
+                    $fallbackLabel = '';
+                    $firstLabel    = reset($action['label']);
+                    if ($firstLabel !== false) {
+                        $fallbackLabel = $firstLabel;
+                    }
+
+                    $label = (string) ($action['label']['en'] ?? $fallbackLabel);
                 }
 
                 $actions[] = [

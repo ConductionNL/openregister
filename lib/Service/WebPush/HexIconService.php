@@ -58,7 +58,7 @@ class HexIconService
     private const COBALT = '#21468B';
 
     /**
-     * appdata folder name for cached icons.
+     * Appdata folder name for cached icons.
      *
      * @var string
      */
@@ -127,8 +127,13 @@ class HexIconService
      */
     private function getOrRender(string $appId, bool $badge): array
     {
-        $safeApp  = preg_replace('/[^a-z0-9_-]/', '', strtolower($appId)) ?? 'openregister';
-        $cacheKey = $safeApp.($badge === true ? '-badge.png' : '-icon.png');
+        $safeApp = preg_replace('/[^a-z0-9_-]/', '', strtolower($appId)) ?? 'openregister';
+        $suffix  = '-icon.png';
+        if ($badge === true) {
+            $suffix = '-badge.png';
+        }
+
+        $cacheKey = $safeApp.$suffix;
 
         $folder = $this->cacheFolder();
         if ($folder !== null && $folder->fileExists($cacheKey) === true) {

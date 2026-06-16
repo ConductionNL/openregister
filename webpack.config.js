@@ -175,6 +175,10 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
+	personalSettings: {
+		import: path.join(__dirname, 'src', 'personalSettings.js'),
+		filename: appId + '-personalSettings.js',
+	},
 	filesSidebar: {
 		import: path.join(__dirname, 'src', 'files-sidebar.js'),
 		filename: appId + '-filesSidebar.js',

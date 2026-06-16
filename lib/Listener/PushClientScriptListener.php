@@ -34,7 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -75,10 +74,6 @@ class PushClientScriptListener implements IEventListener
     public function handle(Event $event): void
     {
         if ($event instanceof BeforeTemplateRenderedEvent === false) {
-            return;
-        }
-
-        if ($event->getResponse() instanceof TemplateResponse === false) {
             return;
         }
 
