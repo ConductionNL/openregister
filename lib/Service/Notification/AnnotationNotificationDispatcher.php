@@ -74,6 +74,16 @@ use Psr\Log\LoggerInterface;
  */
 class AnnotationNotificationDispatcher
 {
+
+    /**
+     * Per-instance cache of resolved relation display names, keyed by UUID.
+     * Avoids repeat ObjectService lookups when the same relation is
+     * interpolated across a recipient fan-out.
+     *
+     * @var array<string, string|null>
+     */
+    private array $relationDisplayCache = [];
+
     /**
      * Constructor.
      *
@@ -2024,14 +2034,20 @@ class AnnotationNotificationDispatcher
     {
         return preg_replace_callback(
             '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-            static function (array $matches) use ($data, $context): string {
+            function (array $matches) use ($data, $context): string {
                 $key = $matches[1];
                 if (array_key_exists($key, $data) === true) {
                     if (is_scalar($data[$key]) === false) {
                         return '';
                     }
 
-                    return htmlspecialchars((string) $data[$key], ENT_QUOTES, 'UTF-8');
+                    // Relation fields hold a UUID reference; show the related
+                    // object's display name instead of the raw UUID so
+                    // "{{client}}" reads "Acme Gemeente BV", not a UUID string.
+                    $raw     = (string) $data[$key];
+                    $display = $this->resolveRelationDisplayName(value: $raw);
+
+                    return htmlspecialchars(($display ?? $raw), ENT_QUOTES, 'UTF-8');
                 }
 
                 if (array_key_exists($key, $context) === true) {
@@ -2047,6 +2063,58 @@ class AnnotationNotificationDispatcher
             $template
         ) ?? $template;
     }//end interpolate()
+
+    /**
+     * Resolve a relation-reference UUID to the related object's display name.
+     *
+     * Notification subjects/bodies interpolate `{{prop}}` from the object's
+     * data; a relation field holds a UUID, which reads poorly in a popup
+     * ("Incoming call from 3b9f…"). When the value is UUID-shaped, resolve the
+     * related object through OpenRegister (RBAC-scoped, mirroring the action
+     * deeplink resolver) and return its name. Returns null — so the caller
+     * keeps the raw value — for non-UUID values, an absent ObjectService, an
+     * unresolvable id, or a nameless object. Cached per dispatcher instance to
+     * avoid repeat lookups across a recipient fan-out.
+     *
+     * @param string $value The interpolated field value.
+     *
+     * @return string|null The related object's display name, or null to keep the raw value.
+     *
+     * @spec openspec/changes/openregister-notification-relation-names/specs/notificatie-engine/spec.md
+     */
+    private function resolveRelationDisplayName(string $value): ?string
+    {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) !== 1) {
+            return null;
+        }
+
+        if ($this->objectService === null) {
+            return null;
+        }
+
+        if (array_key_exists($value, $this->relationDisplayCache) === true) {
+            return $this->relationDisplayCache[$value];
+        }
+
+        $name = null;
+        try {
+            $related = $this->objectService->find(id: $value, _rbac: true);
+            if ($related !== null) {
+                $candidate = $related->getName();
+                if (is_string($candidate) === true && $candidate !== '') {
+                    $name = $candidate;
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug('[AnnotationNotificationDispatcher] relation display-name resolve failed: '.$e->getMessage());
+            $name = null;
+        }
+
+        $this->relationDisplayCache[$value] = $name;
+
+        return $name;
+
+    }//end resolveRelationDisplayName()
 
     /**
      * Map a trigger to the canonical INotification subject the Notifier
