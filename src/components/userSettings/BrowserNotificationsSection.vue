@@ -22,12 +22,9 @@
  @spec openspec/changes/openregister-web-push-engine/tasks.md#task-52
 -->
 <template>
-	<div class="user-settings-section" data-testid="browser-notifications-section">
-		<h3>{{ t('openregister', 'Browser notifications') }}</h3>
-		<p class="user-settings-section__hint">
-			{{ t('openregister', 'Receive OpenRegister notifications as native browser notifications, even when the tab is closed.') }}
-		</p>
-
+	<NcSettingsSection :name="t('openregister', 'Browser notifications')"
+		:description="t('openregister', 'Receive OpenRegister notifications as native browser notifications, even when the tab is closed.')"
+		data-testid="browser-notifications-section">
 		<NcNoteCard v-if="!supported" type="warning" data-testid="browser-notifications-unsupported">
 			{{ t('openregister', 'This browser does not support web push notifications.') }}
 		</NcNoteCard>
@@ -50,17 +47,18 @@
 				{{ error }}
 			</NcNoteCard>
 		</template>
-	</div>
+	</NcSettingsSection>
 </template>
 
 <script>
-import { NcCheckboxRadioSwitch, NcNoteCard } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcNoteCard, NcSettingsSection } from '@nextcloud/vue'
 
 export default {
 	name: 'BrowserNotificationsSection',
 	components: {
 		NcCheckboxRadioSwitch,
 		NcNoteCard,
+		NcSettingsSection,
 	},
 	data() {
 		return {
