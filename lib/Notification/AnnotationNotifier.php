@@ -137,6 +137,16 @@ class AnnotationNotifier implements INotifier
 
         $notification->setParsedSubject($parsedSubject);
 
+        // Notification BODY (distinct from the title/subject). The dispatcher
+        // pre-resolves the recipient-localised body — the rule's `message`
+        // template, or an auto-derived "Open in {AppName}." when the rule has
+        // actions but no message. Left unset when empty (back-compat: rules
+        // with neither message nor actions render exactly as before).
+        $message = ($params['_message'] ?? null);
+        if (is_string($message) === true && $message !== '') {
+            $notification->setParsedMessage($message);
+        }
+
         // Icon: when the rule resolved an originApp, point at the hex-composite
         // raster endpoint (the originApp's white glyph on the cobalt hexagon)
         // instead of the static openregister app image — so the OS popup
