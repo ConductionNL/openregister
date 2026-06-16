@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\Activity\IManager as IActivityManager;
+use OCP\App\IAppManager;
 use OCP\BackgroundJob\IJobList;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
@@ -97,6 +98,7 @@ class AnnotationNotificationDispatcher
      * @param RegisterMapper|null                                      $registerMapper      Register mapper used for the default originApp.
      * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService       Object resolver for relation-target deeplinks (RBAC).
      * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry    Canonical per-app deeplink resolver.
+     * @param IAppManager|null                                         $appManager          Resolves originApp display name (auto body).
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -121,7 +123,8 @@ class AnnotationNotificationDispatcher
         private readonly ?IURLGenerator $urlGenerator=null,
         private readonly ?RegisterMapper $registerMapper=null,
         private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null,
-        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null
+        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null,
+        private readonly ?IAppManager $appManager=null
     ) {
     }//end __construct()
 
@@ -293,6 +296,12 @@ class AnnotationNotificationDispatcher
             }
 
             $subjectTemplate = $spec['subject'] ?? (string) $name;
+            // The notification BODY template (distinct from the title).
+            // Absent when the rule declares no `message`; the per-recipient
+            // and broadcast resolvers below fall back to an auto-derived
+            // body ("Open in {AppName}.") when the rule has actions, else
+            // an empty body (back-compat).
+            $messageTemplate = ($spec['message'] ?? null);
             // Pre-render the broadcast (webhook/talk) subject using the
             // default locale fallback chain — these channels don't have
             // a per-recipient locale, so they use the spec's `defaultLocale`
@@ -330,6 +339,18 @@ class AnnotationNotificationDispatcher
                 originApp: $originApp
             );
 
+            // Resolve the broadcast (webhook/talk/web-push) BODY once per
+            // rule using the default-locale fallback chain — these channels
+            // have no per-recipient locale. Mirrors $broadcastSubject.
+            $broadcastMessage = $this->resolveMessageBody(
+                template: $messageTemplate,
+                locale: null,
+                data: $data,
+                context: $context,
+                hasActions: count($resolvedActions) > 0,
+                originApp: $originApp
+            );
+
             // Route the web-push channel out of band: enqueue a background
             // job per recipient so the originating save request is never
             // blocked on push I/O. The job re-resolves recipients to their
@@ -340,6 +361,7 @@ class AnnotationNotificationDispatcher
                     ruleId: $ruleId,
                     originApp: $originApp,
                     subject: $broadcastSubject,
+                    message: $broadcastMessage,
                     actions: $resolvedActions,
                     object: $object
                 );
@@ -410,6 +432,17 @@ class AnnotationNotificationDispatcher
                     context: $context,
                     fallbackName: (string) $name
                 );
+                // The notification BODY for this recipient: the rule's
+                // localised `message`, or — when absent and the rule has
+                // actions — the auto-derived "Open in {AppName}." body.
+                $recipientMessage = $this->resolveMessageBody(
+                    template: $messageTemplate,
+                    locale: $recipientLocale,
+                    data: $data,
+                    context: $context,
+                    hasActions: count($resolvedActions) > 0,
+                    originApp: $originApp
+                );
 
                 // Per-recipient coalesce: silences duplicate dispatches
                 // inside the configured window. Applied to every
@@ -469,6 +502,7 @@ class AnnotationNotificationDispatcher
                         subjectKey: $subjectKey,
                         name: (string) $name,
                         subject: $recipientSubject,
+                        message: $recipientMessage,
                         context: $context,
                         originApp: $originApp,
                         actions: $resolvedActions,
@@ -1829,6 +1863,98 @@ class AnnotationNotificationDispatcher
     }//end resolveLocalizedSubject()
 
     /**
+     * Resolve the notification BODY (message) for a recipient/broadcast.
+     *
+     * The body is distinct from the title (`subject`):
+     *
+     *   1. When the rule declares a `message` template (string or per-locale
+     *      map), it is localised + `{{prop}}`-interpolated through the SAME
+     *      resolver as the subject (`resolveLocalizedSubject()`).
+     *   2. When the rule declares NO `message` but DOES declare `actions[]`,
+     *      the body is auto-derived as "Open in {AppName}." where {AppName}
+     *      is the originApp's human display name (via IAppManager; falls back
+     *      to ucfirst(originApp) when unavailable).
+     *   3. When the rule declares neither `message` nor `actions`, the body
+     *      is empty — exactly today's behaviour (back-compat).
+     *
+     * @param mixed                $template   Raw `message` value (string, array, or null).
+     * @param string|null          $locale     Recipient locale, or null for broadcast channels.
+     * @param array<string, mixed> $data       Object data for `{{prop}}` interpolation.
+     * @param array<string, mixed> $context    Trigger-specific context.
+     * @param bool                 $hasActions Whether the rule declared resolvable actions.
+     * @param string               $originApp  Resolved origin app id (drives the auto-body app name).
+     *
+     * @return string The interpolated body string, or '' for the empty back-compat body.
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function resolveMessageBody(
+        mixed $template,
+        ?string $locale,
+        array $data,
+        array $context,
+        bool $hasActions,
+        string $originApp
+    ): string {
+        $hasTemplate = (is_string($template) === true && $template !== '') || (is_array($template) === true && $template !== []);
+        if ($hasTemplate === true) {
+            // Reuse the subject resolver: identical shape, locale-resolution
+            // and {{prop}} interpolation contract. The empty fallbackName
+            // means an unresolvable map degrades to '' rather than a name.
+            return $this->resolveLocalizedSubject(
+                template: $template,
+                locale: $locale,
+                data: $data,
+                context: $context,
+                fallbackName: ''
+            );
+        }
+
+        // No explicit body: auto-derive only when the rule has actions.
+        if ($hasActions === false) {
+            return '';
+        }
+
+        return sprintf('Open in %s.', $this->resolveAppDisplayName(app: $originApp));
+
+    }//end resolveMessageBody()
+
+    /**
+     * Resolve an app's human display name for the auto-derived body.
+     *
+     * Reads the app's `name` from IAppManager::getAppInfo() when the manager
+     * is available; falls back to ucfirst(app) when the manager is absent
+     * (older fixtures) or the lookup yields no usable name.
+     *
+     * @param string $app The app id.
+     *
+     * @return string The human-readable app display name.
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function resolveAppDisplayName(string $app): string
+    {
+        $fallback = ucfirst($app);
+        if ($this->appManager === null || $app === '') {
+            return $fallback;
+        }
+
+        try {
+            $info = $this->appManager->getAppInfo($app);
+            if (is_array($info) === true && is_string($info['name'] ?? null) === true && $info['name'] !== '') {
+                return $info['name'];
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf('[AnnotationNotificationDispatcher] app display-name lookup failed: %s', $e->getMessage())
+            );
+        }
+
+        return $fallback;
+
+    }//end resolveAppDisplayName()
+
+    /**
      * Resolve a Nextcloud user's preferred locale.
      *
      * Reads `core.lang` from the user's NC config — the same value
@@ -2279,12 +2405,14 @@ class AnnotationNotificationDispatcher
      * @param array<int, mixed>                $recipients Resolved recipient uids (validated at runtime).
      * @param string                           $ruleId     The rule id.
      * @param string                           $originApp  The resolved origin app id.
-     * @param string                           $subject    The notification subject text.
+     * @param string                           $subject    The notification subject text (push title).
+     * @param string                           $message    The notification body text (push body).
      * @param array<int, array<string, mixed>> $actions    Resolved action buttons.
      * @param ObjectEntity                     $object     The triggering object.
      *
      * @return void
      *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
      * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
      */
     private function enqueueWebPush(
@@ -2292,6 +2420,7 @@ class AnnotationNotificationDispatcher
         string $ruleId,
         string $originApp,
         string $subject,
+        string $message,
         array $actions,
         ObjectEntity $object
     ): void {
@@ -2320,7 +2449,7 @@ class AnnotationNotificationDispatcher
                     'ruleId'    => $ruleId,
                     'originApp' => $originApp,
                     'title'     => $subject,
-                    'body'      => $subject,
+                    'body'      => $message,
                     'tag'       => $tag,
                     'actions'   => $actions,
                 ]
@@ -2345,7 +2474,8 @@ class AnnotationNotificationDispatcher
      * @param ObjectEntity                     $object        The object the event happened on.
      * @param string                           $subjectKey    Canonical subject identifier (object_created/_updated/_transitioned).
      * @param string                           $name          Annotation rule name (notification type identifier).
-     * @param string                           $subject       Pre-interpolated subject text.
+     * @param string                           $subject       Pre-interpolated subject text (notification title).
+     * @param string                           $message       Pre-interpolated body text (notification body); may be empty.
      * @param array<string, mixed>             $context       Trigger context (action, from, to).
      * @param string                           $originApp     Resolved originApp (declared or register-owning app).
      * @param array<int, array<string, mixed>> $actions       Resolved action buttons (label map + deeplink url + primary).
@@ -2353,6 +2483,7 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
      * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
      */
     private function emitNotification(
@@ -2361,6 +2492,7 @@ class AnnotationNotificationDispatcher
         string $subjectKey,
         string $name,
         string $subject,
+        string $message,
         array $context,
         string $originApp='openregister',
         array $actions=[],
@@ -2383,6 +2515,10 @@ class AnnotationNotificationDispatcher
             // Declared, server-resolved action buttons. The notifier renders
             // these via addAction(); an empty array keeps the implicit "View".
             '_actions'                 => $actions,
+            // Pre-interpolated notification BODY (distinct from the title).
+            // The notifier sets it via setParsedMessage() when non-empty;
+            // an empty string leaves the body unset (back-compat).
+            '_message'                 => $message,
             // Stable notification tag used by the Service Worker / foreground
             // client to COLLAPSE the web-push and the stock popup so the
             // recipient never sees a duplicate. Keyed by (rule, object).

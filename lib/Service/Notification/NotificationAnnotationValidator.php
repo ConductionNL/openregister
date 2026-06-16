@@ -34,7 +34,10 @@ namespace OCA\OpenRegister\Service\Notification;
  * - `subject`: string template OR per-locale map
  *   ({nl: "...", en: "...", defaultLocale?: "nl"}; supports {{field}}
  *   interpolation; recipient locale via `core.lang` user preference)
- * - optional `message`: string
+ * - optional `message`: notification body — same shape as `subject`
+ *   (string template OR per-locale map, with {{field}} interpolation).
+ *   Title=`subject`, body=`message`. When absent, the body is auto-derived
+ *   ("Open in {AppName}.") if `actions` are declared, else left empty.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
@@ -439,6 +442,19 @@ final class NotificationAnnotationValidator
                 }
             }//end if
 
+            // Optional `message` (foundation contract / ADR-031): the
+            // notification BODY, distinct from the title (`subject`). Same
+            // shape + locale-resolution + `{{prop}}` interpolation as
+            // `subject` — a single template string OR a per-locale map.
+            // Absence is valid (back-compat): rules with `actions` get an
+            // auto-derived "Open in {AppName}." body, rules without get an
+            // empty body. Malformed → notification-bad-message.
+            if (array_key_exists('message', $spec) === true) {
+                foreach ($this->validateMessage(message: $spec['message'], name: $name) as $messageError) {
+                    $errors[] = $messageError;
+                }
+            }
+
             // When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
             if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
                 $hook    = ($spec['webhook'] ?? null);
@@ -690,6 +706,101 @@ final class NotificationAnnotationValidator
 
         return $errors;
     }//end validateActions()
+
+    /**
+     * Validate the optional `message` field (notification body).
+     *
+     * Mirrors the `subject` shape contract exactly: either a single
+     * non-empty template string OR a per-locale map ({nl: "...", en: "..."}
+     * optionally prefixed with `defaultLocale: <code>`). Every malformed
+     * shape returns a single `notification-bad-message` error so leaf
+     * authors get one canonical error code for a broken body template.
+     *
+     * @param mixed  $message Raw value of the `message` key.
+     * @param string $name    Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function validateMessage(mixed $message, string $name): array
+    {
+        $code = 'notification-bad-message';
+
+        if (is_string($message) === true) {
+            if ($message === '') {
+                return [
+                    [
+                        'code'    => $code,
+                        'message' => sprintf(
+                            'Notification "%s" message must be a non-empty string when present.',
+                            $name
+                        ),
+                    ],
+                ];
+            }
+
+            return [];
+        }
+
+        if (is_array($message) === false) {
+            return [
+                [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message must be a string or a per-locale map.',
+                        $name
+                    ),
+                ],
+            ];
+        }
+
+        $errors     = [];
+        $localeKeys = array_filter(
+            array_keys($message),
+            static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
+        );
+        if (count($localeKeys) === 0) {
+            $errors[] = [
+                'code'    => $code,
+                'message' => sprintf(
+                    'Notification "%s" message map must declare at least one locale (e.g. nl, en).',
+                    $name
+                ),
+            ];
+        }
+
+        foreach ($localeKeys as $localeKey) {
+            if (is_string($message[$localeKey]) === false || $message[$localeKey] === '') {
+                $errors[] = [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message for locale "%s" must be a non-empty string.',
+                        $name,
+                        $localeKey
+                    ),
+                ];
+            }
+        }
+
+        if (isset($message['defaultLocale']) === true) {
+            $defaultLocale     = $message['defaultLocale'];
+            $defaultLocaleBad  = is_string($defaultLocale) === false;
+            $defaultLocaleBad |= isset($message[$defaultLocale]) === false;
+            if ((bool) $defaultLocaleBad === true) {
+                $errors[] = [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
+                        $name,
+                        (string) $defaultLocale
+                    ),
+                ];
+            }
+        }
+
+        return $errors;
+    }//end validateMessage()
 
     /**
      * Validate the optional `organisation` rule-level gate.

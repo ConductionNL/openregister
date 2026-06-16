@@ -94,6 +94,76 @@ class NotificationAnnotationValidatorTest extends TestCase
         $this->assertSame([], $errors);
     }
 
+    public function testMessageStringAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'Title',
+                    'message' => 'Body text',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testMessagePerLocaleMapAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => ['nl' => 'Titel', 'en' => 'Title'],
+                    'message' => ['defaultLocale' => 'en', 'nl' => 'Body', 'en' => 'Body'],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testMalformedMessageIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'Title',
+                    'message' => 123,
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertNotEmpty($errors);
+        $this->assertSame('notification-bad-message', $errors[0]['code']);
+    }
+
+    public function testEmptyMessageStringIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'Title',
+                    'message' => '',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertNotEmpty($errors);
+        $this->assertSame('notification-bad-message', $errors[0]['code']);
+    }
+
     public function testGroupsRecipientAccepted(): void
     {
         $errors = $this->v->validate([
