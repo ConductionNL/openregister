@@ -248,17 +248,18 @@ return [
         ['name' => 'manifest#index', 'url' => '/api/manifest/{appId}', 'verb' => 'GET', 'requirements' => ['appId' => '[^/]+']],
         // Heartbeat - Keep-alive endpoint for long-running operations.
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
-        // Prometheus metrics endpoint.
-        ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
-        // Health check endpoint.
-        ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
-        // AppHost declarative observability engine (ADR-040) — OpenRegister
-        // self-dogfood. Adopting leaf apps alias their own /api/health and
-        // /api/metrics routes at these generic controllers from their own
-        // routes.php; OR exposes them under /api/apphost/* so its own
-        // hand-written /api/health + /api/metrics keep working in parallel.
-        ['name' => 'AppHost\Controller\GenericHealth#index', 'url' => '/api/apphost/health', 'verb' => 'GET'],
-        ['name' => 'AppHost\Controller\GenericMetrics#index', 'url' => '/api/apphost/metrics', 'verb' => 'GET'],
+        // Prometheus metrics endpoint — served by OpenRegister's own AppHost
+        // declarative observability engine (ADR-040). OR dogfoods the engine:
+        // the canonical /api/metrics URL is aliased at GenericMetricsController,
+        // which reads the `observability.metrics` block of src/manifest.json.
+        // URL + output contract are unchanged from the deleted MetricsController
+        // (parity-verified); $appName resolves to "openregister".
+        ['name' => 'AppHost\Controller\GenericMetrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
+        // Health check endpoint — served by the AppHost engine from the
+        // `observability.health` block. The engine adds #[PublicPage] (ADR-006
+        // anon health, an intentional improvement over the login-gated bespoke
+        // controller) and the standard {status, app, version, checks} shape.
+        ['name' => 'AppHost\Controller\GenericHealth#index', 'url' => '/api/health', 'verb' => 'GET'],
         // URN resolution endpoints (RFC 8141 system-independent identifiers).
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],

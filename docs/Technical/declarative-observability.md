@@ -175,3 +175,32 @@ manifest, so the same OpenRegister engine serves every app correctly.
 | appconfig counter | `{"kind":"appConfig","key":"..."}` |
 | JSON metrics output | engine renders Prometheus 0.0.4 |
 | public metrics / auth'd health drift | engine-owned auth posture |
+
+## OpenRegister runs on its own engine (the living example)
+
+OpenRegister is the **first adopter** of the AppHost observability engine — it
+dogfoods its own engine. The ~520 lines of hand-written `HealthController` +
+`MetricsController` have been deleted; OR's `/apps/openregister/api/health` and
+`/apps/openregister/api/metrics` routes are aliased at
+`AppHost\Controller\GenericHealth#index` / `GenericMetrics#index` in
+`appinfo/routes.php`, and the descriptors live in the `observability` block of
+[`src/manifest.json`](https://github.com/ConductionNL/openregister/blob/development/src/manifest.json).
+That block is the canonical, working reference for every other Conduction app
+adopting the engine: two health checks (`database` critical, `filesystem`
+degraded) and nine metric descriptors (registers/schemas/objects counts, the
+four audit-trail CRUD counters via `tableCount` + `action` filter, the
+search-request counter, and the webhook-delivery counter).
+
+The endpoint contract is **unchanged** from the deleted controllers — the same
+metric names, types and label keys, verified by byte-comparing the Prometheus
+output and the health JSON before vs after adoption on a seeded instance. Three
+intentional improvements ride along with the engine:
+
+- the health JSON envelope now carries an `app` field (`{status, app, version, checks}`);
+- the implicit `{app}_info` gauge gains a `nextcloud_version` label alongside `version` + `php_version`;
+- `/api/health` is now public (`#[PublicPage]`, ADR-006 anonymous health) instead of login-gated.
+
+One label-semantics note for `objects_total`: the engine's `tableCount`
+`groupBy: ["register","schema"]` emits the numeric register/schema ids as label
+values (the bespoke controller joined to the title columns). Use the
+`objectCount` source kind if you need slug/title labels in your own app.
