@@ -45,6 +45,7 @@ import Webhook from 'vue-material-design-icons/Webhook.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
+import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
 
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
@@ -111,6 +112,7 @@ registerIcons({
 	ShieldLockOutline,
 	ChartBoxOutline,
 	Api,
+	ViewDashboardOutline,
 })
 
 Vue.mixin({ methods: { t, n } })
