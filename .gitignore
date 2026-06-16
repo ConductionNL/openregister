@@ -52,7 +52,10 @@ phpqa_output.log
 **/*Analysis*
 !**/*Analysis*.php
 **/*references*
+!**/*references*.php
+!**/*references*/
 **/*encoding*
+!**/*encoding*.php
 **/ter
 **/clearCache*
 **/update*Settings*

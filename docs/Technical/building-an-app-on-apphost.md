@@ -14,6 +14,30 @@ instantiation forces to remain.
 > [Declarative Observability](./declarative-observability.md). Both halves share
 > the `OCA\OpenRegister\AppHost\` namespace and the same `Bootstrap`.
 
+## The complete generic set
+
+`Bootstrap::register()` aliases a leaf app's conventional class names to the
+following engine-owned generics. Every class below ships under
+`lib/AppHost/` — a `Bootstrap::register()` call with all standard options
+enabled resolves each one (asserted by
+`tests/Unit/AppHost/BootstrapFactoryChainTest::testAllFactoriesResolveToRealClassesWithFullOptions`),
+so a leaf app can fully adopt the engine without leaving any plumbing class behind.
+
+| Generic class | Leaf alias | Role |
+|---|---|---|
+| `Controller\GenericDashboardController` | `Controller\DashboardController` | Serve the SPA page + history-mode catch-all. |
+| `Controller\GenericPreferencesController` | `Controller\PreferencesController` | Per-user key/value UI preferences (`#[NoAdminRequired]`, user-scoped, `pref_` namespace). |
+| `Controller\GenericSettingsController` | `Controller\SettingsController` | App settings API (admin-write, register binding stripped for non-admins). |
+| `Controller\GenericHealthController` | `Controller\HealthController` | `GET /api/health` (observability; opt-out via `observability: false`). |
+| `Controller\GenericMetricsController` | `Controller\MetricsController` | `GET /api/metrics` (Prometheus; observability). |
+| `Service\AppHostSettingsService` | `Service\SettingsService` | App-scoped settings backed by `IAppConfig`. |
+| `Service\GenericActionAuthService` | `Service\ActionAuthService` | Action authorization matrix (fails closed, admin-only default). |
+| `Repair\GenericInitializeSettings` | `Repair\InitializeSettings` | Install repair step — seed default settings. |
+| `Repair\GenericInitializeActions` | `Repair\InitializeActions` | Install repair step — seed default action matrix. |
+| `Settings\GenericAdminSettings` | `Settings\AdminSettings` | `IDelegatedSettings` admin panel (#299). |
+| `Settings\GenericSettingsSection` | `Sections\SettingsSection` | `IIconSection` admin section. |
+| `Listener\GenericDeepLinkRegistrationListener` | `Listener\DeepLinkRegistrationListener` | Manifest-driven deep-link registration (opt-out via `deepLinks: false`). |
+
 ## The minimal leaf app
 
 After adoption, a shell-only app contains:
