@@ -89,13 +89,18 @@ class Bootstrap
      * @param IRegistrationContext $context The leaf app's registration context.
      * @param string               $appId   The leaf app id (e.g. 'petstore').
      * @param array<string, mixed> $options Optional overrides:
-     *                                       - 'controllerNamespace' (string): leaf controller namespace,
-     *                                         default `OCA\{StudlyAppId}\Controller`.
-     *                                       - 'repairNamespace' (string): leaf repair namespace.
-     *                                       - 'settingsNamespace' (string): leaf settings namespace.
-     *                                       - 'sectionsNamespace' (string): leaf sections namespace.
-     *                                       - 'listenerNamespace' (string): leaf listener namespace.
-     *                                       - 'serviceNamespace' (string): leaf service namespace.
+     *                                       - 'namespace' (string): the leaf app's `OCA\X` base namespace
+     *                                         (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
+     *                                         namespaces are not derivable from the app id (petstore →
+     *                                         PetStore, opencatalogi → OpenCatalogi, decidesk → Decidesk),
+     *                                         so pass it explicitly. When omitted, a StudlyCase guess from
+     *                                         the app id is used as a last-resort fallback.
+     *                                       - 'controllerNamespace' (string): override just the controller namespace.
+     *                                       - 'repairNamespace' (string): override just the repair namespace.
+     *                                       - 'settingsNamespace' (string): override just the settings namespace.
+     *                                       - 'sectionsNamespace' (string): override just the sections namespace.
+     *                                       - 'listenerNamespace' (string): override just the listener namespace.
+     *                                       - 'serviceNamespace' (string): override just the service namespace.
      *                                       - 'sectionId' (string): admin section id, default `$appId`.
      *                                       - 'sectionName' (string): admin section display name, default StudlyAppId.
      *                                       - 'sectionIcon' (string): icon file, default 'app-dark.svg'.
@@ -113,12 +118,13 @@ class Bootstrap
     public static function register(IRegistrationContext $context, string $appId, array $options=[]): void
     {
         $studly             = self::studly($appId);
-        $controllerNs       = (string) ($options['controllerNamespace'] ?? ('OCA\\'.$studly.'\\Controller'));
-        $repairNs           = (string) ($options['repairNamespace'] ?? ('OCA\\'.$studly.'\\Repair'));
-        $settingsNs         = (string) ($options['settingsNamespace'] ?? ('OCA\\'.$studly.'\\Settings'));
-        $sectionsNs         = (string) ($options['sectionsNamespace'] ?? ('OCA\\'.$studly.'\\Sections'));
-        $listenerNs         = (string) ($options['listenerNamespace'] ?? ('OCA\\'.$studly.'\\Listener'));
-        $serviceNs          = (string) ($options['serviceNamespace'] ?? ('OCA\\'.$studly.'\\Service'));
+        $base               = rtrim((string) ($options['namespace'] ?? ('OCA\\'.$studly)), '\\');
+        $controllerNs       = (string) ($options['controllerNamespace'] ?? ($base.'\\Controller'));
+        $repairNs           = (string) ($options['repairNamespace'] ?? ($base.'\\Repair'));
+        $settingsNs         = (string) ($options['settingsNamespace'] ?? ($base.'\\Settings'));
+        $sectionsNs         = (string) ($options['sectionsNamespace'] ?? ($base.'\\Sections'));
+        $listenerNs         = (string) ($options['listenerNamespace'] ?? ($base.'\\Listener'));
+        $serviceNs          = (string) ($options['serviceNamespace'] ?? ($base.'\\Service'));
 
         $sectionId          = (string) ($options['sectionId'] ?? $appId);
         $sectionName        = (string) ($options['sectionName'] ?? $studly);
