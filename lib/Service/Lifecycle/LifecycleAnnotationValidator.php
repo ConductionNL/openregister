@@ -58,6 +58,12 @@ final class LifecycleAnnotationValidator
         $annotation = $schema['x-openregister-lifecycle'];
         $errors     = [];
 
+        // `property` is an additive alias for `field`; normalise it up-front so
+        // the rest of validation (and the runtime listener) sees a single key.
+        if (isset($annotation['field']) === false && isset($annotation['property']) === true) {
+            $annotation['field'] = $annotation['property'];
+        }
+
         // Required top-level fields.
         foreach (['field', 'initial', 'transitions'] as $required) {
             if (isset($annotation[$required]) === false) {
@@ -146,8 +152,13 @@ final class LifecycleAnnotationValidator
                 continue;
             }
 
-            // From: required, array of states all in the enum.
-            $from   = ($spec['from'] ?? null);
+            // From: required, a single state string or an array of states, all
+            // in the enum. A string is coerced to a one-element list.
+            $from = ($spec['from'] ?? null);
+            if (is_string($from) === true && $from !== '') {
+                $from = [$from];
+            }
+
             $fromOk = (is_array($from) === true && count($from) > 0);
             if ($fromOk === false) {
                 $errors[] = [
@@ -207,8 +218,69 @@ final class LifecycleAnnotationValidator
                     ];
                 }
             }
+
+            // Optional `authorization` — declarative per-transition group/role
+            // gate (Engine 1). When present it must be a non-empty list whose
+            // entries are either NC group id strings or `{ "role": "<name>" }`
+            // objects. Shape-check only; group existence is a runtime concern.
+            if (isset($spec['authorization']) === true) {
+                $authError = $this->validateTransitionAuthorization(
+                    authorization: $spec['authorization'],
+                    action: (string) $action
+                );
+                if ($authError !== null) {
+                    $errors[] = $authError;
+                }
+            }
         }//end foreach
 
         return $errors;
     }//end validate()
+
+    /**
+     * Shape-check a transition's optional `authorization` list.
+     *
+     * Valid: a non-empty array whose entries are either non-empty NC group id
+     * strings or `{ "role": "<non-empty string>" }` objects. Returns a single
+     * structured error on the first violation, or null when valid.
+     *
+     * @param mixed  $authorization The raw `authorization` value off the transition spec.
+     * @param string $action        Transition action name, for the error message.
+     *
+     * @return array{code: string, message: string}|null Error, or null when valid.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each return is a distinct, irreducible shape violation.
+     */
+    private function validateTransitionAuthorization(mixed $authorization, string $action): ?array
+    {
+        if (is_array($authorization) === false || $authorization === []) {
+            return [
+                'code'    => 'lifecycle-authorization-malformed',
+                'message' => sprintf(
+                    'Transition "%s" `authorization` must be a non-empty array of group ids or {role} objects.',
+                    $action
+                ),
+            ];
+        }
+
+        foreach ($authorization as $entry) {
+            $isGroupString = (is_string($entry) === true && $entry !== '');
+            $isRoleObject  = (is_array($entry) === true
+                && isset($entry['role']) === true
+                && is_string($entry['role']) === true
+                && $entry['role'] !== '');
+
+            if ($isGroupString === false && $isRoleObject === false) {
+                return [
+                    'code'    => 'lifecycle-authorization-entry-malformed',
+                    'message' => sprintf(
+                        'Transition "%s" `authorization` entries must be non-empty group id strings or {"role":"<name>"} objects.',
+                        $action
+                    ),
+                ];
+            }
+        }
+
+        return null;
+    }//end validateTransitionAuthorization()
 }//end class

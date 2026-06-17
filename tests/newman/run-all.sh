@@ -130,6 +130,7 @@ declare -A DOMAIN_COLLECTIONS=(
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
     [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
+    [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

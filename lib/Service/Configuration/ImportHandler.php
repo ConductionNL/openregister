@@ -57,6 +57,9 @@ use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTime;
@@ -258,6 +261,22 @@ class ImportHandler
     private ?IUserSession $userSession = null;
 
     /**
+     * Optional group manager used to resolve a fallback admin acting user
+     * when there is no logged-in session (occ/installer/cron import path).
+     *
+     * @var IGroupManager|null
+     */
+    private ?IGroupManager $groupManager = null;
+
+    /**
+     * Optional user manager used as a secondary fallback to resolve any
+     * enabled user as the acting user when the admin group is empty.
+     *
+     * @var IUserManager|null
+     */
+    private ?IUserManager $userManager = null;
+
+    /**
      * Constructor for ImportHandler.
      *
      * @param SchemaMapper                                       $schemaMapper         The schema mapper.
@@ -406,6 +425,103 @@ class ImportHandler
     {
         $this->userSession = $userSession;
     }//end setUserSession()
+
+    /**
+     * Inject the IGroupManager used to resolve a fallback admin acting user
+     * when the import runs without a logged-in session (occ/installer/cron).
+     *
+     * @param IGroupManager|null $groupManager Optional group manager.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/import-resilient-per-entity-and-no-user-context/tasks.md
+     */
+    public function setGroupManager(?IGroupManager $groupManager): void
+    {
+        $this->groupManager = $groupManager;
+    }//end setGroupManager()
+
+    /**
+     * Inject the IUserManager used as a secondary fallback to resolve any
+     * enabled user as the acting user when the admin group is empty.
+     *
+     * @param IUserManager|null $userManager Optional user manager.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/import-resilient-per-entity-and-no-user-context/tasks.md
+     */
+    public function setUserManager(?IUserManager $userManager): void
+    {
+        $this->userManager = $userManager;
+    }//end setUserManager()
+
+    /**
+     * Resolve the acting user for import-time object/folder operations.
+     *
+     * Precedence, mirroring the architecture's documented acting-user rule
+     * (explicit user → session → fallback):
+     *
+     *  1. The logged-in session user, when present (HTTP request path). A real
+     *     session is NEVER overridden, so behaviour is unchanged when a user is
+     *     authenticated.
+     *  2. The first member of the `admin` group (occ/installer/cron path, where
+     *     there is no session).
+     *  3. Any first enabled user, when the admin group cannot be used.
+     *  4. `null` when none is resolvable — callers then skip only the
+     *     user-dependent operation, never the whole import.
+     *
+     * @return IUser|null The resolved acting user, or null when none available.
+     *
+     * @spec openspec/changes/import-resilient-per-entity-and-no-user-context/tasks.md
+     */
+    private function resolveActingUser(): ?IUser
+    {
+        // A real session user always wins - do not override authenticated callers.
+        $sessionUser = $this->userSession?->getUser();
+        if ($sessionUser !== null) {
+            return $sessionUser;
+        }
+
+        // No session (occ/installer/cron): prefer the first admin.
+        try {
+            if ($this->groupManager !== null) {
+                $adminGroup = $this->groupManager->get('admin');
+                if ($adminGroup !== null) {
+                    $admins = $adminGroup->getUsers();
+                    if (count($admins) > 0) {
+                        return reset($admins);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ImportHandler] Failed to resolve admin acting user from admin group: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        // Secondary fallback: any first enabled user.
+        try {
+            if ($this->userManager !== null) {
+                $users = $this->userManager->search('', 1, 0);
+                if (count($users) > 0) {
+                    return reset($users);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ImportHandler] Failed to resolve any fallback acting user: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        $this->logger->warning(
+            message: '[ImportHandler] No acting user resolvable for import - user-dependent ops (folders) may skip',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+        return null;
+    }//end resolveActingUser()
 
     /**
      * Set the MagicMapper dependency for ensuring magic mapper tables exist.
@@ -1470,6 +1586,14 @@ class ImportHandler
             'synchronizations' => [],
             'rules'            => [],
             'objects'          => [],
+            // Per-entity-resilience observability: how many entities were
+            // skipped (with a logged warning) instead of aborting the import.
+            'skipped'          => [
+                'registers'   => 0,
+                'objects'     => 0,
+                'mappings'    => 0,
+                'seedObjects' => 0,
+            ],
         ];
 
         // Process and import schemas if present.
@@ -1688,18 +1812,38 @@ class ImportHandler
                     $registerData['type'] = (string) $parentType;
                 }
 
-                $register = $this->importRegister(
-                    data: $registerData,
-                    owner: $owner,
-                    appId: $appId,
-                    version: $version,
-                    force: $force
-                );
-                if ($register !== null) {
-                    // Store register in map by slug for reference.
-                    $this->registersMap[$slug] = $register;
-                    $result['registers'][]     = $register;
-                }
+                // PER-ENTITY RESILIENCE: a single failing register MUST NOT abort
+                // the rest of the data-layer import (sibling registers, mappings,
+                // objects, seed data). Catch \Throwable (not just \Exception) so
+                // opis/json-schema validation failures and folder-access denials
+                // are also contained. Skip-and-continue with a descriptive warning,
+                // mirroring the existing per-schema / per-mapping idiom.
+                try {
+                    $register = $this->importRegister(
+                        data: $registerData,
+                        owner: $owner,
+                        appId: $appId,
+                        version: $version,
+                        force: $force
+                    );
+                    if ($register !== null) {
+                        // Store register in map by slug for reference.
+                        $this->registersMap[$slug] = $register;
+                        $result['registers'][]     = $register;
+                    }
+                } catch (\Throwable $e) {
+                    $result['skipped']['registers']++;
+                    $this->logger->warning(
+                        message: "[ImportHandler] Skipping register '{$slug}' - import failed: ".$e->getMessage(),
+                        context: [
+                            'file'         => __FILE__,
+                            'line'         => __LINE__,
+                            'appId'        => $appId,
+                            'registerSlug' => $slug,
+                            'error'        => $e->getMessage(),
+                        ]
+                    );
+                }//end try
             }//end foreach
         }//end if
 
@@ -1805,6 +1949,13 @@ class ImportHandler
 
         // NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
         // When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
+        // Resolve the acting user once for the object loop. On the occ/installer/cron
+        // path there is no user session, so saveObject()'s folder access checks would
+        // default-deny ("Access to folder NNNN is denied for the acting user").
+        // resolveActingUser() returns the session user when present, otherwise a
+        // fallback admin; null when none is resolvable (folder op then skips, not the
+        // whole import).
+        $actingUser = $this->resolveActingUser();
         // Process and import objects.
         if (($data['components']['objects'] ?? null) !== null && is_array($data['components']['objects']) === true) {
             foreach ($data['components']['objects'] as $objectData) {
@@ -1819,6 +1970,13 @@ class ImportHandler
                     continue;
                 }
 
+                // PER-ENTITY RESILIENCE: wrap the whole per-object resolve / search /
+                // save sequence so one validation-failing object (e.g. a name-missing
+                // or title-less seed fragment) is skipped with a warning instead of
+                // aborting every sibling object and the rest of the app import.
+                // Catch \Throwable so opis/json-schema validation throws and folder
+                // access denials are contained too.
+                try {
                 // Get the actual Register and Schema objects from maps (not IDs!).
                 // This is CRITICAL - passing objects avoids organisation filter in find().
                 $registerObject = $this->registersMap[$rawRegister] ?? null;
@@ -1953,7 +2111,8 @@ class ImportHandler
                             schema: $schemaObject,
                             uuid: $uuid,
                             _rbac: false,
-                            _multitenancy: false
+                            _multitenancy: false,
+                            currentUser: $actingUser
                         );
                         $result['objects'][] = $object;
                     }
@@ -1988,10 +2147,27 @@ class ImportHandler
                         register: $registerObject,
                         schema: $schemaObject,
                         _rbac: false,
-                        _multitenancy: false
+                        _multitenancy: false,
+                        currentUser: $actingUser
                     );
                     $result['objects'][] = $object;
                 }//end if
+                } catch (\Throwable $e) {
+                    // PER-ENTITY RESILIENCE: skip this object, keep importing the rest.
+                    $result['skipped']['objects']++;
+                    $this->logger->warning(
+                        message: "[ImportHandler] Skipping object '{$slug}' - import failed: ".$e->getMessage(),
+                        context: [
+                            'file'         => __FILE__,
+                            'line'         => __LINE__,
+                            'appId'        => $appId,
+                            'objectSlug'   => $slug,
+                            'registerSlug' => $rawRegister,
+                            'schemaSlug'   => $rawSchema,
+                            'error'        => $e->getMessage(),
+                        ]
+                    );
+                }//end try
             }//end foreach
         }//end if
 
@@ -2044,13 +2220,29 @@ class ImportHandler
             return $result;
         }
 
-        $this->importSeedData(
-            configData: $data,
-            owner: $owner,
-            appId: $appId,
-            configuration: $configuration,
-            result: $result
-        );
+        // PER-ENTITY RESILIENCE: seed-data import runs AFTER registers/schemas/objects
+        // are already persisted. A throw inside it must never unwind that completed
+        // work, so wrap the whole call. Per-schema and per-object resilience also
+        // live inside importSeedData().
+        try {
+            $this->importSeedData(
+                configData: $data,
+                owner: $owner,
+                appId: $appId,
+                configuration: $configuration,
+                result: $result
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ImportHandler] Seed-data import failed - registers/schemas/objects kept: '.$e->getMessage(),
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'appId' => $appId,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
 
         return $result;
     }//end importFromJson()
@@ -3556,6 +3748,11 @@ class ImportHandler
         $result['relatedNotes'] = ($result['relatedNotes'] ?? 0);
         $result['relatedTasks'] = ($result['relatedTasks'] ?? 0);
 
+        // Ensure the skipped-entity observability map exists even when this
+        // method is invoked with a result array that predates it.
+        $result['skipped'] = ($result['skipped'] ?? []);
+        $result['skipped']['seedObjects'] = ($result['skipped']['seedObjects'] ?? 0);
+
         // Determine target register for seedData objects.
         // SeedData should go into the first register defined in the configuration.
         $targetRegister = null;
@@ -3631,13 +3828,17 @@ class ImportHandler
                             'schemaApp' => $schema->getApplication(),
                         ]
                     );
-                } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
+                } catch (\Throwable $e) {
+                    // PER-ENTITY RESILIENCE: any failure resolving this schema (not
+                    // found, validation, or otherwise) skips only this schema's seed
+                    // objects with a warning - never the rest of the seed import.
                     $this->logger->warning(
-                        message: "[ImportHandler] Skipping seed data for schema '{$schemaSlug}' - schema not found",
+                        message: "[ImportHandler] Skipping seed data for schema '{$schemaSlug}' - schema not resolvable: ".$e->getMessage(),
                         context: [
                             'file'                  => __FILE__,
                             'line'                  => __LINE__,
                             'appId'                 => $appId,
+                            'error'                 => $e->getMessage(),
                             'availableSchemasInMap' => array_keys($this->schemasMap),
                         ]
                     );
@@ -3943,14 +4144,17 @@ class ImportHandler
                             result: $result
                         );
                     }
-                } catch (Exception $e) {
-                    $this->logger->error(
-                        message: "[ImportHandler] Failed to import seed for '{$schemaSlug}': ".$e->getMessage(),
+                } catch (\Throwable $e) {
+                    // PER-ENTITY RESILIENCE: skip this seed object, keep the rest.
+                    $result['skipped']['seedObjects']++;
+                    $this->logger->warning(
+                        message: "[ImportHandler] Skipping seed object for '{$schemaSlug}' - import failed: ".$e->getMessage(),
                         context: [
-                            'file'       => __FILE__,
-                            'line'       => __LINE__,
-                            'objectData' => $objectData,
-                            'error'      => $e->getMessage(),
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
+                            'schemaSlug'  => $schemaSlug,
+                            'objectSlug'  => $objectSlug ?? null,
+                            'error'       => $e->getMessage(),
                         ]
                     );
                 }//end try

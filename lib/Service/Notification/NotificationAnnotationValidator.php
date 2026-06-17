@@ -34,7 +34,10 @@ namespace OCA\OpenRegister\Service\Notification;
  * - `subject`: string template OR per-locale map
  *   ({nl: "...", en: "...", defaultLocale?: "nl"}; supports {{field}}
  *   interpolation; recipient locale via `core.lang` user preference)
- * - optional `message`: string
+ * - optional `message`: notification body — same shape as `subject`
+ *   (string template OR per-locale map, with {{field}} interpolation).
+ *   Title=`subject`, body=`message`. When absent, the body is auto-derived
+ *   ("Open in {AppName}.") if `actions` are declared, else left empty.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
@@ -45,7 +48,22 @@ final class NotificationAnnotationValidator
 
     private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
 
-    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk'];
+    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
+
+    /**
+     * Valid action `target.kind` values (foundation contract / ADR-031 dialect).
+     *
+     * @var array<int, string>
+     */
+    private const VALID_ACTION_TARGET_KINDS = ['object-detail', 'route', 'url'];
+
+    /**
+     * Hard cap on declared action buttons — the Web Notification API renders
+     * at most two action buttons on the desktop OS popup.
+     *
+     * @var int
+     */
+    private const MAX_ACTIONS = 2;
 
     /**
      * Validate the `x-openregister-notifications` annotation.
@@ -59,6 +77,7 @@ final class NotificationAnnotationValidator
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
      */
     public function validate(array $schema): array
     {
@@ -160,9 +179,9 @@ final class NotificationAnnotationValidator
                             foreach ($entryErrors as $entryError) {
                                 $errors[] = $entryError;
                             }
-                        }
-                    }
-                }
+                        }//end foreach
+                    }//end if
+                }//end if
 
                 if (is_array($trigger) === true && isset($trigger['dedupeFields']) === true) {
                     $dedupeFields = $trigger['dedupeFields'];
@@ -192,10 +211,10 @@ final class NotificationAnnotationValidator
                                 ];
                                 break;
                             }
-                        }
-                    }
-                }
-            }//end scheduled
+                        }//end foreach
+                    }//end if
+                }//end if
+            }//end if
 
             if ($triggerType === 'threshold') {
                 $aggregation = '';
@@ -320,6 +339,35 @@ final class NotificationAnnotationValidator
                 }
             }
 
+            // Optional `originApp` (foundation contract / ADR-031): identifies
+            // the leaf app that owns the rule. Drives the notification
+            // icon/badge and the deeplink base. When present it MUST be a
+            // non-empty string; absence is valid (defaults to the
+            // register-owning app at dispatch).
+            if (array_key_exists('originApp', $spec) === true) {
+                $originApp = $spec['originApp'];
+                if (is_string($originApp) === false || $originApp === '') {
+                    $errors[] = [
+                        'code'    => 'notification-bad-origin-app',
+                        'message' => sprintf(
+                            'Notification "%s" originApp must be a non-empty string app id.',
+                            $name
+                        ),
+                    ];
+                }
+            }
+
+            // Optional `actions[]` (foundation contract / ADR-031): rich
+            // action buttons rendered in the OS notification. Hard cap of 2
+            // (Web Notification API desktop limit). Each action declares an
+            // i18n `label` map, an optional `primary` bool, and a `target`
+            // of kind object-detail | route | url.
+            if (array_key_exists('actions', $spec) === true) {
+                foreach ($this->validateActions(actions: $spec['actions'], name: $name) as $actionError) {
+                    $errors[] = $actionError;
+                }
+            }
+
             // `subject` accepts either a single template string OR a
             // per-locale map ({nl: "...", en: "..."} optionally prefixed
             // with `defaultLocale: <code>`). The dispatcher resolves
@@ -393,6 +441,19 @@ final class NotificationAnnotationValidator
                     }
                 }
             }//end if
+
+            // Optional `message` (foundation contract / ADR-031): the
+            // notification BODY, distinct from the title (`subject`). Same
+            // shape + locale-resolution + `{{prop}}` interpolation as
+            // `subject` — a single template string OR a per-locale map.
+            // Absence is valid (back-compat): rules with `actions` get an
+            // auto-derived "Open in {AppName}." body, rules without get an
+            // empty body. Malformed → notification-bad-message.
+            if (array_key_exists('message', $spec) === true) {
+                foreach ($this->validateMessage(message: $spec['message'], name: $name) as $messageError) {
+                    $errors[] = $messageError;
+                }
+            }
 
             // When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
             if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
@@ -537,6 +598,211 @@ final class NotificationAnnotationValidator
     }//end validate()
 
     /**
+     * Validate the optional `actions[]` array (foundation contract / ADR-031).
+     *
+     * Rules:
+     *  - `actions` MUST be an array; more than 2 entries → notification-too-many-actions.
+     *  - each action's `label` MUST be a per-locale map with at least one
+     *    non-empty locale value → otherwise notification-action-bad-label.
+     *  - each action's `target.kind` MUST be one of object-detail | route | url
+     *    → otherwise notification-action-bad-target.
+     *
+     * @param mixed  $actions Raw value of the `actions` key.
+     * @param string $name    Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function validateActions(mixed $actions, string $name): array
+    {
+        $errors = [];
+
+        if (is_array($actions) === false) {
+            return [
+                [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf('Notification "%s" actions must be an array.', $name),
+                ],
+            ];
+        }
+
+        if (count($actions) > self::MAX_ACTIONS) {
+            $errors[] = [
+                'code'    => 'notification-too-many-actions',
+                'message' => sprintf(
+                    'Notification "%s" declares %d actions; the Web Notification API renders at most %d.',
+                    $name,
+                    count($actions),
+                    self::MAX_ACTIONS
+                ),
+            ];
+        }
+
+        foreach ($actions as $idx => $action) {
+            if (is_array($action) === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf('Notification "%s" action[%s] must be an object.', $name, (string) $idx),
+                ];
+                continue;
+            }
+
+            // Label MUST be a per-locale map with at least one non-empty string value.
+            $label   = ($action['label'] ?? null);
+            $labelOk = false;
+            if (is_array($label) === true && count($label) > 0) {
+                foreach ($label as $localeValue) {
+                    if (is_string($localeValue) === true && $localeValue !== '') {
+                        $labelOk = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($labelOk === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-label',
+                    'message' => sprintf(
+                        'Notification "%s" action[%s] label must be a per-locale map with at least one non-empty value.',
+                        $name,
+                        (string) $idx
+                    ),
+                ];
+            }
+
+            // `primary` (optional) MUST be a boolean when present.
+            if (array_key_exists('primary', $action) === true && is_bool($action['primary']) === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf(
+                        'Notification "%s" action[%s] primary must be a boolean.',
+                        $name,
+                        (string) $idx
+                    ),
+                ];
+            }
+
+            // Target MUST be an object with a recognised kind.
+            $target     = ($action['target'] ?? null);
+            $targetKind = '';
+            if (is_array($target) === true) {
+                $targetKind = (string) ($target['kind'] ?? '');
+            }
+
+            if (in_array($targetKind, self::VALID_ACTION_TARGET_KINDS, true) === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf(
+                        'Notification "%s" action[%s] target.kind "%s" is not in [%s].',
+                        $name,
+                        (string) $idx,
+                        $targetKind,
+                        implode(', ', self::VALID_ACTION_TARGET_KINDS)
+                    ),
+                ];
+            }
+        }//end foreach
+
+        return $errors;
+    }//end validateActions()
+
+    /**
+     * Validate the optional `message` field (notification body).
+     *
+     * Mirrors the `subject` shape contract exactly: either a single
+     * non-empty template string OR a per-locale map ({nl: "...", en: "..."}
+     * optionally prefixed with `defaultLocale: <code>`). Every malformed
+     * shape returns a single `notification-bad-message` error so leaf
+     * authors get one canonical error code for a broken body template.
+     *
+     * @param mixed  $message Raw value of the `message` key.
+     * @param string $name    Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function validateMessage(mixed $message, string $name): array
+    {
+        $code = 'notification-bad-message';
+
+        if (is_string($message) === true) {
+            if ($message === '') {
+                return [
+                    [
+                        'code'    => $code,
+                        'message' => sprintf(
+                            'Notification "%s" message must be a non-empty string when present.',
+                            $name
+                        ),
+                    ],
+                ];
+            }
+
+            return [];
+        }
+
+        if (is_array($message) === false) {
+            return [
+                [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message must be a string or a per-locale map.',
+                        $name
+                    ),
+                ],
+            ];
+        }
+
+        $errors     = [];
+        $localeKeys = array_filter(
+            array_keys($message),
+            static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
+        );
+        if (count($localeKeys) === 0) {
+            $errors[] = [
+                'code'    => $code,
+                'message' => sprintf(
+                    'Notification "%s" message map must declare at least one locale (e.g. nl, en).',
+                    $name
+                ),
+            ];
+        }
+
+        foreach ($localeKeys as $localeKey) {
+            if (is_string($message[$localeKey]) === false || $message[$localeKey] === '') {
+                $errors[] = [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message for locale "%s" must be a non-empty string.',
+                        $name,
+                        $localeKey
+                    ),
+                ];
+            }
+        }
+
+        if (isset($message['defaultLocale']) === true) {
+            $defaultLocale     = $message['defaultLocale'];
+            $defaultLocaleBad  = is_string($defaultLocale) === false;
+            $defaultLocaleBad |= isset($message[$defaultLocale]) === false;
+            if ((bool) $defaultLocaleBad === true) {
+                $errors[] = [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
+                        $name,
+                        (string) $defaultLocale
+                    ),
+                ];
+            }
+        }
+
+        return $errors;
+    }//end validateMessage()
+
+    /**
      * Validate the optional `organisation` rule-level gate.
      *
      * Accepts either a single non-empty string (one tenant) or an
@@ -599,9 +865,7 @@ final class NotificationAnnotationValidator
                 $name
             ),
         ];
-
     }//end validateOrganisationGate()
-
 
     /**
      * Validate a single scheduled-trigger filter entry.
@@ -699,12 +963,9 @@ final class NotificationAnnotationValidator
                         ),
                     ],
                 ];
-            }
-        }
+            }//end try
+        }//end if
 
         return [];
-
     }//end validateScheduledFilterEntry()
-
-
 }//end class

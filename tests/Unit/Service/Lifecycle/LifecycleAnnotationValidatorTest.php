@@ -122,4 +122,82 @@ class LifecycleAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    public function testPropertyAliasIsAcceptedAsField(): void
+    {
+        // `property` (procest migration shape) is accepted as an alias for `field`.
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'property' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => ['indienen' => ['from' => 'concept', 'to' => 'in_parafering']],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering']]],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testStringFromIsAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => ['indienen' => ['from' => 'concept', 'to' => 'in_parafering']],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering']]],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testTransitionAuthorizationGroupListIsAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => [
+                    'completeren' => [
+                        'from' => 'in_parafering',
+                        'to' => 'geparafeerd',
+                        'authorization' => ['vergunningverleners', ['role' => 'handler']],
+                    ],
+                ],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering','geparafeerd']]],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testEmptyTransitionAuthorizationIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => [
+                    'completeren' => ['from' => 'in_parafering', 'to' => 'geparafeerd', 'authorization' => []],
+                ],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering','geparafeerd']]],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-authorization-malformed', $codes);
+    }
+
+    public function testMalformedTransitionAuthorizationEntryIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => [
+                    'completeren' => ['from' => 'in_parafering', 'to' => 'geparafeerd', 'authorization' => [123]],
+                ],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering','geparafeerd']]],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-authorization-entry-malformed', $codes);
+    }
 }
