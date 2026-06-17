@@ -2657,6 +2657,8 @@ class ObjectService
      * Returns all registers with their schemas expanded.
      *
      * @return array List of registers, each with a 'schemas' array of schema objects.
+     *
+     * @spec exclude Read-only lister returning registers with their schemas inlined; no business rule.
      */
     public function getRegisters(): array
     {
