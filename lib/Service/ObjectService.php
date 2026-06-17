@@ -2654,6 +2654,39 @@ class ObjectService
     }//end getRegister()
 
     /**
+     * Returns all registers with their schemas expanded.
+     *
+     * @return array List of registers, each with a 'schemas' array of schema objects.
+     *
+     * @spec exclude Read-only lister returning registers with their schemas inlined; no business rule.
+     */
+    public function getRegisters(): array
+    {
+        $registers = $this->registerMapper->findAll(_multitenancy: false);
+        $result    = [];
+
+        foreach ($registers as $register) {
+            $registerArr = $register->jsonSerialize();
+            $schemaIds   = $register->getSchemas() ?? [];
+            $schemas     = [];
+
+            foreach ($schemaIds as $schemaId) {
+                try {
+                    $schema    = $this->schemaMapper->find(id: (int) $schemaId, _multitenancy: false);
+                    $schemas[] = $schema->jsonSerialize();
+                } catch (\Exception $e) {
+                    // Skip schemas that cannot be found.
+                }
+            }
+
+            $registerArr['schemas'] = $schemas;
+            $result[]               = $registerArr;
+        }
+
+        return $result;
+    }//end getRegisters()
+
+    /**
      * Renders the rendered object.
      *
      * @param ObjectEntity $entity        The entity to be rendered
