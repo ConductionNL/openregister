@@ -128,9 +128,13 @@ class FileSettingsHandler
                     // Presidio entity recognition settings.
                     'presidioApiEndpoint'       => '',
                     'openAnonymiserApiEndpoint' => '',
+                    // OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (operator URL).
+                    'openAnonymiserSource'      => 'internal',
                     'entityRecognitionEnabled'  => false,
-                    'entityRecognitionMethod'   => 'hybrid',
-                    // Regex, presidio, openanonymiser, llm, hybrid.
+                    // 'auto' is an internal "not yet configured" marker resolved at state-query
+                    // time to the recommended backend; it is never shown as a UI option.
+                    'entityRecognitionMethod'   => 'auto',
+                    // Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
                 ];
             }//end if
 
@@ -199,9 +203,10 @@ class FileSettingsHandler
                 // Presidio entity recognition settings.
                 'presidioApiEndpoint'       => $fileData['presidioApiEndpoint'] ?? '',
                 'openAnonymiserApiEndpoint' => $fileData['openAnonymiserApiEndpoint'] ?? '',
+                'openAnonymiserSource'      => $fileData['openAnonymiserSource'] ?? 'internal',
                 'entityRecognitionEnabled'  => $fileData['entityRecognitionEnabled'] ?? false,
-                'entityRecognitionMethod'   => $fileData['entityRecognitionMethod'] ?? 'hybrid',
-                // Regex, presidio, openanonymiser, llm, hybrid.
+                'entityRecognitionMethod'   => $fileData['entityRecognitionMethod'] ?? 'auto',
+                // Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
             ];
 
             $this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));

@@ -994,6 +994,45 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Get the resolved anonymisation backend state (single source of truth).
+		 * @spec exclude API passthrough to GET /api/admin/anonymisation/backend-state
+		 */
+		async getAnonymisationBackendState() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/admin/anonymisation/backend-state'),
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to load anonymisation backend state:', error)
+				return null
+			}
+		},
+
+		/**
+		 * Probe a single anonymisation backend, bypassing the cache.
+		 * @param {string} method - One of regex/presidio/openanonymiser/llm/hybrid
+		 * @spec exclude API passthrough to POST /api/admin/anonymisation/test-connection
+		 */
+		async testAnonymisationBackend(method) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/admin/anonymisation/test-connection'),
+					{ method },
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to probe anonymisation backend:', error)
+				return {
+					reachable: false,
+					latencyMs: null,
+					error: error.response?.data?.error || error.message,
+					probedAt: null,
+				}
+			}
+		},
+
+		/**
 		 * Load version information
 		 * @spec exclude API passthrough to GET /api/settings/version
 		 */

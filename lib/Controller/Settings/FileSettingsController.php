@@ -27,6 +27,8 @@ use Exception;
 use ReflectionClass;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -232,39 +234,49 @@ class FileSettingsController extends Controller
     }//end testPresidioConnection()
 
     /**
-     * Test OpenAnonymiser API connection
+     * Test OpenAnonymiser ExApp availability.
      *
-     * @param string $apiEndpoint OpenAnonymiser API endpoint URL
+     * @deprecated OpenAnonymiser is now detected via AppAPI, not an HTTP endpoint.
+     *             Prefer the admin endpoint `POST /api/admin/anonymisation/test-connection`
+     *             with `{method: "openanonymiser"}`. This route is retained for backward
+     *             compatibility and delegates to AnonymisationBackendService; the
+     *             $apiEndpoint parameter is ignored and no external HTTP request is issued.
+     *
+     * @param string $apiEndpoint Ignored; retained for backward compatibility.
      *
      * @return JSONResponse
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string,
      *     message?: string}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+     * @spec openspec/changes/anonymiser-backend-selection/tasks.md#task-4.4
      */
-    public function testOpenAnonymiserConnection(string $apiEndpoint): JSONResponse
+    public function testOpenAnonymiserConnection(string $apiEndpoint=''): JSONResponse
     {
         try {
-            // Validate inputs.
-            if (empty($apiEndpoint) === true) {
+            /*
+             * @var AnonymisationBackendService $service
+             */
+            $service = $this->container->get(AnonymisationBackendService::class);
+            $probe   = $service->testConnection(method: BackendState::METHOD_OPENANONYMISER);
+
+            if ($probe->reachable === true) {
                 return new JSONResponse(
                     data: [
-                        'success' => false,
-                        'error'   => 'API endpoint is required',
-                    ],
-                    statusCode: 400
+                        'success' => true,
+                        'message' => 'OpenAnonymiser ExApp detected via AppAPI',
+                    ]
                 );
             }
 
-            $result = $this->performHealthCheck(
-                url: $apiEndpoint.'/api/v1/health',
-                serviceName: 'OpenAnonymiser'
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => ($probe->error ?? 'OpenAnonymiser ExApp not available'),
+                ]
             );
-
-            return new JSONResponse(data: $result);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
