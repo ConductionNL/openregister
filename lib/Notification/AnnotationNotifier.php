@@ -102,6 +102,8 @@ class AnnotationNotifier implements INotifier
      * @throws UnknownNotificationException When the notification is not an
      *                                      annotation/object notification this
      *                                      notifier owns.
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
@@ -135,14 +137,106 @@ class AnnotationNotifier implements INotifier
 
         $notification->setParsedSubject($parsedSubject);
 
-        $notification->setIcon(
-            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-        );
+        // Notification BODY (distinct from the title/subject). The dispatcher
+        // pre-resolves the recipient-localised body — the rule's `message`
+        // template, or an auto-derived "Open in {AppName}." when the rule has
+        // actions but no message. Left unset when empty (back-compat: rules
+        // with neither message nor actions render exactly as before).
+        $message = ($params['_message'] ?? null);
+        if (is_string($message) === true && $message !== '') {
+            $notification->setParsedMessage($message);
+        }
 
-        $this->addViewAction(notification: $notification, params: $params, label: $l->t('View'));
+        // Icon: when the rule resolved an originApp, point at the hex-composite
+        // raster endpoint (the originApp's white glyph on the cobalt hexagon)
+        // instead of the static openregister app image — so the OS popup
+        // carries the originating app's identity. Falls back to app.svg.
+        $originApp = (string) ($params['originApp'] ?? 'openregister');
+        if ($originApp !== '' && $originApp !== 'openregister') {
+            $notification->setIcon(
+                $this->urlGenerator->linkToRouteAbsolute(
+                    'openregister.webPush.hexIcon',
+                    ['app' => $originApp]
+                )
+            );
+        } else {
+            $notification->setIcon(
+                $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+            );
+        }
+
+        // Render declared action buttons when the rule provided any; otherwise
+        // keep the implicit single "View" action (back-compat — existing rules
+        // are unchanged).
+        $actions  = ($params['_actions'] ?? []);
+        $rendered = 0;
+        if (is_array($actions) === true && count($actions) > 0) {
+            $rendered = $this->addDeclaredActions(notification: $notification, actions: $actions, languageCode: $languageCode);
+        }
+
+        // Fall back to the implicit "View" action when no declared action was
+        // rendered — either none were declared (back-compat) or every declared
+        // action resolved to an empty link. This guarantees a notification
+        // never ships with zero actions when an object-detail target exists.
+        if ($rendered === 0) {
+            $this->addViewAction(notification: $notification, params: $params, label: $l->t('View'));
+        }
 
         return $notification;
     }//end prepare()
+
+    /**
+     * Render the schema-declared action buttons via addAction().
+     *
+     * Each action carries a per-locale `label` map, a `primary` flag, and a
+     * pre-resolved absolute `url` (resolved server-side by the dispatcher
+     * through OR RBAC). The recipient's locale label wins, falling back to
+     * `en` then the first available locale.
+     *
+     * @param INotification     $notification Notification to attach actions to.
+     * @param array<int, mixed> $actions      Resolved actions (each element validated at runtime).
+     * @param string            $languageCode Active recipient locale.
+     *
+     * @return int The number of action buttons actually rendered.
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): int
+    {
+        $rendered = 0;
+        foreach ($actions as $action) {
+            if (is_array($action) === false) {
+                continue;
+            }
+
+            $url = (string) ($action['url'] ?? '');
+            if ($url === '') {
+                continue;
+            }
+
+            $labelMap = ($action['label'] ?? []);
+            if (is_array($labelMap) === false) {
+                $labelMap = [];
+            }
+
+            $fallbackLabel = 'Open';
+            $firstLabel    = reset($labelMap);
+            if ($firstLabel !== false) {
+                $fallbackLabel = $firstLabel;
+            }
+
+            $label = (string) ($labelMap[$languageCode] ?? ($labelMap['en'] ?? $fallbackLabel));
+
+            $actionObject = $notification->createAction();
+            $actionObject->setLabel($label)
+                ->setPrimary((bool) ($action['primary'] ?? false))
+                ->setLink($url, 'GET');
+            $notification->addAction($actionObject);
+            $rendered++;
+        }//end foreach
+
+        return $rendered;
+    }//end addDeclaredActions()
 
     /**
      * Attach a "View" deep-link action to the notification when all routing

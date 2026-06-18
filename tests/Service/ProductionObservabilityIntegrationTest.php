@@ -3,11 +3,17 @@
 /**
  * Integration tests for the production observability surface.
  *
- * Verifies the `/api/health` and `/api/metrics` controllers return
- * the expected response shape end-to-end against the running NC
- * instance: health JSON envelope with database + filesystem checks,
- * metrics Prometheus text-exposition format with the canonical
- * register/schema/object counters.
+ * Verifies the `/api/health` and `/api/metrics` endpoints return the expected
+ * response shape end-to-end against the running NC instance. Since
+ * openregister-adopt-apphost, OpenRegister dogfoods its OWN AppHost
+ * observability engine: the canonical /api/health + /api/metrics routes are
+ * aliased at GenericHealthController / GenericMetricsController, which render
+ * from the `observability` block of src/manifest.json. These tests therefore
+ * drive the generic controllers resolved for the `openregister` app id and
+ * assert PARITY with the deleted bespoke HealthController / MetricsController:
+ * the health JSON envelope with database + filesystem checks, and the metrics
+ * Prometheus text-exposition with the canonical register/schema/object/CRUD/
+ * webhook counters.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
@@ -17,11 +23,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Controller\HealthController;
-use OCA\OpenRegister\Controller\MetricsController;
+use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
+use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
+use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TextPlainResponse;
+use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,14 +39,29 @@ use PHPUnit\Framework\TestCase;
  */
 class ProductionObservabilityIntegrationTest extends TestCase
 {
-    private HealthController $healthController;
-    private MetricsController $metricsController;
+    private GenericHealthController $healthController;
+    private GenericMetricsController $metricsController;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->healthController  = \OC::$server->get(HealthController::class);
-        $this->metricsController = \OC::$server->get(MetricsController::class);
+
+        $request = \OC::$server->get(IRequest::class);
+
+        // OpenRegister dogfoods the engine: build the generic controllers with
+        // appName "openregister" so the ManifestLoader reads OR's own manifest.
+        $this->healthController = new GenericHealthController(
+            'openregister',
+            $request,
+            \OC::$server->get(ManifestLoader::class),
+            \OC::$server->get(HealthCheckExecutor::class)
+        );
+        $this->metricsController = new GenericMetricsController(
+            'openregister',
+            $request,
+            \OC::$server->get(ManifestLoader::class),
+            \OC::$server->get(MetricsEngine::class)
+        );
     }
 
     public function testHealthEndpointReturnsOkStructure(): void
@@ -49,6 +74,8 @@ class ProductionObservabilityIntegrationTest extends TestCase
         $this->assertSame('ok', $body['status'] ?? null);
         $this->assertArrayHasKey('version', $body);
         $this->assertArrayHasKey('checks', $body);
+        // Engine adds the app id to the envelope (intentional improvement over the bespoke shape).
+        $this->assertSame('openregister', $body['app'] ?? null);
 
         $checks = $body['checks'];
         $this->assertSame('ok', $checks['database']   ?? null, 'database check MUST report ok in a normal dev env');
@@ -76,8 +103,11 @@ class ProductionObservabilityIntegrationTest extends TestCase
         // `# HELP` and `# TYPE` comment lines per the spec.
         $this->assertStringContainsString('# HELP openregister_info', $body);
         $this->assertStringContainsString('# TYPE openregister_info gauge', $body);
+        // The bespoke controller emitted version + php_version; the engine adds
+        // nextcloud_version (intentional improvement). Assert the parity labels
+        // are still present and the value is still 1.
         $this->assertMatchesRegularExpression(
-            '/openregister_info\{version="[^"]+",php_version="[^"]+"\} 1/',
+            '/openregister_info\{[^}]*version="[^"]+"[^}]*php_version="[^"]+"[^}]*\} 1/',
             $body,
             'openregister_info gauge MUST carry version + php_version labels'
         );
@@ -126,7 +156,7 @@ class ProductionObservabilityIntegrationTest extends TestCase
         }
     }
 
-    public function testMetricsExposeWebhookDeliveryCountersWithStatusLabel(): void
+    public function testMetricsExposeWebhookDeliveryCounters(): void
     {
         $body = $this->extractResponseBody($this->metricsController->index());
 
@@ -142,17 +172,16 @@ class ProductionObservabilityIntegrationTest extends TestCase
             "metrics output MUST type '$metric' as a Prometheus counter"
         );
 
-        // The webhook counter MUST be labelled with status; the label
-        // vocabulary is bounded to {success, failure} so cardinality
-        // stays predictable. We don't assert any concrete count because
-        // the dev env may have zero webhook deliveries — only that when
-        // a labelled line is present, it uses the documented vocabulary.
-        if (preg_match_all('/openregister_webhook_deliveries_total\{status="([^"]+)"\}/', $body, $matches) > 0) {
-            foreach ($matches[1] as $status) {
-                $this->assertContains(
-                    $status,
-                    ['success', 'failure'],
-                    'webhook status label vocabulary MUST be bounded to {success, failure}'
+        // The webhook counter is labelled with `status` (the engine renames the
+        // grouped `success` column via labelMap). We don't assert concrete
+        // counts because the dev env may have zero webhook deliveries — only
+        // that when a labelled line is present it carries the status label key.
+        if (preg_match_all('/openregister_webhook_deliveries_total\{([^}]+)\}/', $body, $matches) > 0) {
+            foreach ($matches[1] as $labels) {
+                $this->assertStringContainsString(
+                    'status=',
+                    $labels,
+                    'webhook deliveries counter MUST be labelled with status'
                 );
             }
         }

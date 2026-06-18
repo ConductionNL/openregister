@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -68,10 +69,11 @@ class LifecycleValidationListener implements IEventListener
     /**
      * Wire collaborators used to validate transitions and run guards.
      *
-     * @param SchemaMapper           $schemaMapper  Schema lookup mapper.
-     * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
-     * @param IUserSession           $userSession   Current user session.
-     * @param LoggerInterface        $logger        PSR logger for warnings.
+     * @param SchemaMapper           $schemaMapper      Schema lookup mapper.
+     * @param LifecycleGuardRegistry $guardRegistry     Registry resolving guard ids to instances.
+     * @param IUserSession           $userSession       Current user session.
+     * @param PermissionHandler      $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
+     * @param LoggerInterface        $logger            PSR logger for warnings.
      *
      * @return void
      */
@@ -79,6 +81,7 @@ class LifecycleValidationListener implements IEventListener
         private readonly SchemaMapper $schemaMapper,
         private readonly LifecycleGuardRegistry $guardRegistry,
         private readonly IUserSession $userSession,
+        private readonly PermissionHandler $permissionHandler,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -119,7 +122,10 @@ class LifecycleValidationListener implements IEventListener
             return;
         }
 
-        $field   = (string) ($annotation['field'] ?? '');
+        // Accept `property` as an additive alias for `field` so schemas authored
+        // against the procest migration shape work verbatim. `field` wins when
+        // both are present.
+        $field   = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
         $oldData = $oldObject->getObject() ?? [];
         $newData = $newObject->getObject() ?? [];
 
@@ -171,7 +177,42 @@ class LifecycleValidationListener implements IEventListener
         }
 
         [$action, $spec] = $matched;
-        $requires        = ($spec['requires'] ?? null);
+
+        // Declarative per-transition authorization (Engine 1). When the matched
+        // transition lists `authorization` (NC group ids and/or `{ "role": "<name>" }`
+        // entries), the caller MUST satisfy it. This is the group-based gate
+        // procest's role-routing needs WITHOUT a bespoke PHP guard per role.
+        // Evaluated BEFORE the `requires` guard so an unauthorized caller is
+        // rejected with a 403-shaped error before any guard side-channel runs.
+        // Transitions without an `authorization` key skip this entirely
+        // (additive / backward-compatible).
+        $authorizationList = ($spec['authorization'] ?? null);
+        if (is_array($authorizationList) === true && $authorizationList !== []) {
+            $userId = ($this->userSession->getUser()?->getUID() ?? null);
+            if ($this->permissionHandler->isTransitionAuthorized(
+                    authorizationList: $authorizationList,
+                    userId: $userId,
+                    schema: $schema
+                ) === false
+            ) {
+                $this->reject(
+                    event: $event,
+                    error: [
+                        'code'    => 'lifecycle-transition-unauthorized',
+                        'field'   => $field,
+                        'action'  => $action,
+                        'message' => sprintf(
+                            'You are not authorized to perform transition "%s" on "%s".',
+                            $action,
+                            $field
+                        ),
+                    ]
+                );
+                return;
+            }
+        }
+
+        $requires = ($spec['requires'] ?? null);
         if (is_string($requires) === true && $requires !== '') {
             $userId = ($this->userSession->getUser()?->getUID() ?? '');
             $guard  = $this->guardRegistry->resolve($requires);
@@ -211,7 +252,13 @@ class LifecycleValidationListener implements IEventListener
                 continue;
             }
 
+            // `from` may be a single state string or a list of states. Coerce
+            // a string to a one-element list so both authoring shapes work.
             $from = ($spec['from'] ?? []);
+            if (is_string($from) === true) {
+                $from = [$from];
+            }
+
             if (is_array($from) === false) {
                 continue;
             }
