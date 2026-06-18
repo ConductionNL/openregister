@@ -646,10 +646,16 @@ class MagicSearchHandler
             }//end if
         }//end foreach
 
-        // Search in metadata text fields (ILIKE for all).
-        $searchConditions[] = "_name::text ILIKE {$likePattern}";
-        $searchConditions[] = "_description::text ILIKE {$likePattern}";
-        $searchConditions[] = "_summary::text ILIKE {$likePattern}";
+        // Search in metadata text fields.
+        if ($isPostgres === true) {
+            $searchConditions[] = "_name::text ILIKE {$likePattern}";
+            $searchConditions[] = "_description::text ILIKE {$likePattern}";
+            $searchConditions[] = "_summary::text ILIKE {$likePattern}";
+        } else {
+            $searchConditions[] = "LOWER(CAST(_name AS CHAR)) LIKE LOWER({$likePattern})";
+            $searchConditions[] = "LOWER(CAST(_description AS CHAR)) LIKE LOWER({$likePattern})";
+            $searchConditions[] = "LOWER(CAST(_summary AS CHAR)) LIKE LOWER({$likePattern})";
+        }
 
         // Add fuzzy matching ONLY for _name when explicitly requested via _fuzzy=true.
         // This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
@@ -1187,7 +1193,7 @@ class MagicSearchHandler
 
             // Handle object type columns (JSON objects with 'value' key containing UUID).
             if ($propertyType === 'object') {
-                $this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value);
+                $this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
                 continue;
             }
 
@@ -1342,13 +1348,17 @@ class MagicSearchHandler
      *
      * @return void
      */
-    private function applyJsonObjectFilter(IQueryBuilder $qb, string $columnName, mixed $value): void
+    private function applyJsonObjectFilter(IQueryBuilder $qb, string $columnName, mixed $value, bool $isPostgres): void
     {
         // Normalize value to array.
         $values = [$value];
         if (is_array($value) === true) {
             $values = $value;
         }
+
+        $colCast = $isPostgres === true
+            ? "t.{$columnName}::text"
+            : "CAST(t.{$columnName} AS CHAR)";
 
         if (count($values) === 1) {
             // Single value: match both plain UUID and JSON format using text comparison.
@@ -1357,7 +1367,7 @@ class MagicSearchHandler
             $param       = $qb->createNamedParameter($values[0]);
             $jsonPattern = $qb->createNamedParameter('%"value": "'.$values[0].'"%');
             $qb->andWhere(
-                "(t.{$columnName}::text = {$param} OR t.{$columnName}::text LIKE {$jsonPattern})"
+                "({$colCast} = {$param} OR {$colCast} LIKE {$jsonPattern})"
             );
             return;
         }
@@ -1368,7 +1378,7 @@ class MagicSearchHandler
             $param       = $qb->createNamedParameter($v);
             $jsonPattern = $qb->createNamedParameter('%"value": "'.$v.'"%');
             $orConditions->add(
-                "(t.{$columnName}::text = {$param} OR t.{$columnName}::text LIKE {$jsonPattern})"
+                "({$colCast} = {$param} OR {$colCast} LIKE {$jsonPattern})"
             );
         }
 
