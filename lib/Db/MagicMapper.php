@@ -5297,6 +5297,8 @@ class MagicMapper extends AbstractObjectMapper
 
         $foundObjects = [];
 
+        $isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+
         // Get all magic tables from information_schema.
         $prefix       = $this->getTablePrefix();
         $tablePattern = $prefix.'openregister_table_%';
@@ -5337,12 +5339,13 @@ class MagicMapper extends AbstractObjectMapper
                 $deletedCondition = '';
             }
 
+            $colCast      = $isPostgres === true ? "{$relationsCol}::text" : "CAST({$relationsCol} AS CHAR)";
             $unionParts[] = sprintf(
-                "SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s::text LIKE ?%s",
+                "SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s LIKE ?%s",
                 $fullTableName,
                 $uuidCol,
                 $fullTableName,
-                $relationsCol,
+                $colCast,
                 $deletedCondition
             );
         }//end foreach
