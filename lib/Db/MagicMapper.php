@@ -6569,9 +6569,14 @@ class MagicMapper extends AbstractObjectMapper
                 $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                 foreach ($uuids as $uuid) {
                     // Match both plain UUID strings and {"value": "uuid"} JSON objects.
-                    $conditions[] = "({$quotedCol} = ? OR {$quotedCol}::text LIKE ?)";
-                    $params[]     = $uuid;
-                    $params[]     = '%'.$uuid.'%';
+                    // PostgreSQL uses ::text cast; MariaDB/MySQL uses CAST(col AS CHAR).
+                    if ($isPostgres === true) {
+                        $conditions[] = "({$quotedCol} = ? OR {$quotedCol}::text LIKE ?)";
+                    } else {
+                        $conditions[] = "({$quotedCol} = ? OR CAST({$quotedCol} AS CHAR) LIKE ?)";
+                    }
+                    $params[] = $uuid;
+                    $params[] = '%'.$uuid.'%';
                 }
             }
 
