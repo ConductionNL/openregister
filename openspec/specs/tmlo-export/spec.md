@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # tmlo-export Specification
 
 ## Purpose

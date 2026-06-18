@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # aggregation-api Specification
 
 ## Purpose
-TBD - created by archiving change add-time-bucket-aggregation. Update Purpose after archive.
+Provides a runtime, client-controlled aggregation primitive over REST and GraphQL that buckets the rows of a register-schema collection by a named field, with optional time-bucketing and count/sum/avg/min/max metrics. Enforces row-level RBAC and multi-tenant filtering before aggregating, generates native SQL per database engine (with a PHP fallback), and caches results for up to 60 seconds with event-driven invalidation.
 
 @e2e exclude Backend aggregation primitive over REST + GraphQL (groupBy, time-bucketing, metric, per-engine SQL dialect generation, validation, multi-tenant filtering, ad-hoc cache eviction). No OpenRegister UI surface — the aggregation result feeds dashboards but the primitive itself is a data-layer/HTTP contract exercised via PHPUnit (dialect/validator units) and Newman (REST/GraphQL contract). Covered by Newman/PHPUnit.
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # pdf-anonymisation Specification
 
 ## Purpose
-TBD - created by archiving change pdf-anonymisation. Update Purpose after archive.
+Anonymises PDF documents by rewriting their content streams in place rather than corrupting bytes via naive string replacement. Decodes the text-relevant PDF 1.7 filter set, resolves font encodings (including Identity-H composite fonts via ToUnicode CMaps), flattens kerning arrays, and replaces every variant of a detected entity with an identifiable `[<TYPE>: <id>]` placeholder while preserving table and layout structure and scrubbing metadata to a sentinel. A post-replacement validation gate re-extracts the output and discards it if any entity text survives; image-only PDFs defer to OCR and encrypted PDFs are rejected. The capability extends the existing anonymise endpoint with no new routes and no changes to the DOCX/ODT/text branches.
 ## Requirements
 ### Requirement: `DocumentProcessingHandler::anonymizeDocument` MUST handle PDF inputs without corrupting the output
 

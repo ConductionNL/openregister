@@ -1,5 +1,5 @@
 ---
-status: draft
+status: done
 ---
 
 # geo-metadata-kaart Specification

@@ -4,7 +4,7 @@ status: done
 # tmlo-validation Specification
 
 ## Purpose
-TBD - created by archiving change tmlo-metadata. Update Purpose after archive.
+Validates TMLO archival metadata on objects, enforcing the allowed archival-status transition path (actief → semi_statisch → overgebracht or vernietigd) with the required fields and `archiefnominatie` value for each step. It also validates individual TMLO field values against their allowed enums and formats (archiefnominatie, archiefstatus, ISO-8601 retention durations and action dates), rejecting violations with a 422 error.
 ## Requirements
 ### Requirement: TMLO status transition validation
 

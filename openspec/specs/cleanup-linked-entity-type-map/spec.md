@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # cleanup-linked-entity-type-map Specification
 
 ## Purpose
-TBD - created by archiving change cleanup-linked-entity-type-map. Update Purpose after archive.
+Removes the hardcoded `LinkedEntityService::TYPE_COLUMN_MAP` and `Schema::VALID_LINKED_TYPES` constants so integration discovery and linked-type validation are driven entirely by `IntegrationRegistry`. Existing schemas continue to validate through `IntegrationRegistry::listIds()`, and an organisation-wide grep sweep migrates any external callers before the constants are deleted.
 ## Requirements
 ### Requirement: Constants Removed
 

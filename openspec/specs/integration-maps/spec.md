@@ -5,7 +5,7 @@ status: done
 # integration-maps Specification
 
 ## Purpose
-TBD - created by archiving change integration-maps. Update Purpose after archive.
+Links Nextcloud Maps locations to OpenRegister objects, caching latitude, longitude, and address so rendering never calls geocoding. Users add a location either by entering an address (geocoded) or by clicking the embedded map, and the single-entity surface renders an address chip that expands to a map popover on click. Access inherits from object RBAC plus Maps' own ACLs.
 ## Requirements
 ### Requirement: Maps Provider Registration
 

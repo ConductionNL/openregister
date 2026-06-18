@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 ---
 
 # MariaDB Support & Dual-Database CI Matrix

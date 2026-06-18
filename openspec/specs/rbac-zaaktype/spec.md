@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # rbac-zaaktype Specification
 
 ## Purpose

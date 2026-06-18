@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # schema-property-exploration Specification
 
 ## Purpose

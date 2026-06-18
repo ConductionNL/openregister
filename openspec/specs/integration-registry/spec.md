@@ -5,7 +5,7 @@ status: done
 # integration-registry Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-b-svc-report-import-link. Update Purpose after archive.
+Provides a pluggable integration registry that lets OpenRegister link external and Nextcloud services to objects through a common `IntegrationProvider` contract, auto-registered via DI tags and resolvable through the `IntegrationRegistry` service. Ships the eight built-in NC integrations (files, notes, tasks, calendar, mail, contacts, deck, talk) while preserving their legacy linking behavior, validates schema `linkedTypes` against the registry, routes external providers through OpenConnector, advertises enabled integrations via OCS capabilities, and supplies a CI parity gate, a scaffold script, and an OCC listing command.
 ## Requirements
 ### Requirement: Legacy Deck and Note link services MUST preserve their non-provider behavior @e2e exclude backend Deck/Note link services (enrichment, reverse-lookup, cascade cleanup, author guard) via NC app APIs — covered by PHPUnit
 

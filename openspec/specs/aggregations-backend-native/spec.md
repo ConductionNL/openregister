@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # aggregations-backend-native Specification
 
 ## Purpose

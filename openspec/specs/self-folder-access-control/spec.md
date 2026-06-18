@@ -4,7 +4,8 @@ status: done
 # self-folder-access-control Specification
 
 ## Purpose
-TBD - created by archiving change validate-self-folder-access. Update Purpose after archive.
+Enforces a default-deny access check on every numeric `@self.folder` bind so an object is only attached to a Nextcloud folder when the acting user can actually read it. Any unreadable, non-existent, file, or trashed target — or any inability to confirm readability — aborts the save with a `FolderAccessDeniedException` mapped to HTTP 403 and an audit-trail entry, while empty or legacy non-numeric folder values preserve the existing auto-create behaviour for cron and seed paths.
+
 ## Requirements
 ### Requirement: Default-deny invariant for `@self.folder` binds
 

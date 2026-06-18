@@ -5,7 +5,7 @@ status: done
 # integration-analytics Specification
 
 ## Purpose
-TBD - created by archiving change integration-analytics. Update Purpose after archive.
+Links Nextcloud Analytics reports to OpenRegister objects and embeds their charts, rendering through the shared apexcharts dependency from the Analytics chart config rather than re-implementing chart logic. Dashboard surfaces auto-refresh every five minutes while detail-page and single-entity surfaces refresh only on user action, and the single-entity surface and `referenceType: 'analytics'` properties add a sparkline. Access control defers to Analytics' own ACLs.
 ## Requirements
 ### Requirement: Analytics Provider Registration
 

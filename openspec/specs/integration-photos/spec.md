@@ -5,7 +5,7 @@ status: done
 # integration-photos Specification
 
 ## Purpose
-TBD - created by archiving change integration-photos. Update Purpose after archive.
+Surfaces an object's linked image files as a dedicated Photos integration that shares the Files link table and filters by MIME type. Extracts and caches EXIF metadata lazily on first view, optionally strips GPS coordinates at link time (opt-in, leaving the original file untouched), and renders thumbnail chips for `photos` reference properties. File permissions govern visibility.
 ## Requirements
 ### Requirement: Photos Provider Registration
 

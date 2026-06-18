@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # pdf-anonymisation-odt-fallback Specification
 
 ## Purpose
-TBD - created by archiving change pdf-anonymisation-odt-fallback. Update Purpose after archive.
+Adds an opt-in fallback (Path B) that retries PDF anonymisation by converting the document through ODT via NC Office when the primary path's strict-mode validation gate fails. It is gated per-tenant by a feature flag (default off) and bridge availability, so the v1 fail-closed behaviour is preserved by default, and it never triggers for encrypted-PDF or text-layer-missing reasons. On failure it raises a PII-free `validation_failed_after_fallback` exception whose diagnostic identifies only the failed stage and exception class.
 ## Requirements
 ### Requirement: Path B activates only on Path A strict-mode validation-gate failure
 

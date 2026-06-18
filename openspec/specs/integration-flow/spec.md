@@ -5,7 +5,7 @@ status: done
 # integration-flow Specification
 
 ## Purpose
-TBD - created by archiving change integration-flow. Update Purpose after archive.
+Links Nextcloud Flow (workflowengine) rules to OpenRegister objects, defaulting to schema scope so all objects of a schema trigger the linked rule. The sidebar tab separates NC Flow rules from OR workflow rules and shows recent fire events within a configurable window (default 7 days). Because Flow is admin-gated, the tab and its endpoints are visible only to admins.
 ## Requirements
 ### Requirement: Flow Provider Registration
 

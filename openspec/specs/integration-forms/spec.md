@@ -5,7 +5,7 @@ status: done
 # integration-forms Specification
 
 ## Purpose
-TBD - created by archiving change integration-forms. Update Purpose after archive.
+Links Nextcloud Forms responses to OpenRegister objects, supporting both linking individual responses and form-mappings that auto-link future submissions via an object selector. Linked responses render read-only across the standard surfaces, with editing delegated to NC Forms. Access inherits from object RBAC plus Forms app access.
 ## Requirements
 ### Requirement: Forms Provider Registration
 

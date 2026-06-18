@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # json-ld-output Specification
 
 status: done

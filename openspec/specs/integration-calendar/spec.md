@@ -5,7 +5,7 @@ status: done
 # integration-calendar Specification
 
 ## Purpose
-TBD - created by archiving change integration-calendar. Update Purpose after archive.
+Links Nextcloud Calendar meetings to OpenRegister objects, surfacing them in a "Meetings" sidebar tab, dashboard widget, and inline detail-grid chips. Users can create VEVENTs in their own calendar directly from an object and unlink them without deleting the underlying event. The provider appears only when the Calendar app is installed, and access inherits from object RBAC plus NC Calendar's own controls.
 ## Requirements
 ### Requirement: Calendar Provider Registration
 

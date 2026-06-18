@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # import-resilient-per-entity-and-no-user-context Specification
 
 ## Purpose
-TBD - created by archiving change import-resilient-per-entity-and-no-user-context. Update Purpose after archive.
+Makes configuration import resilient by wrapping each register, object, and seed-data entity in its own try/catch so a single failure is logged, counted, and skipped instead of aborting the whole import. Returns a `skipped` map of per-entity-kind counters for callers and tests to assert against. When no user session exists (the `occ`/installer/cron path), resolves a fallback admin acting user so folder and object operations succeed, without overriding a real session user when one is present.
 ## Requirements
 ### Requirement: Per-register import resilience
 The register import loop in `importFromJson()` SHALL wrap each register in its own try/catch. When `importRegister()` throws for one register, the handler SHALL log a WARNING carrying the register slug and the failure reason, increment a skipped-register counter in the returned result, and CONTINUE with the remaining registers, mappings, objects and seed data. A single failing register SHALL NOT abort the import of sibling registers or of any later import phase.

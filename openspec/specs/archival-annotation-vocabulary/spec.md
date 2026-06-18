@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # archival-annotation-vocabulary Specification
 
 ## Purpose
-TBD - created by archiving change add-archival-annotation-support. Update Purpose after archive.
+Gives schemas a retention and archival vocabulary via the `x-openregister-archival` annotation, enforcing data-retention policy on object rows. Schemas declare a default retention plus condition-based rules; an hourly cron sweeps and deletes expired rows, object reads surface a computed `_retention` block, and user-driven deletes on archival schemas are blocked with HTTP 403. Validates retention declarations at save time and recognises the annotation through the import path so it round-trips without being dropped.
 ## Requirements
 ### Requirement: ANNOTATION_VOCABULARY recognises x-openregister-archival and x-openregister-seed
 

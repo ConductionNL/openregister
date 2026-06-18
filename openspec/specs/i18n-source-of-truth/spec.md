@@ -5,7 +5,7 @@ status: done
 # i18n-source-of-truth Specification
 
 ## Purpose
-TBD - created by archiving change i18n-source-of-truth. Update Purpose after archive.
+Tracks which language is the canonical source for each translatable property so derived translations can be flagged when the source changes. Schemas and individual objects declare a `sourceLanguage`, every projected translation row records it, and editing a source value automatically flips approved derived translations to `outdated`. Exposes source-language and out-of-date query filters, an opt-in `_translationMeta` render envelope, and an `X-Source-Language` response header for at-a-glance "is this the original?" detection.
 ## Requirements
 ### Requirement: Schemas MUST be able to declare a `sourceLanguage` per translatable property
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # account-self-service Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-2b-views. Update Purpose after archive.
+Provides the signed-in user's self-service account page, letting users change their own password, request account deactivation, and manage their personal API tokens and avatar. Password changes and deactivation requests surface inline section feedback and leave the current session active until an administrator acts on the request.
 ## Requirements
 ### Requirement: The account page MUST provide self-service password and deactivation flows @e2e exclude isolated Vue component contract (PasswordSection.changePassword / AccountSection.requestDeactivation API call shape, inline feedback, form clearing, soft-state mutation) — covered by Vitest component unit tests with mocked fetch; the underlying password/deactivate endpoints are covered by Newman
 

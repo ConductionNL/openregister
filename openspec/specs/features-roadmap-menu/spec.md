@@ -5,7 +5,7 @@ status: done
 # features-roadmap-menu Specification
 
 ## Purpose
-TBD - created by archiving change add-features-roadmap-menu. Update Purpose after archive.
+Adds a Features & Roadmap surface to an app — a dedicated route with a Features tab listing capabilities from a generated `docs/features.json` manifest and a Roadmap tab showing live GitHub issues sorted by reaction count, plus a "Suggest feature" modal that submits new requests. Markdown is rendered with strict DOMPurify sanitization, pipeline labels are filtered out, widgets and pages can declare a `specRef` to pre-fill and filter by capability, and admins can disable the whole feature via an app-config flag. The same manifest powers a public Docusaurus `/features` page, with a CI check keeping it in sync with the specs.
 ## Requirements
 ### Requirement: Full route, not side panel
 

@@ -5,7 +5,7 @@ status: done
 # integration-email Specification
 
 ## Purpose
-TBD - created by archiving change integration-email. Update Purpose after archive.
+Links existing Nextcloud Mail messages to OpenRegister objects, listing them by date in a sidebar tab and caching subject, sender, and date at link time so dashboards render without live Mail API calls. The integration links and unlinks only — it never composes, sends, or modifies the underlying message. Access inherits from object RBAC plus the user's own Mail account access.
 ## Requirements
 ### Requirement: Email Provider Registration
 

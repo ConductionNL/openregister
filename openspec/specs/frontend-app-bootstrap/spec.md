@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # frontend-app-bootstrap Specification
 
 ## Purpose

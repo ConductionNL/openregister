@@ -5,7 +5,7 @@ status: done
 # integration-talk Specification
 
 ## Purpose
-TBD - created by archiving change integration-talk. Update Purpose after archive.
+Links Nextcloud Talk conversations to OpenRegister objects through a single chat-and-rooms provider, present only when Spreed is installed. The tab opens chat-first to the most recent conversation with a compose box, dashboard surfaces show the unread-message count as the headline metric, and `talk` reference properties render a conversation card with an unread indicator. Talk's own room ACLs govern visibility.
 ## Requirements
 ### Requirement: Talk Provider Registration
 
