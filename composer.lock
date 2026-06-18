@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b3752fb3cd7b3b490ef89f7fe23672b5",
+    "content-hash": "3bfbe8e51439d77b1cac4389f2e36d92",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -306,16 +306,16 @@
         },
         {
             "name": "ddn/sapp",
-            "version": "dev-feat/cross-line-matching",
+            "version": "dev-feat/chained-filter-text-replace",
             "source": {
                 "type": "git",
                 "url": "https://codeberg.org/Conduction/sapp.git",
-                "reference": "8952dfe"
+                "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/8952dfe5a5c60f5b83de748afde5ae333f0b008f.zip",
-                "reference": "8952dfe",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/5c406e91254d6936f44372db35f1cc15e5a06c56.zip",
+                "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56",
                 "shasum": ""
             },
             "require": {
@@ -346,7 +346,7 @@
                 "signature"
             ],
             "support": {
-                "source": "https://codeberg.org/Conduction/sapp/branch/feat/cross-line-matching",
+                "source": "https://codeberg.org/Conduction/sapp/branch/feat/chained-filter-text-replace",
                 "issues": "https://codeberg.org/Conduction/sapp/issues"
             },
             "funding": [

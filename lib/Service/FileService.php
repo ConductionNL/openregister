@@ -1968,6 +1968,23 @@ class FileService
     }//end anonymizeDocument()
 
     /**
+     * Residual entities from the most recent anonymizeDocument() call.
+     *
+     * Best-effort policy: the anonymised file is produced even when some entity
+     * text could not be removed (e.g. ExApp NER over-capture across table
+     * cells); these records describe what remains so the caller can warn the
+     * operator. Empty when the last run fully redacted everything.
+     *
+     * @return array<int, array{text: string, type: string, id: string}> Residual records.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastResidualEntities.
+     */
+    public function getLastResidualEntities(): array
+    {
+        return $this->documentProcessingHandler->getLastResidualEntities();
+    }//end getLastResidualEntities()
+
+    /**
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.

@@ -211,34 +211,28 @@ class PdfTextReplacerTest extends TestCase
     }//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
     /**
-     * Strict mode ($strict = true, entity anonymisation): when residual entity
-     * text remains the gate MUST fail closed with
-     * `PdfAnonymisationException(REASON_VALIDATION_FAILED)` — a file marked
-     * anonymised must never be written while it still contains the entity text.
+     * Best-effort policy ($strict = true, entity anonymisation): residual entity
+     * text no longer fails closed. validateOutput RETURNS the residual needles
+     * (and logs a PII-free warning) so the caller can still produce the file and
+     * surface a warning for the operator to iterate on. (Previously this threw
+     * `PdfAnonymisationException(REASON_VALIDATION_FAILED)`.)
      *
      * @return void
      */
-    public function testValidateOutputThrowsOnResidualWhenStrict(): void
+    public function testValidateOutputReturnsResidualsWhenStrict(): void
     {
         $pdfContainingNeedle = self::buildFixture(bodyText: 'De heer Jansen bezocht het loket.');
 
-        try {
-            $this->replacer->validateOutput(
-                outputBytes: $pdfContainingNeedle,
-                substitutions: ['Jansen' => '[PERSON: 7]'],
-                replaceStats: [],
-                strict: true
-            );
-            self::fail(message: 'Expected PdfAnonymisationException on residual entity text in strict mode');
-        } catch (PdfAnonymisationException $e) {
-            self::assertSame(
-                expected: PdfAnonymisationException::REASON_VALIDATION_FAILED,
-                actual: $e->getReason()
-            );
-            // ADR-005: the exception message MUST NOT echo the entity text.
-            self::assertStringNotContainsString(needle: 'Jansen', haystack: $e->getMessage());
-        }
-    }//end testValidateOutputThrowsOnResidualWhenStrict()
+        $residuals = $this->replacer->validateOutput(
+            outputBytes: $pdfContainingNeedle,
+            substitutions: ['Jansen' => '[PERSON: 7]'],
+            replaceStats: [],
+            strict: true
+        );
+
+        // The unredacted needle is reported back (no exception thrown).
+        self::assertContains(needle: 'Jansen', haystack: $residuals);
+    }//end testValidateOutputReturnsResidualsWhenStrict()
 
     /**
      * Validation gate passes silently when the PDF contains only the
@@ -250,13 +244,13 @@ class PdfTextReplacerTest extends TestCase
     {
         $pdf = self::buildFixture(bodyText: 'Aanvraag van [PERSON: 7] voor het loket.');
 
-        // No exception expected.
-        $this->replacer->validateOutput(
+        // No exception expected; no residual needles returned.
+        $residuals = $this->replacer->validateOutput(
             outputBytes: $pdf,
             substitutions: ['Jan Jansen' => '[PERSON: 7]']
         );
 
-        $this->addToAssertionCount(count: 1);
+        self::assertSame(expected: [], actual: $residuals);
     }//end testValidateOutputPassesWhenClean()
 
     /**

@@ -158,30 +158,30 @@ The implementation MUST strip PII from PDF metadata in both `/Info` and `/Metada
 - **WHEN** anonymisation completes
 - **THEN** the output's `/Info → /Author` field reads `DocuDesk Anonymisation`
 
-### Requirement: A post-replacement validation gate MUST verify no entity text remains
+### Requirement: A post-replacement validation pass MUST report residual entity text (best-effort, not fail-closed)
 
-After SAPP rewrites the PDF, the implementation MUST re-extract the output's text via `smalot/pdfparser` and assert no substitution-map entry (including variants) survives. If any entity text is found, the implementation MUST:
+After SAPP rewrites the PDF, the implementation MUST re-extract the output's text via `smalot/pdfparser` and detect any substitution-map entry (including variants) that survives. **The policy is best-effort, not fail-closed** (changed 2026-06-16, product-owner-approved): a partially-redacted file MUST still be produced and persisted, and the residual entities surfaced as a warning, so the operator can iterate (add manual entities, skip unselected occurrences) and re-run. When residual entity text is found, the implementation MUST:
 
-1. Discard the output (do NOT return or persist it).
-2. Log the diagnostic surface: which entities are still present, which content streams produced unmatched text, what fonts were in scope.
-3. Raise `PdfAnonymisationException(reason: 'validation_failed')`. The controller maps to HTTP 500 with `{"error": "pdf_anonymisation_failed", "reason": "validation_failed", "details": {...}}`.
+1. Still produce/persist the output (do NOT discard it).
+2. Log a PII-free diagnostic (counts + structural counters only, per ADR-005 — never the residual text in logs).
+3. Return the residual needle list to the caller. The anonymise response is HTTP 200 with `{"success": true, "complete": false, "residual_count": N, "residual_entities": [...]}`. The authenticated response MAY include the residual entity *text* for the review UI (a deliberate, product-owner-approved deviation from the ADR-005 no-PII-in-responses rule; logs remain PII-free).
 
-The validation gate is the single most important safety mechanism: it catches every silent-failure mode of byte-replace (encoding mismatches, missed splits, font edge cases) by detecting residual entity text.
+The validation pass remains the key safety surface — it catches every silent-failure mode of byte-replace (encoding mismatches, missed splits, font edge cases) — but it now informs rather than blocks, because some residuals (e.g. NER spans that cross table cells and are not contiguous in the PDF) cannot be redacted as a single needle and would otherwise make every such document fail.
 
-#### Scenario: Validation gate catches residual entity text
+#### Scenario: Validation surfaces residual entity text without discarding the file
 
 - **GIVEN** an input PDF that produces an output containing `"Jan Jansen"` (the byte-replace missed some occurrence)
-- **WHEN** the validation gate runs
-- **THEN** the output is discarded
-- **AND** `PdfAnonymisationException(reason: 'validation_failed')` is raised
-- **AND** the controller surface is HTTP 500 with the structured body
-- **AND** no partial output is persisted
+- **WHEN** the validation pass runs
+- **THEN** the output is still produced and persisted
+- **AND** the residual needle is returned to the caller (no exception)
+- **AND** the controller surface is HTTP 200 with `success: true`, `complete: false`, and the residual list
+- **AND** the log line is PII-free (count + counters only)
 
-#### Scenario: Validation gate passes when the output is clean
+#### Scenario: Validation passes when the output is clean
 
 - **GIVEN** an input PDF where all substitution-map entries were correctly replaced
-- **WHEN** the validation gate runs
-- **THEN** the output is returned as the anonymisation result
+- **WHEN** the validation pass runs
+- **THEN** the output is returned as the anonymisation result with `complete: true` and an empty residual list
 - **AND** a sanitisation report is persisted (counter of bytes replaced, fonts touched, filters decoded)
 
 ### Requirement: NO new HTTP endpoints
