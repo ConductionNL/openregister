@@ -21,8 +21,12 @@ MUST provide an upsert wrapper over it. The pipeline MUST:
 - reject an empty `$fileName` by throwing;
 - call `FileValidationHandler::blockExecutableFile()` BEFORE the node is created
   (see REQ-010);
-- create the node, call `FileValidationHandler::checkOwnership()`, write content,
-  then `FileOwnershipHandler::transferFileOwnershipIfNeeded()`;
+- create the node (owned by the folder's mount owner — the `openregister` system
+  user for the OpenRegister folder, or the original owner for a folder linked
+  from outside it), assert read access via `FileValidationHandler::checkOwnership()`,
+  write content, then call `FileOwnershipHandler::transferFileOwnershipIfNeeded()`,
+  which re-owns the node to the system user ONLY as a fallback when the current
+  user lacks write rights (see the system-user share model requirement);
 - optionally create a public share link when `$share === true`;
 - ALWAYS attach an automatic `object:<uuid-or-id>` tag merged with caller tags
   via `FileService::generateObjectTag()` + `attachTagsToFile()`.
@@ -37,7 +41,7 @@ delegate to `addFile()`. Both methods MUST wrap failures and rethrow as
 #### Scenario: Add a new file to an object
 - **GIVEN** an `ObjectEntity` with a resolvable object folder and a non-empty filename
 - **WHEN** `CreateFileHandler::addFile(object, "report.pdf", content)` is called
-- **THEN** the handler MUST block executable content, create the node, write content, transfer ownership, and attach an `object:<uuid>` tag
+- **THEN** the handler MUST block executable content, create the node, write content, leave ownership following the folder (re-owning to the system user only as a fallback), and attach an `object:<uuid>` tag
 - **AND** the created `File` MUST be returned
 
 #### Scenario: Base64 data-URI content is decoded
@@ -211,10 +215,13 @@ OpenRegister system user.
   an empty list, and return per-file `{fileId, success[, error]}` results plus a
   `{total, succeeded, failed}` summary, continuing past individual failures.
 - `FileOwnershipHandler::getUser()` MUST get-or-create the `openregister` system
-  user and group; `transferFileOwnershipIfNeeded()` / `transferFolderOwnershipIfNeeded()`
-  MUST transfer ownership to that system user (when the current user owns the node
-  and is not the system user) and re-share with the current user, swallowing
-  failures so the underlying file operation still succeeds.
+  user and group. `transferFileOwnershipIfNeeded()` / `transferFolderOwnershipIfNeeded()`
+  MUST NOT re-own a node when the current user already has write rights on it
+  (`Node::isUpdateable()`) — ownership is left following the folder's mount owner.
+  Only as a fallback, when the current user owns the node but does not have write
+  rights on it, MUST they transfer ownership to the system user and re-share with
+  the current user, swallowing failures so the underlying file operation still
+  succeeds.
 
 #### Scenario: Publish writes the share via FileMapper
 - **GIVEN** a resolvable file under an object
@@ -246,10 +253,15 @@ OpenRegister system user.
 - **WHEN** `executeBatch()` runs
 - **THEN** the result MUST report `succeeded: 2, failed: 1` with a per-file error entry for the failure
 
+#### Scenario: Owned file the user can write is not re-owned
+- **GIVEN** a node the current session user owns and can write (`isUpdateable()` is true)
+- **WHEN** `transferFileOwnershipIfNeeded(file)` runs
+- **THEN** it MUST return without changing ownership and MUST NOT create a share-back
+
 ### Requirement: Uploaded files screened for executable content and ownership repaired safely
 
-`FileValidationHandler` MUST screen uploaded content for executables and repair
-drifted OpenRegister ownership without forcing content reads.
+`FileValidationHandler` MUST screen uploaded content for executables and MUST
+gate file access on readability without forcing content reads.
 
 - `blockExecutableFile(fileName, fileContent)` MUST reject the file when its
   extension is in the dangerous-extension list (Windows/Unix executables,
@@ -261,15 +273,18 @@ drifted OpenRegister ownership without forcing content reads.
   script shebang (`#!.../sh|bash|...|node`), and MUST reject embedded
   `<?php`/`<?=`/`<script language="php">` markers — throwing a descriptive
   `Exception` on any match.
-- `checkOwnership(node)` MUST probe access via `Node::isReadable()` (a pure
+- `checkOwnership(node)` MUST gate access on `Node::isReadable()` alone (a pure
   permission-bitmask check that does NOT read content and does NOT acquire an NC
-  lock, so it is safe in a hot listing loop). It MUST throw
-  `NotPermittedException` when the node is not readable, and when readable but the
-  owner has drifted from the system user it MUST attempt `ownFile()` as a
-  best-effort repair whose failure is logged and swallowed.
+  lock, so it is safe in a hot listing loop). Access is **ownership-agnostic**:
+  a node the session can read MUST be allowed regardless of its owner — including
+  a node owned by another user and reached through a Nextcloud file share, or
+  owned by the `openregister` system user. It MUST throw `NotPermittedException`
+  only when the node is not readable. It MUST NOT deny on owner mismatch and MUST
+  NOT invoke `ownFile()` repair on the access path.
 - `ownFile(node)` MUST set the OR-side ownership record to the system user via
   `FileMapper::setFileOwnership()`, returning the mapper's boolean result and
-  rethrowing a wrapped `Exception` on error.
+  rethrowing a wrapped `Exception` on error. It is invoked only by explicit
+  ownership-management flows, never as a side effect of an access check.
 
 #### Scenario: Executable extension is rejected
 - **GIVEN** a file named `payload.exe`
@@ -286,15 +301,15 @@ drifted OpenRegister ownership without forcing content reads.
 - **WHEN** `detectExecutableMagicBytes()` runs
 - **THEN** it MUST throw, blocking the upload
 
-#### Scenario: Unreadable node is refused without repair
+#### Scenario: Unreadable node is refused
 - **GIVEN** a node where `isReadable()` returns false
 - **WHEN** `checkOwnership()` runs
 - **THEN** it MUST throw `NotPermittedException` and MUST NOT attempt ownership repair
 
-#### Scenario: Readable node with drifted owner is repaired best-effort
-- **GIVEN** a readable node whose owner is not the system user
+#### Scenario: Readable node owned by another user is allowed
+- **GIVEN** a readable node whose owner is a different user (e.g. reached via a file share) or `null`
 - **WHEN** `checkOwnership()` runs
-- **THEN** it MUST call `ownFile()`, and a failure inside `ownFile()` MUST be logged and swallowed so the caller is not failed
+- **THEN** it MUST return without error and MUST NOT call `ownFile()` / `setFileOwnership()`
 
 ### Requirement: File Rename
 
@@ -650,4 +665,32 @@ All new file actions (rename, copy, move, lock, unlock, version restore) MUST di
 #### Scenario: Version restore dispatches event
 - **WHEN** a file version is restored
 - **THEN** an event `nl.openregister.object.file.version_restored` MUST be dispatched with the version ID and file ID
+
+### Requirement: File update and delete enforce per-action node permissions
+
+File mutation MUST be gated on the matching Nextcloud node permission for the
+action, in addition to Nextcloud's native enforcement, so the caller fails fast
+with a clear `NotPermittedException` rather than an opaque storage error.
+
+- `UpdateFileHandler` MUST assert `Node::isUpdateable()` before calling
+  `File::putContent()`, throwing `NotPermittedException` naming the file when the
+  session lacks write permission.
+- `DeleteFileHandler` MUST assert `Node::isDeletable()` before calling
+  `File::delete()`, throwing `NotPermittedException` naming the file when the
+  session lacks delete permission.
+
+#### Scenario: Update without write permission is refused
+- **GIVEN** a readable file the session may NOT write (`isUpdateable()` is false)
+- **WHEN** `UpdateFileHandler` updates its content
+- **THEN** it MUST throw `NotPermittedException` and MUST NOT call `putContent()`
+
+#### Scenario: Delete without delete permission is refused
+- **GIVEN** a readable file the session may NOT delete (`isDeletable()` is false)
+- **WHEN** `DeleteFileHandler` deletes it
+- **THEN** it MUST throw `NotPermittedException` and MUST NOT call `delete()`
+
+#### Scenario: Writable file is updated
+- **GIVEN** a file the session may write (`isUpdateable()` is true)
+- **WHEN** `UpdateFileHandler` updates its content
+- **THEN** `File::putContent()` MUST be called with the new content
 

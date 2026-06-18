@@ -176,15 +176,20 @@ class CreateFileHandler
             // Security: Block executable files.
             $this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $content);
 
+            // The newFile() call already enforces create permission on the folder; it
+            // creates the node owned by the folder's mount owner (the openregister
+            // system user for the OpenRegister folder, or the original owner for a
+            // folder linked from outside it).
             $file = $folder->newFile($fileName);
 
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+            // Assert the session can reach the freshly created node.
             $this->fileValidHandler->checkOwnership($file);
 
             // Write content to the file.
             $file->putContent($content);
 
-            // Transfer ownership to OpenRegister and share with current user if needed.
+            // Re-own to the openregister user only as a fallback when the session
+            // lacks write rights; otherwise ownership is left following the folder.
             $this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
 
             // Create a share link for the file if requested.
