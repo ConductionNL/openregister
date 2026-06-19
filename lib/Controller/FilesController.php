@@ -219,11 +219,23 @@ class FilesController extends Controller
      * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
      *                                                            authenticated caller may not access the object.
      */
-    private function ensureObjectAccess(string $register, string $schema, string $id): void
+    private function ensureObjectAccess(string $register, string $schema, string $id, bool $allowAnonymous=false): void
     {
-        // Anonymous callers are gated by the per-endpoint published-file checks;
-        // the RBAC read check only applies to authenticated sessions.
+        // TEMP GUARD (rbac-default-deny follow-up): these file write/action
+        // endpoints are @PublicPage so authenticated non-members are not blocked
+        // by the app group-gate (HTTP 412), but their object RBAC here is only a
+        // READ check for authenticated callers and is NOT evaluated for anonymous
+        // principals. Until proper write-action RBAC (incl. public-group
+        // evaluation) is wired for file endpoints, deny anonymous outright.
+        // Published-file READ endpoints (e.g. preview) pass $allowAnonymous=true
+        // to keep their existing anonymous access.
         if ($this->isAnonymousRequest() === true) {
+            if ($allowAnonymous === false) {
+                throw new \OCA\OpenRegister\Exception\NotAuthorizedException(
+                    message: 'Authentication is required for this object action'
+                );
+            }
+
             return;
         }
 
@@ -519,6 +531,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     *
+     * @PublicPage
      */
     public function create(
         string $register,
@@ -606,6 +620,8 @@ class FilesController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function save(
         string $register,
@@ -709,6 +725,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function createMultipart(
         string $register,
@@ -1031,6 +1049,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function update(
         string $register,
@@ -1092,6 +1112,8 @@ class FilesController extends Controller
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     *
+     * @PublicPage
      */
     public function delete(
         string $register,
@@ -1367,6 +1389,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     *
+     * @PublicPage
      */
     public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1435,6 +1459,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     *
+     * @PublicPage
      */
     public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1535,6 +1561,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     *
+     * @PublicPage
      */
     public function move(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1635,6 +1663,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     *
+     * @PublicPage
      */
     public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1681,6 +1711,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     *
+     * @PublicPage
      */
     public function restoreVersion(
         string $register,
@@ -1752,6 +1784,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+     *
+     * @PublicPage
      */
     public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1813,6 +1847,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+     *
+     * @PublicPage
      */
     public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1882,6 +1918,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function batch(string $register, string $schema, string $id): JSONResponse
     {
@@ -1964,8 +2002,9 @@ class FilesController extends Controller
             }
 
             // ADR-005 / gate-7: authenticated callers must have object read access.
-            // Anonymous callers were already gated by the published-file check above.
-            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+            // Anonymous callers were already gated by the published-file check
+            // above, so preview opts out of the write/action anonymous-deny guard.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true);
 
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
@@ -2014,6 +2053,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
