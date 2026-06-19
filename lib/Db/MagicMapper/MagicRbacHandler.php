@@ -998,7 +998,6 @@ class MagicRbacHandler
         // anonymous) get the deny-all empty-conditions result — consistent with
         // applyRbacFilters and PermissionHandler. Admins already returned; the
         // empty-block open-default above is unchanged.
-
         // Build the RBAC filter conditions.
         $conditions = [];
 

@@ -203,16 +203,19 @@ class FilesController extends Controller
      * we re-resolve the object through `ObjectService::find(..., _rbac: true)`,
      * which applies the read-permission check and throws
      * {@see \OCA\OpenRegister\Exception\NotAuthorizedException} (mapped to HTTP 403
-     * by the caller) when the user may not access this object. Anonymous callers
-     * are gated separately by the per-endpoint published-file checks, so this
-     * helper is a no-op for them.
+     * by the caller) when the user may not access this object.
+     *
+     * Anonymous callers are denied by default (TEMP guard until proper
+     * write-action RBAC is wired for file endpoints); read-only published-file
+     * endpoints pass $allowAnonymous = true to keep their anonymous access.
      *
      * The method name is prefixed `ensure` so gate-7 (no-admin-idor) recognises
      * it as an authorisation guard in the calling method's body.
      *
-     * @param string $register The register slug or identifier.
-     * @param string $schema   The schema slug or identifier.
-     * @param string $id       The object UUID or identifier.
+     * @param string $register       The register slug or identifier.
+     * @param string $schema         The schema slug or identifier.
+     * @param string $id             The object UUID or identifier.
+     * @param bool   $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
      *
      * @return void
      *

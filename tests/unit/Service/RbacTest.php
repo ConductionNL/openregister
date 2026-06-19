@@ -367,8 +367,9 @@ class RbacTest extends TestCase
         // Empty group ID should be denied.
         $this->assertFalse($schema->hasPermission('', 'read'));
         
-        // Empty action should be allowed (default behavior - unspecified actions are open).
-        $this->assertTrue($schema->hasPermission('editors', ''));
+        // rbac-default-deny: an unspecified action on a non-empty authorization
+        // block is denied (was: allowed under the old permissive default).
+        $this->assertFalse($schema->hasPermission('editors', ''));
         
         // User in authorized group should still have access regardless of object owner.
         $this->assertTrue($schema->hasPermission('editors', 'read', 'user1', null, 'user2'));
@@ -432,7 +433,7 @@ class RbacTest extends TestCase
         ]);
         
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid authorization action: 'invalid-action'");
+        $this->expectExceptionMessage("Invalid authorization action 'invalid-action'");
         $schema2->validateAuthorization();
     }
 
@@ -448,7 +449,7 @@ class RbacTest extends TestCase
         ]);
         
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Authorization groups for action 'create' must be an array");
+        $this->expectExceptionMessage("Authorization rules for action 'create'");
         $schema->validateAuthorization();
     }
 } 
