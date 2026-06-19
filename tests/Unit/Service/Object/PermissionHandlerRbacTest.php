@@ -176,6 +176,28 @@ class PermissionHandlerRbacTest extends TestCase
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
     }
 
+    public function testActionNotConfiguredOnNonEmptyBlockFailsClosed(): void
+    {
+        // rbac-default-deny: once a schema opts into authorization (non-empty
+        // block), an action it does NOT list is denied for a non-admin /
+        // non-owner — while an explicitly-granted action still works. This is
+        // the behaviour change from the old "omitted action => open" default.
+        $this->mockUser('user1', ['medewerkers']);
+
+        $schema = $this->createSchema(1, [
+            'read' => ['medewerkers'],
+            // 'create' / 'update' / 'delete' deliberately omitted.
+        ]);
+
+        // Explicitly-granted action still works.
+        $this->assertTrue($this->handler->hasPermission($schema, 'read'));
+
+        // Omitted actions are now denied (were allowed under the old default).
+        $this->assertFalse($this->handler->hasPermission($schema, 'create'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'update'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+    }
+
     // === Role Expansion Tests ===
 
     public function testRoleExpansionViewerRole(): void

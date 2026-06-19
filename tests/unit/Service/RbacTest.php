@@ -213,7 +213,7 @@ class RbacTest extends TestCase
     }
 
     /**
-     * Test Schema::hasPermission() - Missing Action (Open Access for Unspecified Actions)
+     * Test Schema::hasPermission() - Missing Action (Fail-Closed for Unspecified Actions)
      */
     public function testSchemaHasPermissionMissingAction(): void
     {
@@ -225,10 +225,11 @@ class RbacTest extends TestCase
             // read and update not specified.
         ]);
 
-        // Unspecified actions should be open to all.
-        $this->assertTrue($schema->hasPermission('anyone', 'read'));
-        $this->assertTrue($schema->hasPermission('viewers', 'update'));
-        
+        // rbac-default-deny: unspecified actions on a non-empty authorization
+        // block are now denied (fail-closed), including for `public`.
+        $this->assertFalse($schema->hasPermission('anyone', 'read'));
+        $this->assertFalse($schema->hasPermission('viewers', 'update'));
+
         // Specified actions should respect restrictions.
         $this->assertTrue($schema->hasPermission('editors', 'create'));
         $this->assertFalse($schema->hasPermission('viewers', 'create'));

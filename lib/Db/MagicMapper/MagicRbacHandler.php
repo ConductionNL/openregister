@@ -192,13 +192,17 @@ class MagicRbacHandler
         // Get authorization rules for this action.
         $rules = $authorization[$action] ?? [];
 
-        // If action is not configured in authorization, it's open to all.
+        // Fail-closed: a non-empty authorization block that does not list this
+        // action no longer opens the table. Flow falls through to the owner
+        // condition below and, when nothing matches, the existing `1 = 0`
+        // deny-all — so an omitted action yields owner-only rows (or none),
+        // consistent with PermissionHandler/hasPermission. Admins already
+        // returned earlier; the empty-block open-default above is unchanged.
         if (empty($rules) === true) {
             $this->logger->debug(
-                message: '[MagicRbacHandler] Action not configured, open access',
+                message: '[MagicRbacHandler] Action not configured on a non-empty authorization block — failing closed',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $action]
             );
-            return;
         }
 
         // Build the RBAC filter conditions.
@@ -880,9 +884,11 @@ class MagicRbacHandler
         // Get authorization rules for this action.
         $rules = $authorization[$action] ?? [];
 
-        // If action not configured, everyone has access.
+        // Fail-closed: a non-empty authorization block that does not list this
+        // action denies it (consistent with PermissionHandler). The empty-block
+        // open-default above and the admin/owner bypasses still apply.
         if (empty($rules) === true) {
-            return true;
+            return false;
         }
 
         // Process each rule.
@@ -986,10 +992,12 @@ class MagicRbacHandler
         // Get authorization rules for this action.
         $rules = $authorization[$action] ?? [];
 
-        // If action is not configured in authorization, it's open to all.
-        if (empty($rules) === true) {
-            return ['bypass' => true, 'conditions' => []];
-        }
+        // Fail-closed: a non-empty authorization block that does not list this
+        // action no longer bypasses filtering (no early `bypass => true`). Flow
+        // falls through to the owner condition below; unmatched callers (e.g.
+        // anonymous) get the deny-all empty-conditions result — consistent with
+        // applyRbacFilters and PermissionHandler. Admins already returned; the
+        // empty-block open-default above is unchanged.
 
         // Build the RBAC filter conditions.
         $conditions = [];
