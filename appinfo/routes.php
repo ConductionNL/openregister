@@ -340,6 +340,9 @@ return [
         // Aggregations — ad-hoc time-bucket primitive (must be ordered
         // BEFORE the {name} wildcard so /timeseries literal matches first).
         ['name' => 'aggregation#timeseries', 'url' => '/api/objects/aggregations/{register}/{schema}/timeseries', 'verb' => 'GET'],
+        // Aggregations — ad-hoc single-value + categorical group-by primitives (literal before {name}).
+        ['name' => 'aggregation#value', 'url' => '/api/objects/aggregations/{register}/{schema}/value', 'verb' => 'GET'],
+        ['name' => 'aggregation#grouped', 'url' => '/api/objects/aggregations/{register}/{schema}/grouped', 'verb' => 'GET'],
         // Aggregations sugar endpoint — named annotation surface.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
 
