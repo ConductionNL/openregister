@@ -2237,7 +2237,6 @@ class SettingsService
         return 'integration.deck.default.'.$schemaSlug;
     }//end buildDeckDefaultKey()
 
-
     /**
      * Get the persisted Deck default board+stack for a schema (or null).
      *
@@ -2269,7 +2268,6 @@ class SettingsService
         ];
     }//end getDeckDefault()
 
-
     /**
      * Persist the Deck default board+stack for a schema. Overwrites any prior value.
      *
@@ -2295,7 +2293,6 @@ class SettingsService
 
         $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), $payload);
     }//end setDeckDefault()
-
 
     /**
      * Clear the persisted Deck default for a schema. No-op when none stored.

@@ -123,7 +123,7 @@ class RestApiSourceFetcher implements SourceFetcherInterface
             }
 
             $url = $this->nextPageUrl(body: $body, response: $response);
-        }
+        }//end while
 
         return array_values(array_unique($ids));
     }//end gather()
@@ -168,7 +168,7 @@ class RestApiSourceFetcher implements SourceFetcherInterface
         $auth = $this->decryptAuthConfig(source: $source);
         switch ((string) $source->getAuthType()) {
             case 'apikey':
-                $headerName = (string) ($auth['header'] ?? 'X-Api-Key');
+                $headerName           = (string) ($auth['header'] ?? 'X-Api-Key');
                 $headers[$headerName] = (string) ($auth['key'] ?? '');
                 break;
 

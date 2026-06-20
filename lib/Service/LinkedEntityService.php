@@ -73,7 +73,7 @@ class LinkedEntityService
      * @param RegisterMapper      $registerMapper      Register mapper
      * @param OrganisationMapper  $organisationMapper  Organisation mapper
      * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
-     *                                                  type-id source, post `cleanup-linked-entity-type-map`)
+     *                                                 type-id source, post `cleanup-linked-entity-type-map`)
      * @param LoggerInterface     $logger              Logger
      * @param PermissionHandler   $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
      */
@@ -379,7 +379,7 @@ class LinkedEntityService
                         'register'   => $registerId,
                         'url'        => $deepLink,
                     ];
-                }
+                }//end foreach
             } catch (Exception $e) {
                 $this->logger->warning(
                     '[LinkedEntityService] Error scanning magic table',

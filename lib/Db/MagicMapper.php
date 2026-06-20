@@ -2007,9 +2007,9 @@ class MagicMapper extends AbstractObjectMapper
                 if ($column !== null && $column !== '') {
                     // BUG-DB-8: disambiguate column-name collisions deterministically.
                     if (isset($usedColumnNames[$column['name']]) === true) {
-                        $base       = $column['name'];
-                        $suffix     = 1;
-                        $candidate  = $base.'_'.$suffix;
+                        $base      = $column['name'];
+                        $suffix    = 1;
+                        $candidate = $base.'_'.$suffix;
                         while (isset($usedColumnNames[$candidate]) === true) {
                             $suffix++;
                             $candidate = $base.'_'.$suffix;
@@ -2018,11 +2018,11 @@ class MagicMapper extends AbstractObjectMapper
                         $this->logger->warning(
                             message: '[MagicMapper] Column name collision after sanitisation; disambiguating',
                             context: [
-                                'file'           => __FILE__,
-                                'line'           => __LINE__,
-                                'propertyName'   => $propertyName,
-                                'collidingColumn'=> $base,
-                                'resolvedColumn' => $candidate,
+                                'file'            => __FILE__,
+                                'line'            => __LINE__,
+                                'propertyName'    => $propertyName,
+                                'collidingColumn' => $base,
+                                'resolvedColumn'  => $candidate,
                             ]
                         );
                         $column['name'] = $candidate;
@@ -2030,7 +2030,7 @@ class MagicMapper extends AbstractObjectMapper
 
                     $usedColumnNames[$column['name']] = true;
                     $columns[$propertyName]           = $column;
-                }
+                }//end if
             }//end foreach
         }//end if
 
@@ -2721,13 +2721,13 @@ class MagicMapper extends AbstractObjectMapper
             $fullTableName = $tablePrefix.$tableName;
 
             // Build column definitions.
-            $columnDefs             = [];
-            $primaryKey             = null;
+            $columnDefs = [];
+            $primaryKey = null;
             // SQLite auto-increments an INTEGER PRIMARY KEY column declared
             // inline; when that path is taken the separate PRIMARY KEY(...)
             // table constraint must be suppressed (one primary key only).
             $sqliteInlinePrimaryKey = false;
-            $uniqueConstraints = [];
+            $uniqueConstraints      = [];
 
             foreach ($columns as $column) {
                 // BUG-DB-7: route the raw column name through quoteIdentifier so
@@ -2778,7 +2778,7 @@ class MagicMapper extends AbstractObjectMapper
                         // declared inline; AUTO_INCREMENT is a syntax error and
                         // a separate PRIMARY KEY(...) constraint would stop the
                         // column from aliasing rowid.
-                        $def                    = $colName.' INTEGER PRIMARY KEY AUTOINCREMENT';
+                        $def = $colName.' INTEGER PRIMARY KEY AUTOINCREMENT';
                         $sqliteInlinePrimaryKey = true;
                     }
                 }
@@ -2985,9 +2985,9 @@ class MagicMapper extends AbstractObjectMapper
                 // "WHERE _owner = ? AND _deleted IS NULL" access pattern can use
                 // an index. Partial indexes are a PostgreSQL feature; MySQL/
                 // MariaDB do not support them, so this is Postgres-only.
-                $deletedCol      = self::METADATA_PREFIX.'deleted';
-                $ownerColForIdx  = self::METADATA_PREFIX.'owner';
-                $liveOwnerIdx    = "{$tableName}_live_owner_idx";
+                $deletedCol     = self::METADATA_PREFIX.'deleted';
+                $ownerColForIdx = self::METADATA_PREFIX.'owner';
+                $liveOwnerIdx   = "{$tableName}_live_owner_idx";
                 $this->db->executeStatement(
                     "CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
                 );
@@ -6578,6 +6578,7 @@ class MagicMapper extends AbstractObjectMapper
                     } else {
                         $conditions[] = "({$quotedCol} = ? OR CAST({$quotedCol} AS CHAR) LIKE ?)";
                     }
+
                     $params[] = $uuid;
                     $params[] = '%'.$uuid.'%';
                 }
@@ -6723,7 +6724,7 @@ class MagicMapper extends AbstractObjectMapper
             $sqlParams = array_merge([$uuid], $orgParams);
             if ($isPostgres === true) {
                 // PostgreSQL: handle both object and array relation shapes.
-                $sql = "SELECT * FROM {$fullTableName}
+                $sql       = "SELECT * FROM {$fullTableName}
                         WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
                         AND (
                             (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))

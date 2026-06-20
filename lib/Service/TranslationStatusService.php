@@ -228,8 +228,8 @@ class TranslationStatusService
             } else if (isset($cache[$key]) === true) {
                 $entry['sourceValue'] = $cache[$key];
             } else {
-                $sourceRow = $this->translationMapper->findOne($uuid, $prop, $source);
-                $value     = ($sourceRow !== null) ? $sourceRow->getValue() : null;
+                $sourceRow   = $this->translationMapper->findOne($uuid, $prop, $source);
+                $value       = ($sourceRow !== null) ? $sourceRow->getValue() : null;
                 $cache[$key] = $value;
                 $entry['sourceValue'] = $value;
             }

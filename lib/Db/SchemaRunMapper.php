@@ -36,8 +36,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemaRunMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -48,7 +46,6 @@ class SchemaRunMapper extends QBMapper
         parent::__construct(db: $db, tableName: 'openregister_schema_runs', entityClass: SchemaRun::class);
 
     }//end __construct()
-
 
     /**
      * Find a run by id.
@@ -69,7 +66,6 @@ class SchemaRunMapper extends QBMapper
         return $this->findEntity(query: $qb);
 
     }//end find()
-
 
     /**
      * Find runs for a schema, newest first.
@@ -100,7 +96,6 @@ class SchemaRunMapper extends QBMapper
 
     }//end findBySchema()
 
-
     /**
      * Find the active (blocking) run for a schema, if any.
      *
@@ -124,7 +119,6 @@ class SchemaRunMapper extends QBMapper
         }
 
     }//end findActiveForSchema()
-
 
     /**
      * Create a run from an array of values, assigning a UUID and timestamps.
@@ -153,7 +147,6 @@ class SchemaRunMapper extends QBMapper
 
     }//end createFromArray()
 
-
     /**
      * Persist run progress/state changes, refreshing the updated timestamp.
      *
@@ -168,6 +161,4 @@ class SchemaRunMapper extends QBMapper
         return $this->update(entity: $run);
 
     }//end save()
-
-
 }//end class

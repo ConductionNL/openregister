@@ -33,8 +33,6 @@ use OCP\IDBConnection;
  */
 class SchemaRunEntryMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -45,7 +43,6 @@ class SchemaRunEntryMapper extends QBMapper
         parent::__construct(db: $db, tableName: 'openregister_schema_run_entries', entityClass: SchemaRunEntry::class);
 
     }//end __construct()
-
 
     /**
      * Find entries for a run, optionally filtered by outcome.
@@ -81,7 +78,6 @@ class SchemaRunEntryMapper extends QBMapper
 
     }//end findByRun()
 
-
     /**
      * Create an entry from an array of values.
      *
@@ -97,7 +93,6 @@ class SchemaRunEntryMapper extends QBMapper
         return $this->insert(entity: $entry);
 
     }//end createFromArray()
-
 
     /**
      * Delete all entries for a run.
@@ -115,6 +110,4 @@ class SchemaRunEntryMapper extends QBMapper
         return $qb->executeStatement();
 
     }//end deleteByRun()
-
-
 }//end class

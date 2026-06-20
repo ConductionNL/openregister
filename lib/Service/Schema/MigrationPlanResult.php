@@ -44,7 +44,7 @@ final class MigrationPlanResult
     /**
      * Whether the data changed relative to the input.
      *
-     * @var bool
+     * @var boolean
      */
     private bool $changed;
 
@@ -61,7 +61,6 @@ final class MigrationPlanResult
      * @var array<int, string>
      */
     private array $applied;
-
 
     /**
      * Constructor.
@@ -80,7 +79,6 @@ final class MigrationPlanResult
 
     }//end __construct()
 
-
     /**
      * Get the resulting data.
      *
@@ -91,7 +89,6 @@ final class MigrationPlanResult
         return $this->data;
 
     }//end getData()
-
 
     /**
      * Whether the data changed.
@@ -104,7 +101,6 @@ final class MigrationPlanResult
 
     }//end isChanged()
 
-
     /**
      * Whether the chain failed for this object.
      *
@@ -115,7 +111,6 @@ final class MigrationPlanResult
         return $this->failure !== null;
 
     }//end isFailed()
-
 
     /**
      * Get the failure reason, if any.
@@ -128,7 +123,6 @@ final class MigrationPlanResult
 
     }//end getFailure()
 
-
     /**
      * Get the applied transform descriptions.
      *
@@ -139,6 +133,4 @@ final class MigrationPlanResult
         return $this->applied;
 
     }//end getApplied()
-
-
 }//end class

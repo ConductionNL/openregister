@@ -64,7 +64,6 @@ class JsonLdContextService
      */
     private array $contextCache = [];
 
-
     /**
      * Constructor.
      *
@@ -74,7 +73,6 @@ class JsonLdContextService
         private readonly IURLGenerator $urlGenerator
     ) {
     }//end __construct()
-
 
     /**
      * Build the absolute URL of a per-schema context document.
@@ -97,7 +95,6 @@ class JsonLdContextService
         );
     }//end getSchemaContextUrl()
 
-
     /**
      * Build the absolute URL of the register-wide context document.
      *
@@ -114,7 +111,6 @@ class JsonLdContextService
             ['register' => $this->slugOf($register)]
         );
     }//end getRegisterContextUrl()
-
 
     /**
      * Resolve the class IRI used as a serialized object's `@type` for a schema.
@@ -137,7 +133,6 @@ class JsonLdContextService
 
         return $this->slugOf($schema);
     }//end getTypeForSchema()
-
 
     /**
      * Build the JSON-LD context map for a single schema.
@@ -163,9 +158,9 @@ class JsonLdContextService
             return $this->contextCache[$cacheKey];
         }
 
-        $jsonld    = $this->jsonLdConfig($schema);
-        $vocab     = ($jsonld['@vocab'] ?? null);
-        $propMap   = ($jsonld['properties'] ?? []);
+        $jsonld  = $this->jsonLdConfig($schema);
+        $vocab   = ($jsonld['@vocab'] ?? null);
+        $propMap = ($jsonld['properties'] ?? []);
         if (is_array($propMap) === false) {
             $propMap = [];
         }
@@ -208,7 +203,6 @@ class JsonLdContextService
         return $context;
     }//end buildSchemaContext()
 
-
     /**
      * Build the register-wide context document: a merged term block covering
      * every schema in the register (later schemas win on term collisions, which
@@ -247,7 +241,6 @@ class JsonLdContextService
 
         return $context;
     }//end buildRegisterContext()
-
 
     /**
      * Validate a schema's `jsonld` mapping block. Term values must be absolute
@@ -294,7 +287,6 @@ class JsonLdContextService
         return $errors;
     }//end validateMapping()
 
-
     /**
      * Build a single JSON-LD context term for a schema property.
      *
@@ -326,7 +318,6 @@ class JsonLdContextService
             '@type' => $coercion,
         ];
     }//end buildPropertyTerm()
-
 
     /**
      * Map a JSON-Schema property definition to a JSON-LD `@type` coercion.
@@ -360,7 +351,6 @@ class JsonLdContextService
         return null;
     }//end coercionForDefinition()
 
-
     /**
      * Determine whether a JSON-Schema property definition is a relation to
      * another register object (carries a `$ref`, an `objectConfiguration`,
@@ -388,7 +378,6 @@ class JsonLdContextService
         return false;
     }//end isRelationDefinition()
 
-
     /**
      * Read the optional `jsonld` block from a schema's configuration.
      *
@@ -411,7 +400,6 @@ class JsonLdContextService
         return $jsonld;
     }//end jsonLdConfig()
 
-
     /**
      * Compute the request-cache key for a schema context.
      *
@@ -425,7 +413,6 @@ class JsonLdContextService
         $stamp   = ($updated !== null) ? $updated->format('U') : '0';
         return ((string) $schema->getId()).':'.$stamp;
     }//end cacheKey()
-
 
     /**
      * Resolve the slug for an entity, falling back to its UUID then id so a
@@ -450,7 +437,6 @@ class JsonLdContextService
         return (string) $entity->getId();
     }//end slugOf()
 
-
     /**
      * Whether a value is an absolute IRI (has a scheme, e.g. `https:`).
      *
@@ -466,7 +452,6 @@ class JsonLdContextService
 
         return preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $value) === 1;
     }//end isAbsoluteIri()
-
 
     /**
      * Whether a value is a resolvable JSON-LD term: an absolute IRI, or a

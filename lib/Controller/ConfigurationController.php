@@ -62,7 +62,6 @@ class ConfigurationController extends Controller
 {
     use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
-
     /**
      * Configuration mapper instance.
      *
@@ -1318,9 +1317,9 @@ class ConfigurationController extends Controller
                 }
             }
 
-            $version       = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
-            $title         = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}";
-            $description   = $info['description'] ?? $xOpenregister['description'] ?? "Imported from {$sourceType}";
+            $version     = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
+            $title       = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? "Imported from {$sourceType}";
 
             // Step 3: Check if configuration already exists for this app.
             $existingConfigs = $this->configurationMapper->findByApp($appId);

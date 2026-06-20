@@ -303,7 +303,6 @@ class DeleteObject
         // in place so the object (and its attachments) can be restored. The folder is
         // only destroyed on permanent delete (above). TODO: if product wants soft-deleted
         // attachments moved to the trash for recoverability, trash the folder here.
-
         /*
          * Update the object in database (soft delete - keeps record with deleted metadata).
          * Pass register/schema context for magic mapper routing.

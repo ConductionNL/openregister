@@ -35,7 +35,6 @@ use OCP\IDBConnection;
  */
 class CaseTokenMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *

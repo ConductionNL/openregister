@@ -51,7 +51,6 @@ use RuntimeException;
  */
 final class NullNcOfficeConverter implements NcOfficeConverterInterface
 {
-
     /**
      * NC Office bridge is never available in the null implementation.
      *

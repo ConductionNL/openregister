@@ -65,7 +65,6 @@ class PropertyNotFoundException extends Exception
      */
     private string $schemaIdentifier;
 
-
     /**
      * Construct the not-found exception with diagnostic context.
      *
@@ -101,7 +100,6 @@ class PropertyNotFoundException extends Exception
 
     }//end __construct()
 
-
     /**
      * Get the app id the resolver was working against.
      *
@@ -112,7 +110,6 @@ class PropertyNotFoundException extends Exception
         return $this->appId;
 
     }//end getAppId()
-
 
     /**
      * Get the config key that was read.
@@ -125,7 +122,6 @@ class PropertyNotFoundException extends Exception
 
     }//end getConfigKey()
 
-
     /**
      * Get the resolved value that could not be hydrated.
      *
@@ -137,7 +133,6 @@ class PropertyNotFoundException extends Exception
 
     }//end getResolvedValue()
 
-
     /**
      * Get the schema identifier the property lookup targeted.
      *
@@ -148,6 +143,4 @@ class PropertyNotFoundException extends Exception
         return $this->schemaIdentifier;
 
     }//end getSchemaIdentifier()
-
-
 }//end class

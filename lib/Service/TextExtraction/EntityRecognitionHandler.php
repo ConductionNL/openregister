@@ -94,11 +94,11 @@ class EntityRecognitionHandler
     /**
      * Constructor.
      *
-     * @param ChunkMapper          $chunkMapper          Chunk mapper.
-     * @param GdprEntityMapper     $entityMapper         Entity mapper.
-     * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
-     * @param IDBConnection        $db                   Database connection.
-     * @param LoggerInterface      $logger               Logger.
+     * @param ChunkMapper                 $chunkMapper                 Chunk mapper.
+     * @param GdprEntityMapper            $entityMapper                Entity mapper.
+     * @param EntityRelationMapper        $entityRelationMapper        Entity relation mapper.
+     * @param IDBConnection               $db                          Database connection.
+     * @param LoggerInterface             $logger                      Logger.
      * @param SettingsService             $settingsService             Settings service.
      * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
      */
@@ -540,7 +540,7 @@ class EntityRecognitionHandler
     {
         try {
             // Get Presidio settings.
-            $fileSettings     = $this->settingsService->getFileSettingsOnly();
+            $fileSettings = $this->settingsService->getFileSettingsOnly();
             // Strip a trailing slash to avoid a double-slash "//analyze" URL
             // (some servers 404, silently sending the run to the regex fallback).
             $presidioEndpoint = rtrim(trim((string) ($fileSettings['presidioApiEndpoint'] ?? '')), '/');
@@ -622,7 +622,7 @@ class EntityRecognitionHandler
             // to the regex fallback.
             $anonEndpoint = rtrim(trim((string) ($fileSettings['openAnonymiserApiEndpoint'] ?? '')), '/');
             // Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
-            $useExternal  = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
+            $useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
 
             // Build request body (shared by both transports).
             $requestBody = $this->buildAnalyzeRequestBody(text: $text, language: 'nl', entityTypes: $entityTypes);

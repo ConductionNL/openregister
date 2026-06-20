@@ -71,7 +71,6 @@ class SchemaMigrationService
      */
     public const DEFAULT_BATCH = 100;
 
-
     /**
      * Constructor.
      *
@@ -93,7 +92,6 @@ class SchemaMigrationService
 
     }//end __construct()
 
-
     /**
      * Validate a migration plan structurally.
      *
@@ -108,7 +106,6 @@ class SchemaMigrationService
         return $this->planner->validatePlan($plan);
 
     }//end validatePlan()
-
 
     /**
      * Preview a plan against a bounded sample without persisting.
@@ -144,7 +141,6 @@ class SchemaMigrationService
         return $pairs;
 
     }//end preview()
-
 
     /**
      * Start a migration run.
@@ -188,7 +184,6 @@ class SchemaMigrationService
         );
 
     }//end start()
-
 
     /**
      * Process one batch of a migration run.
@@ -303,7 +298,6 @@ class SchemaMigrationService
 
     }//end processBatch()
 
-
     /**
      * Roll a completed or failed migration run back.
      *
@@ -384,8 +378,8 @@ class SchemaMigrationService
             }
         }//end foreach
 
-        $report                = ($run->getReport() ?? []);
-        $report['rollback']    = ['restored' => $restored, 'conflicts' => $conflicts];
+        $report = ($run->getReport() ?? []);
+        $report['rollback'] = ['restored' => $restored, 'conflicts' => $conflicts];
         $run->setReport($report);
         $run->setState(SchemaRun::STATE_ROLLED_BACK);
         $this->runMapper->save($run);
@@ -393,7 +387,6 @@ class SchemaMigrationService
         return $run;
 
     }//end rollback()
-
 
     /**
      * Finish a run, persisting its terminal state.
@@ -411,7 +404,6 @@ class SchemaMigrationService
         $this->runMapper->save($run);
 
     }//end finish()
-
 
     /**
      * Refuse a second concurrent run on the same schema.
@@ -435,7 +427,6 @@ class SchemaMigrationService
 
     }//end assertNoActiveRun()
 
-
     /**
      * Record a rollback per-object entry.
      *
@@ -458,7 +449,6 @@ class SchemaMigrationService
         );
 
     }//end recordRollbackEntry()
-
 
     /**
      * Load a bounded sample of objects.
@@ -486,7 +476,6 @@ class SchemaMigrationService
         return array_values(array_filter($result, static fn($o) => $o instanceof ObjectEntity));
 
     }//end loadSample()
-
 
     /**
      * Load the next batch of non-deleted objects.
@@ -516,7 +505,6 @@ class SchemaMigrationService
 
     }//end loadBatch()
 
-
     /**
      * Count the non-deleted population for a schema in a register.
      *
@@ -541,6 +529,4 @@ class SchemaMigrationService
         }
 
     }//end countPopulation()
-
-
 }//end class

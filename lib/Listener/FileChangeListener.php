@@ -68,9 +68,9 @@ class FileChangeListener implements IEventListener
     /**
      * Constructor
      *
-     * @param SettingsService       $settingsService Settings service
-     * @param IJobList              $jobList         Job list for queuing background jobs
-     * @param LoggerInterface       $logger          Logger
+     * @param SettingsService $settingsService Settings service
+     * @param IJobList        $jobList         Job list for queuing background jobs
+     * @param LoggerInterface $logger          Logger
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */

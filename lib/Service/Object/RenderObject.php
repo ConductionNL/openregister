@@ -164,7 +164,7 @@ class RenderObject
      * batch preload already populated into $objectsCache — avoiding duplicate
      * UUID collection + preload work for every row.
      *
-     * @var bool
+     * @var boolean
      */
     private bool $pageRenderActive = false;
 
@@ -1082,7 +1082,7 @@ class RenderObject
                 $this->logger->debug(
                     '[RenderObject] Could not determine file size for base64 cap: '.$sizeError->getMessage()
                 );
-            }
+            }//end try
 
             // Get file content.
             $fileContent = $file->getContent();
@@ -1786,7 +1786,7 @@ class RenderObject
             return $objectData;
         }
 
-        $uuid = (string) ($entity->getUuid() ?? '');
+        $uuid            = (string) ($entity->getUuid() ?? '');
         $registerDefault = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
         $served          = $this->languageService->getPreferredLanguage();
 
@@ -1824,7 +1824,7 @@ class RenderObject
                 'isSource'       => ($served === $sourceLanguage),
                 'status'         => $status,
             ];
-        }
+        }//end foreach
 
         if (count($languageMeta) === 0) {
             return $objectData;
@@ -2269,7 +2269,7 @@ class RenderObject
         // every extend UUID for the whole page into $objectsCache, so re-collecting and
         // re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
         // active; nested (depth > 0) extends still preload their own children.
-        $skipPreload = ($this->pageRenderActive === true && $depth === 0);
+        $skipPreload    = ($this->pageRenderActive === true && $depth === 0);
         $uuidsToPreload = [];
         if ($skipPreload === false) {
             $uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);

@@ -194,7 +194,7 @@ class AggregationController extends Controller
         }
 
         $groupSpec = ['field' => $groupBy];
-        $sort = $this->request->getParam('sort');
+        $sort      = $this->request->getParam('sort');
         if ($sort === 'asc' || $sort === 'desc') {
             $groupSpec['sort'] = $sort;
         }

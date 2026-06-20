@@ -310,7 +310,7 @@ class NotificationDedupeStateMapper extends QBMapper
             return $keys;
         } catch (\Throwable) {
             return [];
-        }
+        }//end try
 
     }//end listRuleKeysForSchema()
 }//end class

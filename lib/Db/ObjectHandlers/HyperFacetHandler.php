@@ -523,7 +523,7 @@ class HyperFacetHandler
             if ($caught !== null) {
                 throw $caught;
             }
-        }
+        }//end if
 
         // Combine results from different facet types.
         $combinedFacets = [];

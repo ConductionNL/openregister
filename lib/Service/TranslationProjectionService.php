@@ -119,9 +119,9 @@ class TranslationProjectionService
                 return;
             }
 
-            $data       = (array) ($object->getObject() ?? []);
-            $translator = $this->userSession->getUser()?->getUID();
-            $register   = $this->loadRegister(object: $object);
+            $data            = (array) ($object->getObject() ?? []);
+            $translator      = $this->userSession->getUser()?->getUID();
+            $register        = $this->loadRegister(object: $object);
             $defaultLanguage = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
 
             // Per-property resolved source language (i18n-source-of-truth).

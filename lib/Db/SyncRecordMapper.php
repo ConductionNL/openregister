@@ -47,7 +47,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SyncRecordMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *

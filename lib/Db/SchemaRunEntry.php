@@ -57,18 +57,18 @@ class SchemaRunEntry extends Entity implements JsonSerializable
      *
      * @var string
      */
-    public const OUTCOME_VALID    = 'valid';
-    public const OUTCOME_INVALID  = 'invalid';
-    public const OUTCOME_MIGRATED = 'migrated';
+    public const OUTCOME_VALID     = 'valid';
+    public const OUTCOME_INVALID   = 'invalid';
+    public const OUTCOME_MIGRATED  = 'migrated';
     public const OUTCOME_UNCHANGED = 'unchanged';
-    public const OUTCOME_FAILED   = 'failed';
-    public const OUTCOME_RESTORED = 'restored';
-    public const OUTCOME_CONFLICT = 'conflict';
+    public const OUTCOME_FAILED    = 'failed';
+    public const OUTCOME_RESTORED  = 'restored';
+    public const OUTCOME_CONFLICT  = 'conflict';
 
     /**
      * The run this entry belongs to.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $runId = null;
 
@@ -114,7 +114,6 @@ class SchemaRunEntry extends Entity implements JsonSerializable
      */
     protected ?array $preData = null;
 
-
     /**
      * Constructor — registers field types for hydration.
      */
@@ -129,7 +128,6 @@ class SchemaRunEntry extends Entity implements JsonSerializable
         $this->addType(fieldName: 'preData', type: 'json');
 
     }//end __construct()
-
 
     /**
      * JSON serialisation.
@@ -150,6 +148,4 @@ class SchemaRunEntry extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

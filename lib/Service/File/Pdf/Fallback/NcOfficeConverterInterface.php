@@ -58,7 +58,6 @@ namespace OCA\OpenRegister\Service\File\Pdf\Fallback;
  */
 interface NcOfficeConverterInterface
 {
-
     /**
      * Whether the NC Office bridge is reachable + ready for conversion.
      *

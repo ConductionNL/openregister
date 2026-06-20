@@ -418,7 +418,6 @@ class SchemasController extends Controller
         );
     }//end validateJsonLdMapping()
 
-
     /**
      * Creates a new schema
      *
@@ -1524,7 +1523,6 @@ class SchemasController extends Controller
 
     }//end applyDialect()
 
-
     /**
      * Resolve the type reference for a standards-dialect upload.
      *
@@ -1547,7 +1545,6 @@ class SchemasController extends Controller
         return null;
 
     }//end resolveDialectReference()
-
 
     /**
      * Check if the current user is a Nextcloud administrator.

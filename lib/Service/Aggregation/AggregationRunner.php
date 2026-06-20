@@ -1023,7 +1023,7 @@ class AggregationRunner
                         break 2;
                     }
                 }
-            }
+            }//end foreach
 
             if ($keep === true) {
                 $result[] = $row;

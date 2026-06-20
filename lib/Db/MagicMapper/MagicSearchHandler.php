@@ -1356,9 +1356,7 @@ class MagicSearchHandler
             $values = $value;
         }
 
-        $colCast = $isPostgres === true
-            ? "t.{$columnName}::text"
-            : "CAST(t.{$columnName} AS CHAR)";
+        $colCast = $isPostgres === true ? "t.{$columnName}::text" : "CAST(t.{$columnName} AS CHAR)";
 
         if (count($values) === 1) {
             // Single value: match both plain UUID and JSON format using text comparison.

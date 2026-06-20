@@ -55,12 +55,12 @@ class HarvestPipelineService
     /**
      * Constructor.
      *
-     * @param SyncRecordMapper      $syncRecordMapper Per-record tracking persistence
-     * @param MappingMapper         $mappingMapper    Resolves the configured Mapping entity
-     * @param MappingService        $mappingService   Applies Twig field transformation
-     * @param ObjectService         $objectService    Validates + persists target objects
-     * @param SyncConflictResolver  $conflictResolver Decides source/local conflicts
-     * @param LoggerInterface       $logger           Logger
+     * @param SyncRecordMapper     $syncRecordMapper Per-record tracking persistence
+     * @param MappingMapper        $mappingMapper    Resolves the configured Mapping entity
+     * @param MappingService       $mappingService   Applies Twig field transformation
+     * @param ObjectService        $objectService    Validates + persists target objects
+     * @param SyncConflictResolver $conflictResolver Decides source/local conflicts
+     * @param LoggerInterface      $logger           Logger
      */
     public function __construct(
         private readonly SyncRecordMapper $syncRecordMapper,
@@ -75,10 +75,10 @@ class HarvestPipelineService
     /**
      * Run the full pipeline for a source.
      *
-     * @param Source                   $source      The source to harvest
-     * @param SourceFetcherInterface   $fetcher     Transport for gather/fetch
-     * @param string                   $executionId Unique id for this run
-     * @param string|null              $since       Incremental checkpoint (null = full)
+     * @param Source                 $source      The source to harvest
+     * @param SourceFetcherInterface $fetcher     Transport for gather/fetch
+     * @param string                 $executionId Unique id for this run
+     * @param string|null            $since       Incremental checkpoint (null = full)
      *
      * @return array<string, int|string> Execution summary (counts + status)
      *
@@ -235,9 +235,9 @@ class HarvestPipelineService
     /**
      * Import a single fetched record, updating the summary in place.
      *
-     * @param Source     $source  The source
-     * @param SyncRecord $record  The fetched record
-     * @param Mapping|null $mapping The configured mapping (or null for pass-through)
+     * @param Source                    $source  The source
+     * @param SyncRecord                $record  The fetched record
+     * @param Mapping|null              $mapping The configured mapping (or null for pass-through)
      * @param array<string, int|string> $summary Running summary (by reference)
      *
      * @return void
@@ -371,10 +371,7 @@ class HarvestPipelineService
     public function deriveStatus(array $summary): string
     {
         $errors    = (int) ($summary['errors'] ?? 0);
-        $processed = ((int) ($summary['created'] ?? 0)
-            + (int) ($summary['updated'] ?? 0)
-            + (int) ($summary['unchanged'] ?? 0)
-            + (int) ($summary['conflicts'] ?? 0));
+        $processed = ((int) ($summary['created'] ?? 0) + (int) ($summary['updated'] ?? 0) + (int) ($summary['unchanged'] ?? 0) + (int) ($summary['conflicts'] ?? 0));
 
         if ($errors === 0) {
             return 'success';

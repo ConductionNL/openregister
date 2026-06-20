@@ -5010,7 +5010,7 @@ class SaveObject
         // BUG-OBJ-8: collect the names of the properties the file handler rewrote so
         // we can overlay ONLY those file-id replacements onto the merged/prepared body
         // below, instead of clobbering the whole object with the raw partial $data.
-        $filePropsProcessed     = false;
+        $filePropsProcessed      = false;
         $processedFileProperties = [];
         foreach ($data as $propertyName => $value) {
             $isFileProperty = $this->filePropertyHandler->isFileProperty(
@@ -5145,7 +5145,7 @@ class SaveObject
                 property: (string) $property,
                 sourceLanguage: $sourceLanguage
             );
-        }
+        }//end foreach
     }//end flagOutdatedDerivedTranslations()
 
     /**

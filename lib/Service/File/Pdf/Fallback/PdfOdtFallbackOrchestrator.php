@@ -101,10 +101,10 @@ class PdfOdtFallbackOrchestrator
     /**
      * Constructor.
      *
-     * @param IAppConfig                  $appConfig       App-config carrying the feature flag.
-     * @param NcOfficeConverterInterface  $converter       NC Office bridge (Null by default).
-     * @param PdfTextReplacer             $pdfTextReplacer The Path A replacer (re-used for the ODT-derived PDF).
-     * @param LoggerInterface             $logger          PII-free logger.
+     * @param IAppConfig                 $appConfig       App-config carrying the feature flag.
+     * @param NcOfficeConverterInterface $converter       NC Office bridge (Null by default).
+     * @param PdfTextReplacer            $pdfTextReplacer The Path A replacer (re-used for the ODT-derived PDF).
+     * @param LoggerInterface            $logger          PII-free logger.
      */
     public function __construct(
         private readonly IAppConfig $appConfig,
@@ -156,9 +156,9 @@ class PdfOdtFallbackOrchestrator
      * if Path B itself fails (any sub-step throws OR the re-run validation
      * gate also rejects the output).
      *
-     * @param string                     $pdfBytes      The original input PDF bytes.
-     * @param array<string, string>      $substitutions The substitution map applied by Path A.
-     * @param PdfAnonymisationException  $cause         The Path A exception that triggered the fallback.
+     * @param string                    $pdfBytes      The original input PDF bytes.
+     * @param array<string, string>     $substitutions The substitution map applied by Path A.
+     * @param PdfAnonymisationException $cause         The Path A exception that triggered the fallback.
      *
      * @return string Anonymised PDF bytes from Path B.
      *

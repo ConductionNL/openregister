@@ -57,7 +57,6 @@ class SchemaNotFoundException extends Exception
      */
     private string $resolvedValue;
 
-
     /**
      * Construct the not-found exception with diagnostic context.
      *
@@ -85,7 +84,6 @@ class SchemaNotFoundException extends Exception
 
     }//end __construct()
 
-
     /**
      * Get the app id the resolver was working against.
      *
@@ -96,7 +94,6 @@ class SchemaNotFoundException extends Exception
         return $this->appId;
 
     }//end getAppId()
-
 
     /**
      * Get the config key that was read.
@@ -109,7 +106,6 @@ class SchemaNotFoundException extends Exception
 
     }//end getConfigKey()
 
-
     /**
      * Get the resolved value that could not be hydrated.
      *
@@ -120,6 +116,4 @@ class SchemaNotFoundException extends Exception
         return $this->resolvedValue;
 
     }//end getResolvedValue()
-
-
 }//end class

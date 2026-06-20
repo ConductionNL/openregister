@@ -295,7 +295,7 @@ class AnonymisationBackendService
      *
      * @return array<string, mixed>|null Decoded JSON response, or null on failure.
      */
-    public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array
+    public function requestOpenAnonymiser(string $route, array $params, string $method='POST'): ?array
     {
         $appId = $this->resolveActiveExAppId();
         if ($appId === null) {
@@ -490,8 +490,8 @@ class AnonymisationBackendService
     /**
      * Resolve the active method, applying the first-run auto-select rule.
      *
-     * @param string                      $stored   The stored method (may be the `auto` sentinel).
-     * @param array<string, BackendInfo>  $backends The per-method availability records.
+     * @param string                     $stored   The stored method (may be the `auto` sentinel).
+     * @param array<string, BackendInfo> $backends The per-method availability records.
      *
      * @return string The resolved active method enum value.
      */
@@ -517,9 +517,9 @@ class AnonymisationBackendService
     /**
      * Apply the effectiveMethod precedence rule.
      *
-     * @param bool                        $enabled      Whether recognition is enabled.
-     * @param string                      $activeMethod The resolved active method.
-     * @param array<string, BackendInfo>  $backends     The per-method availability records.
+     * @param bool                       $enabled      Whether recognition is enabled.
+     * @param string                     $activeMethod The resolved active method.
+     * @param array<string, BackendInfo> $backends     The per-method availability records.
      *
      * @return string The method that will actually be used.
      */

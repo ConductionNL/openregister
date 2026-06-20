@@ -1298,8 +1298,8 @@ class RegistersController extends Controller
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
                     // Derive RBAC from admin status and always keep imports tenant-scoped.
-                    $rbac  = ($this->isCurrentUserAdmin() === false);
-                    $multi = true;
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
@@ -1330,8 +1330,8 @@ class RegistersController extends Controller
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
                     // Derive RBAC from admin status and always keep imports tenant-scoped.
-                    $rbac  = ($this->isCurrentUserAdmin() === false);
-                    $multi = true;
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,

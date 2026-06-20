@@ -79,9 +79,9 @@ class ZaaktypeAuthorizationService
      * @var array<string, string>
      */
     private const ZGW_SCOPE_SUFFIX_TO_ACTION = [
-        'lezen'      => 'read',
-        'aanmaken'   => 'create',
-        'bijwerken'  => 'update',
+        'lezen'       => 'read',
+        'aanmaken'    => 'create',
+        'bijwerken'   => 'update',
         'verwijderen' => 'delete',
     ];
 

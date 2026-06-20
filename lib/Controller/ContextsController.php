@@ -47,8 +47,6 @@ use OCP\IRequest;
  */
 class ContextsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -67,7 +65,6 @@ class ContextsController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Return the register-wide JSON-LD context document.
@@ -98,7 +95,6 @@ class ContextsController extends Controller
 
         return $this->contextResponse(['@context' => $contextMap], $etag);
     }//end register()
-
 
     /**
      * Return a per-schema JSON-LD context document.
@@ -136,7 +132,6 @@ class ContextsController extends Controller
         return $this->contextResponse(['@context' => $contextMap], $etag);
     }//end schema()
 
-
     /**
      * Load the schema entities belonging to a register, skipping any that fail
      * to resolve (a stale id in register.schemas must not 500 the document).
@@ -160,7 +155,6 @@ class ContextsController extends Controller
 
         return $schemas;
     }//end loadSchemas()
-
 
     /**
      * Build a weak ETag from the register/schema `updated` timestamps so a
@@ -188,7 +182,6 @@ class ContextsController extends Controller
 
         return '"'.md5(implode(':', $parts)).'"';
     }//end buildEtag()
-
 
     /**
      * Build a JSON-LD context DataResponse with ETag/Cache-Control headers,

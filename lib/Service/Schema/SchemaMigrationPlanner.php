@@ -65,19 +65,17 @@ class SchemaMigrationPlanner
      */
     private $templateRenderer;
 
-
     /**
      * Constructor.
      *
      * @param callable|null $templateRenderer Optional template renderer for
-     *                                         the `compute` transform.
+     *                                        the `compute` transform.
      */
     public function __construct(?callable $templateRenderer=null)
     {
         $this->templateRenderer = $templateRenderer;
 
     }//end __construct()
-
 
     /**
      * Validate a migration plan's structure.
@@ -149,7 +147,6 @@ class SchemaMigrationPlanner
 
     }//end validatePlan()
 
-
     /**
      * Apply a transform chain to one object's data.
      *
@@ -211,7 +208,6 @@ class SchemaMigrationPlanner
 
     }//end apply()
 
-
     /**
      * Apply a rename transform.
      *
@@ -234,7 +230,6 @@ class SchemaMigrationPlanner
 
     }//end applyRename()
 
-
     /**
      * Apply a setDefault transform (only when missing or null).
      *
@@ -253,7 +248,6 @@ class SchemaMigrationPlanner
         return $data;
 
     }//end applySetDefault()
-
 
     /**
      * Apply a cast transform.
@@ -281,7 +275,6 @@ class SchemaMigrationPlanner
 
     }//end applyCast()
 
-
     /**
      * Cast a scalar value to the target type.
      *
@@ -300,7 +293,6 @@ class SchemaMigrationPlanner
                 if (is_scalar($value) === true) {
                     return (string) $value;
                 }
-
                 throw new \RuntimeException('Cannot cast non-scalar value to string.');
 
             case 'integer':
@@ -311,7 +303,6 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (int) $value;
                 }
-
                 throw new \RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe($value)));
 
             case 'number':
@@ -322,7 +313,6 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (float) $value;
                 }
-
                 throw new \RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe($value)));
 
             case 'boolean':
@@ -336,7 +326,6 @@ class SchemaMigrationPlanner
         }//end switch
 
     }//end castValue()
-
 
     /**
      * Cast a value to a boolean using a strict allow-list.
@@ -371,7 +360,6 @@ class SchemaMigrationPlanner
         throw new \RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe($value)));
 
     }//end castBoolean()
-
 
     /**
      * Cast a value to an ISO-8601 date string.
@@ -409,7 +397,6 @@ class SchemaMigrationPlanner
 
     }//end castDate()
 
-
     /**
      * Apply a drop transform.
      *
@@ -425,7 +412,6 @@ class SchemaMigrationPlanner
         return $data;
 
     }//end applyDrop()
-
 
     /**
      * Apply a compute transform via the template renderer.
@@ -449,7 +435,6 @@ class SchemaMigrationPlanner
         return $data;
 
     }//end applyCompute()
-
 
     /**
      * Render a minimal `{{ field }}` template against the object's own data.
@@ -485,7 +470,6 @@ class SchemaMigrationPlanner
 
     }//end renderSimpleTemplate()
 
-
     /**
      * Describe a value for an error message.
      *
@@ -502,6 +486,4 @@ class SchemaMigrationPlanner
         return gettype($value);
 
     }//end describe()
-
-
 }//end class

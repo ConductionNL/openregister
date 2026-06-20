@@ -43,17 +43,15 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaRunJob extends QueuedJob
 {
-
-
     /**
      * Constructor.
      *
-     * @param ITimeFactory              $time                 Time factory.
-     * @param SchemaRunMapper           $runMapper            Run persistence.
-     * @param SchemaRevalidationService $revalidationService  Revalidation engine.
-     * @param SchemaMigrationService    $migrationService     Migration engine.
-     * @param IJobList                  $jobList              Job list for re-enqueue.
-     * @param LoggerInterface           $logger               Logger.
+     * @param ITimeFactory              $time                Time factory.
+     * @param SchemaRunMapper           $runMapper           Run persistence.
+     * @param SchemaRevalidationService $revalidationService Revalidation engine.
+     * @param SchemaMigrationService    $migrationService    Migration engine.
+     * @param IJobList                  $jobList             Job list for re-enqueue.
+     * @param LoggerInterface           $logger              Logger.
      */
     public function __construct(
         ITimeFactory $time,
@@ -67,12 +65,11 @@ class SchemaRunJob extends QueuedJob
 
     }//end __construct()
 
-
     /**
      * Run one batch of a schema run.
      *
      * @param array<string, mixed> $argument Job arguments: run_id (required),
-     *                                        batch_size (optional).
+     *                                       batch_size (optional).
      *
      * @return void
      *
@@ -108,8 +105,8 @@ class SchemaRunJob extends QueuedJob
                 ['run_id' => $runId, 'error' => $e->getMessage()]
             );
             $run->setState(SchemaRun::STATE_FAILED);
-            $report             = ($run->getReport() ?? []);
-            $report['fatal']    = $e->getMessage();
+            $report          = ($run->getReport() ?? []);
+            $report['fatal'] = $e->getMessage();
             $run->setReport($report);
             $this->runMapper->save($run);
             return;
@@ -120,7 +117,6 @@ class SchemaRunJob extends QueuedJob
         }
 
     }//end run()
-
 
     /**
      * Advance the run by one batch, dispatching by run type.
@@ -139,6 +135,4 @@ class SchemaRunJob extends QueuedJob
         return $this->revalidationService->processBatch($run, $batchSize);
 
     }//end advance()
-
-
 }//end class

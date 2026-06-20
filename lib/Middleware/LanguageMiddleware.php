@@ -136,10 +136,12 @@ class LanguageMiddleware extends Middleware
                 if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
                     $this->languageService->setTargetLanguage($targetTrim);
                 } else {
-                    $this->logger->warning(sprintf(
+                    $this->logger->warning(
+                            sprintf(
                         '[LanguageMiddleware] Invalid X-Translation-Target-Language "%s" — ignoring.',
                         $targetTrim
-                    ));
+                    )
+                            );
                 }
             }
         }
@@ -207,16 +209,18 @@ class LanguageMiddleware extends Middleware
 
             $trimmed = trim($value);
             if (preg_match(self::BCP47_PATTERN, $trimmed) !== 1) {
-                $this->logger->warning(sprintf(
+                $this->logger->warning(
+                        sprintf(
                     "[LanguageMiddleware] Invalid ?%s value '%s' — falling through",
                     $name,
                     $trimmed
-                ));
+                )
+                        );
                 continue;
             }
 
             return $trimmed;
-        }
+        }//end foreach
 
         return null;
     }//end resolveFromQueryParams()

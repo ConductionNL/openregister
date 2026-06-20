@@ -49,7 +49,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class TimeReconcileCommand extends Command
 {
-
     /**
      * Wire the time-tracker link service used by the command.
      *

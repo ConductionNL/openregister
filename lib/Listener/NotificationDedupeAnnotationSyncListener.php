@@ -45,7 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 final class NotificationDedupeAnnotationSyncListener implements IEventListener
 {
-
     /**
      * Constructor.
      *

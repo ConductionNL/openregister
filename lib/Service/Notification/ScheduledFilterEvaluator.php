@@ -59,7 +59,6 @@ final class ScheduledFilterEvaluator
 
     private LoggerInterface $logger;
 
-
     /**
      * Construct an evaluator with an optional logger.
      *
@@ -75,13 +74,12 @@ final class ScheduledFilterEvaluator
 
     }//end __construct()
 
-
     /**
      * Evaluate the filter against the given object data.
      *
-     * @param array<string, mixed>  $objectData Flat field map (typically `$object->getObject()`).
-     * @param array<string, mixed>  $filter     Filter map per the class docblock.
-     * @param DateTimeImmutable     $now        Logical "now" for the entire scan pass.
+     * @param array<string, mixed> $objectData Flat field map (typically `$object->getObject()`).
+     * @param array<string, mixed> $filter     Filter map per the class docblock.
+     * @param DateTimeImmutable    $now        Logical "now" for the entire scan pass.
      *
      * @return bool True when every entry matches, false otherwise.
      */
@@ -100,7 +98,6 @@ final class ScheduledFilterEvaluator
         return true;
 
     }//end matches()
-
 
     /**
      * Evaluate a single filter entry.
@@ -133,7 +130,6 @@ final class ScheduledFilterEvaluator
                 if ($actual === null && $value !== null) {
                     return true;
                 }
-
                 return $actual !== $value;
 
             case 'withinNext':
@@ -177,7 +173,6 @@ final class ScheduledFilterEvaluator
 
     }//end entryMatches()
 
-
     /**
      * Parse an ISO-8601 DateInterval string. Logs + returns null on failure.
      *
@@ -214,7 +209,6 @@ final class ScheduledFilterEvaluator
 
     }//end parseDuration()
 
-
     /**
      * Parse an object-data date value. Accepts strings only; non-string
      * (null, bool, array, etc.) → null + debug log. Empty string → null.
@@ -248,6 +242,4 @@ final class ScheduledFilterEvaluator
         }
 
     }//end parseDate()
-
-
 }//end class

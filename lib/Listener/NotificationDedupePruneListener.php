@@ -42,7 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 final class NotificationDedupePruneListener implements IEventListener
 {
-
     /**
      * Constructor.
      *

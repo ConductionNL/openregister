@@ -73,7 +73,7 @@ class SyncRecord extends Entity implements JsonSerializable
     /**
      * Owning source id.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $sourceId = null;
 
@@ -129,7 +129,7 @@ class SyncRecord extends Entity implements JsonSerializable
     /**
      * Number of processing attempts (for retry/backoff).
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $attempts = null;
 

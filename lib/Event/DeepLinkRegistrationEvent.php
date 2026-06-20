@@ -65,9 +65,9 @@ class DeepLinkRegistrationEvent extends Event
     /**
      * Convenience method to register a deep link pattern directly on the event.
      *
-     * @param string $appId        The consuming app ID (e.g., "procest")
-     * @param string $registerSlug The register slug
-     * @param string $schemaSlug   The schema slug
+     * @param string      $appId        The consuming app ID (e.g., "procest")
+     * @param string      $registerSlug The register slug
+     * @param string      $schemaSlug   The schema slug
      * @param string      $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
      * @param string      $icon         Optional icon identifier
      * @param string|null $displayName  Optional human-readable label for the app's

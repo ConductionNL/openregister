@@ -49,16 +49,15 @@ class SchemaDiffService
      * @var array<string, bool>
      */
     private const NUMERIC_BOUND_TIGHTENS_UP = [
-        'minLength'   => true,
-        'minItems'    => true,
-        'minimum'     => true,
+        'minLength'     => true,
+        'minItems'      => true,
+        'minimum'       => true,
         'minProperties' => true,
-        'maxLength'   => false,
-        'maxItems'    => false,
-        'maximum'     => false,
+        'maxLength'     => false,
+        'maxItems'      => false,
+        'maximum'       => false,
         'maxProperties' => false,
     ];
-
 
     /**
      * Diff two schema definitions and classify the change set.
@@ -67,14 +66,14 @@ class SchemaDiffService
      * `properties` map (property name => definition array) and an
      * optional `required` list of property names.
      *
-     * @param array<string, mixed> $old      Previous definition.
-     * @param array<string, mixed> $new      New definition.
+     * @param array<string, mixed>  $old     Previous definition.
+     * @param array<string, mixed>  $new     New definition.
      * @param array<string, string> $renames Optional declared renames
-     *                                        (old name => new name). When
-     *                                        a property is declared renamed
-     *                                        it is classified as a single
-     *                                        `renamed` (breaking) change
-     *                                        rather than remove + add.
+     *                                       (old name => new name). When
+     *                                       a property is declared renamed
+     *                                       it is classified as a single
+     *                                       `renamed` (breaking) change
+     *                                       rather than remove + add.
      *
      * @return SchemaChangeSet The typed, classified change set.
      *
@@ -87,9 +86,9 @@ class SchemaDiffService
         $oldReq   = $this->requiredSet($old);
         $newReq   = $this->requiredSet($new);
 
-        $changes      = [];
-        $hasBreaking  = false;
-        $hasAddedProp = false;
+        $changes        = [];
+        $hasBreaking    = false;
+        $hasAddedProp   = false;
         $hasOtherChange = false;
 
         // Map renamed-away source names so they are not double-counted as removals.
@@ -141,9 +140,9 @@ class SchemaDiffService
                 continue;
             }
 
-            $isRequired   = in_array($name, $newReq, true);
-            $hasDefault   = array_key_exists('default', (array) $def);
-            $changes[]    = [
+            $isRequired = in_array($name, $newReq, true);
+            $hasDefault = array_key_exists('default', (array) $def);
+            $changes[]  = [
                 'property' => $name,
                 'kind'     => 'added',
                 'new'      => $def,
@@ -229,7 +228,6 @@ class SchemaDiffService
 
     }//end diff()
 
-
     /**
      * Compute the next version string given the current one and a change set.
      *
@@ -269,7 +267,6 @@ class SchemaDiffService
         return implode('.', $parts);
 
     }//end nextVersion()
-
 
     /**
      * Diff a single property definition.
@@ -332,7 +329,7 @@ class SchemaDiffService
                 continue;
             }
 
-            $tighter = $this->boundTightened((float) $oldVal, (float) $newVal, $tightensUp);
+            $tighter   = $this->boundTightened((float) $oldVal, (float) $newVal, $tightensUp);
             $changes[] = [
                 'property' => $name,
                 'kind'     => ($tighter === true) ? 'constraint_tightened' : 'constraint_relaxed',
@@ -373,13 +370,12 @@ class SchemaDiffService
                     'old'      => [$keyword => $oldDef[$keyword]],
                     'new'      => [$keyword => $newDef[$keyword]],
                 ];
-            }
+            }//end if
         }//end foreach
 
         return $changes;
 
     }//end diffProperty()
-
 
     /**
      * Diff an enum constraint.
@@ -447,7 +443,6 @@ class SchemaDiffService
 
     }//end diffEnum()
 
-
     /**
      * Whether a numeric bound moved in the tightening direction.
      *
@@ -466,7 +461,6 @@ class SchemaDiffService
         return $newVal < $oldVal;
 
     }//end boundTightened()
-
 
     /**
      * Classify the accumulated changes into a SchemaChangeSet.
@@ -497,7 +491,6 @@ class SchemaDiffService
 
     }//end classify()
 
-
     /**
      * Whether a change kind is breaking.
      *
@@ -522,7 +515,6 @@ class SchemaDiffService
 
     }//end kindIsBreaking()
 
-
     /**
      * Extract the properties map from a definition.
      *
@@ -541,7 +533,6 @@ class SchemaDiffService
 
     }//end properties()
 
-
     /**
      * Extract the required-property name set from a definition.
      *
@@ -559,7 +550,6 @@ class SchemaDiffService
         return array_values(array_filter($required, 'is_string'));
 
     }//end requiredSet()
-
 
     /**
      * Normalise a JSON-schema type for comparison.
@@ -584,7 +574,6 @@ class SchemaDiffService
 
     }//end normaliseType()
 
-
     /**
      * Parse a semantic version string into a [major, minor, patch] int triple.
      *
@@ -607,6 +596,4 @@ class SchemaDiffService
         ];
 
     }//end parseVersion()
-
-
 }//end class

@@ -62,7 +62,6 @@ class JsonLdSerializer
      */
     private const RAW_PREFIX = 'or:raw#';
 
-
     /**
      * Constructor.
      *
@@ -74,7 +73,6 @@ class JsonLdSerializer
         private readonly IURLGenerator $urlGenerator
     ) {
     }//end __construct()
-
 
     /**
      * Decide whether the client wants JSON-LD, based on the `Accept` header.
@@ -129,11 +127,10 @@ class JsonLdSerializer
                 $bestRank = $rank;
                 $best     = $type;
             }
-        }
+        }//end foreach
 
         return $best === self::MEDIA_TYPE && $bestQ > 0.0;
     }//end wantsJsonLd()
-
 
     /**
      * Serialize a single rendered object array as a JSON-LD node document.
@@ -156,7 +153,6 @@ class JsonLdSerializer
             $node
         );
     }//end serialize()
-
 
     /**
      * Serialize a paginated collection result as a JSON-LD `@graph` document.
@@ -216,7 +212,6 @@ class JsonLdSerializer
         return $document;
     }//end serializeCollection()
 
-
     /**
      * Build a single JSON-LD node (no `@context`) from a rendered object array.
      *
@@ -261,7 +256,6 @@ class JsonLdSerializer
         return $node;
     }//end buildNode()
 
-
     /**
      * Resolve a node's `@id`: the canonical object URI, else the absolute
      * `objects#show` route URL.
@@ -290,7 +284,6 @@ class JsonLdSerializer
         );
     }//end resolveId()
 
-
     /**
      * Lift the `@self` envelope into `or:`-prefixed JSON-LD terms. The `uri`
      * key is excluded (it is the node's `@id`); null/empty values are skipped.
@@ -317,7 +310,6 @@ class JsonLdSerializer
 
         return $lifted;
     }//end liftSelfMetadata()
-
 
     /**
      * Build the `or:next` page URL from a paginated result, when there is a
@@ -350,7 +342,6 @@ class JsonLdSerializer
         return $current.$separator.'_page='.($page + 1);
     }//end buildNextLink()
 
-
     /**
      * Whether a data key is a reserved JSON-LD keyword that must be escaped to
      * avoid colliding with the injected keywords.
@@ -363,7 +354,6 @@ class JsonLdSerializer
     {
         return is_string($key) === true && str_starts_with($key, '@') === true;
     }//end isReservedKey()
-
 
     /**
      * Resolve the slug for an entity, falling back to UUID then id.

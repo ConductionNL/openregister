@@ -166,9 +166,9 @@ class TimeEntryService
             throw new \OCP\AppFramework\OCS\OCSForbiddenException('Not authorized');
         }
 
-        $uid      = $user->getUID();
-        $isAdmin  = $this->groupManager->isAdmin($uid);
-        $isOwner  = $uid === $entry->getUserId();
+        $uid     = $user->getUID();
+        $isAdmin = $this->groupManager->isAdmin($uid);
+        $isOwner = $uid === $entry->getUserId();
 
         if ($isOwner === false && $isAdmin === false) {
             throw new \OCP\AppFramework\OCS\OCSForbiddenException('Not authorized to delete this time entry');
@@ -212,8 +212,8 @@ class TimeEntryService
     {
         $links = $this->timeLinkMapper->findByObjectUuid(objectUuid: $objectUuid);
 
-        $total        = $this->timeLinkMapper->sumDurationByObjectUuid(objectUuid: $objectUuid);
-        $serialized   = array_map(static fn(TimeLink $l) => $l->jsonSerialize(), $links);
+        $total      = $this->timeLinkMapper->sumDurationByObjectUuid(objectUuid: $objectUuid);
+        $serialized = array_map(static fn(TimeLink $l) => $l->jsonSerialize(), $links);
 
         return [
             'results'      => $serialized,
@@ -228,11 +228,11 @@ class TimeEntryService
      * Creates a link row in the local table and recalculates the per-object
      * total immediately (AD-2).
      *
-     * @param string      $objectUuid      The object UUID.
-     * @param int         $registerId      The register ID.
-     * @param int         $durationMinutes Duration in minutes (must be >= 1).
-     * @param string|null $description     Optional description.
-     * @param DateTime|null $entryDate     Entry date (defaults to now).
+     * @param string        $objectUuid      The object UUID.
+     * @param int           $registerId      The register ID.
+     * @param int           $durationMinutes Duration in minutes (must be >= 1).
+     * @param string|null   $description     Optional description.
+     * @param DateTime|null $entryDate       Entry date (defaults to now).
      *
      * @return TimeLink The persisted link entity.
      *
@@ -244,8 +244,8 @@ class TimeEntryService
         string $objectUuid,
         int $registerId,
         int $durationMinutes,
-        ?string $description = null,
-        ?DateTime $entryDate = null
+        ?string $description=null,
+        ?DateTime $entryDate=null
     ): TimeLink {
         if ($durationMinutes < 1) {
             throw new \InvalidArgumentException('Duration must be at least 1 minute.');
@@ -354,7 +354,7 @@ class TimeEntryService
             return '0m';
         }
 
-        $hours   = intdiv($minutes, 60);
+        $hours     = intdiv($minutes, 60);
         $remaining = $minutes % 60;
 
         if ($hours > 0 && $remaining > 0) {

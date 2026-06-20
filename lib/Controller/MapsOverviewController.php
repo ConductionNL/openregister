@@ -51,13 +51,11 @@ use OCP\IRequest;
  */
 class MapsOverviewController extends Controller
 {
-
-
     /**
      * Constructor.
      *
-     * @param string              $appName        App name (injected by NC).
-     * @param IRequest            $request        Current request.
+     * @param string              $appName         App name (injected by NC).
+     * @param IRequest            $request         Current request.
      * @param MapsOverviewService $overviewService Map overview register/query service.
      *
      * @return void
@@ -69,7 +67,6 @@ class MapsOverviewController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * POST /api/integrations/maps/overviews
@@ -115,7 +112,6 @@ class MapsOverviewController extends Controller
         return new JSONResponse($stored, Http::STATUS_CREATED);
     }//end register()
 
-
     /**
      * GET /api/integrations/maps/overviews/{register}/{schema}/points
      *
@@ -159,7 +155,6 @@ class MapsOverviewController extends Controller
         return new JSONResponse(['points' => $points, 'count' => count($points)]);
     }//end points()
 
-
     /**
      * Strip framework / reserved params, leaving the object filter set.
      *
@@ -184,7 +179,6 @@ class MapsOverviewController extends Controller
 
         return $filters;
     }//end nonReservedParams()
-
 
     /**
      * Coerce a request param to an int, or null when absent / non-numeric.

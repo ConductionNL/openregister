@@ -35,8 +35,6 @@ use OCP\IDBConnection;
  */
 class SchemaChangelogMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -47,7 +45,6 @@ class SchemaChangelogMapper extends QBMapper
         parent::__construct(db: $db, tableName: 'openregister_schema_changelog', entityClass: SchemaChangelog::class);
 
     }//end __construct()
-
 
     /**
      * Find a changelog entry by id.
@@ -68,7 +65,6 @@ class SchemaChangelogMapper extends QBMapper
         return $this->findEntity(query: $qb);
 
     }//end find()
-
 
     /**
      * Find changelog entries for a schema, newest first.
@@ -99,7 +95,6 @@ class SchemaChangelogMapper extends QBMapper
 
     }//end findBySchema()
 
-
     /**
      * Create a changelog entry from an array of values.
      *
@@ -119,6 +114,4 @@ class SchemaChangelogMapper extends QBMapper
         return $this->insert(entity: $entry);
 
     }//end createFromArray()
-
-
 }//end class

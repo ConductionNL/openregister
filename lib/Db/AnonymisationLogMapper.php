@@ -46,7 +46,6 @@ use OCP\IDBConnection;
  */
 class AnonymisationLogMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *

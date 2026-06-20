@@ -91,7 +91,6 @@ class ObjectsController extends Controller
 {
     use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
-
     /**
      * Export service for handling data exports
      *
@@ -109,27 +108,27 @@ class ObjectsController extends Controller
     /**
      * Constructor for the ObjectsController
      *
-     * @param string                                          $appName          The name of the app
-     * @param IRequest                                        $request          The request object
-     * @param IAppConfig                                      $config           The app configuration object
-     * @param IAppManager                                     $appManager       The app manager
-     * @param ContainerInterface                              $container        The DI container
-     * @param RegisterMapper                                  $registerMapper   The register mapper
-     * @param SchemaMapper                                    $schemaMapper     The schema mapper
-     * @param AuditTrailMapper                                $auditTrailMapper The audit trail mapper
-     * @param ObjectService                                   $objectService    The object service
-     * @param IUserSession                                    $userSession      The user session
-     * @param IGroupManager                                   $groupManager     The group manager
-     * @param ExportService                                   $exportService    The export service
-     * @param ImportService                                   $importService    The import service
-     * @param WebhookService                                  $webhookService   The webhook service (optional)
-     * @param LoggerInterface                                 $logger           The logger (optional)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
-     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer     $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
-     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder           $pdokGeocoder         Optional PDOK geocoder (null-safe)
+     * @param string                                                     $appName              The name of the app
+     * @param IRequest                                                   $request              The request object
+     * @param IAppConfig                                                 $config               The app configuration object
+     * @param IAppManager                                                $appManager           The app manager
+     * @param ContainerInterface                                         $container            The DI container
+     * @param RegisterMapper                                             $registerMapper       The register mapper
+     * @param SchemaMapper                                               $schemaMapper         The schema mapper
+     * @param AuditTrailMapper                                           $auditTrailMapper     The audit trail mapper
+     * @param ObjectService                                              $objectService        The object service
+     * @param IUserSession                                               $userSession          The user session
+     * @param IGroupManager                                              $groupManager         The group manager
+     * @param ExportService                                              $exportService        The export service
+     * @param ImportService                                              $importService        The import service
+     * @param WebhookService                                             $webhookService       The webhook service (optional)
+     * @param LoggerInterface                                            $logger               The logger (optional)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser             $geoFilterParser      Optional geo wire-format adapter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier            $geoFilterApplier     Optional geo post-filter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer         $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService     $jsonLdContextService Optional JSON-LD context service (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder    Optional GeoJSON/WFS feature builder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder                $pdokGeocoder         Optional PDOK geocoder (null-safe)
      *
      * @return void
      *
@@ -185,7 +184,6 @@ class ObjectsController extends Controller
         return in_array('admin', $userGroups);
     }//end isCurrentUserAdmin()
 
-
     /**
      * Whether the current request asks for JSON-LD output via content negotiation.
      *
@@ -205,7 +203,6 @@ class ObjectsController extends Controller
         return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
     }//end wantsJsonLd()
 
-
     /**
      * Decorate an already-rendered single-object array as a JSON-LD JSONResponse.
      *
@@ -213,9 +210,9 @@ class ObjectsController extends Controller
      * data path, so RBAC / multitenancy / field-level security / the published
      * predicate all remain applied exactly as for the plain-JSON response.
      *
-     * @param array                                $renderedObject The rendered object array.
-     * @param \OCA\OpenRegister\Db\Register|null    $register       The resolved register entity.
-     * @param \OCA\OpenRegister\Db\Schema|null      $schema         The resolved schema entity.
+     * @param array                              $renderedObject The rendered object array.
+     * @param \OCA\OpenRegister\Db\Register|null $register       The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema         The resolved schema entity.
      *
      * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
      *
@@ -232,13 +229,12 @@ class ObjectsController extends Controller
         return $this->withJsonLdHeaders(new JSONResponse(data: $document));
     }//end jsonLdObjectResponse()
 
-
     /**
      * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
      *
-     * @param array                                $result   The paginated result array.
-     * @param \OCA\OpenRegister\Db\Register|null    $register The resolved register entity.
-     * @param \OCA\OpenRegister\Db\Schema|null      $schema   The resolved schema entity.
+     * @param array                              $result   The paginated result array.
+     * @param \OCA\OpenRegister\Db\Register|null $register The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema   The resolved schema entity.
      *
      * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
      *
@@ -254,7 +250,6 @@ class ObjectsController extends Controller
 
         return $this->withJsonLdHeaders(new JSONResponse(data: $document));
     }//end jsonLdCollectionResponse()
-
 
     /**
      * Add the JSON-LD content negotiation headers to a response.
@@ -918,8 +913,8 @@ class ObjectsController extends Controller
         // (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
         // lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
         // be wired there before cross-table search is exposed to non-admins.
-        $isAdmin                = $this->isCurrentUserAdmin();
-        $query['_rbac']         = ($isAdmin === false);
+        $isAdmin        = $this->isCurrentUserAdmin();
+        $query['_rbac'] = ($isAdmin === false);
         $query['_multitenancy'] = ($isAdmin === false);
 
         // Remove all register/schema context from query to prevent filtering.
@@ -1163,7 +1158,7 @@ class ObjectsController extends Controller
         $multi   = ($isAdmin === false);
         // No longer request-controlled: never treat _multi as explicitly set by the client.
         $multiExplicitlySet = false;
-        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $deleted            = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
         $registerEntity = $resolved['registerEntity'] ?? null;

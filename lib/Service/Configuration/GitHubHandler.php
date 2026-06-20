@@ -566,7 +566,7 @@ class GitHubHandler
                 'GET',
                 $rawUrl,
                 [
-                    'headers' => [
+                    'headers'         => [
                         'Accept' => 'application/json',
                     ],
                     'allow_redirects' => false,

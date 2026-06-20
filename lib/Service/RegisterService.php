@@ -243,7 +243,6 @@ class RegisterService
         );
     }//end findAll()
 
-
     /**
      * Find a register by ID and serialize it with `_extend` applied
      *
@@ -281,7 +280,6 @@ class RegisterService
         return $this->registerSerializer->serialize($register, $_extend, $stats);
 
     }//end findSerialized()
-
 
     /**
      * Find all registers + serialize each with `_extend` applied
@@ -342,7 +340,6 @@ class RegisterService
         return $this->registerSerializer->serializeMany($registers, $_extend, $statsByRegisterId);
 
     }//end findAllSerialized()
-
 
     /**
      * Resolve schema IDs to hydrated objects for stats computation.

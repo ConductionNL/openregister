@@ -1675,7 +1675,7 @@ class FileService
             $ascii = '';
         }
 
-        $ascii = str_replace(['\\', '"'], '_', $ascii);
+        $ascii   = str_replace(['\\', '"'], '_', $ascii);
         $encoded = rawurlencode($clean);
 
         return $disposition.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.$encoded;

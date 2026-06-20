@@ -91,7 +91,6 @@ final class RegisterResolverService
      */
     private ?string $lastTenantUuid = null;
 
-
     /**
      * Wire the resolver against the canonical OR mappers + IAppConfig.
      *
@@ -110,7 +109,6 @@ final class RegisterResolverService
     ) {
 
     }//end __construct()
-
 
     /**
      * Read the configured slug/UUID for a register from app config.
@@ -153,7 +151,6 @@ final class RegisterResolverService
 
     }//end resolveRegisterId()
 
-
     /**
      * Read the configured slug/UUID for a schema from app config.
      *
@@ -189,7 +186,6 @@ final class RegisterResolverService
         throw new MissingConfigException($appId, $configKey);
 
     }//end resolveSchemaId()
-
 
     /**
      * Read the configured slug/UUID/name for a schema property from app config.
@@ -231,7 +227,6 @@ final class RegisterResolverService
         throw new MissingConfigException($appId, $configKey);
 
     }//end resolvePropertyId()
-
 
     /**
      * Resolve `<context>_register` config to a hydrated Register entity.
@@ -289,7 +284,6 @@ final class RegisterResolverService
 
     }//end resolveRegister()
 
-
     /**
      * Resolve `<context>_schema` config to a hydrated Schema entity.
      *
@@ -341,7 +335,6 @@ final class RegisterResolverService
         return $schema;
 
     }//end resolveSchema()
-
 
     /**
      * Resolve a schema property by configured identifier.
@@ -421,7 +414,6 @@ final class RegisterResolverService
 
     }//end resolveProperty()
 
-
     /**
      * Convenience: resolve a register and schema in a single call.
      *
@@ -458,7 +450,6 @@ final class RegisterResolverService
         );
 
     }//end resolvePair()
-
 
     /**
      * Enumerate every `<context>_(register|schema)` key set for an app.
@@ -501,7 +492,6 @@ final class RegisterResolverService
 
     }//end enumerateAppConfigs()
 
-
     /**
      * Clear request-scoped caches. Test hook + defensive tenant-switch path.
      *
@@ -517,7 +507,6 @@ final class RegisterResolverService
         $this->schemaCache   = [];
 
     }//end clearCache()
-
 
     /**
      * Match a raw config-key string to its canonical resolver key.
@@ -548,7 +537,6 @@ final class RegisterResolverService
 
     }//end matchResolverKey()
 
-
     /**
      * Build the per-tuple cache key used by both internal caches.
      *
@@ -563,7 +551,6 @@ final class RegisterResolverService
         return $appId.':'.$configKey.':'.($organisationUuid ?? '');
 
     }//end cacheKey()
-
 
     /**
      * Defensive cache flush when the active tenant changes mid-request.
@@ -597,6 +584,4 @@ final class RegisterResolverService
         $this->lastTenantUuid = $currentUuid;
 
     }//end maybeFlushOnTenantSwitch()
-
-
 }//end class

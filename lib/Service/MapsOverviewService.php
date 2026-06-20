@@ -81,15 +81,14 @@ class MapsOverviewService
      * @var array<string,mixed>
      */
     private const DEFAULT_BASE_LAYER = [
-        'type'        => 'wmts',
-        'provider'    => 'pdok',
-        'url'         => 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v1_0',
-        'layer'       => 'standaard',
+        'type'          => 'wmts',
+        'provider'      => 'pdok',
+        'url'           => 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v1_0',
+        'layer'         => 'standaard',
         'tileMatrixSet' => 'EPSG:3857',
-        'format'      => 'image/png',
-        'attribution' => 'Kaartgegevens © PDOK',
+        'format'        => 'image/png',
+        'attribution'   => 'Kaartgegevens © PDOK',
     ];
-
 
     /**
      * Constructor.
@@ -111,7 +110,6 @@ class MapsOverviewService
     ) {
     }//end __construct()
 
-
     /**
      * Authorisation guard for the register (write) path — a map overview
      * widget may only be declared by an authenticated user. Throws
@@ -131,7 +129,6 @@ class MapsOverviewService
             throw new InvalidArgumentException('A logged-in user is required to register a map overview');
         }
     }//end ensureCanRegister()
-
 
     /**
      * Register (declare) a page-level map overview widget.
@@ -189,17 +186,18 @@ class MapsOverviewService
 
         // (Re)declare the page widget so the render layer can discover it.
         // First-write-wins inside the registry; harmless on a re-declare.
-        $this->registry->registerPageWidget([
-            'id'         => 'maps-overview:'.$overviewKey,
-            'type'       => 'map',
-            'title'      => $title,
-            'providerId' => 'maps-overview',
-            'config'     => $config,
-        ]);
+        $this->registry->registerPageWidget(
+                [
+                    'id'         => 'maps-overview:'.$overviewKey,
+                    'type'       => 'map',
+                    'title'      => $title,
+                    'providerId' => 'maps-overview',
+                    'config'     => $config,
+                ]
+                );
 
         return $this->registry->getPageWidget('maps-overview:'.$overviewKey) ?? [];
     }//end registerOverview()
-
 
     /**
      * Authorisation guard for the points (read) path — RBAC-scopes the
@@ -239,7 +237,6 @@ class MapsOverviewService
             limit: $limit
         );
     }//end ensureReadablePoints()
-
 
     /**
      * Query the marker point set for a register/schema, RBAC-scoped.
@@ -315,7 +312,6 @@ class MapsOverviewService
         return $points;
     }//end queryPoints()
 
-
     /**
      * Build the OpenRegister findAll filter array for a map query.
      *
@@ -346,7 +342,6 @@ class MapsOverviewService
 
         return $clean;
     }//end buildFilters()
-
 
     /**
      * Extract a marker point from a rendered object row.
@@ -394,7 +389,6 @@ class MapsOverviewService
         ];
     }//end pointFromRow()
 
-
     /**
      * Reduce a GeoJSON geometry to a single representative [lat,lng].
      *
@@ -435,7 +429,6 @@ class MapsOverviewService
         ];
     }//end representativeLatLng()
 
-
     /**
      * Derive a human-readable marker label from a rendered object row.
      *
@@ -465,7 +458,6 @@ class MapsOverviewService
 
         return ($id !== null ? (string) $id : '');
     }//end deriveLabel()
-
 
     /**
      * Whether the current user is an admin (RBAC bypass).
