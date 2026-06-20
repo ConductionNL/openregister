@@ -1,8 +1,11 @@
 ---
-status: done
+status: in-progress
 ---
 
 # import-resilient-per-entity-and-no-user-context Specification
+
+**OpenSpec changes**
+- `config-import-seed-objects` (active) — makes a top-level `objects` array an accepted seed-object source in `importFromJson()`, folded into the existing `components.objects` loop and imported idempotently by `@self` identity. Fixes app seed objects authored at the top level (e.g. shillinq's 78) importing as 0. OR-side only; no app change required.
 
 ## Purpose
 Makes configuration import resilient by wrapping each register, object, and seed-data entity in its own try/catch so a single failure is logged, counted, and skipped instead of aborting the whole import. Returns a `skipped` map of per-entity-kind counters for callers and tests to assert against. When no user session exists (the `occ`/installer/cron path), resolves a fallback admin acting user so folder and object operations succeed, without overriding a real session user when one is present.

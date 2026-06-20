@@ -1956,9 +1956,43 @@ class ImportHandler
         // fallback admin; null when none is resolvable (folder op then skips, not the
         // whole import).
         $actingUser = $this->resolveActingUser();
-        // Process and import objects.
-        if (($data['components']['objects'] ?? null) !== null && is_array($data['components']['objects']) === true) {
-            foreach ($data['components']['objects'] as $objectData) {
+        // Process and import objects. Seed objects may be authored under
+        // components.objects (the canonical export location) OR at the top-level
+        // `objects` key (how some app register files place seed). Merge both,
+        // de-duped by @self identity (uuid, else register/schema/slug), so either
+        // authoring location seeds and re-import never duplicates.
+        $seedObjects = [];
+        $seedSeen    = [];
+        foreach ([($data['components']['objects'] ?? null), ($data['objects'] ?? null)] as $seedBucket) {
+            if (is_array($seedBucket) === false) {
+                continue;
+            }
+
+            foreach ($seedBucket as $seedCandidate) {
+                if (is_array($seedCandidate) === false) {
+                    continue;
+                }
+
+                $seedSelf = ($seedCandidate['@self'] ?? []);
+                $seedKey  = (string) ($seedSelf['uuid'] ?? '');
+                if ($seedKey === '') {
+                    $seedKey = trim(($seedSelf['register'] ?? '').'/'.($seedSelf['schema'] ?? '').'/'.($seedSelf['slug'] ?? ''), '/');
+                }
+
+                if ($seedKey !== '' && isset($seedSeen[$seedKey]) === true) {
+                    continue;
+                }
+
+                if ($seedKey !== '') {
+                    $seedSeen[$seedKey] = true;
+                }
+
+                $seedObjects[] = $seedCandidate;
+            }
+        }
+
+        if (count($seedObjects) > 0) {
+            foreach ($seedObjects as $objectData) {
                 // Log raw values before any mapping.
                 $rawRegister = $objectData['@self']['register'] ?? null;
                 $rawSchema   = $objectData['@self']['schema'] ?? null;
