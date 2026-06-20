@@ -95,6 +95,76 @@ class AnnotationNotifierTest extends TestCase
         $this->assertSame($notification, $result);
     }
 
+    public function testSetsParsedMessageWhenPresent(): void
+    {
+        // A non-empty `_message` becomes the notification body via
+        // setParsedMessage(); the title still comes from `_text`.
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+        $this->factory->method('get')->willReturn($l10n);
+        $this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+        $this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister');
+
+        $action = $this->createMock(IAction::class);
+        $action->method('setLabel')->willReturnSelf();
+        $action->method('setPrimary')->willReturnSelf();
+        $action->method('setLink')->willReturnSelf();
+
+        $notification = $this->createMock(INotification::class);
+        $notification->method('getApp')->willReturn('openregister');
+        $notification->method('getSubject')->willReturn('object_created');
+        $notification->method('getSubjectParameters')->willReturn([
+            '_text'      => 'Incoming call from Acme',
+            '_message'   => 'Open in OpenTalk.',
+            'registerId' => 'r',
+            'schemaId'   => 's',
+            'objectUuid' => 'uuid-1',
+        ]);
+        $notification->method('createAction')->willReturn($action);
+        $notification->method('setIcon')->willReturnSelf();
+        $notification->method('addAction')->willReturnSelf();
+        $notification->method('setParsedSubject')->willReturnSelf();
+
+        $notification->expects($this->once())->method('setParsedMessage')->with('Open in OpenTalk.')->willReturnSelf();
+
+        $result = $this->notifier->prepare($notification, 'en');
+        $this->assertSame($notification, $result);
+    }
+
+    public function testDoesNotSetParsedMessageWhenAbsent(): void
+    {
+        // Back-compat: no `_message` → setParsedMessage() is never called.
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+        $this->factory->method('get')->willReturn($l10n);
+        $this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+        $this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister');
+
+        $action = $this->createMock(IAction::class);
+        $action->method('setLabel')->willReturnSelf();
+        $action->method('setPrimary')->willReturnSelf();
+        $action->method('setLink')->willReturnSelf();
+
+        $notification = $this->createMock(INotification::class);
+        $notification->method('getApp')->willReturn('openregister');
+        $notification->method('getSubject')->willReturn('object_created');
+        $notification->method('getSubjectParameters')->willReturn([
+            '_text'      => 'Plain subject',
+            'registerId' => 'r',
+            'schemaId'   => 's',
+            'objectUuid' => 'uuid-1',
+        ]);
+        $notification->method('createAction')->willReturn($action);
+        $notification->method('setIcon')->willReturnSelf();
+        $notification->method('addAction')->willReturnSelf();
+        $notification->method('setParsedSubject')->willReturnSelf();
+
+        $notification->expects($this->never())->method('setParsedMessage');
+
+        $result = $this->notifier->prepare($notification, 'en');
+        $this->assertSame($notification, $result);
+    }
+
     public function testRendersCanonicalLocalizedWhenNoText(): void
     {
         $l10n = $this->createMock(IL10N::class);

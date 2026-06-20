@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # e-Depot Transfer
 
 ## Purpose

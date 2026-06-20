@@ -10,7 +10,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 			:title="t('openregister', 'Schemas')"
 			:description="t('openregister', 'Manage your data schemas and their properties')"
 			:show-title="true"
-			:objects="schemaStore.schemaList"
+			:objects="paginatedSchemas"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="schemaStore.viewMode"
@@ -167,6 +167,18 @@ export default {
 			const total = schemaStore.schemaList.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
+		},
+		/**
+		 * The schemas for the current page. The full list is loaded client-side,
+		 * so CnIndexPage (prop mode) does not slice — we slice here so paging works.
+		 *
+		 * @spec exclude UI plumbing — derived per-page slice for display
+		 * @return {Array<object>}
+		 */
+		paginatedSchemas() {
+			const { page, limit } = this.paginationData
+			const start = (page - 1) * limit
+			return schemaStore.schemaList.slice(start, start + limit)
 		},
 		/**
 		 * Empty-content label shown when the schema list is empty or loading.

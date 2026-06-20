@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # tmlo-auto-populate Specification
 
 ## Purpose

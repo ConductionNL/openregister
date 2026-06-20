@@ -5,7 +5,7 @@ status: done
 # integration-bookmarks Specification
 
 ## Purpose
-TBD - created by archiving change integration-bookmarks. Update Purpose after archive.
+Links Nextcloud Bookmarks to OpenRegister objects, delegating URL title/favicon scraping to the NC Bookmarks create endpoint instead of re-implementing it. Displays linked bookmarks with their Bookmarks-side tags as filter chips, renders the standard four widget surfaces, and shows a favicon chip for `referenceType: 'bookmarks'` properties. Access control defers to Bookmarks' own ACLs.
 ## Requirements
 ### Requirement: Bookmarks Provider Registration
 

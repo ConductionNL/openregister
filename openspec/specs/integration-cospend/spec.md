@@ -5,7 +5,7 @@ status: done
 # integration-cospend Specification
 
 ## Purpose
-TBD - created by archiving change integration-cospend. Update Purpose after archive.
+Links Cospend projects and bills to OpenRegister objects, each link typed as either a project or a bill, and renders amount chips and totals across the standard surfaces. Totals aggregate only within a single currency, with mixed-currency sets shown as per-currency totals side by side. Access inherits from object RBAC plus Cospend's own ACLs.
 ## Requirements
 ### Requirement: Cospend Provider Registration
 

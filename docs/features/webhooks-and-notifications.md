@@ -250,6 +250,130 @@ Before delivering the in-app/push channel, the dispatcher resolves `schema-defau
 
 For Dutch government interoperability, webhook payloads can be formatted according to the VNG Notificaties API standard via a Twig mapping configuration. This enables OpenRegister to act as a notificatiecomponent in a ZGW API landscape.
 
+## Browser Web Push (rich background notifications)
+
+The `web-push` channel of the `x-openregister-notifications` dialect delivers a
+rich OS-level notification — app icon, body, and up to two action buttons —
+**even when the browser or all Nextcloud tabs are closed**. It complements the
+`nc-notification` channel (which only nudges already-open tabs via `notify_push`).
+
+A rule opts in by listing `web-push` in `channels` and may declare `actions[]` +
+`originApp` (see the dialect reference in ADR-031). Example — an incoming-call
+notification with an "Open client" button:
+
+```jsonc
+"incomingCall": {
+  "trigger": { "type": "created", "filter": { "field": "channel", "operator": "equals", "value": "telefoon" } },
+  "originApp": "pipelinq",
+  "channels": ["nc-notification", "web-push"],
+  "recipients": [ { "kind": "field", "field": "agent" } ],
+  "subject": { "nl": "Inkomende oproep van {{client}}", "en": "Incoming call from {{client}}" },
+  "actions": [
+    { "label": { "nl": "Klant openen", "en": "Open client" }, "primary": true,
+      "target": { "kind": "object-detail", "object": { "kind": "relation", "field": "client" } } }
+  ]
+}
+```
+
+### Setup (admin)
+
+Web Push needs a one-time VAPID keypair, generated and stored in app config:
+
+```bash
+occ openregister:web-push:generate-vapid
+```
+
+The public key is exposed to browsers via `GET /apps/openregister/webpush/vapid-public-key`;
+the private key never leaves the server. Status and the public key are shown in
+**Admin settings → OpenRegister → Push notifications**.
+
+**Key rotation:** re-running the command replaces the keypair. Existing browser
+subscriptions are bound to the old key and stop receiving pushes after a rotation —
+they self-heal when the user re-enables the toggle (which re-subscribes against the
+new key); the server prunes stale subscriptions on the first `404`/`410` response
+from the push service.
+
+### Enabling browser notifications (user guide)
+
+Browser push is **opt-in** — OpenRegister never prompts for notification
+permission on page load. To turn it on:
+
+1. Click your avatar (top-right) → **Settings**.
+2. Open the **Notifications** section under *Personal*.
+3. Find **Browser notifications** and switch on **"Enable browser notifications"**.
+4. Your browser asks to show notifications — click **Allow**.
+
+![The "Enable browser notifications" toggle on the personal Notifications settings page](web-push-enable-toggle.png)
+
+When it is on, the line under the toggle reads **"Notification permission:
+granted"**. From then on OpenRegister sends you a native notification — with the
+originating app's icon and any action buttons (for example *Open client*) —
+whenever a notification rule you are a recipient of fires, **even when no
+Nextcloud tab is open**.
+
+To stop receiving them, switch the toggle **off** (this removes the browser
+subscription).
+
+> Behind the scenes the toggle requests permission, registers the Service Worker
+> (`js/openregister-push-sw.js`), and subscribes
+> (`pushManager.subscribe({ userVisibleOnly: true, … })`). The subscription is
+> stored per user + browser in the `openregister_push_subscriptions` table
+> (infrastructure state — not an OpenRegister object).
+
+### Browser support / degradation
+
+| Browser | Background Web Push |
+|---------|---------------------|
+| Chrome / Edge | Supported — delivered while the browser keeps a background process alive (see below) |
+| Firefox | Supported — delivered while the browser keeps a background process alive (see below) |
+| Safari (macOS/iOS) | Only when the site is an **installed PWA**; otherwise no background push — degrades to the foreground `nc-notification` popup |
+
+### Receiving notifications when the browser is closed
+
+Browser push is delivered over your browser's **background connection** to its
+push service (Chrome → FCM, Firefox → Mozilla autopush). The notification arrives
+**without any Nextcloud tab open**, but a **browser process must be running**:
+
+| State | Result |
+|-------|--------|
+| A browser window is open (any site — no Nextcloud tab needed) | Arrives immediately |
+| Browser running in the background (window closed, tray process alive) | Arrives immediately — *if* the browser is actually maintaining its push connection (see the reality check) |
+| Browser fully closed / process asleep | The push is **queued** by the push service and delivered the moment you next open the browser — nothing is lost |
+
+This is standard browser/OS behaviour shared by every web-push site (Slack,
+Gmail, …) — it is not specific to OpenRegister. For notifications that arrive
+with **no browser running at all**, use the native Nextcloud desktop or mobile
+apps, which have their own push channel.
+
+#### Keep Chrome receiving with all windows closed
+
+For Chrome to receive a push with no window open, it has to keep a background
+process running. On Windows:
+
+1. Open Chrome **Settings → System** (or paste `chrome://settings/system` into the address bar).
+2. Turn on **"Continue running background apps when Google Chrome is closed."**
+
+Microsoft Edge has the same option at `edge://settings/system`.
+
+> **Reality check.** This setting is *necessary but not sufficient*. Even with it
+> on, whether a push is delivered while every window is closed depends on whether
+> Chrome is actually keeping its background connection alive — Windows power
+> management, how you closed Chrome, and Chrome's own throttling can still let the
+> process sleep. When that happens the push is simply **queued and delivered the
+> instant you reopen the browser** (no Nextcloud tab required, nothing lost). The
+> only reliably-instant states are *a browser window open* or *the browser
+> actively running in the background*. For guaranteed always-on delivery, use the
+> native Nextcloud desktop/mobile apps.
+
+### Duplicate suppression
+
+When `web-push` is active and a Nextcloud tab is also open, the stock
+notifications app would otherwise show its own plain popup for the same event.
+Each notification carries a stable `tag` (`openregister-<rule>-<objectUuid>`) so
+the rich Service-Worker notification and the stock popup collapse, and the
+foreground client suppresses the stock popup while web-push is active. With the
+browser closed there is only one source, so no suppression is needed.
+
 ## Standards
 
 | Standard | Role |
@@ -258,6 +382,8 @@ For Dutch government interoperability, webhook payloads can be formatted accordi
 | HMAC-SHA256 | Webhook request signing |
 | VNG Notificaties API | Dutch government notification format (via Mapping) |
 | Nextcloud INotificationManager | In-app notification delivery |
+| Web Push Protocol (RFC 8030) + VAPID (RFC 8292) | Background browser notifications |
+| aes128gcm (RFC 8291) | Web Push payload encryption (via `minishlink/web-push`) |
 
 ## Related Features
 

@@ -1,5 +1,23 @@
 parameters:
 	ignoreErrors:
+		# AppHost observability — same widened-child-signature PHPStan limitation
+		# baselined fleet-wide for SchemaMapper/RegisterMapper::find($id, _rbac, _multitenancy).
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/AppHost/Observability/Source/ObjectMetricSource.php
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/AppHost/Observability/Source/ObjectMetricSource.php
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/AppHost/Observability/Source/ObjectMetricSource.php
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/AppHost/Observability/Source/ObjectMetricSource.php
 		-
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
 			count: 1

@@ -5,7 +5,7 @@ status: done
 # integration-time-tracker Specification
 
 ## Purpose
-TBD - created by archiving change integration-time-tracker. Update Purpose after archive.
+Links time-tracking entries to OpenRegister objects via a configurable Nextcloud backend app (default `timemanager`), storing a denormalized per-object hour total that dashboards read in a single row instead of aggregating entries at render time. Renders across the standard widget surfaces (with a per-user/week breakdown on the detail page) and an hours chip for `time-tracker` reference properties, with an `occ openregister:time:reconcile` command to recalculate totals from source entries. The backend app's ACLs govern visibility.
 ## Requirements
 ### Requirement: Time Provider Registration
 

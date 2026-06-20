@@ -435,52 +435,50 @@ class FileValidationHandlerTest extends TestCase
         $this->handler->checkOwnership(file: $file);
     }//end testCheckOwnershipUnreadableFileThrowsNotPermitted()
 
-    public function testCheckOwnershipReadableFileWithDriftedOwnerThrows(): void
+    public function testCheckOwnershipReadableFileWithDifferentOwnerIsAllowed(): void
     {
-        // SEC-CTRL-5: owner drift must DENY access (throw), never silently re-own
-        // the file on a read path. ownFile()/setFileOwnership() must NOT be called.
+        // Access is readability-based and ownership-agnostic: a file the session can
+        // read but does not own (e.g. reached via a file share, or owned by the
+        // openregister system user) must be allowed. No ownership repair is performed.
         $file = $this->createMock(Node::class);
         $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
 
         $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('old-owner');
+        $fileOwner->method('getUID')->willReturn('other-user');
         $file->method('getOwner')->willReturn($fileOwner);
 
         $currentUser = $this->createMock(IUser::class);
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
-        // No ownership repair may be attempted on a read path.
+        // Ownership is never mutated on an access check.
         $this->fileMapper->expects($this->never())
             ->method('setFileOwnership');
 
-        $this->expectException(NotPermittedException::class);
-
         $this->handler->checkOwnership(file: $file);
-    }//end testCheckOwnershipReadableFileWithDriftedOwnerThrows()
 
-    public function testCheckOwnershipReadableFileWithNullOwnerThrows(): void
+        $this->assertTrue(true);
+    }//end testCheckOwnershipReadableFileWithDifferentOwnerIsAllowed()
+
+    public function testCheckOwnershipReadableFileWithNullOwnerIsAllowed(): void
     {
-        // SEC-CTRL-5: a null owner is also an ownership mismatch — deny access.
+        // A readable file is allowed even when getOwner() returns null: readability is
+        // the access gate, and the owner identity is irrelevant.
         $file = $this->createMock(Node::class);
         $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
         $file->method('getOwner')->willReturn(null);
 
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
         $this->fileMapper->expects($this->never())
             ->method('setFileOwnership');
 
-        $this->expectException(NotPermittedException::class);
-
         $this->handler->checkOwnership(file: $file);
-    }//end testCheckOwnershipReadableFileWithNullOwnerThrows()
+
+        $this->assertTrue(true);
+    }//end testCheckOwnershipReadableFileWithNullOwnerIsAllowed()
 
     // =========================================================================
     // ownFile

@@ -1,7 +1,12 @@
+---
+status: done
+---
+
 # schema-import Specification
 
 ## Purpose
-TBD - created by archiving change schema-import-standards. Update Purpose after archive.
+Imports register schemas from external vocabulary standards — Schema.org types and GGM (Gemeentelijk Gegevensmodel) objecttypes — out of bundled versioned snapshots or uploaded export files, mapping each standard's datatypes, descriptions, and reference lists into JSON Schema and pre-filling JSON-LD term mappings. Importable types are discoverable by search, schema uploads are dialect-aware and reject unidentifiable input, and every imported schema records its provenance so it can be re-imported with a guarded diff preview that preserves local additions and flags conflicts.
+
 ## Requirements
 ### Requirement: Schema.org types MUST be importable as register schemas
 

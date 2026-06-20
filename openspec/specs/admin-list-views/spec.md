@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # admin-list-views Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-2b-views. Update Purpose after archive.
+Provides consistent interaction behaviour across the OpenRegister admin index views (agents, applications, configurations, entities, sources, templates, webhooks). Gives each list a select-all bulk-selection action, an optional detail-sidebar toggle, and a soft refresh of its data on mount so views render instantly from already-loaded store state.
 ## Requirements
 ### Requirement: Admin index views MUST expose a `toggleSelectAll(checked)` bulk-selection action @e2e exclude isolated Vue component contract (toggleSelectAll populates/clears the selection array keyed off store ids, no API/refresh) — covered by Vitest component unit test. The index views themselves render via manifest-shell.spec.ts
 

@@ -1288,7 +1288,36 @@ class ConfigurationController extends Controller
             // Step 2: Extract metadata from config.
             $info          = $configData['info'] ?? [];
             $xOpenregister = $configData['x-openregister'] ?? [];
-            $appId         = $xOpenregister['app'] ?? 'imported';
+
+            // Derive the configuration's app id. Prefer the explicit
+            // x-openregister.app; otherwise derive a stable id from the first
+            // register's slug so two independent URL imports (e.g. a Woo and a
+            // DCAT register) don't both collapse onto the generic 'imported'
+            // bucket and 409 the second import. Idempotent: re-importing the
+            // same register yields the same id, so it updates instead of
+            // colliding.
+            $appId = $xOpenregister['app'] ?? null;
+            if (empty($appId) === true) {
+                $registers = $configData['components']['registers'] ?? [];
+                $firstSlug = null;
+                if (is_array($registers) === true && empty($registers) === false) {
+                    $first     = reset($registers);
+                    $firstSlug = (is_array($first) === true ? ($first['slug'] ?? null) : null);
+                    if ($firstSlug === null) {
+                        $key = array_key_first($registers);
+                        if (is_string($key) === true) {
+                            $firstSlug = $key;
+                        }
+                    }
+                }
+
+                if (empty($firstSlug) === false) {
+                    $appId = 'imported-'.preg_replace('/[^a-z0-9_-]+/', '', strtolower((string) $firstSlug));
+                } else {
+                    $appId = 'imported';
+                }
+            }
+
             $version       = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
             $title         = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}";
             $description   = $info['description'] ?? $xOpenregister['description'] ?? "Imported from {$sourceType}";

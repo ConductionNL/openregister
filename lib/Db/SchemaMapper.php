@@ -833,7 +833,19 @@ class SchemaMapper extends QBMapper
         }
 
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-notifications: '.implode(' ', $messages));
+
+        // A malformed OPTIONAL notification annotation must NOT block the schema
+        // itself — and, on config import, the entire register + every schema
+        // that references it (the import aborts and 0 objects land). The runtime
+        // dispatcher only fires notifications whose trigger matches a known
+        // event, so an invalid/legacy notification spec (e.g. the older
+        // `onCreate`/`onStatusChange` shape without a trigger.type) is simply
+        // inert. Log a warning so it can be cleaned up, but keep the schema
+        // valid and importable.
+        $this->logger->warning(
+            'Schema "'.$schema->getSlug().'" has invalid x-openregister-notifications (ignored at runtime, fix to enable): '.implode(' ', $messages),
+            ['schema' => $schema->getSlug()]
+        );
     }//end validateNotificationsAnnotation()
 
     /**

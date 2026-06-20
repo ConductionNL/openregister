@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # tmlo-metadata-schema Specification
 
 ## Purpose

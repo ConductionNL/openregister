@@ -10,7 +10,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 			:title="t('openregister', 'Registers')"
 			:description="t('openregister', 'Manage your data registers and their configurations')"
 			:show-title="true"
-			:objects="filteredRegisters"
+			:objects="paginatedRegisters"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:loading="registerStore.loading"
@@ -288,6 +288,17 @@ export default {
 			const total = this.filteredRegisters.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
+		},
+		/**
+		 * The registers for the current page. The full list is loaded client-side,
+		 * so CnIndexPage (prop mode) does not slice — we slice here so paging works.
+		 *
+		 * @spec exclude list-view derived per-page slice for display
+		 */
+		paginatedRegisters() {
+			const { page, limit } = this.paginationData
+			const start = (page - 1) * limit
+			return this.filteredRegisters.slice(start, start + limit)
 		},
 		/**
 		 * @spec exclude list-view empty-state title text helper (computed)

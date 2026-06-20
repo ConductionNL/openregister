@@ -5,7 +5,7 @@ status: done
 # integration-deck Specification
 
 ## Purpose
-TBD - created by archiving change integration-deck. Update Purpose after archive.
+Links Nextcloud Deck cards to OpenRegister objects, letting users create new cards (with sticky per-schema default board and stack) or link existing ones from a sidebar tab. The detail-page surface renders a compact mini-kanban that highlights the linked card in its current stack, and unlinking leaves the Deck card untouched. Access inherits from object RBAC plus Deck's per-board ACLs.
 ## Requirements
 ### Requirement: Deck Provider Registration
 

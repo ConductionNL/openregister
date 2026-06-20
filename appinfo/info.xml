@@ -121,6 +121,7 @@ Vrij en open source onder de EUPL-licentie.
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
 		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
+		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
 	</settings>
 
 	<commands>
@@ -137,6 +138,8 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
+		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
+		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
 	</commands>
 
 	<notification>

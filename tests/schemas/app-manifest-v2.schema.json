@@ -61,6 +61,82 @@
 			"type": "array",
 			"items": { "$ref": "#/$defs/page" },
 			"description": "Page definitions dispatched by CnPageRenderer. Each page's id is also its vue-router route name. Ids MUST be unique across the array; uniqueness is enforced by validateManifestV2 as a post-schema check."
+		},
+		"observability": {
+			"type": "object",
+			"additionalProperties": false,
+			"description": "Declarative health + Prometheus metrics consumed by the OpenRegister AppHost observability engine (ADR-040, ADR-006). When present, an app's /api/health and /api/metrics routes aliased at the engine's GenericHealth/GenericMetrics controllers render from these descriptors. Absent → the engine applies safe defaults (a database check + implicit {app}_info/{app}_up). Leaf apps cannot override the engine-owned auth posture or exposition format through this block.",
+			"properties": {
+				"_note": { "type": "string", "description": "Free-text rationale; ignored by the engine." },
+				"health": {
+					"type": "object",
+					"additionalProperties": false,
+					"description": "Declarative health-check configuration.",
+					"properties": {
+						"statusCodePolicy": {
+							"type": "string",
+							"enum": ["adr006", "always200"],
+							"default": "adr006",
+							"description": "adr006 → 503 when a critical check fails (default). always200 → always HTTP 200 (reverse-proxy contract)."
+						},
+						"cors": {
+							"type": "boolean",
+							"default": false,
+							"description": "Emit Access-Control-Allow-* headers on the health response."
+						},
+						"checks": {
+							"type": "array",
+							"description": "Ordered health checks. Each renders as a key in the response `checks` map.",
+							"items": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": ["id", "type"],
+								"properties": {
+									"id": { "type": "string", "description": "Key under which the check result appears in the response." },
+									"type": { "type": "string", "enum": ["database", "filesystem", "appEnabled", "appConfig", "orAvailable"], "description": "One of the five closed check primitives." },
+									"severity": { "type": "string", "enum": ["critical", "degraded"], "default": "critical", "description": "critical failure → error/503; degraded failure → degraded/200." },
+									"app": { "type": "string", "description": "Target app id for the appEnabled check." },
+									"key": { "type": "string", "description": "Config key for the appConfig check." },
+									"assert": { "type": "string", "enum": ["present", "nonEmpty"], "description": "Assertion mode for the appConfig check." }
+								}
+							}
+						}
+					}
+				},
+				"metrics": {
+					"type": "array",
+					"description": "Declarative Prometheus metric descriptors. The engine always prepends implicit {app}_info and {app}_up.",
+					"items": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["name", "source"],
+						"properties": {
+							"name": { "type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$", "description": "Metric name (without the {app}_ prefix)." },
+							"type": { "type": "string", "enum": ["gauge", "counter"], "default": "gauge", "description": "Prometheus metric type." },
+							"help": { "type": "string", "description": "HELP text rendered above the samples." },
+							"cacheTtl": { "type": "integer", "minimum": 0, "default": 0, "description": "Per-metric cache TTL in seconds (0 = no cache)." },
+							"source": {
+								"type": "object",
+								"additionalProperties": true,
+								"required": ["kind"],
+								"description": "Metric data source. The closed set of kinds is objectCount, objectSum, tableCount, appConfig, provider.",
+								"properties": {
+									"kind": { "type": "string", "enum": ["objectCount", "objectSum", "tableCount", "appConfig", "provider"] },
+									"table": { "type": "string", "pattern": "^[a-z0-9_]+$", "description": "tableCount: allowlisted own-table name (no prefix)." },
+									"schema": { "type": "string", "description": "objectCount/objectSum: schema slug." },
+									"register": { "type": "string", "description": "objectCount/objectSum: optional register slug." },
+									"field": { "type": "string", "description": "objectSum: numeric field to sum." },
+									"key": { "type": "string", "description": "appConfig: config key." },
+									"groupBy": { "type": "array", "items": { "type": "string" }, "description": "Columns/fields to group by → one labelled sample per distinct value." },
+									"filter": { "type": "object", "additionalProperties": true, "description": "Map field → { operator: value }; operators eq|neq|lt|lte|gt|gte|like." },
+									"labelMap": { "type": "object", "additionalProperties": true, "description": "tableCount: rename a grouped column to a different label key." },
+									"labelDefaults": { "type": "object", "additionalProperties": true, "description": "tableCount: default label value for NULL/empty columns." }
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	},
 	"$defs": {

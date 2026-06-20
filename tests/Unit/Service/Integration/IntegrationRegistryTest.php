@@ -189,4 +189,41 @@ class IntegrationRegistryTest extends TestCase
         $this->assertNull($this->registry->get('nonexistent'));
     }//end testGetReturnsNullForUnknownId()
 
+    public function testRegisterPageWidgetStoresNormalisedDescriptor(): void
+    {
+        $accepted = $this->registry->registerPageWidget([
+            'id'         => 'analytics-series:sla',
+            'title'      => 'SLA',
+            'providerId' => 'analytics-series',
+            'config'     => ['seriesKey' => 'sla'],
+        ]);
+
+        $this->assertTrue($accepted);
+
+        $widget = $this->registry->getPageWidget('analytics-series:sla');
+        $this->assertNotNull($widget);
+        $this->assertSame('chart', $widget['type']);
+        $this->assertSame('SLA', $widget['title']);
+        $this->assertSame('sla', $widget['config']['seriesKey']);
+        $this->assertCount(1, $this->registry->listPageWidgets());
+    }//end testRegisterPageWidgetStoresNormalisedDescriptor()
+
+    public function testRegisterPageWidgetRejectsMissingId(): void
+    {
+        $this->assertFalse($this->registry->registerPageWidget(['title' => 'no id']));
+        $this->assertSame([], $this->registry->listPageWidgets());
+    }//end testRegisterPageWidgetRejectsMissingId()
+
+    public function testRegisterPageWidgetFirstWinsOnDuplicate(): void
+    {
+        $this->assertTrue($this->registry->registerPageWidget(['id' => 'w', 'title' => 'first']));
+        $this->assertFalse($this->registry->registerPageWidget(['id' => 'w', 'title' => 'second']));
+        $this->assertSame('first', $this->registry->getPageWidget('w')['title']);
+    }//end testRegisterPageWidgetFirstWinsOnDuplicate()
+
+    public function testGetPageWidgetReturnsNullForUnknown(): void
+    {
+        $this->assertNull($this->registry->getPageWidget('nope'));
+    }//end testGetPageWidgetReturnsNullForUnknown()
+
 }//end class

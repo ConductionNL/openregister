@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # entity-relation-grondslagen Specification
 
 ## Purpose
-TBD - created by archiving change entity-relation-grondslagen. Update Purpose after archive.
+Lets operators annotate detected entity-relations with legal-basis (`bases`) UUIDs and a `skipAnonymization` flag through an audited `PATCH /api/entity-relations/{id}` endpoint, and add manual entities to a file via chunk-aware exact-string matching. The anonymisation flow honours `skipAnonymization` so flagged relations are never redacted, substitutes entities with stable `[<TYPE>: <id>]` placeholders for byte-identical re-runs, and records every decision write in OpenRegister's audit trail while keeping operator-supplied values out of HTTP logs and error bodies.
 ## Requirements
 ### Requirement: `EntityRelation` MUST gain an optional `bases` JSON column
 

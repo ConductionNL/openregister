@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # text-extraction-word Specification
 
 ## Purpose
-TBD - created by archiving change text-extraction-word-completeness. Update Purpose after archive.
+Extracts complete text from Word-family documents (DOCX, legacy DOC, ODT) by recursively walking every element — including table cells and nested tables, section headers and footers, and footnotes and endnotes — and selecting the correct PhpWord reader from the input MIME or extension. The recursive walker is depth-guarded against pathological nesting, reader or load failures return null gracefully rather than aborting, and failure logs never contain document content.
 
 @e2e exclude Backend PHP text-extraction service (PhpWord element walker for DOCX/DOC/ODT tables, headers, footers, foot/endnotes, reader selection, failure logging). Pure server-side document processing with no user-facing OpenRegister UI surface — exercised via PHPUnit fixture-document units. Covered by PHPUnit.
 

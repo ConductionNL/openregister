@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # nextcloud-entity-relations Specification
 
 ## Purpose

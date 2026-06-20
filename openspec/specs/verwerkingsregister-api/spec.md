@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # verwerkingsregister-api Specification
 
 ---

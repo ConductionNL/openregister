@@ -5,7 +5,7 @@ status: done
 # integration-activity Specification
 
 ## Purpose
-TBD - created by archiving change integration-activity. Update Purpose after archive.
+Surfaces Nextcloud Activity events alongside OpenRegister cross-integration events as a blended, scope-filtered feed on an object, with event-type filter chips that persist the user's selection. Registers an Activity integration provider using a query-time storage strategy — listing is read directly from NC Activity, mutations return HTTP 501 — and renders the standard widget surfaces plus a single-event reference chip. Per-user visibility defers entirely to NC Activity's own filtering.
 ## Requirements
 ### Requirement: Activity Provider Registration
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # github-issue-proxy Specification
 
 ## Purpose
-TBD - created by archiving change add-github-issue-proxy. Update Purpose after archive.
+Provides a server-side proxy at `GET`/`POST /api/github/issues` that lets authenticated Nextcloud users read a configured repository's issues and submit new ones without exposing GitHub tokens to the browser. Reads merge OR-semantics label filters and are cached; submissions fall back to an app-level PAT with a sanitized attribution prefix, attach an optional `specRef` label, and are rate-limited and audit-logged. Enforces a single-repo allowlist, least-privilege PAT scopes, and guarantees the token never leaks into responses, logs, caches, or errors.
 
 @e2e exclude Pure backend REST proxy (GET/POST /api/github/issues): server-side GitHub fetch, OR-label merge, PAT authorship fallback, rate-limiting, APCu/distributed caching, audit emission, and parameter validation. No user-facing OpenRegister UI surface — exercised via PHPUnit (handler/controller units) and Newman (HTTP contract). Covered by Newman/PHPUnit.
 

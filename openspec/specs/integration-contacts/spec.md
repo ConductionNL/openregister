@@ -5,7 +5,7 @@ status: done
 # integration-contacts Specification
 
 ## Purpose
-TBD - created by archiving change integration-contacts. Update Purpose after archive.
+Links Nextcloud Contacts to OpenRegister objects with per-link roles, grouping linked contacts by role in the sidebar tab and offering reverse lookup of every object a contact is linked to. It provides the canonical person chip (avatar, name, hover details) used to render person-reference properties across Conduction apps. Access inherits from object RBAC plus Contacts address-book permissions.
 ## Requirements
 ### Requirement: Contacts Provider Registration
 

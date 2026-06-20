@@ -1,7 +1,12 @@
+---
+status: done
+---
+
 # settings-management Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-b-svc-settings-mgmt. Update Purpose after archive.
+Manages OpenRegister configuration across all domains (LLM, File, Object, Retention, Archival, SOLR, search backend, RBAC, Multitenancy, Organisation, n8n, Publishing) through a sliced typed get/update pattern that persists each domain as a JSON blob in IAppConfig with defaults backfill and PATCH-merge semantics. A thin SettingsService facade delegates each domain to a dedicated handler and additionally orchestrates cache statistics and clearing, mass object validation in serial or parallel batch jobs, environment introspection, and configuration rebase.
+
 ## Requirements
 ### Requirement: Per-domain settings MUST follow a sliced typed get/update pattern persisted as JSON in IAppConfig
 Each configuration domain MUST expose a typed retrieval method

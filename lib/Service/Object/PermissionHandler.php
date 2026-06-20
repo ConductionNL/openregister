@@ -1963,4 +1963,132 @@ class PermissionHandler
 
         return $config['roles'];
     }//end getRoleDefinitionsForSchema()
+
+    /**
+     * Decide whether a caller may perform a lifecycle transition that
+     * declares a per-transition `authorization` list.
+     *
+     * This is the declarative counterpart to the `requires` PHP-guard seam on
+     * `x-openregister-lifecycle` transitions: a schema author lists the
+     * Nextcloud group ids (and/or register-named roles) permitted to drive a
+     * given transition, and OpenRegister enforces it on the standard
+     * `saveObject()` path WITHOUT the author having to ship a guard class.
+     *
+     * Resolution rules (reusing the SAME `IGroupManager` membership check that
+     * every other RBAC verdict in this handler trusts):
+     *  - The `admin` group always passes (mirrors {@see hasGroupPermission()}).
+     *  - A bare string entry is a literal NC group id; the caller passes when
+     *    {@see IGroupManager::isInGroup()} is true for it.
+     *  - An entry shaped `{ "role": "<name>" }` is expanded to the NC group ids
+     *    assigned to that register-named role via the schema's
+     *    `authorization.roles` map (the same `roles: {name: [groups]}` syntax
+     *    {@see expandRoles()} consumes), then matched the same way.
+     *
+     * Fail-closed posture (CWE-863): an EMPTY list authorises nobody; an
+     * anonymous caller (null/unknown uid) is denied; an entry that cannot be
+     * resolved to a concrete group is skipped (never widens access). A
+     * transition WITHOUT an `authorization` list never reaches this method —
+     * the listener only calls it when the key is present — so existing
+     * transitions are completely unaffected (additive).
+     *
+     * @param array<int, mixed> $authorizationList Group ids / `{role}` entries permitted to perform the transition.
+     * @param string|null       $userId            Caller uid, or null for an anonymous principal.
+     * @param Schema            $schema            Schema the transition belongs to (for named-role expansion).
+     *
+     * @return bool True when the caller is authorised; false (fail-closed) otherwise.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Anonymous guard + admin bypass + literal-vs-role entry handling are each one irreducible branch.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
+     */
+    public function isTransitionAuthorized(array $authorizationList, ?string $userId, Schema $schema): bool
+    {
+        // Fail-closed: an empty list authorises nobody.
+        if ($authorizationList === []) {
+            return false;
+        }
+
+        // Anonymous callers can never satisfy a group-based transition gate.
+        if ($userId === null || $userId === '') {
+            return false;
+        }
+
+        $userObj = $this->userManager->get($userId);
+        if ($userObj === null) {
+            return false;
+        }
+
+        $userGroups = $this->groupManager->getUserGroupIds($userObj);
+
+        // Admin bypass — consistent with every other verdict in this handler.
+        if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
+            return true;
+        }
+
+        $userGroupSet  = array_flip($userGroups);
+        $roleGroupMap  = null;
+
+        foreach ($authorizationList as $entry) {
+            // Literal NC group id.
+            if (is_string($entry) === true) {
+                if ($entry !== '' && isset($userGroupSet[$entry]) === true) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            // Named-role indirection: { "role": "<name>" } → assigned groups.
+            if (is_array($entry) === true && isset($entry['role']) === true && is_string($entry['role']) === true) {
+                if ($roleGroupMap === null) {
+                    $roleGroupMap = $this->resolveTransitionRoleGroups(schema: $schema);
+                }
+
+                $groupsForRole = ($roleGroupMap[$entry['role']] ?? []);
+                foreach ($groupsForRole as $groupId) {
+                    if (is_string($groupId) === true && isset($userGroupSet[$groupId]) === true) {
+                        return true;
+                    }
+                }
+            }
+        }//end foreach
+
+        return false;
+    }//end isTransitionAuthorized()
+
+    /**
+     * Build a `roleName => [groupId, ...]` map from a schema's
+     * `authorization.roles` assignment, used to expand `{ "role": "<name>" }`
+     * entries on lifecycle transitions.
+     *
+     * The role→group assignment lives on the schema's authorization block
+     * (`authorization.roles: { "<name>": ["<group>", ...] }`) — the same
+     * compact syntax {@see expandRoles()} reads. Only the assignment is needed
+     * here (not the register-level action set), so this is a thin, targeted
+     * read rather than a re-run of the full role-hierarchy expansion.
+     *
+     * @param Schema $schema Schema whose authorization block carries the role assignment.
+     *
+     * @return array<string, array<int, string>> Map of role name to assigned NC group ids.
+     */
+    private function resolveTransitionRoleGroups(Schema $schema): array
+    {
+        $authorization = $schema->getAuthorization();
+        if (is_array($authorization) === false || isset($authorization['roles']) === false
+            || is_array($authorization['roles']) === false
+        ) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($authorization['roles'] as $roleName => $groups) {
+            if (is_string($roleName) === false) {
+                continue;
+            }
+
+            $map[$roleName] = array_values(array_filter((array) $groups, 'is_string'));
+        }
+
+        return $map;
+    }//end resolveTransitionRoleGroups()
 }//end class

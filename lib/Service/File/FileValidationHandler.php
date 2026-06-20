@@ -242,36 +242,32 @@ class FileValidationHandler
     }//end detectExecutableMagicBytes()
 
     /**
-     * Check file ownership and repair the OpenRegister owner record when it drifted.
+     * Assert that the current session may access the given file.
      *
-     * Probes read access via `Node::isReadable()` — a pure permission-bitmask
-     * check against `oc_filecache`. It does NOT read file contents and does NOT
-     * acquire a Nextcloud shared lock, so this probe is safe to run in a hot
-     * listing loop against arbitrarily large or actively-locked files. See
-     * `openspec/changes/fix-object-files-listing-lock-and-limit/design.md`
-     * Decision 1 for the rationale (the prior implementation used
-     * `File::getContent()` which forced O(file-size) reads and triggered
-     * `LockedException` on every NC-locked file).
+     * Access is readability-based and ownership-agnostic. An OpenRegister object
+     * may link a file owned by the `openregister` system user, by the uploading
+     * user, or by any other user, and the current session may reach it either
+     * through direct ownership OR through a file share. `Node::isReadable()`
+     * reflects exactly that surface: a pure permission-bitmask check against
+     * `oc_filecache` for the current user's view. It does NOT read file contents
+     * and does NOT acquire a Nextcloud shared lock, so this probe is safe to run
+     * in a hot listing loop against arbitrarily large or actively-locked files.
+     * See `openspec/changes/fix-object-files-listing-lock-and-limit/design.md`
+     * Decision 1 (the prior implementation used `File::getContent()` which forced
+     * O(file-size) reads and triggered `LockedException` on every NC-locked file).
      *
-     * Behaviour:
-     * - If the current session can read the file and the owner record has
-     *   drifted, `ownFile()` is called to repair the DB record (best effort —
-     *   any failure is logged at warning level but does not propagate).
-     * - If the current session cannot read the file at all, a
-     *   `NotPermittedException` is thrown. Ownership is intentionally NOT
-     *   repaired in this branch: repair is only a valid action when the
-     *   session can already observe the file through the user's permission
-     *   surface.
+     * Comparing the file owner against the session user is intentionally NOT done:
+     * it rejects files reachable via a share, which broke linking and viewing of
+     * files owned by users other than the session user. Write and delete paths
+     * additionally assert `isUpdateable()`/`isDeletable()` before mutating, and the
+     * underlying Nextcloud node operations enforce permissions natively, so the
+     * readability gate here does not over-grant.
      *
-     * @param Node $file The file node to check ownership for.
+     * @param Node $file The file node to check access for.
      *
      * @return void
      *
      * @throws NotPermittedException When the file is not readable by the current session.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method fans out across
-     * readability, owner-drift detection, and best-effort repair with a nested
-     * try/catch; splitting further would obscure the ownership-repair intent.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
@@ -287,22 +283,6 @@ class FileValidationHandler
             );
 
             throw new NotPermittedException("File {$fileName} is not readable by the current session");
-        }
-
-        // SEC-CTRL-5: On owner mismatch DENY access — never call ownFile() here.
-        // Re-owning a file on a read path is a state-changing side effect that turns
-        // any mount-visibility drift into a silent cross-user read. Legitimate
-        // ownership repair must be done by an explicit admin job, not on access.
-        $fileOwner        = $file->getOwner();
-        $openRegisterUser = $this->getUser();
-
-        if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
-            $this->logger->warning(
-                message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) owner does not match the current session; denying access",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            throw new NotPermittedException("File {$fileName} is not owned by the current session");
         }
     }//end checkOwnership()
 

@@ -5,7 +5,7 @@ status: done
 # integration-openproject Specification
 
 ## Purpose
-TBD - created by archiving change integration-openproject. Update Purpose after archive.
+Links OpenProject work packages to OpenRegister objects, routing all CRUD through the ExternalIntegrationRouter to an OpenConnector `openproject` OAuth2 source rather than a local link table. The provider appears only when that source exists, surfaces an explicit "Reconnect" banner when the token expires, and exposes its auth status through OCS capabilities. Per-work-package visibility is governed transitively by OpenProject's own ACLs.
 ## Requirements
 ### Requirement: OpenProject Provider Registration
 
