@@ -49,11 +49,7 @@ jobs:
           composer phpcs
 
       - name: Clone Hydra (for gate runner)
-        uses: https://github.com/actions/checkout@v4
-        with:
-          repository: Conduction/hydra
-          ref: development
-          path: .hydra
+        run: git clone --depth 1 --branch development https://codeberg.org/Conduction/hydra .hydra
 
       - name: Run all Hydra gates (diff-scoped per ADR-020)
         run: |
