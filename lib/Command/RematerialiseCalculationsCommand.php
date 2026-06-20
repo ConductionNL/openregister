@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -60,17 +61,20 @@ class RematerialiseCalculationsCommand extends Command
      * @param MagicMapper          $magicMapper    Magic table mapper for objects.
      * @param ObjectService        $objectService  Object persistence service.
      * @param CalculationEvaluator $evaluator      Expression evaluator.
+     * @param ReferenceResolver    $references     Cross-object reference pre-resolver.
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $magicMapper,
         private readonly ObjectService $objectService,
-        private readonly CalculationEvaluator $evaluator
+        private readonly CalculationEvaluator $evaluator,
+        private readonly ReferenceResolver $references
     ) {
         parent::__construct();
     }//end __construct()
@@ -160,6 +164,13 @@ class RematerialiseCalculationsCommand extends Command
             limit: 100000
         );
 
+        // Declared cross-object references are pre-resolved per object so the
+        // recompute path refreshes references the same way the save path does.
+        $referenceSpecs = ($schema->getConfiguration()['x-openregister-references'] ?? null);
+        if (is_array($referenceSpecs) === false || count($referenceSpecs) === 0) {
+            $referenceSpecs = null;
+        }
+
         $touched   = 0;
         $unchanged = 0;
         $failed    = 0;
@@ -167,6 +178,14 @@ class RematerialiseCalculationsCommand extends Command
         foreach ($entities as $entity) {
             $data    = $entity->getObject() ?? [];
             $payload = $this->withSelf(data: $data, entity: $entity);
+
+            if ($referenceSpecs !== null) {
+                $payload['@ref'] = $this->references->resolveAll(
+                    payload: $payload,
+                    references: $referenceSpecs,
+                    register: $entity->getRegister()
+                );
+            }
 
             $changed = false;
             foreach ($calcs as $name => $spec) {
