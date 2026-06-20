@@ -35,6 +35,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,6 +48,11 @@ use Psr\Log\LoggerInterface;
  * cycle check guarantees the graph is acyclic.
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The listener legitimately wires the
+ *   schema mapper, the pure evaluator, the cross-object reference resolver, the logger,
+ *   and the two object/schema/event DB + event types it bridges; each is a distinct
+ *   collaborator in the save-time materialisation pipeline and none can be folded away.
  */
 class CalculationOnSaveListener implements IEventListener
 {
@@ -55,15 +61,18 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @param SchemaMapper         $schemaMapper Schema lookup mapper.
      * @param CalculationEvaluator $evaluator    Expression evaluator.
+     * @param ReferenceResolver    $references   Cross-object reference pre-resolver.
      * @param LoggerInterface      $logger       PSR logger for warnings.
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-1
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly CalculationEvaluator $evaluator,
+        private readonly ReferenceResolver $references,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -146,6 +155,20 @@ class CalculationOnSaveListener implements IEventListener
             'updated'  => $updatedFormatted,
         ];
 
+        // Pre-resolve declared cross-object references (x-openregister-references)
+        // in the SAME pre-step as @self, strictly before any calculation is
+        // evaluated, and inject them under `@ref.<name>`. Calculations then read
+        // them via { "prop": "@ref.<name>.<field>" } — exactly like @self.
+        // Resolution is RBAC + tenant scoped and never fails the save.
+        $references = $this->getReferences(schema: $schema);
+        if ($references !== null) {
+            $data['@ref'] = $this->references->resolveAll(
+                payload: $data,
+                references: $references,
+                register: $object->getRegister()
+            );
+        }
+
         foreach ($calcs as $name => $spec) {
             if (is_array($spec) === false) {
                 continue;
@@ -177,9 +200,9 @@ class CalculationOnSaveListener implements IEventListener
             }
         }//end foreach
 
-        // Strip the synthetic @self before persisting; it's a runtime aid
-        // for the evaluator, not user data.
-        unset($data['@self']);
+        // Strip the synthetic @self and @ref before persisting; they're a
+        // runtime aid for the evaluator, not user data.
+        unset($data['@self'], $data['@ref']);
 
         if ($changed === true) {
             $object->setObject($data);
@@ -247,4 +270,25 @@ class CalculationOnSaveListener implements IEventListener
 
         return $result;
     }//end getCalculations()
+
+    /**
+     * Read the `x-openregister-references` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null References map, or null when absent.
+     *
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+     */
+    private function getReferences(Schema $schema): ?array
+    {
+        $config = ($schema->getConfiguration() ?? []);
+        $value  = ($config['x-openregister-references'] ?? null);
+        $result = null;
+        if (is_array($value) === true && count($value) > 0) {
+            $result = $value;
+        }
+
+        return $result;
+    }//end getReferences()
 }//end class

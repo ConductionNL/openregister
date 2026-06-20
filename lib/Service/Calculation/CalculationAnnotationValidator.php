@@ -36,8 +36,16 @@ namespace OCA\OpenRegister\Service\Calculation;
  *
  * Cross-calculation:
  * - Cycle detection across {prop:calcA, prop:calcB} dependency graph.
+ * - `x-openregister-references` shape validation + `@ref.<name>` token recognition.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The validator mirrors the evaluator's
+ *   operator vocabulary plus three reference families (@ref / @self / plain) plus the
+ *   references-block shape checks; each branch is a distinct validation rule that cannot be
+ *   collapsed without losing a specific, user-facing error message. Splitting into sub-validators
+ *   would require a rule registry that is out of scope for this single-responsibility class.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
+ * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
  */
 final class CalculationAnnotationValidator
 {
@@ -117,8 +125,19 @@ final class CalculationAnnotationValidator
         $calcNames = array_keys($calcs);
         $allRefs   = array_merge($propKeys, $calcNames);
 
+        // Declared cross-object references (`x-openregister-references`) make
+        // `@ref.<name>.<field>` prop tokens valid. Collect their names so the
+        // walker accepts them, and validate the references block shape.
+        $references    = ($schema['x-openregister-references'] ?? []);
+        $referenceKeys = [];
+        if (is_array($references) === true) {
+            $referenceKeys = array_keys($references);
+        }
+
         $errors = [];
         $deps   = [];
+
+        $this->validateReferences(references: $references, propKeys: $propKeys, errors: $errors);
 
         foreach ($calcs as $name => $spec) {
             if (is_string($name) === false || $name === '') {
@@ -162,6 +181,7 @@ final class CalculationAnnotationValidator
                 expr: $spec['expression'],
                 owner: $name,
                 allRefs: $allRefs,
+                referenceKeys: $referenceKeys,
                 errors: $errors,
                 deps: $deps[$name]
             );
@@ -181,18 +201,19 @@ final class CalculationAnnotationValidator
     /**
      * Recursively walk an expression AST collecting errors and dependencies.
      *
-     * @param mixed                                            $expr    Sub-expression to walk.
-     * @param string                                           $owner   Name of the calc currently being walked.
-     * @param array<int, string>                               $allRefs Available property + calc names.
-     * @param array<int, array{code: string, message: string}> $errors  Mutable error accumulator.
-     * @param array<int, string>                               $deps    Mutable list of calc deps for the current calc.
+     * @param mixed                                            $expr          Sub-expression to walk.
+     * @param string                                           $owner         Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs       Available property + calc names.
+     * @param array<int, string>                               $referenceKeys Declared `x-openregister-references` names.
+     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
+     * @param array<int, string>                               $deps          Mutable list of calc deps for the current calc.
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    private function walk(mixed $expr, string $owner, array $allRefs, array &$errors, array &$deps): void
+    private function walk(mixed $expr, string $owner, array $allRefs, array $referenceKeys, array &$errors, array &$deps): void
     {
         if (is_array($expr) === false) {
             return;
@@ -218,78 +239,154 @@ final class CalculationAnnotationValidator
 
         $args = $expr[$op];
         if ($op === 'prop') {
-            $name = '';
-            if (is_string($args) === true) {
-                $name = $args;
-            } else if (is_array($args) === true) {
-                $name = (string) ($args[0] ?? '');
-            }
-
-            if ($name === '') {
-                $errors[] = [
-                    'code'    => 'calculation-prop-unknown',
-                    'message' => sprintf(
-                        'Calculation "%s": prop "%s" is not a property or calculation.',
-                        $owner,
-                        $name
-                    ),
-                ];
-                return;
-            }
-
-            // `@self.<known-system-field>` is always allowed — the listener
-            // injects @self metadata at evaluation time. No dependency
-            // tracking for @self refs since they don't participate in
-            // the calculation cycle graph.
-            if (str_starts_with($name, '@self.') === true) {
-                $sysField = substr($name, 6);
-                $allowed  = ['id', 'uuid', 'register', 'schema', 'owner', 'created', 'updated'];
-                if (in_array($sysField, $allowed, true) === false) {
-                    $errors[] = [
-                        'code'    => 'calculation-self-unknown',
-                        'message' => sprintf(
-                            'Calculation "%s": @self.%s is not a known system field. Allowed: %s.',
-                            $owner,
-                            $sysField,
-                            implode(', ', $allowed)
-                        ),
-                    ];
-                }
-
-                return;
-            }
-
-            if (in_array($name, $allRefs, true) === false) {
-                $errors[] = [
-                    'code'    => 'calculation-prop-unknown',
-                    'message' => sprintf(
-                        'Calculation "%s": prop "%s" is not a property or calculation.',
-                        $owner,
-                        $name
-                    ),
-                ];
-                return;
-            }
-
-            $deps[] = $name;
+            $this->walkProp(
+                args: $args,
+                owner: $owner,
+                allRefs: $allRefs,
+                referenceKeys: $referenceKeys,
+                errors: $errors,
+                deps: $deps
+            );
             return;
-        }//end if
+        }
 
         // DateDiff uses a named-key dict {from, to, unit} rather than a positional array.
         if ($op === 'dateDiff') {
-            $this->walkDateDiff(args: $args, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+            $this->walkDateDiff(
+                args: $args,
+                owner: $owner,
+                allRefs: $allRefs,
+                referenceKeys: $referenceKeys,
+                errors: $errors,
+                deps: $deps
+            );
             return;
         }
 
         if (is_array($args) === false) {
-            $this->walk(expr: $args, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+            $this->walk(
+                expr: $args,
+                owner: $owner,
+                allRefs: $allRefs,
+                referenceKeys: $referenceKeys,
+                errors: $errors,
+                deps: $deps
+            );
             return;
         }
 
         foreach ($args as $sub) {
-            $this->walk(expr: $sub, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+            $this->walk(
+                expr: $sub,
+                owner: $owner,
+                allRefs: $allRefs,
+                referenceKeys: $referenceKeys,
+                errors: $errors,
+                deps: $deps
+            );
         }
     }//end walk()
+
+    /**
+     * Validate a `prop` reference token and record calc-to-calc dependencies.
+     *
+     * Recognises three families: `@ref.<declared-reference>.<field>` (cross-object
+     * reference injected by the listener), `@self.<system-field>` (object metadata
+     * injected by the listener), and plain property / sibling-calculation names.
+     *
+     * @param mixed                                            $args          The prop operator's argument.
+     * @param string                                           $owner         Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs       Available property + calc names.
+     * @param array<int, string>                               $referenceKeys Declared `x-openregister-references` names.
+     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
+     * @param array<int, string>                               $deps          Mutable list of calc deps for the current calc.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+     */
+    private function walkProp(mixed $args, string $owner, array $allRefs, array $referenceKeys, array &$errors, array &$deps): void
+    {
+        $name = '';
+        if (is_string($args) === true) {
+            $name = $args;
+        } else if (is_array($args) === true) {
+            $name = (string) ($args[0] ?? '');
+        }
+
+        if ($name === '') {
+            $errors[] = [
+                'code'    => 'calculation-prop-unknown',
+                'message' => sprintf(
+                    'Calculation "%s": prop "%s" is not a property or calculation.',
+                    $owner,
+                    $name
+                ),
+            ];
+            return;
+        }
+
+        // `@ref.<declared-reference>.<field>` is allowed — the listener
+        // pre-resolves declared references and injects them at evaluation
+        // time. The reference name (the first dotted segment after @ref.)
+        // must be declared in `x-openregister-references`. No dependency
+        // tracking for @ref refs (they read other objects, not calcs).
+        if (str_starts_with($name, '@ref.') === true) {
+            $refName = explode('.', substr($name, 5))[0] ?? '';
+            if (in_array($refName, $referenceKeys, true) === false) {
+                $errors[] = [
+                    'code'    => 'calculation-ref-unknown',
+                    'message' => sprintf(
+                        'Calculation "%s": @ref.%s is not a declared reference. Declared: %s.',
+                        $owner,
+                        $refName,
+                        implode(', ', $referenceKeys)
+                    ),
+                ];
+            }
+
+            return;
+        }
+
+        // `@self.<known-system-field>` is always allowed — the listener
+        // injects @self metadata at evaluation time. No dependency
+        // tracking for @self refs since they don't participate in
+        // the calculation cycle graph.
+        if (str_starts_with($name, '@self.') === true) {
+            $sysField = substr($name, 6);
+            $allowed  = ['id', 'uuid', 'register', 'schema', 'owner', 'created', 'updated'];
+            if (in_array($sysField, $allowed, true) === false) {
+                $errors[] = [
+                    'code'    => 'calculation-self-unknown',
+                    'message' => sprintf(
+                        'Calculation "%s": @self.%s is not a known system field. Allowed: %s.',
+                        $owner,
+                        $sysField,
+                        implode(', ', $allowed)
+                    ),
+                ];
+            }
+
+            return;
+        }
+
+        if (in_array($name, $allRefs, true) === false) {
+            $errors[] = [
+                'code'    => 'calculation-prop-unknown',
+                'message' => sprintf(
+                    'Calculation "%s": prop "%s" is not a property or calculation.',
+                    $owner,
+                    $name
+                ),
+            ];
+            return;
+        }
+
+        $deps[] = $name;
+    }//end walkProp()
 
     /**
      * Validate a `dateDiff` operator's named-key argument dict.
@@ -298,11 +395,12 @@ final class CalculationAnnotationValidator
      * (scalar literal or nested expression). The `unit` value, when a bare
      * string literal, is additionally checked against the allowed list.
      *
-     * @param mixed                                            $args    The dateDiff argument value.
-     * @param string                                           $owner   Name of the calc currently being walked.
-     * @param array<int, string>                               $allRefs Available property + calc names.
-     * @param array<int, array{code: string, message: string}> $errors  Mutable error accumulator.
-     * @param array<int, string>                               $deps    Mutable list of calc deps for the current calc.
+     * @param mixed                                            $args          The dateDiff argument value.
+     * @param string                                           $owner         Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs       Available property + calc names.
+     * @param array<int, string>                               $referenceKeys Declared `x-openregister-references` names.
+     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
+     * @param array<int, string>                               $deps          Mutable list of calc deps for the current calc.
      *
      * @return void
      */
@@ -310,6 +408,7 @@ final class CalculationAnnotationValidator
         mixed $args,
         string $owner,
         array $allRefs,
+        array $referenceKeys,
         array &$errors,
         array &$deps
     ): void {
@@ -329,8 +428,22 @@ final class CalculationAnnotationValidator
         }
 
         // Walk from and to as sub-expressions so prop refs are validated.
-        $this->walk(expr: $args['from'], owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
-        $this->walk(expr: $args['to'], owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+        $this->walk(
+            expr: $args['from'],
+            owner: $owner,
+            allRefs: $allRefs,
+            referenceKeys: $referenceKeys,
+            errors: $errors,
+            deps: $deps
+        );
+        $this->walk(
+            expr: $args['to'],
+            owner: $owner,
+            allRefs: $allRefs,
+            referenceKeys: $referenceKeys,
+            errors: $errors,
+            deps: $deps
+        );
 
         // Validate unit when it's a plain string literal (not a nested expression).
         $unit = $args['unit'];
@@ -346,6 +459,87 @@ final class CalculationAnnotationValidator
             ];
         }
     }//end walkDateDiff()
+
+    /**
+     * Validate the optional `x-openregister-references` annotation shape.
+     *
+     * Each reference must declare a non-empty `schema` and a `mode` of
+     * `relatedObject` or `lookup`. A `relatedObject` reference requires a
+     * `field`; a `lookup` reference requires a `filters` map.
+     *
+     * @param mixed                                            $references The references map.
+     * @param array<int, string>                               $propKeys   Schema property names (for field checks).
+     * @param array<int, array{code: string, message: string}> $errors     Mutable error accumulator.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+     */
+    private function validateReferences(mixed $references, array $propKeys, array &$errors): void
+    {
+        if (is_array($references) === false || count($references) === 0) {
+            return;
+        }
+
+        foreach ($references as $name => $spec) {
+            if (is_string($name) === false || $name === '' || is_array($spec) === false) {
+                $errors[] = [
+                    'code'    => 'reference-malformed',
+                    'message' => sprintf('Reference "%s" must be a named object.', (string) $name),
+                ];
+                continue;
+            }
+
+            $schema = (string) ($spec['schema'] ?? '');
+            if ($schema === '') {
+                $errors[] = [
+                    'code'    => 'reference-no-schema',
+                    'message' => sprintf('Reference "%s" requires a target schema.', $name),
+                ];
+            }
+
+            $mode = (string) ($spec['mode'] ?? '');
+            if ($mode !== 'relatedObject' && $mode !== 'lookup') {
+                $errors[] = [
+                    'code'    => 'reference-bad-mode',
+                    'message' => sprintf(
+                        'Reference "%s" mode must be relatedObject or lookup.',
+                        $name
+                    ),
+                ];
+                continue;
+            }
+
+            if ($mode === 'relatedObject') {
+                $field = (string) ($spec['field'] ?? '');
+                if ($field === '') {
+                    $errors[] = [
+                        'code'    => 'reference-no-field',
+                        'message' => sprintf('Reference "%s" (relatedObject) requires a field.', $name),
+                    ];
+                } else if (in_array($field, $propKeys, true) === false) {
+                    $errors[] = [
+                        'code'    => 'reference-field-unknown',
+                        'message' => sprintf(
+                            'Reference "%s": field "%s" is not a schema property.',
+                            $name,
+                            $field
+                        ),
+                    ];
+                }
+            }
+
+            if ($mode === 'lookup' && is_array($spec['filters'] ?? null) === false) {
+                $errors[] = [
+                    'code'    => 'reference-no-filters',
+                    'message' => sprintf('Reference "%s" (lookup) requires a filters map.', $name),
+                ];
+            }
+        }//end foreach
+    }//end validateReferences()
 
     /**
      * Find a cycle in the calculation dependency graph using DFS colouring.

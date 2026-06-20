@@ -1897,6 +1897,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-lifecycle',
         'x-openregister-aggregations',
         'x-openregister-calculations',
+        'x-openregister-references',
         'x-openregister-notifications',
         'x-openregister-widgets',
         'x-openregister-relations',

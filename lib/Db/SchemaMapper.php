@@ -786,6 +786,7 @@ class SchemaMapper extends QBMapper
         $shape = [
             'properties'                  => ($schema->getProperties() ?? []),
             'x-openregister-calculations' => $annotation,
+            'x-openregister-references'   => ($configuration['x-openregister-references'] ?? []),
         ];
 
         $errors = (new CalculationAnnotationValidator())->validate($shape);
