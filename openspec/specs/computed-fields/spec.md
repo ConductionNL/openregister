@@ -1,10 +1,13 @@
 ---
-status: done
+status: in-progress
 retrofit_extensions:
   - REQ-001
 ---
 
 # Computed Fields
+
+**OpenSpec changes**
+- `calc-engine-scalar-functions` (active) — adds seven pure per-object scalar operators (`max`, `min`, `coalesce`, `abs`, `round`, `year`, `monthsElapsed`) to the `CalculationEvaluator` JSON-AST engine; additive and backward-compatible. Cross-object folding stays out of scope (aggregations).
 
 ## Purpose
 
