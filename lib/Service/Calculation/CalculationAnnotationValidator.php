@@ -81,7 +81,20 @@ final class CalculationAnnotationValidator
         'diffDays',
         'formatDate',
         'dateDiff',
+        'max',
+        'min',
+        'coalesce',
+        'abs',
+        'round',
+        'year',
+        'monthsElapsed',
+        'sha256',
     ];
+
+    /**
+     * Allowed `metric` values for an aggregate-reference declaration.
+     */
+    private const VALID_AGGREGATE_METRICS = ['count', 'sum', 'avg', 'min', 'max'];
 
     /**
      * Allowed `type` values for a calculation declaration.
@@ -97,6 +110,11 @@ final class CalculationAnnotationValidator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method collects three reference
+     *   families (calc names, x-openregister-references, x-openregister-aggregate-refs), runs
+     *   the per-calc shape + expression walk, and the cycle check in one pass; the steps share
+     *   the accumulated name/dep/error state, so splitting them would thread several mutable
+     *   accumulators through helpers for no readability gain.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
      */
@@ -134,10 +152,21 @@ final class CalculationAnnotationValidator
             $referenceKeys = array_keys($references);
         }
 
+        // Declared aggregate-references (`x-openregister-aggregate-refs`) make
+        // `@aggregate.<name>` / `@aggregate.<name>.<field>` prop tokens valid.
+        // Collect their names so the walker accepts them, and validate the
+        // aggregate-refs block shape.
+        $aggregateRefs    = ($schema['x-openregister-aggregate-refs'] ?? []);
+        $aggregateRefKeys = [];
+        if (is_array($aggregateRefs) === true) {
+            $aggregateRefKeys = array_keys($aggregateRefs);
+        }
+
         $errors = [];
         $deps   = [];
 
         $this->validateReferences(references: $references, propKeys: $propKeys, errors: $errors);
+        $this->validateAggregateRefs(aggregateRefs: $aggregateRefs, errors: $errors);
 
         foreach ($calcs as $name => $spec) {
             if (is_string($name) === false || $name === '') {
@@ -182,6 +211,7 @@ final class CalculationAnnotationValidator
                 owner: $name,
                 allRefs: $allRefs,
                 referenceKeys: $referenceKeys,
+                aggregateRefKeys: $aggregateRefKeys,
                 errors: $errors,
                 deps: $deps[$name]
             );
@@ -201,20 +231,28 @@ final class CalculationAnnotationValidator
     /**
      * Recursively walk an expression AST collecting errors and dependencies.
      *
-     * @param mixed                                            $expr          Sub-expression to walk.
-     * @param string                                           $owner         Name of the calc currently being walked.
-     * @param array<int, string>                               $allRefs       Available property + calc names.
-     * @param array<int, string>                               $referenceKeys Declared `x-openregister-references` names.
-     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
-     * @param array<int, string>                               $deps          Mutable list of calc deps for the current calc.
+     * @param mixed                                            $expr             Sub-expression to walk.
+     * @param string                                           $owner            Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs          Available property + calc names.
+     * @param array<int, string>                               $referenceKeys    Declared `x-openregister-references` names.
+     * @param array<int, string>                               $aggregateRefKeys Declared `x-openregister-aggregate-refs` names.
+     * @param array<int, array{code: string, message: string}> $errors           Mutable error accumulator.
+     * @param array<int, string>                               $deps             Mutable list of calc deps for the current calc.
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    private function walk(mixed $expr, string $owner, array $allRefs, array $referenceKeys, array &$errors, array &$deps): void
-    {
+    private function walk(
+        mixed $expr,
+        string $owner,
+        array $allRefs,
+        array $referenceKeys,
+        array $aggregateRefKeys,
+        array &$errors,
+        array &$deps
+    ): void {
         if (is_array($expr) === false) {
             return;
             // Bare scalar literal.
@@ -244,6 +282,7 @@ final class CalculationAnnotationValidator
                 owner: $owner,
                 allRefs: $allRefs,
                 referenceKeys: $referenceKeys,
+                aggregateRefKeys: $aggregateRefKeys,
                 errors: $errors,
                 deps: $deps
             );
@@ -257,6 +296,7 @@ final class CalculationAnnotationValidator
                 owner: $owner,
                 allRefs: $allRefs,
                 referenceKeys: $referenceKeys,
+                aggregateRefKeys: $aggregateRefKeys,
                 errors: $errors,
                 deps: $deps
             );
@@ -269,6 +309,7 @@ final class CalculationAnnotationValidator
                 owner: $owner,
                 allRefs: $allRefs,
                 referenceKeys: $referenceKeys,
+                aggregateRefKeys: $aggregateRefKeys,
                 errors: $errors,
                 deps: $deps
             );
@@ -281,6 +322,7 @@ final class CalculationAnnotationValidator
                 owner: $owner,
                 allRefs: $allRefs,
                 referenceKeys: $referenceKeys,
+                aggregateRefKeys: $aggregateRefKeys,
                 errors: $errors,
                 deps: $deps
             );
@@ -290,26 +332,40 @@ final class CalculationAnnotationValidator
     /**
      * Validate a `prop` reference token and record calc-to-calc dependencies.
      *
-     * Recognises three families: `@ref.<declared-reference>.<field>` (cross-object
-     * reference injected by the listener), `@self.<system-field>` (object metadata
+     * Recognises four families: `@ref.<declared-reference>.<field>` (cross-object
+     * reference injected by the listener), `@aggregate.<declared-aggregate>` (folded
+     * aggregate injected by the listener), `@self.<system-field>` (object metadata
      * injected by the listener), and plain property / sibling-calculation names.
      *
-     * @param mixed                                            $args          The prop operator's argument.
-     * @param string                                           $owner         Name of the calc currently being walked.
-     * @param array<int, string>                               $allRefs       Available property + calc names.
-     * @param array<int, string>                               $referenceKeys Declared `x-openregister-references` names.
-     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
-     * @param array<int, string>                               $deps          Mutable list of calc deps for the current calc.
+     * @param mixed                                            $args             The prop operator's argument.
+     * @param string                                           $owner            Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs          Available property + calc names.
+     * @param array<int, string>                               $referenceKeys    Declared `x-openregister-references` names.
+     * @param array<int, string>                               $aggregateRefKeys Declared `x-openregister-aggregate-refs` names.
+     * @param array<int, array{code: string, message: string}> $errors           Mutable error accumulator.
+     * @param array<int, string>                               $deps             Mutable list of calc deps for the current calc.
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method recognises four prop-token
+     *   families (@ref, @aggregate, @self, plain), each with its own validity check and
+     *   user-facing error message; the families are flat, mutually-exclusive early returns,
+     *   so extracting each into a helper would only add indirection without reducing the rules.
      *
      * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-4
      */
-    private function walkProp(mixed $args, string $owner, array $allRefs, array $referenceKeys, array &$errors, array &$deps): void
-    {
+    private function walkProp(
+        mixed $args,
+        string $owner,
+        array $allRefs,
+        array $referenceKeys,
+        array $aggregateRefKeys,
+        array &$errors,
+        array &$deps
+    ): void {
         $name = '';
         if (is_string($args) === true) {
             $name = $args;
@@ -344,6 +400,28 @@ final class CalculationAnnotationValidator
                         $owner,
                         $refName,
                         implode(', ', $referenceKeys)
+                    ),
+                ];
+            }
+
+            return;
+        }
+
+        // `@aggregate.<declared-aggregate>[.<groupKey>]` is allowed — the
+        // listener pre-resolves declared aggregate-references and injects them
+        // at evaluation time. The aggregate name (the first dotted segment
+        // after @aggregate.) must be declared in `x-openregister-aggregate-refs`.
+        // No dependency tracking (aggregates fold other objects, not calcs).
+        if (str_starts_with($name, '@aggregate.') === true) {
+            $aggName = explode('.', substr($name, 11))[0] ?? '';
+            if (in_array($aggName, $aggregateRefKeys, true) === false) {
+                $errors[] = [
+                    'code'    => 'calculation-aggregate-unknown',
+                    'message' => sprintf(
+                        'Calculation "%s": @aggregate.%s is not a declared aggregate-reference. Declared: %s.',
+                        $owner,
+                        $aggName,
+                        implode(', ', $aggregateRefKeys)
                     ),
                 ];
             }
@@ -395,12 +473,13 @@ final class CalculationAnnotationValidator
      * (scalar literal or nested expression). The `unit` value, when a bare
      * string literal, is additionally checked against the allowed list.
      *
-     * @param mixed                                            $args          The dateDiff argument value.
-     * @param string                                           $owner         Name of the calc currently being walked.
-     * @param array<int, string>                               $allRefs       Available property + calc names.
-     * @param array<int, string>                               $referenceKeys Declared `x-openregister-references` names.
-     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
-     * @param array<int, string>                               $deps          Mutable list of calc deps for the current calc.
+     * @param mixed                                            $args             The dateDiff argument value.
+     * @param string                                           $owner            Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs          Available property + calc names.
+     * @param array<int, string>                               $referenceKeys    Declared `x-openregister-references` names.
+     * @param array<int, string>                               $aggregateRefKeys Declared `x-openregister-aggregate-refs` names.
+     * @param array<int, array{code: string, message: string}> $errors           Mutable error accumulator.
+     * @param array<int, string>                               $deps             Mutable list of calc deps for the current calc.
      *
      * @return void
      */
@@ -409,6 +488,7 @@ final class CalculationAnnotationValidator
         string $owner,
         array $allRefs,
         array $referenceKeys,
+        array $aggregateRefKeys,
         array &$errors,
         array &$deps
     ): void {
@@ -433,6 +513,7 @@ final class CalculationAnnotationValidator
             owner: $owner,
             allRefs: $allRefs,
             referenceKeys: $referenceKeys,
+            aggregateRefKeys: $aggregateRefKeys,
             errors: $errors,
             deps: $deps
         );
@@ -441,6 +522,7 @@ final class CalculationAnnotationValidator
             owner: $owner,
             allRefs: $allRefs,
             referenceKeys: $referenceKeys,
+            aggregateRefKeys: $aggregateRefKeys,
             errors: $errors,
             deps: $deps
         );
@@ -540,6 +622,72 @@ final class CalculationAnnotationValidator
             }
         }//end foreach
     }//end validateReferences()
+
+    /**
+     * Validate the optional `x-openregister-aggregate-refs` annotation shape.
+     *
+     * Each aggregate-reference must declare a non-empty `schema` and a `metric`
+     * of count/sum/avg/min/max. A non-`count` metric additionally requires a
+     * `field` (matching `AggregationQuery::create()`'s own fail-fast contract).
+     *
+     * @param mixed                                            $aggregateRefs The aggregate-references map.
+     * @param array<int, array{code: string, message: string}> $errors        Mutable error accumulator.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-4
+     */
+    private function validateAggregateRefs(mixed $aggregateRefs, array &$errors): void
+    {
+        if (is_array($aggregateRefs) === false || count($aggregateRefs) === 0) {
+            return;
+        }
+
+        foreach ($aggregateRefs as $name => $spec) {
+            if (is_string($name) === false || $name === '' || is_array($spec) === false) {
+                $errors[] = [
+                    'code'    => 'aggregate-ref-malformed',
+                    'message' => sprintf('Aggregate-reference "%s" must be a named object.', (string) $name),
+                ];
+                continue;
+            }
+
+            $schema = (string) ($spec['schema'] ?? '');
+            if ($schema === '') {
+                $errors[] = [
+                    'code'    => 'aggregate-ref-no-schema',
+                    'message' => sprintf('Aggregate-reference "%s" requires a target schema.', $name),
+                ];
+            }
+
+            $metric = (string) ($spec['metric'] ?? '');
+            if (in_array($metric, self::VALID_AGGREGATE_METRICS, true) === false) {
+                $errors[] = [
+                    'code'    => 'aggregate-ref-bad-metric',
+                    'message' => sprintf(
+                        'Aggregate-reference "%s" metric must be one of [%s].',
+                        $name,
+                        implode(', ', self::VALID_AGGREGATE_METRICS)
+                    ),
+                ];
+                continue;
+            }
+
+            if ($metric !== 'count' && (string) ($spec['field'] ?? '') === '') {
+                $errors[] = [
+                    'code'    => 'aggregate-ref-no-field',
+                    'message' => sprintf(
+                        'Aggregate-reference "%s" metric "%s" requires a field.',
+                        $name,
+                        $metric
+                    ),
+                ];
+            }
+        }//end foreach
+    }//end validateAggregateRefs()
 
     /**
      * Find a cycle in the calculation dependency graph using DFS colouring.
