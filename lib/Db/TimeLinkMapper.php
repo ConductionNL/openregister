@@ -152,7 +152,7 @@ class TimeLinkMapper extends QBMapper
 
         $result = $qb->executeQuery();
         $uuids  = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['object_uuid'];
         }
 

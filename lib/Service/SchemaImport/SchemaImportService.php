@@ -68,16 +68,16 @@ class SchemaImportService
     ) {
         $root = ($resourceRoot ?? dirname(__DIR__, 2).'/Resources');
 
-        $schemaOrgVersion = $this->readVersion($root.'/schemaorg/version.json', 'schemaorg-unknown');
+        $schemaOrgVersion = $this->readVersion(versionFile: $root.'/schemaorg/version.json', fallback: 'schemaorg-unknown');
         $this->register(
-            new SchemaOrgImporter(
+            importer: new SchemaOrgImporter(
                 new SchemaOrgSnapshot($root.'/schemaorg/schemaorg-current-https.jsonld', $schemaOrgVersion)
             )
         );
 
-        $ggmVersion = $this->readVersion($root.'/ggm/version.json', 'ggm-unknown');
+        $ggmVersion = $this->readVersion(versionFile: $root.'/ggm/version.json', fallback: 'ggm-unknown');
         $this->register(
-            new GgmImporter(
+            importer: new GgmImporter(
                 new GgmSnapshot($root.'/ggm/ggm-snapshot.json', $ggmVersion)
             )
         );
@@ -124,8 +124,8 @@ class SchemaImportService
     {
         if (isset($this->importers[$dialect]) === false) {
             throw new SchemaImportException(
-                sprintf('No importer registered for dialect "%s". Available: %s.', $dialect, implode(', ', $this->importableDialects())),
-                404
+                message: sprintf('No importer registered for dialect "%s". Available: %s.', $dialect, implode(', ', $this->importableDialects())),
+                httpStatus: 404
             );
         }
 
@@ -146,7 +146,7 @@ class SchemaImportService
      */
     public function discover(string $dialect, string $query): array
     {
-        $importer = $this->importerFor($dialect);
+        $importer = $this->importerFor(dialect: $dialect);
         return [
             'dialect'         => $dialect,
             'snapshotVersion' => $importer->snapshotVersion(),
@@ -167,7 +167,7 @@ class SchemaImportService
      */
     public function snapshotInfo(string $dialect): array
     {
-        $importer = $this->importerFor($dialect);
+        $importer = $this->importerFor(dialect: $dialect);
         return [
             'dialect'         => $dialect,
             'snapshotVersion' => $importer->snapshotVersion(),
@@ -189,7 +189,7 @@ class SchemaImportService
      */
     public function import(string $dialect, string $reference, ImportOptions $options): ImportedSchema
     {
-        return $this->importerFor($dialect)->import($reference, $options);
+        return $this->importerFor(dialect: $dialect)->import($reference, $options);
     }//end import()
 
     /**
@@ -275,7 +275,7 @@ class SchemaImportService
         $dialect   = (string) ($importSource['dialect'] ?? '');
         $reference = (string) ($importSource['reference'] ?? '');
         if ($dialect === '' || $reference === '') {
-            throw new SchemaImportException('Schema has no recorded import source to update from.', 422);
+            throw new SchemaImportException(message: 'Schema has no recorded import source to update from.', httpStatus: 422);
         }
 
         $baseline = ($importSource['baseline'] ?? []);
@@ -283,7 +283,7 @@ class SchemaImportService
             $baseline = [];
         }
 
-        $fresh    = $this->import($dialect, $reference, new ImportOptions());
+        $fresh    = $this->import(dialect: $dialect, reference: $reference, options: new ImportOptions());
         $incoming = $fresh->properties;
 
         $result = $this->merge->compute($baseline, $currentProperties, $incoming, $resolvedConflicts);

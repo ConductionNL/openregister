@@ -68,14 +68,15 @@ class LinkedEntityService
      * a known linked-type is the type id itself — historically the
      * removed map was a verbatim identity for every entry.
      *
-     * @param MagicMapper         $magicMapper         Magic mapper for object operations
-     * @param SchemaMapper        $schemaMapper        Schema mapper
-     * @param RegisterMapper      $registerMapper      Register mapper
-     * @param OrganisationMapper  $organisationMapper  Organisation mapper
-     * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
-     *                                                 type-id source, post `cleanup-linked-entity-type-map`)
-     * @param LoggerInterface     $logger              Logger
-     * @param PermissionHandler   $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
+     * @param MagicMapper             $magicMapper         Magic mapper for object operations
+     * @param SchemaMapper            $schemaMapper        Schema mapper
+     * @param RegisterMapper          $registerMapper      Register mapper
+     * @param OrganisationMapper      $organisationMapper  Organisation mapper
+     * @param IntegrationRegistry     $integrationRegistry Integration registry (authoritative
+     *                                                     type-id source, post `cleanup-linked-entity-type-map`)
+     * @param LoggerInterface         $logger              Logger
+     * @param PermissionHandler       $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
+     * @param DeepLinkRegistryService $deepLinkRegistry    Deep-link registry service for cross-app deep links
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -149,7 +150,7 @@ class LinkedEntityService
         // Idempotent: don't add if already present.
         if (in_array($entityId, $existingIds, true) === false) {
             // SEC-CTRL-4: enforce write (update) permission before mutating the object.
-            $this->assertCanWriteObject($object);
+            $this->assertCanWriteObject(object: $object);
             $existingIds[] = $entityId;
             $object->$setter($existingIds);
             $this->magicMapper->update($object);
@@ -192,7 +193,7 @@ class LinkedEntityService
                 );
 
         // SEC-CTRL-4: enforce write (update) permission before mutating the object.
-        $this->assertCanWriteObject($object);
+        $this->assertCanWriteObject(object: $object);
         $object->$setter($existingIds);
         $this->magicMapper->update($object);
 

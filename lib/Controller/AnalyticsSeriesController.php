@@ -94,19 +94,24 @@ class AnalyticsSeriesController extends Controller
             // a series is a write — it requires an authenticated user.
             $this->seriesService->ensureCanRegister();
 
+            $title = null;
+            if (isset($params['title']) === true) {
+                $title = (string) $params['title'];
+            }
+
             $stored = $this->seriesService->register(
                 seriesKey: (string) ($params['seriesKey'] ?? ''),
                 labels: (array) ($params['labels'] ?? []),
                 datasets: (array) ($params['datasets'] ?? []),
-                title: (isset($params['title']) === true ? (string) $params['title'] : null),
+                title: $title,
                 chartType: (string) ($params['chartType'] ?? 'line'),
                 visibility: (string) ($params['visibility'] ?? 'private'),
-                registerId: $this->intOrNull($params['registerId'] ?? null),
-                schemaId: $this->intOrNull($params['schemaId'] ?? null)
+                registerId: $this->intOrNull(value: ($params['registerId'] ?? null)),
+                schemaId: $this->intOrNull(value: ($params['schemaId'] ?? null))
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        }
+        }//end try
 
         return new JSONResponse($stored, Http::STATUS_CREATED);
     }//end register()

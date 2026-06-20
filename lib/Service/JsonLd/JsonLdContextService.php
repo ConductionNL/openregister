@@ -89,8 +89,8 @@ class JsonLdContextService
         return $this->urlGenerator->linkToRouteAbsolute(
             'openregister.contexts.schema',
             [
-                'register' => $this->slugOf($register),
-                'schema'   => $this->slugOf($schema),
+                'register' => $this->slugOf(entity: $register),
+                'schema'   => $this->slugOf(entity: $schema),
             ]
         );
     }//end getSchemaContextUrl()
@@ -108,7 +108,7 @@ class JsonLdContextService
     {
         return $this->urlGenerator->linkToRouteAbsolute(
             'openregister.contexts.register',
-            ['register' => $this->slugOf($register)]
+            ['register' => $this->slugOf(entity: $register)]
         );
     }//end getRegisterContextUrl()
 
@@ -126,12 +126,12 @@ class JsonLdContextService
      */
     public function getTypeForSchema(Schema $schema): string
     {
-        $jsonld = $this->jsonLdConfig($schema);
+        $jsonld = $this->jsonLdConfig(schema: $schema);
         if (isset($jsonld['type']) === true && is_string($jsonld['type']) === true && $jsonld['type'] !== '') {
             return $jsonld['type'];
         }
 
-        return $this->slugOf($schema);
+        return $this->slugOf(entity: $schema);
     }//end getTypeForSchema()
 
     /**
@@ -153,19 +153,19 @@ class JsonLdContextService
      */
     public function buildSchemaContext(Register $register, Schema $schema): array
     {
-        $cacheKey = $this->cacheKey($schema);
+        $cacheKey = $this->cacheKey(schema: $schema);
         if (isset($this->contextCache[$cacheKey]) === true) {
             return $this->contextCache[$cacheKey];
         }
 
-        $jsonld  = $this->jsonLdConfig($schema);
+        $jsonld  = $this->jsonLdConfig(schema: $schema);
         $vocab   = ($jsonld['@vocab'] ?? null);
         $propMap = ($jsonld['properties'] ?? []);
         if (is_array($propMap) === false) {
             $propMap = [];
         }
 
-        $contextUrl = $this->getSchemaContextUrl($register, $schema);
+        $contextUrl = $this->getSchemaContextUrl(register: $register, schema: $schema);
 
         // Base prefixes always present.
         $context = [
@@ -180,9 +180,9 @@ class JsonLdContextService
 
         // The schema class term itself (used as @type when no jsonld.type IRI).
         if (isset($jsonld['type']) === true && is_string($jsonld['type']) === true && $jsonld['type'] !== '') {
-            $context[$this->slugOf($schema)] = $jsonld['type'];
+            $context[$this->slugOf(entity: $schema)] = $jsonld['type'];
         } else {
-            $context[$this->slugOf($schema)] = $contextUrl.'#'.$this->slugOf($schema);
+            $context[$this->slugOf(entity: $schema)] = $contextUrl.'#'.$this->slugOf(entity: $schema);
         }
 
         // One term per schema property.
@@ -191,9 +191,15 @@ class JsonLdContextService
                 continue;
             }
 
+            if (is_array($definition) === true) {
+                $propertyDefinition = $definition;
+            } else {
+                $propertyDefinition = [];
+            }
+
             $context[$name] = $this->buildPropertyTerm(
                 name: $name,
-                definition: (is_array($definition) === true ? $definition : []),
+                definition: $propertyDefinition,
                 mappedIri: ($propMap[$name] ?? null),
                 contextUrl: $contextUrl
             );
@@ -228,7 +234,7 @@ class JsonLdContextService
                 continue;
             }
 
-            $schemaContext = $this->buildSchemaContext($register, $schema);
+            $schemaContext = $this->buildSchemaContext(register: $register, schema: $schema);
             foreach ($schemaContext as $term => $value) {
                 // Keep the shared prefixes from the base; merge the rest.
                 if ($term === 'or' || $term === 'xsd') {
@@ -258,13 +264,19 @@ class JsonLdContextService
         $errors = [];
         $vocab  = ($jsonld['@vocab'] ?? null);
 
-        if (array_key_exists('@vocab', $jsonld) === true && $this->isAbsoluteIri($vocab) === false) {
+        if (array_key_exists('@vocab', $jsonld) === true && $this->isAbsoluteIri(value: $vocab) === false) {
             $errors[] = '@vocab must be an absolute IRI';
+        }
+
+        if (is_string($vocab) === true) {
+            $vocabBase = $vocab;
+        } else {
+            $vocabBase = null;
         }
 
         if (array_key_exists('type', $jsonld) === true) {
             $type = $jsonld['type'];
-            if ($this->isResolvableTerm($type, is_string($vocab) ? $vocab : null) === false) {
+            if ($this->isResolvableTerm(value: $type, vocab: $vocabBase) === false) {
                 $errors[] = 'type must be an absolute IRI or a term resolvable against @vocab';
             }
         }
@@ -274,7 +286,7 @@ class JsonLdContextService
                 $errors[] = 'properties must be an object mapping property names to IRIs';
             } else {
                 foreach ($jsonld['properties'] as $property => $iri) {
-                    if ($this->isResolvableTerm($iri, is_string($vocab) ? $vocab : null) === false) {
+                    if ($this->isResolvableTerm(value: $iri, vocab: $vocabBase) === false) {
                         $errors[] = sprintf(
                             "properties.%s must be an absolute IRI or a term resolvable against @vocab",
                             (string) $property
@@ -306,7 +318,7 @@ class JsonLdContextService
             $id = $contextUrl.'#'.$name;
         }
 
-        $coercion = $this->coercionForDefinition($definition);
+        $coercion = $this->coercionForDefinition(definition: $definition);
 
         // Plain string term when there is no datatype/node coercion.
         if ($coercion === null) {
@@ -336,7 +348,7 @@ class JsonLdContextService
     {
         $format = ($definition['format'] ?? null);
 
-        if ($this->isRelationDefinition($definition) === true || $format === 'uri' || $format === 'uri-reference') {
+        if ($this->isRelationDefinition(definition: $definition) === true || $format === 'uri' || $format === 'uri-reference') {
             return '@id';
         }
 
@@ -410,7 +422,12 @@ class JsonLdContextService
     private function cacheKey(Schema $schema): string
     {
         $updated = $schema->getUpdated();
-        $stamp   = ($updated !== null) ? $updated->format('U') : '0';
+        if ($updated !== null) {
+            $stamp = $updated->format('U');
+        } else {
+            $stamp = '0';
+        }
+
         return ((string) $schema->getId()).':'.$stamp;
     }//end cacheKey()
 
@@ -468,7 +485,7 @@ class JsonLdContextService
             return false;
         }
 
-        if ($this->isAbsoluteIri($value) === true) {
+        if ($this->isAbsoluteIri(value: $value) === true) {
             return true;
         }
 

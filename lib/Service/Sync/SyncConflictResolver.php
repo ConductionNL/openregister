@@ -117,7 +117,7 @@ final class SyncConflictResolver
         ?DateTimeInterface $localModified=null
     ): string {
         // Unknown strategy falls back to the safest default: defer to a human.
-        if ($this->isValidStrategy($strategy) === false) {
+        if ($this->isValidStrategy(strategy: $strategy) === false) {
             return self::DEFER;
         }
 

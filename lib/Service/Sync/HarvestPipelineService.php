@@ -371,7 +371,11 @@ class HarvestPipelineService
     public function deriveStatus(array $summary): string
     {
         $errors    = (int) ($summary['errors'] ?? 0);
-        $processed = ((int) ($summary['created'] ?? 0) + (int) ($summary['updated'] ?? 0) + (int) ($summary['unchanged'] ?? 0) + (int) ($summary['conflicts'] ?? 0));
+        $created   = (int) ($summary['created'] ?? 0);
+        $updated   = (int) ($summary['updated'] ?? 0);
+        $unchanged = (int) ($summary['unchanged'] ?? 0);
+        $conflicts = (int) ($summary['conflicts'] ?? 0);
+        $processed = ($created + $updated + $unchanged + $conflicts);
 
         if ($errors === 0) {
             return 'success';

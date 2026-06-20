@@ -164,7 +164,7 @@ class CaseTokenService
         $saved = $this->mapper->insert($entity);
 
         $data        = $saved->jsonSerialize();
-        $data['url'] = $this->buildPublicUrl($token);
+        $data['url'] = $this->buildPublicUrl(token: $token);
         return $data;
     }//end mint()
 
@@ -303,7 +303,7 @@ class CaseTokenService
         return array_map(
             function (CaseToken $row): array {
                 $data        = $row->jsonSerialize();
-                $data['url'] = $this->buildPublicUrl((string) $row->getToken());
+                $data['url'] = $this->buildPublicUrl(token: (string) $row->getToken());
                 return $data;
             },
             $rows

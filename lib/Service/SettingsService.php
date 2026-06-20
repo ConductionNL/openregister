@@ -2248,7 +2248,7 @@ class SettingsService
      */
     public function getDeckDefault(string $schemaSlug): ?array
     {
-        $raw = $this->config->getAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), '');
+        $raw = $this->config->getAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug), '');
         if ($raw === '') {
             return null;
         }
@@ -2291,7 +2291,7 @@ class SettingsService
             return;
         }
 
-        $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), $payload);
+        $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug), $payload);
     }//end setDeckDefault()
 
     /**
@@ -2305,6 +2305,6 @@ class SettingsService
      */
     public function clearDeckDefault(string $schemaSlug): void
     {
-        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug));
+        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug));
     }//end clearDeckDefault()
 }//end class

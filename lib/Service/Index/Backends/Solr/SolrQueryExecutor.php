@@ -296,7 +296,7 @@ class SolrQueryExecutor
      */
     private function escapeSolrQuery(string $value): string
     {
-        // Lucene special characters: + - && || ! ( ) { } [ ] ^ " ~ * ? : \ /
+        // Lucene special characters to escape are: + - && || ! ( ) { } [ ] ^ " ~ * ? : \ and /.
         $special = [
             '\\',
             '+',

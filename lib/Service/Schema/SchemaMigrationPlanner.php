@@ -174,23 +174,28 @@ class SchemaMigrationPlanner
             try {
                 switch ($op) {
                     case 'rename':
-                        $working   = $this->applyRename($working, (string) $step['from'], (string) $step['to']);
+                        $working   = $this->applyRename(data: $working, from: (string) $step['from'], to: (string) $step['to']);
                         $applied[] = sprintf('rename %s -> %s', $step['from'], $step['to']);
                         break;
                     case 'setDefault':
-                        $working   = $this->applySetDefault($working, (string) $step['field'], $step['value']);
+                        $working   = $this->applySetDefault(data: $working, field: (string) $step['field'], value: $step['value']);
                         $applied[] = sprintf('setDefault %s', $step['field']);
                         break;
                     case 'cast':
-                        $working   = $this->applyCast($working, (string) $step['field'], (string) $step['to'], ($step['format'] ?? null));
+                        $working   = $this->applyCast(
+                            data: $working,
+                            field: (string) $step['field'],
+                            toType: (string) $step['to'],
+                            format: ($step['format'] ?? null)
+                        );
                         $applied[] = sprintf('cast %s -> %s', $step['field'], $step['to']);
                         break;
                     case 'drop':
-                        $working   = $this->applyDrop($working, (string) $step['field']);
+                        $working   = $this->applyDrop(data: $working, field: (string) $step['field']);
                         $applied[] = sprintf('drop %s', $step['field']);
                         break;
                     case 'compute':
-                        $working   = $this->applyCompute($working, (string) $step['field'], (string) $step['template']);
+                        $working   = $this->applyCompute(data: $working, field: (string) $step['field'], template: (string) $step['template']);
                         $applied[] = sprintf('compute %s', $step['field']);
                         break;
                     default:
@@ -269,7 +274,7 @@ class SchemaMigrationPlanner
         }
 
         $value        = $data[$field];
-        $data[$field] = $this->castValue($value, $toType, $format);
+        $data[$field] = $this->castValue(value: $value, toType: $toType, format: $format);
 
         return $data;
 
@@ -303,7 +308,7 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (int) $value;
                 }
-                throw new \RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe($value)));
+                throw new \RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe(value: $value)));
 
             case 'number':
                 if (is_bool($value) === true) {
@@ -313,13 +318,13 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (float) $value;
                 }
-                throw new \RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe($value)));
+                throw new \RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe(value: $value)));
 
             case 'boolean':
-                return $this->castBoolean($value);
+                return $this->castBoolean(value: $value);
 
             case 'date':
-                return $this->castDate($value, $format);
+                return $this->castDate(value: $value, format: $format);
 
             default:
                 throw new \RuntimeException(sprintf('Unsupported cast target type "%s".', $toType));
@@ -357,7 +362,7 @@ class SchemaMigrationPlanner
             }
         }
 
-        throw new \RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe($value)));
+        throw new \RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe(value: $value)));
 
     }//end castBoolean()
 
@@ -430,7 +435,7 @@ class SchemaMigrationPlanner
             return $data;
         }
 
-        $data[$field] = $this->renderSimpleTemplate($template, $data);
+        $data[$field] = $this->renderSimpleTemplate(template: $template, context: $data);
 
         return $data;
 

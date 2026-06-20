@@ -197,10 +197,10 @@ class PdfOdtFallbackOrchestrator
 
         // Re-run the SAPP-side replacer against the round-tripped PDF. The
         // ODT->PDF conversion happens NEXT — we deliberately do not invoke
-        // an ODT entity-walker here, because the Path B contract is "the
+        // an ODT entity-walker here, because the Path B contract is that the
         // ODT-PDF re-roundtrip MUST defeat the same encoding edge case that
         // tripped Path A, so feeding the round-tripped PDF back through the
-        // SAPP replacer is the equivalent assertion."
+        // SAPP replacer is the equivalent assertion.
         try {
             $pdf = $this->converter->odtToPdf(odtBytes: $odt);
         } catch (Throwable $e) {

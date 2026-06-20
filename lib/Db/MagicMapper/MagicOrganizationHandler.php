@@ -192,7 +192,7 @@ class MagicOrganizationHandler
      * Determine whether the current call is a trusted system (CLI/no-session)
      * context that must bypass org filtering.
      *
-     * occ commands, repair steps, cron jobs, background calculations and system
+     * OCC commands, repair steps, cron jobs, background calculations and system
      * listeners have no user session. Clamping them to `1 = 0` silently empties
      * app list views and background calcs (e.g. larpingapp). This mirrors the
      * established CLI bypass in MultiTenancyTrait::hasRbacPermission(). SaaS mode

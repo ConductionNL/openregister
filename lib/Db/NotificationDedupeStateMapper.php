@@ -156,7 +156,7 @@ class NotificationDedupeStateMapper extends QBMapper
             }
 
             try {
-                return $this->update($existing);
+                return $this->update(entity: $existing);
             } catch (\Throwable $e) {
                 return $existing;
             }
@@ -171,7 +171,7 @@ class NotificationDedupeStateMapper extends QBMapper
         $entity->setSeenAt($now);
 
         try {
-            return $this->insert($entity);
+            return $this->insert(entity: $entity);
         } catch (DbException $e) {
             // Concurrent dispatcher won the race — re-read and treat the
             // row as authoritative.

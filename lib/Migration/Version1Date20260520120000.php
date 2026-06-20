@@ -57,6 +57,7 @@ class Version1Date20260520120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_translations') === false) {

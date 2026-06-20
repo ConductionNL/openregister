@@ -81,10 +81,10 @@ class SchemaDiffService
      */
     public function diff(array $old, array $new, array $renames=[]): SchemaChangeSet
     {
-        $oldProps = $this->properties($old);
-        $newProps = $this->properties($new);
-        $oldReq   = $this->requiredSet($old);
-        $newReq   = $this->requiredSet($new);
+        $oldProps = $this->properties(definition: $old);
+        $newProps = $this->properties(definition: $new);
+        $oldReq   = $this->requiredSet(definition: $old);
+        $newReq   = $this->requiredSet(definition: $new);
 
         $changes        = [];
         $hasBreaking    = false;
@@ -168,10 +168,10 @@ class SchemaDiffService
                 continue;
             }
 
-            $propChanges = $this->diffProperty($name, (array) $oldProps[$name], (array) $newDef);
+            $propChanges = $this->diffProperty(name: $name, oldDef: (array) $oldProps[$name], newDef: (array) $newDef);
             foreach ($propChanges as $pc) {
                 $changes[] = $pc;
-                if ($this->kindIsBreaking($pc['kind']) === true) {
+                if ($this->kindIsBreaking(kind: $pc['kind']) === true) {
                     $hasBreaking = true;
                 } else {
                     $hasOtherChange = true;
@@ -224,7 +224,7 @@ class SchemaDiffService
             $hasOtherChange = true;
         }
 
-        return $this->classify($changes, $hasBreaking, $hasAddedProp, $hasOtherChange);
+        return $this->classify(changes: $changes, hasBreaking: $hasBreaking, hasAddedProp: $hasAddedProp, hasOtherChange: $hasOtherChange);
 
     }//end diff()
 
@@ -243,7 +243,7 @@ class SchemaDiffService
      */
     public function nextVersion(?string $currentVersion, SchemaChangeSet $changeSet): string
     {
-        $parts = $this->parseVersion($currentVersion);
+        $parts = $this->parseVersion(version: $currentVersion);
 
         switch ($changeSet->getBump()) {
             case 'major':
@@ -283,7 +283,7 @@ class SchemaDiffService
 
         $oldType = $oldDef['type'] ?? null;
         $newType = $newDef['type'] ?? null;
-        if ($this->normaliseType($oldType) !== $this->normaliseType($newType)) {
+        if ($this->normaliseType(type: $oldType) !== $this->normaliseType(type: $newType)) {
             $changes[] = [
                 'property' => $name,
                 'kind'     => 'type_changed',
@@ -329,17 +329,23 @@ class SchemaDiffService
                 continue;
             }
 
-            $tighter   = $this->boundTightened((float) $oldVal, (float) $newVal, $tightensUp);
+            $tighter = $this->boundTightened(oldVal: (float) $oldVal, newVal: (float) $newVal, tightensUp: $tightensUp);
+            if ($tighter === true) {
+                $kind = 'constraint_tightened';
+            } else {
+                $kind = 'constraint_relaxed';
+            }
+
             $changes[] = [
                 'property' => $name,
-                'kind'     => ($tighter === true) ? 'constraint_tightened' : 'constraint_relaxed',
+                'kind'     => $kind,
                 'old'      => [$keyword => $oldVal],
                 'new'      => [$keyword => $newVal],
             ];
         }//end foreach
 
         // Enum narrowing/widening.
-        $enumChange = $this->diffEnum($name, $oldDef, $newDef);
+        $enumChange = $this->diffEnum(name: $name, oldDef: $oldDef, newDef: $newDef);
         if ($enumChange !== null) {
             $changes[] = $enumChange;
         }

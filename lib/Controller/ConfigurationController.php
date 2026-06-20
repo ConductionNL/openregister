@@ -320,7 +320,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return $this->errorResponse($e, 'Failed to enrich configuration');
+            return $this->errorResponse(e: $e, context: 'Failed to enrich configuration');
         }//end try
     }//end enrichDetails()
 
@@ -389,7 +389,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return $this->errorResponse($e, 'Failed to create configuration');
+            return $this->errorResponse(e: $e, context: 'Failed to create configuration');
         }//end try
     }//end create()
 
@@ -446,7 +446,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return $this->errorResponse($e, 'Failed to update configuration');
+            return $this->errorResponse(e: $e, context: 'Failed to update configuration');
         }//end try
     }//end update()
 
@@ -584,7 +584,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return $this->errorResponse($e, 'Failed to fetch remote version');
+            return $this->errorResponse(e: $e, context: 'Failed to fetch remote version');
         } catch (Exception $e) {
             $this->logger->error(
                 message: "[ConfigurationController] Failed to check version for configuration {$id}: ".$e->getMessage(),
@@ -705,7 +705,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to import configuration');
+            return $this->errorResponse(e: $e, context: 'Failed to import configuration');
         }//end try
     }//end import()
 
@@ -753,7 +753,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to export configuration');
+            return $this->errorResponse(e: $e, context: 'Failed to export configuration');
         }//end try
     }//end export()
 
@@ -848,7 +848,7 @@ class ConfigurationController extends Controller
                 ]
             );
 
-            return $this->errorResponse($e, 'Failed to discover configurations');
+            return $this->errorResponse(e: $e, context: 'Failed to discover configurations');
         }//end try
     }//end discover()
 
@@ -895,7 +895,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to fetch branches');
+            return $this->errorResponse(e: $e, context: 'Failed to fetch branches');
         }//end try
     }//end getGitHubBranches()
 
@@ -946,7 +946,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to fetch repositories');
+            return $this->errorResponse(e: $e, context: 'Failed to fetch repositories');
         }//end try
     }//end getGitHubRepositories()
 
@@ -995,7 +995,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to fetch configurations');
+            return $this->errorResponse(e: $e, context: 'Failed to fetch configurations');
         }//end try
     }//end getGitHubConfigurations()
 
@@ -1047,7 +1047,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to fetch branches');
+            return $this->errorResponse(e: $e, context: 'Failed to fetch branches');
         }//end try
     }//end getGitLabBranches()
 
@@ -1101,7 +1101,7 @@ class ConfigurationController extends Controller
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            return $this->errorResponse($e, 'Failed to fetch configurations');
+            return $this->errorResponse(e: $e, context: 'Failed to fetch configurations');
         }//end try
     }//end getGitLabConfigurations()
 
@@ -1300,8 +1300,13 @@ class ConfigurationController extends Controller
                 $registers = $configData['components']['registers'] ?? [];
                 $firstSlug = null;
                 if (is_array($registers) === true && empty($registers) === false) {
-                    $first     = reset($registers);
-                    $firstSlug = (is_array($first) === true ? ($first['slug'] ?? null) : null);
+                    $first = reset($registers);
+                    if (is_array($first) === true) {
+                        $firstSlug = ($first['slug'] ?? null);
+                    } else {
+                        $firstSlug = null;
+                    }
+
                     if ($firstSlug === null) {
                         $key = array_key_first($registers);
                         if (is_string($key) === true) {
@@ -1315,7 +1320,7 @@ class ConfigurationController extends Controller
                 } else {
                     $appId = 'imported';
                 }
-            }
+            }//end if
 
             $version     = $info['version'] ?? $xOpenregister['version'] ?? '1.0.0';
             $title       = $info['title'] ?? $xOpenregister['title'] ?? "Configuration from {$sourceType}";

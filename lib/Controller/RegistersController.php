@@ -187,6 +187,7 @@ class RegistersController extends Controller
      * @param ContainerInterface   $container            Container for lazy loading services
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
      * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
+     * @param RegisterSerializer   $registerSerializer   Register serializer for response shaping
      *
      * @return void
      *

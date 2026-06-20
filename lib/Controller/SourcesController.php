@@ -439,13 +439,18 @@ class SourcesController extends Controller
 
         $lastSyncDate = $source->getLastSyncDate();
 
+        $formattedLastSyncDate = null;
+        if ($lastSyncDate !== null) {
+            $formattedLastSyncDate = $lastSyncDate->format('c');
+        }
+
         return new JSONResponse(
             data: [
                 'id'           => $source->getId(),
                 'uuid'         => $source->getUuid(),
                 'syncEnabled'  => $source->getSyncEnabled(),
                 'status'       => ($source->getLastSyncStatus() ?? 'never'),
-                'lastSyncDate' => ($lastSyncDate !== null ? $lastSyncDate->format('c') : null),
+                'lastSyncDate' => $formattedLastSyncDate,
                 'syncInterval' => $source->getSyncInterval(),
             ]
         );

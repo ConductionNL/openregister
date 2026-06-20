@@ -125,7 +125,7 @@ class AnalyticsSeriesService
      */
     public function ensureReadableOrNull(string $seriesKey): ?array
     {
-        return $this->fetch($seriesKey);
+        return $this->fetch(seriesKey: $seriesKey);
     }//end ensureReadableOrNull()
 
     /**
@@ -239,7 +239,7 @@ class AnalyticsSeriesService
             return null;
         }
 
-        if ($this->canRead($series) === false) {
+        if ($this->canRead(series: $series) === false) {
             return null;
         }
 

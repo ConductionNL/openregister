@@ -434,7 +434,11 @@ class TranslationMapper extends QBMapper
         }
 
         $value = (string) $row['source_language'];
-        return ($value === '') ? null : $value;
+        if ($value === '') {
+            return null;
+        }
+
+        return $value;
     }//end getDominantSourceLanguage()
 
     /**

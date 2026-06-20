@@ -273,7 +273,7 @@ class RegisterService
         ) {
             $stats = $this->getSchemaObjectCounts(
                 registerId: (int) $register->getId(),
-                schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+                schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
             );
         }
 
@@ -332,7 +332,7 @@ class RegisterService
             foreach ($registers as $register) {
                 $statsByRegisterId[(int) $register->getId()] = $this->getSchemaObjectCounts(
                     registerId: (int) $register->getId(),
-                    schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+                    schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
                 );
             }
         }
@@ -584,8 +584,10 @@ class RegisterService
                     $schemaId = $schema->getId();
                 } else if (is_array($schema) === true) {
                     $schemaId = $schema['id'] ?? null;
+                } else if (is_numeric($schema) === true) {
+                    $schemaId = (int) $schema;
                 } else {
-                    $schemaId = is_numeric($schema) === true ? (int) $schema : null;
+                    $schemaId = null;
                 }
 
                 if ($schemaId === null) {

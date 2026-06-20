@@ -123,8 +123,8 @@ class SchemaVersioningService
         }
 
         throw new BreakingSchemaChangeException(
-            $changeSet->getChanges(),
-            $this->latestInvalidCount($schemaId)
+            changes: $changeSet->getChanges(),
+            invalidCount: $this->latestInvalidCount(schemaId: $schemaId)
         );
 
     }//end enforceGate()

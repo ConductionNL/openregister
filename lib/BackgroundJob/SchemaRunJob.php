@@ -98,7 +98,7 @@ class SchemaRunJob extends QueuedJob
         }
 
         try {
-            $more = $this->advance($run, $batchSize);
+            $more = $this->advance(run: $run, batchSize: $batchSize);
         } catch (\Throwable $e) {
             $this->logger->error(
                 '[SchemaRunJob] Batch processing failed',

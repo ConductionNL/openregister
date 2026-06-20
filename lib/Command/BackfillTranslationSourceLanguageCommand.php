@@ -70,7 +70,7 @@ class BackfillTranslationSourceLanguageCommand extends Command
      */
     protected function configure(): void
     {
-        $this->setName('openregister:translations:backfill-source-language')
+        $this->setName(name: 'openregister:translations:backfill-source-language')
             ->setDescription(
                 'Back-fill openregister_translations.source_language from each register default. Idempotent.'
             )

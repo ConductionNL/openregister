@@ -179,7 +179,7 @@ class RestApiSourceFetcher implements SourceFetcherInterface
                 break;
 
             default:
-                // none / unsupported-here: no auth header.
+                // None / unsupported-here: no auth header.
                 break;
         }
 

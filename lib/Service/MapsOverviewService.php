@@ -295,8 +295,8 @@ class MapsOverviewService
             _multitenancy: $rbac
         );
 
-        // findAll() returns a list of rendered object arrays (each carrying
-        // @self metadata + the schema properties incl. the geometry).
+        // The findAll() call returns a list of rendered object arrays (each
+        // carrying @self metadata + the schema properties incl. the geometry).
         $points = [];
         foreach ($result as $row) {
             if (is_array($row) === false) {
@@ -315,7 +315,7 @@ class MapsOverviewService
     /**
      * Build the OpenRegister findAll filter array for a map query.
      *
-     * register/schema become the scope keys; every other supplied filter is
+     * Register/schema become the scope keys; every other supplied filter is
      * copied through verbatim (the OR read path validates + RBAC-scopes
      * them). The reserved scope keys cannot be overridden by the leaf.
      *
@@ -378,8 +378,13 @@ class MapsOverviewService
         $id    = ($row['id'] ?? ($self['id'] ?? ($feature['id'] ?? null)));
         $label = $this->deriveLabel(row: $row, self: $self, id: $id);
 
+        $idString = null;
+        if ($id !== null) {
+            $idString = (string) $id;
+        }
+
         return [
-            'id'       => ($id !== null ? (string) $id : null),
+            'id'       => $idString,
             'label'    => $label,
             'lat'      => $latLng['lat'],
             'lng'      => $latLng['lng'],
@@ -456,7 +461,11 @@ class MapsOverviewService
             }
         }
 
-        return ($id !== null ? (string) $id : '');
+        if ($id !== null) {
+            return (string) $id;
+        }
+
+        return '';
     }//end deriveLabel()
 
     /**

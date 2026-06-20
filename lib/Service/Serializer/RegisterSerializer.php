@@ -88,7 +88,7 @@ final class RegisterSerializer
         $wantStats   = in_array('@self.stats', $extend, true);
 
         if ($wantSchemas === true) {
-            $data['schemas'] = $this->expandSchemas($data['schemas'] ?? [], $wantStats, $schemaStats);
+            $data['schemas'] = $this->expandSchemas(ids: ($data['schemas'] ?? []), attachStats: $wantStats, schemaStats: $schemaStats);
         }
 
         return $data;
@@ -100,8 +100,9 @@ final class RegisterSerializer
      *
      * @param Register[]                                  $registers               Registers to serialize.
      * @param array                                       $extend                  Extension keys to apply.
-     * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats (registerId → schemaId → ['total' =>
-     *                                                                             int]).
+     * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
+     *                                                                             (registerId → schemaId →
+     *                                                                             ['total' => int]).
      *
      * @return array<int,array> Serialized payload for each register.
      *
@@ -122,7 +123,7 @@ final class RegisterSerializer
                 $stats = $schemaStatsByRegisterId[$registerId];
             }
 
-            $out[] = $this->serialize($register, $extend, $stats);
+            $out[] = $this->serialize(register: $register, extend: $extend, schemaStats: $stats);
         }
 
         return $out;

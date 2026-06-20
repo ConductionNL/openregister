@@ -147,7 +147,7 @@ final class RegisterResolverService
             return $default;
         }
 
-        throw new MissingConfigException($appId, $configKey);
+        throw new MissingConfigException(appId: $appId, configKey: $configKey);
 
     }//end resolveRegisterId()
 
@@ -183,7 +183,7 @@ final class RegisterResolverService
             return $default;
         }
 
-        throw new MissingConfigException($appId, $configKey);
+        throw new MissingConfigException(appId: $appId, configKey: $configKey);
 
     }//end resolveSchemaId()
 
@@ -224,7 +224,7 @@ final class RegisterResolverService
             return $default;
         }
 
-        throw new MissingConfigException($appId, $configKey);
+        throw new MissingConfigException(appId: $appId, configKey: $configKey);
 
     }//end resolvePropertyId()
 
@@ -252,8 +252,13 @@ final class RegisterResolverService
     ): Register {
         $this->maybeFlushOnTenantSwitch();
 
-        $slugOrUuid = $this->resolveRegisterId($appId, $configKey, $default, $organisationUuid);
-        $cacheKey   = $this->cacheKey($appId, $configKey, $organisationUuid);
+        $slugOrUuid = $this->resolveRegisterId(
+            appId: $appId,
+            configKey: $configKey,
+            default: $default,
+            organisationUuid: $organisationUuid
+        );
+        $cacheKey   = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
 
         if (isset($this->registerCache[$cacheKey]) === true) {
             return $this->registerCache[$cacheKey];
@@ -269,13 +274,13 @@ final class RegisterResolverService
                 if ($register->getOrganisation() !== null
                     && $register->getOrganisation() !== $organisationUuid
                 ) {
-                    throw new RegisterNotFoundException($appId, $configKey, $slugOrUuid);
+                    throw new RegisterNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid);
                 }
             } else {
                 $register = $this->registerMapper->find(id: $slugOrUuid);
             }
         } catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
-            throw new RegisterNotFoundException($appId, $configKey, $slugOrUuid, $e);
+            throw new RegisterNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid, previous: $e);
         }
 
         $this->registerCache[$cacheKey] = $register;
@@ -308,8 +313,13 @@ final class RegisterResolverService
     ): Schema {
         $this->maybeFlushOnTenantSwitch();
 
-        $slugOrUuid = $this->resolveSchemaId($appId, $configKey, $default, $organisationUuid);
-        $cacheKey   = $this->cacheKey($appId, $configKey, $organisationUuid);
+        $slugOrUuid = $this->resolveSchemaId(
+            appId: $appId,
+            configKey: $configKey,
+            default: $default,
+            organisationUuid: $organisationUuid
+        );
+        $cacheKey   = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
 
         if (isset($this->schemaCache[$cacheKey]) === true) {
             return $this->schemaCache[$cacheKey];
@@ -321,13 +331,13 @@ final class RegisterResolverService
                 if ($schema->getOrganisation() !== null
                     && $schema->getOrganisation() !== $organisationUuid
                 ) {
-                    throw new SchemaNotFoundException($appId, $configKey, $slugOrUuid);
+                    throw new SchemaNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid);
                 }
             } else {
                 $schema = $this->schemaMapper->find(id: $slugOrUuid);
             }
         } catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
-            throw new SchemaNotFoundException($appId, $configKey, $slugOrUuid, $e);
+            throw new SchemaNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid, previous: $e);
         }
 
         $this->schemaCache[$cacheKey] = $schema;
@@ -377,8 +387,18 @@ final class RegisterResolverService
         ?string $schemaDefault=null,
         ?string $organisationUuid=null,
     ): array {
-        $schema     = $this->resolveSchema($appId, $schemaConfigKey, $schemaDefault, $organisationUuid);
-        $propertyId = $this->resolvePropertyId($appId, $propertyConfigKey, $propertyDefault, $organisationUuid);
+        $schema     = $this->resolveSchema(
+            appId: $appId,
+            configKey: $schemaConfigKey,
+            default: $schemaDefault,
+            organisationUuid: $organisationUuid
+        );
+        $propertyId = $this->resolvePropertyId(
+            appId: $appId,
+            configKey: $propertyConfigKey,
+            default: $propertyDefault,
+            organisationUuid: $organisationUuid
+        );
 
         $properties = $schema->getProperties();
         $schemaId   = (string) ($schema->getSlug() ?? $schema->getUuid() ?? '');
@@ -437,10 +457,10 @@ final class RegisterResolverService
         string $schemaKey,
         ?string $organisationUuid=null,
     ): RegisterSchemaPair {
-        $registerId = $this->resolveRegisterId($appId, $registerKey, null, $organisationUuid);
-        $schemaId   = $this->resolveSchemaId($appId, $schemaKey, null, $organisationUuid);
-        $register   = $this->resolveRegister($appId, $registerKey, null, $organisationUuid);
-        $schema     = $this->resolveSchema($appId, $schemaKey, null, $organisationUuid);
+        $registerId = $this->resolveRegisterId(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
+        $schemaId   = $this->resolveSchemaId(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
+        $register   = $this->resolveRegister(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
+        $schema     = $this->resolveSchema(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
 
         return new RegisterSchemaPair(
             registerId: $registerId,
@@ -471,7 +491,7 @@ final class RegisterResolverService
         $allValues = $this->appConfig->getAllValues($appId);
         $matches   = [];
         foreach ($allValues as $key => $value) {
-            $resolved = $this->matchResolverKey($key);
+            $resolved = $this->matchResolverKey(key: $key);
             if ($resolved === null) {
                 continue;
             }
@@ -576,7 +596,11 @@ final class RegisterResolverService
             return;
         }
 
-        $currentUuid = ($active !== null) ? $active->getUuid() : null;
+        $currentUuid = null;
+        if ($active !== null) {
+            $currentUuid = $active->getUuid();
+        }
+
         if ($this->lastTenantUuid !== null && $currentUuid !== $this->lastTenantUuid) {
             $this->clearCache();
         }

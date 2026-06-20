@@ -139,14 +139,14 @@ class SchemaImportController extends Controller
         }
 
         try {
-            $schema = $this->persistNewSchema($imported);
+            $schema = $this->persistNewSchema(imported: $imported);
         } catch (\Throwable $e) {
-            return $this->failPersist($e);
+            return $this->failPersist(e: $e);
         }
 
         $registerId = $options->targetRegister;
         if ($registerId !== null) {
-            $this->associateWithRegister($registerId, (int) $schema->getId());
+            $this->associateWithRegister(registerId: $registerId, schemaId: (int) $schema->getId());
         }
 
         return new JSONResponse(
@@ -185,7 +185,10 @@ class SchemaImportController extends Controller
         $configuration = ($schema->getConfiguration() ?? []);
         $importSource  = ($configuration['importSource'] ?? null);
         if (is_array($importSource) === false) {
-            return new JSONResponse(['error' => 'This schema was not imported from a standard; nothing to update from.'], Http::STATUS_UNPROCESSABLE_ENTITY);
+            return new JSONResponse(
+                ['error' => 'This schema was not imported from a standard; nothing to update from.'],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
         }
 
         $resolveConflicts = $this->request->getParam('resolveConflicts', []);
@@ -207,7 +210,7 @@ class SchemaImportController extends Controller
 
         $apply = filter_var($this->request->getParam('apply', false), FILTER_VALIDATE_BOOLEAN);
         if ($apply === false) {
-            return new JSONResponse($this->previewPayload($diff));
+            return new JSONResponse($this->previewPayload(diff: $diff));
         }
 
         if ($diff['applied'] === false) {
@@ -221,15 +224,15 @@ class SchemaImportController extends Controller
         }
 
         try {
-            $schema = $this->applyMerge($schema, $diff);
+            $schema = $this->applyMerge(schema: $schema, diff: $diff);
         } catch (\Throwable $e) {
-            return $this->failPersist($e);
+            return $this->failPersist(e: $e);
         }
 
         return new JSONResponse(
             [
                 'schema'  => $schema->jsonSerialize(),
-                'applied' => $this->previewPayload($diff),
+                'applied' => $this->previewPayload(diff: $diff),
             ]
         );
 

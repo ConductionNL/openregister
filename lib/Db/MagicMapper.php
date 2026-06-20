@@ -1381,7 +1381,7 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
         // Add table prefix.
-        $fullTableName = $this->getFullTableName($tableName);
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
 
         // Get metadata column names, checking each exists in this table.
         // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
@@ -1772,7 +1772,7 @@ class MagicMapper extends AbstractObjectMapper
         try {
             // Check if table exists in information_schema.
             // NOTE: We use raw SQL here because information_schema is a system table.
-            $fullTableName = $this->getFullTableName($tableName);
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
 
             // Get database platform to use correct schema check.
             // MySQL/MariaDB: table_schema = DATABASE().
@@ -2928,7 +2928,7 @@ class MagicMapper extends AbstractObjectMapper
     {
         try {
             // Add prefix for raw SQL queries.
-            $fullTableName = $this->getFullTableName($tableName);
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
 
             // Create unique index on UUID.
             // Phpcs:ignore Generic.Files.LineLength.TooLong.
@@ -3622,11 +3622,22 @@ class MagicMapper extends AbstractObjectMapper
         // so an intra-request mutation produces a fresh key (and a fresh hash).
         $schemaUpdated   = $schema->getUpdated();
         $registerUpdated = $register->getUpdated();
-        $cacheKey        = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId)
+
+        $schemaUpdatedStamp = '0';
+        if ($schemaUpdated !== null) {
+            $schemaUpdatedStamp = (string) $schemaUpdated->getTimestamp();
+        }
+
+        $registerUpdatedStamp = '0';
+        if ($registerUpdated !== null) {
+            $registerUpdatedStamp = (string) $registerUpdated->getTimestamp();
+        }
+
+        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId)
             .'_'.(string) $schema->getVersion()
-            .'_'.($schemaUpdated !== null ? $schemaUpdated->getTimestamp() : '0')
+            .'_'.$schemaUpdatedStamp
             .'_'.(string) $register->getVersion()
-            .'_'.($registerUpdated !== null ? $registerUpdated->getTimestamp() : '0');
+            .'_'.$registerUpdatedStamp;
 
         // Check cache first to avoid expensive json_encode + md5.
         if (isset(self::$calcVersionCache[$cacheKey]) === true) {
@@ -3771,7 +3782,7 @@ class MagicMapper extends AbstractObjectMapper
         try {
             // Use direct SQL query to get table columns (Nextcloud 32 compatible).
             // NOTE: We use raw SQL here because information_schema is a system table that should not be prefixed.
-            $fullTableName = $this->getFullTableName($tableName);
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
 
             // Get database platform to use correct schema check.
             // MySQL/MariaDB: table_schema = DATABASE().
@@ -4508,7 +4519,7 @@ class MagicMapper extends AbstractObjectMapper
         try {
             // Use direct SQL to drop table (Nextcloud 32 compatible).
             $qb            = $this->db->getQueryBuilder();
-            $fullTableName = $this->getFullTableName($tableName);
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
             $quotedTable   = $qb->getConnection()->quoteIdentifier($fullTableName);
             $qb->getConnection()->executeStatement('DROP TABLE IF EXISTS '.$quotedTable);
 
@@ -5339,7 +5350,11 @@ class MagicMapper extends AbstractObjectMapper
                 $deletedCondition = '';
             }
 
-            $colCast      = $isPostgres === true ? "{$relationsCol}::text" : "CAST({$relationsCol} AS CHAR)";
+            $colCast = "CAST({$relationsCol} AS CHAR)";
+            if ($isPostgres === true) {
+                $colCast = "{$relationsCol}::text";
+            }
+
             $unionParts[] = sprintf(
                 "SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s LIKE ?%s",
                 $fullTableName,
@@ -6298,7 +6313,7 @@ class MagicMapper extends AbstractObjectMapper
 
         foreach ($tables as $tableName) {
             try {
-                $fullTableName = $this->getFullTableName($tableName);
+                $fullTableName = $this->getFullTableName(tableName: $tableName);
 
                 // Search for the UUID as a VALUE within the _relations JSONB.
                 // The _relations column can be either:.
@@ -6404,7 +6419,7 @@ class MagicMapper extends AbstractObjectMapper
             return [];
         }
 
-        $fullTableName = $this->getFullTableName($tableName);
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
         $platform      = $this->db->getDatabasePlatform();
         $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
 
@@ -6511,7 +6526,7 @@ class MagicMapper extends AbstractObjectMapper
 
         // Construct the magic table name directly: openregister_table_{registerId}_{schemaId}.
         $tableName     = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
-        $fullTableName = $this->getFullTableName($tableName);
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
 
         // Check if the table exists.
         if ($this->checkTableExistsInDatabase(tableName: $tableName) === false) {
@@ -6703,7 +6718,7 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
         // Construct the full table name with prefix for use in SQL functions.
-        $fullTableName = $this->getFullTableName($tableName);
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
 
         try {
             // Apply multi-tenancy filtering to inverse relationship lookups.

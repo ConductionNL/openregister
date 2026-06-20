@@ -92,11 +92,13 @@ class PdfTextReplacer
      * carries a diagnostic surface (which entities remained, how many
      * streams were modified, etc.) for ops review.
      *
-     * @param string $pdfBytes      Raw input PDF bytes.
-     * @param array  $substitutions Map: entity-text => placeholder
-     *                              (e.g. ['Jan Jansen' => '[PERSON: 7]']).
-     * @param bool   $strict        Forwarded to {@see validateOutput}: when
-     *                              true, residual entity text fails closed.
+     * @param string $pdfBytes         Raw input PDF bytes.
+     * @param array  $substitutions    Map: entity-text => placeholder
+     *                                 (e.g. ['Jan Jansen' => '[PERSON: 7]']).
+     * @param bool   $strict           Forwarded to {@see validateOutput}: when
+     *                                 true, residual entity text fails closed.
+     * @param array  $residualEntities Out-param receiving any entity text that
+     *                                 remained after replacement.
      *
      * @return string Anonymised PDF bytes.
      *

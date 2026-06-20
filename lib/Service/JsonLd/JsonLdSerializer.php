@@ -145,7 +145,7 @@ class JsonLdSerializer
      */
     public function serialize(array $renderedObject, Schema $schema, Register $register): array
     {
-        $node = $this->buildNode($renderedObject, $schema, $register);
+        $node = $this->buildNode(renderedObject: $renderedObject, schema: $schema, register: $register);
 
         // Prepend the @context reference (per-schema context document URL).
         return array_merge(
@@ -179,7 +179,7 @@ class JsonLdSerializer
             }
 
             // Each node carries its own @id/@type but not a repeated @context.
-            $graph[] = $this->buildNode($rendered, $schema, $register);
+            $graph[] = $this->buildNode(renderedObject: $rendered, schema: $schema, register: $register);
         }
 
         $document = [
@@ -204,7 +204,7 @@ class JsonLdSerializer
             $document['or:limit'] = $paginatedResult['limit'];
         }
 
-        $next = $this->buildNextLink($paginatedResult);
+        $next = $this->buildNextLink(paginatedResult: $paginatedResult);
         if ($next !== null) {
             $document['or:next'] = $next;
         }
@@ -229,12 +229,12 @@ class JsonLdSerializer
         }
 
         $node = [
-            '@id'   => $this->resolveId($self, $register, $schema),
+            '@id'   => $this->resolveId(self: $self, register: $register, schema: $schema),
             '@type' => $this->contextService->getTypeForSchema($schema),
         ];
 
         // Lift @self metadata to or: terms (skip null/empty so the node stays lean).
-        foreach ($this->liftSelfMetadata($self) as $term => $value) {
+        foreach ($this->liftSelfMetadata(self: $self) as $term => $value) {
             $node[$term] = $value;
         }
 
@@ -245,7 +245,7 @@ class JsonLdSerializer
                 continue;
             }
 
-            if ($this->isReservedKey($key) === true) {
+            if ($this->isReservedKey(key: $key) === true) {
                 $node[self::RAW_PREFIX.ltrim((string) $key, '@')] = $value;
                 continue;
             }
@@ -277,8 +277,8 @@ class JsonLdSerializer
         return $this->urlGenerator->linkToRouteAbsolute(
             'openregister.objects.show',
             [
-                'register' => $this->slugOf($register),
-                'schema'   => $this->slugOf($schema),
+                'register' => $this->slugOf(entity: $register),
+                'schema'   => $this->slugOf(entity: $schema),
                 'id'       => (string) $uuid,
             ]
         );
@@ -338,7 +338,12 @@ class JsonLdSerializer
             return null;
         }
 
-        $separator = (str_contains($current, '?') === true) ? '&' : '?';
+        if (str_contains($current, '?') === true) {
+            $separator = '&';
+        } else {
+            $separator = '?';
+        }
+
         return $current.$separator.'_page='.($page + 1);
     }//end buildNextLink()
 

@@ -109,9 +109,9 @@ class SchemaRevalidationService
      */
     public function start(int $schemaId, int $registerId, ?array $proposedDefinition=null, ?string $startedBy=null): SchemaRun
     {
-        $this->assertNoActiveRun($schemaId);
+        $this->assertNoActiveRun(schemaId: $schemaId);
 
-        $total = $this->countPopulation($schemaId, $registerId);
+        $total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
 
         return $this->runMapper->createFromArray(
             [
@@ -150,12 +150,12 @@ class SchemaRevalidationService
         $validationSchema = $schema;
         $isDryRun         = ($run->getProposedDefinition() !== null);
         if ($isDryRun === true) {
-            $validationSchema = $this->transientSchema($schema, $run->getProposedDefinition());
+            $validationSchema = $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
         }
 
-        $objects = $this->loadBatch($run, $batchSize);
+        $objects = $this->loadBatch(run: $run, batchSize: $batchSize);
         if (count($objects) === 0) {
-            $this->finish($run, SchemaRun::STATE_COMPLETED);
+            $this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
             return false;
         }
 
@@ -165,7 +165,7 @@ class SchemaRevalidationService
         foreach ($objects as $object) {
             $maxId = max($maxId, (int) $object->getId());
 
-            $errors = $this->validate($object, $validationSchema);
+            $errors = $this->validate(object: $object, schema: $validationSchema);
             if (count($errors) === 0) {
                 $report['valid'] = (($report['valid'] ?? 0) + 1);
             } else {
@@ -332,7 +332,7 @@ class SchemaRevalidationService
         $active = $this->runMapper->findActiveForSchema($schemaId);
         if ($active !== null) {
             throw new SchemaRunConcurrencyException(
-                sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
+                message: sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
             );
         }
 

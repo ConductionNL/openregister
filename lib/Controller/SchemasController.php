@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -96,19 +97,22 @@ class SchemasController extends Controller
      * Initializes controller with required dependencies for schema operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string              $appName             Application name
-     * @param IRequest            $request             HTTP request object
-     * @param IAppConfig          $config              App configuration for settings
-     * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
-     * @param MagicMapper         $objectEntityMapper  Object entity mapper for object queries
-     * @param UploadService       $uploadService       Upload service for file uploads
-     * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param SchemaCacheHandler  $schemaCacheService  Schema cache handler for caching operations
-     * @param FacetCacheHandler   $facetCacheSvc       Schema facet cache service for facet caching
-     * @param SchemaService       $schemaService       Schema service for exploration operations
-     * @param LoggerInterface     $logger              Logger for error tracking
-     * @param ContainerInterface  $container           Container for lazy loading services
+     * @param string                  $appName                 Application name
+     * @param IRequest                $request                 HTTP request object
+     * @param IAppConfig              $config                  App configuration for settings
+     * @param SchemaMapper            $schemaMapper            Schema mapper for database operations
+     * @param MagicMapper             $objectEntityMapper      Object entity mapper for object queries
+     * @param UploadService           $uploadService           Upload service for file uploads
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for log statistics
+     * @param OrganisationService     $organisationService     Organisation service for multi-tenancy
+     * @param SchemaCacheHandler      $schemaCacheService      Schema cache handler for caching operations
+     * @param FacetCacheHandler       $facetCacheSvc           Schema facet cache service for facet caching
+     * @param SchemaService           $schemaService           Schema service for exploration operations
+     * @param LoggerInterface         $logger                  Logger for error tracking
+     * @param ContainerInterface      $container               Container for lazy loading services
+     * @param SchemaVersioningService $schemaVersioningService Schema versioning service for version operations
+     * @param JsonLdContextService    $jsonLdContextService    JSON-LD context service
+     * @param SchemaImportService     $schemaImportService     Schema import service for importing schemas
      *
      * @return void
      *
@@ -129,7 +133,7 @@ class SchemasController extends Controller
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
         private readonly SchemaVersioningService $schemaVersioningService,
-        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
+        private readonly ?JsonLdContextService $jsonLdContextService=null,
         private readonly ?SchemaImportService $schemaImportService=null
     ) {
         // Call parent constructor to initialize base controller.
@@ -371,7 +375,7 @@ class SchemasController extends Controller
                     'error_message' => $e->getMessage(),
                 ]
             );
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end show()
 
@@ -557,7 +561,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end create()
 
@@ -769,7 +773,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end update()
 
@@ -896,7 +900,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
         } catch (\Exception $e) {
             // Return 500 for other errors.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end destroy()
 
@@ -917,7 +921,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @no-admin-idor-exempt Pure delegation to upload(), which performs the checkSchemaManagePermission() guard for update paths; this method has no body of its own.
+     * @no-admin-idor-exempt Pure delegation to upload(), which performs the checkSchemaManagePermission()
+     * guard for update paths; this method has no body of its own.
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
@@ -1089,7 +1094,7 @@ class SchemasController extends Controller
             }
 
             // Return 500 for other unexpected errors with actual error message.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end upload()
 
@@ -1106,7 +1111,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @no-admin-idor-exempt Read-only export of a shared schema *definition* (not a user-owned object); schema metadata is public-readable by design, matching the @PublicPage index/show endpoints. No per-user data, no IDOR vector.
+     * @no-admin-idor-exempt Read-only export of a shared schema *definition* (not a user-owned object);
+     * schema metadata is public-readable by design, matching the @PublicPage index/show endpoints.
+     * No per-user data, no IDOR vector.
      *
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<404,
@@ -1145,7 +1152,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @no-admin-idor-exempt Read-only discovery of which shared schema *definitions* reference this one; returns schema metadata only (public-readable by design, like @PublicPage index/show). No per-user data, no IDOR vector.
+     * @no-admin-idor-exempt Read-only discovery of which shared schema *definitions* reference this one;
+     * returns schema metadata only (public-readable by design, like @PublicPage index/show).
+     * No per-user data, no IDOR vector.
      *
      * @return JSONResponse JSON response with related schemas
      *
@@ -1200,7 +1209,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end related()
 
@@ -1215,7 +1224,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @no-admin-idor-exempt Read-only aggregate counts for a shared schema *definition* (object totals, not object contents); exposes no per-object or per-user data, matching the @PublicPage read posture. No IDOR vector.
+     * @no-admin-idor-exempt Read-only aggregate counts for a shared schema *definition* (object totals,
+     * not object contents); exposes no per-object or per-user data, matching the @PublicPage read posture.
+     * No IDOR vector.
      *
      * @return JSONResponse JSON response with schema statistics
      *
@@ -1262,7 +1273,7 @@ class SchemasController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end stats()
 
@@ -1324,7 +1335,7 @@ class SchemasController extends Controller
                 message: '[SchemasController] Schema exploration failed: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end explore()
 
@@ -1404,7 +1415,7 @@ class SchemasController extends Controller
                 message: '[SchemasController] Failed to update schema from exploration: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end updateFromExploration()
 
@@ -1484,7 +1495,7 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
         }
 
-        // json-schema and openapi documents are ingested as-is (unchanged).
+        // Json-schema and openapi documents are ingested as-is (unchanged).
         if ($dialect === 'json-schema' || $dialect === 'openapi') {
             return $document;
         }

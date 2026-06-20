@@ -172,7 +172,7 @@ class GgmSnapshot
             $decoded = $this->override;
         } else {
             if (is_file($this->snapshotFile) === false) {
-                throw new SchemaImportException('GGM snapshot file is missing: '.$this->snapshotFile, 500);
+                throw new SchemaImportException(message: 'GGM snapshot file is missing: '.$this->snapshotFile, httpStatus: 500);
             }
 
             $raw     = (string) file_get_contents($this->snapshotFile);
@@ -182,7 +182,10 @@ class GgmSnapshot
         if (is_array($decoded) === false || isset($decoded['objecttypen']) === false
             || is_array($decoded['objecttypen']) === false
         ) {
-            throw new SchemaImportException('GGM source is not a valid normalised GGM intermediate (missing "objecttypen").', 422);
+            throw new SchemaImportException(
+                message: 'GGM source is not a valid normalised GGM intermediate (missing "objecttypen").',
+                httpStatus: 422
+            );
         }
 
         $this->loadedVersion = (string) ($decoded['version'] ?? $this->version);

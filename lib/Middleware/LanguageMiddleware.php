@@ -167,7 +167,7 @@ class LanguageMiddleware extends Middleware
             $response->addHeader('X-Content-Language-Fallback', 'true');
         }
 
-        // i18n-source-of-truth: surface the dominant source language for
+        // I18n-source-of-truth: surface the dominant source language for
         // the response payload. We can only derive this when the request
         // targets a single object (the path carries a uuid). Listing /
         // multi-object endpoints skip the header.

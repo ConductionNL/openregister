@@ -58,7 +58,7 @@ class BreakingSchemaChangeException extends Exception
      */
     public function __construct(array $changes, ?int $invalidCount=null)
     {
-        parent::__construct('Schema change classified breaking; acknowledgeBreaking required.');
+        parent::__construct(message: 'Schema change classified breaking; acknowledgeBreaking required.');
         $this->changes      = $changes;
         $this->invalidCount = $invalidCount;
 

@@ -537,7 +537,7 @@ class MagicBulkHandler
         $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
         // Get full table name with the configured database prefix.
-        $fullTableName = $this->getFullTableName($tableName);
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
 
         // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
         // This allows us to correctly classify created vs updated regardless of timestamp values.
@@ -753,7 +753,7 @@ class MagicBulkHandler
             $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
             // Get full table name with the configured database prefix.
-            $fullTableName = $this->getFullTableName($tableName);
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
 
             // MySQL/MariaDB: use SHOW COLUMNS.
             $sql = "SHOW COLUMNS FROM `$fullTableName`";

@@ -121,7 +121,7 @@ class SchemaMigrationService
      */
     public function preview(int $schemaId, int $registerId, array $plan, int $sampleSize=self::DEFAULT_PREVIEW_SAMPLE): array
     {
-        $objects = $this->loadSample($schemaId, $registerId, $sampleSize);
+        $objects = $this->loadSample(schemaId: $schemaId, registerId: $registerId, sampleSize: $sampleSize);
         $pairs   = [];
 
         foreach ($objects as $object) {
@@ -165,9 +165,9 @@ class SchemaMigrationService
             throw new \InvalidArgumentException(implode(' ', $problems));
         }
 
-        $this->assertNoActiveRun($schemaId);
+        $this->assertNoActiveRun(schemaId: $schemaId);
 
-        $total = $this->countPopulation($schemaId, $registerId);
+        $total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
 
         return $this->runMapper->createFromArray(
             [
@@ -201,9 +201,9 @@ class SchemaMigrationService
         $plan        = ($run->getPlan() ?? []);
         $stopOnError = (bool) (($run->getOptions() ?? [])['stopOnError'] ?? false);
 
-        $objects = $this->loadBatch($run, $batchSize);
+        $objects = $this->loadBatch(run: $run, batchSize: $batchSize);
         if (count($objects) === 0) {
-            $this->finish($run, SchemaRun::STATE_COMPLETED);
+            $this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
             return false;
         }
 
@@ -231,7 +231,7 @@ class SchemaMigrationService
                 if ($stopOnError === true) {
                     $run->setCursor($maxId);
                     $run->setReport($report);
-                    $this->finish($run, SchemaRun::STATE_FAILED);
+                    $this->finish(run: $run, state: SchemaRun::STATE_FAILED);
                     return false;
                 }
 
@@ -282,7 +282,7 @@ class SchemaMigrationService
                     $run->setProcessed(($run->getProcessed() + 1));
                     $run->setCursor($maxId);
                     $run->setReport($report);
-                    $this->finish($run, SchemaRun::STATE_FAILED);
+                    $this->finish(run: $run, state: SchemaRun::STATE_FAILED);
                     return false;
                 }
             }//end try
@@ -325,7 +325,7 @@ class SchemaMigrationService
         }
 
         if ($run->getState() === SchemaRun::STATE_ROLLED_BACK) {
-            throw new SchemaRunConcurrencyException(sprintf('Run #%d has already been rolled back.', $runId));
+            throw new SchemaRunConcurrencyException(message: sprintf('Run #%d has already been rolled back.', $runId));
         }
 
         $schema  = $this->schemaMapper->find($run->getSchemaId());
@@ -345,7 +345,12 @@ class SchemaMigrationService
 
             if ($object === null) {
                 $conflicts++;
-                $this->recordRollbackEntry($run, $entry->getObjectUuid(), SchemaRunEntry::OUTCOME_CONFLICT, 'Object no longer exists.');
+                $this->recordRollbackEntry(
+                    run: $run,
+                    objectUuid: $entry->getObjectUuid(),
+                    outcome: SchemaRunEntry::OUTCOME_CONFLICT,
+                    message: 'Object no longer exists.'
+                );
                 continue;
             }
 
@@ -353,10 +358,10 @@ class SchemaMigrationService
             if ((string) $object->getVersion() !== (string) $entry->getPostVersion()) {
                 $conflicts++;
                 $this->recordRollbackEntry(
-                    $run,
-                    $entry->getObjectUuid(),
-                    SchemaRunEntry::OUTCOME_CONFLICT,
-                    sprintf('Object modified after migration (current version %s).', (string) $object->getVersion())
+                    run: $run,
+                    objectUuid: $entry->getObjectUuid(),
+                    outcome: SchemaRunEntry::OUTCOME_CONFLICT,
+                    message: sprintf('Object modified after migration (current version %s).', (string) $object->getVersion())
                 );
                 continue;
             }
@@ -371,11 +376,21 @@ class SchemaMigrationService
                     _multitenancy: false
                 );
                 $restored++;
-                $this->recordRollbackEntry($run, $entry->getObjectUuid(), SchemaRunEntry::OUTCOME_RESTORED, null);
+                $this->recordRollbackEntry(
+                    run: $run,
+                    objectUuid: $entry->getObjectUuid(),
+                    outcome: SchemaRunEntry::OUTCOME_RESTORED,
+                    message: null
+                );
             } catch (\Throwable $e) {
                 $conflicts++;
-                $this->recordRollbackEntry($run, $entry->getObjectUuid(), SchemaRunEntry::OUTCOME_CONFLICT, $e->getMessage());
-            }
+                $this->recordRollbackEntry(
+                    run: $run,
+                    objectUuid: $entry->getObjectUuid(),
+                    outcome: SchemaRunEntry::OUTCOME_CONFLICT,
+                    message: $e->getMessage()
+                );
+            }//end try
         }//end foreach
 
         $report = ($run->getReport() ?? []);
@@ -421,7 +436,7 @@ class SchemaMigrationService
         $active = $this->runMapper->findActiveForSchema($schemaId);
         if ($active !== null) {
             throw new SchemaRunConcurrencyException(
-                sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
+                message: sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
             );
         }
 

@@ -188,6 +188,8 @@ class RenderObject
      * @param CalculationEvaluator     $calculationEvaluator     Evaluator for derived/computed properties.
      * @param UrnService               $urnService               URN resolver for register/schema/object identifiers.
      * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
+     * @param TranslationMapper        $translationMapper        Translation mapper for database operations.
+     * @param LanguageService          $languageService          Language service for source-language resolution.
      * @param IRequest|null            $request                  Current request, used to read `?recurrenceOccurrences=N`.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
@@ -1575,7 +1577,7 @@ class RenderObject
             );
         }
 
-        // i18n-source-of-truth: when `?_translationMeta=true`, attach a
+        // I18n-source-of-truth: when `?_translationMeta=true`, attach a
         // `_meta.languageMeta` envelope describing each translatable
         // property's served language, source language, isSource flag, and
         // workflow status. Opt-in to keep payload size flat by default.
@@ -1786,9 +1788,14 @@ class RenderObject
             return $objectData;
         }
 
-        $uuid            = (string) ($entity->getUuid() ?? '');
-        $registerDefault = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
-        $served          = $this->languageService->getPreferredLanguage();
+        $uuid = (string) ($entity->getUuid() ?? '');
+        if ($register !== null) {
+            $registerDefault = $register->getDefaultLanguage();
+        } else {
+            $registerDefault = 'nl';
+        }
+
+        $served = $this->languageService->getPreferredLanguage();
 
         $languageMeta = [];
         foreach ($translatableProps as $property) {
@@ -1861,9 +1868,9 @@ class RenderObject
     ): string {
         $meta = $preResolveData['_translationMeta'] ?? null;
         if (is_array($meta) === true
-            && isset($meta[$property])
+            && isset($meta[$property]) === true
             && is_array($meta[$property]) === true
-            && isset($meta[$property]['sourceLanguage'])
+            && isset($meta[$property]['sourceLanguage']) === true
             && is_string($meta[$property]['sourceLanguage']) === true
             && $meta[$property]['sourceLanguage'] !== ''
         ) {
@@ -1873,14 +1880,18 @@ class RenderObject
         $properties = $schema->getProperties() ?? [];
         $definition = $properties[$property] ?? null;
         if (is_array($definition) === true
-            && isset($definition['sourceLanguage'])
+            && isset($definition['sourceLanguage']) === true
             && is_string($definition['sourceLanguage']) === true
             && $definition['sourceLanguage'] !== ''
         ) {
             return (string) $definition['sourceLanguage'];
         }
 
-        return ($registerDefault !== '') ? $registerDefault : 'nl';
+        if ($registerDefault !== '') {
+            return $registerDefault;
+        }
+
+        return 'nl';
     }//end resolveSourceLanguageForProperty()
 
     /**
@@ -3458,7 +3469,7 @@ class RenderObject
                     continue;
                 }
 
-                // base64-format properties read content, not the formatted file
+                // Base64-format properties read content, not the formatted file
                 // object/tags, so they are not part of this prefetch.
                 $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
                 $fileConfig      = $propertyConfig;

@@ -504,7 +504,8 @@ class HyperFacetHandler
             $results = \React\Async\await(\React\Promise\all($promises));
         } else {
             $this->logger->warning(
-                message: '[HyperFacetHandler] React\\Async\\await() unavailable; falling back to synchronous promise extraction (install react/async to silence)',
+                message: '[HyperFacetHandler] React\\Async\\await() unavailable; falling back to synchronous'
+                    .' promise extraction (install react/async to silence)',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             $results = [];

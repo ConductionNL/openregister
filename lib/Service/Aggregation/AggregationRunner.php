@@ -91,6 +91,7 @@ class AggregationRunner
      * @param PermissionHandler           $permissionHandler   RBAC verdict on the schema's `list` action.
      * @param IUserSession                $userSession         Active session, for the RBAC + cache-key user scope.
      * @param OrganisationService         $organisationService Active-organisation lookup for the cache key.
+     * @param LoggerInterface|null        $logger              Optional logger for diagnostics.
      * @param SearchBackendInterface|null $searchBackend       Optional Solr/ES backend for native aggregation.
      *
      * @return void

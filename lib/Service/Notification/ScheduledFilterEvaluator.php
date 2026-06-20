@@ -57,6 +57,11 @@ use Psr\Log\NullLogger;
 final class ScheduledFilterEvaluator
 {
 
+    /**
+     * Logger for fail-closed diagnostics.
+     *
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
     /**

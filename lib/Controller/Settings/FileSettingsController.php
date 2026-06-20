@@ -236,15 +236,17 @@ class FileSettingsController extends Controller
     /**
      * Test OpenAnonymiser ExApp availability.
      *
-     * @deprecated OpenAnonymiser is now detected via AppAPI, not an HTTP endpoint.
-     *             Prefer the admin endpoint `POST /api/admin/anonymisation/test-connection`
-     *             with `{method: "openanonymiser"}`. This route is retained for backward
-     *             compatibility and delegates to AnonymisationBackendService; the
-     *             $apiEndpoint parameter is ignored and no external HTTP request is issued.
+     * OpenAnonymiser is now detected via AppAPI, not an HTTP endpoint.
+     * Prefer the admin endpoint `POST /api/admin/anonymisation/test-connection`
+     * with `{method: "openanonymiser"}`. This route is retained for backward
+     * compatibility and delegates to AnonymisationBackendService; the
+     * $apiEndpoint parameter is ignored and no external HTTP request is issued.
      *
      * @param string $apiEndpoint Ignored; retained for backward compatibility.
      *
      * @return JSONResponse
+     *
+     * @deprecated OpenAnonymiser is now detected via AppAPI, not an HTTP endpoint.
      *
      * @NoCSRFRequired
      *
@@ -259,6 +261,7 @@ class FileSettingsController extends Controller
             /*
              * @var AnonymisationBackendService $service
              */
+
             $service = $this->container->get(AnonymisationBackendService::class);
             $probe   = $service->testConnection(method: BackendState::METHOD_OPENANONYMISER);
 

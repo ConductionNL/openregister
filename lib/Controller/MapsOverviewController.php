@@ -96,18 +96,33 @@ class MapsOverviewController extends Controller
             // map overview is a write — it requires an authenticated user.
             $this->overviewService->ensureCanRegister();
 
+            $title = null;
+            if (isset($params['title']) === true) {
+                $title = (string) $params['title'];
+            }
+
+            $geoProperty = null;
+            if (isset($params['geoProperty']) === true) {
+                $geoProperty = (string) $params['geoProperty'];
+            }
+
+            $baseLayer = null;
+            if (isset($params['baseLayer']) === true) {
+                $baseLayer = (array) $params['baseLayer'];
+            }
+
             $stored = $this->overviewService->registerOverview(
                 overviewKey: (string) ($params['overviewKey'] ?? ''),
                 register: (string) ($params['register'] ?? ''),
                 schema: (string) ($params['schema'] ?? ''),
-                title: (isset($params['title']) === true ? (string) $params['title'] : null),
-                geoProperty: (isset($params['geoProperty']) === true ? (string) $params['geoProperty'] : null),
+                title: $title,
+                geoProperty: $geoProperty,
                 filters: (array) ($params['filters'] ?? []),
-                baseLayer: (isset($params['baseLayer']) === true ? (array) $params['baseLayer'] : null)
+                baseLayer: $baseLayer
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        }
+        }//end try
 
         return new JSONResponse($stored, Http::STATUS_CREATED);
     }//end register()
@@ -141,16 +156,24 @@ class MapsOverviewController extends Controller
             // query is RBAC-scoped inside the service — it runs the
             // canonical OR read path with _rbac:true for non-admins, so a
             // caller only ever sees objects they may read (fail-closed).
+            $geoProperty = null;
+            if (isset($params['geoProperty']) === true) {
+                $geoProperty = (string) $params['geoProperty'];
+            }
+
+            $filters = (array) ($params['filters'] ?? $this->nonReservedParams(params: $params));
+            $limit   = $this->intOrNull(value: ($params['limit'] ?? null));
+
             $points = $this->overviewService->ensureReadablePoints(
                 register: $register,
                 schema: $schema,
-                filters: (array) ($params['filters'] ?? $this->nonReservedParams($params)),
-                geoProperty: (isset($params['geoProperty']) === true ? (string) $params['geoProperty'] : null),
-                limit: $this->intOrNull($params['limit'] ?? null)
+                filters: $filters,
+                geoProperty: $geoProperty,
+                limit: $limit
             );
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        }
+        }//end try
 
         return new JSONResponse(['points' => $points, 'count' => count($points)]);
     }//end points()

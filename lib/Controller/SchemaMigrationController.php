@@ -96,10 +96,10 @@ class SchemaMigrationController extends Controller
      */
     public function changelog(int $id): JSONResponse
     {
-        $limit  = $this->intParam('_limit');
-        $offset = $this->intParam('_offset');
+        $limit  = $this->intParam(name: '_limit');
+        $offset = $this->intParam(name: '_offset');
 
-        $entries = $this->changelogMapper->findBySchema($id, $limit, $offset);
+        $entries = $this->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
 
         return new JSONResponse(['results' => array_map(static fn($e) => $e->jsonSerialize(), $entries)]);
 
@@ -122,7 +122,7 @@ class SchemaMigrationController extends Controller
             return new JSONResponse(['error' => 'Schema not found'], 404);
         }
 
-        $registerId = $this->resolveRegisterId($id);
+        $registerId = $this->resolveRegisterId(schemaId: $id);
         if ($registerId === null) {
             return new JSONResponse(['error' => 'No register contains this schema'], 422);
         }
@@ -160,7 +160,11 @@ class SchemaMigrationController extends Controller
      */
     public function runs(int $id): JSONResponse
     {
-        $runs = $this->runMapper->findBySchema($id, $this->intParam('_limit'), $this->intParam('_offset'));
+        $runs = $this->runMapper->findBySchema(
+            schemaId: $id,
+            limit: $this->intParam(name: '_limit'),
+            offset: $this->intParam(name: '_offset')
+        );
 
         return new JSONResponse(['results' => array_map(static fn($r) => $r->jsonSerialize(), $runs)]);
 
@@ -194,10 +198,10 @@ class SchemaMigrationController extends Controller
         }
 
         $entries = $this->runEntryMapper->findByRun(
-            $run,
-            $outcome,
-            $this->intParam('_limit'),
-            $this->intParam('_offset')
+            runId: $run,
+            outcome: $outcome,
+            limit: $this->intParam(name: '_limit'),
+            offset: $this->intParam(name: '_offset')
         );
 
         $payload            = $entity->jsonSerialize();
@@ -234,7 +238,7 @@ class SchemaMigrationController extends Controller
             return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => $problems], 422);
         }
 
-        $registerId = $this->resolveRegisterId($id);
+        $registerId = $this->resolveRegisterId(schemaId: $id);
         if ($registerId === null) {
             return new JSONResponse(['error' => 'No register contains this schema'], 422);
         }
@@ -269,7 +273,7 @@ class SchemaMigrationController extends Controller
             return new JSONResponse(['error' => 'A "plan" array is required'], 422);
         }
 
-        $registerId = $this->resolveRegisterId($id);
+        $registerId = $this->resolveRegisterId(schemaId: $id);
         if ($registerId === null) {
             return new JSONResponse(['error' => 'No register contains this schema'], 422);
         }

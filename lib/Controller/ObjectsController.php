@@ -226,7 +226,7 @@ class ObjectsController extends Controller
             register: $register
         );
 
-        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+        return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
     }//end jsonLdObjectResponse()
 
     /**
@@ -248,7 +248,7 @@ class ObjectsController extends Controller
             register: $register
         );
 
-        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+        return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
     }//end jsonLdCollectionResponse()
 
     /**
@@ -969,7 +969,11 @@ class ObjectsController extends Controller
 
         // PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
         $wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $total     = ($wantTotal === true) ? $fetchedCount : null;
+        if ($wantTotal === true) {
+            $total = $fetchedCount;
+        } else {
+            $total = null;
+        }
 
         $pages = 1;
         $page  = 1;
@@ -1251,8 +1255,14 @@ class ObjectsController extends Controller
                 // PERF-10: allow callers to skip the extra COUNT(*) query when they
                 // don't need the grand total (e.g. infinite scroll). _count=false /
                 // _noTotal=true returns total:null and skips the count round-trip.
+                if (($params['_noTotal'] ?? false) === true) {
+                    $countDefault = false;
+                } else {
+                    $countDefault = true;
+                }
+
                 $wantTotal = filter_var(
-                    $params['_count'] ?? (($params['_noTotal'] ?? false) ? false : true),
+                    $params['_count'] ?? $countDefault,
                     FILTER_VALIDATE_BOOLEAN
                 );
 
@@ -1591,9 +1601,15 @@ class ObjectsController extends Controller
         $fields  = $this->parseFieldsParam(params: $params);
         $geoProp = ($params['geo.property'] ?? null);
 
+        if ($geoProp !== null) {
+            $geoPropertyValue = (string) $geoProp;
+        } else {
+            $geoPropertyValue = null;
+        }
+
         $collection = $this->geoFeatureBuilder->buildFeatureCollection(
             rows: $rows,
-            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            geoProperty: $geoPropertyValue,
             fields: $fields,
             includeArea: true
         );
@@ -1643,10 +1659,17 @@ class ObjectsController extends Controller
             $maxFeatures = (int) $rawMax;
         }
 
-        $geoProp  = ($params['geo.property'] ?? null);
+        $geoProp = ($params['geo.property'] ?? null);
+
+        if ($geoProp !== null) {
+            $geoPropertyValue = (string) $geoProp;
+        } else {
+            $geoPropertyValue = null;
+        }
+
         $response = $this->geoFeatureBuilder->buildWfsResponse(
             rows: $rows,
-            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            geoProperty: $geoPropertyValue,
             maxFeatures: $maxFeatures
         );
 
@@ -1727,7 +1750,11 @@ class ObjectsController extends Controller
         $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
         $payload = (array) $listing->getData();
         $rows    = ($payload['results'] ?? []);
-        return (is_array($rows) === true) ? $rows : [];
+        if (is_array($rows) === true) {
+            return $rows;
+        }
+
+        return [];
 
     }//end scopedGeoRows()
 
@@ -2533,7 +2560,7 @@ class ObjectsController extends Controller
                     ]
                     );
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($exception);
+            return $this->errorResponse(e: $exception);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -2776,7 +2803,7 @@ class ObjectsController extends Controller
                     ]
                     );
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($exception);
+            return $this->errorResponse(e: $exception);
         }//end try
     }//end patch()
 
@@ -2909,7 +2936,7 @@ class ObjectsController extends Controller
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($exception);
+            return $this->errorResponse(e: $exception);
         }//end try
     }//end postPatch()
 
@@ -3384,7 +3411,7 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (\Throwable $e) {
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end lock()
 

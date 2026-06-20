@@ -252,7 +252,10 @@ class TimeEntryService
         }
 
         $user = $this->userSession->getUser();
-        $uid  = $user !== null ? $user->getUID() : '';
+        $uid  = '';
+        if ($user !== null) {
+            $uid = $user->getUID();
+        }
 
         $link = new TimeLink();
         $link->setObjectUuid($objectUuid);

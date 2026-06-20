@@ -67,6 +67,7 @@ class NamesController extends Controller
      * @param IRequest        $request            HTTP request object
      * @param CacheHandler    $objectCacheService Object cache service for name operations
      * @param LoggerInterface $logger             Logger for performance monitoring
+     * @param IUserSession    $userSession        User session for the current user
      */
     public function __construct(
         string $appName,

@@ -1090,7 +1090,11 @@ class EntityRecognitionHandler
 
         $converted = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
 
-        return ($converted === false ? $value : $converted);
+        if ($converted === false) {
+            return $value;
+        }
+
+        return $converted;
     }//end sanitizeUtf8()
 
     /**

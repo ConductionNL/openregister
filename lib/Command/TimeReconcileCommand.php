@@ -73,7 +73,8 @@ class TimeReconcileCommand extends Command
     {
         $this->setName(name: 'openregister:time:reconcile')
             ->setDescription(
-                'Reconcile denormalised time-tracker link metadata (name, duration, billable, started_at) against the authoritative NC TimeManager source so per-object totals stay correct.'
+                'Reconcile denormalised time-tracker link metadata (name, duration, billable, started_at) '
+                .'against the authoritative NC TimeManager source so per-object totals stay correct.'
             )
             ->addOption(
                 'object',

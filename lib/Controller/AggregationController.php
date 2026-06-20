@@ -140,10 +140,15 @@ class AggregationController extends Controller
         $field  = $this->request->getParam('field');
         $filter = (array) ($this->request->getParam('filter', []));
 
+        $resolvedField = $field;
+        if ($field === '') {
+            $resolvedField = null;
+        }
+
         try {
             $query = AggregationQuery::create(
                 metric: $metric,
-                field: ($field === '' ? null : $field),
+                field: $resolvedField,
                 filter: $filter
             );
         } catch (InvalidArgumentException $e) {
@@ -204,10 +209,15 @@ class AggregationController extends Controller
             $groupSpec['limit'] = (int) $limit;
         }
 
+        $resolvedField = $field;
+        if ($field === '') {
+            $resolvedField = null;
+        }
+
         try {
             $query = AggregationQuery::create(
                 metric: $metric,
-                field: ($field === '' ? null : $field),
+                field: $resolvedField,
                 filter: $filter,
                 groupBy: $groupSpec
             );
