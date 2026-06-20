@@ -110,7 +110,7 @@ class TranslationController extends Controller
         ?string $isOutOfDate=null,
         ?string $compareToSource=null
     ): JSONResponse {
-        $isOutOfDateBool    = $this->isTruthy(value: $isOutOfDate);
+        $isOutOfDateBool     = $this->isTruthy(value: $isOutOfDate);
         $compareToSourceBool = $this->isTruthy(value: $compareToSource);
 
         if ($compareToSourceBool === true) {
@@ -133,7 +133,7 @@ class TranslationController extends Controller
                 sourceLanguage: $sourceLanguage,
                 isOutOfDate: $isOutOfDateBool
             );
-        }
+        }//end if
 
         return new JSONResponse(
                 [

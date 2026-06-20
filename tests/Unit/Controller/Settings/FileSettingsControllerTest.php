@@ -117,7 +117,7 @@ class TestableFileSettingsController extends FileSettingsController
         }
     }
 
-    public function testOpenAnonymiserConnection(string $apiEndpoint): JSONResponse
+    public function testOpenAnonymiserConnection(string $apiEndpoint = ''): JSONResponse
     {
         try {
             if (empty($apiEndpoint) === true) {

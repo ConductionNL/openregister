@@ -126,7 +126,14 @@ class AnonymisationBackendService
 
         // Probe the atomic backends (cached) and build their info records.
         $backends = [];
-        foreach ([BackendState::METHOD_REGEX, BackendState::METHOD_PRESIDIO, BackendState::METHOD_OPENANONYMISER, BackendState::METHOD_LLM] as $method) {
+
+        $probeMethods = [
+            BackendState::METHOD_REGEX,
+            BackendState::METHOD_PRESIDIO,
+            BackendState::METHOD_OPENANONYMISER,
+            BackendState::METHOD_LLM,
+        ];
+        foreach ($probeMethods as $method) {
             $backends[$method] = $this->buildBackendInfo(method: $method, probe: $this->probe(method: $method));
         }
 
@@ -248,10 +255,16 @@ class AnonymisationBackendService
         $anyInstalled = ($this->appManager->isInstalled(self::EXAPP_FULL) === true
             || $this->appManager->isInstalled(self::EXAPP_LIGHT) === true);
 
+        if ($anyInstalled === true) {
+            $error = ProbeResult::ERROR_EXAPP_DISABLED;
+        } else {
+            $error = ProbeResult::ERROR_EXAPP_NOT_INSTALLED;
+        }
+
         return new ProbeResult(
             reachable: false,
             latencyMs: null,
-            error: ($anyInstalled === true ? ProbeResult::ERROR_EXAPP_DISABLED : ProbeResult::ERROR_EXAPP_NOT_INSTALLED),
+            error: $error,
             probedAt: $this->now(),
         );
     }//end detectOpenAnonymiser()
@@ -295,7 +308,7 @@ class AnonymisationBackendService
      *
      * @return array<string, mixed>|null Decoded JSON response, or null on failure.
      */
-    public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array
+    public function requestOpenAnonymiser(string $route, array $params, string $method='POST'): ?array
     {
         $appId = $this->resolveActiveExAppId();
         if ($appId === null) {
@@ -314,7 +327,7 @@ class AnonymisationBackendService
             $response        = $publicFunctions->exAppRequest($appId, $route, null, $method, $params);
 
             if (is_array($response) === true) {
-                // exAppRequest returns an array only to signal an error.
+                // ExAppRequest returns an array only to signal an error.
                 $this->logger->error('[AnonymisationBackendService] ExApp request error: '.($response['error'] ?? 'unknown'));
                 return null;
             }
@@ -331,7 +344,11 @@ class AnonymisationBackendService
 
             $decoded = json_decode((string) $response->getBody(), true);
 
-            return (is_array($decoded) === true ? $decoded : null);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            return null;
         } catch (Throwable $e) {
             $this->logger->error('[AnonymisationBackendService] ExApp request to '.$appId.' failed: '.$e->getMessage());
             return null;
@@ -376,10 +393,16 @@ class AnonymisationBackendService
                 return new ProbeResult(reachable: true, latencyMs: $latency, error: null, probedAt: $this->now());
             }
 
+            if ($statusCode >= 500) {
+                $error = ProbeResult::ERROR_HTTP_5XX;
+            } else {
+                $error = ProbeResult::ERROR_HTTP_4XX;
+            }
+
             return new ProbeResult(
                 reachable: false,
                 latencyMs: $latency,
-                error: ($statusCode >= 500 ? ProbeResult::ERROR_HTTP_5XX : ProbeResult::ERROR_HTTP_4XX),
+                error: $error,
                 probedAt: $this->now(),
             );
         } catch (Throwable $e) {
@@ -490,8 +513,8 @@ class AnonymisationBackendService
     /**
      * Resolve the active method, applying the first-run auto-select rule.
      *
-     * @param string                      $stored   The stored method (may be the `auto` sentinel).
-     * @param array<string, BackendInfo>  $backends The per-method availability records.
+     * @param string                     $stored   The stored method (may be the `auto` sentinel).
+     * @param array<string, BackendInfo> $backends The per-method availability records.
      *
      * @return string The resolved active method enum value.
      */
@@ -517,9 +540,9 @@ class AnonymisationBackendService
     /**
      * Apply the effectiveMethod precedence rule.
      *
-     * @param bool                        $enabled      Whether recognition is enabled.
-     * @param string                      $activeMethod The resolved active method.
-     * @param array<string, BackendInfo>  $backends     The per-method availability records.
+     * @param bool                       $enabled      Whether recognition is enabled.
+     * @param string                     $activeMethod The resolved active method.
+     * @param array<string, BackendInfo> $backends     The per-method availability records.
      *
      * @return string The method that will actually be used.
      */
@@ -598,10 +621,20 @@ class AnonymisationBackendService
             return null;
         }
 
+        $latencyMs = null;
+        if (($data['latencyMs'] ?? null) !== null) {
+            $latencyMs = (int) $data['latencyMs'];
+        }
+
+        $error = null;
+        if (($data['error'] ?? null) !== null) {
+            $error = (string) $data['error'];
+        }
+
         return new ProbeResult(
             reachable: (bool) ($data['reachable'] ?? false),
-            latencyMs: (($data['latencyMs'] ?? null) === null ? null : (int) $data['latencyMs']),
-            error: (($data['error'] ?? null) === null ? null : (string) $data['error']),
+            latencyMs: $latencyMs,
+            error: $error,
             probedAt: (string) ($data['probedAt'] ?? $this->now()),
         );
     }//end readCache()

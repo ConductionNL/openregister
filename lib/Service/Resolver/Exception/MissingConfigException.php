@@ -50,7 +50,6 @@ class MissingConfigException extends Exception
      */
     private string $configKey;
 
-
     /**
      * Construct the missing-config exception with diagnostic context.
      *
@@ -75,7 +74,6 @@ class MissingConfigException extends Exception
 
     }//end __construct()
 
-
     /**
      * Get the app id that was being resolved against.
      *
@@ -87,7 +85,6 @@ class MissingConfigException extends Exception
 
     }//end getAppId()
 
-
     /**
      * Get the config key that was missing.
      *
@@ -98,6 +95,4 @@ class MissingConfigException extends Exception
         return $this->configKey;
 
     }//end getConfigKey()
-
-
 }//end class

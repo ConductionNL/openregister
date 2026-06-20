@@ -411,11 +411,16 @@ class SharesProvider extends AbstractIntegrationProvider
             $ttlSeconds = (int) $payload['ttlSeconds'];
         }
 
+        $resolvedLabel = null;
+        if ($label !== null) {
+            $resolvedLabel = (string) $label;
+        }
+
         return $service->mint(
             objectUuid: $objectId,
-            registerId: $this->numericOrNull($register),
-            schemaId: $this->numericOrNull($schema),
-            label: ($label !== null ? (string) $label : null),
+            registerId: $this->numericOrNull(value: $register),
+            schemaId: $this->numericOrNull(value: $schema),
+            label: $resolvedLabel,
             ttlSeconds: $ttlSeconds
         );
     }//end create()

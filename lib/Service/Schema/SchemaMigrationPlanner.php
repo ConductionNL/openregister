@@ -65,19 +65,17 @@ class SchemaMigrationPlanner
      */
     private $templateRenderer;
 
-
     /**
      * Constructor.
      *
      * @param callable|null $templateRenderer Optional template renderer for
-     *                                         the `compute` transform.
+     *                                        the `compute` transform.
      */
     public function __construct(?callable $templateRenderer=null)
     {
         $this->templateRenderer = $templateRenderer;
 
     }//end __construct()
-
 
     /**
      * Validate a migration plan's structure.
@@ -149,7 +147,6 @@ class SchemaMigrationPlanner
 
     }//end validatePlan()
 
-
     /**
      * Apply a transform chain to one object's data.
      *
@@ -177,23 +174,28 @@ class SchemaMigrationPlanner
             try {
                 switch ($op) {
                     case 'rename':
-                        $working   = $this->applyRename($working, (string) $step['from'], (string) $step['to']);
+                        $working   = $this->applyRename(data: $working, from: (string) $step['from'], to: (string) $step['to']);
                         $applied[] = sprintf('rename %s -> %s', $step['from'], $step['to']);
                         break;
                     case 'setDefault':
-                        $working   = $this->applySetDefault($working, (string) $step['field'], $step['value']);
+                        $working   = $this->applySetDefault(data: $working, field: (string) $step['field'], value: $step['value']);
                         $applied[] = sprintf('setDefault %s', $step['field']);
                         break;
                     case 'cast':
-                        $working   = $this->applyCast($working, (string) $step['field'], (string) $step['to'], ($step['format'] ?? null));
+                        $working   = $this->applyCast(
+                            data: $working,
+                            field: (string) $step['field'],
+                            toType: (string) $step['to'],
+                            format: ($step['format'] ?? null)
+                        );
                         $applied[] = sprintf('cast %s -> %s', $step['field'], $step['to']);
                         break;
                     case 'drop':
-                        $working   = $this->applyDrop($working, (string) $step['field']);
+                        $working   = $this->applyDrop(data: $working, field: (string) $step['field']);
                         $applied[] = sprintf('drop %s', $step['field']);
                         break;
                     case 'compute':
-                        $working   = $this->applyCompute($working, (string) $step['field'], (string) $step['template']);
+                        $working   = $this->applyCompute(data: $working, field: (string) $step['field'], template: (string) $step['template']);
                         $applied[] = sprintf('compute %s', $step['field']);
                         break;
                     default:
@@ -210,7 +212,6 @@ class SchemaMigrationPlanner
         return new MigrationPlanResult($working, $changed, null, $applied);
 
     }//end apply()
-
 
     /**
      * Apply a rename transform.
@@ -234,7 +235,6 @@ class SchemaMigrationPlanner
 
     }//end applyRename()
 
-
     /**
      * Apply a setDefault transform (only when missing or null).
      *
@@ -253,7 +253,6 @@ class SchemaMigrationPlanner
         return $data;
 
     }//end applySetDefault()
-
 
     /**
      * Apply a cast transform.
@@ -275,12 +274,11 @@ class SchemaMigrationPlanner
         }
 
         $value        = $data[$field];
-        $data[$field] = $this->castValue($value, $toType, $format);
+        $data[$field] = $this->castValue(value: $value, toType: $toType, format: $format);
 
         return $data;
 
     }//end applyCast()
-
 
     /**
      * Cast a scalar value to the target type.
@@ -300,7 +298,6 @@ class SchemaMigrationPlanner
                 if (is_scalar($value) === true) {
                     return (string) $value;
                 }
-
                 throw new \RuntimeException('Cannot cast non-scalar value to string.');
 
             case 'integer':
@@ -311,8 +308,7 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (int) $value;
                 }
-
-                throw new \RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe($value)));
+                throw new \RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe(value: $value)));
 
             case 'number':
                 if (is_bool($value) === true) {
@@ -322,21 +318,19 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (float) $value;
                 }
-
-                throw new \RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe($value)));
+                throw new \RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe(value: $value)));
 
             case 'boolean':
-                return $this->castBoolean($value);
+                return $this->castBoolean(value: $value);
 
             case 'date':
-                return $this->castDate($value, $format);
+                return $this->castDate(value: $value, format: $format);
 
             default:
                 throw new \RuntimeException(sprintf('Unsupported cast target type "%s".', $toType));
         }//end switch
 
     }//end castValue()
-
 
     /**
      * Cast a value to a boolean using a strict allow-list.
@@ -368,10 +362,9 @@ class SchemaMigrationPlanner
             }
         }
 
-        throw new \RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe($value)));
+        throw new \RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe(value: $value)));
 
     }//end castBoolean()
-
 
     /**
      * Cast a value to an ISO-8601 date string.
@@ -409,7 +402,6 @@ class SchemaMigrationPlanner
 
     }//end castDate()
 
-
     /**
      * Apply a drop transform.
      *
@@ -425,7 +417,6 @@ class SchemaMigrationPlanner
         return $data;
 
     }//end applyDrop()
-
 
     /**
      * Apply a compute transform via the template renderer.
@@ -444,12 +435,11 @@ class SchemaMigrationPlanner
             return $data;
         }
 
-        $data[$field] = $this->renderSimpleTemplate($template, $data);
+        $data[$field] = $this->renderSimpleTemplate(template: $template, context: $data);
 
         return $data;
 
     }//end applyCompute()
-
 
     /**
      * Render a minimal `{{ field }}` template against the object's own data.
@@ -485,7 +475,6 @@ class SchemaMigrationPlanner
 
     }//end renderSimpleTemplate()
 
-
     /**
      * Describe a value for an error message.
      *
@@ -502,6 +491,4 @@ class SchemaMigrationPlanner
         return gettype($value);
 
     }//end describe()
-
-
 }//end class

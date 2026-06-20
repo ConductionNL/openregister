@@ -91,7 +91,6 @@ final class RegisterResolverService
      */
     private ?string $lastTenantUuid = null;
 
-
     /**
      * Wire the resolver against the canonical OR mappers + IAppConfig.
      *
@@ -110,7 +109,6 @@ final class RegisterResolverService
     ) {
 
     }//end __construct()
-
 
     /**
      * Read the configured slug/UUID for a register from app config.
@@ -149,10 +147,9 @@ final class RegisterResolverService
             return $default;
         }
 
-        throw new MissingConfigException($appId, $configKey);
+        throw new MissingConfigException(appId: $appId, configKey: $configKey);
 
     }//end resolveRegisterId()
-
 
     /**
      * Read the configured slug/UUID for a schema from app config.
@@ -186,10 +183,9 @@ final class RegisterResolverService
             return $default;
         }
 
-        throw new MissingConfigException($appId, $configKey);
+        throw new MissingConfigException(appId: $appId, configKey: $configKey);
 
     }//end resolveSchemaId()
-
 
     /**
      * Read the configured slug/UUID/name for a schema property from app config.
@@ -228,10 +224,9 @@ final class RegisterResolverService
             return $default;
         }
 
-        throw new MissingConfigException($appId, $configKey);
+        throw new MissingConfigException(appId: $appId, configKey: $configKey);
 
     }//end resolvePropertyId()
-
 
     /**
      * Resolve `<context>_register` config to a hydrated Register entity.
@@ -257,8 +252,13 @@ final class RegisterResolverService
     ): Register {
         $this->maybeFlushOnTenantSwitch();
 
-        $slugOrUuid = $this->resolveRegisterId($appId, $configKey, $default, $organisationUuid);
-        $cacheKey   = $this->cacheKey($appId, $configKey, $organisationUuid);
+        $slugOrUuid = $this->resolveRegisterId(
+            appId: $appId,
+            configKey: $configKey,
+            default: $default,
+            organisationUuid: $organisationUuid
+        );
+        $cacheKey   = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
 
         if (isset($this->registerCache[$cacheKey]) === true) {
             return $this->registerCache[$cacheKey];
@@ -274,13 +274,13 @@ final class RegisterResolverService
                 if ($register->getOrganisation() !== null
                     && $register->getOrganisation() !== $organisationUuid
                 ) {
-                    throw new RegisterNotFoundException($appId, $configKey, $slugOrUuid);
+                    throw new RegisterNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid);
                 }
             } else {
                 $register = $this->registerMapper->find(id: $slugOrUuid);
             }
         } catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
-            throw new RegisterNotFoundException($appId, $configKey, $slugOrUuid, $e);
+            throw new RegisterNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid, previous: $e);
         }
 
         $this->registerCache[$cacheKey] = $register;
@@ -288,7 +288,6 @@ final class RegisterResolverService
         return $register;
 
     }//end resolveRegister()
-
 
     /**
      * Resolve `<context>_schema` config to a hydrated Schema entity.
@@ -314,8 +313,13 @@ final class RegisterResolverService
     ): Schema {
         $this->maybeFlushOnTenantSwitch();
 
-        $slugOrUuid = $this->resolveSchemaId($appId, $configKey, $default, $organisationUuid);
-        $cacheKey   = $this->cacheKey($appId, $configKey, $organisationUuid);
+        $slugOrUuid = $this->resolveSchemaId(
+            appId: $appId,
+            configKey: $configKey,
+            default: $default,
+            organisationUuid: $organisationUuid
+        );
+        $cacheKey   = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
 
         if (isset($this->schemaCache[$cacheKey]) === true) {
             return $this->schemaCache[$cacheKey];
@@ -327,13 +331,13 @@ final class RegisterResolverService
                 if ($schema->getOrganisation() !== null
                     && $schema->getOrganisation() !== $organisationUuid
                 ) {
-                    throw new SchemaNotFoundException($appId, $configKey, $slugOrUuid);
+                    throw new SchemaNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid);
                 }
             } else {
                 $schema = $this->schemaMapper->find(id: $slugOrUuid);
             }
         } catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
-            throw new SchemaNotFoundException($appId, $configKey, $slugOrUuid, $e);
+            throw new SchemaNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid, previous: $e);
         }
 
         $this->schemaCache[$cacheKey] = $schema;
@@ -341,7 +345,6 @@ final class RegisterResolverService
         return $schema;
 
     }//end resolveSchema()
-
 
     /**
      * Resolve a schema property by configured identifier.
@@ -384,8 +387,18 @@ final class RegisterResolverService
         ?string $schemaDefault=null,
         ?string $organisationUuid=null,
     ): array {
-        $schema     = $this->resolveSchema($appId, $schemaConfigKey, $schemaDefault, $organisationUuid);
-        $propertyId = $this->resolvePropertyId($appId, $propertyConfigKey, $propertyDefault, $organisationUuid);
+        $schema     = $this->resolveSchema(
+            appId: $appId,
+            configKey: $schemaConfigKey,
+            default: $schemaDefault,
+            organisationUuid: $organisationUuid
+        );
+        $propertyId = $this->resolvePropertyId(
+            appId: $appId,
+            configKey: $propertyConfigKey,
+            default: $propertyDefault,
+            organisationUuid: $organisationUuid
+        );
 
         $properties = $schema->getProperties();
         $schemaId   = (string) ($schema->getSlug() ?? $schema->getUuid() ?? '');
@@ -421,7 +434,6 @@ final class RegisterResolverService
 
     }//end resolveProperty()
 
-
     /**
      * Convenience: resolve a register and schema in a single call.
      *
@@ -445,10 +457,10 @@ final class RegisterResolverService
         string $schemaKey,
         ?string $organisationUuid=null,
     ): RegisterSchemaPair {
-        $registerId = $this->resolveRegisterId($appId, $registerKey, null, $organisationUuid);
-        $schemaId   = $this->resolveSchemaId($appId, $schemaKey, null, $organisationUuid);
-        $register   = $this->resolveRegister($appId, $registerKey, null, $organisationUuid);
-        $schema     = $this->resolveSchema($appId, $schemaKey, null, $organisationUuid);
+        $registerId = $this->resolveRegisterId(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
+        $schemaId   = $this->resolveSchemaId(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
+        $register   = $this->resolveRegister(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
+        $schema     = $this->resolveSchema(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
 
         return new RegisterSchemaPair(
             registerId: $registerId,
@@ -458,7 +470,6 @@ final class RegisterResolverService
         );
 
     }//end resolvePair()
-
 
     /**
      * Enumerate every `<context>_(register|schema)` key set for an app.
@@ -480,7 +491,7 @@ final class RegisterResolverService
         $allValues = $this->appConfig->getAllValues($appId);
         $matches   = [];
         foreach ($allValues as $key => $value) {
-            $resolved = $this->matchResolverKey($key);
+            $resolved = $this->matchResolverKey(key: $key);
             if ($resolved === null) {
                 continue;
             }
@@ -501,7 +512,6 @@ final class RegisterResolverService
 
     }//end enumerateAppConfigs()
 
-
     /**
      * Clear request-scoped caches. Test hook + defensive tenant-switch path.
      *
@@ -517,7 +527,6 @@ final class RegisterResolverService
         $this->schemaCache   = [];
 
     }//end clearCache()
-
 
     /**
      * Match a raw config-key string to its canonical resolver key.
@@ -548,7 +557,6 @@ final class RegisterResolverService
 
     }//end matchResolverKey()
 
-
     /**
      * Build the per-tuple cache key used by both internal caches.
      *
@@ -563,7 +571,6 @@ final class RegisterResolverService
         return $appId.':'.$configKey.':'.($organisationUuid ?? '');
 
     }//end cacheKey()
-
 
     /**
      * Defensive cache flush when the active tenant changes mid-request.
@@ -589,7 +596,11 @@ final class RegisterResolverService
             return;
         }
 
-        $currentUuid = ($active !== null) ? $active->getUuid() : null;
+        $currentUuid = null;
+        if ($active !== null) {
+            $currentUuid = $active->getUuid();
+        }
+
         if ($this->lastTenantUuid !== null && $currentUuid !== $this->lastTenantUuid) {
             $this->clearCache();
         }
@@ -597,6 +608,4 @@ final class RegisterResolverService
         $this->lastTenantUuid = $currentUuid;
 
     }//end maybeFlushOnTenantSwitch()
-
-
 }//end class

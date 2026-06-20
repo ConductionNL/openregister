@@ -39,11 +39,11 @@ class AnonymisationBackendController extends Controller
     /**
      * Constructor.
      *
-     * @param string                      $appName     The app name.
-     * @param IRequest                    $request     The request.
-     * @param IUserSession                $userSession Current user session for admin gating.
+     * @param string                      $appName      The app name.
+     * @param IRequest                    $request      The request.
+     * @param IUserSession                $userSession  Current user session for admin gating.
      * @param IGroupManager               $groupManager Group manager for admin checks.
-     * @param AnonymisationBackendService $service     Backend state service (single source of truth).
+     * @param AnonymisationBackendService $service      Backend state service (single source of truth).
      */
     public function __construct(
         $appName,

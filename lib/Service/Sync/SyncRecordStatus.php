@@ -86,11 +86,11 @@ final class SyncRecordStatus
      * @var array<string, list<string>>
      */
     private const TRANSITIONS = [
-        self::PENDING     => [self::FETCHED, self::FETCH_ERROR, self::SKIPPED],
-        self::FETCHED     => [self::IMPORTED, self::UNCHANGED, self::IMPORT_ERROR, self::CONFLICT, self::SKIPPED],
-        self::FETCH_ERROR => [self::FETCHED, self::PERMANENT_ERROR, self::SKIPPED],
-        self::IMPORT_ERROR => [self::IMPORTED, self::PERMANENT_ERROR, self::SKIPPED],
-        self::CONFLICT    => [self::IMPORTED, self::UNCHANGED, self::SKIPPED],
+        self::PENDING         => [self::FETCHED, self::FETCH_ERROR, self::SKIPPED],
+        self::FETCHED         => [self::IMPORTED, self::UNCHANGED, self::IMPORT_ERROR, self::CONFLICT, self::SKIPPED],
+        self::FETCH_ERROR     => [self::FETCHED, self::PERMANENT_ERROR, self::SKIPPED],
+        self::IMPORT_ERROR    => [self::IMPORTED, self::PERMANENT_ERROR, self::SKIPPED],
+        self::CONFLICT        => [self::IMPORTED, self::UNCHANGED, self::SKIPPED],
         // Terminal states.
         self::IMPORTED        => [],
         self::UNCHANGED       => [],
@@ -168,7 +168,7 @@ final class SyncRecordStatus
      */
     public static function canTransition(string $from, string $to): bool
     {
-        if (self::isValid($from) === false || self::isValid($to) === false) {
+        if (self::isValid(status: $from) === false || self::isValid(status: $to) === false) {
             return false;
         }
 

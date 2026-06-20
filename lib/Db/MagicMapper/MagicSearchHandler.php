@@ -1345,6 +1345,7 @@ class MagicSearchHandler
      * @param IQueryBuilder $qb         Query builder to modify
      * @param string        $columnName Column name to filter
      * @param mixed         $value      Filter value (UUID string or array of UUIDs)
+     * @param bool          $isPostgres Whether the backing database is PostgreSQL.
      *
      * @return void
      */
@@ -1356,9 +1357,11 @@ class MagicSearchHandler
             $values = $value;
         }
 
-        $colCast = $isPostgres === true
-            ? "t.{$columnName}::text"
-            : "CAST(t.{$columnName} AS CHAR)";
+        if ($isPostgres === true) {
+            $colCast = "t.{$columnName}::text";
+        } else {
+            $colCast = "CAST(t.{$columnName} AS CHAR)";
+        }
 
         if (count($values) === 1) {
             // Single value: match both plain UUID and JSON format using text comparison.

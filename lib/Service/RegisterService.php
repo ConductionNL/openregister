@@ -243,7 +243,6 @@ class RegisterService
         );
     }//end findAll()
 
-
     /**
      * Find a register by ID and serialize it with `_extend` applied
      *
@@ -274,14 +273,13 @@ class RegisterService
         ) {
             $stats = $this->getSchemaObjectCounts(
                 registerId: (int) $register->getId(),
-                schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+                schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
             );
         }
 
         return $this->registerSerializer->serialize($register, $_extend, $stats);
 
     }//end findSerialized()
-
 
     /**
      * Find all registers + serialize each with `_extend` applied
@@ -334,7 +332,7 @@ class RegisterService
             foreach ($registers as $register) {
                 $statsByRegisterId[(int) $register->getId()] = $this->getSchemaObjectCounts(
                     registerId: (int) $register->getId(),
-                    schemas: $this->resolveSchemasForStats($register->getSchemas() ?? [])
+                    schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
                 );
             }
         }
@@ -342,7 +340,6 @@ class RegisterService
         return $this->registerSerializer->serializeMany($registers, $_extend, $statsByRegisterId);
 
     }//end findAllSerialized()
-
 
     /**
      * Resolve schema IDs to hydrated objects for stats computation.
@@ -587,8 +584,10 @@ class RegisterService
                     $schemaId = $schema->getId();
                 } else if (is_array($schema) === true) {
                     $schemaId = $schema['id'] ?? null;
+                } else if (is_numeric($schema) === true) {
+                    $schemaId = (int) $schema;
                 } else {
-                    $schemaId = is_numeric($schema) === true ? (int) $schema : null;
+                    $schemaId = null;
                 }
 
                 if ($schemaId === null) {

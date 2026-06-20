@@ -83,7 +83,6 @@ final class SchemaChangeSet implements JsonSerializable
      */
     private string $bump;
 
-
     /**
      * Constructor.
      *
@@ -99,7 +98,6 @@ final class SchemaChangeSet implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the typed change list.
      *
@@ -110,7 +108,6 @@ final class SchemaChangeSet implements JsonSerializable
         return $this->changes;
 
     }//end getChanges()
-
 
     /**
      * Get the classification.
@@ -123,7 +120,6 @@ final class SchemaChangeSet implements JsonSerializable
 
     }//end getClassification()
 
-
     /**
      * Get the derived semantic-version bump level.
      *
@@ -134,7 +130,6 @@ final class SchemaChangeSet implements JsonSerializable
         return $this->bump;
 
     }//end getBump()
-
 
     /**
      * Whether the change set is classified breaking.
@@ -147,7 +142,6 @@ final class SchemaChangeSet implements JsonSerializable
 
     }//end isBreaking()
 
-
     /**
      * Whether there is any structural change at all.
      *
@@ -158,7 +152,6 @@ final class SchemaChangeSet implements JsonSerializable
         return count($this->changes) > 0;
 
     }//end hasChanges()
-
 
     /**
      * JSON serialisation.
@@ -176,6 +169,4 @@ final class SchemaChangeSet implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

@@ -171,7 +171,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
         $properties = [];
         $termMap    = [];
         foreach ($sourceProperties as $name => $property) {
-            $properties[$name] = $this->mapProperty($property);
+            $properties[$name] = $this->mapProperty(property: $property);
             $termMap[$name]    = $property['iri'];
         }
 
@@ -208,7 +208,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
      */
     private function mapProperty(array $property): array
     {
-        $definition = $this->mapRanges($property['ranges']);
+        $definition = $this->mapRanges(ranges: $property['ranges']);
         $comment    = (string) ($property['comment'] ?? '');
         if ($comment !== '') {
             $definition['description'] = $comment;
@@ -232,7 +232,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
     {
         $mapped = [];
         foreach ($ranges as $range) {
-            $mapped[] = $this->mapSingleRange($range);
+            $mapped[] = $this->mapSingleRange(range: $range);
         }
 
         if ($mapped === []) {
@@ -244,7 +244,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
             return $mapped[0];
         }
 
-        return $this->collapseMostPermissive($mapped);
+        return $this->collapseMostPermissive(fragments: $mapped);
     }//end mapRanges()
 
     /**

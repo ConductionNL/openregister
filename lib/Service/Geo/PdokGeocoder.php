@@ -261,7 +261,11 @@ class PdokGeocoder
         if ($this->transport !== null) {
             try {
                 $result = ($this->transport)($url, $params);
-                return (is_array($result) === true) ? $result : null;
+                if (is_array($result) === true) {
+                    return $result;
+                }
+
+                return null;
             } catch (Throwable $e) {
                 $this->logger->warning('PDOK geocoding transport failed: '.$e->getMessage());
                 return null;
@@ -314,7 +318,11 @@ class PdokGeocoder
         }
 
         $decoded = json_decode($body, true);
-        return (is_array($decoded) === true) ? $decoded : null;
+        if (is_array($decoded) === true) {
+            return $decoded;
+        }
+
+        return null;
 
     }//end decode()
 }//end class

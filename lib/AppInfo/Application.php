@@ -1986,7 +1986,7 @@ class Application extends App implements IBootstrap
         // Scheduled-notification per-object dedup pruning (Phase 3.4):
         // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
         // - drop dedup rows for rule keys removed/renamed in the schema annotation
-        //   so orphan state does not pile up after edits.
+        // so orphan state does not pile up after edits.
         $context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);

@@ -128,7 +128,7 @@ class GgmImporter implements SchemaDialectImporter
 
         $unknownRequested = [];
         if ($options->hasSubset() === true) {
-            [$attributes, $unknownRequested] = $this->applySubset($attributes, $options->propertySubset);
+            [$attributes, $unknownRequested] = $this->applySubset(attributes: $attributes, subset: $options->propertySubset);
         }
 
         $properties = [];
@@ -137,7 +137,7 @@ class GgmImporter implements SchemaDialectImporter
                 continue;
             }
 
-            $properties[(string) $attribute['naam']] = $this->mapAttribute($attribute);
+            $properties[(string) $attribute['naam']] = $this->mapAttribute(attribute: $attribute);
         }
 
         $importSource = [
@@ -199,7 +199,7 @@ class GgmImporter implements SchemaDialectImporter
     private function mapAttribute(array $attribute): array
     {
         $type       = strtolower(trim((string) ($attribute['type'] ?? 'tekst')));
-        $definition = $this->mapType($type, $attribute);
+        $definition = $this->mapType(type: $type, attribute: $attribute);
 
         $omschrijving = (string) ($attribute['definitie'] ?? '');
         if ($omschrijving !== '') {

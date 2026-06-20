@@ -1645,7 +1645,10 @@ class FileService
         $response->addHeader('Content-Type', $file->getMimeType());
         // SEC-CTRL-9: RFC 6266-encode the filename to prevent header injection /
         // response splitting via quotes, control chars, or non-ASCII bytes.
-        $response->addHeader('Content-Disposition', $this->buildContentDisposition('attachment', $file->getName()));
+        $response->addHeader(
+            'Content-Disposition',
+            $this->buildContentDisposition(disposition: 'attachment', filename: $file->getName())
+        );
         $response->addHeader('Content-Length', (string) $file->getSize());
 
         return $response;
@@ -1675,7 +1678,7 @@ class FileService
             $ascii = '';
         }
 
-        $ascii = str_replace(['\\', '"'], '_', $ascii);
+        $ascii   = str_replace(['\\', '"'], '_', $ascii);
         $encoded = rawurlencode($clean);
 
         return $disposition.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.$encoded;

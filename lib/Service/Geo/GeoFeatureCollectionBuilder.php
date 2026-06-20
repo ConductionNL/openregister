@@ -66,10 +66,10 @@ class GeoFeatureCollectionBuilder
      * `properties` are restricted to that allow-list; the geometry is
      * always included regardless of the allow-list (REQ-GEO-008).
      *
-     * @param array         $rows         Object rows (assoc arrays).
-     * @param ?string       $geoProperty  Geo property name; null = auto-detect.
-     * @param string[]|null $fields       Property allow-list, or null for all.
-     * @param bool          $includeArea  Add `_area_m2` for polygonal geometries.
+     * @param array         $rows        Object rows (assoc arrays).
+     * @param ?string       $geoProperty Geo property name; null = auto-detect.
+     * @param string[]|null $fields      Property allow-list, or null for all.
+     * @param bool          $includeArea Add `_area_m2` for polygonal geometries.
      *
      * @return array A GeoJSON FeatureCollection.
      *

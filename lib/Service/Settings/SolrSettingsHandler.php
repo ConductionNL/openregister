@@ -701,8 +701,6 @@ class SolrSettingsHandler
      * Updates the configuration for customizing SOLR facets including
      * custom titles, ordering, and descriptions.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-     *
      * Expected structure:
      * [
      * 'facets' => [
@@ -731,6 +729,7 @@ class SolrSettingsHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Facet configuration validation requires multiple checks
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function updateSolrFacetConfiguration(array $facetConfig): array

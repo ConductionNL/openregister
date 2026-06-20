@@ -210,7 +210,7 @@ class LifecycleValidationListener implements IEventListener
                 );
                 return;
             }
-        }
+        }//end if
 
         $requires = ($spec['requires'] ?? null);
         if (is_string($requires) === true && $requires !== '') {
@@ -266,7 +266,7 @@ class LifecycleValidationListener implements IEventListener
             if (in_array($oldValue, $from, true) === true) {
                 return [(string) $action, $spec];
             }
-        }
+        }//end foreach
 
         return null;
     }//end findTransitionByTarget()
