@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
@@ -59,20 +60,23 @@ class CalculationOnSaveListener implements IEventListener
     /**
      * Wire collaborators used to look up schema calculations.
      *
-     * @param SchemaMapper         $schemaMapper Schema lookup mapper.
-     * @param CalculationEvaluator $evaluator    Expression evaluator.
-     * @param ReferenceResolver    $references   Cross-object reference pre-resolver.
-     * @param LoggerInterface      $logger       PSR logger for warnings.
+     * @param SchemaMapper               $schemaMapper Schema lookup mapper.
+     * @param CalculationEvaluator       $evaluator    Expression evaluator.
+     * @param ReferenceResolver          $references   Cross-object reference pre-resolver.
+     * @param AggregateReferenceResolver $aggregates   Aggregate-reference pre-resolver.
+     * @param LoggerInterface            $logger       PSR logger for warnings.
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-1
      * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly CalculationEvaluator $evaluator,
         private readonly ReferenceResolver $references,
+        private readonly AggregateReferenceResolver $aggregates,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -111,6 +115,10 @@ class CalculationOnSaveListener implements IEventListener
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method runs the linear save-time
+     *   materialisation pipeline (inject @self, @ref, @aggregate, then evaluate each calc and
+     *   strip the synthetic keys); the steps share one payload and must stay in order, so
+     *   extracting them would only scatter a strictly-sequential flow across helpers.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-3
      */
@@ -169,6 +177,22 @@ class CalculationOnSaveListener implements IEventListener
             );
         }
 
+        // Pre-resolve declared aggregate-references
+        // (x-openregister-aggregate-refs) in the same pre-step and inject them
+        // under `@aggregate.<name>`. Each folds MANY objects of a target schema
+        // into a scalar (or a grouped map) via AggregationRunner::runAdhoc(),
+        // which is RBAC + tenant scoped under the saving user's session and
+        // never fails the save. Calculations read them via
+        // { "prop": "@aggregate.<name>" } — exactly like @self and @ref.
+        $aggregateRefs = $this->getAggregateRefs(schema: $schema);
+        if ($aggregateRefs !== null) {
+            $data['@aggregate'] = $this->aggregates->resolveAll(
+                payload: $data,
+                aggregates: $aggregateRefs,
+                registerRef: $object->getRegister()
+            );
+        }
+
         foreach ($calcs as $name => $spec) {
             if (is_array($spec) === false) {
                 continue;
@@ -200,9 +224,9 @@ class CalculationOnSaveListener implements IEventListener
             }
         }//end foreach
 
-        // Strip the synthetic @self and @ref before persisting; they're a
-        // runtime aid for the evaluator, not user data.
-        unset($data['@self'], $data['@ref']);
+        // Strip the synthetic @self, @ref and @aggregate before persisting;
+        // they're a runtime aid for the evaluator, not user data.
+        unset($data['@self'], $data['@ref'], $data['@aggregate']);
 
         if ($changed === true) {
             $object->setObject($data);
@@ -291,4 +315,25 @@ class CalculationOnSaveListener implements IEventListener
 
         return $result;
     }//end getReferences()
+
+    /**
+     * Read the `x-openregister-aggregate-refs` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null Aggregate-references map, or null when absent.
+     *
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
+     */
+    private function getAggregateRefs(Schema $schema): ?array
+    {
+        $config = ($schema->getConfiguration() ?? []);
+        $value  = ($config['x-openregister-aggregate-refs'] ?? null);
+        $result = null;
+        if (is_array($value) === true && count($value) > 0) {
+            $result = $value;
+        }
+
+        return $result;
+    }//end getAggregateRefs()
 }//end class

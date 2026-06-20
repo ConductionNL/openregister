@@ -186,4 +186,25 @@ class CalculationEvaluatorTest extends TestCase
         $this->expectException(EvaluationException::class);
         $this->eval->evaluate(['d' => '2024-01-01'], ['monthsElapsed' => [['prop' => 'd']]]);
     }
+
+    public function testSha256Deterministic(): void
+    {
+        $expected = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+        $this->assertSame($expected, $this->eval->evaluate([], ['sha256' => ['abc']]));
+        // Repeated evaluation yields the same digest (pure / deterministic).
+        $this->assertSame($expected, $this->eval->evaluate([], ['sha256' => ['abc']]));
+    }
+
+    public function testSha256StringifiesNonStringOperand(): void
+    {
+        // The numeric operand is hashed as its string form "120".
+        $expected = hash('sha256', '120');
+        $this->assertSame($expected, $this->eval->evaluate(['h' => 120], ['sha256' => [['prop' => 'h']]]));
+    }
+
+    public function testSha256NullOperandYieldsNull(): void
+    {
+        // A null-resolving operand returns null, not the hash of an empty string.
+        $this->assertNull($this->eval->evaluate([], ['sha256' => [['prop' => 'missing']]]));
+    }
 }

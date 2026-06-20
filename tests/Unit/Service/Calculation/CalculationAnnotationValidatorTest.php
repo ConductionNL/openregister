@@ -102,4 +102,60 @@ class CalculationAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    public function testAggregateTokenAcceptedWhenDeclared(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregate-refs' => [
+                'billable' => ['schema' => 'TimeEntry', 'metric' => 'sum', 'field' => 'hours'],
+            ],
+            'x-openregister-calculations' => [
+                'util' => ['type' => 'number', 'expression' => ['prop' => '@aggregate.billable']],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testAggregateTokenRejectedWhenUndeclared(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-calculations' => [
+                'util' => ['type' => 'number', 'expression' => ['prop' => '@aggregate.unknown']],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('calculation-aggregate-unknown', $codes);
+    }
+
+    public function testAggregateRefShapeErrors(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregate-refs' => [
+                'noSchema'  => ['metric' => 'count'],
+                'badMetric' => ['schema' => 'X', 'metric' => 'median'],
+                'noField'   => ['schema' => 'X', 'metric' => 'sum'],
+            ],
+            'x-openregister-calculations' => [
+                'c' => ['type' => 'integer', 'expression' => 1],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('aggregate-ref-no-schema', $codes);
+        $this->assertContains('aggregate-ref-bad-metric', $codes);
+        $this->assertContains('aggregate-ref-no-field', $codes);
+    }
+
+    public function testSha256OpAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-calculations' => [
+                'hash' => ['type' => 'string', 'expression' => ['sha256' => [['prop' => 'name']]]],
+            ],
+            'properties' => ['name' => ['type' => 'string']],
+        ]);
+        $this->assertSame([], $errors);
+    }
 }
