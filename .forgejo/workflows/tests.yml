@@ -65,7 +65,7 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-unit:
     name: PHPUnit unit (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: code.forgejo.org/oci/ci-php:8.3
     steps:
@@ -86,7 +86,7 @@ jobs:
   # ---------------------------------------------------------------------------
   l10n-check:
     name: l10n extraction check (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
     steps:
@@ -112,7 +112,7 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-coverage-ratchet:
     name: PHPUnit coverage ratchet (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: code.forgejo.org/oci/ci-php:8.3
     continue-on-error: true
@@ -158,7 +158,7 @@ jobs:
   # ---------------------------------------------------------------------------
   frontend-coverage-ratchet:
     name: Frontend coverage ratchet (${{ inputs.app-id }})
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
     continue-on-error: true
