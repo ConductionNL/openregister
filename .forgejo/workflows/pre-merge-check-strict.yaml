@@ -38,7 +38,10 @@ jobs:
         uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+        # --ignore-platform-reqs: the gate only runs lint + phpcs (it never executes
+        # the app), so app-runtime ext-* requirements (xsl/intl/…) that the bare
+        # php:8.3-cli image lacks must not block the dependency install.
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run composer check:strict
         run: composer check:strict
