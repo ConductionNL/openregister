@@ -16,7 +16,7 @@ on:
 
 jobs:
   weekly-strict:
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: code.forgejo.org/oci/ci-php:8.3
     steps:
