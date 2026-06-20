@@ -3,6 +3,11 @@
 # to keep the merge button disabled until this workflow passes.
 #
 # Diff-scoped per ADR-020 so legacy debt never blocks a PR — only new failures fail.
+#
+# Runner/container mirror the proven release-semrel workflow (Conduction/.github):
+# codeberg-medium + the official php:8.3-cli image + a base-tooling install step.
+# The previous code.forgejo.org/oci/ci-php:8.3 image 404s ("manifest unknown"),
+# which made every run fail at container-pull in ~13s regardless of runner label.
 
 name: pre-merge-check-strict
 
@@ -15,21 +20,34 @@ on:
 
 jobs:
   quality-gates:
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
+      image: php:8.3-cli
+    timeout-minutes: 15
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout PR
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+        # --ignore-platform-reqs: the gate only runs lint + phpcs (it never executes
+        # the app), so app-runtime ext-* requirements (xsl/intl/…) that the bare
+        # php:8.3-cli image lacks must not block the dependency install.
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run composer check:strict
         run: composer check:strict
 
       - name: Clone Hydra (for gate runner)
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
         with:
           repository: Conduction/hydra
           ref: development
