@@ -79,16 +79,19 @@ class PersonLookupController extends Controller
      * body) — it is never logged. This endpoint does NOT validate the elfproef
      * checksum; the consuming app does that before/after this call.
      *
-     * @return JSONResponse `{ results, total }` on success (results is the raw
-     *                      HaalCentraal person object list — 0 or 1 entries),
-     *                      or a 503 with `details.cause` when the
+     * @return JSONResponse `{ results, total, meta }` on success (results is
+     *                      the raw HaalCentraal person object list — 0 or 1
+     *                      entries; `meta` is the Wet-BRP audit metadata
+     *                      `{ correlationId, durationMs, status }` the
+     *                      consuming app persists into its `brpLookupVerzoek`
+     *                      record), or a 503 with `details.cause` when the
      *                      `brp-haalcentraal` source is unconfigured / BRP is
      *                      down (AD-23).
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md
+     * @spec openspec/changes/integration-brp-audit-metadata/specs/integration-person-lookup/spec.md
      */
     public function brpPerson(): JSONResponse
     {

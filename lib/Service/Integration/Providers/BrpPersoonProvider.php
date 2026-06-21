@@ -301,23 +301,25 @@ class BrpPersoonProvider extends AbstractIntegrationProvider
      *
      * @param string $bsn The 9-digit Burgerservicenummer.
      *
-     * @return array<string,mixed> `{ results, total }` on success (results is
-     *                             the raw HaalCentraal person object list — 0
-     *                             or 1 entries), or
+     * @return array<string,mixed> `{ results, total, meta }` on success
+     *                             (results is the raw HaalCentraal person
+     *                             object list — 0 or 1 entries; `meta` carries
+     *                             the Wet-BRP audit metadata
+     *                             `{ correlationId, durationMs, status }`), or
      *                             `{ unavailable, cause, results, total }`
      *                             when the source is unconfigured/down.
      *
-     * @spec openspec/changes/integration-brp-haalcentraal/tasks.md
+     * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
      */
     public function lookupByBsn(string $bsn): array
     {
         $bsn = trim($bsn);
         if ($bsn === '') {
-            return ['results' => [], 'total' => 0];
+            return ['results' => [], 'total' => 0, 'meta' => $this->emptyMeta()];
         }
 
         try {
-            $response = $this->router->call(
+            $envelope = $this->router->callWithMeta(
                 provider: $this,
                 method: 'POST',
                 path: 'personen',
@@ -334,9 +336,13 @@ class BrpPersoonProvider extends AbstractIntegrationProvider
             return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
         }
 
-        $personen = $this->extractPersonen(response: $response);
+        $personen = $this->extractPersonen(response: ($envelope['body'] ?? []));
 
-        return ['results' => $personen, 'total' => count($personen)];
+        return [
+            'results' => $personen,
+            'total'   => count($personen),
+            'meta'    => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
+        ];
     }//end lookupByBsn()
 
     /**
@@ -372,6 +378,51 @@ class BrpPersoonProvider extends AbstractIntegrationProvider
             'fields'              => self::DEFAULT_FIELDS,
         ];
     }//end buildQueryBody()
+
+    /**
+     * Shape the router's transport metadata into the leaf's stable `meta`
+     * contract consumed by the calling app's Wet-BRP audit record:
+     *   - `correlationId` ← the upstream `X-Correlation-ID` response header
+     *     (consumer persists it as `haalcentraalCorrelationId`)
+     *   - `durationMs`    ← the OpenConnector-measured round-trip duration
+     *     (consumer persists it as `responseDuurMs`)
+     *   - `status`        ← the upstream HTTP status code
+     *     (consumer persists it as the response status / `responseCode`)
+     *
+     * The BSN is never present in `meta` — only transport metadata.
+     *
+     * @param array<string,mixed> $meta The router's raw meta array.
+     *
+     * @return array{correlationId: ?string, durationMs: int, status: int}
+     */
+    private function shapeMeta(array $meta): array
+    {
+        $correlationId = ($meta['correlationId'] ?? null);
+        if ($correlationId !== null) {
+            $correlationId = (string) $correlationId;
+        }
+
+        return [
+            'correlationId' => $correlationId,
+            'durationMs'    => (int) ($meta['durationMs'] ?? 0),
+            'status'        => (int) ($meta['status'] ?? 0),
+        ];
+    }//end shapeMeta()
+
+    /**
+     * The empty `meta` shape used on the no-BSN short-circuit (no upstream
+     * call was made, so there is no correlation id / duration / status).
+     *
+     * @return array{correlationId: ?string, durationMs: int, status: int}
+     */
+    private function emptyMeta(): array
+    {
+        return [
+            'correlationId' => null,
+            'durationMs'    => 0,
+            'status'        => 0,
+        ];
+    }//end emptyMeta()
 
     /**
      * Build the degraded envelope mirroring the unconfigured-source

@@ -153,6 +153,81 @@ class ExternalIntegrationRouter
     }//end call()
 
     /**
+     * Dispatch a call like {@see call()} but additionally surface the
+     * upstream response metadata (HTTP status, round-trip duration in
+     * milliseconds, and the response headers) alongside the decoded body.
+     *
+     * This is a general, foundation-safe superset of {@see call()}: any
+     * external leaf that needs to relay audit metadata to its consuming app
+     * (e.g. the BRP/HaalCentraal leaf, whose consumer persists the
+     * Wet-BRP-required `X-Correlation-ID` + response duration into its
+     * `brpLookupVerzoek` audit record) can route through this method instead
+     * of `call()`. `call()` is intentionally left untouched so existing
+     * leaves keep their lean body-only contract.
+     *
+     * The returned envelope is:
+     *   - `body` : the decoded upstream response body (identical to what
+     *              `call()` returns)
+     *   - `meta` : `{ status, durationMs, correlationId, headers }` — the
+     *              upstream HTTP status, the OpenConnector-measured round-trip
+     *              duration in milliseconds, the first `X-Correlation-ID`
+     *              response header (case-insensitive; null when absent), and a
+     *              flattened copy of the response headers.
+     *
+     * No request/response body or BSN is read into `meta` — only transport
+     * metadata. The same failure classification as `call()` applies.
+     *
+     * @param IntegrationProvider $provider The provider making the call.
+     * @param string              $method   HTTP method.
+     * @param string              $path     Path relative to the source base URL.
+     * @param array<string,mixed> $options  Optional call options (query/body/headers).
+     *
+     * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
+     *
+     * @throws ProviderUnavailableException When OpenConnector or the upstream
+     *                                      service is unavailable.
+     *
+     * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
+     */
+    public function callWithMeta(
+        IntegrationProvider $provider,
+        string $method,
+        string $path,
+        array $options=[],
+    ): array {
+        $this->assertProviderIsExternal(provider: $provider);
+        $this->assertOpenConnectorAvailable();
+
+        $sourceId = (string) $provider->getOpenConnectorSource();
+        $source   = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+
+        try {
+            return $this->invokeWithMeta(source: $source, method: $method, path: $path, options: $options);
+        } catch (ProviderUnavailableException $e) {
+            // Already classified — surface as-is.
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                sprintf(
+                    '[ExternalIntegrationRouter] upstream call (with meta) failed for provider %s %s %s',
+                    $provider->getId(),
+                    $method,
+                    $path
+                ),
+                ['exception' => $e]
+            );
+            throw new ProviderUnavailableException(
+                message: sprintf(
+                    'Upstream service for integration "%s" is unreachable.',
+                    $provider->getId()
+                ),
+                cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
+                previous: $e
+            );
+        }//end try
+    }//end callWithMeta()
+
+    /**
      * Cheap "is the connector reachable at all" check.
      *
      * Used by `IntegrationProvider::health()` implementations on
@@ -353,6 +428,158 @@ class ExternalIntegrationRouter
             'OpenConnector\\Service\\CallService does not expose a known call/request method.'
         );
     }//end invoke()
+
+    /**
+     * Invoke the upstream call like {@see invoke()} but return both the
+     * decoded body and the extracted response metadata. Keeps the same
+     * CallService method-name fallback + >= 400 status assertion.
+     *
+     * @param mixed               $source  Resolved source entity.
+     * @param string              $method  HTTP method.
+     * @param string              $path    Path relative to source base URL.
+     * @param array<string,mixed> $options Call options (query / body / headers).
+     *
+     * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
+     *
+     * @throws \RuntimeException When CallService is unreachable. The caller
+     *                          wraps this as ProviderUnavailableException.
+     */
+    private function invokeWithMeta($source, string $method, string $path, array $options): array
+    {
+        $callService = $this->container->get('OCA\\OpenConnector\\Service\\CallService');
+
+        if (method_exists($callService, 'call') === true) {
+            $response = $callService->call($source, $path, $method, $options);
+            $this->assertUpstreamOk(response: $response);
+            return [
+                'body' => $this->decodeResponse(response: $response),
+                'meta' => $this->extractMeta(response: $response),
+            ];
+        }
+
+        if (method_exists($callService, 'request') === true) {
+            $response = $callService->request($source, $method, $path, $options);
+            $this->assertUpstreamOk(response: $response);
+            return [
+                'body' => $this->decodeResponse(response: $response),
+                'meta' => $this->extractMeta(response: $response),
+            ];
+        }
+
+        throw new RuntimeException(
+            'OCA\\OpenConnector\\Service\\CallService does not expose a known call/request method.'
+        );
+    }//end invokeWithMeta()
+
+    /**
+     * Extract transport metadata from a CallService response (OpenConnector
+     * CallLog). Reads ONLY the HTTP status, the OpenConnector-measured
+     * round-trip duration (`responseTime`, milliseconds), and the response
+     * headers — never the request/response body, so no BSN or payload data
+     * ever lands in `meta`.
+     *
+     * The CallLog's `getResponse()` payload is
+     * `{ statusCode, responseTime, headers, body, encoding, … }`. The
+     * `X-Correlation-ID` response header (case-insensitive) is surfaced as
+     * `correlationId`. Headers are flattened to `array<string,string>`
+     * (Guzzle returns `array<string,string[]>`).
+     *
+     * @param mixed $response The raw return from CallService.
+     *
+     * @return array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}
+     */
+    private function extractMeta($response): array
+    {
+        $meta = [
+            'status'        => 0,
+            'durationMs'    => 0,
+            'correlationId' => null,
+            'headers'       => [],
+        ];
+
+        if (is_object($response) === true && method_exists($response, 'getStatusCode') === true) {
+            $meta['status'] = (int) $response->getStatusCode();
+        }
+
+        $payload = null;
+        if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
+            $payload = $response->getResponse();
+        } else if (is_array($response) === true) {
+            $payload = $response;
+        }
+
+        if (is_array($payload) === false) {
+            return $meta;
+        }
+
+        if ($meta['status'] === 0 && isset($payload['statusCode']) === true) {
+            $meta['status'] = (int) $payload['statusCode'];
+        }
+
+        if (isset($payload['responseTime']) === true && is_numeric($payload['responseTime']) === true) {
+            $meta['durationMs'] = (int) round((float) $payload['responseTime']);
+        }
+
+        $headers = ($payload['headers'] ?? []);
+        if (is_array($headers) === true) {
+            $meta['headers']       = $this->flattenHeaders(headers: $headers);
+            $meta['correlationId'] = $this->firstHeaderValue(headers: $headers, name: 'X-Correlation-ID');
+        }
+
+        return $meta;
+    }//end extractMeta()
+
+    /**
+     * Flatten Guzzle-style `array<string,string[]>` response headers to
+     * `array<string,string>` (first value per header).
+     *
+     * @param array<string,mixed> $headers Raw headers.
+     *
+     * @return array<string,string>
+     */
+    private function flattenHeaders(array $headers): array
+    {
+        $out = [];
+        foreach ($headers as $name => $value) {
+            if (is_array($value) === true) {
+                $value = ($value[0] ?? '');
+            }
+
+            $out[(string) $name] = (string) $value;
+        }
+
+        return $out;
+    }//end flattenHeaders()
+
+    /**
+     * Case-insensitive lookup of the first value of a named response header.
+     *
+     * @param array<string,mixed> $headers Raw (possibly array-valued) headers.
+     * @param string              $name    Header name to find.
+     *
+     * @return string|null The first value, or null when the header is absent/empty.
+     */
+    private function firstHeaderValue(array $headers, string $name): ?string
+    {
+        $needle = strtolower($name);
+        foreach ($headers as $headerName => $value) {
+            if (strtolower((string) $headerName) !== $needle) {
+                continue;
+            }
+
+            if (is_array($value) === true) {
+                $value = ($value[0] ?? null);
+            }
+
+            if ($value === null || $value === '') {
+                return null;
+            }
+
+            return (string) $value;
+        }
+
+        return null;
+    }//end firstHeaderValue()
 
     /**
      * Treat a >= 400 upstream status (carried on the CallLog OpenConnector

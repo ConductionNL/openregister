@@ -29,6 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- test method names + arrange/act/assert structure make intent obvious; matches BrpPersoonProviderTest convention.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring BrpPersoonProviderTest in this repo.
+
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -40,13 +43,12 @@ use Psr\Log\NullLogger;
 /**
  * External provider stub.
  */
-class _ExternalProvider extends AbstractIntegrationProvider
+class FakeExternalProvider extends AbstractIntegrationProvider
 {
-
     public function __construct(
-        private string $id = 'xwiki',
-        private ?string $source = 'xwiki',
-        private string $storage = 'external',
+        private string $id='xwiki',
+        private ?string $source='xwiki',
+        private string $storage='external',
     ) {
     }//end __construct()
 
@@ -85,19 +87,17 @@ class _ExternalProvider extends AbstractIntegrationProvider
         return true;
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         return [];
     }//end list()
-
 }//end class
 
 /**
  * Local provider stub.
  */
-class _LocalProvider extends AbstractIntegrationProvider
+class FakeLocalProvider extends AbstractIntegrationProvider
 {
-
     public function getId(): string
     {
         return 'files';
@@ -128,19 +128,17 @@ class _LocalProvider extends AbstractIntegrationProvider
         return true;
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         return [];
     }//end list()
-
 }//end class
 
 /**
  * Stand-in for OpenConnector's CallLog — only the bits the router reads.
  */
-class _FakeCallLog
+class FakeCallLog
 {
-
     public function __construct(
         private int $status,
         private ?array $response,
@@ -156,37 +154,32 @@ class _FakeCallLog
     {
         return $this->response;
     }//end getResponse()
-
 }//end class
 
 /**
  * Stand-in for OpenConnector's CallService — returns a preset CallLog.
  */
-class _FakeCallService
+class FakeCallService
 {
-
-    public function __construct(private _FakeCallLog $log)
+    public function __construct(private FakeCallLog $log)
     {
     }//end __construct()
 
-    public function call($source, string $endpoint = '', string $method = 'GET', array $config = [])
+    public function call($source, string $endpoint='', string $method='GET', array $config=[])
     {
         return $this->log;
     }//end call()
-
 }//end class
 
 /**
  * Stand-in for OpenConnector's SourceMapper — find() returns a marker.
  */
-class _FakeSourceMapper
+class FakeSourceMapper
 {
-
     public function find($id)
     {
         return (object) ['id' => 1, 'slug' => (string) $id];
     }//end find()
-
 }//end class
 
 /**
@@ -194,7 +187,6 @@ class _FakeSourceMapper
  */
 class ExternalIntegrationRouterTest extends TestCase
 {
-
     private function buildRouter(bool $openConnectorInstalled): ExternalIntegrationRouter
     {
         $appManager = $this->createMock(IAppManager::class);
@@ -214,18 +206,18 @@ class ExternalIntegrationRouterTest extends TestCase
      * Build a router whose container hands back a fake SourceMapper + a
      * fake CallService that returns the given CallLog.
      *
-     * @param _FakeCallLog $log The CallLog the fake CallService returns.
+     * @param FakeCallLog $log The CallLog the fake CallService returns.
      *
      * @return ExternalIntegrationRouter
      */
-    private function buildRouterWithCallLog(_FakeCallLog $log): ExternalIntegrationRouter
+    private function buildRouterWithCallLog(FakeCallLog $log): ExternalIntegrationRouter
     {
         $appManager = $this->createMock(IAppManager::class);
         $appManager->method('isInstalled')->willReturn(true);
         $appManager->method('isEnabledForUser')->willReturn(true);
 
-        $callService = new _FakeCallService($log);
-        $mapper      = new _FakeSourceMapper();
+        $callService = new FakeCallService($log);
+        $mapper      = new FakeSourceMapper();
 
         $container = $this->createMock(ContainerInterface::class);
         $container->method('get')->willReturnCallback(
@@ -248,7 +240,7 @@ class ExternalIntegrationRouterTest extends TestCase
     public function testCallRejectsNonExternalProvider(): void
     {
         $router   = $this->buildRouter(true);
-        $provider = new _LocalProvider();
+        $provider = new FakeLocalProvider();
 
         $this->expectException(\LogicException::class);
         $router->call($provider, 'GET', '/some/path');
@@ -257,7 +249,7 @@ class ExternalIntegrationRouterTest extends TestCase
     public function testCallRejectsExternalProviderWithoutSource(): void
     {
         $router   = $this->buildRouter(true);
-        $provider = new _ExternalProvider(source: null);
+        $provider = new FakeExternalProvider(source: null);
 
         try {
             $router->call($provider, 'GET', '/some/path');
@@ -277,7 +269,7 @@ class ExternalIntegrationRouterTest extends TestCase
     public function testCallReportsOpenConnectorDownWhenAppMissing(): void
     {
         $router   = $this->buildRouter(false);
-        $provider = new _ExternalProvider();
+        $provider = new FakeExternalProvider();
 
         try {
             $router->call($provider, 'GET', '/some/path');
@@ -293,7 +285,7 @@ class ExternalIntegrationRouterTest extends TestCase
     public function testProbeReturnsOkForLocalProvider(): void
     {
         $router   = $this->buildRouter(false);
-        $provider = new _LocalProvider();
+        $provider = new FakeLocalProvider();
 
         $report = $router->probe($provider);
         $this->assertSame('ok', $report['status']);
@@ -303,7 +295,7 @@ class ExternalIntegrationRouterTest extends TestCase
     public function testProbeReportsUnavailableWhenOpenConnectorMissing(): void
     {
         $router   = $this->buildRouter(false);
-        $provider = new _ExternalProvider();
+        $provider = new FakeExternalProvider();
 
         $report = $router->probe($provider);
         $this->assertSame('unavailable', $report['status']);
@@ -315,10 +307,11 @@ class ExternalIntegrationRouterTest extends TestCase
         // CallService returns a CallLog; the upstream JSON payload is the
         // `body` string inside getResponse() — the router must hand the
         // caller the decoded body, not the CallLog wrapper.
-        $log    = new _FakeCallLog(200, ['statusCode' => 200, 'headers' => [], 'body' => '{"pageSummaries":[{"id":"xwiki:Sandbox.Page","name":"Page"}]}', 'encoding' => 'UTF-8']);
+        $body   = '{"pageSummaries":[{"id":"xwiki:Sandbox.Page","name":"Page"}]}';
+        $log    = new FakeCallLog(200, ['statusCode' => 200, 'headers' => [], 'body' => $body, 'encoding' => 'UTF-8']);
         $router = $this->buildRouterWithCallLog($log);
 
-        $result = $router->call(new _ExternalProvider(), 'GET', '');
+        $result = $router->call(new FakeExternalProvider(), 'GET', '');
 
         $this->assertArrayHasKey('pageSummaries', $result);
         $this->assertSame('xwiki:Sandbox.Page', $result['pageSummaries'][0]['id']);
@@ -326,18 +319,18 @@ class ExternalIntegrationRouterTest extends TestCase
 
     public function testCallDecodesBase64EncodedBody(): void
     {
-        $log    = new _FakeCallLog(200, ['body' => base64_encode('{"items":[]}'), 'encoding' => 'base64']);
+        $log    = new FakeCallLog(200, ['body' => base64_encode('{"items":[]}'), 'encoding' => 'base64']);
         $router = $this->buildRouterWithCallLog($log);
 
-        $this->assertSame(['items' => []], $router->call(new _ExternalProvider(), 'GET', ''));
+        $this->assertSame(['items' => []], $router->call(new FakeExternalProvider(), 'GET', ''));
     }//end testCallDecodesBase64EncodedBody()
 
     public function testCallTreatsAuthErrorAsProviderAuth(): void
     {
-        $router = $this->buildRouterWithCallLog(new _FakeCallLog(401, ['body' => 'denied']));
+        $router = $this->buildRouterWithCallLog(new FakeCallLog(401, ['body' => 'denied']));
 
         try {
-            $router->call(new _ExternalProvider(), 'GET', '');
+            $router->call(new FakeExternalProvider(), 'GET', '');
             $this->fail('Expected ProviderUnavailableException');
         } catch (ProviderUnavailableException $e) {
             $this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
@@ -346,14 +339,87 @@ class ExternalIntegrationRouterTest extends TestCase
 
     public function testCallTreatsServerErrorAsUpstreamDown(): void
     {
-        $router = $this->buildRouterWithCallLog(new _FakeCallLog(500, ['body' => 'oops']));
+        $router = $this->buildRouterWithCallLog(new FakeCallLog(500, ['body' => 'oops']));
 
         try {
-            $router->call(new _ExternalProvider(), 'GET', '');
+            $router->call(new FakeExternalProvider(), 'GET', '');
             $this->fail('Expected ProviderUnavailableException');
         } catch (ProviderUnavailableException $e) {
             $this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
         }
     }//end testCallTreatsServerErrorAsUpstreamDown()
 
+    public function testCallWithMetaSurfacesBodyStatusDurationAndCorrelationId(): void
+    {
+        // The CallLog carries the upstream X-Correlation-ID header + the
+        // OpenConnector-measured responseTime (ms) + the upstream status; the
+        // router must surface them under `meta` alongside the decoded body so
+        // a leaf can relay the Wet-BRP audit fields.
+        $log    = new FakeCallLog(
+            200,
+            [
+                'statusCode'   => 200,
+                'responseTime' => 137.4,
+                'headers'      => [
+                    'Content-Type'     => ['application/hal+json'],
+                    'X-Correlation-ID' => ['abcd-1234-correlation'],
+                ],
+                'body'         => '{"personen":[{"burgerservicenummer":"999993653"}]}',
+                'encoding'     => 'UTF-8',
+            ]
+        );
+        $router = $this->buildRouterWithCallLog($log);
+
+        $result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+
+        $this->assertArrayHasKey('body', $result);
+        $this->assertArrayHasKey('meta', $result);
+        $this->assertSame('999993653', $result['body']['personen'][0]['burgerservicenummer']);
+        $this->assertSame(200, $result['meta']['status']);
+        $this->assertSame(137, $result['meta']['durationMs']);
+        $this->assertSame('abcd-1234-correlation', $result['meta']['correlationId']);
+        $this->assertSame('application/hal+json', $result['meta']['headers']['Content-Type']);
+    }//end testCallWithMetaSurfacesBodyStatusDurationAndCorrelationId()
+
+    public function testCallWithMetaFindsCorrelationIdCaseInsensitively(): void
+    {
+        $log    = new FakeCallLog(
+            200,
+            [
+                'statusCode'   => 200,
+                'responseTime' => 12,
+                'headers'      => ['x-correlation-id' => ['lower-case-id']],
+                'body'         => '{"personen":[]}',
+                'encoding'     => 'UTF-8',
+            ]
+        );
+        $router = $this->buildRouterWithCallLog($log);
+
+        $result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+        $this->assertSame('lower-case-id', $result['meta']['correlationId']);
+    }//end testCallWithMetaFindsCorrelationIdCaseInsensitively()
+
+    public function testCallWithMetaDefaultsWhenHeadersAndTimingAbsent(): void
+    {
+        $log    = new FakeCallLog(200, ['statusCode' => 200, 'body' => '{"personen":[]}', 'encoding' => 'UTF-8']);
+        $router = $this->buildRouterWithCallLog($log);
+
+        $result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+        $this->assertNull($result['meta']['correlationId']);
+        $this->assertSame(0, $result['meta']['durationMs']);
+        $this->assertSame(200, $result['meta']['status']);
+        $this->assertSame([], $result['meta']['headers']);
+    }//end testCallWithMetaDefaultsWhenHeadersAndTimingAbsent()
+
+    public function testCallWithMetaDegradesOnAuthError(): void
+    {
+        $router = $this->buildRouterWithCallLog(new FakeCallLog(401, ['body' => 'denied']));
+
+        try {
+            $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+            $this->fail('Expected ProviderUnavailableException');
+        } catch (ProviderUnavailableException $e) {
+            $this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
+        }
+    }//end testCallWithMetaDegradesOnAuthError()
 }//end class

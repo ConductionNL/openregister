@@ -126,7 +126,7 @@ class BrpPersoonProviderTest extends TestCase
     public function testLookupByBsnPostsRaadpleegBodyAndUnwrapsPersonen(): void
     {
         $this->router->expects($this->once())
-            ->method('call')
+            ->method('callWithMeta')
             ->with(
                 $this->provider,
                 'POST',
@@ -142,7 +142,12 @@ class BrpPersoonProviderTest extends TestCase
                     }
                 )
             )
-            ->willReturn(['personen' => [['burgerservicenummer' => '999993653', 'naam' => ['geslachtsnaam' => 'Tester']]]]);
+            ->willReturn(
+                [
+                    'body' => ['personen' => [['burgerservicenummer' => '999993653', 'naam' => ['geslachtsnaam' => 'Tester']]]],
+                    'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
+                ]
+            );
 
         $result = $this->provider->lookupByBsn('999993653');
         $this->assertArrayNotHasKey('unavailable', $result);
@@ -152,8 +157,11 @@ class BrpPersoonProviderTest extends TestCase
 
     public function testLookupUnwrapsEmbeddedPersonenEnvelope(): void
     {
-        $this->router->method('call')->willReturn(
-            ['_embedded' => ['personen' => [['burgerservicenummer' => '999993653']]]]
+        $this->router->method('callWithMeta')->willReturn(
+            [
+                'body' => ['_embedded' => ['personen' => [['burgerservicenummer' => '999993653']]]],
+                'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
+            ]
         );
 
         $result = $this->provider->lookupByBsn('999993653');
@@ -161,11 +169,52 @@ class BrpPersoonProviderTest extends TestCase
         $this->assertSame('999993653', $result['results'][0]['burgerservicenummer']);
     }//end testLookupUnwrapsEmbeddedPersonenEnvelope()
 
+    public function testLookupSurfacesAuditMetadataFromUpstreamResponse(): void
+    {
+        // The router surfaces the upstream X-Correlation-ID + round-trip
+        // duration + HTTP status; the leaf shapes them into `meta` so the
+        // consuming app can persist the Wet-BRP-required audit fields.
+        $this->router->method('callWithMeta')->willReturn(
+            [
+                'body' => ['personen' => [['burgerservicenummer' => '999993653']]],
+                'meta' => [
+                    'correlationId' => 'abcd-1234-correlation',
+                    'durationMs'    => 137,
+                    'status'        => 200,
+                    'headers'       => ['X-Correlation-ID' => 'abcd-1234-correlation'],
+                ],
+            ]
+        );
+
+        $result = $this->provider->lookupByBsn('999993653');
+        $this->assertArrayHasKey('meta', $result);
+        $this->assertSame('abcd-1234-correlation', $result['meta']['correlationId']);
+        $this->assertSame(137, $result['meta']['durationMs']);
+        $this->assertSame(200, $result['meta']['status']);
+        // The BSN must NEVER appear in the audit metadata.
+        $this->assertStringNotContainsString('999993653', json_encode($result['meta']));
+    }//end testLookupSurfacesAuditMetadataFromUpstreamResponse()
+
+    public function testLookupMetaDefaultsWhenRouterOmitsMeta(): void
+    {
+        $this->router->method('callWithMeta')->willReturn(
+            ['body' => ['personen' => [['burgerservicenummer' => '999993653']]]]
+        );
+
+        $result = $this->provider->lookupByBsn('999993653');
+        $this->assertNull($result['meta']['correlationId']);
+        $this->assertSame(0, $result['meta']['durationMs']);
+        $this->assertSame(0, $result['meta']['status']);
+    }//end testLookupMetaDefaultsWhenRouterOmitsMeta()
+
     public function testLookupByEmptyBsnShortCircuits(): void
     {
-        $this->router->expects($this->never())->method('call');
+        $this->router->expects($this->never())->method('callWithMeta');
         $result = $this->provider->lookupByBsn('   ');
-        $this->assertSame(['results' => [], 'total' => 0], $result);
+        $this->assertSame(
+            ['results' => [], 'total' => 0, 'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 0]],
+            $result
+        );
     }//end testLookupByEmptyBsnShortCircuits()
 
     public function testListDelegatesUsingSearchFilterAsBsn(): void
@@ -195,7 +244,7 @@ class BrpPersoonProviderTest extends TestCase
 
     public function testLookupDegradesOnSourceMissing(): void
     {
-        $this->router->method('call')->willThrowException(
+        $this->router->method('callWithMeta')->willThrowException(
             new ProviderUnavailableException(
                 'no source',
                 ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
@@ -211,7 +260,7 @@ class BrpPersoonProviderTest extends TestCase
 
     public function testLookupDegradesOnUpstreamDown(): void
     {
-        $this->router->method('call')->willThrowException(
+        $this->router->method('callWithMeta')->willThrowException(
             new ProviderUnavailableException(
                 'down',
                 ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN
@@ -225,7 +274,7 @@ class BrpPersoonProviderTest extends TestCase
 
     public function testLookupDegradesOnUnexpectedThrowable(): void
     {
-        $this->router->method('call')->willThrowException(new \RuntimeException('boom'));
+        $this->router->method('callWithMeta')->willThrowException(new \RuntimeException('boom'));
 
         $result = $this->provider->lookupByBsn('999993653');
         $this->assertTrue($result['unavailable']);
