@@ -595,9 +595,9 @@ class ImportService
         // schema properties at the top level PLUS an `@self` block and
         // entity-level fields (uuid/version/slug/dates) that are NOT schema
         // properties. Persist each object through the single-object saveObject()
-        // path — the same one the REST create/update uses — which is robust to
-        // this shape and upserts by uuid. (The bulk saveObjects() path binds ''
-        // into a typed relation column on this data and 500s the write.) The
+        // path — the same one the REST create/update uses — which reliably
+        // upserts by uuid for this register/schema. (The bulk saveObjects()
+        // path silently skips these objects for dedicated-table schemas.) The
         // body is reduced to the schema's own properties, with empty strings
         // coerced to null.
         $propertyKeys = array_flip(array_keys($schema->getProperties()));

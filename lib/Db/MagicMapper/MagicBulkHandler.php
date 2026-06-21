@@ -593,12 +593,27 @@ class MagicBulkHandler
             foreach ($columns as $column) {
                 $paramName   = 'p'.$paramIndex;
                 $rowValues[] = ':'.$paramName;
-                $parameters[$paramName] = $objectData[$column] ?? null;
+
+                $value = $objectData[$column] ?? null;
+                // The execute() call binds every parameter as PARAM_STR, which
+                // turns PHP `false` into '' — PostgreSQL then rejects '' for
+                // boolean columns (e.g. a dedicated per-schema table's
+                // `pass_through`), 500ing the whole bulk save. Normalise
+                // booleans to 0/1, which both PostgreSQL and MySQL accept for
+                // boolean columns.
+                if (is_bool($value) === true) {
+                    $value = 0;
+                    if ($objectData[$column] === true) {
+                        $value = 1;
+                    }
+                }
+
+                $parameters[$paramName] = $value;
                 $paramIndex++;
-            }
+            }//end foreach
 
             $valuesClause[] = '('.implode(',', $rowValues).')';
-        }
+        }//end foreach
 
         // Build UPSERT SQL ($fullTableName already defined above for pre-upsert UUID check).
         // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
