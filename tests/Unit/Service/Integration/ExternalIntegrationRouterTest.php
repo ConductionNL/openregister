@@ -183,6 +183,50 @@ class FakeSourceMapper
 }//end class
 
 /**
+ * Stand-in for an OpenConnector source ObjectEntity carrying a mock
+ * `configuration` — the router reads `getObject()['configuration']`.
+ */
+class FakeMockSource
+{
+    public function __construct(private array $object)
+    {
+    }//end __construct()
+
+    public function getObject(): array
+    {
+        return $this->object;
+    }//end getObject()
+}//end class
+
+/**
+ * Stand-in for OpenConnector's SourceMapper that returns a mock-flagged
+ * source ObjectEntity for the find() lookup.
+ */
+class FakeMockSourceMapper
+{
+    public function __construct(private array $object)
+    {
+    }//end __construct()
+
+    public function find($id)
+    {
+        return new FakeMockSource($this->object);
+    }//end find()
+}//end class
+
+/**
+ * A CallService that fails loudly if ever called — proves mock mode never
+ * touches the real upstream transport.
+ */
+class ExplodingCallService
+{
+    public function call($source, string $endpoint='', string $method='GET', array $config=[])
+    {
+        throw new \RuntimeException('CallService::call must NOT be reached in mock mode');
+    }//end call()
+}//end class
+
+/**
  * Unit tests for ExternalIntegrationRouter.
  */
 class ExternalIntegrationRouterTest extends TestCase
@@ -422,4 +466,113 @@ class ExternalIntegrationRouterTest extends TestCase
             $this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
         }
     }//end testCallWithMetaDegradesOnAuthError()
+
+    /**
+     * Build a router whose source is flagged `configuration.mock=true` and
+     * whose CallService explodes if reached — so a passing test proves the
+     * mock short-circuit fired without any real upstream call.
+     *
+     * @param array<string,mixed> $configuration The source `configuration` array.
+     *
+     * @return ExternalIntegrationRouter
+     */
+    private function buildMockRouter(array $configuration): ExternalIntegrationRouter
+    {
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('isInstalled')->willReturn(true);
+        $appManager->method('isEnabledForUser')->willReturn(true);
+
+        $mapper      = new FakeMockSourceMapper(['configuration' => $configuration]);
+        $callService = new ExplodingCallService();
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willReturnCallback(
+            static function (string $id) use ($mapper, $callService) {
+                if (str_ends_with($id, 'SourceMapper') === true) {
+                    return $mapper;
+                }
+
+                if (str_ends_with($id, 'CallService') === true) {
+                    return $callService;
+                }
+
+                return null;
+            }
+        );
+
+        return new ExternalIntegrationRouter($appManager, $container, new NullLogger());
+    }//end buildMockRouter()
+
+    public function testCallReturnsCannedMockBodyWithoutRealCall(): void
+    {
+        // A source flagged mock returns its canned mockResponse shaped exactly
+        // like the real KvK upstream — and the ExplodingCallService proves no
+        // real HTTP call was made.
+        $fixture = [
+            'resultaten' => [
+                ['kvkNummer' => '69599084', 'naam' => 'Conduction B.V.'],
+                ['kvkNummer' => '12345678', 'naam' => 'Acme Holding B.V.'],
+            ],
+        ];
+        $router  = $this->buildMockRouter(['mock' => true, 'mockResponse' => $fixture]);
+
+        $result = $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+
+        $this->assertSame($fixture, $result);
+        $this->assertSame('69599084', $result['resultaten'][0]['kvkNummer']);
+    }//end testCallReturnsCannedMockBodyWithoutRealCall()
+
+    public function testCallReturnsEmptyBodyWhenMockResponseAbsent(): void
+    {
+        // Flagged mock but no fixture → empty body (never a 500); the leaf's
+        // own extractor then yields an empty result set.
+        $router = $this->buildMockRouter(['mock' => true]);
+
+        $this->assertSame([], $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken'));
+    }//end testCallReturnsEmptyBodyWhenMockResponseAbsent()
+
+    public function testCallWithMetaReturnsCannedBodyAndSynthesizedMeta(): void
+    {
+        // A BRP-style mock returns the canned personen body PLUS a synthesized
+        // meta (status 200, non-zero duration, a fresh fake correlationId).
+        $fixture = ['personen' => [['burgerservicenummer' => '999990019']]];
+        $router  = $this->buildMockRouter(['mock' => true, 'mockResponse' => $fixture]);
+
+        $result = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), 'POST', 'personen');
+
+        $this->assertSame($fixture, $result['body']);
+        $this->assertSame('999990019', $result['body']['personen'][0]['burgerservicenummer']);
+        $this->assertSame(200, $result['meta']['status']);
+        $this->assertGreaterThan(0, $result['meta']['durationMs']);
+        $this->assertNotNull($result['meta']['correlationId']);
+        $this->assertSame($result['meta']['correlationId'], $result['meta']['headers']['X-Correlation-ID']);
+    }//end testCallWithMetaReturnsCannedBodyAndSynthesizedMeta()
+
+    public function testCallWithMetaHonoursMockMetaOverride(): void
+    {
+        $router = $this->buildMockRouter(
+            [
+                'mock'         => true,
+                'mockResponse' => ['personen' => []],
+                'mockMeta'     => ['status' => 200, 'durationMs' => 42, 'correlationId' => 'fixed-cid'],
+            ]
+        );
+
+        $result = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), 'POST', 'personen');
+
+        $this->assertSame(42, $result['meta']['durationMs']);
+        $this->assertSame('fixed-cid', $result['meta']['correlationId']);
+    }//end testCallWithMetaHonoursMockMetaOverride()
+
+    public function testNonMockSourceStillUsesTheRealCallPath(): void
+    {
+        // A source WITHOUT the mock flag must still hit the real CallService
+        // path unchanged (here the FakeCallService returns a normal CallLog).
+        $log    = new FakeCallLog(200, ['statusCode' => 200, 'headers' => [], 'body' => '{"resultaten":[]}', 'encoding' => 'UTF-8']);
+        $router = $this->buildRouterWithCallLog($log);
+
+        $result = $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+
+        $this->assertSame(['resultaten' => []], $result);
+    }//end testNonMockSourceStillUsesTheRealCallPath()
 }//end class

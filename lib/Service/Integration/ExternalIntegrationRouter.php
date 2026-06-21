@@ -123,6 +123,18 @@ class ExternalIntegrationRouter
         $sourceId = (string) $provider->getOpenConnectorSource();
         $source   = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
 
+        // Mock mode: when the resolved source is flagged
+        // `configuration.mock === true`, short-circuit and return the canned
+        // `configuration.mockResponse` body WITHOUT performing a real HTTP
+        // call — so the KvK / OpenCorporates / BRP / SMS / WhatsApp leaves are
+        // demonstrably functional end-to-end without real credentials. The
+        // real path below stays 100% intact for non-mock sources; mock is
+        // opt-in per source. {@see resolveMockBody()} for the resolution.
+        $config = $this->readSourceConfiguration(source: $source);
+        if (($config['mock'] ?? false) === true) {
+            return $this->resolveMockBody(config: $config, sourceId: $sourceId);
+        }
+
         try {
             return $this->invoke(source: $source, method: $method, path: $path, options: $options);
         } catch (ProviderUnavailableException $e) {
@@ -200,6 +212,19 @@ class ExternalIntegrationRouter
 
         $sourceId = (string) $provider->getOpenConnectorSource();
         $source   = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+
+        // Mock mode: short-circuit a flagged source with the canned body PLUS a
+        // synthesized `meta` envelope (fake correlationId / durationMs /
+        // status:200) so a meta-consuming leaf (e.g. the BRP/HaalCentraal leaf,
+        // which persists the Wet-BRP `X-Correlation-ID` + duration into its
+        // audit record) gets a fully-shaped response without a real call.
+        $config = $this->readSourceConfiguration(source: $source);
+        if (($config['mock'] ?? false) === true) {
+            return [
+                'body' => $this->resolveMockBody(config: $config, sourceId: $sourceId),
+                'meta' => $this->mockMeta(config: $config),
+            ];
+        }
 
         try {
             return $this->invokeWithMeta(source: $source, method: $method, path: $path, options: $options);
@@ -390,6 +415,136 @@ class ExternalIntegrationRouter
             );
         }//end try
     }//end loadSource()
+
+    /**
+     * Read the `configuration` array off a resolved OpenConnector source,
+     * whatever concrete shape the SourceMapper handed back. OpenConnector
+     * sources are OpenRegister `ObjectEntity` objects whose payload lives
+     * under `getObject()`; older builds returned a plain array or a
+     * `jsonSerialize`-able entity. This reads the `configuration` sub-array
+     * (where the mock flag + canned fixture live) defensively across all
+     * three shapes, returning an empty array when there is none.
+     *
+     * This is the ONLY place the router introspects the source body — and it
+     * reads transport configuration only (never a credential), so the mock
+     * short-circuit stays foundation-safe and additive.
+     *
+     * @param mixed $source The resolved source entity.
+     *
+     * @return array<string,mixed> The source's `configuration` array (possibly empty).
+     *
+     * @spec openspec/changes/integration-mock-mode/tasks.md
+     */
+    private function readSourceConfiguration($source): array
+    {
+        $data = null;
+
+        if (is_array($source) === true) {
+            $data = $source;
+        } else if (is_object($source) === true && method_exists($source, 'getObject') === true) {
+            $data = $source->getObject();
+        } else if (is_object($source) === true && method_exists($source, 'jsonSerialize') === true) {
+            $data = $source->jsonSerialize();
+        } else if (is_object($source) === true && method_exists($source, 'getConfiguration') === true) {
+            $config = $source->getConfiguration();
+            if (is_array($config) === true) {
+                return $config;
+            }
+
+            return [];
+        }
+
+        if (is_array($data) === false) {
+            return [];
+        }
+
+        $config = ($data['configuration'] ?? []);
+        if (is_array($config) === true) {
+            return $config;
+        }
+
+        return [];
+    }//end readSourceConfiguration()
+
+    /**
+     * Resolve the canned mock body for a flagged source.
+     *
+     * The realistic, upstream-shaped fixture is taken from
+     * `configuration.mockResponse` on the source (so each leaf's fixture lives
+     * with its source fragment). When a source is flagged `mock:true` but
+     * carries no `mockResponse`, an empty `{}` body is returned — the leaf's
+     * own extractor then yields an empty result set rather than fataling, so
+     * mock mode never produces a 500.
+     *
+     * @param array<string,mixed> $config   The source's `configuration` array.
+     * @param string              $sourceId The source slug (diagnostics only).
+     *
+     * @return array<string,mixed> The canned upstream-shaped body.
+     *
+     * @spec openspec/changes/integration-mock-mode/tasks.md
+     */
+    private function resolveMockBody(array $config, string $sourceId): array
+    {
+        $body = ($config['mockResponse'] ?? []);
+        if (is_array($body) === false) {
+            $this->logger->warning(
+                sprintf(
+                    '[ExternalIntegrationRouter] mock source "%s" has a non-array mockResponse; returning empty body.',
+                    $sourceId
+                )
+            );
+            return [];
+        }
+
+        return $body;
+    }//end resolveMockBody()
+
+    /**
+     * Synthesize the `meta` envelope for a mock `callWithMeta()` response. A
+     * source may override any field via `configuration.mockMeta`; otherwise a
+     * realistic default is produced — `status:200`, a small non-zero
+     * `durationMs`, and a fresh fake `correlationId` (so a BRP-style consumer
+     * that persists the Wet-BRP `X-Correlation-ID` always has a value). No real
+     * call is made, so the `headers` map carries only the synthesized
+     * correlation header.
+     *
+     * @param array<string,mixed> $config The source's `configuration` array.
+     *
+     * @return array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}
+     *
+     * @spec openspec/changes/integration-mock-mode/tasks.md
+     */
+    private function mockMeta(array $config): array
+    {
+        $override = ($config['mockMeta'] ?? []);
+        if (is_array($override) === false) {
+            $override = [];
+        }
+
+        $correlationId = ($override['correlationId'] ?? ('MOCK-CID-'.bin2hex(random_bytes(6))));
+        if ($correlationId !== null) {
+            $correlationId = (string) $correlationId;
+        }
+
+        $status     = (int) ($override['status'] ?? 200);
+        $durationMs = (int) ($override['durationMs'] ?? 12);
+
+        $headers = ($override['headers'] ?? []);
+        if (is_array($headers) === false) {
+            $headers = [];
+        }
+
+        if ($correlationId !== null && isset($headers['X-Correlation-ID']) === false) {
+            $headers['X-Correlation-ID'] = $correlationId;
+        }
+
+        return [
+            'status'        => $status,
+            'durationMs'    => $durationMs,
+            'correlationId' => $correlationId,
+            'headers'       => $this->flattenHeaders(headers: $headers),
+        ];
+    }//end mockMeta()
 
     /**
      * Invoke the upstream call via OpenConnector's CallService.
