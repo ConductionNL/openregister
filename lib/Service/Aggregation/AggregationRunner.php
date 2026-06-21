@@ -1038,7 +1038,7 @@ class AggregationRunner
      * Apply a single operator check.
      *
      * @param mixed  $value   The value extracted from the row.
-     * @param string $op      Operator name ('eq','ne','gt','gte','lt','lte','in').
+     * @param string $op      Operator name ('eq','ne','gt','gte','lt','lte','in','notIn').
      * @param mixed  $opValue The operand value to compare against.
      *
      * @return bool True when the value satisfies the operator.
@@ -1050,13 +1050,14 @@ class AggregationRunner
         $cmp = $this->normaliseForCompare(v: $value);
         $rhs = $this->normaliseForCompare(v: $opValue);
         return match ($op) {
-            'eq'  => $cmp === $rhs,
-            'ne'  => $cmp !== $rhs,
-            'gt'  => $cmp !== null && $rhs !== null && $cmp > $rhs,
-            'gte' => $cmp !== null && $rhs !== null && $cmp >= $rhs,
-            'lt'  => $cmp !== null && $rhs !== null && $cmp < $rhs,
-            'lte' => $cmp !== null && $rhs !== null && $cmp <= $rhs,
-            'in'  => is_array($opValue) === true && in_array($value, $opValue, true),
+            'eq'    => $cmp === $rhs,
+            'ne'    => $cmp !== $rhs,
+            'gt'    => $cmp !== null && $rhs !== null && $cmp > $rhs,
+            'gte'   => $cmp !== null && $rhs !== null && $cmp >= $rhs,
+            'lt'    => $cmp !== null && $rhs !== null && $cmp < $rhs,
+            'lte'   => $cmp !== null && $rhs !== null && $cmp <= $rhs,
+            'in'    => is_array($opValue) === true && in_array($value, $opValue, true),
+            'notIn' => is_array($opValue) === false || in_array($value, $opValue, true) === false,
             default => true,
         };
     }//end checkOp()
@@ -1160,13 +1161,14 @@ class AggregationRunner
         // Validate filter shapes are translatable. Supported:
         // {field: scalar}              → field = ?
         // {field: {in: [...]}}         → field IN (?, ?, ?)
+        // {field: {notIn: [...]}}      → field NOT IN (?, ?, ?)
         // {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
         // {field: {ne: x}}             → field <> ?
         // Reject anything else.
         foreach ($filter as $value) {
             if (is_array($value) === true) {
                 foreach (array_keys($value) as $op) {
-                    if (in_array((string) $op, ['in', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
+                    if (in_array((string) $op, ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
                         return null;
                     }
                 }
@@ -1229,6 +1231,29 @@ class AggregationRunner
 
                     $placeholders = implode(', ', array_fill(0, count($list), '?'));
                     $whereParts[] = $quote.$col.$quote.' IN ('.$placeholders.')';
+                    foreach ($list as $item) {
+                        $bindings[] = $this->bindValue(value: $item);
+                    }
+
+                    continue;
+                }//end if
+
+                if ($op === 'notIn') {
+                    $list = [];
+                    if (is_array($opValue) === true) {
+                        $list = $opValue;
+                    }
+
+                    if (count($list) === 0) {
+                        // `notIn` with an empty exclusion list excludes
+                        // nothing — emit an always-true condition so every
+                        // row is retained (mirrors SQL `NOT IN ()` intent).
+                        $whereParts[] = '1 = 1';
+                        continue;
+                    }
+
+                    $placeholders = implode(', ', array_fill(0, count($list), '?'));
+                    $whereParts[] = $quote.$col.$quote.' NOT IN ('.$placeholders.')';
                     foreach ($list as $item) {
                         $bindings[] = $this->bindValue(value: $item);
                     }

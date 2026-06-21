@@ -132,6 +132,104 @@ When the client does not request `groupBy`, the `groups` field is `null` (not an
 
 Validation problems surface as GraphQL field-errors on the `groups` field. The rest of the connection (edges, pageInfo, totalCount, facets) still resolves normally.
 
+## In-process (PHP service) surface
+
+A consuming app (e.g. pipelinq) that already runs inside the same Nextcloud
+process should NOT loop over HTTP back to the REST endpoint, and it should
+NOT fetch-all-and-sum-in-PHP. Instead it calls the runner directly. This is
+the in-process ad-hoc primitive — the same RBAC + multi-tenancy gate and the
+same native-or-fallback dispatch the REST/GraphQL surfaces use.
+
+### Call pattern
+
+```php
+use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+
+// 1. DI-resolve the runner (constructor inject it in your service).
+public function __construct(
+    private readonly AggregationRunner $aggregationRunner,
+) {}
+
+// 2. Build a query value object and run it against a register+schema ref.
+//    runAdhocByRef() applies the schema's `list` RBAC verdict for the
+//    active user and the active-organisation tenant filter, exactly like
+//    findAll() does, before any SQL executes.
+$query = AggregationQuery::create(
+    metric: 'sum',                       // count | sum | avg | min | max
+    field: 'amount',                     // required for sum/avg/min/max; null for count
+    filter: [                            // same operator vocabulary as findAll's config filters
+        'status' => ['notIn' => ['cancelled', 'draft']],
+        'createdAt' => ['gte' => '$startOfMonth'],   // placeholders are resolved
+    ],
+    groupBy: ['field' => 'costCenter'],  // optional — omit for a single scalar
+);
+
+$result = $this->aggregationRunner->runAdhocByRef(
+    registerRef: 'finance',              // register slug / uuid / id
+    schemaRef: 'invoice',                // schema slug / uuid / id
+    query: $query,
+);
+```
+
+### Method signature
+
+```php
+AggregationRunner::runAdhocByRef(
+    string $registerRef,
+    string $schemaRef,
+    AggregationQuery $query
+): array
+```
+
+Throws `NotAuthorizedException` (→ HTTP 403) when the caller lacks `list`
+permission on the schema, and `RuntimeException` (→ 404) when the register
+or schema ref can't be resolved.
+
+### Return shape
+
+Ungrouped (no `groupBy`):
+
+```php
+['value' => 1234.5, 'backend' => 'postgres', 'cached' => false]
+```
+
+Grouped (`groupBy` set): one bucket per distinct group value.
+
+```php
+[
+  'groups' => [
+    ['key' => 'cc-100', 'value' => 800.0],
+    ['key' => 'cc-200', 'value' => 434.5],
+  ],
+  'backend' => 'postgres',
+  'cached'  => false,
+]
+```
+
+`value` is an `int` for `count`, a `float` for `sum`/`avg`/`min`/`max`, and
+`null` when the metric has no matching rows (empty set). `backend` reports
+the engine that served the request (see the Backend matrix below).
+
+### Filter operator vocabulary
+
+Per field, the filter map accepts a bare scalar (equality) or an operator
+sub-map. Supported operators:
+
+| Operator | Operand | Meaning |
+|---|---|---|
+| (scalar) | scalar | `field = value` |
+| `in` | array | `field IN (...)` |
+| `notIn` | array | `field NOT IN (...)` — empty array excludes nothing (retains all rows) |
+| `ne` | scalar | `field <> value` |
+| `gt` / `gte` / `lt` / `lte` | scalar | range comparisons |
+
+The same `in` / `notIn` / `ne` / `gt` / `gte` / `lt` / `lte` operator
+vocabulary is also reachable through the standard `ObjectService::findAll(array $config)`
+/ `count(array $config)` config path (`config['filters']`), so a consuming
+app can exclude a set of values (`'status' => ['notIn' => [...]]`) on an
+ordinary object query without aggregating.
+
 ## Backend matrix
 
 The runner picks the matching native bucketing primitive for the active database engine and falls back to PHP only on engines OpenRegister doesn't natively target.

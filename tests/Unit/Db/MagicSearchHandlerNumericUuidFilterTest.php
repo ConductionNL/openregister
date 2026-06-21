@@ -121,7 +121,6 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase
     // -------------------------------------------------------------------------
     // The reported bug: UUID filter on an integer column (event_message.subscriptionId)
     // -------------------------------------------------------------------------
-
     public function testUuidFilterOnIntegerColumnCastsColumnToTextOnPostgres(): void
     {
         // Mirrors GET /events/subscriptions/{uuid}/messages: filter the
@@ -167,7 +166,6 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase
     // -------------------------------------------------------------------------
     // No regression: genuine numeric filters keep the bare numeric comparison
     // -------------------------------------------------------------------------
-
     public function testNumericFilterOnIntegerColumnIsNotCast(): void
     {
         $conditions = $this->invokeObjectFilters(
@@ -221,9 +219,53 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase
     }//end testNumericInListFilterOnIntegerColumnIsNotCast()
 
     // -------------------------------------------------------------------------
+    // notIn / ne operators (findAll config-filter path)
+    // -------------------------------------------------------------------------
+    public function testNotInOperatorEmitsNotInClause(): void
+    {
+        // `{status: {notIn: [archived, deleted]}}` must translate to a
+        // `NOT IN (...)` clause — the operator a consuming app (pipelinq
+        // RoutingService requests-leg) needs to exclude a set of values.
+        $conditions = $this->invokeObjectFilters(
+            query: ['status' => ['notIn' => ['archived', 'deleted']]],
+            properties: ['status' => ['type' => 'string']],
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertStringContainsString("\"status\" NOT IN ('archived', 'deleted')", $conditions[0]);
+    }//end testNotInOperatorEmitsNotInClause()
+
+    public function testEmptyNotInListEmitsNoCondition(): void
+    {
+        // An empty exclusion list excludes nothing, so no clause is emitted
+        // (rather than a malformed `NOT IN ()`).
+        $conditions = $this->invokeObjectFilters(
+            query: ['status' => ['notIn' => []]],
+            properties: ['status' => ['type' => 'string']],
+            isPostgres: true
+        );
+
+        $this->assertCount(0, $conditions);
+    }//end testEmptyNotInListEmitsNoCondition()
+
+    public function testNeOperatorEmitsNotEqualClause(): void
+    {
+        // `{status: {ne: completed}}` must translate to a `<> 'completed'`
+        // inequality.
+        $conditions = $this->invokeObjectFilters(
+            query: ['status' => ['ne' => 'completed']],
+            properties: ['status' => ['type' => 'string']],
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertStringContainsString("\"status\" <> 'completed'", $conditions[0]);
+    }//end testNeOperatorEmitsNotEqualClause()
+
+    // -------------------------------------------------------------------------
     // buildFilterColumnRef() direct contract
     // -------------------------------------------------------------------------
-
     public function testColumnRefCastsNumericColumnForUuidValue(): void
     {
         $this->assertSame(

@@ -9,9 +9,10 @@
  * value object into native query parameters.
  *
  * Supported metrics: count / sum / avg / min / max.
- * Supported filter operators (per field): scalar equality + in / gt /
- * gte / lt / lte / ne (mirrors the inline magic-table SQL path that
- * lived in `AggregationRunner::tryNativeAggregation`).
+ * Supported filter operators (per field): scalar equality + in / notIn /
+ * gt / gte / lt / lte / ne (mirrors the inline magic-table SQL path that
+ * lived in `AggregationRunner::tryNativeAggregation`). `in` and `notIn`
+ * take an array operand; the rest take a scalar.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

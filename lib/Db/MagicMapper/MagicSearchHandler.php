@@ -727,9 +727,10 @@ class MagicSearchHandler
                 continue;
             }
 
-            // Handle array filter values: comparison operators (gte/lte/gt/lt/in) or IN clause.
+            // Handle array filter values: comparison operators
+            // (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
             if (is_array($value) === true) {
-                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
                     if (isset($value['gte']) === true) {
                         $colRef       = $this->buildFilterColumnRef(
@@ -785,6 +786,36 @@ class MagicSearchHandler
                         );
                         $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
                         $conditions[] = "{$colRef} IN (".implode(', ', $quotedValues).')';
+                    }
+
+                    if (isset($value['notIn']) === true) {
+                        $notInValues = [$value['notIn']];
+                        if (is_array($value['notIn']) === true) {
+                            $notInValues = $value['notIn'];
+                        }
+
+                        // An empty exclusion list excludes nothing — skip the
+                        // clause rather than emit `NOT IN ()`.
+                        if (count($notInValues) > 0) {
+                            $colRef       = $this->buildFilterColumnRef(
+                                columnRef: $quotedCol,
+                                propertyType: $propertyType,
+                                value: $notInValues,
+                                isPostgres: $isPostgres
+                            );
+                            $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $notInValues);
+                            $conditions[] = "{$colRef} NOT IN (".implode(', ', $quotedValues).')';
+                        }
+                    }
+
+                    if (isset($value['ne']) === true) {
+                        $colRef       = $this->buildFilterColumnRef(
+                            columnRef: $quotedCol,
+                            propertyType: $propertyType,
+                            value: $value['ne'],
+                            isPostgres: $isPostgres
+                        );
+                        $conditions[] = "{$colRef} <> ".$connection->quote((string) $value['ne']);
                     }
                 } else if (empty($value) === false) {
                     $colRef       = $this->buildFilterColumnRef(
@@ -1198,7 +1229,7 @@ class MagicSearchHandler
             }
 
             if (is_array($value) === true) {
-                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
                     // Cast numeric columns to text when filtered by non-numeric
                     // (e.g. UUID) values so PostgreSQL does not abort with 22P02.
@@ -1275,6 +1306,41 @@ class MagicSearchHandler
                             $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
+                }
+
+                if (isset($value['notIn']) === true) {
+                    $notInValues = [$value['notIn']];
+                    if (is_array($value['notIn']) === true) {
+                        $notInValues = $value['notIn'];
+                    }
+
+                    // An empty exclusion list excludes nothing, so skip the
+                    // clause entirely — emitting `NOT IN ()` is a SQL error
+                    // on some engines and a no-op-shaped clause on others.
+                    if (count($notInValues) > 0) {
+                        $columnRef = $this->buildFilterColumnRef(
+                            columnRef: "t.{$columnName}",
+                            propertyType: $propertyType,
+                            value: $notInValues,
+                            isPostgres: $isPostgres
+                        );
+                        $qb->andWhere(
+                            $qb->expr()->notIn(
+                                $columnRef,
+                                $qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
+                            )
+                        );
+                    }
+                }//end if
+
+                if (isset($value['ne']) === true) {
+                    $columnRef = $this->buildFilterColumnRef(
+                        columnRef: "t.{$columnName}",
+                        propertyType: $propertyType,
+                        value: $value['ne'],
+                        isPostgres: $isPostgres
+                    );
+                    $qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
                 }
 
                 continue;
