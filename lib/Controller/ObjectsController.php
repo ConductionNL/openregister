@@ -3532,6 +3532,20 @@ class ObjectsController extends Controller
             );
         }
 
+        if ($type === 'json') {
+            $content = $this->exportService->exportToJson(
+                register: $registerEntity,
+                schema: $schemaEntity,
+                filters: $filters
+            );
+
+            return new DataDownloadResponse(
+                data: $content,
+                filename: "{$filenameBase}.json",
+                contentType: 'application/json'
+            );
+        }
+
         // Default to Excel.
         $spreadsheet = $this->exportService->exportToExcel(
             register: $registerEntity,

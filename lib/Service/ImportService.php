@@ -517,6 +517,167 @@ class ImportService
     }//end importFromCsv()
 
     /**
+     * Import objects of a single schema from a JSON document
+     *
+     * Inverse of `ExportService::exportToJson()`. Accepts either a bare JSON
+     * array of objects or a `{ "results": [...] }` envelope, then upserts every
+     * object (by uuid) through `ObjectService::saveObject()` — the same
+     * single-object path the REST create/update uses, applying RBAC and
+     * multi-tenancy. JSON carries no spreadsheet, so no PhpSpreadsheet (and
+     * therefore no ZipStream) is involved.
+     *
+     * @param string        $filePath      Path to the uploaded JSON file
+     * @param Register|null $register      Register to import into
+     * @param Schema|null   $schema        Target schema (required — JSON import is single-schema, like
+     *                                     CSV)
+     * @param bool          $validation    Whether to validate objects against the schema
+     * @param bool          $events        Whether to dispatch object lifecycle events
+     * @param bool          $_rbac         Whether to apply RBAC permissions
+     * @param bool          $_multitenancy Whether to apply multi-tenancy filtering
+     * @param bool          $publish       DEPRECATED no-op; publication is RBAC-driven
+     * @param IUser|null    $currentUser   The current user performing the import
+     * @param bool          $enrich        Whether to enrich objects with metadata
+     *
+     * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
+     *
+     * @throws InvalidArgumentException When no schema is given or the payload is not an array of objects
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the Excel/CSV importer signatures
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)  validation/events/enrich are kept for signature parity with importFromExcel/importFromCsv
+     *
+     * @spec exclude Retrofit — JSON object import/export added alongside the existing Excel/CSV importers; no dedicated openspec change.
+     */
+    public function importFromJson(
+        string $filePath,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $validation=false,
+        bool $events=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $publish=false,
+        ?IUser $currentUser=null,
+        bool $enrich=true
+    ): array {
+        // Clear caches at the start of each import to prevent stale data issues.
+        $this->clearCaches();
+
+        if ($schema === null) {
+            throw new InvalidArgumentException('JSON import requires a specific schema');
+        }
+
+        if ($publish === true) {
+            $this->logger->warning(
+                message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        $raw     = file_get_contents($filePath);
+        $decoded = null;
+        if ($raw !== false) {
+            $decoded = json_decode($raw, true);
+        }
+
+        if (is_array($decoded) === false) {
+            throw new InvalidArgumentException('JSON import expects an array of objects');
+        }
+
+        // Accept both a bare array and a `{ "results": [...] }` envelope (the
+        // shape some object-list endpoints return).
+        $objects = $decoded;
+        if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
+            $objects = $decoded['results'];
+        }
+
+        // ExportService::exportToJson() emits ObjectEntity::jsonSerialize() —
+        // schema properties at the top level PLUS an `@self` block and
+        // entity-level fields (uuid/version/slug/dates) that are NOT schema
+        // properties. Persist each object through the single-object saveObject()
+        // path — the same one the REST create/update uses — which is robust to
+        // this shape and upserts by uuid. (The bulk saveObjects() path binds ''
+        // into a typed relation column on this data and 500s the write.) The
+        // body is reduced to the schema's own properties, with empty strings
+        // coerced to null.
+        $propertyKeys = array_flip(array_keys($schema->getProperties()));
+
+        $importJobId = Uuid::v4()->toRfc4122();
+
+        try {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
+            $summary = [
+                'found'     => count($objects),
+                'created'   => [],
+                'updated'   => [],
+                'unchanged' => [],
+                'errors'    => [],
+            ];
+
+            foreach ($objects as $raw) {
+                if (is_array($raw) === false) {
+                    continue;
+                }
+
+                // Upsert key: prefer @self.id, then a top-level id/uuid.
+                $uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
+                if ($uuid !== null) {
+                    $uuid = (string) $uuid;
+                }
+
+                // Body = schema properties only; empty strings → null.
+                $body = array_intersect_key($raw, $propertyKeys);
+                foreach ($body as $key => $value) {
+                    if ($value === '') {
+                        $body[$key] = null;
+                    }
+                }
+
+                try {
+                    $saved = $this->objectService->saveObject(
+                        object: $body,
+                        register: $register,
+                        schema: $schema,
+                        uuid: $uuid,
+                        _rbac: $_rbac,
+                        _multitenancy: $_multitenancy,
+                        currentUser: $currentUser
+                    );
+
+                    if ($uuid !== null) {
+                        $summary['updated'][] = $saved->getUuid();
+                    } else {
+                        $summary['created'][] = $saved->getUuid();
+                    }
+                } catch (\Throwable $e) {
+                    $summary['errors'][] = [
+                        'object' => ($raw['name'] ?? $uuid),
+                        'error'  => $e->getMessage(),
+                        'type'   => get_class($e),
+                    ];
+                }//end try
+            }//end foreach
+
+            $summary['schema'] = [
+                'id'    => $schema->getId(),
+                'title' => $schema->getTitle(),
+                'slug'  => $schema->getSlug(),
+            ];
+
+            $finalResult = [
+                'JSON'        => $summary,
+                'importJobId' => $importJobId,
+            ];
+            $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
+
+            return $finalResult;
+        } finally {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: null);
+        }//end try
+    }//end importFromJson()
+
+    /**
      * Process spreadsheet with multiple schemas using batch saving for better performance
      *
      * @param Spreadsheet $spreadsheet   The spreadsheet to process

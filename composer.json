@@ -156,6 +156,9 @@
 		"patches": {
 			"theodo-group/llphant": {
 				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) \u2014 drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
+			},
+			"phpoffice/phpspreadsheet": {
+				"Prefer ZipStream3 when zipstream-php v3 is installed \u2014 a co-installed app's leaked zipstream v2 Option\\Archive otherwise mis-selects the v2 shim and 500s every .xlsx export on the shared Nextcloud autoloader": "patches/phpspreadsheet-zipstream3-prefer.patch"
 			}
 		}
 	}

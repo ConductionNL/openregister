@@ -259,6 +259,44 @@ class ExportService
     }//end exportToCsv()
 
     /**
+     * Export objects of a single schema to a JSON document
+     *
+     * Serialises every object (subject to the same RBAC + multi-tenancy + filter
+     * rules as the spreadsheet exporters) to its canonical `jsonSerialize()`
+     * representation — body properties at the top level plus the `@self`
+     * metadata block. The result is a JSON array re-importable via
+     * `ImportService::importFromJson()`, which upserts by `@self.id`.
+     *
+     * @param Register|null $register Register context (required)
+     * @param Schema|null   $schema   Schema whose objects are exported (required)
+     * @param array         $filters  Optional `@self.*` metadata filters
+     *
+     * @return string Pretty-printed JSON array of objects
+     *
+     * @throws InvalidArgumentException When no schema is given (JSON export is single-schema, like CSV)
+     *
+     * @spec exclude Retrofit — JSON object export added alongside the existing Excel/CSV exporters; no dedicated openspec change.
+     */
+    public function exportToJson(
+        ?Register $register=null,
+        ?Schema $schema=null,
+        array $filters=[]
+    ): string {
+        if ($schema === null) {
+            throw new InvalidArgumentException('JSON export requires a specific schema.');
+        }
+
+        $objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+
+        $rows = array_map(
+            static fn(ObjectEntity $object): array => $object->jsonSerialize(),
+            $objects
+        );
+
+        return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }//end exportToJson()
+
+    /**
      * Build an empty import template spreadsheet for a schema
      *
      * Generates a spreadsheet that contains only the header row derived from the
