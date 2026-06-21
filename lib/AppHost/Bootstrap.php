@@ -359,7 +359,8 @@ class Bootstrap
                     sectionId: $sectionId,
                     priority: $adminPriority,
                     appManager: $c->get('OCP\\App\\IAppManager'),
-                    initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState')
+                    initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
+                    appConfig: $c->get('OCP\\IAppConfig')
                 );
             }
         );

@@ -186,6 +186,9 @@ class AppHostSettingsService
 
             if (empty($result) === false) {
                 $this->logger->info(sprintf('[AppHost:%s] register configuration imported successfully', $this->appId));
+                // Stamp the app version the config was imported for, so the admin
+                // page can show a REAL up-to-date check (config_version === app version).
+                $this->appConfig->setValueString($this->appId, 'config_version', $this->appManager->getAppVersion($this->appId));
                 return [
                     'success' => true,
                     'message' => 'Configuration imported successfully.',
