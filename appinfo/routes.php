@@ -490,6 +490,7 @@ return [
         // pageRef is a url-encoded canonical page reference (`%2F` not `/`),
         // so the `[^/]+` requirement matches the whole segment.
         ['name' => 'xwikiLinks#available',    'url' => '/api/integrations/xwiki/available',                  'verb' => 'GET'],
+        ['name' => 'xwikiLinks#search',       'url' => '/api/integrations/xwiki/search',                     'verb' => 'GET'],
         ['name' => 'xwikiLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/xwiki/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
