@@ -248,6 +248,7 @@ use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
@@ -1282,6 +1283,30 @@ class Application extends App implements IBootstrap
             OpenCorporatesProvider::class,
             function (ContainerInterface $container) {
                 return new OpenCorporatesProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: outbound-messaging dispatch (external,
+        // OpenConnector-backed) — side-effecting SMS / WhatsApp send. Routed
+        // through ExternalIntegrationRouter, credentials on the per-call
+        // OpenConnector source (cmcom-sms / messagebird-sms / twilio-sms /
+        // whatsapp-cloud-api / whatsapp-bsp). NOT added to the IntegrationRegistry
+        // boot loop: it is a send-only leaf with no listable surface, reached
+        // via MessageDispatchController, not as an object-sidebar tab.
+        // Centralises only pipelinq's per-provider DISPATCH + credentials onto
+        // the canonical OR/OpenConnector path (ADR-022); all orchestration
+        // (provider selection, STOP opt-out, template-approval, 24h session,
+        // dedupe, delivery-status) stays in pipelinq.
+        // @spec openspec/changes/messaging-dispatch-leaf/tasks.md.
+        $context->registerService(
+            MessageDispatchProvider::class,
+            function (ContainerInterface $container) {
+                return new MessageDispatchProvider(
                     router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),

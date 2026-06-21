@@ -512,6 +512,18 @@ return [
         // details.cause. The BSN travels in the request body only, never logged.
         // @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md.
         ['name' => 'personLookup#brpPerson',             'url' => '/api/integrations/brp/person',             'verb' => 'GET'],
+        // Outbound-messaging dispatch (external, OpenConnector-routed) —
+        // side-effecting send leaf. No NC app gate; the OpenConnector
+        // cmcom-sms / messagebird-sms / twilio-sms (SMS) and
+        // whatsapp-cloud-api / whatsapp-bsp (WhatsApp) sources carry the base
+        // URL + provider credential. The consuming app (pipelinq) composes the
+        // vendor-shaped body + path and owns all orchestration (provider
+        // selection, STOP opt-out, template-approval, 24h session, dedupe,
+        // delivery-status); this leaf only POSTs the message. Unconfigured/down
+        // → 503 with details.cause.
+        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md.
+        ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
+        ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
         // admin gate). The specific `/cospend/new` (create + link) route
         // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
