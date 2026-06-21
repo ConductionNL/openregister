@@ -495,6 +495,15 @@ return [
         ['name' => 'xwikiLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/xwiki/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/xwiki/{pageRef}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageRef' => '[^/]+']],
+
+        // KvK + OpenCorporates company lookup (external, OpenConnector-routed)
+        // — read-only, object-independent company-lookup leaves. No NC app
+        // gate; the OpenConnector `kvk` / `opencorporates` sources carry the
+        // base URL + API key. Unconfigured/down → 503 with details.cause.
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md.
+        ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
+        ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
+        ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
         // admin gate). The specific `/cospend/new` (create + link) route
         // MUST precede the wildcard `/cospend/{entryId}` unlink route, and

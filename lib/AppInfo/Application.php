@@ -247,6 +247,8 @@ use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
+use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -1246,6 +1248,43 @@ class Application extends App implements IBootstrap
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: KvK company lookup (external, OpenConnector-backed).
+        // Stateless, read-only — no link table; routed through
+        // ExternalIntegrationRouter, credentials (the `apikey` header) on the
+        // OpenConnector `kvk` source. Centralises pipelinq's KvkApiClient
+        // onto the canonical OR/OpenConnector path (ADR-022).
+        // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+        $context->registerService(
+            KvkProvider::class,
+            function (ContainerInterface $container) {
+                return new KvkProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: OpenCorporates company search (external,
+        // OpenConnector-backed). Stateless, read-only — no link table;
+        // routed through ExternalIntegrationRouter, credentials (the
+        // `api_token` query param) on the OpenConnector `opencorporates`
+        // source. Centralises pipelinq's OpenCorporatesApiClient onto the
+        // canonical OR/OpenConnector path (ADR-022).
+        // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+        $context->registerService(
+            OpenCorporatesProvider::class,
+            function (ContainerInterface $container) {
+                return new OpenCorporatesProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
@@ -2530,6 +2569,9 @@ class Application extends App implements IBootstrap
             XwikiProvider::class,
             // @spec openspec/changes/integration-openproject/tasks.md.
             OpenProjectProvider::class,
+            // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+            KvkProvider::class,
+            OpenCorporatesProvider::class,
             // Leaves: NC-native, backend-shipped (wrap existing OR services).
             // @spec openspec/changes/integration-calendar/tasks.md.
             CalendarProvider::class,
