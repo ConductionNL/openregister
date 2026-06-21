@@ -504,6 +504,14 @@ return [
         ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
         ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
         ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
+        // BRP HaalCentraal person lookup (external, OpenConnector-routed) —
+        // read-only, object-independent person-lookup leaf. No NC app gate; the
+        // OpenConnector `brp-haalcentraal` source carries the base URL + OAuth2
+        // client_credentials secret + PKIoverheid mutual-TLS client certificate
+        // (both applied natively by CallService). Unconfigured/down → 503 with
+        // details.cause. The BSN travels in the request body only, never logged.
+        // @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md.
+        ['name' => 'personLookup#brpPerson',             'url' => '/api/integrations/brp/person',             'verb' => 'GET'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
         // admin gate). The specific `/cospend/new` (create + link) route
         // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
