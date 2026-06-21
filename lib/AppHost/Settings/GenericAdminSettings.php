@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\AppHost\Settings;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
+use OCP\IAppConfig;
 use OCP\Settings\IDelegatedSettings;
 
 /**
@@ -52,20 +53,33 @@ class GenericAdminSettings implements IDelegatedSettings
      * @param string        $appId        The leaf app id (template + version).
      * @param string        $sectionId    The settings section id this form sits in.
      * @param int           $priority     Ordering priority within the section.
-     * @param IAppManager   $appManager   App manager (version lookup).
-     * @param IInitialState $initialState Initial-state service.
+     * @param IAppManager     $appManager   App manager (version lookup).
+     * @param IInitialState   $initialState Initial-state service.
+     * @param IAppConfig|null $appConfig    App config — when provided, enables a
+     *                                      real up-to-date check by comparing the
+     *                                      running app version against the version
+     *                                      stored when the configuration was last
+     *                                      (re-)imported. Nullable so the older
+     *                                      registration factories keep working.
      */
     public function __construct(
         protected readonly string $appId,
         protected readonly string $sectionId,
         protected readonly int $priority,
         protected readonly IAppManager $appManager,
-        protected readonly IInitialState $initialState
+        protected readonly IInitialState $initialState,
+        protected readonly ?IAppConfig $appConfig=null
     ) {
     }//end __construct()
 
     /**
      * Get the settings form template (the leaf app's `settings/admin`).
+     *
+     * Provides `version` (running app version) and, when an IAppConfig is
+     * available, `configuredVersion` + `isUpToDate` — a REAL up-to-date signal
+     * (the config version is stamped by AppHostSettingsService on each import).
+     * The shared CnAdminSettingsShell reads these via loadState so the badge is
+     * truthful instead of hardcoded.
      *
      * @return TemplateResponse
      */
@@ -73,6 +87,14 @@ class GenericAdminSettings implements IDelegatedSettings
     {
         $version = $this->appManager->getAppVersion(appId: $this->appId);
         $this->initialState->provideInitialState('version', $version);
+
+        if ($this->appConfig !== null) {
+            $configuredVersion = $this->appConfig->getValueString($this->appId, 'config_version', '');
+            $this->initialState->provideInitialState('configuredVersion', $configuredVersion);
+            // Up to date when the config was imported for the current app version.
+            // Empty configuredVersion (never imported) → not up to date.
+            $this->initialState->provideInitialState('isUpToDate', ($configuredVersion !== '' && $configuredVersion === $version));
+        }
 
         return new TemplateResponse($this->appId, 'settings/admin', []);
     }//end getForm()
