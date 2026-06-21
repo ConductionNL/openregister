@@ -63,6 +63,9 @@ class LinkedEntityController extends Controller
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
+    // SEC-CTRL-8: CSRF protection retained — this is an SPA-called authenticated write
+    // (axios sends the CSRF token); #[NoCSRFRequired] removed.
+
     /**
      * Add a linked entity to an object.
      *
@@ -77,8 +80,6 @@ class LinkedEntityController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
-    // SEC-CTRL-8: CSRF protection retained — this is an SPA-called authenticated write
-    // (axios sends the CSRF token); #[NoCSRFRequired] removed.
     #[NoAdminRequired]
     public function addObjectLink(string $uuid, string $type): JSONResponse
     {
@@ -103,8 +104,10 @@ class LinkedEntityController extends Controller
             );
 
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
+        }//end try
     }//end addObjectLink()
+
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
 
     /**
      * Remove a linked entity from an object.
@@ -122,7 +125,6 @@ class LinkedEntityController extends Controller
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
-    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
     #[NoAdminRequired]
     public function removeObjectLink(string $uuid, string $type, string $entityId): JSONResponse
     {
@@ -143,6 +145,8 @@ class LinkedEntityController extends Controller
         }
     }//end removeObjectLink()
 
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
+
     /**
      * Add a linked entity to a register.
      *
@@ -157,7 +161,6 @@ class LinkedEntityController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
-    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
     #[NoAdminRequired]
     public function addRegisterLink(string $uuid, string $type): JSONResponse
     {
@@ -177,6 +180,8 @@ class LinkedEntityController extends Controller
         }
     }//end addRegisterLink()
 
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
+
     /**
      * Add a linked entity to a schema.
      *
@@ -191,7 +196,6 @@ class LinkedEntityController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
-    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
     #[NoAdminRequired]
     public function addSchemaLink(string $uuid, string $type): JSONResponse
     {

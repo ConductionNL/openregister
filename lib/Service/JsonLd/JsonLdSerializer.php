@@ -62,7 +62,6 @@ class JsonLdSerializer
      */
     private const RAW_PREFIX = 'or:raw#';
 
-
     /**
      * Constructor.
      *
@@ -74,7 +73,6 @@ class JsonLdSerializer
         private readonly IURLGenerator $urlGenerator
     ) {
     }//end __construct()
-
 
     /**
      * Decide whether the client wants JSON-LD, based on the `Accept` header.
@@ -129,11 +127,10 @@ class JsonLdSerializer
                 $bestRank = $rank;
                 $best     = $type;
             }
-        }
+        }//end foreach
 
         return $best === self::MEDIA_TYPE && $bestQ > 0.0;
     }//end wantsJsonLd()
-
 
     /**
      * Serialize a single rendered object array as a JSON-LD node document.
@@ -148,7 +145,7 @@ class JsonLdSerializer
      */
     public function serialize(array $renderedObject, Schema $schema, Register $register): array
     {
-        $node = $this->buildNode($renderedObject, $schema, $register);
+        $node = $this->buildNode(renderedObject: $renderedObject, schema: $schema, register: $register);
 
         // Prepend the @context reference (per-schema context document URL).
         return array_merge(
@@ -156,7 +153,6 @@ class JsonLdSerializer
             $node
         );
     }//end serialize()
-
 
     /**
      * Serialize a paginated collection result as a JSON-LD `@graph` document.
@@ -183,7 +179,7 @@ class JsonLdSerializer
             }
 
             // Each node carries its own @id/@type but not a repeated @context.
-            $graph[] = $this->buildNode($rendered, $schema, $register);
+            $graph[] = $this->buildNode(renderedObject: $rendered, schema: $schema, register: $register);
         }
 
         $document = [
@@ -208,14 +204,13 @@ class JsonLdSerializer
             $document['or:limit'] = $paginatedResult['limit'];
         }
 
-        $next = $this->buildNextLink($paginatedResult);
+        $next = $this->buildNextLink(paginatedResult: $paginatedResult);
         if ($next !== null) {
             $document['or:next'] = $next;
         }
 
         return $document;
     }//end serializeCollection()
-
 
     /**
      * Build a single JSON-LD node (no `@context`) from a rendered object array.
@@ -234,12 +229,12 @@ class JsonLdSerializer
         }
 
         $node = [
-            '@id'   => $this->resolveId($self, $register, $schema),
+            '@id'   => $this->resolveId(self: $self, register: $register, schema: $schema),
             '@type' => $this->contextService->getTypeForSchema($schema),
         ];
 
         // Lift @self metadata to or: terms (skip null/empty so the node stays lean).
-        foreach ($this->liftSelfMetadata($self) as $term => $value) {
+        foreach ($this->liftSelfMetadata(self: $self) as $term => $value) {
             $node[$term] = $value;
         }
 
@@ -250,7 +245,7 @@ class JsonLdSerializer
                 continue;
             }
 
-            if ($this->isReservedKey($key) === true) {
+            if ($this->isReservedKey(key: $key) === true) {
                 $node[self::RAW_PREFIX.ltrim((string) $key, '@')] = $value;
                 continue;
             }
@@ -260,7 +255,6 @@ class JsonLdSerializer
 
         return $node;
     }//end buildNode()
-
 
     /**
      * Resolve a node's `@id`: the canonical object URI, else the absolute
@@ -283,13 +277,12 @@ class JsonLdSerializer
         return $this->urlGenerator->linkToRouteAbsolute(
             'openregister.objects.show',
             [
-                'register' => $this->slugOf($register),
-                'schema'   => $this->slugOf($schema),
+                'register' => $this->slugOf(entity: $register),
+                'schema'   => $this->slugOf(entity: $schema),
                 'id'       => (string) $uuid,
             ]
         );
     }//end resolveId()
-
 
     /**
      * Lift the `@self` envelope into `or:`-prefixed JSON-LD terms. The `uri`
@@ -318,7 +311,6 @@ class JsonLdSerializer
         return $lifted;
     }//end liftSelfMetadata()
 
-
     /**
      * Build the `or:next` page URL from a paginated result, when there is a
      * next page.
@@ -346,10 +338,14 @@ class JsonLdSerializer
             return null;
         }
 
-        $separator = (str_contains($current, '?') === true) ? '&' : '?';
+        if (str_contains($current, '?') === true) {
+            $separator = '&';
+        } else {
+            $separator = '?';
+        }
+
         return $current.$separator.'_page='.($page + 1);
     }//end buildNextLink()
-
 
     /**
      * Whether a data key is a reserved JSON-LD keyword that must be escaped to
@@ -363,7 +359,6 @@ class JsonLdSerializer
     {
         return is_string($key) === true && str_starts_with($key, '@') === true;
     }//end isReservedKey()
-
 
     /**
      * Resolve the slug for an entity, falling back to UUID then id.

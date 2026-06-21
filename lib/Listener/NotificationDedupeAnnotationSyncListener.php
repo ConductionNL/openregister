@@ -45,7 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 final class NotificationDedupeAnnotationSyncListener implements IEventListener
 {
-
     /**
      * Constructor.
      *
@@ -67,7 +66,7 @@ final class NotificationDedupeAnnotationSyncListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        $schema = $this->resolveSchema($event);
+        $schema = $this->resolveSchema(event: $event);
         if ($schema === null) {
             return;
         }
@@ -110,12 +109,20 @@ final class NotificationDedupeAnnotationSyncListener implements IEventListener
     {
         if ($event instanceof SchemaCreatedEvent) {
             $schema = $event->getSchema();
-            return ($schema instanceof Schema) ? $schema : null;
+            if ($schema instanceof Schema) {
+                return $schema;
+            }
+
+            return null;
         }
 
         if ($event instanceof SchemaUpdatedEvent) {
             $schema = $event->getNewSchema();
-            return ($schema instanceof Schema) ? $schema : null;
+            if ($schema instanceof Schema) {
+                return $schema;
+            }
+
+            return null;
         }
 
         return null;

@@ -235,7 +235,7 @@ class ApplicationsController extends Controller
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Application not found'}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec exclude Thin read endpoint for the applications resource route; delegates to ApplicationService (domain layer), not a raw ObjectService duplication. gate-17's receiver regex over-matches any $this->*Service call.
      */
     public function show(int $id): JSONResponse
     {

@@ -79,15 +79,15 @@ final class ScheduledNotificationJob extends TimedJob
     /**
      * Wire collaborators and configure the timed-job interval.
      *
-     * @param ITimeFactory                     $time             Nextcloud time factory.
-     * @param SchemaMapper                     $schemaMapper     Schema lookup mapper.
-     * @param MagicMapper                      $objectMapper     Magic object mapper.
-     * @param AnnotationNotificationDispatcher $dispatcher       Notification dispatcher.
-     * @param LoggerInterface                  $logger           PSR logger.
-     * @param ICacheFactory                    $cacheFactory     Distributed cache factory.
-     * @param ScheduledFilterEvaluator         $filterEvaluator  Operator-aware filter evaluator.
-     * @param NotificationDedupeStateMapper    $dedupeMapper     Per-object dedup state mapper.
-     * @param IAppConfig                       $appConfig        App config for tunable retention window.
+     * @param ITimeFactory                     $time            Nextcloud time factory.
+     * @param SchemaMapper                     $schemaMapper    Schema lookup mapper.
+     * @param MagicMapper                      $objectMapper    Magic object mapper.
+     * @param AnnotationNotificationDispatcher $dispatcher      Notification dispatcher.
+     * @param LoggerInterface                  $logger          PSR logger.
+     * @param ICacheFactory                    $cacheFactory    Distributed cache factory.
+     * @param ScheduledFilterEvaluator         $filterEvaluator Operator-aware filter evaluator.
+     * @param NotificationDedupeStateMapper    $dedupeMapper    Per-object dedup state mapper.
+     * @param IAppConfig                       $appConfig       App config for tunable retention window.
      *
      * @return void
      */
@@ -125,7 +125,7 @@ final class ScheduledNotificationJob extends TimedJob
      */
     protected function run($argument): void
     {
-        $now   = time();
+        $now = time();
         // One logical "now" per scan pass so every entry sees the same window
         // (Phase 1 — filter operator evaluator).
         $nowDt = (new DateTimeImmutable('@'.$now))->setTimezone(new DateTimeZone('UTC'));
@@ -363,7 +363,7 @@ final class ScheduledNotificationJob extends TimedJob
 
             $matched++;
 
-            $objectUuid  = (string) $object->getUuid();
+            $objectUuid = (string) $object->getUuid();
             if ($objectUuid === '') {
                 continue;
             }
@@ -422,7 +422,7 @@ final class ScheduledNotificationJob extends TimedJob
                         $e->getMessage()
                     )
                 );
-            }
+            }//end try
         }//end foreach
 
         $this->logger->info(
@@ -529,5 +529,4 @@ final class ScheduledNotificationJob extends TimedJob
 
         return sha1($encoded);
     }//end computeFingerprint()
-
 }//end class

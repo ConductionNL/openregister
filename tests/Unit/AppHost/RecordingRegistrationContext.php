@@ -61,6 +61,7 @@ final class RecordingRegistrationContext implements IRegistrationContext
     public function registerMiddleware(string $class, bool $global = false): void {}
     public function registerSearchProvider(string $class): void {}
     public function registerAlternativeLogin(string $class): void {}
+    public function registerAlternativeLoginProvider(string $class): void {}
     public function registerInitialStateProvider(string $class): void {}
     public function registerWellKnownHandler(string $class): void {}
     public function registerSpeechToTextProvider(string $providerClass): void {}

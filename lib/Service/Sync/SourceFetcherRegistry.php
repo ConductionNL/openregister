@@ -48,7 +48,7 @@ class SourceFetcherRegistry
     public function __construct(iterable $fetchers=[])
     {
         foreach ($fetchers as $fetcher) {
-            $this->register($fetcher);
+            $this->register(fetcher: $fetcher);
         }
     }//end __construct()
 

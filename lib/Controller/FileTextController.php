@@ -594,8 +594,16 @@ class FileTextController extends Controller
             $residualEntities = $this->fileService->getLastResidualEntities();
             $isComplete       = (count($residualEntities) === 0);
 
+            $logSuffix     = ' with residual entities';
+            $messageResult = 'File anonymized, but some entities could not be fully removed — review the output'
+                .' and refine the entities (manual entities, skip unselected occurrences).';
+            if ($isComplete === true) {
+                $logSuffix     = ' successfully';
+                $messageResult = 'File anonymized successfully';
+            }
+
             $this->logger->info(
-                message: '[FileTextController] File anonymized'.($isComplete === true ? ' successfully' : ' with residual entities'),
+                message: '[FileTextController] File anonymized'.$logSuffix,
                 context: [
                     'file'               => __FILE__,
                     'line'               => __LINE__,
@@ -613,9 +621,7 @@ class FileTextController extends Controller
                 data: [
                     'success'            => true,
                     'complete'           => $isComplete,
-                    'message'            => ($isComplete === true
-                        ? 'File anonymized successfully'
-                        : 'File anonymized, but some entities could not be fully removed — review the output and refine the entities (manual entities, skip unselected occurrences).'),
+                    'message'            => $messageResult,
                     'original_file_id'   => $fileId,
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
@@ -629,17 +635,17 @@ class FileTextController extends Controller
             // per the `pdf-anonymisation` spec (REQ:filter-coverage +
             // REQ:validation-gate + REQ:image-only-defer):
             //
-            //   - encrypted_pdf       → 422 (caller-correctable)
-            //   - text_layer_missing → 422 (caller MUST route to OCR via
-            //                              the `ocr-document-scanning`
-            //                              capability — the controller
-            //                              surfaces a structured body so
-            //                              the caller can dispatch; v1
-            //                              does not auto-redirect)
-            //   - validation_failed  → 500 (pipeline integrity failure;
-            //                              fail-closed for the strict
-            //                              entity-anonymisation flow)
-            //   - internal_error     → 500 (unexpected pipeline failure)
+            // - encrypted_pdf       → 422 (caller-correctable)
+            // - text_layer_missing → 422 (caller MUST route to OCR via
+            // the `ocr-document-scanning`
+            // capability — the controller
+            // surfaces a structured body so
+            // the caller can dispatch; v1
+            // does not auto-redirect)
+            // - validation_failed  → 500 (pipeline integrity failure;
+            // fail-closed for the strict
+            // entity-anonymisation flow)
+            // - internal_error     → 500 (unexpected pipeline failure)
             //
             // Per ADR-005 the response body MUST NOT echo the
             // operator-supplied entity text — the exception's diagnostic

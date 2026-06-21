@@ -127,18 +127,18 @@ class SaveObjects
     /**
      * Constructor for SaveObjects handler
      *
-     * @param MagicMapper         $objectEntityMapper  Mapper for object entity database operations
-     * @param SchemaMapper        $schemaMapper        Mapper for schema operations
-     * @param RegisterMapper      $registerMapper      Mapper for register operations
-     * @param SaveObject          $saveHandler         Handler for individual object operations
-     * @param IUserSession        $userSession         User session for getting current user
-     * @param OrganisationService   $organisationService Service for organisation operations
-     * @param LoggerInterface       $logger              Logger for error and debug logging
-     * @param IGroupManager|null    $groupManager        Group manager for admin-bypass detection
-     * @param PermissionHandler|null $permissionHandler  Permission handler for per-object RBAC enforcement
-     * @param ValidateObject|null   $validateHandler     Validation handler for per-object schema validation
-     * @param IEventDispatcher|null $eventDispatcher     Event dispatcher for object lifecycle events
-     * @param AuditTrailMapper|null $auditTrailMapper    Audit trail mapper for logging bulk changes
+     * @param MagicMapper            $objectEntityMapper  Mapper for object entity database operations
+     * @param SchemaMapper           $schemaMapper        Mapper for schema operations
+     * @param RegisterMapper         $registerMapper      Mapper for register operations
+     * @param SaveObject             $saveHandler         Handler for individual object operations
+     * @param IUserSession           $userSession         User session for getting current user
+     * @param OrganisationService    $organisationService Service for organisation operations
+     * @param LoggerInterface        $logger              Logger for error and debug logging
+     * @param IGroupManager|null     $groupManager        Group manager for admin-bypass detection
+     * @param PermissionHandler|null $permissionHandler   Permission handler for per-object RBAC enforcement
+     * @param ValidateObject|null    $validateHandler     Validation handler for per-object schema validation
+     * @param IEventDispatcher|null  $eventDispatcher     Event dispatcher for object lifecycle events
+     * @param AuditTrailMapper|null  $auditTrailMapper    Audit trail mapper for logging bulk changes
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
@@ -1136,8 +1136,8 @@ class SaveObjects
 
             // Validation: validate the business data against the schema (BUG-OBJ-1).
             if ($_validation === true && $this->validateHandler !== null) {
-                $businessData      = $objData['object'] ?? [];
-                $validationResult  = $this->validateHandler->validateObject(
+                $businessData     = $objData['object'] ?? [];
+                $validationResult = $this->validateHandler->validateObject(
                     object: $businessData,
                     schema: $schema
                 );

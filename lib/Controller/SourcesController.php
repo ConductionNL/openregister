@@ -52,13 +52,13 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string        $appName      The name of the app
-     * @param IRequest      $request      The request object
-     * @param IAppConfig    $config       The app configuration object
-     * @param SourceMapper  $sourceMapper The source mapper
-     * @param IL10N         $l10n         The localization service
-     * @param IUserSession  $userSession  User session for admin checks
-     * @param IGroupManager $groupManager Group manager for admin checks
+     * @param string                 $appName         The name of the app
+     * @param IRequest               $request         The request object
+     * @param IAppConfig             $config          The app configuration object
+     * @param SourceMapper           $sourceMapper    The source mapper
+     * @param IL10N                  $l10n            The localization service
+     * @param IUserSession           $userSession     User session for admin checks
+     * @param IGroupManager          $groupManager    Group manager for admin checks
      * @param ICrypto                $crypto          Crypto service for databaseUrl encryption
      * @param SourceFetcherRegistry  $fetcherRegistry Resolves the transport for a source type
      * @param HarvestPipelineService $pipeline        Harvest pipeline orchestrator
@@ -439,14 +439,19 @@ class SourcesController extends Controller
 
         $lastSyncDate = $source->getLastSyncDate();
 
+        $formattedLastSyncDate = null;
+        if ($lastSyncDate !== null) {
+            $formattedLastSyncDate = $lastSyncDate->format('c');
+        }
+
         return new JSONResponse(
             data: [
-                'id'             => $source->getId(),
-                'uuid'           => $source->getUuid(),
-                'syncEnabled'    => $source->getSyncEnabled(),
-                'status'         => ($source->getLastSyncStatus() ?? 'never'),
-                'lastSyncDate'   => ($lastSyncDate !== null ? $lastSyncDate->format('c') : null),
-                'syncInterval'   => $source->getSyncInterval(),
+                'id'           => $source->getId(),
+                'uuid'         => $source->getUuid(),
+                'syncEnabled'  => $source->getSyncEnabled(),
+                'status'       => ($source->getLastSyncStatus() ?? 'never'),
+                'lastSyncDate' => $formattedLastSyncDate,
+                'syncInterval' => $source->getSyncInterval(),
             ]
         );
     }//end syncStatus()

@@ -139,8 +139,8 @@ class CaseTokenService
             throw new InvalidArgumentException('A logged-in user is required to mint a case token');
         }
 
-        $now      = new DateTime();
-        $expires  = null;
+        $now     = new DateTime();
+        $expires = null;
         if ($ttlSeconds !== null && $ttlSeconds > 0) {
             $expires = (clone $now)->modify('+'.$ttlSeconds.' seconds');
         }
@@ -164,7 +164,7 @@ class CaseTokenService
         $saved = $this->mapper->insert($entity);
 
         $data        = $saved->jsonSerialize();
-        $data['url'] = $this->buildPublicUrl($token);
+        $data['url'] = $this->buildPublicUrl(token: $token);
         return $data;
     }//end mint()
 
@@ -303,7 +303,7 @@ class CaseTokenService
         return array_map(
             function (CaseToken $row): array {
                 $data        = $row->jsonSerialize();
-                $data['url'] = $this->buildPublicUrl((string) $row->getToken());
+                $data['url'] = $this->buildPublicUrl(token: (string) $row->getToken());
                 return $data;
             },
             $rows
@@ -359,7 +359,6 @@ class CaseTokenService
         }
 
         return new class implements ContainerInterface {
-
             /**
              * Resolve a service from NC's global server container.
              *

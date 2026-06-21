@@ -187,6 +187,7 @@ class RegistersController extends Controller
      * @param ContainerInterface   $container            Container for lazy loading services
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
      * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
+     * @param RegisterSerializer   $registerSerializer   Register serializer for response shaping
      *
      * @return void
      *
@@ -1298,8 +1299,8 @@ class RegistersController extends Controller
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
                     // Derive RBAC from admin status and always keep imports tenant-scoped.
-                    $rbac  = ($this->isCurrentUserAdmin() === false);
-                    $multi = true;
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
@@ -1330,8 +1331,8 @@ class RegistersController extends Controller
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
                     // Derive RBAC from admin status and always keep imports tenant-scoped.
-                    $rbac  = ($this->isCurrentUserAdmin() === false);
-                    $multi = true;
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,

@@ -59,8 +59,8 @@ class CaseTokenController extends Controller
     /**
      * Constructor.
      *
-     * @param string           $appName     App name (injected by NC).
-     * @param IRequest         $request     Current request.
+     * @param string           $appName      App name (injected by NC).
+     * @param IRequest         $request      Current request.
      * @param CaseTokenService $tokenService Case-token mint/resolve/revoke service.
      *
      * @return void

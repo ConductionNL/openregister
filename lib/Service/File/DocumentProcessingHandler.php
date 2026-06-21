@@ -100,18 +100,18 @@ class DocumentProcessingHandler
     /**
      * Constructor for DocumentProcessingHandler.
      *
-     * @param IRootFolder                               $rootFolder           Root folder for file access.
-     * @param IUserSession                              $userSession          User session for getting current user.
-     * @param LoggerInterface                           $logger               Logger for logging operations.
-     * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
-     *                                                                        flags during the redaction pass
-     *                                                                        (see `entity-relation-grondslagen`).
-     * @param OfficeDocumentSanitizer                   $sanitizer            Office document sanitiser (DOCX / ODT).
-     * @param AnonymisationLogMapper|null               $anonymisationLogMapper
-     *                                                                        Mapper for persisting per-run anonymisation
-     *                                                                        log rows (carries the sanitisation report).
-     *                                                                        Nullable so the handler stays construct-safe
-     *                                                                        for tests that do not need persistence.
+     * @param IRootFolder                               $rootFolder             Root folder for file access.
+     * @param IUserSession                              $userSession            User session for getting current user.
+     * @param LoggerInterface                           $logger                 Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper   Used to honour skip-anonymization
+     *                                                                          flags during the redaction pass
+     *                                                                          (see
+     *                                                                          `entity-relation-grondslagen`).
+     * @param OfficeDocumentSanitizer                   $sanitizer              Office document sanitiser (DOCX / ODT).
+     * @param AnonymisationLogMapper|null               $anonymisationLogMapper Mapper for persisting per-run anonymisation
+     *                                                                          log rows (carries the sanitisation report).
+     *                                                                          Nullable so the handler stays construct-safe
+     *                                                                          for tests that do not need persistence.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,

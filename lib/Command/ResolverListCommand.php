@@ -43,8 +43,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ResolverListCommand extends Command
 {
-
-
     /**
      * Wire the command against the resolver service.
      *
@@ -56,7 +54,6 @@ class ResolverListCommand extends Command
         parent::__construct();
 
     }//end __construct()
-
 
     /**
      * Define command name + the required `app-id` argument.
@@ -79,7 +76,6 @@ class ResolverListCommand extends Command
             );
 
     }//end configure()
-
 
     /**
      * Print the resolver-key inventory.
@@ -112,6 +108,4 @@ class ResolverListCommand extends Command
         return Command::SUCCESS;
 
     }//end execute()
-
-
 }//end class

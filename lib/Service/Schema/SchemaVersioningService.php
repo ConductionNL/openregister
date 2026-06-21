@@ -56,17 +56,15 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaVersioningService
 {
-
-
     /**
      * Constructor.
      *
-     * @param SchemaDiffService     $diffService    Pure diff/classification.
+     * @param SchemaDiffService     $diffService     Pure diff/classification.
      * @param SchemaChangelogMapper $changelogMapper Changelog persistence.
-     * @param SchemaRunMapper       $runMapper      Run persistence (for invalid counts).
-     * @param SchemaRunEntryMapper  $runEntryMapper Per-object run entries.
-     * @param IUserSession          $userSession    Current user resolution.
-     * @param LoggerInterface       $logger         Logger.
+     * @param SchemaRunMapper       $runMapper       Run persistence (for invalid counts).
+     * @param SchemaRunEntryMapper  $runEntryMapper  Per-object run entries.
+     * @param IUserSession          $userSession     Current user resolution.
+     * @param LoggerInterface       $logger          Logger.
      */
     public function __construct(
         private readonly SchemaDiffService $diffService,
@@ -79,13 +77,12 @@ class SchemaVersioningService
 
     }//end __construct()
 
-
     /**
      * Diff the incoming definition against the stored schema.
      *
-     * @param Schema               $existing      The stored schema.
-     * @param array<string, mixed> $newDefinition The incoming definition (properties/required).
-     * @param array<string, string> $renames      Optional declared renames.
+     * @param Schema                $existing      The stored schema.
+     * @param array<string, mixed>  $newDefinition The incoming definition (properties/required).
+     * @param array<string, string> $renames       Optional declared renames.
      *
      * @return SchemaChangeSet The classified change set.
      *
@@ -102,13 +99,12 @@ class SchemaVersioningService
 
     }//end classify()
 
-
     /**
      * Enforce the breaking-change acknowledgement gate.
      *
-     * @param SchemaChangeSet $changeSet   The classified change set.
+     * @param SchemaChangeSet $changeSet    The classified change set.
      * @param bool            $acknowledged Whether acknowledgeBreaking was set.
-     * @param int             $schemaId    The schema id (for invalid-count lookup).
+     * @param int             $schemaId     The schema id (for invalid-count lookup).
      *
      * @return void
      *
@@ -127,12 +123,11 @@ class SchemaVersioningService
         }
 
         throw new BreakingSchemaChangeException(
-            $changeSet->getChanges(),
-            $this->latestInvalidCount($schemaId)
+            changes: $changeSet->getChanges(),
+            invalidCount: $this->latestInvalidCount(schemaId: $schemaId)
         );
 
     }//end enforceGate()
-
 
     /**
      * Compute the next version for a schema given a change set.
@@ -150,15 +145,14 @@ class SchemaVersioningService
 
     }//end nextVersion()
 
-
     /**
      * Record a changelog entry for an applied schema update.
      *
      * No entry is written for a metadata-only (no structural change) update.
      *
-     * @param int             $schemaId   The schema id.
-     * @param string|null     $version    The resulting version.
-     * @param SchemaChangeSet $changeSet  The classified change set.
+     * @param int             $schemaId     The schema id.
+     * @param string|null     $version      The resulting version.
+     * @param SchemaChangeSet $changeSet    The classified change set.
      * @param bool            $acknowledged Whether the change was acknowledged.
      *
      * @return SchemaChangelog|null The recorded entry, or null for a no-op.
@@ -198,7 +192,6 @@ class SchemaVersioningService
         }
 
     }//end recordChangelog()
-
 
     /**
      * The invalid-object count from the most recent completed revalidation,
@@ -242,7 +235,6 @@ class SchemaVersioningService
 
     }//end latestInvalidCount()
 
-
     /**
      * The current acting user id, or 'system'.
      *
@@ -258,6 +250,4 @@ class SchemaVersioningService
         return 'system';
 
     }//end currentActor()
-
-
 }//end class

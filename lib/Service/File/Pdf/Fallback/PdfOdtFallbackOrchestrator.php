@@ -101,10 +101,10 @@ class PdfOdtFallbackOrchestrator
     /**
      * Constructor.
      *
-     * @param IAppConfig                  $appConfig       App-config carrying the feature flag.
-     * @param NcOfficeConverterInterface  $converter       NC Office bridge (Null by default).
-     * @param PdfTextReplacer             $pdfTextReplacer The Path A replacer (re-used for the ODT-derived PDF).
-     * @param LoggerInterface             $logger          PII-free logger.
+     * @param IAppConfig                 $appConfig       App-config carrying the feature flag.
+     * @param NcOfficeConverterInterface $converter       NC Office bridge (Null by default).
+     * @param PdfTextReplacer            $pdfTextReplacer The Path A replacer (re-used for the ODT-derived PDF).
+     * @param LoggerInterface            $logger          PII-free logger.
      */
     public function __construct(
         private readonly IAppConfig $appConfig,
@@ -156,9 +156,9 @@ class PdfOdtFallbackOrchestrator
      * if Path B itself fails (any sub-step throws OR the re-run validation
      * gate also rejects the output).
      *
-     * @param string                     $pdfBytes      The original input PDF bytes.
-     * @param array<string, string>      $substitutions The substitution map applied by Path A.
-     * @param PdfAnonymisationException  $cause         The Path A exception that triggered the fallback.
+     * @param string                    $pdfBytes      The original input PDF bytes.
+     * @param array<string, string>     $substitutions The substitution map applied by Path A.
+     * @param PdfAnonymisationException $cause         The Path A exception that triggered the fallback.
      *
      * @return string Anonymised PDF bytes from Path B.
      *
@@ -197,10 +197,10 @@ class PdfOdtFallbackOrchestrator
 
         // Re-run the SAPP-side replacer against the round-tripped PDF. The
         // ODT->PDF conversion happens NEXT — we deliberately do not invoke
-        // an ODT entity-walker here, because the Path B contract is "the
+        // an ODT entity-walker here, because the Path B contract is that the
         // ODT-PDF re-roundtrip MUST defeat the same encoding edge case that
         // tripped Path A, so feeding the round-tripped PDF back through the
-        // SAPP replacer is the equivalent assertion."
+        // SAPP replacer is the equivalent assertion.
         try {
             $pdf = $this->converter->odtToPdf(odtBytes: $odt);
         } catch (Throwable $e) {

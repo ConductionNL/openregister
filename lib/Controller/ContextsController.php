@@ -47,8 +47,6 @@ use OCP\IRequest;
  */
 class ContextsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -67,7 +65,6 @@ class ContextsController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Return the register-wide JSON-LD context document.
@@ -92,13 +89,12 @@ class ContextsController extends Controller
             return new DataResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
         }
 
-        $schemas    = $this->loadSchemas($registerEntity);
-        $contextMap = $this->contextService->buildRegisterContext($registerEntity, $schemas);
-        $etag       = $this->buildEtag($registerEntity, $schemas);
+        $schemas    = $this->loadSchemas(register: $registerEntity);
+        $contextMap = $this->contextService->buildRegisterContext(register: $registerEntity, schemas: $schemas);
+        $etag       = $this->buildEtag(register: $registerEntity, schemas: $schemas);
 
-        return $this->contextResponse(['@context' => $contextMap], $etag);
+        return $this->contextResponse(document: ['@context' => $contextMap], etag: $etag);
     }//end register()
-
 
     /**
      * Return a per-schema JSON-LD context document.
@@ -130,12 +126,11 @@ class ContextsController extends Controller
             return new DataResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
         }
 
-        $contextMap = $this->contextService->buildSchemaContext($registerEntity, $schemaEntity);
-        $etag       = $this->buildEtag($registerEntity, [$schemaEntity]);
+        $contextMap = $this->contextService->buildSchemaContext(register: $registerEntity, schema: $schemaEntity);
+        $etag       = $this->buildEtag(register: $registerEntity, schemas: [$schemaEntity]);
 
-        return $this->contextResponse(['@context' => $contextMap], $etag);
+        return $this->contextResponse(document: ['@context' => $contextMap], etag: $etag);
     }//end schema()
-
 
     /**
      * Load the schema entities belonging to a register, skipping any that fail
@@ -161,7 +156,6 @@ class ContextsController extends Controller
         return $schemas;
     }//end loadSchemas()
 
-
     /**
      * Build a weak ETag from the register/schema `updated` timestamps so a
      * conditional GET can short-circuit when nothing changed.
@@ -175,7 +169,11 @@ class ContextsController extends Controller
     {
         $parts   = [];
         $updated = $register->getUpdated();
-        $parts[] = ($updated !== null) ? $updated->format('U') : '0';
+        if ($updated !== null) {
+            $parts[] = $updated->format('U');
+        } else {
+            $parts[] = '0';
+        }
 
         foreach ($schemas as $schema) {
             if (($schema instanceof Schema) === false) {
@@ -183,12 +181,17 @@ class ContextsController extends Controller
             }
 
             $schemaUpdated = $schema->getUpdated();
-            $parts[]       = ((string) $schema->getId()).'-'.(($schemaUpdated !== null) ? $schemaUpdated->format('U') : '0');
+            if ($schemaUpdated !== null) {
+                $schemaStamp = $schemaUpdated->format('U');
+            } else {
+                $schemaStamp = '0';
+            }
+
+            $parts[] = ((string) $schema->getId()).'-'.$schemaStamp;
         }
 
         return '"'.md5(implode(':', $parts)).'"';
     }//end buildEtag()
-
 
     /**
      * Build a JSON-LD context DataResponse with ETag/Cache-Control headers,

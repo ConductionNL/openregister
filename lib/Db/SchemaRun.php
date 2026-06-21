@@ -117,14 +117,14 @@ class SchemaRun extends Entity implements JsonSerializable
     /**
      * The schema this run targets.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $schemaId = null;
 
     /**
      * The register the schema's objects live in (magic-mapper routing).
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $registerId = null;
 
@@ -166,21 +166,21 @@ class SchemaRun extends Entity implements JsonSerializable
     /**
      * Number of processed objects.
      *
-     * @var int
+     * @var integer
      */
     protected int $processed = 0;
 
     /**
      * Total number of objects in scope.
      *
-     * @var int
+     * @var integer
      */
     protected int $total = 0;
 
     /**
      * Resumable cursor (last processed object id).
      *
-     * @var int
+     * @var integer
      */
     protected int $cursor = 0;
 
@@ -201,7 +201,7 @@ class SchemaRun extends Entity implements JsonSerializable
     /**
      * For a rollback run, the migration run id it rolls back.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $rolledBackFrom = null;
 
@@ -218,7 +218,6 @@ class SchemaRun extends Entity implements JsonSerializable
      * @var DateTime|null
      */
     protected ?DateTime $updated = null;
-
 
     /**
      * Constructor — registers field types for hydration.
@@ -244,7 +243,6 @@ class SchemaRun extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Whether the run is in an active (blocking) state.
      *
@@ -255,7 +253,6 @@ class SchemaRun extends Entity implements JsonSerializable
         return in_array($this->state, self::ACTIVE_STATES, true);
 
     }//end isActive()
-
 
     /**
      * JSON serialisation.
@@ -285,6 +282,4 @@ class SchemaRun extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

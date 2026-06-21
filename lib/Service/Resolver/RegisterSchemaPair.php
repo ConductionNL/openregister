@@ -34,8 +34,6 @@ use OCA\OpenRegister\Db\Schema;
  */
 final class RegisterSchemaPair
 {
-
-
     /**
      * Constructor; capture every field as readonly.
      *
@@ -53,7 +51,6 @@ final class RegisterSchemaPair
 
     }//end __construct()
 
-
     /**
      * Get the raw register slug/UUID the resolver started from.
      *
@@ -64,7 +61,6 @@ final class RegisterSchemaPair
         return $this->registerId;
 
     }//end getRegisterId()
-
 
     /**
      * Get the raw schema slug/UUID the resolver started from.
@@ -77,7 +73,6 @@ final class RegisterSchemaPair
 
     }//end getSchemaId()
 
-
     /**
      * Get the hydrated Register entity.
      *
@@ -89,7 +84,6 @@ final class RegisterSchemaPair
 
     }//end getRegister()
 
-
     /**
      * Get the hydrated Schema entity.
      *
@@ -100,6 +94,4 @@ final class RegisterSchemaPair
         return $this->schema;
 
     }//end getSchema()
-
-
 }//end class

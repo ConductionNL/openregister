@@ -95,7 +95,7 @@ class SchemaOrgSnapshot
     public function findClass(string $reference): ?array
     {
         $this->ensureParsed();
-        $name = $this->bareName($reference);
+        $name = $this->bareName(reference: $reference);
         return ($this->classes[$name] ?? null);
     }//end findClass()
 
@@ -136,8 +136,8 @@ class SchemaOrgSnapshot
         $this->ensureParsed();
 
         $result = [];
-        foreach ($this->ancestryOf($className) as $ancestor) {
-            foreach ($this->directPropertiesOf($ancestor) as $name => $property) {
+        foreach ($this->ancestryOf(className: $className) as $ancestor) {
+            foreach ($this->directPropertiesOf(className: $ancestor) as $name => $property) {
                 if (isset($result[$name]) === false) {
                     $result[$name] = $property;
                 }
@@ -167,7 +167,7 @@ class SchemaOrgSnapshot
             $chain[] = $current;
             $parent  = $this->classes[$current]['parent'];
             if ($parent !== null) {
-                $current = $this->bareName($parent);
+                $current = $this->bareName(reference: $parent);
             } else {
                 $current = null;
             }
@@ -265,13 +265,19 @@ class SchemaOrgSnapshot
         }
 
         if (is_file($this->releaseFile) === false) {
-            throw new SchemaImportException('Schema.org snapshot file is missing: '.$this->releaseFile, 500);
+            throw new SchemaImportException(
+                message: 'Schema.org snapshot file is missing: '.$this->releaseFile,
+                httpStatus: 500
+            );
         }
 
         $raw     = (string) file_get_contents($this->releaseFile);
         $decoded = json_decode($raw, associative: true);
         if (is_array($decoded) === false || isset($decoded['@graph']) === false) {
-            throw new SchemaImportException('Schema.org snapshot is not a valid JSON-LD release file.', 500);
+            throw new SchemaImportException(
+                message: 'Schema.org snapshot is not a valid JSON-LD release file.',
+                httpStatus: 500
+            );
         }
 
         $this->classes    = [];
@@ -282,14 +288,14 @@ class SchemaOrgSnapshot
                 continue;
             }
 
-            $type = $this->normaliseTypes($node['@type'] ?? null);
+            $type = $this->normaliseTypes(type: $node['@type'] ?? null);
             if (in_array('rdfs:Class', $type, true) === true) {
-                $this->indexClass($node);
+                $this->indexClass(node: $node);
                 continue;
             }
 
             if (in_array('rdf:Property', $type, true) === true) {
-                $this->indexProperty($node);
+                $this->indexProperty(node: $node);
             }
         }
     }//end ensureParsed()
@@ -304,7 +310,7 @@ class SchemaOrgSnapshot
     private function indexClass(array $node): void
     {
         $iri    = (string) $node['@id'];
-        $name   = $this->bareName($iri);
+        $name   = $this->bareName(reference: $iri);
         $parent = null;
         if (isset($node['rdfs:subClassOf']['@id']) === true) {
             $parent = (string) $node['rdfs:subClassOf']['@id'];
@@ -328,14 +334,14 @@ class SchemaOrgSnapshot
     private function indexProperty(array $node): void
     {
         $iri  = (string) $node['@id'];
-        $name = $this->bareName($iri);
+        $name = $this->bareName(reference: $iri);
 
         $this->properties[$name] = [
             'iri'     => $iri,
             'label'   => (string) ($node['rdfs:label'] ?? $name),
             'comment' => (string) ($node['rdfs:comment'] ?? ''),
-            'domains' => $this->idList($node['schema:domainIncludes'] ?? null),
-            'ranges'  => $this->idList($node['schema:rangeIncludes'] ?? null),
+            'domains' => $this->idList(value: $node['schema:domainIncludes'] ?? null),
+            'ranges'  => $this->idList(value: $node['schema:rangeIncludes'] ?? null),
         ];
     }//end indexProperty()
 
@@ -354,13 +360,13 @@ class SchemaOrgSnapshot
 
         // Single { "@id": ... }.
         if (isset($value['@id']) === true) {
-            return [$this->bareName((string) $value['@id'])];
+            return [$this->bareName(reference: (string) $value['@id'])];
         }
 
         $names = [];
         foreach ($value as $entry) {
             if (is_array($entry) === true && isset($entry['@id']) === true) {
-                $names[] = $this->bareName((string) $entry['@id']);
+                $names[] = $this->bareName(reference: (string) $entry['@id']);
             }
         }
 

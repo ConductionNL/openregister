@@ -915,8 +915,10 @@ class MagicRbacHandler
                 if (isset($rule['user']) === true && is_string($rule['user']) === true) {
                     $userQualifies = $this->matchesUserOverride(rule: 'user:'.$rule['user'], userId: $userId);
                 } else {
-                    $group         = ($rule['group'] ?? null);
-                    $userQualifies = (($group === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
+                    $group           = ($rule['group'] ?? null);
+                    $qualifiesPublic = ($group === 'public'
+                        && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true);
+                    $userQualifies   = ($qualifiesPublic === true
                         || ($group !== null && in_array($group, $userGroups, true) === true));
                 }
 

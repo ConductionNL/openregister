@@ -35,7 +35,6 @@ use OCA\OpenRegister\Db\Source;
  */
 interface SourceFetcherInterface
 {
-
     /**
      * Whether this fetcher can handle the given source type.
      *

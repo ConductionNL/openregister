@@ -1353,7 +1353,6 @@ class ObjectService
         // avoids cluttering the Files tree with an empty folder per object and
         // avoids binding system/seed-created objects to a folder a later editor
         // can't access (the folder_access_denied case).
-
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $savedObject,
@@ -2680,7 +2679,7 @@ class ObjectService
             }
 
             $registerArr['schemas'] = $schemas;
-            $result[]               = $registerArr;
+            $result[] = $registerArr;
         }
 
         return $result;

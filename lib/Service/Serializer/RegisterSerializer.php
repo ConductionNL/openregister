@@ -56,8 +56,6 @@ use Psr\Log\LoggerInterface;
  */
 final class RegisterSerializer
 {
-
-
     /**
      * Wire mappers + logger via constructor DI.
      *
@@ -71,12 +69,11 @@ final class RegisterSerializer
 
     }//end __construct()
 
-
     /**
      * Serialize a single Register entity with optional extensions.
      *
-     * @param Register     $register    The Register entity to serialize.
-     * @param array        $extend      Extension keys to apply (`schemas`, `@self.stats`).
+     * @param Register                         $register    The Register entity to serialize.
+     * @param array                            $extend      Extension keys to apply (`schemas`, `@self.stats`).
      * @param array<int,array{total:int}>|null $schemaStats Pre-computed per-schema object counts (id → ['total' => int]).
      *
      * @return array Serialized register payload, with extensions applied.
@@ -91,20 +88,21 @@ final class RegisterSerializer
         $wantStats   = in_array('@self.stats', $extend, true);
 
         if ($wantSchemas === true) {
-            $data['schemas'] = $this->expandSchemas($data['schemas'] ?? [], $wantStats, $schemaStats);
+            $data['schemas'] = $this->expandSchemas(ids: ($data['schemas'] ?? []), attachStats: $wantStats, schemaStats: $schemaStats);
         }
 
         return $data;
 
     }//end serialize()
 
-
     /**
      * Serialize a collection of Register entities.
      *
-     * @param Register[]                                                $registers              Registers to serialize.
-     * @param array                                                     $extend                 Extension keys to apply.
-     * @param array<int,array<int,array{total:int}>>|null               $schemaStatsByRegisterId Pre-computed per-register stats (registerId → schemaId → ['total' => int]).
+     * @param Register[]                                  $registers               Registers to serialize.
+     * @param array                                       $extend                  Extension keys to apply.
+     * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
+     *                                                                             (registerId → schemaId →
+     *                                                                             ['total' => int]).
      *
      * @return array<int,array> Serialized payload for each register.
      *
@@ -125,13 +123,12 @@ final class RegisterSerializer
                 $stats = $schemaStatsByRegisterId[$registerId];
             }
 
-            $out[] = $this->serialize($register, $extend, $stats);
+            $out[] = $this->serialize(register: $register, extend: $extend, schemaStats: $stats);
         }
 
         return $out;
 
     }//end serializeMany()
-
 
     /**
      * Expand a `schemas` ID array to schema objects, optionally annotating with stats.
@@ -140,9 +137,10 @@ final class RegisterSerializer
      * retained in their original position with their original PHP type
      * preserved. The serializer logs a warning for each orphan.
      *
-     * @param array                                  $ids          Schema ID array (int|string).
-     * @param bool                                   $attachStats  Whether to attach per-schema stats to expanded entries.
-     * @param array<int,array{total:int}>|null       $schemaStats  Pre-computed per-schema stats (id → ['total' => int]).
+     * @param array                            $ids         Schema ID array (int|string).
+     * @param bool                             $attachStats Whether to attach per-schema stats to expanded entries.
+     * @param array<int,array{total:int}>|null $schemaStats Pre-computed per-schema stats (id → ['total'
+     *                                                      => int]).
      *
      * @return array Heterogeneous array of schema objects + retained orphan IDs.
      *
@@ -176,7 +174,7 @@ final class RegisterSerializer
                 );
                 $expanded[] = $schemaId;
                 continue;
-            }
+            }//end try
 
             if ($attachStats === true) {
                 $idForLookup = $schemaJson['id'] ?? null;
@@ -200,6 +198,4 @@ final class RegisterSerializer
         return $expanded;
 
     }//end expandSchemas()
-
-
 }//end class

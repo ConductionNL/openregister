@@ -36,7 +36,6 @@ use OCP\IDBConnection;
  */
 class AnalyticsSeriesMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *

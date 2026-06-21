@@ -411,7 +411,7 @@ class ObjectsProvider implements IFilteringProvider
         // Cursor pagination: cursor is an integer offset serialised as a
         // string (matching the NC core files/contacts providers). Limit is
         // capped at PAGE_LIMIT.
-        $limit  = self::PAGE_LIMIT;
+        $limit      = self::PAGE_LIMIT;
         $queryLimit = $query->getLimit();
         if ($queryLimit > 0 && $queryLimit < $limit) {
             $limit = $queryLimit;

@@ -122,7 +122,11 @@ class TranslationProjectionService
             $data       = (array) ($object->getObject() ?? []);
             $translator = $this->userSession->getUser()?->getUID();
             $register   = $this->loadRegister(object: $object);
-            $defaultLanguage = ($register !== null) ? $register->getDefaultLanguage() : 'nl';
+            if ($register !== null) {
+                $defaultLanguage = $register->getDefaultLanguage();
+            } else {
+                $defaultLanguage = 'nl';
+            }
 
             // Per-property resolved source language (i18n-source-of-truth).
             $sourceLanguages = [];
@@ -291,9 +295,9 @@ class TranslationProjectionService
         $body = (array) ($object->getObject() ?? []);
         $meta = $body['_translationMeta'] ?? null;
         if (is_array($meta) === true
-            && isset($meta[$property])
+            && isset($meta[$property]) === true
             && is_array($meta[$property]) === true
-            && isset($meta[$property]['sourceLanguage'])
+            && isset($meta[$property]['sourceLanguage']) === true
             && is_string($meta[$property]['sourceLanguage']) === true
             && $meta[$property]['sourceLanguage'] !== ''
         ) {
@@ -304,7 +308,7 @@ class TranslationProjectionService
         $properties = $schema->getProperties() ?? [];
         $definition = $properties[$property] ?? null;
         if (is_array($definition) === true
-            && isset($definition['sourceLanguage'])
+            && isset($definition['sourceLanguage']) === true
             && is_string($definition['sourceLanguage']) === true
             && $definition['sourceLanguage'] !== ''
         ) {
@@ -312,7 +316,11 @@ class TranslationProjectionService
         }
 
         // Step 3 — register default; Step 4 — hardcoded fallback.
-        return ($registerDefault !== '') ? $registerDefault : 'nl';
+        if ($registerDefault !== '') {
+            return $registerDefault;
+        }
+
+        return 'nl';
     }//end resolveSourceLanguage()
 
     /**

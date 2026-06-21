@@ -87,12 +87,12 @@ class TranslationTargetConflictException extends CustomValidationException
         $this->targetLanguage = $targetLanguage;
 
         parent::__construct(
-            sprintf(
+            message: sprintf(
                 'Cannot mix language-keyed body for "%s" with X-Translation-Target-Language: %s',
                 $property,
                 $targetLanguage
             ),
-            [
+            errors: [
                 'code'           => self::ERROR_CODE,
                 'property'       => $property,
                 'targetLanguage' => $targetLanguage,
