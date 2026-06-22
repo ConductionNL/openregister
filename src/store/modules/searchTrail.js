@@ -289,15 +289,20 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch search trail statistics
+		 * @param {object} options - Optional { from, to } ISO date filters
 		 * @return {Promise<object>} The statistics data
 		 *
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
-		async fetchStatistics() {
+		async fetchStatistics(options = {}) {
 			this.statisticsLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/statistics`, {
+				const query = new URLSearchParams()
+				if (options.from) query.append('from', options.from)
+				if (options.to) query.append('to', options.to)
+				const suffix = query.toString() ? `?${query.toString()}` : ''
+				const response = await fetch(`${apiUrl}/search-trails/statistics${suffix}`, {
 					method: 'GET',
 					headers: {
 						'Content-Type': 'application/json',
