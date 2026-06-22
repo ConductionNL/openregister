@@ -22,7 +22,7 @@ Serializes a single register entity. Calls `$register->jsonSerialize()` for the 
 |---|---|---|
 | `$register` | `Register` | The register entity to serialize. |
 | `$extend` | `string[]` | Extension keys (`'schemas'`, `'@self.stats'`). |
-| `$schemaStats` | `array<int, array>|null` | Pre-computed schema object counts (keyed by schema ID). Pass the result of `RegisterService::getSchemaObjectCounts()`. Required when `'@self.stats'` is in `$extend`; ignored otherwise. |
+| `$schemaStats` | `array<int, array>\|null` | Pre-computed schema object counts (keyed by schema ID). Pass the result of `RegisterService::getSchemaObjectCounts()`. Required when `'@self.stats'` is in `$extend`; ignored otherwise. |
 
 **Returns** `array` — serialized register array with extensions applied.
 
