@@ -1054,23 +1054,18 @@ class ObjectService
     public function count(
         array $config=[]
     ): int {
-        // Add register and schema IDs to filters.
-        // Ensure we have both register and schema set.
-        if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
-            // Note: $_filters was intended for filter building but is currently unused.
-            // Filters are applied directly to $config instead.
-            // $_filters = ['register' => $this->currentRegister->getId()];.
-        }
-
-        if ($this->currentSchema !== null && empty($config['filers']['schema']) === true) {
-            $config['filers']['schema'] = $this->currentSchema->getId();
-        }
-
-        // Remove limit from config as it's not needed for count.
+        // Scope the count to the current register/schema context (set via
+        // setRegister()/setSchema()) by passing them to the mapper as typed
+        // params. Without them MagicMapper::countAll() sums EVERY register/schema
+        // table — i.e. the whole instance — so a context-scoped caller would get
+        // the global object total instead of its own. Any extra ad-hoc filters
+        // travel in $config['filters'] and are applied within the scoped table(s).
         unset($config['limit']);
 
         return $this->objectMapper->countAll(
-            _filters: $config['filters'] ?? []
+            _filters: $config['filters'] ?? [],
+            schema: $this->currentSchema,
+            register: $this->currentRegister
         );
     }//end count()
 
