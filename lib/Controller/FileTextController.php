@@ -552,6 +552,15 @@ class FileTextController extends Controller
             // Perform anonymization.
             $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
 
+            // Best-effort policy: the file is produced even when some entity
+            // text could not be removed. Surface the residuals so the operator
+            // can iterate (manual entities, skip unselected occurrences). Logs
+            // stay PII-free (ADR-005); the residual TEXT is carried only in
+            // this authenticated response for the review UI (deliberate,
+            // product-owner-approved deviation from the no-PII-in-responses rule).
+            $residualEntities = $this->fileService->getLastResidualEntities();
+            $isComplete       = (count($residualEntities) === 0);
+
             // Mark entity relations as anonymized.
             $this->entityRelationMapper->markAsAnonymized(
                 fileId: $fileId,
@@ -559,7 +568,7 @@ class FileTextController extends Controller
             );
 
             $this->logger->info(
-                message: '[FileTextController] File anonymized successfully',
+                message: '[FileTextController] File anonymized'.($isComplete === true ? ' successfully' : ' with residual entities'),
                 context: [
                     'file'               => __FILE__,
                     'line'               => __LINE__,
@@ -567,17 +576,25 @@ class FileTextController extends Controller
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
                     'entities_replaced'  => count($entities),
+                    'complete'           => $isComplete,
+                    // PII-free: count only, never the residual text.
+                    'residual_count'     => count($residualEntities),
                 ]
             );
 
             return new JSONResponse(
                 data: [
                     'success'            => true,
-                    'message'            => 'File anonymized successfully',
+                    'complete'           => $isComplete,
+                    'message'            => ($isComplete === true
+                        ? 'File anonymized successfully'
+                        : 'File anonymized, but some entities could not be fully removed — review the output and refine the entities (manual entities, skip unselected occurrences).'),
                     'original_file_id'   => $fileId,
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
                     'entities_replaced'  => count($entities),
+                    'residual_count'     => count($residualEntities),
+                    'residual_entities'  => $residualEntities,
                 ]
             );
         } catch (\Exception $e) {

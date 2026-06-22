@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -110,6 +111,16 @@ class TextExtractionService
     private const FIXED_SIZE = 'FIXED_SIZE';
 
     /**
+     * Maximum recursion depth for the Word element walker
+     *
+     * Guards against pathologically (or maliciously) nested documents — far
+     * above any realistic table-in-cell-in-table nesting.
+     *
+     * @var int
+     */
+    private const MAX_WORD_DEPTH = 50;
+
+    /**
      * Constructor
      *
      * @param FileMapper               $fileMapper           Mapper for Nextcloud files
@@ -146,7 +157,7 @@ class TextExtractionService
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly SettingsService $settingsService,
         private readonly RiskLevelService $riskLevelService,
-        private readonly \OCA\OpenRegister\Service\TextExtraction\EmlParser $emlParser
+        private readonly EmlParser $emlParser
     ) {
     }//end __construct()
 
@@ -1408,20 +1419,28 @@ class TextExtractionService
     }//end extractPdf()
 
     /**
-     * Extract text from Word document (DOCX/DOC) using PhpWord
+     * Extract text from a Word-family document (DOCX/DOC/ODT) using PhpWord
+     *
+     * Selects the PhpWord reader from the file's MIME type / extension
+     * (DOCX → Word2007, DOC → MsDoc, ODT → ODText) and walks the full
+     * element tree — body, tables (incl. nested tables and in-cell text
+     * runs / list items), section headers and footers, and document-level
+     * footnotes/endnotes. On a per-document load/parse failure the method
+     * logs structural detail (no document content) and returns null rather
+     * than throwing, so a single un-parseable file does not abort a batch.
      *
      * @param \OCP\Files\File $file Nextcloud file object
      *
-     * @return string|null Extracted text content
+     * @return string|null Extracted text content, or null on empty/failed extraction
      *
-     * @throws Exception If Word parsing fails
+     * @throws Exception If the PhpWord library itself is not installed (deployment error)
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-section header/body/footer/notes traversal
      */
     private function extractWord(\OCP\Files\File $file): ?string
     {
-        // Check if PhpWord library is available.
+        // Check if PhpWord library is available (deployment error — still throws).
         if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
             $this->logger->warning(
                 message: '[TextExtractionService] PhpWord library not available',
@@ -1436,6 +1455,9 @@ class TextExtractionService
             throw new Exception($msg);
         }
 
+        $readerName = $this->resolveWordReader(mimeType: (string) $file->getMimeType(), fileName: (string) $file->getName());
+
+        $tempFile = null;
         try {
             $this->logger->debug(
                 message: '[TextExtractionService] Extracting Word document',
@@ -1444,49 +1466,48 @@ class TextExtractionService
                     'line'   => __LINE__,
                     'fileId' => $file->getId(),
                     'name'   => $file->getName(),
+                    'reader' => $readerName,
                 ]
             );
 
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PhpWord.
+            // Write the content to a temp file for PhpWord to read.
+            $content  = $file->getContent();
             $tempFile = tmpfile();
             $tempPath = stream_get_meta_data($tempFile)['uri'];
             fwrite($tempFile, $content);
 
-            // Load Word document.
-            $phpWord = WordIOFactory::load($tempPath);
+            // Load with the reader chosen from the MIME/extension.
+            $phpWord = WordIOFactory::load($tempPath, $readerName);
 
-            // Extract text from all sections.
+            // Walk every section: headers, body, footers.
             $text = '';
             foreach ($phpWord->getSections() as $section) {
-                foreach ($section->getElements() as $element) {
-                    if (method_exists($element, 'getText') === true) {
-                        $text .= $element->getText()."\n";
-                    } else if (method_exists($element, 'getElements') === true) {
-                        // Handle nested elements (tables, etc.).
-                        foreach ($element->getElements() as $childElement) {
-                            if (method_exists($childElement, 'getText') === true) {
-                                $text .= $childElement->getText()." ";
-                            }
-                        }
+                foreach ($section->getHeaders() as $header) {
+                    $text .= $this->walkWordElements(elements: $header->getElements());
+                }
 
-                        $text .= "\n";
-                    }
+                $text .= $this->walkWordElements(elements: $section->getElements());
+
+                foreach ($section->getFooters() as $footer) {
+                    $text .= $this->walkWordElements(elements: $footer->getElements());
                 }
             }
 
-            // Clean up.
-            fclose($tempFile);
+            // Always capture document-level footnotes/endnotes in addition to
+            // any inline notes the body walk already picked up.
+            $text .= $this->extractWordNotes(phpWord: $phpWord);
 
-            if (trim($text) === '' || trim($text) === null) {
+            fclose($tempFile);
+            $tempFile = null;
+
+            if (trim($text) === '') {
                 $this->logger->warning(
                     message: '[TextExtractionService] Word extraction returned empty text',
                     context: [
                         'file'   => __FILE__,
                         'line'   => __LINE__,
                         'fileId' => $file->getId(),
+                        'reader' => $readerName,
                     ]
                 );
                 return null;
@@ -1503,19 +1524,181 @@ class TextExtractionService
             );
 
             return $text;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            if (is_resource($tempFile) === true) {
+                fclose($tempFile);
+            }
+
+            // Per-document failure (e.g. limited MsDoc binary parsing): log
+            // structure only (no document content, per ADR-005) and degrade
+            // to null so the surrounding pipeline treats it as "no text".
             $this->logger->error(
-                message: '[TextExtractionService] Word extraction failed',
+                message: '[TextExtractionService] Word extraction failed; returning null',
                 context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'fileId'    => $file->getId(),
+                    'mimeType'  => (string) $file->getMimeType(),
+                    'reader'    => $readerName,
+                    'exception' => get_class($e),
                 ]
             );
-            throw new Exception("Word extraction failed: ".$e->getMessage());
+            return null;
         }//end try
     }//end extractWord()
+
+    /**
+     * Recursively walk PhpWord elements, accumulating their text
+     *
+     * Duck-typed (method_exists) so it tolerates PhpWord version differences
+     * and any element type that exposes the same accessors. Dispatch order:
+     * Table (getRows) → composite container (getElements) → leaf text
+     * (getText). Composite containers are descended rather than flattened to
+     * a single getText() so styled sub-runs and in-cell content are captured.
+     *
+     * @param iterable $elements PhpWord elements to walk
+     * @param int      $depth    Current recursion depth (guarded by MAX_WORD_DEPTH)
+     *
+     * @return string Accumulated text
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Element-tree dispatch over several PhpWord shapes
+     */
+    private function walkWordElements(iterable $elements, int $depth=0): string
+    {
+        if ($depth > self::MAX_WORD_DEPTH) {
+            $this->logger->debug(
+                message: '[TextExtractionService] Word element walk hit MAX_WORD_DEPTH; stopping descent',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'maxDepth' => self::MAX_WORD_DEPTH,
+                ]
+            );
+            return '';
+        }
+
+        $text = '';
+        foreach ($elements as $element) {
+            // Table: rows → cells → recurse cell elements (nested tables re-enter here).
+            if (method_exists($element, 'getRows') === true) {
+                foreach ($element->getRows() as $row) {
+                    if (method_exists($row, 'getCells') === false) {
+                        continue;
+                    }
+
+                    foreach ($row->getCells() as $cell) {
+                        if (method_exists($cell, 'getElements') === true) {
+                            $text .= $this->walkWordElements(elements: $cell->getElements(), depth: ($depth + 1));
+                        }
+                    }
+
+                    $text .= "\n";
+                }
+
+                continue;
+            }
+
+            // Composite container (TextRun, ListItemRun, Footnote, ...): descend into children.
+            if (method_exists($element, 'getElements') === true) {
+                $children = $element->getElements();
+                if (empty($children) === false) {
+                    $text .= $this->walkWordElements(elements: $children, depth: ($depth + 1));
+                    $text .= "\n";
+                    continue;
+                }
+            }
+
+            // Leaf text-bearing element (Text, Title, Link, ListItem, PreserveText).
+            if (method_exists($element, 'getText') === true) {
+                $value = $element->getText();
+                if (is_string($value) === true) {
+                    if ($value !== '') {
+                        $text .= $value."\n";
+                    }
+                } else if (is_object($value) === true) {
+                    // Some elements (e.g. Title) return a TextRun from getText() — walk it.
+                    $text .= $this->walkWordElements(elements: [$value], depth: ($depth + 1));
+                }
+            }
+        }//end foreach
+
+        return $text;
+    }//end walkWordElements()
+
+    /**
+     * Extract document-level footnote and endnote text
+     *
+     * Iterated unconditionally (in addition to inline note capture during the
+     * body walk) so note text is collected regardless of how the vendored
+     * PhpWord version surfaces it. De-duplication is intentionally not done —
+     * a repeated note string is acceptable for the flat-text use case.
+     *
+     * @param \PhpOffice\PhpWord\PhpWord $phpWord Loaded PhpWord document
+     *
+     * @return string Accumulated footnote/endnote text
+     */
+    private function extractWordNotes(\PhpOffice\PhpWord\PhpWord $phpWord): string
+    {
+        $text = '';
+
+        $collections = [];
+        try {
+            $collections[] = $phpWord->getFootnotes();
+            $collections[] = $phpWord->getEndnotes();
+        } catch (\Throwable $e) {
+            // Older/newer PhpWord without these accessors — inline capture still applies.
+            return $text;
+        }
+
+        foreach ($collections as $collection) {
+            if (method_exists($collection, 'getItems') === false) {
+                continue;
+            }
+
+            foreach ($collection->getItems() as $note) {
+                if (method_exists($note, 'getElements') === true) {
+                    $text .= $this->walkWordElements(elements: $note->getElements());
+                }
+            }
+        }
+
+        return $text;
+    }//end extractWordNotes()
+
+    /**
+     * Map a Word-family MIME type (or filename extension) to a PhpWord reader name
+     *
+     * @param string $mimeType The file MIME type
+     * @param string $fileName The file name (extension used as fallback)
+     *
+     * @return string PhpWord reader name (Word2007 | MsDoc | ODText)
+     */
+    private function resolveWordReader(string $mimeType, string $fileName): string
+    {
+        $byMime = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'Word2007',
+            'application/msword'                                                      => 'MsDoc',
+            'application/vnd.oasis.opendocument.text'                                 => 'ODText',
+        ];
+
+        if (isset($byMime[$mimeType]) === true) {
+            return $byMime[$mimeType];
+        }
+
+        // Fall back to the filename extension when the MIME is generic/ambiguous.
+        $byExt = [
+            'docx' => 'Word2007',
+            'doc'  => 'MsDoc',
+            'odt'  => 'ODText',
+        ];
+
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        if (isset($byExt[$ext]) === true) {
+            return $byExt[$ext];
+        }
+
+        return 'Word2007';
+    }//end resolveWordReader()
 
     /**
      * Extract text from spreadsheet (XLSX/XLS) using PhpSpreadsheet
@@ -2060,6 +2243,7 @@ class TextExtractionService
         $wordTypes = [
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/msword',
+            'application/vnd.oasis.opendocument.text',
         ];
 
         return in_array($mimeType, $wordTypes, true) === true;

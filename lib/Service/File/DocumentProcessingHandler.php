@@ -59,6 +59,19 @@ class DocumentProcessingHandler
     private ?FileService $fileService = null;
 
     /**
+     * Residual entities from the most recent anonymisation (best-effort policy).
+     *
+     * Each record: {text: string, type: string, id: string} for an entity whose
+     * text could not be fully removed from the output (e.g. the recognition
+     * backend over-captured across table cells, so the value is not contiguous
+     * in the PDF). Empty when the last run was complete. Consumed by the
+     * controller to surface a warning so the operator can iterate (manual/skip).
+     *
+     * @var array<int, array{text: string, type: string, id: string}>
+     */
+    private array $lastResidualEntities = [];
+
+    /**
      * Constructor for DocumentProcessingHandler.
      *
      * @param IRootFolder                               $rootFolder           Root folder for file access.
@@ -87,6 +100,21 @@ class DocumentProcessingHandler
     {
         $this->fileService = $fileService;
     }//end setFileService()
+
+    /**
+     * Residual entities from the most recent anonymisation run.
+     *
+     * Best-effort policy: when some entity text could not be removed from the
+     * output (e.g. recognition over-capture across table cells), the file is
+     * still produced and these records describe what remains so the caller can
+     * warn the operator. Empty when the last run fully redacted everything.
+     *
+     * @return array<int, array{text: string, type: string, id: string}> Residual records.
+     */
+    public function getLastResidualEntities(): array
+    {
+        return $this->lastResidualEntities;
+    }//end getLastResidualEntities()
 
     /**
      * Replace words in a document.
@@ -162,6 +190,9 @@ class DocumentProcessingHandler
      */
     public function anonymizeDocument(Node $node, array $entities): File
     {
+        // Reset residuals from a prior call on this (potentially reused) handler.
+        $this->lastResidualEntities = [];
+
         // Resolve the source file id once — the substitution placeholder
         // format and the post-redaction audit flag both key off it.
         $fileId = 0;
@@ -206,6 +237,19 @@ class DocumentProcessingHandler
                 continue;
             }
 
+            // The needle actually matched/replaced in the document is the
+            // trimmed text: some recognition backends (and the regex pass)
+            // capture entity spans with surrounding whitespace (e.g.
+            // "06-12345678 "), which the document content stream never
+            // contains verbatim — leaving the value unredacted while the
+            // (whitespace-normalising) validation gate still flags it as
+            // residual. Trim for the map KEY; keep $originalText for the
+            // skip-list and stable-id lookups (those are keyed by the stored value).
+            $needle = trim($originalText);
+            if ($needle === '') {
+                continue;
+            }
+
             // Prefer stable per-entity placeholder. Fall back to the
             // legacy UUID-prefix only when there is no matching entity
             // row on the file (shouldn't happen in the normal
@@ -213,10 +257,10 @@ class DocumentProcessingHandler
             // direct DI callers that bypass extraction).
             if (isset($entityIdMap[$originalText]) === true) {
                 $stableId = $entityIdMap[$originalText]['id'];
-                $replacements[$originalText] = '['.$entityType.': '.$stableId.']';
+                $replacements[$needle] = '['.$entityType.': '.$stableId.']';
             } else {
                 $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-                $replacements[$originalText] = '['.$entityType.': '.$key.']';
+                $replacements[$needle] = '['.$entityType.': '.$key.']';
             }
         }//end foreach
 
@@ -587,7 +631,36 @@ class DocumentProcessingHandler
 
         // Run text replacement first; metadata sanitisation operates on
         // the result so /Info / XMP changes survive the rebuild.
-        $replacedBytes = $replacer->replaceInPdf(pdfBytes: $content, substitutions: $replacements);
+        // Best-effort: replaceInPdf does not fail closed on residual entity
+        // text — it returns the residual needles so we can produce the file
+        // and warn instead of discarding it.
+        $residualNeedles = [];
+        $replacedBytes   = $replacer->replaceInPdf(
+            pdfBytes: $content,
+            substitutions: $replacements,
+            residualEntities: $residualNeedles
+        );
+
+        // Map residual needles back to entity records {text, type, id} via the
+        // placeholder map (`[<TYPE>: <id>]`). Logs stay PII-free (ADR-005); the
+        // text is carried only to the authenticated anonymise response for the
+        // operator's review/iterate UI.
+        if (empty($residualNeedles) === false) {
+            $records = [];
+            foreach ($residualNeedles as $needle) {
+                $placeholder = $replacements[$needle] ?? '';
+                $type        = 'UNKNOWN';
+                $id          = '';
+                if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $m) === 1) {
+                    $type = trim($m[1]);
+                    $id   = trim($m[2]);
+                }
+
+                $records[] = ['text' => (string) $needle, 'type' => $type, 'id' => $id];
+            }
+
+            $this->lastResidualEntities = $records;
+        }
 
         try {
             $doc = \ddn\sapp\PDFDoc::from_string(buffer: $replacedBytes);

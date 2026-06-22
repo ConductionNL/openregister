@@ -92,9 +92,12 @@ class PdfTextReplacer
      * carries a diagnostic surface (which entities remained, how many
      * streams were modified, etc.) for ops review.
      *
-     * @param string $pdfBytes      Raw input PDF bytes.
-     * @param array  $substitutions Map: entity-text => placeholder
-     *                              (e.g. ['Jan Jansen' => '[PERSON: 7]']).
+     * @param string $pdfBytes         Raw input PDF bytes.
+     * @param array  $substitutions    Map: entity-text => placeholder
+     *                                 (e.g. ['Jan Jansen' => '[PERSON: 7]']).
+     * @param array  $residualEntities Out-param: populated with the residual
+     *                                 substitution-map needles still present
+     *                                 in the output (best-effort reporting).
      *
      * @return string Anonymised PDF bytes.
      *
@@ -105,8 +108,9 @@ class PdfTextReplacer
      *
      * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
-    public function replaceInPdf(string $pdfBytes, array $substitutions): string
+    public function replaceInPdf(string $pdfBytes, array $substitutions, array &$residualEntities=[]): string
     {
+        $residualEntities = [];
         if (count($substitutions) === 0) {
             // No-op: nothing to anonymise.
             return $pdfBytes;
@@ -160,9 +164,11 @@ class PdfTextReplacer
 
         $outputBytes = $serialised;
 
-        // Validation gate: re-extract the output and assert no residual
-        // substitution-map keys remain. Fails closed.
-        $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats);
+        // Validation: re-extract the output and collect any residual
+        // substitution-map keys. Best-effort (does not fail closed) — the
+        // residual needles are returned to the caller so the anonymisation
+        // flow can write the file and surface a warning listing what remains.
+        $residualEntities = $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats);
 
         $this->logger->info(
             message: '[PdfTextReplacer] PDF anonymisation succeeded',
@@ -197,7 +203,9 @@ class PdfTextReplacer
      *                              (kept in the diagnostic surface
      *                              for ops review).
      *
-     * @return void
+     * @return array<int, string> The residual substitution-map needles still
+     *                            present in the output (empty when clean or
+     *                            when re-extraction was not possible).
      *
      * @phpstan-param array<string, string> $substitutions
      * @phpstan-param array<string, mixed>  $replaceStats
@@ -206,7 +214,7 @@ class PdfTextReplacer
      *
      * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
-    public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[]): void
+    public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[]): array
     {
         try {
             $parser    = new PdfParser();
@@ -231,7 +239,8 @@ class PdfTextReplacer
                 ]
             );
 
-            return;
+            // Can't re-extract to audit — report no detectable residuals.
+            return [];
         }
 
         $residual = [];
@@ -271,6 +280,12 @@ class PdfTextReplacer
                 context: $diagnostic
             );
         }//end if
+
+        // Best-effort: return the residual needles so the anonymisation flow
+        // can write the partially-redacted file and surface a warning listing
+        // what remains. Logs stay PII-free per ADR-005; the values travel in
+        // the authenticated anonymise response for the review UI.
+        return $residual;
     }//end validateOutput()
 
     /**

@@ -185,7 +185,7 @@ class PdfTextReplacerTest extends TestCase
             ->expects(matcher: self::once())
             ->method(constraint: 'warning')
             ->with(
-                self::matchesRegularExpression(regularExpression: '/Partial anonymisation/i'),
+                self::matchesRegularExpression(pattern: '/Partial anonymisation/i'),
                 self::callback(callback: function (array $context): bool {
                     // PII redaction: context MUST NOT contain the actual entity text.
                     if (strpos((string) json_encode($context), 'Jansen') !== false) {
@@ -197,10 +197,14 @@ class PdfTextReplacerTest extends TestCase
                 })
             );
 
-        $this->replacer->validateOutput(
+        $residual = $this->replacer->validateOutput(
             outputBytes: $pdfContainingNeedle,
             substitutions: ['Jansen' => '[PERSON: 7]']
         );
+
+        // Best-effort reporting: the residual needle is RETURNED so the
+        // anonymisation flow can surface it to the operator.
+        self::assertContains(needle: 'Jansen', haystack: $residual);
     }//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
     /**
@@ -213,13 +217,13 @@ class PdfTextReplacerTest extends TestCase
     {
         $pdf = self::buildFixture(bodyText: 'Aanvraag van [PERSON: 7] voor het loket.');
 
-        // No exception expected.
-        $this->replacer->validateOutput(
+        // No residuals when the entity text is absent — returns an empty array.
+        $residual = $this->replacer->validateOutput(
             outputBytes: $pdf,
             substitutions: ['Jan Jansen' => '[PERSON: 7]']
         );
 
-        $this->addToAssertionCount(count: 1);
+        self::assertSame(expected: [], actual: $residual);
     }//end testValidateOutputPassesWhenClean()
 
     /**
