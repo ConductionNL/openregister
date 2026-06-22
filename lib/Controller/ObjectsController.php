@@ -2559,8 +2559,12 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectService->unlockObject($objectEntity->getUuid());
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful.
+                // NOTE: must be the global \Exception — the unqualified `Exception`
+                // resolves to OCP\DB\Exception here (see `use` block) and would NOT
+                // catch the \Exception thrown by LockHandler::unlock(), which then
+                // surfaced as a spurious 403. See openregister#195.
             }
 
             // Return the successfully saved object directly.
