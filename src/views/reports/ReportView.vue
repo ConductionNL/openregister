@@ -117,11 +117,11 @@
 							:labels="chartLabels(widgetState(index).data, widget)" />
 
 						<!-- Table -->
-						<CnTableWidget
+						<CnDataTable
 							v-else-if="widget.type === 'table'"
-							:title="''"
 							:rows="tableRows(widgetState(index).data)"
-							:columns="tableColumns(widget)" />
+							:columns="tableColumns(widget)"
+							borderless />
 
 						<!-- Sparkline (renders as a tiny line chart) -->
 						<CnChartWidget
@@ -167,7 +167,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
-import { CnChartWidget, CnTableWidget } from '@conduction/nextcloud-vue'
+import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -203,7 +203,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		CnChartWidget,
-		CnTableWidget,
+		CnDataTable,
 		Refresh,
 		ChevronLeft,
 		AlertCircleOutline,
