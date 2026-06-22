@@ -2412,6 +2412,10 @@ class ObjectService
         ?string $uses=null,
         ?array $views=null
     ): array {
+        // Capture the start time so the search trail can record the real
+        // response time regardless of which backend (index/database) runs.
+        $searchStartTime = microtime(true);
+
         // Add register and schema context to query for magic mapper routing.
         // Use array_key_exists to allow explicit null values to disable auto-setting.
         if ($this->currentRegister !== null && array_key_exists('_register', $query) === false) {
@@ -2521,6 +2525,8 @@ class ObjectService
                 }
             }//end if
 
+            $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+
             return $result;
         }//end if
 
@@ -2587,8 +2593,65 @@ class ObjectService
             }
         }//end if
 
+        $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+
         return $result;
     }//end searchObjectsPaginated()
+
+    /**
+     * Record a search-trail entry for a paginated search, honouring the
+     * configured recording mode.
+     *
+     * Resolves the effective mode via SearchQueryHandler: 'none' records
+     * nothing; '_search' records only when a non-empty `_search` term is
+     * present; 'all' records every paginated search. Derives the execution
+     * type from the result source (index vs database) and the response time
+     * from the captured start time. Never throws — a recording failure must
+     * not affect the search response.
+     *
+     * @param array $query     The post-view-merge search query.
+     * @param array $result    The paginated search result (results, total, @self).
+     * @param float $startTime The microtime(true) captured at search entry.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/search-trail-recording/tasks.md
+     */
+    private function recordSearchTrail(array $query, array $result, float $startTime): void
+    {
+        try {
+            $mode = $this->searchQueryHandler->getEffectiveRecordingMode();
+            if ($mode === 'none') {
+                return;
+            }
+
+            $searchTerm = trim((string) ($query['_search'] ?? ''));
+            if ($mode === '_search' && $searchTerm === '') {
+                return;
+            }
+
+            $responseTime  = (float) ((microtime(true) - $startTime) * 1000);
+            $source        = $result['@self']['source'] ?? 'database';
+            $executionType = 'database';
+            if ($source === 'index') {
+                $executionType = 'index';
+            }
+
+            $this->searchQueryHandler->logSearchTrail(
+                $query,
+                count($result['results'] ?? []),
+                (int) ($result['total'] ?? 0),
+                $responseTime,
+                $executionType
+            );
+        } catch (\Throwable $e) {
+            // Recording is best-effort and must never fail the search.
+            $this->logger->warning(
+                message: '[ObjectService] recordSearchTrail failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }//end try
+    }//end recordSearchTrail()
 
     /**
      * Check if Solr is available for use.

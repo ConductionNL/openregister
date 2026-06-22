@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -59,11 +60,12 @@ class SearchQueryHandler
     /**
      * SearchQueryHandler constructor.
      *
-     * @param ViewMapper      $viewMapper      Mapper for view operations.
-     * @param SchemaMapper    $schemaMapper    Mapper for schema operations.
-     * @param SettingsService $settingsService Service for settings operations.
-     * @param LoggerInterface $logger          Logger for performance monitoring.
-     * @param IRequest        $request         Request object.
+     * @param ViewMapper         $viewMapper         Mapper for view operations.
+     * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
+     * @param SettingsService    $settingsService    Service for settings operations.
+     * @param LoggerInterface    $logger             Logger for performance monitoring.
+     * @param IRequest           $request            Request object.
+     * @param SearchTrailService $searchTrailService Service for recording search trails.
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
      */
@@ -72,7 +74,8 @@ class SearchQueryHandler
         private readonly SchemaMapper $schemaMapper,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly IRequest $request
+        private readonly IRequest $request,
+        private readonly SearchTrailService $searchTrailService
     ) {
     }//end __construct()
 
@@ -569,18 +572,27 @@ class SearchQueryHandler
             // Only create search trail if search trails are enabled.
             if ($this->isSearchTrailsEnabled() === true) {
                 // Create the search trail entry using the service with actual execution time.
-                // TODO
-                // $this->searchTrailService->createSearchTrail(
-                // Query: $query,
-                // ResultCount: $resultCount,
-                // TotalResults: $totalResults,
-                // ResponseTime: $executionTime,
-                // ExecutionType: $executionType.
-                // );.
+                // The mapper extracts the search term from $_query['_search'] into
+                // the search_term column that the popular-terms stats aggregate.
+                $this->searchTrailService->createSearchTrail(
+                    query: $_query,
+                    resultCount: $_resultCount,
+                    totalResults: $_totalResults,
+                    responseTime: $_executionTime,
+                    executionType: $_executionType
+                );
             }
         } catch (Exception $e) {
-            // Log the error but don't fail the request.
-        }
+            // Log the error but never fail the search request.
+            $this->logger->warning(
+                message: '[SearchQueryHandler] Failed to record search trail',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
     }//end logSearchTrail()
 
     /**
@@ -608,4 +620,43 @@ class SearchQueryHandler
             return true;
         }
     }//end isSearchTrailsEnabled()
+
+    /**
+     * Resolve the effective search-trail recording mode.
+     *
+     * Returns 'none' when search trails are disabled (master switch /
+     * back-compat), otherwise the configured `searchTrailRecordingMode`
+     * ('all', '_search', or 'none'; default '_search'). Falls back to
+     * '_search' if settings cannot be read.
+     *
+     * @return string One of 'all', '_search', 'none'.
+     *
+     * @spec openspec/changes/search-trail-recording/tasks.md
+     */
+    public function getEffectiveRecordingMode(): string
+    {
+        try {
+            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
+            if (($retentionSettings['searchTrailsEnabled'] ?? true) === false) {
+                return 'none';
+            }
+
+            $mode = $retentionSettings['searchTrailRecordingMode'] ?? '_search';
+            if (in_array($mode, ['all', '_search', 'none'], true) === true) {
+                return $mode;
+            }
+
+            return '_search';
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SearchQueryHandler] Failed to read recording mode, defaulting to _search',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return '_search';
+        }//end try
+    }//end getEffectiveRecordingMode()
 }//end class
