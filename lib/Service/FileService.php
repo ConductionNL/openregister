@@ -1750,18 +1750,27 @@ class FileService
      * This is a convenience method that creates replacement mappings
      * from entity detection results and applies them to a document.
      *
-     * @param Node  $node     The file node to anonymize.
-     * @param array $entities Array of detected entities with 'text' and 'key' fields.
+     * @param Node        $node       The file node to anonymize.
+     * @param array       $entities   Array of detected entities with 'text' and 'key' fields.
+     * @param string      $scope      Placeholder-numbering scope: 'document' (default) or 'dossier'.
+     * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
+     *                                back to the file's parent folder.
      *
      * @throws Exception If anonymization fails.
      *
      * @return Node The anonymized file node.
      */
-    public function anonymizeDocument(Node $node, array $entities): Node
-    {
+    public function anonymizeDocument(
+        Node $node,
+        array $entities,
+        string $scope='document',
+        ?string $dossierKey=null
+    ): Node {
         return $this->documentProcessingHandler->anonymizeDocument(
             node: $node,
-            entities: $entities
+            entities: $entities,
+            scope: $scope,
+            dossierKey: $dossierKey
         );
     }//end anonymizeDocument()
 

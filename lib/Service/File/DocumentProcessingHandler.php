@@ -21,9 +21,12 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
+use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
 use PhpOffice\PhpWord\Exception\CopyFileException;
@@ -50,6 +53,30 @@ use Psr\Log\LoggerInterface;
  */
 class DocumentProcessingHandler
 {
+
+    /**
+     * The enumerated entity-type labels that get localised in the placeholder.
+     *
+     * Canonical source = the `EntityRecognitionHandler::ENTITY_TYPE_*`
+     * constants. Each value is registered as a translatable string in `l10n/`
+     * (en + nl), so `IL10N::t()` returns the localised label on a Dutch
+     * instance (`PERSON` → `PERSOON`). A type NOT in this set falls back to its
+     * raw string (no translation, no error).
+     *
+     * @var array<int, string>
+     */
+    private const LOCALIZABLE_ENTITY_TYPES = [
+        EntityRecognitionHandler::ENTITY_TYPE_PERSON,
+        EntityRecognitionHandler::ENTITY_TYPE_ORGANIZATION,
+        EntityRecognitionHandler::ENTITY_TYPE_LOCATION,
+        EntityRecognitionHandler::ENTITY_TYPE_EMAIL,
+        EntityRecognitionHandler::ENTITY_TYPE_PHONE,
+        EntityRecognitionHandler::ENTITY_TYPE_ADDRESS,
+        EntityRecognitionHandler::ENTITY_TYPE_DATE,
+        EntityRecognitionHandler::ENTITY_TYPE_IBAN,
+        EntityRecognitionHandler::ENTITY_TYPE_SSN,
+        EntityRecognitionHandler::ENTITY_TYPE_IP_ADDRESS,
+    ];
 
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -80,12 +107,18 @@ class DocumentProcessingHandler
      * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
      *                                                                        flags during the redaction pass
      *                                                                        (see `entity-relation-grondslagen`).
+     * @param IL10N|null                                $l10n                 Acting-user localisation, used to
+     *                                                                        translate the placeholder TYPE label
+     *                                                                        (PERSON → PERSOON on a Dutch instance).
+     *                                                                        Nullable: when absent the raw English
+     *                                                                        label is emitted (construct-safe).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
-        private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper
+        private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
+        private readonly ?IL10N $l10n=null
     ) {
     }//end __construct()
 
@@ -177,8 +210,13 @@ class DocumentProcessingHandler
      * in the format [ENTITY_TYPE: key]. It builds a replacement mapping from entity detection
      * results and applies them using the replaceWords method.
      *
-     * @param Node  $node     The file node to anonymize.
-     * @param array $entities Array of detected entities with 'text', 'entityType', and 'key' fields.
+     * @param Node        $node       The file node to anonymize.
+     * @param array       $entities   Array of detected entities with 'text', 'entityType', and 'key' fields.
+     * @param string      $scope      Placeholder-numbering scope: 'document' (default — counter restarts
+     *                                per run, no persistence) or 'dossier' (counter consistent across all
+     *                                files in the dossier folder, recomputed deterministically).
+     * @param string|null $dossierKey Stable folder id identifying the dossier when $scope='dossier'.
+     *                                When absent (and scope='dossier') the file's parent folder is used.
      *
      * @throws Exception If anonymization fails.
      *
@@ -188,8 +226,12 @@ class DocumentProcessingHandler
      *
      * @return File The anonymized document file.
      */
-    public function anonymizeDocument(Node $node, array $entities): File
-    {
+    public function anonymizeDocument(
+        Node $node,
+        array $entities,
+        string $scope='document',
+        ?string $dossierKey=null
+    ): File {
         // Reset residuals from a prior call on this (potentially reused) handler.
         $this->lastResidualEntities = [];
 
@@ -225,6 +267,18 @@ class DocumentProcessingHandler
             $entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
         }
 
+        // Scope-local placeholder numbering (anonymisation-placeholder-id-scope):
+        // translate the internal global `e.id` to a number local to this scope so
+        // the emitted `[<TYPE>: <number>]` never links a person across
+        // documents/publications. Per-document (default) numbers lazily by first
+        // appearance; per-dossier seeds the translator with a map deterministically
+        // recomputed from the whole dossier folder's stored rows.
+        if ($scope === 'dossier') {
+            $translator = $this->recomputeDossierTranslator(node: $node, dossierKey: $dossierKey);
+        } else {
+            $translator = PlaceholderIdTranslator::perDocument();
+        }
+
         // Build replacements array from entities.
         $replacements = [];
         foreach ($entities as $entity) {
@@ -255,12 +309,18 @@ class DocumentProcessingHandler
             // row on the file (shouldn't happen in the normal
             // extract → review → anonymise flow, but defensive against
             // direct DI callers that bypass extraction).
+            // Localise the TYPE label to the acting user's language
+            // (PERSON → PERSOON on a Dutch instance); unknown types fall
+            // back to the raw label.
+            $localizedType = $this->localizeEntityType(entityType: $entityType);
+
             if (isset($entityIdMap[$originalText]) === true) {
-                $stableId = $entityIdMap[$originalText]['id'];
-                $replacements[$needle] = '['.$entityType.': '.$stableId.']';
+                // Translate the internal `e.id` to the scope-local number.
+                $localNumber           = $translator->translate(entityId: $entityIdMap[$originalText]['id']);
+                $replacements[$needle] = '['.$localizedType.': '.$localNumber.']';
             } else {
                 $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-                $replacements[$needle] = '['.$entityType.': '.$key.']';
+                $replacements[$needle] = '['.$localizedType.': '.$key.']';
             }
         }//end foreach
 
@@ -302,6 +362,156 @@ class DocumentProcessingHandler
 
         return $anonymizedFile;
     }//end anonymizeDocument()
+
+    /**
+     * Localise an entity-type label to the acting user's language for the
+     * placeholder. Only the enumerated entity-type set
+     * (`LOCALIZABLE_ENTITY_TYPES`, sourced from the
+     * `EntityRecognitionHandler::ENTITY_TYPE_*` constants) is translated; an
+     * unknown / free-form type is returned unchanged (no translation, no
+     * error). When no `IL10N` is injected the raw label is returned (the
+     * `en` / untranslated behaviour).
+     *
+     * @param string $entityType The raw entity type (e.g. 'PERSON').
+     *
+     * @return string The localised label (e.g. 'PERSOON' on nl), or the raw type.
+     */
+    private function localizeEntityType(string $entityType): string
+    {
+        if ($this->l10n === null
+            || in_array($entityType, self::LOCALIZABLE_ENTITY_TYPES, true) === false
+        ) {
+            return $entityType;
+        }
+
+        return $this->l10n->t($entityType);
+    }//end localizeEntityType()
+
+    /**
+     * Build a per-dossier numbering translator by deterministically
+     * recomputing the `e.id → local_number` map from the dossier's stored
+     * entity-relation rows (no table, no migration).
+     *
+     * Resolves the dossier folder from $dossierKey (a stable folder id) or,
+     * when absent, the file's parent folder. Enumerates the folder's
+     * descendant files (recursively), loads their entity rows in one query
+     * (`findEntityIdsByValueForFiles`), and ranks distinct `entity_id`s by
+     * first appearance under the total order `(file_id, position_start,
+     * entity_id)`. The result is a pure function of the stored rows, so every
+     * per-file call within the dossier derives the same map. Any failure to
+     * resolve/enumerate the folder degrades to a per-document translator
+     * (fail-safe — never throws out of numbering). Nothing here logs the
+     * entity value alongside its number.
+     *
+     * @param Node        $node       The file being anonymised.
+     * @param string|null $dossierKey Stable folder id, or null to use the parent folder.
+     *
+     * @return PlaceholderIdTranslator Seeded with the dossier map.
+     */
+    private function recomputeDossierTranslator(Node $node, ?string $dossierKey): PlaceholderIdTranslator
+    {
+        $folder = $this->resolveDossierFolder(node: $node, dossierKey: $dossierKey);
+        if ($folder === null) {
+            return PlaceholderIdTranslator::perDocument();
+        }
+
+        $fileIds = $this->collectDescendantFileIds(folder: $folder);
+        if ($fileIds === []) {
+            return PlaceholderIdTranslator::perDocument();
+        }
+
+        $rows = $this->entityRelationMapper->findEntityIdsByValueForFiles(fileIds: $fileIds);
+
+        // PII-free diagnostic (ADR-005): ids/counts only, never value → number.
+        $this->logger->debug(
+            'DocumentProcessingHandler: recomputed per-dossier placeholder numbering',
+            [
+                'dossierKey' => $dossierKey,
+                'folderId'   => $folder->getId(),
+                'fileCount'  => count($fileIds),
+                'rowCount'   => count($rows),
+            ]
+        );
+
+        return PlaceholderIdTranslator::forDossier(rows: $rows);
+    }//end recomputeDossierTranslator()
+
+    /**
+     * Resolve the dossier folder for per-dossier numbering: prefer the
+     * explicit $dossierKey (a stable folder id), else fall back to the file's
+     * parent folder. Returns null when neither resolves to a usable folder
+     * (caller then degrades to per-document).
+     *
+     * @param Node        $node       The file being anonymised.
+     * @param string|null $dossierKey Stable folder id, or null for the parent-folder fallback.
+     *
+     * @return Folder|null The dossier folder, or null when unresolved.
+     */
+    private function resolveDossierFolder(Node $node, ?string $dossierKey): ?Folder
+    {
+        // Explicit, authoritative signal: the folder id.
+        if ($dossierKey !== null && trim($dossierKey) !== '' && ctype_digit(trim($dossierKey)) === true) {
+            try {
+                $matches = $this->rootFolder->getById((int) trim($dossierKey));
+                foreach ($matches as $candidate) {
+                    if ($candidate instanceof Folder) {
+                        return $candidate;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Fall through to the parent-folder fallback below.
+                unset($e);
+            }
+        }
+
+        // Forgiving fallback: the file's parent folder IS the dossier.
+        try {
+            $parent = $node->getParent();
+            if ($parent instanceof Folder) {
+                return $parent;
+            }
+        } catch (\Throwable $e) {
+            unset($e);
+        }
+
+        return null;
+    }//end resolveDossierFolder()
+
+    /**
+     * Enumerate the descendant file ids of a dossier folder (recursive), via
+     * the Nextcloud Node API. Sub-folders are walked; only file nodes
+     * contribute ids.
+     *
+     * @param Folder $folder The dossier folder.
+     *
+     * @return array<int, int> Distinct descendant file ids.
+     */
+    private function collectDescendantFileIds(Folder $folder): array
+    {
+        $fileIds = [];
+        try {
+            foreach ($folder->getDirectoryListing() as $child) {
+                if ($child instanceof Folder) {
+                    foreach ($this->collectDescendantFileIds(folder: $child) as $nestedId) {
+                        $fileIds[] = $nestedId;
+                    }
+
+                    continue;
+                }
+
+                $childId = $child->getId();
+                if (is_int($childId) === true && $childId > 0) {
+                    $fileIds[] = $childId;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Best-effort enumeration; partial/empty list degrades numbering
+            // gracefully rather than failing the anonymise run.
+            unset($e);
+        }
+
+        return array_values(array_unique($fileIds));
+    }//end collectDescendantFileIds()
 
     /**
      * Replace words in a Word document.

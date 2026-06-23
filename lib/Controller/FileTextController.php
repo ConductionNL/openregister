@@ -549,8 +549,26 @@ class FileTextController extends Controller
                 ]
             );
 
+            // Placeholder-numbering scope (anonymisation-placeholder-id-scope):
+            // optional request-body params. `scope` defaults to 'document'
+            // (counter restarts per run); `scope=dossier` makes the number
+            // consistent across the dossier folder's files. `dossierKey` is the
+            // stable folder id; when omitted under scope=dossier the handler
+            // falls back to the file's parent folder. Any value other than
+            // 'dossier' normalises to per-document so existing callers are
+            // unaffected.
+            $scopeParam      = (string) $this->request->getParam('scope', 'document');
+            $scope           = ($scopeParam === 'dossier') ? 'dossier' : 'document';
+            $dossierKeyParam = $this->request->getParam('dossierKey', null);
+            $dossierKey      = ($dossierKeyParam === null || $dossierKeyParam === '') ? null : (string) $dossierKeyParam;
+
             // Perform anonymization.
-            $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
+            $anonymizedFile = $this->fileService->anonymizeDocument(
+                node: $fileNode,
+                entities: $entities,
+                scope: $scope,
+                dossierKey: $dossierKey
+            );
 
             // Best-effort policy: the file is produced even when some entity
             // text could not be removed. Surface the residuals so the operator

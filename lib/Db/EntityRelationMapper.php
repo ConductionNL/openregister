@@ -288,6 +288,60 @@ class EntityRelationMapper extends QBMapper
     }//end findEntityIdsByValueForFile()
 
     /**
+     * Load the entity-relation rows for several files in one query — the
+     * multi-file sibling of `findEntityIdsByValueForFile`.
+     *
+     * Used by the per-dossier placeholder numbering: the dossier number is
+     * recomputed as a pure function of the dossier's stored rows, so this
+     * returns the raw `(entity_id, file_id, position_start)` tuples for every
+     * relation on the given files. The caller (`PlaceholderIdTranslator`)
+     * imposes the total stable order `(file_id, position_start, entity_id)`
+     * and ranks distinct `entity_id`s by first appearance. No join to
+     * `openregister_entities` is needed — the relation row already carries the
+     * `entity_id` that is the numbering key.
+     *
+     * @param array<int, int> $fileIds The Nextcloud file IDs of the dossier's files.
+     *
+     * @return array<int, array{entity_id: int, file_id: int, position_start: int}>
+     *         One record per relation row across all given files (unordered;
+     *         the caller imposes the ranking order).
+     */
+    public function findEntityIdsByValueForFiles(array $fileIds): array
+    {
+        if ($fileIds === []) {
+            return [];
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $fileIds)));
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('entity_id', 'file_id', 'position_start')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    'file_id',
+                    $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)
+                )
+            );
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        $records = [];
+        foreach ($rows as $row) {
+            $records[] = [
+                'entity_id'      => (int) ($row['entity_id'] ?? 0),
+                'file_id'        => (int) ($row['file_id'] ?? 0),
+                'position_start' => (int) ($row['position_start'] ?? 0),
+            ];
+        }
+
+        return $records;
+
+    }//end findEntityIdsByValueForFiles()
+
+    /**
      * Mark entity relations as anonymized.
      *
      * Skip-aware: rows where `skip_anonymization = true` are excluded
