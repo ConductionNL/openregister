@@ -462,6 +462,17 @@ class TaskService
             $vtodo->DUE = new DateTime($data['due']);
         }
 
+        // Round-trip non-core schema fields (object-source-providers): replace the
+        // X-OPENREGISTER-DATA blob so a projected object's non-core fields (e.g.
+        // assignee, taskStatus) update faithfully. Linking props (REGISTER/SCHEMA/
+        // OBJECT) are left untouched above so the link + scoping survive the update.
+        if (isset($data['fields']) === true && is_array($data['fields']) === true) {
+            unset($vtodo->{'X-OPENREGISTER-DATA'});
+            if (empty($data['fields']) === false) {
+                $vtodo->add('X-OPENREGISTER-DATA', base64_encode((string) json_encode($data['fields'])));
+            }
+        }
+
         // Update DTSTAMP.
         $vtodo->DTSTAMP = gmdate('Ymd\THis\Z');
 
