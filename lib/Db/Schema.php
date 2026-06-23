@@ -1586,6 +1586,42 @@ class Schema extends Entity implements JsonSerializable
     }//end getCalendarProviderConfig()
 
     /**
+     * Get the object-source declaration from the schema configuration.
+     *
+     * Reads the `x-openregister-object-source` annotation block (folded into the
+     * configuration column at save time). When present and valid, the schema's
+     * objects are served by the named ObjectSourceProvider instead of the magic
+     * table (see GetObject). Returns null when absent or when `provider` is not a
+     * non-empty string.
+     *
+     * @return array{provider: string, readOnly?: bool, config?: array}|null
+     *         The parsed object-source declaration, or null when absent/invalid.
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
+     */
+    public function getObjectSource(): ?array
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return null;
+        }
+
+        $source = ($configuration['x-openregister-object-source'] ?? null);
+
+        if (is_array($source) === false) {
+            return null;
+        }
+
+        $provider = ($source['provider'] ?? null);
+        if (is_string($provider) === false || $provider === '') {
+            return null;
+        }
+
+        return $source;
+    }//end getObjectSource()
+
+    /**
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
@@ -1905,6 +1941,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-processing-activity',
         'x-openregister-archival',
         'x-openregister-seed',
+        'x-openregister-object-source',
     ];
 
     /**

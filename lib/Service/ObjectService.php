@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -200,46 +201,47 @@ class ObjectService
     /**
      * Constructor for ObjectService.
      *
-     * @param DataManipulationHandler        $dataManipHandler    Handler for data manipulation operations.
-     * @param DeleteObject                   $deleteHandler       Handler for object deletion.
-     * @param GetObject                      $getHandler          Handler for object retrieval.
-     * @param PerformanceHandler             $performanceHandler  Handler for performance operations.
-     * @param PermissionHandler              $permissionHandler   Handler for permission checks.
-     * @param RenderObject                   $renderHandler       Handler for object rendering.
-     * @param SaveObject                     $saveHandler         Handler for individual object saving.
-     * @param SaveObjects                    $saveObjectsHandler  Handler for bulk object saving operations.
-     * @param SearchQueryHandler             $searchQueryHandler  Handler for search query operations.
-     * @param ValidateObject                 $validateHandler     Handler for object validation.
-     * @param LockHandler                    $lockHandler         Handler for object locking.
-     * @param AuditHandler                   $auditHandler        Handler for audit trail operations.
-     * @param RelationHandler                $relationHandler     Handler for object relationships.
-     * @param MergeHandler                   $mergeHandler        Handler for merge and migration.
-     * @param FacetHandler                   $facetHandler        Handler for facet operations.
-     * @param MetadataHandler                $metadataHandler     Handler for metadata operations.
-     * @param PerformanceOptimizationHandler $perfOptHandler      Handler for performance optimization.
-     * @param QueryHandler                   $queryHandler        Handler for query operations.
-     * @param RevertHandler                  $revertHandler       Handler for revert operations.
-     * @param UtilityHandler                 $utilityHandler      Handler for utility operations.
-     * @param ValidationHandler              $validationHandler   Handler for validation operations.
-     * @param CascadingHandler               $cascadingHandler    Handler for cascading operations.
-     * @param MigrationHandler               $migrationHandler    Handler for migration operations.
-     * @param RegisterMapper                 $registerMapper      Mapper for register operations.
-     * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
-     * @param ViewMapper                     $viewMapper          Mapper for view operations.
-     * @param MagicMapper                    $objectMapper        Unified mapper for object
-     *                                                            operations (routes to
-     *                                                            magic tables).
-     * @param FileService                    $fileService         Service for file operations.
-     * @param IUserSession                   $userSession         User session for getting current user.
-     * @param SearchTrailService             $searchTrailService  Service for search trail operations.
-     * @param IGroupManager                  $groupManager        Group manager for checking user groups.
-     * @param IUserManager                   $userManager         User manager for getting user objects.
-     * @param OrganisationService            $organisationService Service for organisation operations.
-     * @param LoggerInterface                $logger              Logger for performance monitoring.
-     * @param CacheHandler                   $cacheHandler        Service for entity and query caching.
-     * @param SettingsService                $settingsService     Service for settings operations.
-     * @param DateTimeNormalizer             $dateTimeNormalizer  Normaliser for user-supplied datetime input.
-     * @param IAppContainer                  $container           Application container.
+     * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
+     * @param DeleteObject                   $deleteHandler        Handler for object deletion.
+     * @param GetObject                      $getHandler           Handler for object retrieval.
+     * @param PerformanceHandler             $performanceHandler   Handler for performance operations.
+     * @param PermissionHandler              $permissionHandler    Handler for permission checks.
+     * @param RenderObject                   $renderHandler        Handler for object rendering.
+     * @param SaveObject                     $saveHandler          Handler for individual object saving.
+     * @param SaveObjects                    $saveObjectsHandler   Handler for bulk object saving operations.
+     * @param SearchQueryHandler             $searchQueryHandler   Handler for search query operations.
+     * @param ValidateObject                 $validateHandler      Handler for object validation.
+     * @param LockHandler                    $lockHandler          Handler for object locking.
+     * @param AuditHandler                   $auditHandler         Handler for audit trail operations.
+     * @param RelationHandler                $relationHandler      Handler for object relationships.
+     * @param MergeHandler                   $mergeHandler         Handler for merge and migration.
+     * @param FacetHandler                   $facetHandler         Handler for facet operations.
+     * @param MetadataHandler                $metadataHandler      Handler for metadata operations.
+     * @param PerformanceOptimizationHandler $perfOptHandler       Handler for performance optimization.
+     * @param QueryHandler                   $queryHandler         Handler for query operations.
+     * @param RevertHandler                  $revertHandler        Handler for revert operations.
+     * @param UtilityHandler                 $utilityHandler       Handler for utility operations.
+     * @param ValidationHandler              $validationHandler    Handler for validation operations.
+     * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
+     * @param MigrationHandler               $migrationHandler     Handler for migration operations.
+     * @param RegisterMapper                 $registerMapper       Mapper for register operations.
+     * @param SchemaMapper                   $schemaMapper         Mapper for schema operations.
+     * @param ViewMapper                     $viewMapper           Mapper for view operations.
+     * @param MagicMapper                    $objectMapper         Unified mapper for object
+     *                                                             operations (routes to
+     *                                                             magic tables).
+     * @param FileService                    $fileService          Service for file operations.
+     * @param IUserSession                   $userSession          User session for getting current user.
+     * @param SearchTrailService             $searchTrailService   Service for search trail operations.
+     * @param IGroupManager                  $groupManager         Group manager for checking user groups.
+     * @param IUserManager                   $userManager          User manager for getting user objects.
+     * @param OrganisationService            $organisationService  Service for organisation operations.
+     * @param LoggerInterface                $logger               Logger for performance monitoring.
+     * @param CacheHandler                   $cacheHandler         Service for entity and query caching.
+     * @param SettingsService                $settingsService      Service for settings operations.
+     * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
+     * @param IAppContainer                  $container            Application container.
+     * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -292,7 +294,8 @@ class ObjectService
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
         private readonly DateTimeNormalizer $dateTimeNormalizer,
-        private readonly IAppContainer $container
+        private readonly IAppContainer $container,
+        private readonly ObjectSourceRegistry $objectSourceRegistry
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -2407,6 +2410,14 @@ class ObjectService
         ?string $uses=null,
         ?array $views=null
     ): array {
+        // Object-source delegation: a schema served from an external source
+        // (x-openregister-object-source) lists live from its provider, never the
+        // search index or magic table. Returns the standard paginated shape.
+        $sourcePaginated = $this->paginateObjectSource(query: $query);
+        if ($sourcePaginated !== null) {
+            return $sourcePaginated;
+        }
+
         // Capture the start time so the search trail can record the real
         // response time regardless of which backend (index/database) runs.
         $searchStartTime = microtime(true);
@@ -2592,6 +2603,68 @@ class ObjectService
 
         return $result;
     }//end searchObjectsPaginated()
+
+    /**
+     * Build a paginated result from the current schema's object-source provider,
+     * or null when the current schema is not served from an external source.
+     *
+     * Mirrors the `{ results, total, '@self' }` shape that the index/database
+     * search backends return, so the controller renders virtual objects exactly
+     * like native ones. When the schema declares a source whose provider is
+     * missing/disabled, returns an empty paginated result (never the DB).
+     *
+     * @param array $query The search query (filters/limit/offset).
+     *
+     * @return array|null The paginated result, or null when not source-backed.
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-3.1
+     */
+    private function paginateObjectSource(array $query): ?array
+    {
+        $schema = $this->currentSchema;
+        if ($schema === null) {
+            return null;
+        }
+
+        $source = $schema->getObjectSource();
+        if ($source === null) {
+            return null;
+        }
+
+        $results  = [];
+        $provider = $this->objectSourceRegistry->get($source['provider']);
+        if ($provider === null || $provider->isEnabled() === false || $this->currentRegister === null) {
+            $this->logger->warning(
+                sprintf(
+                    '[ObjectSource] schema "%s" declares provider "%s" but it is missing/disabled or has no register context — returning empty list',
+                    (string) $schema->getSlug(),
+                    $source['provider']
+                )
+            );
+        } else {
+            $results = $provider->findAll(
+                register: $this->currentRegister,
+                schema: $schema,
+                query: $query,
+                config: ($source['config'] ?? [])
+            );
+        }
+
+        $total = count($results);
+
+        return [
+            'results' => $results,
+            'total'   => $total,
+            '@self'   => [
+                'total' => $total,
+                'page'  => 1,
+                'pages' => 1,
+                'limit' => ($query['limit'] ?? $total),
+                'next'  => null,
+                'prev'  => null,
+            ],
+        ];
+    }//end paginateObjectSource()
 
     /**
      * Record a search-trail entry for a paginated search, honouring the

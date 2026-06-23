@@ -497,6 +497,19 @@ class DeleteObject
         bool $_multitenancy=true,
         bool $scoped=false
     ): bool {
+        // Read-only projection guard: a schema served from an external source
+        // (x-openregister-object-source) is read-only — deletes are not allowed.
+        $objectSource = ($schema instanceof Schema) ? $schema->getObjectSource() : null;
+        if ($objectSource !== null) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
         // Reset cascade count for root deletions.
         if ($originalObjectId === null) {
             $this->lastCascadeCount = 0;
