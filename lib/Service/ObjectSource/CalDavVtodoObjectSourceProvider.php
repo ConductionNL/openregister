@@ -259,6 +259,12 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider
             'priority'    => ($task['priority'] ?? null),
         ];
 
+        // Merge non-core schema fields round-tripped via X-OPENREGISTER-DATA
+        // (e.g. assignee), so the projection is faithful to the bound schema.
+        if (empty($task['fields']) === false && is_array($task['fields']) === true) {
+            $data = array_merge($data, $task['fields']);
+        }
+
         $entity = new ObjectEntity();
         $entity->setUuid($uuid);
         $entity->setRegister((string) $register->getId());

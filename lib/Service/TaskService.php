@@ -380,6 +380,13 @@ class TaskService
         $lines[] = 'X-OPENREGISTER-SCHEMA:'.$schemaId;
         $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
 
+        // Non-core schema fields (e.g. assignee) are round-tripped as a single
+        // base64-encoded JSON blob so any field survives the VTODO projection
+        // (object-source-providers) without iCal escaping concerns.
+        if (empty($data['fields']) === false && is_array($data['fields']) === true) {
+            $lines[] = 'X-OPENREGISTER-DATA:'.base64_encode((string) json_encode($data['fields']));
+        }
+
         // RFC 9253 LINK property.
         $linkLabel = $this->escapeIcalText(text: $objectTitle);
         $linkUri   = '/apps/openregister/api/objects/'.$registerId.'/'.$schemaId.'/'.$objectUuid;
@@ -562,6 +569,7 @@ class TaskService
             'objectUuid'  => $linkData['objectUuid'],
             'registerId'  => $linkData['registerId'],
             'schemaId'    => $linkData['schemaId'],
+            'fields'      => $linkData['fields'],
         ];
     }//end vtodoToArray()
 
@@ -570,13 +578,14 @@ class TaskService
      *
      * @param mixed $vtodo The VTODO component from the parsed iCalendar.
      *
-     * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
+     * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null, fields: array<string, mixed>}
      */
     private function extractOpenRegisterProperties(mixed $vtodo): array
     {
         $objectUuid = null;
         $registerId = null;
         $schemaId   = null;
+        $fields     = [];
 
         if (isset($vtodo->{'X-OPENREGISTER-OBJECT'}) === true) {
             $objectUuid = (string) $vtodo->{'X-OPENREGISTER-OBJECT'};
@@ -590,10 +599,24 @@ class TaskService
             $schemaId = (int) (string) $vtodo->{'X-OPENREGISTER-SCHEMA'};
         }
 
+        // Non-core schema fields are round-tripped as a single base64-encoded
+        // JSON blob (X-OPENREGISTER-DATA) so any field survives the VTODO
+        // projection without iCal-escaping pitfalls. Decoded best-effort.
+        if (isset($vtodo->{'X-OPENREGISTER-DATA'}) === true) {
+            $raw = base64_decode((string) $vtodo->{'X-OPENREGISTER-DATA'}, true);
+            if ($raw !== false) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded) === true) {
+                    $fields = $decoded;
+                }
+            }
+        }
+
         return [
             'objectUuid' => $objectUuid,
             'registerId' => $registerId,
             'schemaId'   => $schemaId,
+            'fields'     => $fields,
         ];
     }//end extractOpenRegisterProperties()
 
