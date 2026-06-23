@@ -42,8 +42,6 @@ use ReflectionMethod;
  */
 class DocumentProcessingHandlerLocalizationTest extends TestCase
 {
-
-
     /**
      * Build a handler with an optional IL10N. All other collaborators are
      * mocked (the localisation helper touches none of them).
@@ -66,7 +64,6 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase
 
     }//end makeHandler()
 
-
     /**
      * Invoke the private localizeEntityType() via reflection.
      *
@@ -83,7 +80,6 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase
         return (string) $method->invoke($handler, $entityType);
 
     }//end callLocalize()
-
 
     /**
      * A Dutch IL10N translates a known type: PERSON → PERSOON.
@@ -114,7 +110,6 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase
 
     }//end testLocalizesKnownTypeWithDutchL10n()
 
-
     /**
      * An unknown / free-form type is returned unchanged (never sent to t()).
      *
@@ -123,7 +118,7 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase
     public function testUnknownTypeFallsBackToRawLabel(): void
     {
         $l10n = $this->createMock(originalClassName: IL10N::class);
-        // t() must NOT be called for a non-enumerated type.
+        // The t() method must NOT be called for a non-enumerated type.
         $l10n->expects($this->never())->method('t');
 
         $handler = $this->makeHandler(l10n: $l10n);
@@ -134,7 +129,6 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase
         );
 
     }//end testUnknownTypeFallsBackToRawLabel()
-
 
     /**
      * With no IL10N injected the raw English label is emitted (the en /
@@ -152,6 +146,4 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase
         );
 
     }//end testNullL10nReturnsRawLabel()
-
-
 }//end class

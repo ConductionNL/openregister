@@ -33,8 +33,6 @@ use PHPUnit\Framework\TestCase;
  */
 class PlaceholderIdTranslatorTest extends TestCase
 {
-
-
     /**
      * Per-document: distinct ids are numbered 1..n by order of first
      * appearance; the same id always resolves to the same number.
@@ -53,7 +51,6 @@ class PlaceholderIdTranslatorTest extends TestCase
         $this->assertSame(expected: 2, actual: $translator->translate(entityId: 7));
 
     }//end testPerDocumentNumbersByFirstAppearance()
-
 
     /**
      * Per-document: two independent runs of the same person yield independent
@@ -75,7 +72,6 @@ class PlaceholderIdTranslatorTest extends TestCase
 
     }//end testTwoSeparateRunsGetIndependentNumbers()
 
-
     /**
      * Ranking core imposes the total order (file_id, position_start,
      * entity_id) and ranks distinct entity_ids by first appearance.
@@ -88,7 +84,7 @@ class PlaceholderIdTranslatorTest extends TestCase
             ['entity_id' => 9, 'file_id' => 2, 'position_start' => 5],
             ['entity_id' => 7, 'file_id' => 1, 'position_start' => 50],
             ['entity_id' => 8, 'file_id' => 1, 'position_start' => 10],
-            // entity 7 again, earlier file but later position than its first row
+            // Entity 7 again, earlier file but later position than its first row.
             ['entity_id' => 7, 'file_id' => 1, 'position_start' => 90],
         ];
 
@@ -102,7 +98,6 @@ class PlaceholderIdTranslatorTest extends TestCase
         );
 
     }//end testRankByFirstAppearanceOrdering()
-
 
     /**
      * Ranking is a pure function of the rows — independent of input order.
@@ -126,7 +121,6 @@ class PlaceholderIdTranslatorTest extends TestCase
         );
 
     }//end testRankByFirstAppearanceIsPureRegardlessOfInputOrder()
-
 
     /**
      * Translation is keyed on e.id: all value-variants of one entity (which
@@ -152,7 +146,6 @@ class PlaceholderIdTranslatorTest extends TestCase
 
     }//end testTranslationKeyedOnEntityIdVariantsShareNumber()
 
-
     /**
      * Per-dossier: the same e.id resolves to the same number across the
      * dossier's files; idempotent re-runs reproduce identical numbers.
@@ -171,7 +164,7 @@ class PlaceholderIdTranslatorTest extends TestCase
         $first  = PlaceholderIdTranslator::forDossier(rows: $rows);
         $second = PlaceholderIdTranslator::forDossier(rows: $rows);
 
-        // entity 11 first appears in file 100 → number 1, consistent across
+        // Entity 11 first appears in file 100 (number 1), consistent across
         // both files and both recomputations.
         $this->assertSame(expected: 1, actual: $first->translate(entityId: 11));
         $this->assertSame(expected: 2, actual: $first->translate(entityId: 22));
@@ -180,7 +173,6 @@ class PlaceholderIdTranslatorTest extends TestCase
         $this->assertSame(expected: 3, actual: $second->translate(entityId: 33));
 
     }//end testPerDossierConsistencyAndIdempotency()
-
 
     /**
      * A different dossier (different rows) restarts numbering at 1.
@@ -201,7 +193,6 @@ class PlaceholderIdTranslatorTest extends TestCase
 
     }//end testDifferentDossierRestartsAtOne()
 
-
     /**
      * A seeded translator returns the seeded numbers and assigns the next
      * free number (after the seed maximum) to an id not present in the seed.
@@ -219,7 +210,6 @@ class PlaceholderIdTranslatorTest extends TestCase
 
     }//end testSeededMapContinuesAfterMaxForUnseenId()
 
-
     /**
      * Empty input yields an empty map / a translator that numbers from 1.
      *
@@ -233,6 +223,4 @@ class PlaceholderIdTranslatorTest extends TestCase
         $this->assertSame(expected: 1, actual: $translator->translate(entityId: 5));
 
     }//end testEmptyRowsProduceEmptyMap()
-
-
 }//end class
