@@ -93,7 +93,7 @@
 	"require": {
 		"php": "^8.1",
 		"adbario/php-dot-notation": "^3.3.0",
-		"ddn/sapp": "dev-fix/rebuild-strip-prev-classic-xref#b1c411d",
+		"ddn/sapp": "dev-feat/chained-filter-text-replace#b65851788fdc5e45bacb440845179257c0a8aaad",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^1.7",
 		"dompdf/dompdf": "^3.1",

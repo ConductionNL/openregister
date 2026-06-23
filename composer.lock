@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7fd4336bfafc4e34056903bab27c8a18",
+    "content-hash": "0f647ccd288774c7b980875934d163f5",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -306,16 +306,16 @@
         },
         {
             "name": "ddn/sapp",
-            "version": "dev-fix/rebuild-strip-prev-classic-xref",
+            "version": "dev-feat/chained-filter-text-replace",
             "source": {
                 "type": "git",
                 "url": "https://codeberg.org/Conduction/sapp.git",
-                "reference": "b1c411d"
+                "reference": "b65851788fdc5e45bacb440845179257c0a8aaad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/b1c411d0c62fd0788862aea61f258f6dd3db23b6.zip",
-                "reference": "b1c411d",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/b65851788fdc5e45bacb440845179257c0a8aaad.zip",
+                "reference": "b65851788fdc5e45bacb440845179257c0a8aaad",
                 "shasum": ""
             },
             "require": {
@@ -346,10 +346,10 @@
                 "signature"
             ],
             "support": {
-                "source": "https://codeberg.org/Conduction/sapp/branch/fix/rebuild-strip-prev-classic-xref",
+                "source": "https://codeberg.org/Conduction/sapp/branch/feat/chained-filter-text-replace",
                 "issues": "https://codeberg.org/Conduction/sapp/issues"
             },
-            "time": "2026-05-29T17:37:17+02:00"
+            "time": "2026-06-23T09:33:33+02:00"
         },
         {
             "name": "dompdf/dompdf",
