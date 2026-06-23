@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
@@ -52,11 +53,18 @@ class DataSubjectRequestServiceTest extends TestCase
     private $db;
 
     /**
-     * Object mapper mock.
+     * Object mapper mock (RBAC-scoped reads).
      *
      * @var MagicMapper&MockObject
      */
     private $objectMapper;
+
+    /**
+     * Object service mock (audited write path).
+     *
+     * @var ObjectService&MockObject
+     */
+    private $objectService;
 
     /**
      * Retention service mock.
@@ -95,6 +103,7 @@ class DataSubjectRequestServiceTest extends TestCase
     {
         $this->db               = $this->createMock(IDBConnection::class);
         $this->objectMapper     = $this->createMock(MagicMapper::class);
+        $this->objectService    = $this->createMock(ObjectService::class);
         $this->retentionService = $this->createMock(RetentionService::class);
         $this->dsarService      = $this->createMock(DsarService::class);
         $this->userSession      = $this->createMock(IUserSession::class);
@@ -106,6 +115,7 @@ class DataSubjectRequestServiceTest extends TestCase
         $this->service = new DataSubjectRequestService(
             $this->db,
             $this->objectMapper,
+            $this->objectService,
             $this->retentionService,
             $this->dsarService,
             new DataSubjectDeadline(),
@@ -254,8 +264,13 @@ class DataSubjectRequestServiceTest extends TestCase
         );
         $this->retentionService->method('validateNotImmutable')->willReturn(null);
 
-        // Only the free object is updated (erased).
-        $this->objectMapper->expects($this->once())->method('update')->with($free)->willReturn($free);
+        // Only the free object is written (erased) via the audited save path.
+        $this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
+            function ($object) use ($free) {
+                $this->assertSame($free, $object);
+                return $free;
+            }
+        );
 
         $summary = $this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
@@ -284,7 +299,7 @@ class DataSubjectRequestServiceTest extends TestCase
         $this->objectMapper->method('find')->willReturn($object);
         $this->retentionService->method('hasActiveLegalHold')->willReturn(false);
         $this->retentionService->method('validateNotImmutable')->willReturn(null);
-        $this->objectMapper->method('update')->willReturnArgument(0);
+        $this->objectService->method('saveObject')->willReturnArgument(0);
 
         $this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
         $this->assertNotNull($object->getDeleted());
@@ -309,7 +324,7 @@ class DataSubjectRequestServiceTest extends TestCase
         $this->objectMapper->method('find')->willReturn($object);
         $this->retentionService->method('hasActiveLegalHold')->willReturn(false);
         $this->retentionService->method('validateNotImmutable')->willReturn(null);
-        $this->objectMapper->method('update')->willReturnArgument(0);
+        $this->objectService->method('saveObject')->willReturnArgument(0);
 
         $this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
 
@@ -336,8 +351,8 @@ class DataSubjectRequestServiceTest extends TestCase
         $this->retentionService->method('hasActiveLegalHold')->willReturn(false);
         $this->retentionService->method('validateNotImmutable')->willReturn(null);
 
-        // update() must never be called on a dry run.
-        $this->objectMapper->expects($this->never())->method('update');
+        // saveObject() must never be called on a dry run.
+        $this->objectService->expects($this->never())->method('saveObject');
 
         $summary = $this->service->erase(subjectId: 'jane@example.org', dryRun: true);
 
@@ -360,7 +375,7 @@ class DataSubjectRequestServiceTest extends TestCase
         $this->objectMapper->method('find')->willReturn($object);
         $this->retentionService->method('validateNotImmutable')->willReturn(null);
         $this->dsarService->method('getDsarProcessingActivityUuid')->willReturn('activity-uuid');
-        $this->objectMapper->method('update')->willReturnArgument(0);
+        $this->objectService->method('saveObject')->willReturnArgument(0);
 
         $result = $this->service->rectify(objectIdentifier: 'obj', changes: ['email' => 'new@example.org']);
 
@@ -380,7 +395,7 @@ class DataSubjectRequestServiceTest extends TestCase
         $object = $this->buildObject('obj', ['email' => 'x@example.org']);
         $this->objectMapper->method('find')->willReturn($object);
         $this->retentionService->method('validateNotImmutable')->willReturn('OBJECT_DESTROYED');
-        $this->objectMapper->expects($this->never())->method('update');
+        $this->objectService->expects($this->never())->method('saveObject');
 
         $this->assertNull($this->service->rectify(objectIdentifier: 'obj', changes: ['email' => 'y@example.org']));
 

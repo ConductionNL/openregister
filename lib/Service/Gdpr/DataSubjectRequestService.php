@@ -56,6 +56,7 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -96,7 +97,8 @@ class DataSubjectRequestService
      * Constructor.
      *
      * @param IDBConnection       $db               GdprEntity + entity_relations join.
-     * @param MagicMapper         $objectMapper     Object loader/writer (RBAC/tenant scoped).
+     * @param MagicMapper         $objectMapper     Object loader (RBAC/tenant scoped reads).
+     * @param ObjectService       $objectService    Audited write path (saveObject → audit trail).
      * @param RetentionService    $retentionService Legal-hold + immutability guard.
      * @param DsarService         $dsarService      Reused only for the configured DSAR activity uuid.
      * @param DataSubjectDeadline $deadline         EU art-12 deadline maths.
@@ -106,6 +108,7 @@ class DataSubjectRequestService
     public function __construct(
         private readonly IDBConnection $db,
         private readonly MagicMapper $objectMapper,
+        private readonly ObjectService $objectService,
         private readonly RetentionService $retentionService,
         private readonly DsarService $dsarService,
         private readonly DataSubjectDeadline $deadline,
@@ -442,7 +445,13 @@ class DataSubjectRequestService
 
         $ref = $this->refOf(entry: [], object: $object);
         try {
-            $this->objectMapper->update(entity: $object);
+            $this->objectService->saveObject(
+                object: $object,
+                register: $object->getRegister(),
+                schema: $object->getSchema(),
+                _rbac: true,
+                _multitenancy: true
+            );
             $summary['erased'][] = $ref;
         } catch (\Throwable $e) {
             $summary['failed'][] = ['object' => $ref, 'error' => $e->getMessage()];
@@ -758,8 +767,14 @@ class DataSubjectRequestService
     private function persist(ObjectEntity $object, string $op, string $identifier): ?array
     {
         try {
-            $this->objectMapper->update(entity: $object);
-            return $object->jsonSerialize();
+            $saved = $this->objectService->saveObject(
+                object: $object,
+                register: $object->getRegister(),
+                schema: $object->getSchema(),
+                _rbac: true,
+                _multitenancy: true
+            );
+            return $saved->jsonSerialize();
         } catch (\Throwable $e) {
             $this->logger->warning(
                 message: '[DSR] '.$op.' update failed',
