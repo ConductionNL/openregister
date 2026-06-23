@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0f647ccd288774c7b980875934d163f5",
+    "content-hash": "0ac4583484bd0a77737f9ca3f4fefdf6",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -310,12 +310,12 @@
             "source": {
                 "type": "git",
                 "url": "https://codeberg.org/Conduction/sapp.git",
-                "reference": "b65851788fdc5e45bacb440845179257c0a8aaad"
+                "reference": "66c36722412343156b33af55783181896cba96b1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/b65851788fdc5e45bacb440845179257c0a8aaad.zip",
-                "reference": "b65851788fdc5e45bacb440845179257c0a8aaad",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/66c36722412343156b33af55783181896cba96b1.zip",
+                "reference": "66c36722412343156b33af55783181896cba96b1",
                 "shasum": ""
             },
             "require": {
@@ -349,7 +349,7 @@
                 "source": "https://codeberg.org/Conduction/sapp/branch/feat/chained-filter-text-replace",
                 "issues": "https://codeberg.org/Conduction/sapp/issues"
             },
-            "time": "2026-06-23T09:33:33+02:00"
+            "time": "2026-06-23T10:23:45+02:00"
         },
         {
             "name": "dompdf/dompdf",
