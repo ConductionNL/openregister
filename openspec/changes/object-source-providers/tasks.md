@@ -21,6 +21,12 @@
 - [x] 3.3 RBAC: the CalDAV provider is inherently user-scoped (acting user's calendars), so another
       user's records are absent (denied == not-found). Per-schema read-rule enforcement is the
       provider's responsibility (documented in the interface).
+- [x] 3.4 LIVE-TEST FINDING: the HTTP list endpoint does NOT go through GetObject::findAll — it uses
+      `ObjectService::searchObjectsPaginated` (and a magic-mapped fast path in `ObjectsController::index`).
+      Added the same delegation there: `paginateObjectSource()` guard in `searchObjectsPaginated`
+      (returns the `{results,total,@self}` shape from the provider) + gated the controller's
+      magic-mapped branch with `&& $schemaEntity->getObjectSource() === null` so sourced schemas fall
+      through to the provider path.
 
 ## 4. Write rejection
 - [x] 4.1 `SaveObject::saveObject()` (create/update) and `DeleteObject::deleteObject()` reject writes
@@ -30,14 +36,18 @@
 - [x] 5.1 Add `lib/Service/ObjectSource/CalDavVtodoObjectSourceProvider.php` (getId `caldav-vtodo`),
       reusing `TaskService::getAllUserTasks`; map summary/description/status/due/priority/completed →
       schema fields; uid → uuid; fail-closed to empty on read error.
-- [x] 5.2 `isEnabled()` = tasks/calendar installed; registered with the registry in
-      `bootObjectSourceProviders()`.
+- [x] 5.2 `isEnabled()` = CalDAV available (core `dav` app, with tasks/calendar as positive signals);
+      registered with the registry in `bootObjectSourceProviders()`. LIVE-TEST FINDING: VTODOs live in
+      core `dav`, NOT the optional tasks/calendar apps — checking only tasks/calendar made the provider
+      report disabled on a stock instance.
 
 ## 6. Tests
 - [x] 6.1 `ObjectSourceRegistryTest` (resolve, duplicate-id first-wins, withProviders). GREEN.
-- [~] 6.2 Read-path delegation integration test — covered at the unit level by the registry +
-      provider tests and a live boot smoke; full GetObject integration test (mocking MagicMapper)
-      left as a follow-up / CI suite addition.
+- [x] 6.2 Read-path delegation LIVE-VERIFIED on :8080: a probe register+schema carrying
+      `x-openregister-object-source: caldav-vtodo`, listed via `GET /api/objects/{reg}/{schema}`,
+      returned the acting user's CalDAV VTODO as a virtual object (title/status mapped), total=1, no DB
+      row; `POST` to it returned 403 read-only. (A mocked GetObject/ObjectService integration test can
+      still be added to the CI suite as a follow-up.)
 - [x] 6.3 Write-guard behaviour asserted via the read-only RuntimeException path (provider tests +
       reasoning); CalDAV mapping + disabled-when-absent covered in `CalDavVtodoObjectSourceProviderTest`.
 - [x] 6.4 `CalDavVtodoObjectSourceProviderTest`: VTODO→virtual-object mapping; find by uid/id;

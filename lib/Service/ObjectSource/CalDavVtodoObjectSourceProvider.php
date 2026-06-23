@@ -74,8 +74,10 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider
     /**
      * {@inheritDoc}
      *
-     * Enabled when the Tasks or Calendar app is installed (VTODOs live in the
-     * user's CalDAV calendars).
+     * Enabled when CalDAV is available. VTODOs live in the user's CalDAV
+     * calendars served by the CORE `dav` app — the `tasks`/`calendar` apps are
+     * only optional UIs, so this checks `dav` (with tasks/calendar as positive
+     * signals too).
      *
      * @return bool True when CalDAV VTODO reads are available.
      *
@@ -84,7 +86,8 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider
     public function isEnabled(): bool
     {
         try {
-            return ($this->appManager->isInstalled('tasks') === true
+            return ($this->appManager->isInstalled('dav') === true
+                || $this->appManager->isInstalled('tasks') === true
                 || $this->appManager->isInstalled('calendar') === true);
         } catch (Throwable $e) {
             return false;

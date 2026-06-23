@@ -1177,7 +1177,10 @@ class ObjectsController extends Controller
                 schemaSlug: $schemaEntity->getSlug()
             );
 
-            if ($isMagicMapped === true) {
+            // A schema served from an external object-source (x-openregister-object-source)
+            // must never read the magic table — fall through to searchObjectsPaginated,
+            // which delegates to the registered provider (object-source-providers).
+            if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
                 // Use MagicMapper for magic-mapped schemas.
                 $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
