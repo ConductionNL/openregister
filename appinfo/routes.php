@@ -290,6 +290,14 @@ return [
         ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
         ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
         ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
+        // Generic, RBAC + tenant scoped GDPR data-subject-rights endpoints
+        // (consumable by leaf apps; NOT admin-only, distinct from dsar#*).
+        ['name' => 'dataSubjectRequest#subjectData',  'url' => '/api/gdpr/subject-data',  'verb' => 'GET'],
+        ['name' => 'dataSubjectRequest#accessExport', 'url' => '/api/gdpr/access-export', 'verb' => 'GET'],
+        ['name' => 'dataSubjectRequest#rectify',      'url' => '/api/gdpr/rectify',       'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
