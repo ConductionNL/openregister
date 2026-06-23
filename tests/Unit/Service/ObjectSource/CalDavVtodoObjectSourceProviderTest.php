@@ -38,7 +38,6 @@ use Psr\Log\NullLogger;
  */
 class CalDavVtodoObjectSourceProviderTest extends TestCase
 {
-
     /**
      * Build a provider with a stubbed TaskService result and app availability.
      *
@@ -75,6 +74,18 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase
                 'due'         => '2026-07-01',
                 'priority'    => 5,
                 'completed'   => null,
+                // Linked to the bound register/schema (3/9) so default scoping keeps it.
+                'registerId'  => 3,
+                'schemaId'    => 9,
+            ],
+            [
+                'id'         => 'uri-2.ics',
+                'uid'        => 'uid-2',
+                'summary'    => 'Someone else\'s personal task',
+                'status'     => 'needs-action',
+                // Linked to a different schema (99) — default scoping excludes it.
+                'registerId' => 3,
+                'schemaId'   => 99,
             ],
         ];
     }//end tasks()
@@ -112,6 +123,8 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase
         $schema = new Schema();
         $schema->setId(9);
 
+        // Default scoping: only the VTODO linked to register 3 / schema 9 is returned;
+        // the schema-99 task is excluded.
         $objects = $this->provider($this->tasks())->findAll($register, $schema);
 
         $this->assertCount(1, $objects);
@@ -121,6 +134,30 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase
         $this->assertSame('2026-07-01', $data['dueDate']);
         $this->assertSame('uid-1', $objects[0]->getUuid());
     }//end testFindAllMapsVtodos()
+
+    /**
+     * Scoping: default filters to the bound register+schema; `unscoped` returns all.
+     *
+     * @return void
+     */
+    public function testScopingByBoundSchema(): void
+    {
+        $register = new Register();
+        $register->setId(3);
+        $schema = new Schema();
+        $schema->setId(9);
+
+        // Default: schema-99 task excluded → 1 of 2.
+        $this->assertCount(1, $this->provider($this->tasks())->findAll($register, $schema));
+
+        // unscoped: both tasks returned.
+        $this->assertCount(2, $this->provider($this->tasks())->findAll($register, $schema, [], ['unscoped' => true]));
+
+        // config.schemas override: scope to schema 99 only → the other task.
+        $only99 = $this->provider($this->tasks())->findAll($register, $schema, [], ['schemas' => [99]]);
+        $this->assertCount(1, $only99);
+        $this->assertSame('uid-2', $only99[0]->getUuid());
+    }//end testScopingByBoundSchema()
 
     /**
      * find() resolves by uid and returns null for an unknown id.

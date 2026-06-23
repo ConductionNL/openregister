@@ -109,6 +109,10 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider
     public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity
     {
         foreach ($this->readTasks(config: $config, limit: 1000, offset: 0) as $task) {
+            if ($this->matchesScope(task: $task, register: $register, schema: $schema, config: $config) === false) {
+                continue;
+            }
+
             if ((string) ($task['id'] ?? '') === $id || (string) ($task['uid'] ?? '') === $id) {
                 return $this->toObjectEntity(register: $register, schema: $schema, task: $task);
             }
@@ -137,11 +141,55 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider
 
         $objects = [];
         foreach ($this->readTasks(config: $config, limit: (int) $limit, offset: (int) $offset, status: $status) as $task) {
+            if ($this->matchesScope(task: $task, register: $register, schema: $schema, config: $config) === false) {
+                continue;
+            }
+
             $objects[] = $this->toObjectEntity(register: $register, schema: $schema, task: $task);
         }
 
         return $objects;
     }//end findAll()
+
+    /**
+     * Whether a VTODO is in scope for the bound schema.
+     *
+     * By default a sourced schema only surfaces VTODOs whose X-OPENREGISTER link
+     * points at the bound register AND schema, so each projection shows only its
+     * own tasks (not every VTODO the user owns). Config escape hatches:
+     *  - `unscoped: true` — surface all of the user's VTODOs (no link filter);
+     *  - `register` (int) / `schema` (int) — scope to a different register/schema
+     *    than the bound one;
+     *  - `schemas` (int[]) — scope to VTODOs linked to ANY of these schema ids.
+     *
+     * @param array<string, mixed> $task     The VTODO task array.
+     * @param Register             $register The bound register.
+     * @param Schema               $schema   The bound schema.
+     * @param array<string, mixed> $config   The object-source config block.
+     *
+     * @return bool True when the task is in scope.
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
+     */
+    private function matchesScope(array $task, Register $register, Schema $schema, array $config): bool
+    {
+        if (($config['unscoped'] ?? false) === true) {
+            return true;
+        }
+
+        $wantRegister = (int) ($config['register'] ?? $register->getId());
+        if ((int) ($task['registerId'] ?? 0) !== $wantRegister) {
+            return false;
+        }
+
+        $wantSchemas = $config['schemas'] ?? null;
+        if (is_array($wantSchemas) === true && empty($wantSchemas) === false) {
+            return in_array((int) ($task['schemaId'] ?? 0), array_map('intval', $wantSchemas), true);
+        }
+
+        $wantSchema = (int) ($config['schema'] ?? $schema->getId());
+        return ((int) ($task['schemaId'] ?? 0) === $wantSchema);
+    }//end matchesScope()
 
     /**
      * {@inheritDoc}
