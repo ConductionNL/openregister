@@ -1,6 +1,16 @@
 OC.L10N.register(
     "openregister",
     {
+    "PERSON" : "PERSOON",
+    "ORGANIZATION" : "ORGANISATIE",
+    "LOCATION" : "LOCATIE",
+    "EMAIL" : "E-MAILADRES",
+    "PHONE" : "TELEFOONNUMMER",
+    "ADDRESS" : "ADRES",
+    "DATE" : "DATUM",
+    "IBAN" : "IBAN",
+    "SSN" : "BSN",
+    "IP_ADDRESS" : "IP-ADRES",
     "Detection backends" : "Detectie-backends",
     "OpenAnonymiser source" : "OpenAnonymiser-bron",
     "Use the built-in OpenAnonymiser (recommended)" : "Gebruik de ingebouwde OpenAnonymiser (aanbevolen)",
