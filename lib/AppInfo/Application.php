@@ -163,6 +163,7 @@ use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
@@ -2044,6 +2045,12 @@ class Application extends App implements IBootstrap
         // into the object payload before persistence (see x-openregister-calculations).
         $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
+
+        // Quality annotation listener — materialises a per-object data-quality
+        // score (0-1) into the object payload before persistence
+        // (see x-openregister-quality). MDM foundation capability.
+        $context->registerEventListener(ObjectCreatingEvent::class, QualityScoreOnSaveListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, QualityScoreOnSaveListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
