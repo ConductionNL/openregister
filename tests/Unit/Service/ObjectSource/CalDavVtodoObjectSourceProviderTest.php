@@ -176,4 +176,35 @@ class CalDavVtodoObjectSourceProviderTest extends TestCase
         $this->assertSame('Send the minutes', $provider->find($register, $schema, 'uri-1.ics')?->getObject()['title']);
         $this->assertNull($provider->find($register, $schema, 'does-not-exist'));
     }//end testFindByIdAndMissing()
+
+    /**
+     * Non-core schema fields round-tripped via X-OPENREGISTER-DATA (task['fields'])
+     * are merged into the projected object data.
+     *
+     * @return void
+     */
+    public function testNonCoreFieldsRoundTrip(): void
+    {
+        $register = new Register();
+        $register->setId(3);
+        $schema = new Schema();
+        $schema->setId(9);
+
+        $task = [
+            'id'         => 'uri-x.ics',
+            'uid'        => 'uid-x',
+            'summary'    => 'Draft the plan',
+            'status'     => 'needs-action',
+            'registerId' => 3,
+            'schemaId'   => 9,
+            'fields'     => ['assignee' => 'Wethouder Duurzaamheid', 'taskStatus' => 'open'],
+        ];
+
+        $objects = $this->provider([$task])->findAll($register, $schema);
+        $this->assertCount(1, $objects);
+        $data = $objects[0]->getObject();
+        $this->assertSame('Draft the plan', $data['title']);
+        $this->assertSame('Wethouder Duurzaamheid', $data['assignee']);
+        $this->assertSame('open', $data['taskStatus']);
+    }//end testNonCoreFieldsRoundTrip()
 }//end class
