@@ -2683,6 +2683,20 @@ class SaveObject
             register: $register
         );
 
+        // Read-only projection guard: a schema served from an external source
+        // (x-openregister-object-source) is read-only — the external system stays
+        // authoritative and OpenRegister must never become a second write path.
+        $objectSource = $schema->getObjectSource();
+        if ($persist === true && $objectSource !== null) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
         // Normalize translatable properties (wrap simple values under default language).
         $data = $this->translationHandler->normalizeTranslationsForSave(
             objectData: $data,

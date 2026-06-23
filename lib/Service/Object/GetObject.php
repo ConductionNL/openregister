@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handler class for retrieving objects in the OpenRegister application.
@@ -57,18 +59,66 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param MagicMapper      $objectMapper     Object entity data mapper.
-     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs.
-     * @param SettingsService  $settingsService  Settings service for accessing trail settings.
+     * @param MagicMapper          $objectMapper         Object entity data mapper.
+     * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for logs.
+     * @param SettingsService      $settingsService      Settings service for accessing trail settings.
+     * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
+     * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SettingsService $settingsService
+        private readonly SettingsService $settingsService,
+        private readonly ObjectSourceRegistry $objectSourceRegistry,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
+
+    /**
+     * Resolve the ObjectSourceProvider for a schema, or null when the schema is
+     * served from the magic table (no `x-openregister-object-source`).
+     *
+     * When a schema declares an object source whose provider is missing or
+     * disabled, this logs a warning and returns null WITH `$sourced` set true,
+     * so the caller degrades to an empty result instead of reading the database.
+     *
+     * @param Schema|null $schema  The schema being read (null = magic table).
+     * @param bool        $sourced Set true when the schema declares an object source.
+     *
+     * @return \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider|null
+     *         An enabled provider, or null (see $sourced).
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-3.1
+     */
+    private function resolveObjectSource(?Schema $schema, bool &$sourced): ?object
+    {
+        $sourced = false;
+        if ($schema === null) {
+            return null;
+        }
+
+        $source = $schema->getObjectSource();
+        if ($source === null) {
+            return null;
+        }
+
+        $sourced  = true;
+        $provider = $this->objectSourceRegistry->get($source['provider']);
+        if ($provider === null || $provider->isEnabled() === false) {
+            $this->logger->warning(
+                sprintf(
+                    '[ObjectSource] schema "%s" declares object-source provider "%s" but it is missing or disabled — returning empty result',
+                    (string) $schema->getSlug(),
+                    (string) $source['provider']
+                )
+            );
+            return null;
+        }
+
+        return $provider;
+    }//end resolveObjectSource()
 
     /**
      * Gets an object by its ID with optional extensions.
@@ -101,6 +151,21 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
+        // Object-source delegation: for a schema served from an external source
+        // (x-openregister-object-source) the object is fetched live from the
+        // provider and never read from the magic table. Absent/denied → 404.
+        $sourced  = false;
+        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
+        if ($sourced === true) {
+            $config  = ($schema->getObjectSource()['config'] ?? []);
+            $virtual = $provider?->find(register: $register, schema: $schema, id: $id, config: $config);
+            if ($virtual === null) {
+                throw new DoesNotExistException(sprintf('Object %s not found', $id));
+            }
+
+            return $virtual;
+        }
+
         $object = $this->objectMapper->find(
             identifier: $id,
             register: $register,
@@ -156,6 +221,19 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
+        // Object-source delegation (silent read, no audit) — see find().
+        $sourced  = false;
+        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
+        if ($sourced === true) {
+            $config  = ($schema->getObjectSource()['config'] ?? []);
+            $virtual = $provider?->find(register: $register, schema: $schema, id: $id, config: $config);
+            if ($virtual === null) {
+                throw new DoesNotExistException(sprintf('Object %s not found', $id));
+            }
+
+            return $virtual;
+        }
+
         $object = $this->objectMapper->find(
             identifier: $id,
             register: $register,
@@ -215,6 +293,34 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        // Object-source delegation: a schema served from an external source
+        // lists live from the provider, never the magic table. A missing/disabled
+        // provider degrades to an empty list (resolveObjectSource logs it).
+        $sourced  = false;
+        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
+        if ($sourced === true) {
+            if ($provider === null) {
+                return [];
+            }
+
+            $source = $schema->getObjectSource();
+            $query  = [
+                'limit'   => $limit,
+                'offset'  => $offset,
+                'filters' => $filters,
+                'sort'    => $sort,
+                'search'  => $search,
+                'ids'     => $ids,
+            ];
+
+            return $provider->findAll(
+                register: $register,
+                schema: $schema,
+                query: $query,
+                config: ($source['config'] ?? [])
+            );
+        }//end if
+
         // Thread the RBAC / multitenancy posture into the filters so the search
         // handler honours them. These are read from the query array downstream;
         // passing them only as method arguments left them silently dropped, so

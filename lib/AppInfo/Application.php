@@ -169,6 +169,8 @@ use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -440,6 +442,7 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerIntegrationRegistry(context: $context);
+        $this->registerObjectSourceProviders(context: $context);
         $this->registerEventListeners(context: $context);
         $this->registerMcpToolProviders(context: $context);
         $this->registerAppHostObservability(context: $context);
@@ -1145,6 +1148,43 @@ class Application extends App implements IBootstrap
         );
 
     }//end registerIntegrationRegistry()
+
+    /**
+     * Register the ObjectSourceRegistry (shared) and the built-in
+     * CalDAV-VTODO object-source provider service.
+     *
+     * The registry is shared so `addProvider()` registrations made during
+     * `boot()` persist for the whole request; GetObject auto-wires it.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-1.3
+     */
+    private function registerObjectSourceProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            ObjectSourceRegistry::class,
+            function (ContainerInterface $container) {
+                return new ObjectSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            CalDavVtodoObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new CalDavVtodoObjectSourceProvider(
+                    taskService: $container->get(TaskService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+    }//end registerObjectSourceProviders()
 
     /**
      * Register the 5 BuiltinProviders/* services so they can be
@@ -2485,6 +2525,7 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+        $this->bootObjectSourceProviders(server: $server);
 
         // Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
         // component can render submitter faces alongside the issues
@@ -2670,4 +2711,40 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+
+    /**
+     * Register the built-in object-source providers with the shared
+     * ObjectSourceRegistry.
+     *
+     * Runs in boot() (post-registration) because addProvider() needs the
+     * registry instance. Guarded so one absent provider never takes the app
+     * down — a failing provider simply won't serve its bound schemas.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-5.2
+     */
+    private function bootObjectSourceProviders($server): void
+    {
+        try {
+            $registry = $server->get(ObjectSourceRegistry::class);
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        try {
+            $registry->addProvider($server->get(CalDavVtodoObjectSourceProvider::class));
+        } catch (\Throwable $e) {
+            try {
+                $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    '[ObjectSource] could not register CalDavVtodoObjectSourceProvider: '.$e->getMessage()
+                );
+            } catch (\Throwable $inner) {
+                // Logger unavailable on this build — nothing to do.
+            }
+        }
+
+    }//end bootObjectSourceProviders()
 }//end class
