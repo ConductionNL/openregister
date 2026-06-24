@@ -374,16 +374,21 @@ class DocumentProcessingHandler
         $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
 
         // Flip the source's EntityRelation rows to `anonymized = 1` so the
-        // anonymised state is queryable downstream. `markAsAnonymized`
-        // skips rows where `skip_anonymization = 1` per the
-        // `entity-relation-grondslagen` contract — operator skips are
-        // preserved. The placeholder value is a generic "[REDACTED]"
-        // because each entity got its own per-row replacement key earlier
-        // in this method; the column stores a single representative value
-        // per anonymise call, not the full per-entity placeholder list.
+        // anonymised state is queryable downstream. Skip-aware (rows where
+        // `skip_anonymization = 1` are preserved per the
+        // `entity-relation-grondslagen` contract). Each relation's
+        // `anonymized_value` is set to the EXACT placeholder emitted for its
+        // entity (scope-local number + localized label, from
+        // `lastPlaceholderMap`) — the only durable record of the scope-local
+        // number, which isn't recoverable from the stored rows later. This
+        // lets the grondslagen-summary render the same placeholder the
+        // document carries without re-deriving from the global id. The
+        // persistence lives exactly as long as the relation (overwritten on
+        // re-anonymise, gone on delete). Relations whose entity is absent from
+        // the map keep the legacy "[REDACTED]" marker.
         if ($fileId > 0 && empty($replacements) === false) {
             try {
-                $this->entityRelationMapper->markAsAnonymized($fileId, '[REDACTED]');
+                $this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
             } catch (\Throwable $e) {
                 // Persistence-side failure on the audit flag MUST NOT mask
                 // the successful redaction; the file is already written.
@@ -391,7 +396,7 @@ class DocumentProcessingHandler
                 // simply won't see this file until the next anonymise
                 // call retries the mark.
                 $this->logger->warning(
-                    'DocumentProcessingHandler: markAsAnonymized failed after redaction',
+                    'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
                     ['fileId' => $fileId, 'error' => $e->getMessage()]
                 );
             }
@@ -659,23 +664,23 @@ class DocumentProcessingHandler
 
             // PhpWord roundtrip-safety workaround for the Word2007 Numbering
             // bug. Chain of events upstream:
-            //   1. Shared\XMLReader::getAttribute() at line 187 normalises
-            //      every empty-string attribute value to null:
-            //          return ($return == '') ? null : $return;
-            //   2. Reader\Word2007\Numbering at line 53 stores that null
-            //      verbatim into $abstract['type'] (the readLevel() helper
-            //      filters nulls; the abstract-level reader does not).
-            //   3. Style::addNumberingStyle dispatches the array through
-            //      AbstractStyle::setStyleByArray, which calls setType($value)
-            //      on each entry.
-            //   4. Style\Numbering::setType has a strict `string` typehint
-            //      since PhpWord 1.x; null → TypeError.
-            //   5. Writer\Word2007\Part\Numbering lines 68–70 unconditionally
-            //      emits <w:multiLevelType> via writeAttribute('w:val',
-            //      $style->getType()). When getType() is null PHP coerces
-            //      to "", so the writer poisons its own output:
-            //      <w:multiLevelType w:val=""/>. Re-loading that file then
-            //      triggers (1)–(4) and the read crashes.
+            // 1. Shared\XMLReader::getAttribute() at line 187 normalises
+            // every empty-string attribute value to null:
+            // return ($return == '') ? null : $return;
+            // 2. Reader\Word2007\Numbering at line 53 stores that null
+            // verbatim into $abstract['type'] (the readLevel() helper
+            // filters nulls; the abstract-level reader does not).
+            // 3. Style::addNumberingStyle dispatches the array through
+            // AbstractStyle::setStyleByArray, which calls setType($value)
+            // on each entry.
+            // 4. Style\Numbering::setType has a strict `string` typehint
+            // since PhpWord 1.x; null → TypeError.
+            // 5. Writer\Word2007\Part\Numbering lines 68–70 unconditionally
+            // emits <w:multiLevelType> via writeAttribute('w:val',
+            // $style->getType()). When getType() is null PHP coerces
+            // to "", so the writer poisons its own output:
+            // <w:multiLevelType w:val=""/>. Re-loading that file then
+            // triggers (1)–(4) and the read crashes.
             //
             // The fix here works at the OpenRegister boundary: before
             // calling the writer we walk every Numbering style PhpWord
