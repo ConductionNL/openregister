@@ -1790,6 +1790,23 @@ class FileService
     }//end getLastResidualEntities()
 
     /**
+     * Per-entity placeholder map from the most recent anonymizeDocument() call.
+     *
+     * Maps the internal global entity id (stringified) to the exact placeholder
+     * string emitted into the document (e.g. `"7" => "[PERSOON: 1]"`), so the
+     * caller (DocuDesk's grondslagen-summary) can render the same placeholder
+     * the document carries rather than re-deriving it from the global id.
+     *
+     * @return array<string, string> Map of global entity id → emitted placeholder.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastPlaceholderMap.
+     */
+    public function getLastPlaceholderMap(): array
+    {
+        return $this->documentProcessingHandler->getLastPlaceholderMap();
+    }//end getLastPlaceholderMap()
+
+    /**
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.
