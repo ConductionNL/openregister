@@ -125,6 +125,21 @@ class DocumentProcessingHandler
     private array $lastResidualEntities = [];
 
     /**
+     * Per-entity placeholder map from the most recent anonymisation.
+     *
+     * Maps the internal global entity id (`openregister_entities.id`, stringified)
+     * to the EXACT placeholder string emitted into the document for that entity
+     * (e.g. `"7" => "[PERSOON: 1]"`). Lets downstream consumers (DocuDesk's
+     * grondslagen-summary) render the SAME placeholder the document carries
+     * — scope-local number + localized TYPE label — instead of re-deriving
+     * `[<TYPE>: <entity_id>]` from the global id. Empty when the last run
+     * matched no catalogue entity.
+     *
+     * @var array<string, string>
+     */
+    private array $lastPlaceholderMap = [];
+
+    /**
      * Constructor for DocumentProcessingHandler.
      *
      * @param IRootFolder                               $rootFolder             Root folder for file access.
@@ -184,6 +199,22 @@ class DocumentProcessingHandler
     {
         return $this->lastResidualEntities;
     }//end getLastResidualEntities()
+
+    /**
+     * Per-entity placeholder map from the most recent anonymizeDocument() call.
+     *
+     * Maps the internal global entity id (stringified) to the exact placeholder
+     * string emitted into the document (e.g. `"7" => "[PERSOON: 1]"`), so the
+     * grondslagen-summary can render the SAME placeholder the document carries
+     * (scope-local number + localized label) rather than re-deriving it from the
+     * global id. Empty when the last run matched no catalogue entity.
+     *
+     * @return array<string, string> Map of global entity id → emitted placeholder.
+     */
+    public function getLastPlaceholderMap(): array
+    {
+        return $this->lastPlaceholderMap;
+    }//end getLastPlaceholderMap()
 
     /**
      * Set the FileService instance for cross-handler coordination.
@@ -290,9 +321,11 @@ class DocumentProcessingHandler
         string $scope='document',
         ?string $dossierKey=null
     ): File {
-        // Reset any report/residuals from a prior call on this (potentially reused) handler.
+        // Reset any report/residuals/placeholder-map from a prior call on this
+        // (potentially reused) handler.
         $this->lastSanitizationReport = null;
         $this->lastResidualEntities   = [];
+        $this->lastPlaceholderMap     = [];
 
         // Resolve the source file id once — the substitution placeholder
         // format and the post-redaction audit flag both key off it.
@@ -382,6 +415,11 @@ class DocumentProcessingHandler
                 // Translate the internal `e.id` to the scope-local number.
                 $localNumber           = $translator->translate(entityId: $entityIdMap[$originalText]['id']);
                 $replacements[$needle] = '['.$localizedType.': '.$localNumber.']';
+                // Record the EXACT emitted placeholder against the global e.id
+                // so consumers (DocuDesk's grondslagen-summary) can render the
+                // same string (scope-local number + localized label) instead of
+                // re-deriving from the global id.
+                $this->lastPlaceholderMap[(string) $entityIdMap[$originalText]['id']] = $replacements[$needle];
             }
         }//end foreach
 
