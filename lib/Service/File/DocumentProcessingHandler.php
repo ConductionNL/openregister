@@ -476,16 +476,21 @@ class DocumentProcessingHandler
         }
 
         // Flip the source's EntityRelation rows to `anonymized = 1` so the
-        // anonymised state is queryable downstream. `markAsAnonymized`
-        // skips rows where `skip_anonymization = 1` per the
-        // `entity-relation-grondslagen` contract — operator skips are
-        // preserved. The placeholder value is a generic "[REDACTED]"
-        // because each entity got its own per-row replacement key earlier
-        // in this method; the column stores a single representative value
-        // per anonymise call, not the full per-entity placeholder list.
+        // anonymised state is queryable downstream. Skip-aware (rows where
+        // `skip_anonymization = 1` are preserved per the
+        // `entity-relation-grondslagen` contract). Each relation's
+        // `anonymized_value` is set to the EXACT placeholder emitted for its
+        // entity (scope-local number + localized label, from
+        // `lastPlaceholderMap`) — the only durable record of the scope-local
+        // number, which isn't recoverable from the stored rows later. This
+        // lets the grondslagen-summary render the same placeholder the
+        // document carries without re-deriving from the global id. The
+        // persistence lives exactly as long as the relation (overwritten on
+        // re-anonymise, gone on delete). Relations whose entity is absent from
+        // the map keep the legacy "[REDACTED]" marker.
         if ($fileId > 0 && empty($replacements) === false) {
             try {
-                $this->entityRelationMapper->markAsAnonymized($fileId, '[REDACTED]');
+                $this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
             } catch (\Throwable $e) {
                 // Persistence-side failure on the audit flag MUST NOT mask
                 // the successful redaction; the file is already written.
@@ -493,7 +498,7 @@ class DocumentProcessingHandler
                 // simply won't see this file until the next anonymise
                 // call retries the mark.
                 $this->logger->warning(
-                    'DocumentProcessingHandler: markAsAnonymized failed after redaction',
+                    'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
                     ['fileId' => $fileId, 'error' => $e->getMessage()]
                 );
             }

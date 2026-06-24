@@ -566,6 +566,61 @@ class EntityRelationMapper extends QBMapper
     }//end buildRelationFromRow()
 
     /**
+     * Mark entity relations as anonymized, persisting each entity's EXACT
+     * emitted placeholder into its `anonymized_value`.
+     *
+     * The scope-local placeholder (number + localized label) is computed once,
+     * at anonymise time, inside the run — it is not otherwise recoverable later
+     * (the number depends on the scope and is not derivable from the stored
+     * rows alone). Persisting it here, per relation, is the only durable record
+     * of "what each entity became" — and it lives exactly as long as the
+     * relation does (overwritten on re-anonymise, removed when the relation is
+     * deleted/re-extracted), so there is no separate store to keep in sync or
+     * clean up.
+     *
+     * ONLY the entities actually redacted are marked: each `entity_id` present
+     * in `$placeholderByEntityId` (i.e. the entities that were substituted into
+     * the document) has all its non-skipped relations on the file set to
+     * `anonymized = true` with `anonymized_value` = its exact placeholder.
+     *
+     * This intentionally does NOT blanket-mark every non-skipped relation:
+     * an entity that was detected but NOT redacted (absent from the map — e.g.
+     * a value matched only under a second type, or filtered out) was never
+     * substituted into the document, so marking it anonymized would make the
+     * grondslagen-summary list a placeholder that isn't in the file and (with
+     * no scope-local number) leak the global entity id. Skip decisions are
+     * honoured (skipped rows untouched).
+     *
+     * @param int                   $fileId                The file ID.
+     * @param array<string, string> $placeholderByEntityId Map of (stringified) entity id → the
+     *                                                     exact placeholder emitted for it
+     *                                                     (e.g. "7" => "[PERSOON: 1]").
+     *
+     * @return int Number of relation rows marked anonymized.
+     */
+    public function markAsAnonymizedWithPlaceholders(
+        int $fileId,
+        array $placeholderByEntityId
+    ): int {
+        $total = 0;
+        foreach ($placeholderByEntityId as $entityId => $placeholder) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($this->getTableName())
+                ->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+                ->set('anonymized_value', $qb->createNamedParameter((string) $placeholder))
+                ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter((int) $entityId, IQueryBuilder::PARAM_INT)))
+                ->andWhere(
+                    $qb->expr()->eq('skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+                );
+            $total += $qb->executeStatement();
+        }
+
+        return $total;
+
+    }//end markAsAnonymizedWithPlaceholders()
+
+    /**
      * Find entity relations for the anonymise pass — skip-aware.
      *
      * Same shape as `findEntitiesForFile` but filters out rows the operator
