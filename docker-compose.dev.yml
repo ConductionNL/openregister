@@ -355,7 +355,7 @@ services:
   nextcloud:
     user: root
     container_name: nextcloud-dev
-    image: nextcloud
+    image: nextcloud:34.0.0-apache
     restart: always
     ports:
       - 8080:80
