@@ -337,6 +337,13 @@ class RelationCascadeHandler
     /**
      * Checks if a value looks like an object reference.
      *
+     * This is the relation RESOLUTION path (it accepts numeric ids and `/api/`
+     * URLs so cascade write-back can resolve them to UUIDs), which is a broader
+     * concern than the `@self.relations` RECORDING rule shared by SaveObjects
+     * and BulkRelationHandler via RelationDetectionTrait. It deliberately does
+     * NOT carry the loose "length + separator" heuristic, so scalars such as
+     * dates or enum values are never matched here either.
+     *
      * @param string $value The value to check.
      *
      * @return bool True if it looks like a reference.
