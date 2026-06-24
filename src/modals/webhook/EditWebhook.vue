@@ -170,6 +170,17 @@
 							</p>
 						</div>
 
+						<div class="checkboxField">
+							<NcCheckboxRadioSwitch
+								:checked="configuration.allowPrivateTargets === true"
+								@update:checked="updateAllowPrivateTargets">
+								{{ t('openregister', 'Allow private/loopback targets') }}
+							</NcCheckboxRadioSwitch>
+							<p class="field-hint">
+								{{ t('openregister', 'Disable the SSRF guard for this webhook so it can deliver to private, loopback or link-local addresses (e.g. http://localhost:8000). Only enable this for local testing.') }}
+							</p>
+						</div>
+
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Retry Policy') }}</label>
 							<NcSelect
@@ -349,6 +360,7 @@ export default {
 			configuration: {
 				sendCloudEvent: true,
 				waitForResponse: false,
+				allowPrivateTargets: false,
 				eventProperty: null,
 				responseMapping: {},
 			},
@@ -484,6 +496,7 @@ export default {
 					configuration: {
 						sendCloudEvent: true,
 						waitForResponse: false,
+						allowPrivateTargets: false,
 						eventProperty: null,
 						responseMapping: {},
 					},
@@ -600,6 +613,20 @@ export default {
 			}
 			this.configuration.waitForResponse = value
 			this.webhookItem.configuration.waitForResponse = value
+		},
+		/**
+		 * @param value
+		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
+		 */
+		updateAllowPrivateTargets(value) {
+			if (!this.webhookItem) {
+				this.webhookItem = {}
+			}
+			if (!this.webhookItem.configuration) {
+				this.webhookItem.configuration = {}
+			}
+			this.configuration.allowPrivateTargets = value
+			this.webhookItem.configuration.allowPrivateTargets = value
 		},
 		/**
 		 * @param value
@@ -781,6 +808,7 @@ export default {
 			this.configuration = {
 				sendCloudEvent: true,
 				waitForResponse: false,
+				allowPrivateTargets: false,
 				eventProperty: null,
 				responseMapping: {},
 			}
