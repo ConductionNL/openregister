@@ -1171,7 +1171,7 @@ export default {
 
 .managedBadge--local {
 	background: var(--color-warning);
-	color: var(--color-main-background);
+	color: var(--color-main-text);
 }
 
 .statusPill {

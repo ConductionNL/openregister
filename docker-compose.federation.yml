@@ -48,7 +48,7 @@ services:
   nc-fed-1:
     user: root
     container_name: nc-fed-1
-    image: nextcloud
+    image: nextcloud:34.0.0-apache
     restart: "no"
     ports:
       - "9081:80"
@@ -80,7 +80,7 @@ services:
   nc-fed-2:
     user: root
     container_name: nc-fed-2
-    image: nextcloud
+    image: nextcloud:34.0.0-apache
     restart: "no"
     ports:
       - "9082:80"

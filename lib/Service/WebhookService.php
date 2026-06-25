@@ -233,13 +233,26 @@ class WebhookService
      *  - Unresolvable hosts are allowed through so that DNS failures surface
      *    as the normal Guzzle ConnectException, not a 400 here.
      *
-     * @param string $uri Full request URI to validate.
+     * When $allowPrivate is true (an admin-set, per-hook opt-in stored as
+     * `configuration.allowPrivateTargets`), the IP-range checks are skipped so a
+     * developer can deliver to a local target such as http://localhost:8000. The
+     * scheme (http/https only) and parse/host checks are ALWAYS enforced — only
+     * the loopback/RFC-1918/link-local/IPv6 range checks are bypassed.
+     *
+     * @param string  $uri          Full request URI to validate.
+     * @param boolean $allowPrivate When true, skip the private/loopback IP-range checks.
      *
      * @return void
      *
      * @throws \RuntimeException When the URI is blocked.
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the per-hook
+     * allowPrivateTargets opt-in; a boolean toggle is the clearest API for a
+     * binary "bypass the IP-range checks" decision threaded from the caller.
      */
-    private function assertSafeWebhookUri(string $uri): void
+    private function assertSafeWebhookUri(string $uri, bool $allowPrivate=false): void
     {
         $parsed = parse_url($uri);
         if ($parsed === false) {
@@ -256,6 +269,13 @@ class WebhookService
         $host = strtolower($parsed['host'] ?? '');
         if ($host === '') {
             throw new RuntimeException('Webhook target URL is missing a host');
+        }
+
+        // Per-hook opt-in: the admin deliberately allowed private/loopback
+        // targets for this webhook. Scheme + host/parse checks above stay
+        // enforced; only the IP-range checks below are bypassed.
+        if ($allowPrivate === true) {
+            return;
         }
 
         // ── IPv6 literal detection ──────────────────────────────────────
@@ -693,11 +713,11 @@ class WebhookService
             // response does NOT throw — it lands here. Treat any non-2xx status as a
             // delivery failure (log it, record failed statistics, schedule a retry)
             // instead of silently recording it as a successful delivery.
-            $statusCode = (int) ($response['status_code'] ?? 0);
+            $statusCode = (int) $response['status_code'];
             if ($statusCode < 200 || $statusCode >= 300) {
                 $webhookLog->setSuccess(false);
                 $webhookLog->setStatusCode($statusCode);
-                $webhookLog->setResponseBody($this->capResponseBody(body: (string) ($response['body'] ?? '')));
+                $webhookLog->setResponseBody($this->capResponseBody(body: (string) $response['body']));
                 $webhookLog->setErrorMessage('Webhook endpoint returned non-2xx status: '.$statusCode);
                 $webhookLog->setRequestBody(json_encode($webhookPayload));
 
@@ -1100,13 +1120,20 @@ class WebhookService
      * @psalm-return array{status_code: int, body: string}
      *
      * Different handling for GET vs POST/PUT/PATCH/DELETE methods
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {
+        // Per-hook opt-in (admin-set) to allow private/loopback targets for
+        // local testing. Defaults to false (full SSRF blocking) when the key
+        // is absent. See configuration.allowPrivateTargets.
+        $allowPrivate = (bool) ($webhook->getConfigurationArray()['allowPrivateTargets'] ?? false);
+
         // SSRF guard: validate the webhook target before issuing the request.
-        // Redirects are re-validated by the on_redirect callback in
-        // initializeHttpClient().
-        $this->assertSafeWebhookUri(uri: $webhook->getUrl());
+        // Redirects are re-validated by the per-request on_redirect callback set
+        // in $options below, which honours the same per-hook flag.
+        $this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
         $headers = array_merge(
             [
@@ -1125,6 +1152,26 @@ class WebhookService
         $options = [
             'headers' => $headers,
             'timeout' => $webhook->getTimeout(),
+        ];
+
+        // Override the shared client's redirect guard per-request so the
+        // on_redirect callback can see this hook's allowPrivate flag. Mirrors
+        // the client default (max/strict/protocols) from initializeHttpClient();
+        // the only difference is the flag-aware re-validation. The shared client
+        // default keeps allowPrivate = false as the safe fallback.
+        $options['allow_redirects'] = [
+            'max'             => 5,
+            'strict'          => true,
+            'referer'         => false,
+            'protocols'       => ['http', 'https'],
+            'track_redirects' => true,
+            'on_redirect'     => function (
+                RequestInterface $request,
+                ResponseInterface $response,
+                \Psr\Http\Message\UriInterface $uri
+            ) use ($allowPrivate): void {
+                $this->assertSafeWebhookUri(uri: (string) $uri, allowPrivate: $allowPrivate);
+            },
         ];
 
         // For GET requests, use query parameters; for others, send JSON body.

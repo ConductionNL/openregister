@@ -2511,6 +2511,101 @@ class WebhookServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }//end testAssertSafeWebhookUriAllowsPublicIpv6()
 
+    // ─── Per-hook allowPrivateTargets opt-in (SSRF bypass) ──────────────
+    //
+    // configuration.allowPrivateTargets lets an admin deliberately opt a single
+    // webhook out of the IP-range checks for local testing (e.g.
+    // http://localhost:8000). The scheme check stays enforced; the default
+    // (flag absent / false) keeps full blocking.
+
+    /**
+     * Provider: private/loopback URLs that are normally blocked.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function privateWebhookUrls(): array
+    {
+        return [
+            'loopback IPv4 with port'   => ['http://127.0.0.1:8000/webhook'],
+            'localhost hostname'        => ['http://localhost:8000/webhook'],
+            'RFC-1918 10/8'             => ['https://10.0.0.5/webhook'],
+            'RFC-1918 192.168/16'       => ['http://192.168.1.1/webhook'],
+            'IPv6 loopback ::1'         => ['http://[::1]:8000/webhook'],
+            'IPv6 unique-local fd00::1' => ['http://[fd00::1]/webhook'],
+        ];
+    }//end privateWebhookUrls()
+
+    /**
+     * With allowPrivate=true the guard permits private/loopback targets.
+     *
+     * @param string $url URL to validate.
+     *
+     * @dataProvider privateWebhookUrls
+     */
+    public function testAssertSafeWebhookUriAllowsPrivateWhenOptedIn(string $url): void
+    {
+        // No exception expected when the per-hook flag is set.
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => $url, 'allowPrivate' => true]
+        );
+        $this->addToAssertionCount(1);
+    }//end testAssertSafeWebhookUriAllowsPrivateWhenOptedIn()
+
+    /**
+     * Regression: with allowPrivate=false (the default) private targets stay blocked.
+     *
+     * @param string $url URL to validate.
+     *
+     * @dataProvider privateWebhookUrls
+     */
+    public function testAssertSafeWebhookUriBlocksPrivateWhenFlagFalse(string $url): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => $url, 'allowPrivate' => false]
+        );
+    }//end testAssertSafeWebhookUriBlocksPrivateWhenFlagFalse()
+
+    /**
+     * The scheme check stays enforced even when allowPrivate is set: a
+     * non-http(s) scheme is still rejected.
+     */
+    public function testAssertSafeWebhookUriStillRejectsNonHttpSchemeWhenOptedIn(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'file:///etc/passwd', 'allowPrivate' => true]
+        );
+    }//end testAssertSafeWebhookUriStillRejectsNonHttpSchemeWhenOptedIn()
+
+    /**
+     * A redirect to a private target is permitted when the hook opted in.
+     *
+     * The per-request on_redirect callback set in sendRequest() delegates to
+     * assertSafeWebhookUri(uri, allowPrivate), so this exercises that exact
+     * delegation: allowPrivate=true ⇒ a private Location is accepted, while the
+     * default client path (allowPrivate=false) still rejects it.
+     */
+    public function testRedirectToPrivateTargetHonoursPerHookFlag(): void
+    {
+        // allowPrivate=true: the redirect target is accepted.
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'http://192.168.1.50:8000/callback', 'allowPrivate' => true]
+        );
+        $this->addToAssertionCount(1);
+
+        // allowPrivate=false: the same redirect target is rejected.
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'http://192.168.1.50:8000/callback', 'allowPrivate' => false]
+        );
+    }//end testRedirectToPrivateTargetHonoursPerHookFlag()
+
     /**
      * blockedIpv6Reason must return 'loopback' for the ::1 address.
      */
