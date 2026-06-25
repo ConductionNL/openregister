@@ -8,7 +8,6 @@ use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -28,8 +27,6 @@ class FileTextControllerTest extends TestCase
 
     private TextExtractionService&MockObject $textExtractor;
 
-    private IndexService&MockObject $indexService;
-
     private FileService&MockObject $fileService;
 
     private EntityRelationMapper&MockObject $entityRelationMapper;
@@ -46,21 +43,19 @@ class FileTextControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->request       = $this->createMock(IRequest::class);
-        $this->textExtractor = $this->createMock(TextExtractionService::class);
-        $this->indexService  = $this->createMock(IndexService::class);
-        $this->fileService   = $this->createMock(FileService::class);
+        $this->request              = $this->createMock(IRequest::class);
+        $this->textExtractor        = $this->createMock(TextExtractionService::class);
+        $this->fileService          = $this->createMock(FileService::class);
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->config = $this->createMock(IAppConfig::class);
-        $this->manualEntityService = $this->createMock(ManualEntityService::class);
-        $this->userSession         = $this->createMock(IUserSession::class);
+        $this->logger               = $this->createMock(LoggerInterface::class);
+        $this->config               = $this->createMock(IAppConfig::class);
+        $this->manualEntityService  = $this->createMock(ManualEntityService::class);
+        $this->userSession          = $this->createMock(IUserSession::class);
 
         $this->controller = new FileTextController(
             'openregister',
             $this->request,
             $this->textExtractor,
-            $this->indexService,
             $this->fileService,
             $this->entityRelationMapper,
             $this->logger,
@@ -116,12 +111,12 @@ class FileTextControllerTest extends TestCase
     {
         $this->config->method('hasKey')->willReturn(true);
         $this->config->method('getValueString')->willReturn(
-                json_encode(
+            json_encode(
                 [
                     'extractionScope' => 'none',
                 ]
-                )
-                );
+            )
+        );
 
         $this->logger->expects($this->once())
             ->method('info');
@@ -138,12 +133,12 @@ class FileTextControllerTest extends TestCase
     {
         $this->config->method('hasKey')->willReturn(true);
         $this->config->method('getValueString')->willReturn(
-                json_encode(
+            json_encode(
                 [
                     'extractionScope' => 'all',
                 ]
-                )
-                );
+            )
+        );
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -161,12 +156,12 @@ class FileTextControllerTest extends TestCase
     {
         $this->config->method('hasKey')->willReturn(true);
         $this->config->method('getValueString')->willReturn(
-                json_encode(
+            json_encode(
                 [
                     'extractionScope' => 'all',
                 ]
-                )
-                );
+            )
+        );
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -183,12 +178,12 @@ class FileTextControllerTest extends TestCase
     {
         $this->config->method('hasKey')->willReturn(true);
         $this->config->method('getValueString')->willReturn(
-                json_encode(
+            json_encode(
                 [
                     'extractionScope' => 'all',
                 ]
-                )
-                );
+            )
+        );
         $this->textExtractor->method('extractFile')
             ->willThrowException(new \Exception('Extract error'));
 
@@ -208,12 +203,12 @@ class FileTextControllerTest extends TestCase
         // Config has key but extractionScope is not set (null fallback).
         $this->config->method('hasKey')->willReturn(true);
         $this->config->method('getValueString')->willReturn(
-                json_encode(
+            json_encode(
                 [
                     'someOtherKey' => 'value',
                 ]
-                )
-                );
+            )
+        );
 
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
@@ -233,10 +228,10 @@ class FileTextControllerTest extends TestCase
     {
         $this->request->method('getParam')
             ->willReturnMap(
-                    [
-                        ['limit', 100, '50'],
-                    ]
-                    );
+                [
+                    ['limit', 100, '50'],
+                ]
+            );
         $this->textExtractor->method('extractPendingFiles')
             ->with(50)
             ->willReturn(['processed' => 10, 'failed' => 0, 'total' => 10]);
@@ -255,10 +250,10 @@ class FileTextControllerTest extends TestCase
     {
         $this->request->method('getParam')
             ->willReturnMap(
-                    [
-                        ['limit', 100, '999'],
-                    ]
-                    );
+                [
+                    ['limit', 100, '999'],
+                ]
+            );
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(500)
@@ -276,10 +271,10 @@ class FileTextControllerTest extends TestCase
     {
         $this->request->method('getParam')
             ->willReturnMap(
-                    [
-                        ['limit', 100, 100],
-                    ]
-                    );
+                [
+                    ['limit', 100, 100],
+                ]
+            );
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(100)
@@ -298,10 +293,10 @@ class FileTextControllerTest extends TestCase
     {
         $this->request->method('getParam')
             ->willReturnMap(
-                    [
-                        ['limit', 100, '50'],
-                    ]
-                    );
+                [
+                    ['limit', 100, '50'],
+                ]
+            );
         $this->textExtractor->method('extractPendingFiles')
             ->willThrowException(new \Exception('Bulk error'));
 
@@ -370,191 +365,6 @@ class FileTextControllerTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('chunk-based endpoints', $data['message']);
     }//end testDeleteFileTextNotImplementedWithDifferentId()
-
-    // =========================================================================
-    // processAndIndexExtracted
-    // =========================================================================
-    public function testProcessAndIndexExtractedSuccess(): void
-    {
-        $expectedResult = ['processed' => 5, 'indexed' => 5];
-        $this->indexService->method('processUnindexedChunks')
-            ->with(null)
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexExtracted();
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexExtractedSuccess()
-
-    public function testProcessAndIndexExtractedWithLimit(): void
-    {
-        $expectedResult = ['processed' => 10, 'indexed' => 10];
-        $this->indexService->expects($this->once())
-            ->method('processUnindexedChunks')
-            ->with(50)
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexExtracted(50);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexExtractedWithLimit()
-
-    public function testProcessAndIndexExtractedWithChunkSize(): void
-    {
-        $expectedResult = ['processed' => 3];
-        $this->indexService->method('processUnindexedChunks')
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexExtracted(null, 1024);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexExtractedWithChunkSize()
-
-    public function testProcessAndIndexExtractedWithChunkOverlap(): void
-    {
-        $expectedResult = ['processed' => 3];
-        $this->indexService->method('processUnindexedChunks')
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexExtracted(null, null, 128);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexExtractedWithChunkOverlap()
-
-    public function testProcessAndIndexExtractedWithAllParams(): void
-    {
-        $expectedResult = ['processed' => 7];
-        $this->indexService->expects($this->once())
-            ->method('processUnindexedChunks')
-            ->with(25)
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexExtracted(25, 512, 64);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexExtractedWithAllParams()
-
-    public function testProcessAndIndexExtractedException(): void
-    {
-        $this->indexService->method('processUnindexedChunks')
-            ->willThrowException(new \Exception('Index error'));
-
-        $this->logger->expects($this->once())
-            ->method('error');
-
-        $result = $this->controller->processAndIndexExtracted();
-
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('Index error', $data['message']);
-    }//end testProcessAndIndexExtractedException()
-
-    // =========================================================================
-    // processAndIndexFile
-    // =========================================================================
-    public function testProcessAndIndexFileSuccess(): void
-    {
-        $expectedResult = ['processed' => 1];
-        $this->indexService->method('processUnindexedChunks')
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexFile(1);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexFileSuccess()
-
-    public function testProcessAndIndexFileWithChunkSize(): void
-    {
-        $expectedResult = ['processed' => 1];
-        $this->indexService->method('processUnindexedChunks')
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexFile(1, 2048);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexFileWithChunkSize()
-
-    public function testProcessAndIndexFileWithChunkOverlap(): void
-    {
-        $expectedResult = ['processed' => 1];
-        $this->indexService->method('processUnindexedChunks')
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexFile(1, null, 256);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexFileWithChunkOverlap()
-
-    public function testProcessAndIndexFileWithAllParams(): void
-    {
-        $expectedResult = ['processed' => 1];
-        $this->indexService->expects($this->once())
-            ->method('processUnindexedChunks')
-            ->willReturn($expectedResult);
-
-        $result = $this->controller->processAndIndexFile(42, 1024, 128);
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($expectedResult, $result->getData());
-    }//end testProcessAndIndexFileWithAllParams()
-
-    public function testProcessAndIndexFileException(): void
-    {
-        $this->indexService->method('processUnindexedChunks')
-            ->willThrowException(new \Exception('File index error'));
-
-        $this->logger->expects($this->once())
-            ->method('error');
-
-        $result = $this->controller->processAndIndexFile(1);
-
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('File index error', $data['message']);
-    }//end testProcessAndIndexFileException()
-
-    // =========================================================================
-    // getChunkingStats
-    // =========================================================================
-    public function testGetChunkingStatsSuccess(): void
-    {
-        $statsData = ['total' => 100, 'indexed' => 90, 'pending' => 10];
-        $this->indexService->method('getChunkingStats')
-            ->willReturn($statsData);
-
-        $result = $this->controller->getChunkingStats();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals($statsData, $data['stats']);
-    }//end testGetChunkingStatsSuccess()
-
-    public function testGetChunkingStatsException(): void
-    {
-        $this->indexService->method('getChunkingStats')
-            ->willThrowException(new \Exception('Chunking stats error'));
-
-        $this->logger->expects($this->once())
-            ->method('error');
-
-        $result = $this->controller->getChunkingStats();
-
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('Chunking stats error', $data['message']);
-    }//end testGetChunkingStatsException()
 
     // =========================================================================
     // anonymizeFile
@@ -638,8 +448,8 @@ class FileTextControllerTest extends TestCase
         $this->fileService->expects($this->once())
             ->method('anonymizeDocument')
             ->with(
-                    $fileNode,
-                    $this->callback(
+                $fileNode,
+                $this->callback(
                     function ($entities) {
                         return count($entities) === 2
                         && $entities[0]['text'] === 'John Doe'
@@ -648,16 +458,10 @@ class FileTextControllerTest extends TestCase
                         && $entities[1]['text'] === '123-45-6789'
                         && $entities[1]['entityType'] === 'SSN';
                     }
-                    )
-                    )
+                )
+            )
             ->willReturn($anonymizedFileNode);
 
-        // Per PR #1503 review: the controller MUST NOT call
-        // markAsAnonymized — it's the redaction path's responsibility
-        // (DocumentProcessingHandler::anonymizeDocument, which is mocked
-        // here via $this->fileService). A controller-side mark would
-        // race the redaction-path mark on this same fileId and clobber
-        // the per-entity placeholder values.
         $this->entityRelationMapper->expects($this->never())
             ->method('markAsAnonymized');
 
@@ -704,18 +508,16 @@ class FileTextControllerTest extends TestCase
         $this->fileService->expects($this->once())
             ->method('anonymizeDocument')
             ->with(
-                    $fileNode,
-                    $this->callback(
+                $fileNode,
+                $this->callback(
                     function ($entities) {
                         // Should be deduplicated: 2 unique entities, not 3.
                         return count($entities) === 2;
                     }
-                    )
-                    )
+                )
+            )
             ->willReturn($anonymizedFileNode);
 
-        // Same as above: marking ownership belongs to the redaction
-        // path (mocked via $this->fileService), not the controller.
         $this->entityRelationMapper->expects($this->never())
             ->method('markAsAnonymized');
 

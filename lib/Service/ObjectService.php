@@ -95,7 +95,6 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -418,7 +417,6 @@ class ObjectService
                     function (array $ids): array {
                         return [$this->registerMapper->find(
                             id: $ids[0],
-                            published: null,
                             _rbac: false,
                             _multitenancy: false
                         )
@@ -436,7 +434,6 @@ class ObjectService
                     // Fallback to direct database lookup if cache fails.
                     $register = $this->registerMapper->find(
                         id: $register,
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );
@@ -447,7 +444,6 @@ class ObjectService
                 // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
                 $register = $this->registerMapper->find(
                     id: $register,
-                    published: null,
                     _rbac: false,
                     _multitenancy: false
                 );
@@ -479,7 +475,6 @@ class ObjectService
                         function (array $ids): array {
                             return [$this->schemaMapper->find(
                                 id: $ids[0],
-                                published: null,
                                 _rbac: false,
                                 _multitenancy: false
                             )
@@ -496,7 +491,6 @@ class ObjectService
                         // Fallback to direct database lookup if cache fails.
                         $schema = $this->schemaMapper->find(
                             id: $schema,
-                            published: null,
                             _rbac: false,
                             _multitenancy: false
                         );
@@ -507,7 +501,6 @@ class ObjectService
                     // It's a slug string - find() supports slugs via orX(id, uuid, slug).
                     $schema = $this->schemaMapper->find(
                         id: $schema,
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );
@@ -2445,97 +2438,6 @@ class ObjectService
         // Strip deprecated _source parameter (silently ignore for backward compatibility).
         unset($query['_source']);
 
-        // Use SOLR if enabled in config, unless relation-based search params are provided.
-        $hasIds        = isset($query['_ids']) === true;
-        $hasUses       = isset($query['_uses']) === true;
-        $hasIdsParam   = $ids !== null;
-        $hasUsesParam  = $uses !== null;
-        $isSolrEnabled = $this->isSolrAvailable() === true;
-        if ($isSolrEnabled === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false
-        ) {
-            // Forward to Index service - let it handle availability checks and error handling.
-            $indexService = $this->container->get(IndexService::class);
-            $result       = $indexService->searchObjects(
-                query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                deleted: $deleted
-            );
-            $result['@self']['source']  = 'index';
-            $result['@self']['query']   = $query;
-            $result['@self']['rbac']    = $_rbac;
-            $result['@self']['multi']   = $_multitenancy;
-            $result['@self']['deleted'] = $deleted;
-
-            // Per the files-render-extension capability, every list row MUST carry
-            // @self.files. The SOLR/index path does not route rows through renderEntities,
-            // so attach the lightweight ID list via a single batched FileMapper lookup.
-            // Note: the SOLR path does not currently support _extend[]=@self.files for
-            // full metadata; consumers needing full metadata should query the DB path.
-            if (isset($result['results']) === true && is_array($result['results']) === true) {
-                $this->renderHandler->attachLightweightFilesToRows(rows: $result['results']);
-            }
-
-            // Surface a machine-readable signal when the consumer asked for an
-            // extend value the SOLR path cannot honour, so they can detect the
-            // shape mismatch programmatically instead of diffing the response.
-            // Today this only applies to @self.files (and its shorthand _files).
-            $extendForSignal = $query['_extend'] ?? [];
-            if (is_string($extendForSignal) === true) {
-                $extendForSignal = array_filter(array_map('trim', explode(',', $extendForSignal)));
-            }
-
-            if (is_array($extendForSignal) === true
-                && (in_array('@self.files', $extendForSignal, true) === true
-                || in_array('_files', $extendForSignal, true) === true)
-            ) {
-                $result['@self']['extend_unsupported'] = ['@self.files'];
-            }
-
-            // Add extended objects only if _extend is requested.
-            // Normalize _extend to array (handles comma-separated string from URL).
-            $extend = $query['_extend'] ?? [];
-            if (is_string($extend) === true) {
-                $extend = array_filter(array_map('trim', explode(',', $extend)));
-            }
-
-            if (empty($extend) === false) {
-                $result['@self']['objects'] = $this->getExtendedObjects();
-            }
-
-            // Add names mapping if _names is in _extend.
-            // This provides UUID-to-name mappings for all related objects in the results,
-            // reducing frontend calls to the names service.
-            if (is_array($extend) === true && in_array('_names', $extend, true) === true) {
-                $resultsToProcess = $result['results'] ?? [];
-
-                // Only process if results exist and is an array.
-                $result['@self']['names'] = [];
-
-                if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {
-                    try {
-                        $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
-                    } catch (\Throwable $e) {
-                        $errMsg  = $e->getMessage();
-                        $errFile = $e->getFile();
-                        $errLine = $e->getLine();
-                        $this->logger->error(
-                            message: "[ObjectService] _names extension failed: {$errMsg} at {$errFile}:{$errLine}",
-                            context: ['file' => __FILE__, 'line' => __LINE__]
-                        );
-                        $result['@self']['names']       = [];
-                        $result['@self']['names_error'] = $e->getMessage();
-                    }
-                }
-            }//end if
-
-            $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
-
-            return $result;
-        }//end if
-
         // Bypass multitenancy for schemas with public read access.
         // Public schemas should be visible to all users regardless of organisation.
         $effectiveMt = $_multitenancy;
@@ -2720,16 +2622,6 @@ class ObjectService
             );
         }//end try
     }//end recordSearchTrail()
-
-    /**
-     * Check if Solr is available for use.
-     *
-     * @return bool True if Solr is enabled and available, false otherwise
-     */
-    private function isSolrAvailable(): bool
-    {
-        return $this->searchQueryHandler->isSolrAvailable();
-    }//end isSolrAvailable()
 
     /**
      * Original database search logic - extracted to avoid code duplication.

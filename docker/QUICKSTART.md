@@ -201,14 +201,6 @@ docker-compose --profile mariadb up -d
 
 ## 📦 Optional Services
 
-### Enable Solr Search
-
-```bash
-docker-compose --profile solr up -d
-
-# Access Solr UI: http://localhost:8983
-```
-
 ### Enable n8n Workflows
 
 ```bash
@@ -222,7 +214,7 @@ docker-compose --profile n8n up -d
 ### Enable All Optional Services
 
 ```bash
-docker-compose --profile solr --profile n8n --profile elasticsearch up -d
+docker-compose --profile n8n --profile elasticsearch up -d
 ```
 
 ## 🧪 Run Integration Tests
@@ -331,7 +323,6 @@ After setup:
 - **OpenRegister**: http://localhost:8080/index.php/apps/openregister
 - **Ollama API**: http://localhost:11434
 - **Presidio**: http://localhost:5001
-- **Solr** (if enabled): http://localhost:8983
 - **n8n** (if enabled): http://localhost:5678
 - **Elasticsearch** (if enabled): http://localhost:9200
 

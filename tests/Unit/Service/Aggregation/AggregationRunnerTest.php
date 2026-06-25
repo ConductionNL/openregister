@@ -150,7 +150,6 @@ class AggregationRunnerTest extends TestCase
                 $this->equalTo('meldingen'),
                 $this->anything(),
                 $this->anything(),
-                $this->anything(),
                 $this->isFalse()
             )
             ->willReturn($schema);
@@ -178,7 +177,6 @@ class AggregationRunnerTest extends TestCase
             ->method('find')
             ->with(
                 $this->equalTo('zaken'),
-                $this->anything(),
                 $this->anything(),
                 $this->isFalse()
             )

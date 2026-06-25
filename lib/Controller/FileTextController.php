@@ -32,7 +32,6 @@ use OCA\OpenRegister\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -64,7 +63,6 @@ class FileTextController extends Controller
      * @param string                $appName              App name
      * @param IRequest              $request              Request object
      * @param TextExtractionService $textExtractor        Text extraction service
-     * @param IndexService          $indexService         Index service for file operations
      * @param FileService           $fileService          File service for file operations
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
      * @param LoggerInterface       $logger               Logger
@@ -76,7 +74,6 @@ class FileTextController extends Controller
         string $appName,
         IRequest $request,
         private readonly TextExtractionService $textExtractor,
-        private readonly IndexService $indexService,
         private readonly FileService $fileService,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly LoggerInterface $logger,
@@ -331,149 +328,6 @@ class FileTextController extends Controller
             );
         }//end try
     }//end deleteFileText()
-
-    /**
-     * Process extracted files and index their chunks to SOLR
-     *
-     * @param int|null $limit        Maximum number of files to process
-     * @param int|null $chunkSize    Chunk size in characters
-     * @param int|null $chunkOverlap Overlap between chunks in characters
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with indexing stats
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
-    {
-        try {
-            $options = [];
-            if ($chunkSize !== null) {
-                $options['chunk_size'] = $chunkSize;
-            }
-
-            if ($chunkOverlap !== null) {
-                $options['chunk_overlap'] = $chunkOverlap;
-            }
-
-            $result = $this->indexService->processUnindexedChunks(limit: $limit);
-
-            return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to process extracted files',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to process extracted files: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end processAndIndexExtracted()
-
-    /**
-     * Process and index a single extracted file
-     *
-     * @param int      $fileId        File ID
-     * @param int|null $chunkSize     Chunk size in characters
-     * @param int|null $_chunkOverlap Overlap between chunks in characters (reserved for future use)
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter) $_chunkOverlap reserved for future implementation
-     *
-     * @return JSONResponse JSON response with indexing result
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
-    {
-        try {
-            $options = [];
-            if ($chunkSize !== null) {
-                $options['chunk_size'] = $chunkSize;
-            }
-
-            // Process unindexed chunks for all files (fileId and options are not supported by current API).
-            // TODO: Implement file-specific chunk processing with chunk size/overlap options.
-            $result = $this->indexService->processUnindexedChunks();
-
-            return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to process file',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to process file: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end processAndIndexFile()
-
-    /**
-     * Get chunking statistics
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with chunking stats
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function getChunkingStats(): JSONResponse
-    {
-        try {
-            $stats = $this->indexService->getChunkingStats();
-
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'stats'   => $stats,
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileTextController] Failed to get chunking stats',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to get chunking stats: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end getChunkingStats()
 
     /**
      * Anonymize a file by replacing detected entities with placeholders

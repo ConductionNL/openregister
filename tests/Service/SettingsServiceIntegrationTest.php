@@ -76,7 +76,7 @@ class SettingsServiceIntegrationTest extends TestCase
         $config = $this->service->getSearchBackendConfig();
 
         $this->assertIsString($config['active']);
-        $this->assertContains($config['active'], ['solr', 'elasticsearch']);
+        $this->assertSame('database', $config['active']);
     }
 
     // =========================================================================
@@ -520,206 +520,8 @@ class SettingsServiceIntegrationTest extends TestCase
     }
 
     // =========================================================================
-    // compareFields tests
-    // =========================================================================
-
-    /**
-     * Test compareFields with matching fields returns summary
-     *
-     * @return void
-     */
-    public function testCompareFieldsMatchingReturnsSummary(): void
-    {
-        $actual = [
-            'field1' => ['type' => 'string'],
-            'field2' => ['type' => 'integer'],
-        ];
-        $expected = [
-            'field1' => ['type' => 'string'],
-            'field2' => ['type' => 'integer'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('missing', $result);
-        $this->assertArrayHasKey('extra', $result);
-        $this->assertArrayHasKey('mismatched', $result);
-        $this->assertArrayHasKey('summary', $result);
-        $this->assertEmpty($result['missing']);
-        $this->assertEmpty($result['extra']);
-        $this->assertEmpty($result['mismatched']);
-        $this->assertSame(0, $result['summary']['total_differences']);
-    }
-
-    /**
-     * Test compareFields detects missing fields
-     *
-     * @return void
-     */
-    public function testCompareFieldsDetectsMissing(): void
-    {
-        $actual = [
-            'field1' => ['type' => 'string'],
-        ];
-        $expected = [
-            'field1' => ['type' => 'string'],
-            'field2' => ['type' => 'integer'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['missing']);
-        $this->assertSame('field2', $result['missing'][0]['field']);
-        $this->assertSame(1, $result['summary']['missing_count']);
-    }
-
-    /**
-     * Test compareFields detects extra fields
-     *
-     * @return void
-     */
-    public function testCompareFieldsDetectsExtra(): void
-    {
-        $actual = [
-            'field1' => ['type' => 'string'],
-            'field2' => ['type' => 'integer'],
-            'field3' => ['type' => 'text'],
-        ];
-        $expected = [
-            'field1' => ['type' => 'string'],
-            'field2' => ['type' => 'integer'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['extra']);
-        $this->assertSame('field3', $result['extra'][0]['field']);
-        $this->assertSame(1, $result['summary']['extra_count']);
-    }
-
-    /**
-     * Test compareFields detects type mismatches
-     *
-     * @return void
-     */
-    public function testCompareFieldsDetectsTypeMismatch(): void
-    {
-        $actual = [
-            'field1' => ['type' => 'text'],
-        ];
-        $expected = [
-            'field1' => ['type' => 'string'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['mismatched']);
-        $this->assertSame('field1', $result['mismatched'][0]['field']);
-        $this->assertContains('type', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields detects multiValued mismatch
-     *
-     * @return void
-     */
-    public function testCompareFieldsDetectsMultiValuedMismatch(): void
-    {
-        $actual = [
-            'tags' => ['type' => 'string', 'multiValued' => true],
-        ];
-        $expected = [
-            'tags' => ['type' => 'string', 'multiValued' => false],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['mismatched']);
-        $this->assertContains('multiValued', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields skips system fields (starting with _)
-     *
-     * @return void
-     */
-    public function testCompareFieldsSkipsSystemFields(): void
-    {
-        $actual = [
-            '_version_' => ['type' => 'long'],
-            'field1'    => ['type' => 'string'],
-        ];
-        $expected = [
-            'field1' => ['type' => 'string'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertEmpty($result['extra']);
-    }
-
-    /**
-     * Test compareFields with both empty arrays
-     *
-     * @return void
-     */
-    public function testCompareFieldsEmpty(): void
-    {
-        $result = $this->service->compareFields([], []);
-
-        $this->assertIsArray($result);
-        $this->assertEmpty($result['missing']);
-        $this->assertEmpty($result['extra']);
-        $this->assertEmpty($result['mismatched']);
-        $this->assertSame(0, $result['summary']['total_differences']);
-    }
-
-    /**
-     * Test compareFields total differences is sum of all categories
-     *
-     * @return void
-     */
-    public function testCompareFieldsTotalDifferencesIsSum(): void
-    {
-        $actual = [
-            'field1' => ['type' => 'text'],
-            'extraField' => ['type' => 'string'],
-        ];
-        $expected = [
-            'field1' => ['type' => 'string'],
-            'missingField' => ['type' => 'integer'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $sum = $result['summary']['missing_count']
-             + $result['summary']['extra_count']
-             + $result['summary']['mismatched_count'];
-        $this->assertSame($sum, $result['summary']['total_differences']);
-    }
-
-    // =========================================================================
     // rebase tests
     // =========================================================================
-
-    /**
-     * Test rebase with solr-only component returns success
-     *
-     * @return void
-     */
-    public function testRebaseSolrComponent(): void
-    {
-        $result = $this->service->rebase(['components' => ['solr']]);
-
-        $this->assertIsArray($result);
-        $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('message', $result);
-        $this->assertArrayHasKey('rebased', $result);
-        $this->assertArrayHasKey('timestamp', $result);
-        $this->assertArrayHasKey('solr', $result['rebased']);
-        $this->assertTrue($result['rebased']['solr']['success']);
-    }
 
     /**
      * Test rebase with cache component encounters known CacheSettingsHandler bug
@@ -753,19 +555,6 @@ class SettingsServiceIntegrationTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertEmpty($result['rebased']);
-    }
-
-    /**
-     * Test rebase returns timestamp in result
-     *
-     * @return void
-     */
-    public function testRebaseReturnsTimestamp(): void
-    {
-        $result = $this->service->rebase(['components' => ['solr']]);
-
-        $this->assertArrayHasKey('timestamp', $result);
-        $this->assertIsInt($result['timestamp']);
     }
 
     // =========================================================================

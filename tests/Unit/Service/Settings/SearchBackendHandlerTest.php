@@ -19,7 +19,6 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * Unit tests for SearchBackendHandler
@@ -52,118 +51,63 @@ class SearchBackendHandlerTest extends TestCase
     }
 
     /**
-     * Test getSearchBackendConfig returns default when empty.
+     * Test getSearchBackendConfig always returns database as active backend.
      *
      * @return void
      */
     public function testGetSearchBackendConfigReturnsDefaultWhenEmpty(): void
     {
-        $this->appConfig->method('getValueString')
-            ->with('openregister', 'search_backend', '')
-            ->willReturn('');
-
         $result = $this->handler->getSearchBackendConfig();
 
-        $this->assertSame('solr', $result['active']);
-        $this->assertContains('solr', $result['available']);
-        $this->assertContains('elasticsearch', $result['available']);
-        $this->assertCount(2, $result['available']);
+        $this->assertSame('database', $result['active']);
+        $this->assertSame(['database'], $result['available']);
+        $this->assertCount(1, $result['available']);
     }
 
     /**
-     * Test getSearchBackendConfig returns decoded config.
+     * Test getSearchBackendConfig always returns database regardless of stored config.
      *
      * @return void
      */
     public function testGetSearchBackendConfigReturnsDecodedConfig(): void
     {
-        $config = [
-            'active'    => 'elasticsearch',
-            'available' => ['solr', 'elasticsearch'],
-            'updated'   => 1700000000,
-        ];
-
-        $this->appConfig->method('getValueString')
-            ->willReturn(json_encode($config));
-
+        // getSearchBackendConfig ignores appConfig — always returns database.
         $result = $this->handler->getSearchBackendConfig();
 
-        $this->assertSame('elasticsearch', $result['active']);
-        $this->assertSame(1700000000, $result['updated']);
+        $this->assertSame('database', $result['active']);
+        $this->assertSame(['database'], $result['available']);
     }
 
     /**
-     * Test getSearchBackendConfig throws RuntimeException on error.
-     *
-     * @return void
-     */
-    public function testGetSearchBackendConfigThrowsRuntimeExceptionOnError(): void
-    {
-        $this->appConfig->method('getValueString')
-            ->willThrowException(new \Exception('DB error'));
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Failed to retrieve search backend configuration: DB error');
-
-        $this->handler->getSearchBackendConfig();
-    }
-
-    /**
-     * Test updateSearchBackendConfig with solr.
-     *
-     * @return void
-     */
-    public function testUpdateSearchBackendConfigWithSolr(): void
-    {
-        $this->appConfig->expects($this->once())
-            ->method('setValueString')
-            ->with('openregister', 'search_backend', $this->isType('string'));
-
-        $this->logger->expects($this->once())
-            ->method('info')
-            ->with(
-                $this->stringContains('Search backend changed to: solr'),
-                $this->arrayHasKey('backend')
-            );
-
-        $result = $this->handler->updateSearchBackendConfig('solr');
-
-        $this->assertSame('solr', $result['active']);
-        $this->assertContains('solr', $result['available']);
-        $this->assertContains('elasticsearch', $result['available']);
-        $this->assertArrayHasKey('updated', $result);
-        $this->assertIsInt($result['updated']);
-    }
-
-    /**
-     * Test updateSearchBackendConfig with elasticsearch.
-     *
-     * @return void
-     */
-    public function testUpdateSearchBackendConfigWithElasticsearch(): void
-    {
-        $this->appConfig->expects($this->once())
-            ->method('setValueString');
-
-        $this->logger->expects($this->once())
-            ->method('info');
-
-        $result = $this->handler->updateSearchBackendConfig('elasticsearch');
-
-        $this->assertSame('elasticsearch', $result['active']);
-    }
-
-    /**
-     * Test updateSearchBackendConfig with invalid backend throws RuntimeException.
+     * Test updateSearchBackendConfig with invalid backend throws InvalidArgumentException.
      *
      * @return void
      */
     public function testUpdateSearchBackendConfigWithInvalidBackendThrowsException(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid backend');
 
         $this->handler->updateSearchBackendConfig('mongodb');
+    }
+
+    /**
+     * Test updateSearchBackendConfig with 'database' is valid and returns correct config.
+     *
+     * @return void
+     */
+    public function testUpdateSearchBackendConfigWithDatabase(): void
+    {
+        $this->appConfig->expects($this->once())
+            ->method('setValueString')
+            ->with('openregister', 'search_backend', $this->isType('string'));
+
+        $result = $this->handler->updateSearchBackendConfig('database');
+
+        $this->assertSame('database', $result['active']);
+        $this->assertSame(['database'], $result['available']);
+        $this->assertArrayHasKey('updated', $result);
+        $this->assertIsInt($result['updated']);
     }
 
     /**
@@ -176,27 +120,11 @@ class SearchBackendHandlerTest extends TestCase
         $this->appConfig->method('setValueString');
 
         $before = time();
-        $result = $this->handler->updateSearchBackendConfig('solr');
+        $result = $this->handler->updateSearchBackendConfig('database');
         $after = time();
 
         $this->assertGreaterThanOrEqual($before, $result['updated']);
         $this->assertLessThanOrEqual($after, $result['updated']);
-    }
-
-    /**
-     * Test updateSearchBackendConfig throws RuntimeException on write error.
-     *
-     * @return void
-     */
-    public function testUpdateSearchBackendConfigThrowsRuntimeExceptionOnWriteError(): void
-    {
-        $this->appConfig->method('setValueString')
-            ->willThrowException(new \Exception('Write failed'));
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Failed to update search backend configuration');
-
-        $this->handler->updateSearchBackendConfig('solr');
     }
 
     /**
@@ -214,17 +142,15 @@ class SearchBackendHandlerTest extends TestCase
                 $this->anything(),
                 $this->callback(function ($context) {
                     return isset($context['app'])
-                        && $context['app'] === 'openregister'
-                        && isset($context['backend'])
-                        && $context['backend'] === 'elasticsearch';
+                        && $context['app'] === 'openregister';
                 })
             );
 
-        $this->handler->updateSearchBackendConfig('elasticsearch');
+        $this->handler->updateSearchBackendConfig('database');
     }
 
     /**
-     * Test updateSearchBackendConfig available backends list is complete.
+     * Test updateSearchBackendConfig available backends list contains only database.
      *
      * @return void
      */
@@ -232,9 +158,9 @@ class SearchBackendHandlerTest extends TestCase
     {
         $this->appConfig->method('setValueString');
 
-        $result = $this->handler->updateSearchBackendConfig('solr');
+        $result = $this->handler->updateSearchBackendConfig('database');
 
-        $this->assertCount(2, $result['available']);
-        $this->assertSame(['solr', 'elasticsearch'], $result['available']);
+        $this->assertCount(1, $result['available']);
+        $this->assertSame(['database'], $result['available']);
     }
 }

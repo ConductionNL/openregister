@@ -21,7 +21,6 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
@@ -33,16 +32,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use RuntimeException;
 
 /**
  * Coverage-focused unit tests for CacheHandler
  *
  * Targets uncovered lines in:
- * - indexObjectInSolr (failure path, success path)
- * - removeObjectFromSolr (success path, failure path, exception path)
- * - extractDynamicFieldsFromObject (all type branches)
- * - isDateString / formatDateForSolr
  * - cacheObject (eviction path)
  * - clearSearchCache (pattern filtering, distributed cache failure)
  * - clearSchemaRelatedCaches (distributed cache failure, null schemaId)
@@ -53,9 +47,6 @@ use RuntimeException;
  * - getSingleObjectName (distributed cache hit/miss, org found)
  * - getDistributedNameCacheCount (cache exception)
  * - clearNameCache (distributed failure)
- * - getSolrDashboardStats (no index service)
- * - commitSolr (success, failure, exception)
- * - optimizeSolr
  * - persistNameCacheToDistributed (failure)
  * - queryTableForNames
  */
@@ -111,7 +102,7 @@ class CacheHandlerCoverageTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
 
         // Set up container callback that uses containerServices map.
-        // Tests can add services like IndexService to $this->containerServices before calling createHandler.
+        // Tests can add services to $this->containerServices before calling createHandler.
         $this->containerServices = [];
         $this->containerServices[MagicMapper::class] = $this->objectMapper;
 
@@ -727,160 +718,6 @@ class CacheHandlerCoverageTest extends TestCase
     }
 
     // =========================================================================
-    // getSolrDashboardStats
-    // =========================================================================
-
-    public function testGetSolrDashboardStatsNoContainer(): void
-    {
-        $handler = $this->createHandler(false, false);
-
-        $this->expectException(RuntimeException::class);
-        $handler->getSolrDashboardStats();
-    }
-
-    public function testGetSolrDashboardStatsNoIndexService(): void
-    {
-        $handler = $this->createHandler(false, true);
-
-        $this->container->method('get')
-            ->willThrowException(new \Exception('not available'));
-
-        $this->expectException(RuntimeException::class);
-        $handler->getSolrDashboardStats();
-    }
-
-    // =========================================================================
-    // commitSolr
-    // =========================================================================
-
-    public function testCommitSolrNoIndexService(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $result = $handler->commitSolr();
-        $this->assertFalse($result['success']);
-        $this->assertStringContainsString('not available', $result['error']);
-    }
-
-    public function testCommitSolrSuccess(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('commit')->willReturn(true);
-
-        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
-
-        $result = $handler->commitSolr();
-        $this->assertTrue($result['success']);
-        $this->assertSame('Commit successful', $result['message']);
-    }
-
-    public function testCommitSolrFailure(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('commit')->willReturn(false);
-
-        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
-
-        $result = $handler->commitSolr();
-        $this->assertFalse($result['success']);
-        $this->assertSame('Commit failed', $result['message']);
-    }
-
-    public function testCommitSolrException(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('commit')->willThrowException(new \Exception('Connection refused'));
-
-        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
-
-        $result = $handler->commitSolr();
-        $this->assertFalse($result['success']);
-        $this->assertSame('Connection refused', $result['error']);
-    }
-
-    // =========================================================================
-    // extractDynamicFieldsFromObject
-    // =========================================================================
-
-    public function testExtractDynamicFieldsFromObjectAllTypes(): void
-    {
-        $handler = $this->createHandler(false, false);
-
-        $data = [
-            '@self' => 'http://example.com', // should be skipped
-            'id' => '123', // should be skipped
-            'name' => 'Test',
-            'count' => 42,
-            'price' => 3.14,
-            'active' => true,
-            'tags' => ['tag1', 'tag2'],
-            'nested' => ['key1' => 'value1'],
-            'empty_val' => null, // should be skipped
-        ];
-
-        $result = $this->invokeMethod($handler, 'extractDynamicFieldsFromObject', [$data, '']);
-
-        $this->assertSame('Test', $result['name_s']);
-        $this->assertSame('Test', $result['name_txt']);
-        $this->assertSame(42, $result['count_i']);
-        $this->assertSame(3.14, $result['price_f']);
-        $this->assertTrue($result['active_b']);
-        $this->assertSame(['tag1', 'tag2'], $result['tags_ss']);
-    }
-
-    public function testExtractDynamicFieldsFromObjectWithPrefix(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $data = ['color' => 'red'];
-        $result = $this->invokeMethod($handler, 'extractDynamicFieldsFromObject', [$data, 'item_']);
-        $this->assertSame('red', $result['item_color_s']);
-    }
-
-    // =========================================================================
-    // isDateString
-    // =========================================================================
-
-    public function testIsDateStringWithDate(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $this->assertTrue($this->invokeMethod($handler, 'isDateString', ['2024-01-15']));
-    }
-
-    public function testIsDateStringWithNonDate(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $this->assertFalse($this->invokeMethod($handler, 'isDateString', ['not-a-date']));
-    }
-
-    public function testIsDateStringWithNonString(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $this->assertFalse($this->invokeMethod($handler, 'isDateString', [12345]));
-    }
-
-    // =========================================================================
-    // formatDateForSolr
-    // =========================================================================
-
-    public function testFormatDateForSolrValid(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $result = $this->invokeMethod($handler, 'formatDateForSolr', ['2024-01-15']);
-        $this->assertStringContainsString('2024-01-15', $result);
-        $this->assertStringContainsString('T', $result);
-        $this->assertStringEndsWith('Z', $result);
-    }
-
-    public function testFormatDateForSolrInvalid(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $result = $this->invokeMethod($handler, 'formatDateForSolr', ['not-a-date']);
-        $this->assertNull($result);
-    }
-
-    // =========================================================================
     // persistNameCacheToDistributed
     // =========================================================================
 
@@ -955,96 +792,4 @@ class CacheHandlerCoverageTest extends TestCase
         $this->assertIsArray($result);
     }
 
-    // =========================================================================
-    // indexObjectInSolr
-    // =========================================================================
-
-    public function testIndexObjectInSolrNoService(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'indexObjectInSolr', [$entity, false]);
-        $this->assertTrue($result);
-    }
-
-    public function testIndexObjectInSolrServiceNotAvailable(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('isAvailable')->willReturn(false);
-
-        $this->container->method('get')->willReturn($indexService);
-
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'indexObjectInSolr', [$entity, false]);
-        $this->assertTrue($result);
-    }
-
-    public function testIndexObjectInSolrSuccess(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('isAvailable')->willReturn(true);
-        $indexService->method('indexObject')->willReturn(true);
-
-        $this->container->method('get')->willReturn($indexService);
-
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'indexObjectInSolr', [$entity, false]);
-        $this->assertTrue($result);
-    }
-
-    public function testIndexObjectInSolrFailure(): void
-    {
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('isAvailable')->willReturn(true);
-        $indexService->method('indexObject')->willReturn(false);
-
-        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
-        $handler = $this->createHandler(false, true);
-
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'indexObjectInSolr', [$entity, false]);
-        $this->assertFalse($result);
-    }
-
-    // =========================================================================
-    // removeObjectFromSolr
-    // =========================================================================
-
-    public function testRemoveObjectFromSolrNoService(): void
-    {
-        $handler = $this->createHandler(false, false);
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'removeObjectFromSolr', [$entity, false]);
-        $this->assertTrue($result);
-    }
-
-    public function testRemoveObjectFromSolrSuccess(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('isAvailable')->willReturn(true);
-        $indexService->method('deleteObject')->willReturn(true);
-
-        $this->container->method('get')->willReturn($indexService);
-
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'removeObjectFromSolr', [$entity, false]);
-        $this->assertTrue($result);
-    }
-
-    public function testRemoveObjectFromSolrException(): void
-    {
-        $handler = $this->createHandler(false, true);
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('isAvailable')->willReturn(true);
-        $indexService->method('deleteObject')->willThrowException(new \Exception('Solr down'));
-
-        $this->container->method('get')->willReturn($indexService);
-
-        $entity = $this->createObjectEntity();
-        $result = $this->invokeMethod($handler, 'removeObjectFromSolr', [$entity, true]);
-        $this->assertTrue($result); // Returns true even on exception (graceful degradation)
-    }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SearchController;
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -15,19 +15,19 @@ class SearchControllerTest extends TestCase
 {
     private SearchController $controller;
     private IRequest&MockObject $request;
-    private IndexService&MockObject $indexService;
+    private ObjectService&MockObject $objectService;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->indexService = $this->createMock(IndexService::class);
+        $this->request       = $this->createMock(IRequest::class);
+        $this->objectService = $this->createMock(ObjectService::class);
 
         $this->controller = new SearchController(
             'openregister',
             $this->request,
-            $this->indexService
+            $this->objectService
         );
     }
 
@@ -41,16 +41,15 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []],
             ]);
 
-        $this->indexService->method('searchObjects')->willReturn([
-            'objects' => [
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
                 [
                     'uuid' => 'obj-1',
                     'name' => 'Test Object',
-                    'url' => '/objects/1',
                 ],
             ],
             'total' => 1,
-            'facets' => ['type' => ['object' => 1]],
+            '@self' => [],
         ]);
 
         $result = $this->controller->search();
@@ -73,10 +72,9 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []],
             ]);
 
-        $this->indexService->method('searchObjects')->willReturn([
-            'objects' => [],
-            'total' => 0,
-            'facets' => [],
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total'   => 0,
         ]);
 
         $result = $this->controller->search();
@@ -95,12 +93,11 @@ class SearchControllerTest extends TestCase
                 ['_search', [], []],
             ]);
 
-        $this->indexService->method('searchObjects')->willReturn([
-            'objects' => [
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [
                 ['id' => 'fallback-id'],
             ],
             'total' => 1,
-            'facets' => [],
         ]);
 
         $result = $this->controller->search();

@@ -21,7 +21,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Controller\SearchController;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -91,7 +90,7 @@ class IntegrationTest extends TestCase
         $this->searchController = new SearchController(
             'openregister',
             $this->request,
-            $this->createMock(IndexService::class)
+            $this->objectService
         );
     }
 
@@ -156,8 +155,8 @@ class IntegrationTest extends TestCase
     /**
      * Test 10.2: Search Filtering by Organisation
      *
-     * Note: SearchController::search() delegates to IndexService, not MagicMapper directly.
-     * The IndexService mock returns results. This test verifies the search endpoint response format.
+     * Note: SearchController::search() delegates to ObjectService.
+     * This test verifies the search endpoint response format.
      */
     public function testSearchFilteringByOrganisation(): void
     {
@@ -174,7 +173,7 @@ class IntegrationTest extends TestCase
                 ['limit', 25, 25],
             ]);
 
-        // Act: Search (IndexService is mocked and returns defaults).
+        // Act: Search using ObjectService.
         $response = $this->searchController->search();
 
         // Assert: Response is a valid JSONResponse.

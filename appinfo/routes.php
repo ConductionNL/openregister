@@ -77,61 +77,6 @@ return [
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
-        ['name' => 'Settings\SolrSettings#getSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PATCH'],
-        ['name' => 'Settings\SolrSettings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
-        ['name' => 'Settings\SolrOperations#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#getSolrMemoryPrediction', 'url' => '/api/settings/solr/memory-prediction', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#testSchemaMapping', 'url' => '/api/settings/solr/test-schema-mapping', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrSettings#getSolrFacetConfiguration', 'url' => '/api/settings/solr-facet-config', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#updateSolrFacetConfiguration', 'url' => '/api/settings/solr-facet-config', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrSettings#discoverSolrFacets', 'url' => '/api/solr/discover-facets', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#getSolrFacetConfigWithDiscovery', 'url' => '/api/solr/facet-config', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#updateSolrFacetConfigWithDiscovery', 'url' => '/api/solr/facet-config', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
-	    ['name' => 'Settings\SolrManagement#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
-
-		// Collection-specific field management.
-		['name' => 'Settings\ConfigurationSettings#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
-		['name' => 'Settings\FileSettings#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
-		['name' => 'Settings\ConfigurationSettings#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
-
-        // SOLR Dashboard Management endpoints.
-        ['name' => 'Settings\SolrSettings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrOperations#inspectSolrIndex', 'url' => '/api/settings/solr/inspect', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#testSetupHandler', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
-
-        // Collection-specific operations (with collection name parameter).
-        ['name' => 'Settings\SolrManagement#deleteSpecificSolrCollection', 'url' => '/api/solr/collections/{name}', 'verb' => 'DELETE', 'requirements' => ['name' => '[^/]+']],
-        ['name' => 'Settings\SolrManagement#clearSpecificCollection', 'url' => '/api/solr/collections/{name}/clear', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
-        ['name' => 'Settings\SolrManagement#reindexSpecificCollection', 'url' => '/api/solr/collections/{name}/reindex', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
-
-        // SOLR Collection and ConfigSet Management endpoints (SolrController).
-        ['name' => 'solr#listCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
-        ['name' => 'solr#createCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
-        ['name' => 'solr#listConfigSets', 'url' => '/api/solr/configsets', 'verb' => 'GET'],
-        ['name' => 'solr#createConfigSet', 'url' => '/api/solr/configsets', 'verb' => 'POST'],
-        ['name' => 'solr#deleteConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
-        ['name' => 'solr#copyCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrManagement#updateSolrCollectionAssignments', 'url' => '/api/solr/collections/assignments', 'verb' => 'PUT'],
-
-        // Vector Search endpoints (Semantic and Hybrid Search) - SolrController.
-        ['name' => 'solr#semanticSearch', 'url' => '/api/search/semantic', 'verb' => 'POST'],
-        ['name' => 'solr#hybridSearch', 'url' => '/api/search/hybrid', 'verb' => 'POST'],
-        ['name' => 'solr#getVectorStats', 'url' => '/api/vectors/stats', 'verb' => 'GET'],
-        ['name' => 'solr#testVectorEmbedding', 'url' => '/api/vectors/test', 'verb' => 'POST'],
-
-        // Object Vectorization endpoints - SolrController.
-        ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
-        ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
-        ['name' => 'solr#getVectorizationStats', 'url' => '/api/solr/vectorize/stats', 'verb' => 'GET'],
-
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -151,7 +96,6 @@ return [
         ['name' => 'Settings\LlmSettings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
         ['name' => 'settings#refreshDatabaseInfo', 'url' => '/api/settings/database/refresh', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrSettings#getSolrInfo', 'url' => '/api/settings/solr-info', 'verb' => 'GET'],
         ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
         ['name' => 'Settings\LlmSettings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
         ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
@@ -203,10 +147,6 @@ return [
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
-        ['name' => 'settings#updatePublishingOptions',  'url' => '/api/settings/publishing-options',              'verb' => 'PUT'],
-        ['name' => 'settings#testSetupHandler',         'url' => '/api/settings/test-setup',                      'verb' => 'POST'],
-        ['name' => 'settings#reindexSpecificCollection','url' => '/api/settings/reindex/{name}',                  'verb' => 'POST',   'requirements' => ['name' => '[^/]+']],
-        ['name' => 'settings#testSchemaMapping',        'url' => '/api/settings/test-schema-mapping',             'verb' => 'POST'],
         ['name' => 'settings#semanticSearch',           'url' => '/api/settings/search/semantic',                 'verb' => 'GET'],
         ['name' => 'settings#hybridSearch',             'url' => '/api/settings/search/hybrid',                   'verb' => 'GET'],
         // Debug endpoints for type filtering issue.
@@ -957,9 +897,6 @@ return [
 		['name' => 'fileText#deleteFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'DELETE', 'requirements' => ['fileId' => '\\d+']],
 
 		// File Chunking & Indexing - Process extracted files and index chunks in SOLR.
-		['name' => 'fileText#processAndIndexExtracted', 'url' => '/api/files/chunks/process', 'verb' => 'POST'],
-		['name' => 'fileText#processAndIndexFile', 'url' => '/api/files/{fileId}/chunks/process', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'fileText#getChunkingStats', 'url' => '/api/files/chunks/stats', 'verb' => 'GET'],
 
 		// File Anonymization - Replace detected entities with placeholders.
 		['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
@@ -978,14 +915,7 @@ return [
 		['name' => 'gdprEntities#getCategories', 'url' => '/api/entities/categories', 'verb' => 'GET'],
 		['name' => 'gdprEntities#getStats', 'url' => '/api/entities/stats', 'verb' => 'GET'],
 
-		// File Warmup & Indexing - Bulk process and index files in SOLR.
-		['name' => 'Settings\FileSettings#warmupFiles', 'url' => '/api/solr/warmup/files', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#indexFile', 'url' => '/api/solr/files/{fileId}/index', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'Settings\FileSettings#reindexFiles', 'url' => '/api/solr/files/reindex', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#getFileIndexStats', 'url' => '/api/solr/files/stats', 'verb' => 'GET'],
-
-		// File Search - Keyword, semantic, and hybrid search over file contents.
-		['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
+		// File Search - Semantic and hybrid search over file contents.
 		['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
 		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
 

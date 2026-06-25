@@ -24,7 +24,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,14 +47,12 @@ class ConfigurationSettingsController extends Controller
      * @param string          $appName         The app name.
      * @param IRequest        $request         The request.
      * @param SettingsService $settingsService Settings service.
-     * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly SettingsService $settingsService,
-        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -337,85 +334,4 @@ class ConfigurationSettingsController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end updateArchivalSettings()
-
-    /**
-     * Get object collection field status
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with object collection fields
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
-     */
-    public function getObjectCollectionFields(): JSONResponse
-    {
-        try {
-            $solrSchemaService = $this->indexService;
-            $status            = $solrSchemaService->getObjectCollectionFieldStatus();
-
-            return new JSONResponse(
-                data: [
-                    'success'    => true,
-                    'collection' => 'objects',
-                    'status'     => $status,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to get object collection field status: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }
-    }//end getObjectCollectionFields()
-
-    /**
-     * Create missing fields in object collection
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with creation result
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
-     */
-    public function createMissingObjectFields(): JSONResponse
-    {
-        try {
-            $solrSchemaService = $this->indexService;
-
-            // Switch to object collection.
-            $objectCollection = $this->settingsService->getSolrSettingsOnly()['objectCollection'] ?? null;
-            if ($objectCollection === null || $objectCollection === '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'Object collection not configured',
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            // Create missing fields.
-            $result = $solrSchemaService->mirrorSchemas(force: true);
-
-            return new JSONResponse(
-                data: [
-                    'success'    => true,
-                    'collection' => 'objects',
-                    'message'    => 'Missing object fields created successfully',
-                    'result'     => $result,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to create missing object fields: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end createMissingObjectFields()
 }//end class

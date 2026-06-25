@@ -386,59 +386,6 @@ class SettingsControllerGapTest extends TestCase
     }
 
     /**
-     * Test reindexSpecificCollection with invalid batch size.
-     */
-    public function testReindexSpecificCollectionInvalidBatchSize(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 10000],
-            ]);
-
-        $result = $this->controller->reindexSpecificCollection('test-collection');
-
-        $this->assertEquals(400, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('batch size', strtolower($data['message']));
-    }
-
-    /**
-     * Test reindexSpecificCollection with negative maxObjects.
-     */
-    public function testReindexSpecificCollectionNegativeMaxObjects(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, -1],
-                ['batchSize', 1000, 100],
-            ]);
-
-        $result = $this->controller->reindexSpecificCollection('test-collection');
-
-        $this->assertEquals(400, $result->getStatus());
-    }
-
-    /**
-     * Test reindexSpecificCollection exception.
-     */
-    public function testReindexSpecificCollectionException(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 100],
-            ]);
-
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Service error'));
-
-        $result = $this->controller->reindexSpecificCollection('test-collection');
-
-        $this->assertEquals(422, $result->getStatus());
-    }
-
-    /**
      * Test semanticSearch with filters and provider.
      */
     public function testSemanticSearchWithFiltersAndProvider(): void

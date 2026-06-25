@@ -194,7 +194,6 @@ class RegisterMapper extends QBMapper
      * Includes RBAC and organisation filtering for multi-tenancy.
      *
      * @param int|string $id            The ID of the register to find
-     * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
@@ -209,7 +208,6 @@ class RegisterMapper extends QBMapper
      */
     public function find(
         string|int $id,
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): Register {
@@ -239,7 +237,6 @@ class RegisterMapper extends QBMapper
                     'identifier' => $id,
                     'rbac'       => $_rbac,
                     'multi'      => $_multitenancy,
-                    'published'  => $published,
                 ]
             );
         }
@@ -293,8 +290,6 @@ class RegisterMapper extends QBMapper
                         'identifier'   => $id,
                         'registerId'   => $testResult->getId(),
                         'organisation' => $testResult->getOrganisation(),
-                        'published'    => $testResult->getPublished(),
-                        'depublished'  => $testResult->getDepublished(),
                     ]
                 );
             }
@@ -406,10 +401,9 @@ class RegisterMapper extends QBMapper
     /**
      * Finds multiple registers by id
      *
-     * @param array     $ids           The ids of the registers
-     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param array $ids           The ids of the registers
+     * @param bool  $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool  $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a register does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers are found
@@ -423,12 +417,12 @@ class RegisterMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
-    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
+    public function findMultiple(array $ids, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find(id: $id, published: $published, _rbac: $_rbac, _multitenancy: $_multitenancy);
+                $result[] = $this->find(id: $id, _rbac: $_rbac, _multitenancy: $_multitenancy);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException) {
                 // Catch all exceptions but do nothing.
             } catch (\OCP\DB\Exception) {
@@ -484,7 +478,6 @@ class RegisterMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
@@ -499,7 +492,6 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -536,9 +528,6 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter with published entity bypass support
-        // Published registers can bypass multi-tenancy restrictions if configured
-        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
@@ -778,10 +767,9 @@ class RegisterMapper extends QBMapper
     /**
      * Get all schemas associated with a register
      *
-     * @param int       $registerId    The ID of the register
-     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param int  $registerId    The ID of the register
+     * @param bool $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Schema[]
      *
@@ -791,13 +779,11 @@ class RegisterMapper extends QBMapper
      */
     public function getSchemasByRegisterId(
         int $registerId,
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
         $register  = $this->find(
             id: $registerId,
-            published: $published,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );
@@ -810,7 +796,7 @@ class RegisterMapper extends QBMapper
         // This ensures schemas linked to accessible registers can always be found.
         foreach ($schemaIds ?? [] as $schemaId) {
             try {
-                $schemas[] = $this->schemaMapper->find((int) $schemaId, [], $published, $_rbac, false);
+                $schemas[] = $this->schemaMapper->find(id: (int) $schemaId, _extend: [], _rbac: $_rbac, _multitenancy: false);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Schema not found, skip it (similar to RegistersController behavior).
                 continue;

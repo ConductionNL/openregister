@@ -590,20 +590,15 @@ export default {
 						const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
 						const vectorBackend = llmResponse.data.vectorConfig?.backend
 
-						if (vectorBackend === 'solr') {
-							displayType = 'Solr'
-							displayVersion = '9.x (Dense Vector)'
-							performanceNote = '✅ Using Solr for vector search (100-1000x faster than PHP). Database used only for application data.'
-							recommendedPlugin = 'KNN/HNSW Indexing (active ✓)'
-							vectorSupport = true // Solr provides vector support
-						} else if (vectorBackend === 'database' && db.vectorSupport) {
+						if (vectorBackend === 'database' && db.vectorSupport) {
 							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
 							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
 							vectorSupport = true
 						} else if (vectorBackend === 'database' && !db.vectorSupport) {
 							performanceNote = db.performanceNote
 							recommendedPlugin = db.recommendedPlugin
-						} else if (vectorBackend === 'php' || !vectorBackend) {
+						} else {
+							// 'php' / not set — use defaults from db info
 							performanceNote = db.performanceNote
 							recommendedPlugin = db.recommendedPlugin
 						}

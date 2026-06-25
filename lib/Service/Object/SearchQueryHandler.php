@@ -390,23 +390,6 @@ class SearchQueryHandler
     }//end applyViewsToQuery()
 
     /**
-     * Check if SOLR search engine is available
-     *
-     * @return bool True if SOLR is enabled and available, false otherwise
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
-     */
-    public function isSolrAvailable(): bool
-    {
-        try {
-            $solrSettings = $this->settingsService->getSolrSettings();
-            return $solrSettings['enabled'] ?? false;
-        } catch (Exception $e) {
-            return false;
-        }
-    }//end isSolrAvailable()
-
-    /**
      * Clean and normalize query parameters
      *
      * Converts legacy query parameter formats to the standard format used by MagicMapper.
