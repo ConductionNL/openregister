@@ -275,7 +275,11 @@ class CalculationOnSaveListener implements IEventListener
         }
 
         try {
-            $register   = $this->registerMapper->find($registerRef);
+            // Bypass RBAC + multitenancy: the create event fires in a context
+            // that may have no active organisation, so the default tenant-scoped
+            // find() would not resolve a register referenced purely by its
+            // numeric id and the `sequence` node would silently yield null.
+            $register   = $this->registerMapper->find($registerRef, false, false);
             $registerId = (int) $register->getId();
         } catch (Throwable $e) {
             $this->logger->warning(
