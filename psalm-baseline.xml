@@ -156,11 +156,6 @@
       <code><![CDATA[objectId]]></code>
     </InvalidNamedArgument>
   </file>
-  <file src="lib/Listener/CalculationOnSaveListener.php">
-    <UnusedParam>
-      <code><![CDATA[$isUpdate]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Migration/Version1Date20260325120000.php">
     <UndefinedConstant>
       <code><![CDATA[Types::DATETIME_MUTABLE]]></code>
