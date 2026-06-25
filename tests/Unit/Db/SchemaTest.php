@@ -48,8 +48,6 @@ class SchemaTest extends TestCase
         $this->assertSame('datetime', $types['deleted']);
         $this->assertSame('json', $types['configuration']);
         $this->assertSame('json', $types['groups']);
-        $this->assertSame('datetime', $types['published']);
-        $this->assertSame('datetime', $types['depublished']);
         $this->assertSame('json', $types['hooks']);
     }
 
@@ -71,8 +69,6 @@ class SchemaTest extends TestCase
         $this->assertNull($this->schema->getOwner());
         $this->assertNull($this->schema->getApplication());
         $this->assertNull($this->schema->getOrganisation());
-        $this->assertNull($this->schema->getPublished());
-        $this->assertNull($this->schema->getDepublished());
     }
 
     // --- Getters/Setters ---
@@ -410,8 +406,6 @@ class SchemaTest extends TestCase
         $this->assertArrayHasKey('allOf', $json);
         $this->assertArrayHasKey('oneOf', $json);
         $this->assertArrayHasKey('anyOf', $json);
-        $this->assertArrayHasKey('published', $json);
-        $this->assertArrayHasKey('depublished', $json);
     }
 
     public function testJsonSerializeRequiredEnrichment(): void
@@ -441,8 +435,6 @@ class SchemaTest extends TestCase
         $this->assertNull($json['created']);
         $this->assertNull($json['updated']);
         $this->assertNull($json['deleted']);
-        $this->assertNull($json['published']);
-        $this->assertNull($json['depublished']);
     }
 
     public function testJsonSerializeHooksDefault(): void
@@ -630,47 +622,6 @@ class SchemaTest extends TestCase
     {
         $this->schema->setAnyOf([5, 6]);
         $this->assertSame([5, 6], $this->schema->getAnyOf());
-    }
-
-    // --- Published / Depublished ---
-
-    public function testSetPublishedDateTime(): void
-    {
-        $dt = new DateTime('2024-01-15');
-        $this->schema->setPublished($dt);
-        $this->assertSame($dt, $this->schema->getPublished());
-    }
-
-    public function testSetPublishedString(): void
-    {
-        $this->schema->setPublished('2024-01-15T10:00:00+00:00');
-        $this->assertInstanceOf(DateTime::class, $this->schema->getPublished());
-    }
-
-    public function testSetPublishedNull(): void
-    {
-        $this->schema->setPublished(new DateTime());
-        $this->schema->setPublished(null);
-        $this->assertNull($this->schema->getPublished());
-    }
-
-    public function testSetDepublishedDateTime(): void
-    {
-        $dt = new DateTime('2024-06-01');
-        $this->schema->setDepublished($dt);
-        $this->assertSame($dt, $this->schema->getDepublished());
-    }
-
-    public function testSetDepublishedString(): void
-    {
-        $this->schema->setDepublished('2024-06-01T10:00:00+00:00');
-        $this->assertInstanceOf(DateTime::class, $this->schema->getDepublished());
-    }
-
-    public function testSetDepublishedNull(): void
-    {
-        $this->schema->setDepublished(null);
-        $this->assertNull($this->schema->getDepublished());
     }
 
     // --- isManagedByConfiguration ---

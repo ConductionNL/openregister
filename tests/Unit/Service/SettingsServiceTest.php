@@ -27,7 +27,6 @@ use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
-use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -107,9 +106,6 @@ class SettingsServiceTest extends TestCase
     /** @var FileSettingsHandler|MockObject */
     private $fileSettingsHandler;
 
-    /** @var SolrSettingsHandler|MockObject */
-    private $solrSettingsHandler;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -141,7 +137,6 @@ class SettingsServiceTest extends TestCase
         $this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
         $this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
         $this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
-        $this->solrSettingsHandler = $this->createMock(SolrSettingsHandler::class);
 
         // Create SettingsService instance matching the actual constructor.
         // All handler properties must be injected to avoid null property access.
@@ -163,7 +158,6 @@ class SettingsServiceTest extends TestCase
             fileSettingsHandler: $this->fileSettingsHandler,
             objRetentionHandler: $this->objectRetentionHandler,
             cacheSettingsHandler: $this->cacheSettingsHandler,
-            solrSettingsHandler: $this->solrSettingsHandler,
             cfgSettingsHandler: $this->configurationSettingsHandler
         );
     }
@@ -393,10 +387,8 @@ class SettingsServiceTest extends TestCase
      */
     public function testRebase(): void
     {
-        // rebase() calls clearCache(null) internally via SettingsService::clearCache(?string).
-        // Since CacheSettingsHandler::clearCache(string) does not accept null,
-        // we pass explicit options to skip the cache clearing code path.
-        $result = $this->settingsService->rebase(options: ['components' => ['solr']]);
+        // rebase() with an unknown component returns success with empty rebased.
+        $result = $this->settingsService->rebase(options: ['components' => ['unknown']]);
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('success', $result);
@@ -841,94 +833,6 @@ class SettingsServiceTest extends TestCase
     }
 
     /**
-     * Test getSolrSettings delegates to solrSettingsHandler
-     */
-    public function testGetSolrSettings(): void
-    {
-        $expected = ['host' => 'localhost', 'port' => 8983, 'core' => 'openregister'];
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('getSolrSettings')
-            ->willReturn($expected);
-
-        $result = $this->settingsService->getSolrSettings();
-        $this->assertSame($expected, $result);
-    }
-
-    /**
-     * Test getSolrSettingsOnly delegates to solrSettingsHandler
-     */
-    public function testGetSolrSettingsOnly(): void
-    {
-        $expected = ['host' => 'solr', 'port' => 8983];
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('getSolrSettingsOnly')
-            ->willReturn($expected);
-
-        $result = $this->settingsService->getSolrSettingsOnly();
-        $this->assertSame($expected, $result);
-    }
-
-    /**
-     * Test updateSolrSettingsOnly delegates to solrSettingsHandler
-     */
-    public function testUpdateSolrSettingsOnly(): void
-    {
-        $data = ['host' => 'new-solr', 'port' => 8984];
-        $expected = ['success' => true];
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('updateSolrSettingsOnly')
-            ->with($data)
-            ->willReturn($expected);
-
-        $result = $this->settingsService->updateSolrSettingsOnly(data: $data);
-        $this->assertSame($expected, $result);
-    }
-
-    /**
-     * Test getSolrDashboardStats delegates to solrSettingsHandler
-     */
-    public function testGetSolrDashboardStats(): void
-    {
-        $expected = ['numDocs' => 1500, 'indexSize' => '25MB'];
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('getSolrDashboardStats')
-            ->willReturn($expected);
-
-        $result = $this->settingsService->getSolrDashboardStats();
-        $this->assertSame($expected, $result);
-    }
-
-    /**
-     * Test getSolrFacetConfiguration delegates to solrSettingsHandler
-     */
-    public function testGetSolrFacetConfiguration(): void
-    {
-        $expected = ['facets' => ['category', 'status']];
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('getSolrFacetConfiguration')
-            ->willReturn($expected);
-
-        $result = $this->settingsService->getSolrFacetConfiguration();
-        $this->assertSame($expected, $result);
-    }
-
-    /**
-     * Test updateSolrFacetConfiguration delegates to solrSettingsHandler
-     */
-    public function testUpdateSolrFacetConfiguration(): void
-    {
-        $data = ['facets' => ['category', 'type', 'status']];
-        $expected = ['success' => true];
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('updateSolrFacetConfiguration')
-            ->with($data)
-            ->willReturn($expected);
-
-        $result = $this->settingsService->updateSolrFacetConfiguration(data: $data);
-        $this->assertSame($expected, $result);
-    }
-
-    /**
      * Test getOrganisationSettingsOnly delegates to configurationSettingsHandler
      */
     public function testGetOrganisationSettingsOnly(): void
@@ -991,60 +895,17 @@ class SettingsServiceTest extends TestCase
     // ===== SEARCH BACKEND CONFIG TESTS =====.
 
     /**
-     * Test getSearchBackendConfig returns stored config
-     */
-    public function testGetSearchBackendConfigStored(): void
-    {
-        $storedConfig = json_encode(['active' => 'elasticsearch', 'available' => ['solr', 'elasticsearch']]);
-        $this->config->expects($this->once())
-            ->method('getAppValue')
-            ->with('openregister', 'search_backend', '')
-            ->willReturn($storedConfig);
-
-        $result = $this->settingsService->getSearchBackendConfig();
-        $this->assertSame('elasticsearch', $result['active']);
-    }
-
-    /**
-     * Test getSearchBackendConfig returns default when empty
-     */
-    public function testGetSearchBackendConfigDefault(): void
-    {
-        $this->config->expects($this->once())
-            ->method('getAppValue')
-            ->with('openregister', 'search_backend', '')
-            ->willReturn('');
-
-        $result = $this->settingsService->getSearchBackendConfig();
-        $this->assertSame('solr', $result['active']);
-        $this->assertSame(['solr', 'elasticsearch'], $result['available']);
-    }
-
-    /**
-     * Test getSearchBackendConfig returns default on exception
-     */
-    public function testGetSearchBackendConfigException(): void
-    {
-        $this->config->expects($this->once())
-            ->method('getAppValue')
-            ->willThrowException(new \Exception('Config error'));
-
-        $result = $this->settingsService->getSearchBackendConfig();
-        $this->assertSame('solr', $result['active']);
-    }
-
-    /**
-     * Test updateSearchBackendConfig delegates to searchBackendHandler
+     * Test updateSearchBackendConfig delegates to searchBackendHandler with database backend
      */
     public function testUpdateSearchBackendConfig(): void
     {
-        $expected = ['active' => 'elasticsearch', 'available' => ['solr', 'elasticsearch']];
+        $expected = ['active' => 'database', 'available' => ['database']];
         $this->searchBackendHandler->expects($this->once())
             ->method('updateSearchBackendConfig')
-            ->with('elasticsearch')
+            ->with('database')
             ->willReturn($expected);
 
-        $result = $this->settingsService->updateSearchBackendConfig(data: ['backend' => 'elasticsearch']);
+        $result = $this->settingsService->updateSearchBackendConfig(data: ['backend' => 'database']);
         $this->assertSame($expected, $result);
     }
 
@@ -1053,13 +914,13 @@ class SettingsServiceTest extends TestCase
      */
     public function testUpdateSearchBackendConfigWithActiveKey(): void
     {
-        $expected = ['active' => 'solr', 'available' => ['solr', 'elasticsearch']];
+        $expected = ['active' => 'database', 'available' => ['database']];
         $this->searchBackendHandler->expects($this->once())
             ->method('updateSearchBackendConfig')
-            ->with('solr')
+            ->with('database')
             ->willReturn($expected);
 
-        $result = $this->settingsService->updateSearchBackendConfig(data: ['active' => 'solr']);
+        $result = $this->settingsService->updateSearchBackendConfig(data: ['active' => 'database']);
         $this->assertSame($expected, $result);
     }
 
@@ -1246,148 +1107,10 @@ class SettingsServiceTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    // ===== COMPARE FIELDS TESTS =====.
-
-    /**
-     * Test compareFields with no differences
-     */
-    public function testCompareFieldsNoDifferences(): void
-    {
-        $fields = [
-            'title' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
-            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => true],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $fields, expectedFields: $fields);
-
-        $this->assertSame(0, $result['summary']['total_differences']);
-        $this->assertEmpty($result['missing']);
-        $this->assertEmpty($result['extra']);
-        $this->assertEmpty($result['mismatched']);
-    }
-
-    /**
-     * Test compareFields with missing fields
-     */
-    public function testCompareFieldsMissingFields(): void
-    {
-        $actual = [
-            'title' => ['type' => 'text_general'],
-        ];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-            'description' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['missing_count']);
-        $this->assertSame('description', $result['missing'][0]['field']);
-    }
-
-    /**
-     * Test compareFields with extra fields
-     */
-    public function testCompareFieldsExtraFields(): void
-    {
-        $actual = [
-            'title' => ['type' => 'text_general'],
-            'extra_field' => ['type' => 'string'],
-        ];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['extra_count']);
-        $this->assertSame('extra_field', $result['extra'][0]['field']);
-    }
-
-    /**
-     * Test compareFields skips system fields starting with underscore
-     */
-    public function testCompareFieldsSkipsSystemFields(): void
-    {
-        $actual = [
-            '_version_' => ['type' => 'plong'],
-            'title' => ['type' => 'text_general'],
-        ];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        // _version_ should be skipped, not counted as extra
-        $this->assertSame(0, $result['summary']['extra_count']);
-    }
-
-    /**
-     * Test compareFields with type mismatch
-     */
-    public function testCompareFieldsTypeMismatch(): void
-    {
-        $actual = [
-            'status' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
-        ];
-        $expected = [
-            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['mismatched_count']);
-        $this->assertContains('type', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields with multiValued mismatch
-     */
-    public function testCompareFieldsMultiValuedMismatch(): void
-    {
-        $actual = [
-            'tags' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-        ];
-        $expected = [
-            'tags' => ['type' => 'string', 'multiValued' => true, 'docValues' => false],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['mismatched_count']);
-        $this->assertContains('multiValued', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields with multiple differences at once
-     */
-    public function testCompareFieldsMultipleDifferences(): void
-    {
-        $actual = [
-            'title' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
-            'orphan_field' => ['type' => 'string'],
-        ];
-        $expected = [
-            'title' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-            'missing_field' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['missing_count']);
-        $this->assertSame(1, $result['summary']['extra_count']);
-        $this->assertSame(1, $result['summary']['mismatched_count']);
-        $this->assertSame(3, $result['summary']['total_differences']);
-    }
-
     // ===== REBASE TESTS =====.
 
     /**
-     * Test rebase with 'all' components triggers TypeError when clearCache receives null
-     *
-     * SettingsService::clearCache(?string) passes null to CacheSettingsHandler::clearCache(string).
-     * This is a known type mismatch in production code; we verify the behavior here.
+     * Test rebase with 'all' components clears cache.
      */
     public function testRebaseAllComponents(): void
     {
@@ -1399,36 +1122,23 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->rebase(options: ['components' => ['all']]);
 
         $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('solr', $result['rebased']);
         $this->assertArrayHasKey('cache', $result['rebased']);
     }
 
     /**
-     * Test rebase with only solr component
+     * Test rebase with unknown component returns success with empty rebased.
      */
-    public function testRebaseSolrOnly(): void
+    public function testRebaseUnknownComponentReturnsEmpty(): void
     {
-        $result = $this->settingsService->rebase(options: ['components' => ['solr']]);
+        $result = $this->settingsService->rebase(options: ['components' => ['unknown']]);
 
         $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertEmpty($result['rebased']);
         $this->assertArrayNotHasKey('cache', $result['rebased']);
     }
 
     /**
-     * Test rebase with explicit cache type via clearCache delegation
-     */
-    public function testRebaseSolrComponent(): void
-    {
-        $result = $this->settingsService->rebase(options: ['components' => ['solr']]);
-
-        $this->assertTrue($result['success']);
-        $this->assertSame('Solr configuration rebased', $result['rebased']['solr']['message']);
-        $this->assertArrayHasKey('timestamp', $result);
-    }
-
-    /**
-     * Test rebase with default (no options) triggers all components
+     * Test rebase with default (no options) triggers all components (cache).
      */
     public function testRebaseDefaultOptionsTriggersAllComponents(): void
     {
@@ -1440,13 +1150,12 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->rebase();
 
         $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('solr', $result['rebased']);
         $this->assertArrayHasKey('cache', $result['rebased']);
         $this->assertArrayHasKey('timestamp', $result);
     }
 
     /**
-     * Test rebase with cache component only
+     * Test rebase with cache component only.
      */
     public function testRebaseCacheOnly(): void
     {
@@ -1459,7 +1168,6 @@ class SettingsServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('cache', $result['rebased']);
-        $this->assertArrayNotHasKey('solr', $result['rebased']);
     }
 
     // ===== STATS TESTS =====.
@@ -1474,8 +1182,6 @@ class SettingsServiceTest extends TestCase
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn(['success' => true]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willReturn(['numDocs' => 0]);
 
         $result = $this->settingsService->getStats();
 
@@ -1496,8 +1202,6 @@ class SettingsServiceTest extends TestCase
             ->willThrowException(new \Exception('No database'));
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -1505,26 +1209,6 @@ class SettingsServiceTest extends TestCase
         $this->assertArrayHasKey('php_version', $result['system']);
         $this->assertArrayHasKey('memory_limit', $result['system']);
         $this->assertArrayHasKey('max_execution_time', $result['system']);
-    }
-
-    /**
-     * Test getStats handles Solr exception gracefully
-     */
-    public function testGetStatsHandlesSolrException(): void
-    {
-        $this->db->method('getQueryBuilder')
-            ->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class));
-        $this->db->method('executeQuery')
-            ->willThrowException(new \Exception('No database'));
-        $this->cacheSettingsHandler->method('getCacheStats')
-            ->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willThrowException(new \Exception('Solr down'));
-
-        $result = $this->settingsService->getStats();
-
-        $this->assertArrayHasKey('solr', $result);
-        $this->assertSame('Solr down', $result['solr']['error']);
     }
 
     /**
@@ -1538,8 +1222,6 @@ class SettingsServiceTest extends TestCase
             ->willThrowException(new \Exception('No database'));
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willThrowException(new \Exception('Cache error'));
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -1557,7 +1239,6 @@ class SettingsServiceTest extends TestCase
         $this->db->method('executeQuery')
             ->willThrowException(new \Exception('No database'));
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -1593,7 +1274,6 @@ class SettingsServiceTest extends TestCase
             fileSettingsHandler: $this->fileSettingsHandler,
             objRetentionHandler: $this->objectRetentionHandler,
             cacheSettingsHandler: $this->cacheSettingsHandler,
-            solrSettingsHandler: $this->solrSettingsHandler,
             cfgSettingsHandler: $this->configurationSettingsHandler
         );
 
@@ -1629,7 +1309,6 @@ class SettingsServiceTest extends TestCase
             fileSettingsHandler: $this->fileSettingsHandler,
             objRetentionHandler: $this->objectRetentionHandler,
             cacheSettingsHandler: $this->cacheSettingsHandler,
-            solrSettingsHandler: $this->solrSettingsHandler,
             cfgSettingsHandler: $this->configurationSettingsHandler
         );
 
@@ -1665,7 +1344,6 @@ class SettingsServiceTest extends TestCase
             fileSettingsHandler: $this->fileSettingsHandler,
             objRetentionHandler: $this->objectRetentionHandler,
             cacheSettingsHandler: $this->cacheSettingsHandler,
-            solrSettingsHandler: $this->solrSettingsHandler,
             cfgSettingsHandler: $this->configurationSettingsHandler
         );
 
@@ -1716,64 +1394,6 @@ class SettingsServiceTest extends TestCase
         // first 4 + min(20, 100-8)=20 stars + last 4
         $this->assertSame('aaaa' . str_repeat('*', 20) . 'aaaa', $result);
         $this->assertSame(28, strlen($result));
-    }
-
-    // ===== COMPARE FIELDS (additional coverage) =====.
-
-    /**
-     * Test compareFields with docValues mismatch
-     */
-    public function testCompareFieldsDocValuesMismatch(): void
-    {
-        $actual = [
-            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => true],
-        ];
-        $expected = [
-            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['mismatched_count']);
-        $this->assertContains('docValues', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields with empty arrays
-     */
-    public function testCompareFieldsEmpty(): void
-    {
-        $result = $this->settingsService->compareFields(actualFields: [], expectedFields: []);
-
-        $this->assertSame(0, $result['summary']['total_differences']);
-    }
-
-    /**
-     * Test compareFields with all three difference types simultaneously
-     */
-    public function testCompareFieldsAllDifferenceTypes(): void
-    {
-        $actual = [
-            'field_a' => ['type' => 'string', 'multiValued' => true, 'docValues' => true],
-            'field_extra' => ['type' => 'string'],
-        ];
-        $expected = [
-            'field_a' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
-            'field_missing' => ['type' => 'string'],
-        ];
-
-        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
-
-        $this->assertSame(1, $result['summary']['missing_count']);
-        $this->assertSame(1, $result['summary']['extra_count']);
-        $this->assertSame(1, $result['summary']['mismatched_count']);
-        $this->assertSame(3, $result['summary']['total_differences']);
-
-        // Check mismatch has all three differences.
-        $differences = $result['mismatched'][0]['differences'];
-        $this->assertContains('type', $differences);
-        $this->assertContains('multiValued', $differences);
-        $this->assertContains('docValues', $differences);
     }
 
     // ===== DATABASE INFO (additional coverage) =====.
@@ -1832,17 +1452,21 @@ class SettingsServiceTest extends TestCase
     }
 
     /**
-     * Test updateSearchBackendConfig defaults to 'solr' when no key present
+     * Test updateSearchBackendConfig passes 'database' to handler when explicitly requested
+     *
+     * The production default when no key is present is 'solr' (legacy); passing
+     * ['backend' => 'database'] explicitly exercises the database-only path.
      */
-    public function testUpdateSearchBackendConfigDefaultsSolr(): void
+    public function testUpdateSearchBackendConfigDefaultsDatabase(): void
     {
         $this->searchBackendHandler->expects($this->once())
             ->method('updateSearchBackendConfig')
-            ->with('solr')
-            ->willReturn(['active' => 'solr']);
+            ->with('database')
+            ->willReturn(['active' => 'database', 'available' => ['database']]);
 
-        $result = $this->settingsService->updateSearchBackendConfig(data: []);
-        $this->assertSame('solr', $result['active']);
+        $result = $this->settingsService->updateSearchBackendConfig(data: ['backend' => 'database']);
+        $this->assertSame('database', $result['active']);
+        $this->assertSame(['database'], $result['available']);
     }
 
     /**
@@ -1862,157 +1486,6 @@ class SettingsServiceTest extends TestCase
 
         $result = $this->settingsService->getPostgresExtensions();
         $this->assertCount(1, $result);
-    }
-
-    // ===== EXPECTED SCHEMA FIELDS TESTS =====.
-
-    /**
-     * Test getExpectedSchemaFields with setupHandler and schemas
-     */
-    public function testGetExpectedSchemaFieldsWithSetupHandler(): void
-    {
-        $setupHandler = $this->createMock(SetupHandler::class);
-        $setupHandler->method('getObjectEntityFieldDefinitions')
-            ->willReturn([
-                'uuid' => ['type' => 'string', 'multiValued' => false],
-                'name' => ['type' => 'text_general', 'multiValued' => false],
-            ]);
-
-        $service = new SettingsService(
-            $this->config,
-            $this->auditTrailMapper,
-            $this->cacheFactory,
-            $this->groupManager,
-            $this->logger,
-            $this->organisationMapper,
-            $this->schemaCacheService,
-            $this->facetCacheHandler,
-            $this->searchTrailMapper,
-            $this->userManager,
-            $this->db,
-            $setupHandler,
-            null,
-            null,
-            'openregister',
-            $this->validationOperationsHandler,
-            $this->searchBackendHandler,
-            $this->llmSettingsHandler,
-            $this->fileSettingsHandler,
-            $this->objectRetentionHandler,
-            $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
-            $this->configurationSettingsHandler
-        );
-
-        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-        $schemaMapper->method('findAll')->willReturn([]);
-
-        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-
-        // The method uses reflection to call analyzeAndResolveFieldConflicts.
-        // Since we pass empty schemas, the reflected method should return empty fields.
-        // We test the fallback path by making reflection throw.
-        $result = $service->getExpectedSchemaFields($schemaMapper, $indexService);
-
-        // Should at least contain the core fields from setupHandler.
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('uuid', $result);
-        $this->assertArrayHasKey('name', $result);
-    }
-
-    /**
-     * Test getExpectedSchemaFields without setupHandler returns empty on exception
-     */
-    public function testGetExpectedSchemaFieldsWithoutSetupHandlerOnException(): void
-    {
-        $service = new SettingsService(
-            $this->config,
-            $this->auditTrailMapper,
-            $this->cacheFactory,
-            $this->groupManager,
-            $this->logger,
-            $this->organisationMapper,
-            $this->schemaCacheService,
-            $this->facetCacheHandler,
-            $this->searchTrailMapper,
-            $this->userManager,
-            $this->db,
-            null,
-            null,
-            null,
-            'openregister',
-            $this->validationOperationsHandler,
-            $this->searchBackendHandler,
-            $this->llmSettingsHandler,
-            $this->fileSettingsHandler,
-            $this->objectRetentionHandler,
-            $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
-            $this->configurationSettingsHandler
-        );
-
-        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-        $schemaMapper->method('findAll')
-            ->willThrowException(new \Exception('DB error'));
-
-        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-
-        $result = $service->getExpectedSchemaFields($schemaMapper, $indexService);
-
-        // Without setupHandler and with exception, should return empty array.
-        $this->assertSame([], $result);
-    }
-
-    /**
-     * Test getExpectedSchemaFields with setupHandler falls back to core fields on exception
-     */
-    public function testGetExpectedSchemaFieldsFallbackToCoreFields(): void
-    {
-        $coreFields = [
-            'uuid' => ['type' => 'string'],
-            'owner' => ['type' => 'string'],
-        ];
-
-        $setupHandler = $this->createMock(SetupHandler::class);
-        $setupHandler->method('getObjectEntityFieldDefinitions')
-            ->willReturn($coreFields);
-
-        $service = new SettingsService(
-            $this->config,
-            $this->auditTrailMapper,
-            $this->cacheFactory,
-            $this->groupManager,
-            $this->logger,
-            $this->organisationMapper,
-            $this->schemaCacheService,
-            $this->facetCacheHandler,
-            $this->searchTrailMapper,
-            $this->userManager,
-            $this->db,
-            $setupHandler,
-            null,
-            null,
-            'openregister',
-            $this->validationOperationsHandler,
-            $this->searchBackendHandler,
-            $this->llmSettingsHandler,
-            $this->fileSettingsHandler,
-            $this->objectRetentionHandler,
-            $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
-            $this->configurationSettingsHandler
-        );
-
-        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-        $schemaMapper->method('findAll')
-            ->willThrowException(new \Exception('Schema error'));
-
-        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-
-        $result = $service->getExpectedSchemaFields($schemaMapper, $indexService);
-
-        // Should fall back to core fields from setupHandler.
-        $this->assertSame($coreFields, $result);
     }
 
     // ===== REBASE EXCEPTION PATH =====.
@@ -2046,19 +1519,18 @@ class SettingsServiceTest extends TestCase
     }
 
     /**
-     * Test rebase with both solr and cache components
+     * Test rebase with cache component (solr is no longer a valid component)
      */
-    public function testRebaseSolrAndCache(): void
+    public function testRebaseCacheComponent(): void
     {
         $this->cacheSettingsHandler->expects($this->once())
             ->method('clearCache')
             ->with('all')
             ->willReturn(['success' => true]);
 
-        $result = $this->settingsService->rebase(options: ['components' => ['solr', 'cache']]);
+        $result = $this->settingsService->rebase(options: ['components' => ['cache']]);
 
         $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('solr', $result['rebased']);
         $this->assertArrayHasKey('cache', $result['rebased']);
     }
 
@@ -2093,7 +1565,6 @@ class SettingsServiceTest extends TestCase
             $this->fileSettingsHandler,
             $this->objectRetentionHandler,
             $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
             $this->configurationSettingsHandler
         );
 
@@ -2132,7 +1603,6 @@ class SettingsServiceTest extends TestCase
             $this->fileSettingsHandler,
             $this->objectRetentionHandler,
             $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
             $this->configurationSettingsHandler
         );
 
@@ -2157,90 +1627,6 @@ class SettingsServiceTest extends TestCase
 
         $result = $this->settingsService->clearCache('objects');
         $this->assertSame('objects', $result['type']);
-    }
-
-    // ===== COMPARE FIELDS ADDITIONAL EDGE CASES =====.
-
-    /**
-     * Test compareFields with missing type defaults to empty string comparison
-     */
-    public function testCompareFieldsMissingTypeKeys(): void
-    {
-        $actual = [
-            'field_a' => ['multiValued' => false, 'docValues' => false],
-        ];
-        $expected = [
-            'field_a' => ['multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->settingsService->compareFields($actual, $expected);
-
-        // Both missing 'type' defaults to '' === '' so no mismatch.
-        $this->assertSame(0, $result['summary']['mismatched_count']);
-    }
-
-    /**
-     * Test compareFields where actual has no type but expected does
-     */
-    public function testCompareFieldsActualMissingType(): void
-    {
-        $actual = [
-            'field_a' => ['multiValued' => false, 'docValues' => false],
-        ];
-        $expected = [
-            'field_a' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->settingsService->compareFields($actual, $expected);
-
-        $this->assertSame(1, $result['summary']['mismatched_count']);
-        $this->assertContains('type', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields extra field reports correct actual_type
-     */
-    public function testCompareFieldsExtraFieldType(): void
-    {
-        $actual = [
-            'orphan' => ['type' => 'plong'],
-        ];
-        $expected = [];
-
-        $result = $this->settingsService->compareFields($actual, $expected);
-
-        $this->assertSame(1, $result['summary']['extra_count']);
-        $this->assertSame('plong', $result['extra'][0]['actual_type']);
-    }
-
-    /**
-     * Test compareFields extra field with no type key defaults to 'unknown'
-     */
-    public function testCompareFieldsExtraFieldNoType(): void
-    {
-        $actual = [
-            'orphan' => ['multiValued' => true],
-        ];
-        $expected = [];
-
-        $result = $this->settingsService->compareFields($actual, $expected);
-
-        $this->assertSame('unknown', $result['extra'][0]['actual_type']);
-    }
-
-    /**
-     * Test compareFields missing field with no type key defaults to 'unknown'
-     */
-    public function testCompareFieldsMissingFieldNoType(): void
-    {
-        $actual = [];
-        $expected = [
-            'needed' => ['multiValued' => true],
-        ];
-
-        $result = $this->settingsService->compareFields($actual, $expected);
-
-        $this->assertSame('unknown', $result['missing'][0]['expected_type']);
     }
 
     // ===== FORMAT BYTES ADDITIONAL COVERAGE =====.
@@ -2373,10 +1759,6 @@ class SettingsServiceTest extends TestCase
         $this->db->method('executeQuery')
             ->willThrowException(new \Exception('DB failed'));
 
-        // Make getSolrDashboardStats throw.
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willThrowException(new \Exception('Solr error'));
-
         // Make getCacheStats throw.
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willThrowException(new \Exception('Cache error'));
@@ -2386,7 +1768,6 @@ class SettingsServiceTest extends TestCase
         $this->assertIsArray($result);
         // Despite all sub-errors, getStats still returns a valid structure.
         $this->assertArrayHasKey('warnings', $result);
-        $this->assertArrayHasKey('solr', $result);
         $this->assertArrayHasKey('cache', $result);
         $this->assertArrayHasKey('system', $result);
     }
@@ -2455,18 +1836,6 @@ class SettingsServiceTest extends TestCase
 
         $this->expectException(\Exception::class);
         $this->settingsService->getObjectSettingsOnly();
-    }
-
-    /**
-     * Test getSolrSettings handler exception propagates
-     */
-    public function testGetSolrSettingsException(): void
-    {
-        $this->solrSettingsHandler->method('getSolrSettings')
-            ->willThrowException(new \Exception('Solr error'));
-
-        $this->expectException(\Exception::class);
-        $this->settingsService->getSolrSettings();
     }
 
     /**
@@ -2541,42 +1910,6 @@ class SettingsServiceTest extends TestCase
         $this->settingsService->getCacheStats();
     }
 
-    /**
-     * Test getSolrSettingsOnly handler exception propagates
-     */
-    public function testGetSolrSettingsOnlyException(): void
-    {
-        $this->solrSettingsHandler->method('getSolrSettingsOnly')
-            ->willThrowException(new \Exception('Solr only error'));
-
-        $this->expectException(\Exception::class);
-        $this->settingsService->getSolrSettingsOnly();
-    }
-
-    /**
-     * Test getSolrFacetConfiguration handler exception propagates
-     */
-    public function testGetSolrFacetConfigurationException(): void
-    {
-        $this->solrSettingsHandler->method('getSolrFacetConfiguration')
-            ->willThrowException(new \Exception('Facet error'));
-
-        $this->expectException(\Exception::class);
-        $this->settingsService->getSolrFacetConfiguration();
-    }
-
-    /**
-     * Test getSolrDashboardStats handler exception propagates
-     */
-    public function testGetSolrDashboardStatsException(): void
-    {
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willThrowException(new \Exception('Dashboard error'));
-
-        $this->expectException(\Exception::class);
-        $this->settingsService->getSolrDashboardStats();
-    }
-
     // ===== CONSTRUCTOR / INITIALIZATION TESTS =====.
 
     /**
@@ -2606,7 +1939,6 @@ class SettingsServiceTest extends TestCase
             $this->fileSettingsHandler,
             $this->objectRetentionHandler,
             $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
             $this->configurationSettingsHandler
         );
 
@@ -2620,6 +1952,10 @@ class SettingsServiceTest extends TestCase
     public function testConstructorWithCustomAppName(): void
     {
         $config = $this->createMock(IConfig::class);
+        // Stub getAppValue to return a database-backend config so that
+        // getSearchBackendConfig() resolves to 'database'.
+        $config->method('getAppValue')
+            ->willReturn(json_encode(['active' => 'database', 'available' => ['database']]));
 
         $service = new SettingsService(
             $config,
@@ -2643,20 +1979,15 @@ class SettingsServiceTest extends TestCase
             $this->fileSettingsHandler,
             $this->objectRetentionHandler,
             $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
             $this->configurationSettingsHandler
         );
 
         $this->assertInstanceOf(SettingsService::class, $service);
 
-        // Verify the custom app name is used: getSearchBackendConfig uses $this->appName.
-        $config->expects($this->once())
-            ->method('getAppValue')
-            ->with('custom_app', 'search_backend', '')
-            ->willReturn('');
-
+        // getSearchBackendConfig reads appConfig which we stubbed to return database config.
         $result = $service->getSearchBackendConfig();
-        $this->assertSame('solr', $result['active']);
+        $this->assertSame('database', $result['active']);
+        $this->assertSame(['database'], $result['available']);
     }
 
     // ===== MASK TOKEN ADDITIONAL COVERAGE =====.
@@ -2681,53 +2012,6 @@ class SettingsServiceTest extends TestCase
         $this->assertSame('*', $result);
     }
 
-    // ===== COMPARE FIELDS: MISMATCHED FIELD DETAILS =====.
-
-    /**
-     * Test compareFields mismatch entry contains all expected keys
-     */
-    public function testCompareFieldsMismatchEntryStructure(): void
-    {
-        $actual = [
-            'test_field' => ['type' => 'text', 'multiValued' => true, 'docValues' => true],
-        ];
-        $expected = [
-            'test_field' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->settingsService->compareFields($actual, $expected);
-
-        $mismatch = $result['mismatched'][0];
-        $this->assertArrayHasKey('field', $mismatch);
-        $this->assertArrayHasKey('expected_type', $mismatch);
-        $this->assertArrayHasKey('actual_type', $mismatch);
-        $this->assertArrayHasKey('expected_multiValued', $mismatch);
-        $this->assertArrayHasKey('actual_multiValued', $mismatch);
-        $this->assertArrayHasKey('expected_docValues', $mismatch);
-        $this->assertArrayHasKey('actual_docValues', $mismatch);
-        $this->assertArrayHasKey('differences', $mismatch);
-        $this->assertArrayHasKey('expected_config', $mismatch);
-        $this->assertArrayHasKey('actual_config', $mismatch);
-        $this->assertSame('test_field', $mismatch['field']);
-    }
-
-    /**
-     * Test compareFields summary structure
-     */
-    public function testCompareFieldsSummaryStructure(): void
-    {
-        $result = $this->settingsService->compareFields([], []);
-
-        $this->assertArrayHasKey('missing', $result);
-        $this->assertArrayHasKey('extra', $result);
-        $this->assertArrayHasKey('mismatched', $result);
-        $this->assertArrayHasKey('summary', $result);
-        $this->assertArrayHasKey('missing_count', $result['summary']);
-        $this->assertArrayHasKey('extra_count', $result['summary']);
-        $this->assertArrayHasKey('mismatched_count', $result['summary']);
-        $this->assertArrayHasKey('total_differences', $result['summary']);
-    }
-
     // ===== DATABASE INFO EDGE CASE =====.
 
     /**
@@ -2742,44 +2026,6 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->getDatabaseInfo();
         // json_decode returns a string, which is not null, but isset($data['database']) is false.
         $this->assertNull($result);
-    }
-
-    // ===== WARMUP SOLR INDEX =====.
-
-    /**
-     * Test warmupSolrIndex delegates to solrSettingsHandler
-     */
-    public function testWarmupSolrIndexDelegatesToHandler(): void
-    {
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('warmupSolrIndex')
-            ->willThrowException(new \RuntimeException('Deprecated: Use IndexService->warmupIndex()'));
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Deprecated');
-
-        $this->settingsService->warmupSolrIndex();
-    }
-
-    /**
-     * Test warmupSolrIndex with parameters still delegates to handler
-     */
-    public function testWarmupSolrIndexWithParams(): void
-    {
-        $this->solrSettingsHandler->expects($this->once())
-            ->method('warmupSolrIndex')
-            ->willThrowException(new \RuntimeException('Deprecated'));
-
-        $this->expectException(\RuntimeException::class);
-
-        $this->settingsService->warmupSolrIndex(
-            schemas: ['schema1'],
-            maxObjects: 100,
-            mode: 'parallel',
-            collectErrors: true,
-            batchSize: 500,
-            schemaIds: [1, 2]
-        );
     }
 
     // ===== MASS VALIDATE OBJECTS HAPPY PATH =====.
@@ -2815,7 +2061,6 @@ class SettingsServiceTest extends TestCase
             $this->fileSettingsHandler,
             $this->objectRetentionHandler,
             $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
             $this->configurationSettingsHandler
         );
     }
@@ -3164,8 +2409,6 @@ class SettingsServiceTest extends TestCase
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn(['success' => true, 'caches' => []]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willReturn(['numDocs' => 100]);
 
         $result = $this->settingsService->getStats();
 
@@ -3173,7 +2416,6 @@ class SettingsServiceTest extends TestCase
         $this->assertArrayHasKey('warnings', $result);
         $this->assertArrayHasKey('totals', $result);
         $this->assertArrayHasKey('system', $result);
-        $this->assertArrayHasKey('solr', $result);
         $this->assertArrayHasKey('cache', $result);
 
         // Verify totals (no magic tables, so totalObjects = 0).
@@ -3247,8 +2489,6 @@ class SettingsServiceTest extends TestCase
             });
 
         $this->cacheSettingsHandler->method('getCacheStats')
-            ->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
             ->willReturn([]);
 
         $result = $this->settingsService->getStats();
@@ -3330,8 +2570,6 @@ class SettingsServiceTest extends TestCase
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -3383,8 +2621,6 @@ class SettingsServiceTest extends TestCase
             });
 
         $this->cacheSettingsHandler->method('getCacheStats')
-            ->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
             ->willReturn([]);
 
         $result = $this->settingsService->getStats();
@@ -3457,8 +2693,6 @@ class SettingsServiceTest extends TestCase
             });
 
         $this->cacheSettingsHandler->method('getCacheStats')
-            ->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
             ->willReturn([]);
 
         $result = $this->settingsService->getStats();
@@ -3545,8 +2779,6 @@ class SettingsServiceTest extends TestCase
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn(['caches' => []]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willThrowException(new \Exception('SOLR unavailable'));
 
         $result = $this->settingsService->getStats();
 
@@ -3575,8 +2807,6 @@ class SettingsServiceTest extends TestCase
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willThrowException(new \Exception('Cache broken'));
-        $this->solrSettingsHandler->method('getSolrDashboardStats')
-            ->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -3588,13 +2818,13 @@ class SettingsServiceTest extends TestCase
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // rebase() — 'all' component covers both solr and cache branches
+    // rebase() — 'all' component covers cache branch
     // ──────────────────────────────────────────────────────────────────────────
 
     /**
-     * rebase() with component 'all' should rebase both solr and cache.
+     * rebase() with component 'all' should rebase cache.
      */
-    public function testRebaseWithAllComponentRebasesBothSolrAndCache(): void
+    public function testRebaseWithAllComponentRebasesCacheOnly(): void
     {
         // clearCache() is called internally — the cacheSettingsHandler must exist.
         $this->cacheSettingsHandler->expects($this->once())
@@ -3605,28 +2835,14 @@ class SettingsServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('rebased', $result);
-        $this->assertArrayHasKey('solr', $result['rebased']);
         $this->assertArrayHasKey('cache', $result['rebased']);
-        $this->assertTrue($result['rebased']['solr']['success']);
         $this->assertTrue($result['rebased']['cache']['success']);
     }
 
     /**
-     * rebase() with only 'solr' component should NOT include cache in rebased.
+     * rebase() with only 'cache' component should include cache in rebased.
      */
-    public function testRebaseWithSolrOnlyComponentDoesNotRebaseCache(): void
-    {
-        $result = $this->settingsService->rebase(['components' => ['solr']]);
-
-        $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('solr', $result['rebased']);
-        $this->assertArrayNotHasKey('cache', $result['rebased']);
-    }
-
-    /**
-     * rebase() with only 'cache' component should NOT include solr in rebased.
-     */
-    public function testRebaseWithCacheOnlyComponentDoesNotRebaseSolr(): void
+    public function testRebaseWithCacheOnlyComponentRebasesCache(): void
     {
         $this->cacheSettingsHandler->expects($this->once())
             ->method('clearCache')
@@ -3636,11 +2852,10 @@ class SettingsServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('cache', $result['rebased']);
-        $this->assertArrayNotHasKey('solr', $result['rebased']);
     }
 
     /**
-     * rebase() with default (empty options) uses 'all' and covers both branches.
+     * rebase() with default (empty options) uses 'all' and covers cache branch.
      */
     public function testRebaseWithDefaultOptionsUsesAll(): void
     {
@@ -3649,7 +2864,6 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->rebase([]);
 
         $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('solr', $result['rebased']);
         $this->assertArrayHasKey('cache', $result['rebased']);
         $this->assertGreaterThan(0, $result['timestamp']);
     }
@@ -3801,7 +3015,6 @@ class SettingsServiceTest extends TestCase
         $this->db->method('executeQuery')->willReturn($stmt);
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn(['caches' => []]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -3828,7 +3041,7 @@ class SettingsServiceTest extends TestCase
 
         $result = $this->settingsService->rebase(['components' => ['all']]);
 
-        // solr branch runs first (no exception), then cache branch throws.
+        // cache branch throws.
         // The outer try/catch should catch it and return success=false.
         $this->assertFalse($result['success']);
         $this->assertSame('Rebase failed', $result['error']);
@@ -3881,7 +3094,6 @@ class SettingsServiceTest extends TestCase
             });
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -3946,7 +3158,6 @@ class SettingsServiceTest extends TestCase
             );
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -4018,7 +3229,6 @@ class SettingsServiceTest extends TestCase
             );
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -4093,7 +3303,6 @@ class SettingsServiceTest extends TestCase
             );
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -4157,7 +3366,6 @@ class SettingsServiceTest extends TestCase
             );
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 
@@ -4209,7 +3417,6 @@ class SettingsServiceTest extends TestCase
             );
 
         $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
-        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
 
         $result = $this->settingsService->getStats();
 

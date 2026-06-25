@@ -41,9 +41,6 @@
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-		<!-- SOLR Configuration Section -->
-		<SolrConfiguration />
-
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :push-status="pushStatus" />
 
@@ -71,7 +68,6 @@ import { useSettingsStore } from '../../store/settings.js'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
@@ -98,7 +94,6 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		Refresh,
-		SolrConfiguration,
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,

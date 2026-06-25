@@ -1,8 +1,7 @@
 <?php
 
 /**
- * Integration tests for Settings Handlers, WebhookEventListener,
- * SolrManagementCommand, and PreviewHandler
+ * Integration tests for Settings Handlers, WebhookEventListener, and PreviewHandler
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
@@ -67,19 +66,15 @@ use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
-use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
-use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * Integration tests for settings handlers and related services
  *
  * Tests CacheSettingsHandler, ConfigurationSettingsHandler,
- * FileSettingsHandler, ObjectRetentionHandler, SolrSettingsHandler,
- * WebhookEventListener, SolrManagementCommand, and PreviewHandler
+ * FileSettingsHandler, ObjectRetentionHandler,
+ * WebhookEventListener, and PreviewHandler
  * using the real Nextcloud DI container and database.
  *
  * @group DB
@@ -109,11 +104,6 @@ class SettingsHandlersIntegrationTest extends TestCase
      * @var ObjectRetentionHandler
      */
     private ObjectRetentionHandler $retentionHandler;
-
-    /**
-     * @var SolrSettingsHandler
-     */
-    private SolrSettingsHandler $solrHandler;
 
     /**
      * @var WebhookEventListener
@@ -149,7 +139,6 @@ class SettingsHandlersIntegrationTest extends TestCase
         $this->configHandler    = \OC::$server->get(ConfigurationSettingsHandler::class);
         $this->fileHandler      = \OC::$server->get(FileSettingsHandler::class);
         $this->retentionHandler = \OC::$server->get(ObjectRetentionHandler::class);
-        $this->solrHandler      = \OC::$server->get(SolrSettingsHandler::class);
         $this->webhookListener  = \OC::$server->get(WebhookEventListener::class);
         $this->previewHandler   = \OC::$server->get(PreviewHandler::class);
         $this->appConfig        = \OC::$server->get(IAppConfig::class);
@@ -501,21 +490,6 @@ class SettingsHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test getSettings returns solr section
-     *
-     * @return void
-     */
-    public function testGetSettingsReturnsSolrSection(): void
-    {
-        $settings = $this->configHandler->getSettings();
-
-        $this->assertArrayHasKey('solr', $settings);
-        $this->assertArrayHasKey('enabled', $settings['solr']);
-        $this->assertArrayHasKey('host', $settings['solr']);
-        $this->assertArrayHasKey('port', $settings['solr']);
-    }
-
-    /**
      * Test updateSettings with RBAC data persists settings
      *
      * @return void
@@ -590,33 +564,6 @@ class SettingsHandlersIntegrationTest extends TestCase
 
         $this->assertArrayHasKey('retention', $result);
         $this->assertEquals(999999, $result['retention']['objectArchiveRetention']);
-    }
-
-    /**
-     * Test updateSettings with SOLR data persists
-     *
-     * @return void
-     */
-    public function testUpdateSettingsWithSolrData(): void
-    {
-        $this->trackConfigKey('solr');
-
-        $data = [
-            'solr' => [
-                'enabled'  => true,
-                'host'     => 'custom-solr',
-                'port'     => 9999,
-                'timeout'  => 60,
-                'useCloud' => false,
-            ],
-        ];
-
-        $result = $this->configHandler->updateSettings($data);
-
-        $this->assertArrayHasKey('solr', $result);
-        $this->assertTrue($result['solr']['enabled']);
-        $this->assertEquals('custom-solr', $result['solr']['host']);
-        $this->assertEquals(9999, $result['solr']['port']);
     }
 
     /**
@@ -1224,313 +1171,6 @@ class SettingsHandlersIntegrationTest extends TestCase
     }
 
     // =========================================================================
-    // SolrSettingsHandler tests
-    // =========================================================================
-
-    /**
-     * Test getSolrSettings returns expected defaults
-     *
-     * @return void
-     */
-    public function testGetSolrSettingsReturnsDefaults(): void
-    {
-        $result = $this->solrHandler->getSolrSettings();
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('enabled', $result);
-        $this->assertArrayHasKey('host', $result);
-        $this->assertArrayHasKey('port', $result);
-        $this->assertArrayHasKey('core', $result);
-    }
-
-    /**
-     * Test getSolrSettingsOnly returns comprehensive defaults
-     *
-     * @return void
-     */
-    public function testGetSolrSettingsOnlyReturnsComprehensiveDefaults(): void
-    {
-        $result = $this->solrHandler->getSolrSettingsOnly();
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('enabled', $result);
-        $this->assertArrayHasKey('host', $result);
-        $this->assertArrayHasKey('port', $result);
-        $this->assertArrayHasKey('path', $result);
-        $this->assertArrayHasKey('core', $result);
-        $this->assertArrayHasKey('configSet', $result);
-        $this->assertArrayHasKey('scheme', $result);
-        $this->assertArrayHasKey('username', $result);
-        $this->assertArrayHasKey('password', $result);
-        $this->assertArrayHasKey('timeout', $result);
-        $this->assertArrayHasKey('autoCommit', $result);
-        $this->assertArrayHasKey('commitWithin', $result);
-        $this->assertArrayHasKey('zookeeperHosts', $result);
-        $this->assertArrayHasKey('collection', $result);
-        $this->assertArrayHasKey('useCloud', $result);
-        $this->assertArrayHasKey('objectCollection', $result);
-        $this->assertArrayHasKey('fileCollection', $result);
-    }
-
-    /**
-     * Test updateSolrSettingsOnly persists values
-     *
-     * @return void
-     */
-    public function testUpdateSolrSettingsOnlyPersists(): void
-    {
-        $this->trackConfigKey('solr');
-
-        $result = $this->solrHandler->updateSolrSettingsOnly([
-            'enabled'    => true,
-            'host'       => 'my-solr',
-            'port'       => 9999,
-            'timeout'    => 120,
-            'useCloud'   => false,
-            'collection' => 'test-collection',
-        ]);
-
-        $this->assertTrue($result['enabled']);
-        $this->assertEquals('my-solr', $result['host']);
-        $this->assertEquals(9999, $result['port']);
-        $this->assertEquals(120, $result['timeout']);
-        $this->assertFalse($result['useCloud']);
-        $this->assertEquals('test-collection', $result['collection']);
-    }
-
-    /**
-     * Test SOLR settings round-trip
-     *
-     * @return void
-     */
-    public function testSolrSettingsRoundTrip(): void
-    {
-        $this->trackConfigKey('solr');
-
-        $this->solrHandler->updateSolrSettingsOnly([
-            'host'    => 'roundtrip-solr',
-            'port'    => 7777,
-            'enabled' => true,
-        ]);
-
-        $result = $this->solrHandler->getSolrSettingsOnly();
-
-        $this->assertEquals('roundtrip-solr', $result['host']);
-        $this->assertEquals(7777, $result['port']);
-        $this->assertTrue($result['enabled']);
-    }
-
-    /**
-     * Test updateSolrSettingsOnly casts port to int
-     *
-     * @return void
-     */
-    public function testUpdateSolrSettingsOnlyCastsPortToInt(): void
-    {
-        $this->trackConfigKey('solr');
-
-        $result = $this->solrHandler->updateSolrSettingsOnly([
-            'port'         => '8984',
-            'timeout'      => '45',
-            'commitWithin' => '2000',
-        ]);
-
-        $this->assertIsInt($result['port']);
-        $this->assertIsInt($result['timeout']);
-        $this->assertIsInt($result['commitWithin']);
-        $this->assertEquals(8984, $result['port']);
-    }
-
-    /**
-     * Test warmupSolrIndex throws deprecation exception
-     *
-     * @return void
-     */
-    public function testWarmupSolrIndexThrowsDeprecatedException(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('deprecated');
-        $this->solrHandler->warmupSolrIndex();
-    }
-
-    /**
-     * Test getSolrDashboardStats returns structure when CacheHandler unavailable
-     *
-     * @return void
-     */
-    public function testGetSolrDashboardStatsReturnsDefaultWhenUnavailable(): void
-    {
-        $result = $this->solrHandler->getSolrDashboardStats();
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('overview', $result);
-        $this->assertArrayHasKey('cores', $result);
-        $this->assertArrayHasKey('performance', $result);
-        $this->assertArrayHasKey('health', $result);
-        $this->assertArrayHasKey('operations', $result);
-        $this->assertArrayHasKey('generated_at', $result);
-    }
-
-    /**
-     * Test getSolrDashboardStats overview has expected keys
-     *
-     * @return void
-     */
-    public function testGetSolrDashboardStatsOverviewHasExpectedKeys(): void
-    {
-        $result = $this->solrHandler->getSolrDashboardStats();
-
-        $overview = $result['overview'];
-        $this->assertArrayHasKey('available', $overview);
-        $this->assertArrayHasKey('connection_status', $overview);
-        $this->assertArrayHasKey('total_documents', $overview);
-    }
-
-    /**
-     * Test getSearchBackendConfig returns expected structure
-     *
-     * @return void
-     */
-    public function testGetSearchBackendConfigReturnsExpectedStructure(): void
-    {
-        $result = $this->solrHandler->getSearchBackendConfig();
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('active', $result);
-        $this->assertArrayHasKey('available', $result);
-    }
-
-    /**
-     * Test updateSearchBackendConfig with valid backend
-     *
-     * @return void
-     */
-    public function testUpdateSearchBackendConfigWithValidBackend(): void
-    {
-        $this->trackConfigKey('search_backend');
-
-        $result = $this->solrHandler->updateSearchBackendConfig('elasticsearch');
-
-        $this->assertEquals('elasticsearch', $result['active']);
-        $this->assertContains('elasticsearch', $result['available']);
-        $this->assertArrayHasKey('updated', $result);
-    }
-
-    /**
-     * Test updateSearchBackendConfig with invalid backend throws exception
-     *
-     * @return void
-     */
-    public function testUpdateSearchBackendConfigWithInvalidBackendThrows(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->solrHandler->updateSearchBackendConfig('mongodb');
-    }
-
-    /**
-     * Test getSolrFacetConfiguration returns expected defaults
-     *
-     * @return void
-     */
-    public function testGetSolrFacetConfigurationReturnsDefaults(): void
-    {
-        $result = $this->solrHandler->getSolrFacetConfiguration();
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('facets', $result);
-        $this->assertArrayHasKey('global_order', $result);
-        $this->assertArrayHasKey('default_settings', $result);
-    }
-
-    /**
-     * Test updateSolrFacetConfiguration validates and persists
-     *
-     * @return void
-     */
-    public function testUpdateSolrFacetConfigurationValidatesAndPersists(): void
-    {
-        $this->trackConfigKey('solr_facet_config');
-
-        $result = $this->solrHandler->updateSolrFacetConfiguration([
-            'facets' => [
-                'category' => [
-                    'title'       => 'Category',
-                    'description' => 'Filter by category',
-                    'order'       => 1,
-                    'enabled'     => true,
-                    'show_count'  => true,
-                    'max_items'   => 20,
-                ],
-                'status' => [
-                    'title' => 'Status',
-                    'order' => 2,
-                ],
-            ],
-            'global_order'     => ['category', 'status'],
-            'default_settings' => [
-                'show_count' => false,
-                'show_empty' => true,
-                'max_items'  => 15,
-            ],
-        ]);
-
-        $this->assertArrayHasKey('facets', $result);
-        $this->assertArrayHasKey('category', $result['facets']);
-        $this->assertEquals('Category', $result['facets']['category']['title']);
-        $this->assertEquals(1, $result['facets']['category']['order']);
-        $this->assertTrue($result['facets']['category']['enabled']);
-        $this->assertEquals(20, $result['facets']['category']['max_items']);
-        $this->assertFalse($result['default_settings']['show_count']);
-        $this->assertTrue($result['default_settings']['show_empty']);
-    }
-
-    /**
-     * Test updateSolrFacetConfiguration skips invalid facet names
-     *
-     * @return void
-     */
-    public function testUpdateSolrFacetConfigurationSkipsInvalidNames(): void
-    {
-        $this->trackConfigKey('solr_facet_config');
-
-        $result = $this->solrHandler->updateSolrFacetConfiguration([
-            'facets' => [
-                ''           => ['title' => 'Empty Key'],
-                'valid_name' => ['title' => 'Valid'],
-            ],
-        ]);
-
-        $this->assertArrayNotHasKey('', $result['facets']);
-        $this->assertArrayHasKey('valid_name', $result['facets']);
-    }
-
-    /**
-     * Test facet configuration round-trip
-     *
-     * @return void
-     */
-    public function testFacetConfigurationRoundTrip(): void
-    {
-        $this->trackConfigKey('solr_facet_config');
-
-        $this->solrHandler->updateSolrFacetConfiguration([
-            'facets' => [
-                'test_facet' => [
-                    'title'     => 'Test Facet',
-                    'max_items' => 25,
-                ],
-            ],
-            'global_order' => ['test_facet'],
-        ]);
-
-        $result = $this->solrHandler->getSolrFacetConfiguration();
-
-        $this->assertArrayHasKey('test_facet', $result['facets']);
-        $this->assertEquals('Test Facet', $result['facets']['test_facet']['title']);
-        $this->assertEquals(25, $result['facets']['test_facet']['max_items']);
-    }
-
-    // =========================================================================
     // WebhookEventListener tests
     // =========================================================================
 
@@ -1864,167 +1504,6 @@ class SettingsHandlersIntegrationTest extends TestCase
 
         $this->webhookListener->handle($event);
         $this->assertTrue(true); // Should log warning and return.
-    }
-
-    // =========================================================================
-    // SolrManagementCommand tests (non-Solr paths)
-    // =========================================================================
-
-    /**
-     * Test SolrManagementCommand configure sets correct name
-     *
-     * @return void
-     */
-    public function testSolrCommandHasCorrectName(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $this->assertEquals('openregister:solr:manage', $command->getName());
-    }
-
-    /**
-     * Test SolrManagementCommand configure sets description
-     *
-     * @return void
-     */
-    public function testSolrCommandHasDescription(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $this->assertNotEmpty($command->getDescription());
-    }
-
-    /**
-     * Test SolrManagementCommand with invalid action returns failure
-     *
-     * @return void
-     */
-    public function testSolrCommandInvalidActionReturnsFailure(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'invalid-action']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        $outputStr = $output->fetch();
-        // Either SOLR unavailable (returns 1) or invalid action (returns 1).
-        $this->assertEquals(1, $exitCode);
-        $this->assertNotEmpty($outputStr);
-    }
-
-    /**
-     * Test SolrManagementCommand setup action (will fail without Solr)
-     *
-     * @return void
-     */
-    public function testSolrCommandSetupWithoutSolrFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'setup']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-        $outputStr = $output->fetch();
-
-        // Without Solr running, should return FAILURE.
-        $this->assertEquals(1, $exitCode);
-        $this->assertStringContainsString('SOLR', $outputStr);
-    }
-
-    /**
-     * Test SolrManagementCommand health action (will fail without Solr)
-     *
-     * @return void
-     */
-    public function testSolrCommandHealthWithoutSolrFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'health']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        $this->assertEquals(1, $exitCode);
-    }
-
-    /**
-     * Test SolrManagementCommand clear without force flag fails
-     *
-     * @return void
-     */
-    public function testSolrCommandClearWithoutForceFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'clear']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        // Either SOLR unavailable or clear without force.
-        $this->assertEquals(1, $exitCode);
-    }
-
-    /**
-     * Test SolrManagementCommand optimize action (fails without Solr)
-     *
-     * @return void
-     */
-    public function testSolrCommandOptimizeWithoutSolrFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'optimize']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        $this->assertEquals(1, $exitCode);
-    }
-
-    /**
-     * Test SolrManagementCommand warm action (fails without Solr)
-     *
-     * @return void
-     */
-    public function testSolrCommandWarmWithoutSolrFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'warm']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        $this->assertEquals(1, $exitCode);
-    }
-
-    /**
-     * Test SolrManagementCommand stats action (fails without Solr)
-     *
-     * @return void
-     */
-    public function testSolrCommandStatsWithoutSolrFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'stats']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        $this->assertEquals(1, $exitCode);
-    }
-
-    /**
-     * Test SolrManagementCommand schema-check action (fails without Solr)
-     *
-     * @return void
-     */
-    public function testSolrCommandSchemaCheckWithoutSolrFails(): void
-    {
-        $command = \OC::$server->get(SolrManagementCommand::class);
-        $input   = new ArrayInput(['action' => 'schema-check']);
-        $output  = new BufferedOutput();
-
-        $exitCode = $command->run($input, $output);
-
-        $this->assertEquals(1, $exitCode);
     }
 
     // =========================================================================

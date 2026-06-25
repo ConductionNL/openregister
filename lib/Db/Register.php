@@ -231,28 +231,6 @@ class Register extends Entity implements JsonSerializable
     protected ?DateTime $deleted = null;
 
     /**
-     * Publication timestamp.
-     *
-     * When set, this register becomes publicly accessible regardless of organisation restrictions
-     * if published bypass is enabled. The register is considered published when:
-     * - published <= now AND
-     * - (depublished IS NULL OR depublished > now)
-     *
-     * @var DateTime|null Publication timestamp
-     */
-    protected ?DateTime $published = null;
-
-    /**
-     * Depublication timestamp.
-     *
-     * When set, this register becomes inaccessible after this date/time.
-     * Used together with published to control publication lifecycle.
-     *
-     * @var DateTime|null Depublication timestamp
-     */
-    protected ?DateTime $depublished = null;
-
-    /**
      * Register classification, sourced from `x-openregister.type` on import.
      *
      * Free-form short string. Standard values are "mock" (demo/seed data
@@ -369,8 +347,6 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
-        $this->addType(fieldName: 'published', type: 'datetime');
-        $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'type', type: 'string');
         $this->addType(fieldName: 'languages', type: 'json');
         $this->addType(fieldName: 'configuration', type: 'json');
@@ -523,9 +499,7 @@ class Register extends Entity implements JsonSerializable
      *         users: 0,
      *         groups: int<0, max>
      *     },
-     *     deleted: null|string,
-     *     published: null|string,
-     *     depublished: null|string
+     *     deleted: null|string
      * }
      */
     public function jsonSerialize(): array
@@ -543,16 +517,6 @@ class Register extends Entity implements JsonSerializable
         $deleted = null;
         if ($this->deleted !== null) {
             $deleted = $this->deleted->format('c');
-        }
-
-        $published = null;
-        if (isset($this->published) === true) {
-            $published = $this->published->format('c');
-        }
-
-        $depublished = null;
-        if (isset($this->depublished) === true) {
-            $depublished = $this->depublished->format('c');
         }
 
         // Always return schemas as array of IDs (int/string).
@@ -586,8 +550,6 @@ class Register extends Entity implements JsonSerializable
             'type'          => $this->type,
             'languages'     => $this->languages,
             'configuration' => $this->configuration,
-            'published'     => $published,
-            'depublished'   => $depublished,
             'quota'         => [
                 'storage'   => null,
         // To be set via admin configuration.
@@ -705,60 +667,6 @@ class Register extends Entity implements JsonSerializable
 
         return null;
     }//end getManagedByConfiguration()
-
-    /**
-     * Get the publication timestamp
-     *
-     * @return DateTime|null Publication timestamp
-     */
-    public function getPublished(): ?DateTime
-    {
-        return $this->published;
-    }//end getPublished()
-
-    /**
-     * Set the publication timestamp
-     *
-     * @param DateTime|string|null $published Publication timestamp (DateTime object or ISO 8601 string)
-     *
-     * @return void
-     */
-    public function setPublished(DateTime|string|null $published): void
-    {
-        if (is_string($published) === true) {
-            $published = new DateTime($published);
-        }
-
-        $this->published = $published;
-        $this->markFieldUpdated(attribute: 'published');
-    }//end setPublished()
-
-    /**
-     * Get the depublication timestamp
-     *
-     * @return DateTime|null Depublication timestamp
-     */
-    public function getDepublished(): ?DateTime
-    {
-        return $this->depublished;
-    }//end getDepublished()
-
-    /**
-     * Set the depublication timestamp
-     *
-     * @param DateTime|string|null $depublished Depublication timestamp (DateTime object or ISO 8601 string)
-     *
-     * @return void
-     */
-    public function setDepublished(DateTime|string|null $depublished): void
-    {
-        if (is_string($depublished) === true) {
-            $depublished = new DateTime($depublished);
-        }
-
-        $this->depublished = $depublished;
-        $this->markFieldUpdated(attribute: 'depublished');
-    }//end setDepublished()
 
     // ==================================================================================
     // LANGUAGE CONFIGURATION HELPERS

@@ -7,8 +7,8 @@
  * matched objects via the existing findAll path (RBAC + multi-tenancy
  * still applied), and computes the metric in PHP.
  *
- * v1 trades performance for simplicity: backend-native aggregation
- * (Postgres GROUP BY / Solr facets / ES aggs) ships in a follow-up.
+ * v1 trades performance for simplicity: Postgres-native aggregation
+ * (GROUP BY) is the fast path; PHP fallback covers non-Postgres setups.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -44,14 +44,12 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
 use RuntimeException;
 
 /**
@@ -82,17 +80,16 @@ class AggregationRunner
     /**
      * Constructor.
      *
-     * @param MagicMapper                 $magicMapper         Magic-table mapper used for the PHP fallback path.
-     * @param RegisterMapper              $registerMapper      Register loader.
-     * @param SchemaMapper                $schemaMapper        Schema loader.
-     * @param PlaceholderResolver         $placeholders        Resolves dynamic placeholders inside filters.
-     * @param IDBConnection               $db                  Database connection for the Postgres-native fast path.
-     * @param AggregationCache            $cache               60s aggregation result cache.
-     * @param PermissionHandler           $permissionHandler   RBAC verdict on the schema's `list` action.
-     * @param IUserSession                $userSession         Active session, for the RBAC + cache-key user scope.
-     * @param OrganisationService         $organisationService Active-organisation lookup for the cache key.
-     * @param LoggerInterface|null        $logger              Optional logger for diagnostics.
-     * @param SearchBackendInterface|null $searchBackend       Optional Solr/ES backend for native aggregation.
+     * @param MagicMapper          $magicMapper         Magic-table mapper used for the PHP fallback path.
+     * @param RegisterMapper       $registerMapper      Register loader.
+     * @param SchemaMapper         $schemaMapper        Schema loader.
+     * @param PlaceholderResolver  $placeholders        Resolves dynamic placeholders inside filters.
+     * @param IDBConnection        $db                  Database connection for the Postgres-native fast path.
+     * @param AggregationCache     $cache               60s aggregation result cache.
+     * @param PermissionHandler    $permissionHandler   RBAC verdict on the schema's `list` action.
+     * @param IUserSession         $userSession         Active session, for the RBAC + cache-key user scope.
+     * @param OrganisationService  $organisationService Active-organisation lookup for the cache key.
+     * @param LoggerInterface|null $logger              Optional logger for diagnostics.
      *
      * @return void
      *
@@ -110,8 +107,7 @@ class AggregationRunner
         private readonly PermissionHandler $permissionHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
-        private readonly ?LoggerInterface $logger=null,
-        private readonly ?SearchBackendInterface $searchBackend=null
+        private readonly ?LoggerInterface $logger=null
     ) {
     }//end __construct()
 
@@ -270,73 +266,6 @@ class AggregationRunner
             $cached['cached'] = true;
             return $cached;
         }
-
-        // Try the configured external search backend (Solr / ES) first
-        // when one is wired in. The backend returns null when it can't
-        // execute the query (unsupported metric, unreachable instance,
-        // etc) — we then fall through to the Postgres-native fast path
-        // and finally to the PHP fallback.
-        if ($this->searchBackend !== null) {
-            try {
-                $fieldArg = null;
-                if (is_string($field) === true) {
-                    $fieldArg = $field;
-                }
-
-                $groupByArg = null;
-                if (is_array($groupBy) === true) {
-                    $groupByArg = $groupBy;
-                }
-
-                $portableQuery = AggregationQuery::create(
-                    metric: $metric,
-                    field: $fieldArg,
-                    filter: $resolvedFilter,
-                    groupBy: $groupByArg
-                );
-                $external      = $this->searchBackend->aggregate(query: $portableQuery);
-                if ($external !== null) {
-                    $backendName = $this->detectBackendName(backend: $this->searchBackend);
-                    // R05: surface `truncated` on every backend so the
-                    // shape is consistent. Search backends propagate the
-                    // flag from the engine when supplied; otherwise
-                    // assume the engine returned the full set.
-                    $fieldValue = null;
-                    if (is_string($field) === true) {
-                        $fieldValue = $field;
-                    }
-
-                    $result = [
-                        'name'      => $name,
-                        'metric'    => $metric,
-                        'field'     => $fieldValue,
-                        'backend'   => $backendName,
-                        'truncated' => (bool) ($external['truncated'] ?? false),
-                    ] + $external;
-                    $this->cache->set(
-                        registerSlug: (string) $register->getSlug(),
-                        schemaSlug: (string) $schema->getSlug(),
-                        name: $name,
-                        filter: $cacheKey,
-                        result: $result
-                    );
-                    return $result;
-                }//end if
-            } catch (\Throwable $e) {
-                // External backend errored — fall through to native /
-                // PHP path so a flaky Solr/ES never breaks aggregations.
-                // BUG-SVC-11: log the failure so a persistently broken backend
-                // is observable instead of silently degrading to the DB path.
-                $this->logger?->warning(
-                    '[AggregationRunner] External aggregation backend failed, falling back to native/PHP path',
-                    [
-                        'backend' => $backendName,
-                        'metric'  => $metric,
-                        'error'   => $e->getMessage(),
-                    ]
-                );
-            }//end try
-        }//end if
 
         // Try the Postgres-native fast path. Falls back to PHP when the
         // query shape isn't supported (operator filters, complex values,
@@ -1433,9 +1362,7 @@ class AggregationRunner
      * `2026-05-21 13:00:00`. We need a stable wire format that the
      * client can parse identically across Postgres versions / timezone
      * settings AND across the PHP-fallback path on non-Postgres
-     * databases. Mirrors the behaviour the
-     * `SolrAggregationQueryBuilder` and
-     * `ElasticsearchAggregationQueryBuilder` produce.
+     * databases.
      *
      * @param mixed $raw Raw bucket value from the DB row (typically a string).
      *
@@ -2059,28 +1986,4 @@ class AggregationRunner
 
         return null;
     }//end getAnnotation()
-
-    /**
-     * Map a SearchBackendInterface implementation to its short backend
-     * label for the result envelope. Falls back to `'external'` when the
-     * concrete class name doesn't match a known prefix.
-     *
-     * @param SearchBackendInterface $backend The backend instance.
-     *
-     * @return string Short backend label ('solr', 'elasticsearch', or 'external').
-     */
-    private function detectBackendName(SearchBackendInterface $backend): string
-    {
-        $shortName = (new ReflectionClass($backend))->getShortName();
-        if (str_contains($shortName, 'Solr') === true) {
-            return 'solr';
-        }
-
-        if (str_contains($shortName, 'Elasticsearch') === true) {
-            return 'elasticsearch';
-        }
-
-        return 'external';
-
-    }//end detectBackendName()
 }//end class

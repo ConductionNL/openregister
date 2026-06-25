@@ -89,15 +89,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
-use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrCollectionManager;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrDocumentIndexer;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrQueryExecutor;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrFacetProcessor;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrSchemaManager;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
@@ -118,18 +110,12 @@ use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
-use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
-use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Command\SolrDebugCommand;
-use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
-use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
-use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
 use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
@@ -141,7 +127,6 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Security\IContentSecurityPolicyManager;
-use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
@@ -439,7 +424,6 @@ class Application extends App implements IBootstrap
         $this->registerCacheAndFileHandlers(context: $context);
         $this->registerConfigurationServices(context: $context);
         $this->registerSettingsServices(context: $context);
-        $this->registerSearchBackend(context: $context);
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerIntegrationRegistry(context: $context);
@@ -632,7 +616,6 @@ class Application extends App implements IBootstrap
      */
     private function registerCacheAndFileHandlers(IRegistrationContext $context): void
     {
-        // CacheHandler uses lazy loading of IndexService to break circular dependency.
         $context->registerService(
             CacheHandler::class,
             function (ContainerInterface $container) {
@@ -892,7 +875,6 @@ class Application extends App implements IBootstrap
                     fileSettingsHandler: $container->get(FileSettingsHandler::class),
                     objRetentionHandler: $container->get(ObjectRetentionHandler::class),
                     cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
-                    solrSettingsHandler: $container->get(SolrSettingsHandler::class),
                     cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
                 );
             }
@@ -910,36 +892,6 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerSettingsServices()
-
-    /**
-     * Register search backend interface with dynamic backend selection.
-     *
-     * @param IRegistrationContext $context The registration context
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
-     */
-    private function registerSearchBackend(IRegistrationContext $context): void
-    {
-        $context->registerService(
-            \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
-            function (ContainerInterface $container): \OCA\OpenRegister\Service\Index\SearchBackendInterface {
-                $settingsService = $container->get(SettingsService::class);
-                $backendConfig   = $settingsService->getSearchBackendConfig();
-                $activeBackend   = $backendConfig['active'] ?? 'solr';
-
-                switch ($activeBackend) {
-                    case 'elasticsearch':
-                        return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
-
-                    case 'solr':
-                    default:
-                        return $container->get(SolrBackend::class);
-                }
-            }
-        );
-    }//end registerSearchBackend()
 
     /**
      * Register vectorization service with strategies.
@@ -2015,16 +1967,6 @@ class Application extends App implements IBootstrap
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
-        // Solr event listeners for automatic indexing.
-        $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
-
-        // Solr event listeners for schema lifecycle management.
-        $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
-
         // FileChangeListener for automatic file text extraction.
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);

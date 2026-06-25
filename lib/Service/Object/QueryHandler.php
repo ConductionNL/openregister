@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -289,34 +288,7 @@ class QueryHandler
         // Strip deprecated _source parameter (silently ignore for backward compatibility).
         unset($query['_source']);
 
-        // Use SOLR if enabled in config, unless relation-based search params are provided.
-        $hasIds        = isset($query['_ids']) === true;
-        $hasUses       = isset($query['_uses']) === true;
-        $hasIdsParam   = $ids !== null;
-        $hasUsesParam  = $uses !== null;
-        $isSolrEnabled = $this->searchQueryHandler->isSolrAvailable();
-
-        if ($isSolrEnabled === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false
-        ) {
-            // Forward to Index service - let it handle availability checks and error handling.
-            $indexService = $this->container->get(IndexService::class);
-            $result       = $indexService->searchObjects(
-                query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                deleted: $deleted
-            );
-            $result['@self']['source']  = 'index';
-            $result['@self']['query']   = $query;
-            $result['@self']['rbac']    = $_rbac;
-            $result['@self']['multi']   = $_multitenancy;
-            $result['@self']['deleted'] = $deleted;
-            return $result;
-        }
-
-        // Use database search.
+        // Use database search (the only search backend; the external Solr/index tier was removed).
         $result = $this->searchObjectsPaginatedDatabase(
             query: $query,
             _rbac: $_rbac,

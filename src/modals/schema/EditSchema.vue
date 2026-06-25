@@ -19,7 +19,6 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		show-analyze-properties
 		show-validate-objects
 		show-delete-objects
-		show-publish-objects
 		show-delete
 		:cancel-label="t('openregister', 'Cancel')"
 		:close-label="t('openregister', 'Close')"
@@ -31,11 +30,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		:analyze-properties-label="t('openregister', 'Analyze Properties')"
 		:validate-objects-label="t('openregister', 'Validate Objects')"
 		:delete-objects-label="t('openregister', 'Delete Objects')"
-		:publish-objects-label="t('openregister', 'Publish Objects')"
 		:delete-label="t('openregister', 'Delete')"
 		:delete-objects-tooltip="t('openregister', 'Delete all objects in this schema')"
-		:publish-objects-tooltip="t('openregister', 'Publish all objects in this schema')"
-
 		:cannot-delete-tooltip="t('openregister', 'Cannot delete: objects are still attached')"
 		@confirm="onConfirm"
 		@close="closeModal"
@@ -43,7 +39,6 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		@analyze-properties="analyzeProperties"
 		@validate-objects="validateObjects"
 		@delete-objects="deleteObjects"
-		@publish-objects="publishObjects"
 		@delete-schema="deleteSchema" />
 </template>
 
@@ -250,12 +245,6 @@ export default {
 		 */
 		deleteObjects() {
 			navigationStore.setDialog('deleteSchemaObjects')
-		},
-		/**
-		 * @spec exclude dialog-open UI handler for object publication
-		 */
-		publishObjects() {
-			navigationStore.setDialog('publishSchemaObjects')
 		},
 		/**
 		 * @spec exclude dialog-open UI handler for schema deletion

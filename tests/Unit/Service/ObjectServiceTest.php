@@ -1636,7 +1636,6 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedUsesDatabaseByDefault(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,
@@ -1655,7 +1654,6 @@ class ObjectServiceTest extends TestCase
 		$this->setProperty('currentRegister', $this->register);
 		$this->setProperty('currentSchema', $this->schema);
 
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,
@@ -1669,7 +1667,6 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedForcesDbWhenIdsProvided(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(true);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,
@@ -1686,7 +1683,6 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedAddsExtendedObjectsWhenExtendSet(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,
@@ -2080,7 +2076,6 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedHandlesExtendCommaString(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,
@@ -2334,8 +2329,6 @@ class ObjectServiceTest extends TestCase
 		$publicSchema->setAuthorization(['read' => ['public']]);
 		$this->setProperty('currentSchema', $publicSchema);
 
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
-
 		// The effective multitenancy passed to queryHandler should be false.
 		$this->queryHandler->expects($this->once())
 			->method('searchObjectsPaginatedDatabase')
@@ -2361,7 +2354,6 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedExplicitDatabaseSource(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,
@@ -2379,7 +2371,6 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedForcesDbWhenUsesProvided(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(true);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,

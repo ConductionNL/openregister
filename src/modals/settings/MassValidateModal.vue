@@ -593,7 +593,7 @@ export default {
 </script>
 
 <style scoped>
-/* Dialog content styles (consistent with SolrWarmupModal.vue) */
+/* Dialog content styles */
 .dialog-content {
 	padding: 0 20px;
 }
@@ -820,7 +820,7 @@ export default {
 	font-size: 0.9rem;
 }
 
-/* Results state styles (consistent with SolrWarmupModal) */
+/* Results state styles */
 .validate-results {
 	padding: 1rem 0;
 }

@@ -228,17 +228,15 @@ class SchemasController extends Controller
 
         // Read-visibility guard: this endpoint is @PublicPage so it stays
         // reachable when OpenRegister is restricted to a user group. Anonymous
-        // callers may only see PUBLISHED schemas; authenticated users are
-        // unaffected. Visibility is derived from server-side published/
-        // depublished entity state, never from client-supplied parameters.
+        // callers may only see schemas whose RBAC authorization grants read
+        // access to the `public` group; authenticated users are unaffected.
+        // Visibility is derived from server-side authorization rules, never
+        // from client-supplied parameters.
         if ($this->isAnonymousRequest() === true) {
             $schemas = array_values(
                 array_filter(
                     $schemas,
-                    fn($schema) => $this->isPublishedEntity(
-                        published: $schema->getPublished(),
-                        depublished: $schema->getDepublished()
-                    )
+                    fn($schema) => $this->isPublicReadable(authorization: $schema->getAuthorization())
                 )
             );
         }
@@ -322,13 +320,11 @@ class SchemasController extends Controller
             $schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
 
             // Read-visibility guard (@PublicPage): an anonymous caller may only
-            // view a PUBLISHED schema. Derived from server-side published/
-            // depublished entity state, never from client-supplied parameters.
+            // view a schema whose RBAC authorization grants read access to the
+            // `public` group. Derived from server-side authorization rules,
+            // never from client-supplied parameters.
             if ($this->isAnonymousRequest() === true
-                && $this->isPublishedEntity(
-                    published: $schema->getPublished(),
-                    depublished: $schema->getDepublished()
-                ) === false
+                && $this->isPublicReadable(authorization: $schema->getAuthorization()) === false
             ) {
                 return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
             }
@@ -1441,21 +1437,27 @@ class SchemasController extends Controller
     }//end isAnonymousRequest()
 
     /**
-     * Whether an entity is currently published.
+     * Whether an entity is anonymously readable via RBAC authorization.
      *
-     * A resource is published when its `published` timestamp is set and it has
-     * not since been depublished. Both values come from persisted entity state.
+     * A resource is visible to anonymous callers when its authorization block
+     * grants `read` access to the `public` group. This replaces the former
+     * published/depublished column gate: anonymous publication is an RBAC
+     * concern, expressed as a `public`-group read rule on the entity.
      *
-     * @param \DateTime|null $published   The published timestamp, or null.
-     * @param \DateTime|null $depublished The depublished timestamp, or null.
+     * @param array|null $authorization The entity's authorization block, or null.
      *
-     * @return bool True if the entity is published and not depublished.
+     * @return bool True if the `public` group has read access.
      */
-    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
+    private function isPublicReadable(?array $authorization): bool
     {
-        return $published !== null && $depublished === null;
+        if (is_array($authorization) === false) {
+            return false;
+        }
 
-    }//end isPublishedEntity()
+        $readGroups = ($authorization['read'] ?? []);
+        return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+
+    }//end isPublicReadable()
 
     /**
      * Resolve the dialect of an uploaded schema document and map it.

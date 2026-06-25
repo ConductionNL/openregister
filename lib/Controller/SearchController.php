@@ -27,13 +27,13 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\ObjectService;
 
 /**
  * SearchController handles search operations
  *
  * Controller for handling search operations in the application.
- * Provides functionality to search across objects using SOLR search service.
+ * Provides functionality to search across objects using the database search path.
  * Supports query processing, pagination, and result formatting.
  *
  * @category Controller
@@ -51,25 +51,15 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class SearchController extends Controller
 {
-
-    /**
-     * The SOLR search service
-     *
-     * Handles SOLR-based search operations for objects.
-     *
-     * @var IndexService Index search service instance
-     */
-    private readonly IndexService $indexService;
-
     /**
      * Constructor for the SearchController
      *
-     * Initializes controller with SOLR search service for object search operations.
+     * Initializes controller with object service for database search operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string       $appName      The name of the app
-     * @param IRequest     $request      The HTTP request object
-     * @param IndexService $indexService The index search service instance
+     * @param string        $appName       The name of the app
+     * @param IRequest      $request       The HTTP request object
+     * @param ObjectService $objectService The object service instance
      *
      * @return void
      *
@@ -78,31 +68,28 @@ class SearchController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        IndexService $indexService
+        private readonly ObjectService $objectService
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-
-        // Store index service for search operations.
-        $this->indexService = $indexService;
     }//end __construct()
 
     /**
-     * Handles search requests and forwards them to the SOLR search service
+     * Handles search requests and delegates to the database search path
      *
-     * Processes search query, performs SOLR search, and formats results for JSON response.
+     * Processes search query, performs database object search, and formats results for JSON response.
      * Supports pagination via offset and limit parameters.
-     * Returns formatted search results with facets and total count.
+     * Returns formatted search results with total count.
      *
-     * @return JSONResponse Search results with facets and total count.
+     * @return JSONResponse Search results with total count.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed,
-     *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed,
-     *                                facets: array<never, never>|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{results: array<int, array{id: mixed|null, name: 'Unknown'|mixed,
+     *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|int,
+     *                                facets: array<never, never>}, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
@@ -115,25 +102,27 @@ class SearchController extends Controller
         // This handles comma-separated values, arrays, and case-insensitive matching.
         $processedQuery = $this->processSearchQuery(query: $query);
 
-        // Step 3: Build search parameters for SOLR query.
+        // Step 3: Build search parameters for the database search path.
         // Note: This is a simplified search endpoint. For full Nextcloud search integration,
-        // Use the ObjectsProvider which implements IFilteringProvider.
+        // use the ObjectsProvider which implements IFilteringProvider.
         $searchParams = [
-            'q'     => $processedQuery,
-            'start' => (int) ($this->request->getParam('offset', 0)),
-            'rows'  => (int) ($this->request->getParam('limit', 25)),
+            '_search' => $processedQuery,
+            '_page'   => (int) floor(((int) $this->request->getParam('offset', 0)) / max(1, (int) $this->request->getParam('limit', 25))) + 1,
+            '_limit'  => (int) ($this->request->getParam('limit', 25)),
         ];
 
-        // Step 4: Perform search using SOLR service.
-        // Returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float].
-        $results = $this->indexService->searchObjects($searchParams);
+        // Step 4: Perform search using ObjectService database path.
+        // Returns: ['results' => ObjectEntity[], 'total' => int, '@self' => [...]].
+        $paginatedResult = $this->objectService->searchObjectsPaginated(query: $searchParams);
 
         // Step 5: Format search results for JSON response.
-        // Extract relevant fields from each object and standardize format.
+        // Extract relevant fields from each ObjectEntity and standardize format.
         $formattedResults = array_map(
             // phpcs:ignore Squiz.Commenting.BlockComment.NoEmptyLineBefore -- Empty line conflicts with "first argument must be on line after opening parenthesis" rule
             /*
              * Format search result item.
+             *
+             * @param \OCA\OpenRegister\Db\ObjectEntity|array $object
              *
              * @return (mixed|null|string)[]
              *
@@ -146,24 +135,44 @@ class SearchController extends Controller
              * }
              */
 
-            function (array $object): array {
+            function ($object): array {
+                if (is_object($object) === true && method_exists($object, 'getUuid') === true) {
+                    $name = null;
+                    if (method_exists($object, 'getName') === true) {
+                        $name = $object->getName();
+                    }
+
+                    return [
+                        'id'     => $object->getUuid(),
+                        'name'   => $name ?? 'Unknown',
+                        'type'   => 'object',
+                        'url'    => null,
+                        'source' => 'openregister',
+                    ];
+                }
+
+                $objectArr = [];
+                if (is_array($object) === true) {
+                    $objectArr = $object;
+                }
+
                 return [
-                    'id'     => $object['uuid'] ?? $object['id'] ?? null,
-                    'name'   => $object['name'] ?? $object['@self']['name'] ?? 'Unknown',
+                    'id'     => $objectArr['uuid'] ?? $objectArr['id'] ?? null,
+                    'name'   => $objectArr['name'] ?? $objectArr['@self']['name'] ?? 'Unknown',
                     'type'   => 'object',
-                    'url'    => $object['url'] ?? null,
+                    'url'    => $objectArr['url'] ?? null,
                     'source' => 'openregister',
                 ];
             },
-            $results['objects'] ?? []
+            $paginatedResult['results'] ?? []
         );
 
         // Step 6: Return formatted search results with metadata.
         return new JSONResponse(
             data: [
                 'results' => $formattedResults,
-                'total'   => $results['total'] ?? 0,
-                'facets'  => $results['facets'] ?? [],
+                'total'   => $paginatedResult['total'] ?? 0,
+                'facets'  => [],
             ]
         );
     }//end search()

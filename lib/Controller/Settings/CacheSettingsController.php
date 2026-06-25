@@ -28,7 +28,6 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,7 +50,6 @@ class CacheSettingsController extends Controller
      * @param string          $appName         The app name.
      * @param IRequest        $request         The request.
      * @param SettingsService $settingsService Settings service.
-     * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
      * @param Factory         $appDataFactory  App data factory.
      * @param IAppConfig      $appConfig       App configuration.
@@ -60,7 +58,6 @@ class CacheSettingsController extends Controller
         $appName,
         IRequest $request,
         private readonly SettingsService $settingsService,
-        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
         private readonly Factory $appDataFactory,
         private readonly IAppConfig $appConfig,

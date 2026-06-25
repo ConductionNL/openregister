@@ -8,7 +8,6 @@ use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
@@ -27,8 +26,6 @@ class FileTextControllerDeepTest extends TestCase
 
     private TextExtractionService|MockObject $textExtractor;
 
-    private IndexService|MockObject $indexService;
-
     private FileService|MockObject $fileService;
 
     private EntityRelationMapper|MockObject $entityRelationMapper;
@@ -45,21 +42,19 @@ class FileTextControllerDeepTest extends TestCase
     {
         parent::setUp();
 
-        $this->request       = $this->createMock(IRequest::class);
-        $this->textExtractor = $this->createMock(TextExtractionService::class);
-        $this->indexService  = $this->createMock(IndexService::class);
-        $this->fileService   = $this->createMock(FileService::class);
+        $this->request              = $this->createMock(IRequest::class);
+        $this->textExtractor        = $this->createMock(TextExtractionService::class);
+        $this->fileService          = $this->createMock(FileService::class);
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->config = $this->createMock(IAppConfig::class);
-        $this->manualEntityService = $this->createMock(ManualEntityService::class);
-        $this->userSession         = $this->createMock(IUserSession::class);
+        $this->logger               = $this->createMock(LoggerInterface::class);
+        $this->config               = $this->createMock(IAppConfig::class);
+        $this->manualEntityService  = $this->createMock(ManualEntityService::class);
+        $this->userSession          = $this->createMock(IUserSession::class);
 
         $this->controller = new FileTextController(
             'openregister',
             $this->request,
             $this->textExtractor,
-            $this->indexService,
             $this->fileService,
             $this->entityRelationMapper,
             $this->logger,
@@ -139,36 +134,6 @@ class FileTextControllerDeepTest extends TestCase
 
         $this->assertEquals(500, $response->getStatus());
     }//end testGetStatsException()
-
-    public function testProcessAndIndexExtractedException(): void
-    {
-        $this->indexService->method('processUnindexedChunks')
-            ->willThrowException(new \Exception('index error'));
-
-        $response = $this->controller->processAndIndexExtracted();
-
-        $this->assertEquals(500, $response->getStatus());
-    }//end testProcessAndIndexExtractedException()
-
-    public function testProcessAndIndexFileException(): void
-    {
-        $this->indexService->method('processUnindexedChunks')
-            ->willThrowException(new \Exception('file error'));
-
-        $response = $this->controller->processAndIndexFile(1);
-
-        $this->assertEquals(500, $response->getStatus());
-    }//end testProcessAndIndexFileException()
-
-    public function testGetChunkingStatsException(): void
-    {
-        $this->indexService->method('getChunkingStats')
-            ->willThrowException(new \Exception('chunk stats error'));
-
-        $response = $this->controller->getChunkingStats();
-
-        $this->assertEquals(500, $response->getStatus());
-    }//end testGetChunkingStatsException()
 
     public function testAnonymizeFileNotFound(): void
     {

@@ -21,7 +21,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCP\BackgroundJob\IJobList;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -35,7 +34,7 @@ use ReflectionClass;
 /**
  * Unit tests for ImportService
  *
- * Tests import logic, data transformation, caching, and SOLR warmup scheduling.
+ * Tests import logic, data transformation, and caching.
  */
 class ImportServiceTest extends TestCase
 {
@@ -54,9 +53,6 @@ class ImportServiceTest extends TestCase
     /** @var IGroupManager&MockObject */
     private IGroupManager $groupManager;
 
-    /** @var IJobList&MockObject */
-    private IJobList $jobList;
-
     /** @var ImportService */
     private ImportService $service;
 
@@ -67,7 +63,6 @@ class ImportServiceTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->jobList = $this->createMock(IJobList::class);
 
         // The CSV codec is invoked as a translatable-property pre-pass
         // inside transformCsvRowToObject; without a stub the default
@@ -81,7 +76,6 @@ class ImportServiceTest extends TestCase
             $this->objectService,
             $this->logger,
             $this->groupManager,
-            $this->jobList,
             $translationCsvCodec,
             $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
         );
@@ -208,215 +202,6 @@ class ImportServiceTest extends TestCase
         $this->service->clearCaches();
         // Should not throw
         $this->assertTrue(true);
-    }
-
-    // =========================================================================
-    // getRecommendedWarmupMode
-    // =========================================================================
-
-    public function testGetRecommendedWarmupModeSmall(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(5);
-        $this->assertSame('safe', $result);
-    }
-
-    public function testGetRecommendedWarmupModeMedium(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(5000);
-        $this->assertSame('balanced', $result);
-    }
-
-    public function testGetRecommendedWarmupModeLarge(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(20000);
-        $this->assertSame('fast', $result);
-    }
-
-    public function testGetRecommendedWarmupModeZero(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(0);
-        $this->assertSame('safe', $result);
-    }
-
-    public function testGetRecommendedWarmupModeBoundary1000(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(1000);
-        $this->assertSame('safe', $result);
-    }
-
-    public function testGetRecommendedWarmupModeBoundary1001(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(1001);
-        $this->assertSame('balanced', $result);
-    }
-
-    public function testGetRecommendedWarmupModeBoundary10000(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(10000);
-        $this->assertSame('balanced', $result);
-    }
-
-    public function testGetRecommendedWarmupModeBoundary10001(): void
-    {
-        $result = $this->service->getRecommendedWarmupMode(10001);
-        $this->assertSame('fast', $result);
-    }
-
-    // =========================================================================
-    // scheduleSolrWarmup
-    // =========================================================================
-
-    public function testScheduleSolrWarmupWithData(): void
-    {
-        $summary = [
-            ['created' => ['obj1', 'obj2'], 'updated' => ['obj3']],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSolrWarmup($summary);
-
-        $this->assertTrue($result);
-    }
-
-    public function testScheduleSolrWarmupWithNoImportedObjects(): void
-    {
-        $summary = [
-            ['created' => [], 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->never())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSolrWarmup($summary);
-
-        $this->assertFalse($result);
-    }
-
-    public function testScheduleSolrWarmupEmptySummary(): void
-    {
-        $result = $this->service->scheduleSolrWarmup([]);
-
-        $this->assertFalse($result);
-    }
-
-    public function testScheduleSolrWarmupHandlesException(): void
-    {
-        $summary = [
-            ['created' => ['obj1'], 'updated' => []],
-        ];
-
-        $this->jobList->method('scheduleAfter')
-            ->willThrowException(new \Exception('Job scheduling failed'));
-
-        $this->logger->expects($this->atLeastOnce())->method('error');
-
-        $result = $this->service->scheduleSolrWarmup($summary);
-
-        $this->assertFalse($result);
-    }
-
-    public function testScheduleSolrWarmupWithCustomDelay(): void
-    {
-        $summary = [
-            ['created' => ['obj1'], 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSolrWarmup($summary, 60, 'parallel', 10000);
-        $this->assertTrue($result);
-    }
-
-    public function testScheduleSolrWarmupWithMultipleSheets(): void
-    {
-        $summary = [
-            'Sheet1' => ['created' => ['obj1', 'obj2'], 'updated' => []],
-            'Sheet2' => ['created' => [], 'updated' => ['obj3', 'obj4', 'obj5']],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSolrWarmup($summary);
-        $this->assertTrue($result);
-    }
-
-    public function testScheduleSolrWarmupWithNonArrayEntry(): void
-    {
-        // If summary contains non-array entries, they should be skipped.
-        $summary = [
-            'not-an-array',
-            ['created' => ['obj1'], 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSolrWarmup($summary);
-        $this->assertTrue($result);
-    }
-
-    // =========================================================================
-    // scheduleSmartSolrWarmup
-    // =========================================================================
-
-    public function testScheduleSmartSolrWarmupWithData(): void
-    {
-        $summary = [
-            ['created' => ['obj1', 'obj2'], 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSmartSolrWarmup($summary);
-
-        $this->assertTrue($result);
-    }
-
-    public function testScheduleSmartSolrWarmupEmpty(): void
-    {
-        $result = $this->service->scheduleSmartSolrWarmup([]);
-
-        $this->assertFalse($result);
-    }
-
-    public function testScheduleSmartSolrWarmupImmediate(): void
-    {
-        $summary = [
-            ['created' => ['obj1'], 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSmartSolrWarmup($summary, true);
-
-        $this->assertTrue($result);
-    }
-
-    public function testScheduleSmartSolrWarmupUsesRecommendedMode(): void
-    {
-        // Large import should trigger 'fast' mode.
-        $created = array_fill(0, 15000, 'uuid');
-        $summary = [
-            ['created' => $created, 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSmartSolrWarmup($summary);
-        $this->assertTrue($result);
-    }
-
-    public function testScheduleSmartSolrWarmupCapsMaxObjects(): void
-    {
-        // Very large import should cap maxObjects at 15000.
-        $created = array_fill(0, 20000, 'uuid');
-        $summary = [
-            ['created' => $created, 'updated' => []],
-        ];
-
-        $this->jobList->expects($this->once())->method('scheduleAfter');
-
-        $result = $this->service->scheduleSmartSolrWarmup($summary);
-        $this->assertTrue($result);
     }
 
     // =========================================================================
@@ -2121,79 +1906,6 @@ class ImportServiceTest extends TestCase
         $this->assertTrue($result['active']);
         $this->assertSame(['a', 'b', 'c'], $result['tags']);
         $this->assertSame(['key' => 'val'], $result['meta']);
-    }
-
-    // =========================================================================
-    // Private method testing via Reflection: calculateTotalImported
-    // =========================================================================
-
-    public function testCalculateTotalImported(): void
-    {
-        $ref = new ReflectionClass($this->service);
-        $method = $ref->getMethod('calculateTotalImported');
-        $method->setAccessible(true);
-
-        $summary = [
-            ['created' => ['a', 'b'], 'updated' => ['c']],
-            ['created' => ['d'], 'updated' => []],
-        ];
-
-        $result = $method->invoke($this->service, $summary);
-        $this->assertSame(4, $result);
-    }
-
-    public function testCalculateTotalImportedEmpty(): void
-    {
-        $ref = new ReflectionClass($this->service);
-        $method = $ref->getMethod('calculateTotalImported');
-        $method->setAccessible(true);
-
-        $result = $method->invoke($this->service, []);
-        $this->assertSame(0, $result);
-    }
-
-    public function testCalculateTotalImportedWithNonArray(): void
-    {
-        $ref = new ReflectionClass($this->service);
-        $method = $ref->getMethod('calculateTotalImported');
-        $method->setAccessible(true);
-
-        $summary = [
-            'not-array',
-            ['created' => ['a'], 'updated' => []],
-        ];
-
-        $result = $method->invoke($this->service, $summary);
-        $this->assertSame(1, $result);
-    }
-
-    public function testCalculateTotalImportedOnlyUpdated(): void
-    {
-        $ref = new ReflectionClass($this->service);
-        $method = $ref->getMethod('calculateTotalImported');
-        $method->setAccessible(true);
-
-        $summary = [
-            ['created' => [], 'updated' => ['a', 'b', 'c']],
-        ];
-
-        $result = $method->invoke($this->service, $summary);
-        $this->assertSame(3, $result);
-    }
-
-    public function testCalculateTotalImportedMissingKeys(): void
-    {
-        $ref = new ReflectionClass($this->service);
-        $method = $ref->getMethod('calculateTotalImported');
-        $method->setAccessible(true);
-
-        // Summary entries without created/updated keys.
-        $summary = [
-            ['errors' => ['some error']],
-        ];
-
-        $result = $method->invoke($this->service, $summary);
-        $this->assertSame(0, $result);
     }
 
     // =========================================================================

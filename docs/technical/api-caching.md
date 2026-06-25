@@ -109,17 +109,6 @@ curl 'api/objects/voorzieningen/module?_extend[]=@self.schema&_cache=false'
 - `ObjectCacheService`: Object-specific caching with SOLR integration
 - `SchemaCacheHandler`: Schema-specific caching (Handler in Schemas/)
 - `FacetCacheHandler`: Facet-specific caching (Handler in Schemas/)
-- `SolrService`: Apache SOLR search engine integration
-
-### SOLR Integration
-
-When SOLR is enabled, OpenRegister uses a hybrid caching approach:
-- **Search queries** are processed by SOLR (50ms average)
-- **Object loading** uses traditional cache layers
-- **Automatic fallback** to database when SOLR unavailable
-
-See [SOLR Setup & Configuration](./solr-setup-configuration.md) for detailed information.
-
 ## Best Practices
 
 ### Development

@@ -35,24 +35,6 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton
-						v-if="!item.published || (item.depublished && new Date(item.depublished) <= new Date())"
-						close-after-click
-						@click="publish">
-						<template #icon>
-							<Publish :size="20" />
-						</template>
-						Publish
-					</NcActionButton>
-					<NcActionButton
-						v-if="item.published && (!item.depublished || new Date(item.depublished) > new Date())"
-						close-after-click
-						@click="depublish">
-						<template #icon>
-							<PublishOff :size="20" />
-						</template>
-						Depublish
-					</NcActionButton>
 					<!-- Register-only actions -->
 					<template v-if="type === 'register'">
 						<NcActionButton close-after-click @click="registerStore.setRegisterItem(item); navigationStore.setModal('publishRegister')">
@@ -352,8 +334,6 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import Table from 'vue-material-design-icons/Table.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -385,8 +365,6 @@ export default {
 		ChevronUp,
 		CogOutline,
 		CloudUploadOutline,
-		Publish,
-		PublishOff,
 		Sync,
 		// eslint-disable-next-line vue/no-reserved-component-names
 		Table,
@@ -555,40 +533,6 @@ export default {
 			} else {
 				schemaStore.setSchemaItem(this.item)
 				navigationStore.setModal('editSchema')
-			}
-		},
-		/**
-		 * @spec exclude store passthrough publishing register/schema with toast, contract owned by register/schema capability
-		 */
-		async publish() {
-			try {
-				if (this.type === 'register') {
-					await registerStore.publishRegister(this.item.id)
-					showSuccess(t('openregister', 'Register published successfully'))
-				} else {
-					await schemaStore.publishSchema(this.item.id)
-					showSuccess(t('openregister', 'Schema published successfully'))
-				}
-			} catch (error) {
-				console.error('Error publishing:', error)
-				showError(t('openregister', 'Failed to publish: {error}', { error: error.message }))
-			}
-		},
-		/**
-		 * @spec exclude store passthrough depublishing register/schema with toast, contract owned by register/schema capability
-		 */
-		async depublish() {
-			try {
-				if (this.type === 'register') {
-					await registerStore.depublishRegister(this.item.id)
-					showSuccess(t('openregister', 'Register depublished successfully'))
-				} else {
-					await schemaStore.depublishSchema(this.item.id)
-					showSuccess(t('openregister', 'Schema depublished successfully'))
-				}
-			} catch (error) {
-				console.error('Error depublishing:', error)
-				showError(t('openregister', 'Failed to depublish: {error}', { error: error.message }))
 			}
 		},
 		/**

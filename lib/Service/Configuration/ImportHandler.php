@@ -763,7 +763,6 @@ class ImportHandler
             try {
                 $existingRegister = $this->registerMapper->find(
                     id: strtolower($data['slug']),
-                    published: null,
                     _rbac: false,
                     _multitenancy: false
                 );
@@ -1988,8 +1987,8 @@ class ImportHandler
                 }
 
                 $seedObjects[] = $seedCandidate;
-            }
-        }
+            }//end foreach
+        }//end foreach
 
         if (count($seedObjects) > 0) {
             foreach ($seedObjects as $objectData) {
@@ -3849,7 +3848,6 @@ class ImportHandler
                     $schema = $this->schemaMapper->find(
                         id: $schemaSlug,
                         _extend: [],
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );
