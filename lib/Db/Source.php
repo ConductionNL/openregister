@@ -145,7 +145,7 @@ class Source extends Entity implements JsonSerializable
     /**
      * Whether scheduled/harvest sync is enabled for this source
      *
-     * @var bool|null Sync enabled flag
+     * @var boolean|null Sync enabled flag
      */
     protected ?bool $syncEnabled = null;
 
@@ -159,7 +159,7 @@ class Source extends Entity implements JsonSerializable
     /**
      * Sync interval in hours used by the timed job to decide whether a source is due
      *
-     * @var int|null Sync interval in hours
+     * @var integer|null Sync interval in hours
      */
     protected ?int $syncInterval = null;
 
@@ -201,7 +201,7 @@ class Source extends Entity implements JsonSerializable
     /**
      * Reference to the Mapping entity used to transform source records
      *
-     * @var int|null Mapping entity id
+     * @var integer|null Mapping entity id
      */
     protected ?int $mappingId = null;
 
@@ -236,7 +236,7 @@ class Source extends Entity implements JsonSerializable
     /**
      * Batch size used by the harvest pipeline when processing records
      *
-     * @var int|null Batch size
+     * @var integer|null Batch size
      */
     protected ?int $batchSize = null;
 

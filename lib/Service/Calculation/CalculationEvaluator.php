@@ -54,6 +54,10 @@ use Throwable;
  *   types (arithmetic, logical, date, string, comparison, etc.); each operator requires
  *   its own parse/validate/execute path. Splitting into sub-evaluators would require
  *   a plugin registry and is outside the scope of this service's single-responsibility.
+ * @SuppressWarnings(PHPMD.TooManyMethods) Each operator (prop/concat/if/arith/compare/date/
+ *   string/sha256/…) is a dedicated private handler dispatched from the single `evaluate()`
+ *   match; the count rises one-per-operator by design. Collapsing handlers would lose the
+ *   per-operator validation and error messages, and a plugin registry is out of scope.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
  */
@@ -115,8 +119,16 @@ class CalculationEvaluator
             'diffDays'   => $this->diffDays(object: $object, args: $args),
             'formatDate' => $this->formatDate(object: $object, args: $args),
             'dateDiff'   => $this->dateDiff(object: $object, args: $args),
+            'max'        => $this->minMax(object: $object, args: $args, wantMax: true),
+            'min'        => $this->minMax(object: $object, args: $args, wantMax: false),
+            'coalesce'   => $this->coalesce(object: $object, args: $args),
+            'abs'        => $this->absVal(object: $object, args: $args),
+            'round'      => $this->roundVal(object: $object, args: $args),
+            'year'       => $this->yearOf(object: $object, args: $args),
+            'monthsElapsed' => $this->monthsElapsed(object: $object, args: $args),
+            'sha256'     => $this->sha256Of(object: $object, args: $args),
             default      => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
-        };
+        };//end match
     }//end evaluate()
 
     /**
@@ -716,4 +728,224 @@ class CalculationEvaluator
 
         return null;
     }//end toDateOrNull()
+
+    /**
+     * Resolve a single operand: the first element of a list, or the bare node.
+     *
+     * Single-argument ops accept either `[expr]` (engine list convention) or a
+     * bare AST node / scalar `expr`.
+     *
+     * @param mixed $args The op arguments.
+     *
+     * @return mixed The operand sub-expression.
+     */
+    private function firstOperand(mixed $args): mixed
+    {
+        if (is_array($args) === true && array_is_list($args) === true) {
+            return ($args[0] ?? null);
+        }
+
+        return $args;
+    }//end firstOperand()
+
+    /**
+     * Max(...) / min(...) over N numeric operands; null operands are skipped.
+     *
+     * @param array<string, mixed> $object  The object's stored data.
+     * @param mixed                $args    Operand list.
+     * @param bool                 $wantMax True for max, false for min.
+     *
+     * @return int|float|null The extreme value, or null when every operand is null.
+     *
+     * @throws EvaluationException When args is not a list or an operand is non-numeric.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The null-skip + non-numeric guard +
+     *   max/min direction branch over N operands sit at the CC threshold; each branch is a
+     *   distinct, required guard and extracting them would not reduce the decision count.
+     */
+    private function minMax(array $object, mixed $args, bool $wantMax): int|float|null
+    {
+        if (is_array($args) === false) {
+            throw new EvaluationException('max/min requires an array of operands.');
+        }
+
+        $result = null;
+        foreach ($args as $a) {
+            $v = $this->evaluate(object: $object, expression: $a);
+            if ($v === null) {
+                continue;
+            }
+
+            if (is_numeric($v) === false) {
+                throw new EvaluationException('max/min operand is not numeric.');
+            }
+
+            $num = ($v + 0);
+            if ($result === null
+                || ($wantMax === true && $num > $result)
+                || ($wantMax === false && $num < $result)
+            ) {
+                $result = $num;
+            }
+        }
+
+        return $result;
+    }//end minMax()
+
+    /**
+     * Coalesce(...): the first non-null operand, or null when all are null.
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   Operand list.
+     *
+     * @return mixed The first non-null value, or null.
+     *
+     * @throws EvaluationException When args is not an array.
+     */
+    private function coalesce(array $object, mixed $args): mixed
+    {
+        if (is_array($args) === false) {
+            throw new EvaluationException('coalesce requires an array of operands.');
+        }
+
+        foreach ($args as $a) {
+            $v = $this->evaluate(object: $object, expression: $a);
+            if ($v !== null) {
+                return $v;
+            }
+        }
+
+        return null;
+    }//end coalesce()
+
+    /**
+     * Abs(x): absolute value; null passes through.
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   Single operand (`[expr]` or bare).
+     *
+     * @return int|float|null The absolute value, or null.
+     *
+     * @throws EvaluationException When the operand is non-numeric.
+     */
+    private function absVal(array $object, mixed $args): int|float|null
+    {
+        $v = $this->evaluate(object: $object, expression: $this->firstOperand(args: $args));
+        if ($v === null) {
+            return null;
+        }
+
+        if (is_numeric($v) === false) {
+            throw new EvaluationException('abs operand is not numeric.');
+        }
+
+        return abs($v + 0);
+    }//end absVal()
+
+    /**
+     * Round([value, precision?]): round to precision decimals (default 0).
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   `[value]` or `[value, precision]`.
+     *
+     * @return float|null The rounded value, or null when value is null.
+     *
+     * @throws EvaluationException When args is not a list, value is non-numeric, or precision is non-integer.
+     */
+    private function roundVal(array $object, mixed $args): ?float
+    {
+        if (is_array($args) === false) {
+            throw new EvaluationException('round requires [value, precision?].');
+        }
+
+        $v = $this->evaluate(object: $object, expression: ($args[0] ?? null));
+        if ($v === null) {
+            return null;
+        }
+
+        if (is_numeric($v) === false) {
+            throw new EvaluationException('round value is not numeric.');
+        }
+
+        $precision = 0;
+        if (array_key_exists(1, $args) === true) {
+            $precisionArg = $this->evaluate(object: $object, expression: $args[1]);
+            if (is_int($precisionArg) === false) {
+                throw new EvaluationException('round precision must be an integer.');
+            }
+
+            $precision = $precisionArg;
+        }
+
+        return round(($v + 0), $precision);
+    }//end roundVal()
+
+    /**
+     * Year(date): the four-digit year of a date operand.
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   Single date operand (`[expr]` or bare).
+     *
+     * @return int|null The year, or null when the date is unparseable.
+     */
+    private function yearOf(array $object, mixed $args): ?int
+    {
+        $date = $this->resolveDateOperand(object: $object, expression: $this->firstOperand(args: $args));
+        if ($date === null) {
+            return null;
+        }
+
+        return (int) $date->format('Y');
+    }//end yearOf()
+
+    /**
+     * MonthsElapsed([later, earlier]): signed whole calendar months between them.
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   `[later, earlier]` date operands.
+     *
+     * @return int|null The signed whole-month difference, or null when either date is unparseable.
+     *
+     * @throws EvaluationException When fewer than two operands are supplied.
+     */
+    private function monthsElapsed(array $object, mixed $args): ?int
+    {
+        if (is_array($args) === false || count($args) < 2) {
+            throw new EvaluationException('monthsElapsed requires (later, earlier).');
+        }
+
+        $later   = $this->resolveDateOperand(object: $object, expression: $args[0]);
+        $earlier = $this->resolveDateOperand(object: $object, expression: $args[1]);
+        if ($later === null || $earlier === null) {
+            return null;
+        }
+
+        return $this->calendarDiff(from: $earlier, to: $later, unit: 'months');
+    }//end monthsElapsed()
+
+    /**
+     * Sha256(value): lowercase hex SHA-256 digest of the stringified operand.
+     *
+     * Pure and deterministic: the same operand always yields the same 64-char
+     * hex digest. A `null`-resolving operand returns `null` (rather than the
+     * hash of an empty string) so the operator is null-safe and never coins a
+     * fabricated digest for missing data. Mirrors the single-operand shape of
+     * `abs`/`round`/`year` — accepts both `[expr]` and a bare `expr`.
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   Single operand (`[expr]` or bare).
+     *
+     * @return string|null The 64-character hex SHA-256 digest, or null when the operand is null.
+     *
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-3
+     */
+    private function sha256Of(array $object, mixed $args): ?string
+    {
+        $value = $this->evaluate(object: $object, expression: $this->firstOperand(args: $args));
+        if ($value === null) {
+            return null;
+        }
+
+        return hash('sha256', (string) $value);
+    }//end sha256Of()
 }//end class

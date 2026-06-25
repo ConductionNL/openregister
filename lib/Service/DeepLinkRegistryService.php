@@ -122,9 +122,9 @@ class DeepLinkRegistryService
     /**
      * Register a deep link pattern for a (register, schema) combination.
      *
-     * @param string $appId        The consuming app ID (e.g., "procest")
-     * @param string $registerSlug The register slug
-     * @param string $schemaSlug   The schema slug
+     * @param string      $appId        The consuming app ID (e.g., "procest")
+     * @param string      $registerSlug The register slug
+     * @param string      $schemaSlug   The schema slug
      * @param string      $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
      * @param string      $icon         Optional icon identifier (defaults to "icon-{appId}")
      * @param string|null $displayName  Optional human-readable label for the app's

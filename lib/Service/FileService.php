@@ -1645,7 +1645,10 @@ class FileService
         $response->addHeader('Content-Type', $file->getMimeType());
         // SEC-CTRL-9: RFC 6266-encode the filename to prevent header injection /
         // response splitting via quotes, control chars, or non-ASCII bytes.
-        $response->addHeader('Content-Disposition', $this->buildContentDisposition('attachment', $file->getName()));
+        $response->addHeader(
+            'Content-Disposition',
+            $this->buildContentDisposition(disposition: 'attachment', filename: $file->getName())
+        );
         $response->addHeader('Content-Length', (string) $file->getSize());
 
         return $response;
@@ -1675,7 +1678,7 @@ class FileService
             $ascii = '';
         }
 
-        $ascii = str_replace(['\\', '"'], '_', $ascii);
+        $ascii   = str_replace(['\\', '"'], '_', $ascii);
         $encoded = rawurlencode($clean);
 
         return $disposition.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.$encoded;
@@ -1966,6 +1969,23 @@ class FileService
             entities: $entities
         );
     }//end anonymizeDocument()
+
+    /**
+     * Residual entities from the most recent anonymizeDocument() call.
+     *
+     * Best-effort policy: the anonymised file is produced even when some entity
+     * text could not be removed (e.g. ExApp NER over-capture across table
+     * cells); these records describe what remains so the caller can warn the
+     * operator. Empty when the last run fully redacted everything.
+     *
+     * @return array<int, array{text: string, type: string, id: string}> Residual records.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastResidualEntities.
+     */
+    public function getLastResidualEntities(): array
+    {
+        return $this->documentProcessingHandler->getLastResidualEntities();
+    }//end getLastResidualEntities()
 
     /**
      * Get the file versioning handler.

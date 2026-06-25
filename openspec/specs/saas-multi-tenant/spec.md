@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # saas-multi-tenant Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-saas-multi-tenant. Update Purpose after archive.
+Manages per-tenant HMAC signing keys for multi-tenant deployments, guaranteeing each tenant has exactly one active key that is stored encrypted via Nextcloud's crypto service and bootstrapped or rotated through a single write path. The service is DI-registered for server-side use only — used by audit-trail and evidence signers — and never exposes plaintext key material over REST, in logs, or in audit output.
 
 @e2e exclude Backend per-tenant HMAC key lifecycle (single-active-row lookup, bootstrap/rotation inserts, encryption-failure abort, DI constructability, no-plaintext-key-over-REST invariant). Data-layer service with no user-facing OpenRegister UI surface — exercised via PHPUnit (mapper/service units). Covered by PHPUnit.
 

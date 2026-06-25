@@ -81,15 +81,14 @@ class MapsOverviewService
      * @var array<string,mixed>
      */
     private const DEFAULT_BASE_LAYER = [
-        'type'        => 'wmts',
-        'provider'    => 'pdok',
-        'url'         => 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v1_0',
-        'layer'       => 'standaard',
+        'type'          => 'wmts',
+        'provider'      => 'pdok',
+        'url'           => 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v1_0',
+        'layer'         => 'standaard',
         'tileMatrixSet' => 'EPSG:3857',
-        'format'      => 'image/png',
-        'attribution' => 'Kaartgegevens © PDOK',
+        'format'        => 'image/png',
+        'attribution'   => 'Kaartgegevens © PDOK',
     ];
-
 
     /**
      * Constructor.
@@ -111,7 +110,6 @@ class MapsOverviewService
     ) {
     }//end __construct()
 
-
     /**
      * Authorisation guard for the register (write) path — a map overview
      * widget may only be declared by an authenticated user. Throws
@@ -131,7 +129,6 @@ class MapsOverviewService
             throw new InvalidArgumentException('A logged-in user is required to register a map overview');
         }
     }//end ensureCanRegister()
-
 
     /**
      * Register (declare) a page-level map overview widget.
@@ -189,17 +186,18 @@ class MapsOverviewService
 
         // (Re)declare the page widget so the render layer can discover it.
         // First-write-wins inside the registry; harmless on a re-declare.
-        $this->registry->registerPageWidget([
-            'id'         => 'maps-overview:'.$overviewKey,
-            'type'       => 'map',
-            'title'      => $title,
-            'providerId' => 'maps-overview',
-            'config'     => $config,
-        ]);
+        $this->registry->registerPageWidget(
+                [
+                    'id'         => 'maps-overview:'.$overviewKey,
+                    'type'       => 'map',
+                    'title'      => $title,
+                    'providerId' => 'maps-overview',
+                    'config'     => $config,
+                ]
+                );
 
         return $this->registry->getPageWidget('maps-overview:'.$overviewKey) ?? [];
     }//end registerOverview()
-
 
     /**
      * Authorisation guard for the points (read) path — RBAC-scopes the
@@ -239,7 +237,6 @@ class MapsOverviewService
             limit: $limit
         );
     }//end ensureReadablePoints()
-
 
     /**
      * Query the marker point set for a register/schema, RBAC-scoped.
@@ -298,8 +295,8 @@ class MapsOverviewService
             _multitenancy: $rbac
         );
 
-        // findAll() returns a list of rendered object arrays (each carrying
-        // @self metadata + the schema properties incl. the geometry).
+        // The findAll() call returns a list of rendered object arrays (each
+        // carrying @self metadata + the schema properties incl. the geometry).
         $points = [];
         foreach ($result as $row) {
             if (is_array($row) === false) {
@@ -315,11 +312,10 @@ class MapsOverviewService
         return $points;
     }//end queryPoints()
 
-
     /**
      * Build the OpenRegister findAll filter array for a map query.
      *
-     * register/schema become the scope keys; every other supplied filter is
+     * Register/schema become the scope keys; every other supplied filter is
      * copied through verbatim (the OR read path validates + RBAC-scopes
      * them). The reserved scope keys cannot be overridden by the leaf.
      *
@@ -346,7 +342,6 @@ class MapsOverviewService
 
         return $clean;
     }//end buildFilters()
-
 
     /**
      * Extract a marker point from a rendered object row.
@@ -383,8 +378,13 @@ class MapsOverviewService
         $id    = ($row['id'] ?? ($self['id'] ?? ($feature['id'] ?? null)));
         $label = $this->deriveLabel(row: $row, self: $self, id: $id);
 
+        $idString = null;
+        if ($id !== null) {
+            $idString = (string) $id;
+        }
+
         return [
-            'id'       => ($id !== null ? (string) $id : null),
+            'id'       => $idString,
             'label'    => $label,
             'lat'      => $latLng['lat'],
             'lng'      => $latLng['lng'],
@@ -393,7 +393,6 @@ class MapsOverviewService
             'geometry' => ($feature['geometry'] ?? null),
         ];
     }//end pointFromRow()
-
 
     /**
      * Reduce a GeoJSON geometry to a single representative [lat,lng].
@@ -435,7 +434,6 @@ class MapsOverviewService
         ];
     }//end representativeLatLng()
 
-
     /**
      * Derive a human-readable marker label from a rendered object row.
      *
@@ -463,9 +461,12 @@ class MapsOverviewService
             }
         }
 
-        return ($id !== null ? (string) $id : '');
-    }//end deriveLabel()
+        if ($id !== null) {
+            return (string) $id;
+        }
 
+        return '';
+    }//end deriveLabel()
 
     /**
      * Whether the current user is an admin (RBAC bypass).

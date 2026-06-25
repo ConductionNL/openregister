@@ -35,7 +35,6 @@ use OCP\IDBConnection;
  */
 class TimeLinkMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *
@@ -118,8 +117,8 @@ class TimeLinkMapper extends QBMapper
     /**
      * Update the denormalized total_minutes for all entries belonging to an object.
      *
-     * @param string $objectUuid    The object UUID.
-     * @param int    $totalMinutes  The freshly calculated total.
+     * @param string $objectUuid   The object UUID.
+     * @param int    $totalMinutes The freshly calculated total.
      *
      * @return int Number of updated rows.
      *
@@ -153,7 +152,7 @@ class TimeLinkMapper extends QBMapper
 
         $result = $qb->executeQuery();
         $uuids  = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['object_uuid'];
         }
 

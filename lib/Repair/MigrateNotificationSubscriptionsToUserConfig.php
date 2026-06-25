@@ -131,7 +131,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
 
         if ($rows === []) {
             $output->info('[OpenRegister] No notification subscriptions to migrate.');
-            $this->markDone($appConfig);
+            $this->markDone(appConfig: $appConfig);
             return;
         }
 
@@ -181,7 +181,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
         }//end foreach
 
         $output->info(sprintf('[OpenRegister] Migrated %d notification subscription override(s).', $migrated));
-        $this->markDone($appConfig);
+        $this->markDone(appConfig: $appConfig);
     }//end run()
 
     /**

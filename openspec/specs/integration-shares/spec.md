@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # integration-shares Specification
 
 ## Purpose

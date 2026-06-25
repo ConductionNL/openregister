@@ -101,10 +101,10 @@ final class SyncConflictResolver
      * When the local copy did not change, the source update is applied
      * regardless of strategy (there is nothing to conflict with).
      *
-     * @param string                 $strategy         Configured strategy (one of the *_WINS / MANUAL constants)
-     * @param bool                   $localChanged     Whether the local object changed since the last sync
-     * @param DateTimeInterface|null $sourceModified   Source-side last-modified timestamp (for newest-wins)
-     * @param DateTimeInterface|null $localModified    Local-side last-modified timestamp (for newest-wins)
+     * @param string                 $strategy       Configured strategy (one of the *_WINS / MANUAL constants)
+     * @param bool                   $localChanged   Whether the local object changed since the last sync
+     * @param DateTimeInterface|null $sourceModified Source-side last-modified timestamp (for newest-wins)
+     * @param DateTimeInterface|null $localModified  Local-side last-modified timestamp (for newest-wins)
      *
      * @return string One of APPLY_SOURCE, KEEP_LOCAL, DEFER
      *
@@ -117,7 +117,7 @@ final class SyncConflictResolver
         ?DateTimeInterface $localModified=null
     ): string {
         // Unknown strategy falls back to the safest default: defer to a human.
-        if ($this->isValidStrategy($strategy) === false) {
+        if ($this->isValidStrategy(strategy: $strategy) === false) {
             return self::DEFER;
         }
 

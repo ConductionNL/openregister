@@ -160,6 +160,55 @@ For the `openanonymiser` method, `available` SHALL be `true` if and only if an O
 - **AND** the cached probe error is `appapi_missing`
 - **AND** the admin UI displays a hint to install AppAPI
 
+### Requirement: A detected OpenAnonymiser ExApp MUST be auto-configured as the active method, with the full variant preferred and operator choice always overriding
+
+When the admin has not yet explicitly chosen an entity recognition method, the stored method SHALL be the internal sentinel value `auto`. `auto` is NOT a user-facing option — the admin UI MUST NOT offer it as a selectable method; it exists only as a "not yet configured" marker. When resolving state, `auto` SHALL resolve to `openanonymiser` if a healthy OpenAnonymiser ExApp is detected (`backends[openanonymiser].available` is `true`), and to `regex` otherwise. The admin UI SHALL present this resolved concrete method as the pre-selected choice and persist it on save; once an admin saves any concrete method, that literal value SHALL be persisted and `auto` resolution no longer applies — operator intent always wins. When both `openanonymiser` (full) and `openanonymiser_light` are installed and enabled, the full `openanonymiser` variant SHALL be the preferred default and the light variant SHALL be reported as also-detected.
+
+#### Scenario: Unconfigured install pre-selects a detected ExApp
+- **GIVEN** the stored `entityRecognitionMethod` is `auto` (never explicitly chosen) and `openanonymiser_light` is installed and enabled
+- **WHEN** the state is queried
+- **THEN** `activeMethod` resolves to `openanonymiser`
+- **AND** `effectiveMethod` is `openanonymiser`
+- **AND** the admin UI shows `openanonymiser` as the (concrete) pre-selected method, never `auto`
+
+#### Scenario: Unconfigured install falls back to regex when no ExApp present
+- **GIVEN** the stored `entityRecognitionMethod` is `auto` and no OpenAnonymiser ExApp is installed
+- **WHEN** the state is queried
+- **THEN** `activeMethod` resolves to `regex`
+- **AND** `effectiveMethod` is `regex`
+
+#### Scenario: Operator choice overrides the auto-configuration
+- **GIVEN** a healthy OpenAnonymiser ExApp is detected and the admin saves `regex` as the method
+- **WHEN** the state is queried
+- **THEN** `activeMethod` is `regex` (the stored literal, not `auto`)
+- **AND** the openanonymiser backend is still reported as `available` / "recommended"
+
+#### Scenario: Full variant preferred over light when both installed
+- **GIVEN** both `openanonymiser` (full) and `openanonymiser_light` are installed and enabled and the method is `auto`
+- **WHEN** the state is queried
+- **THEN** the resolved backend uses the full `openanonymiser` variant
+- **AND** the light variant is reported as also-detected
+
+### Requirement: OpenAnonymiser MUST support an internal (AppAPI) source and an external endpoint source, defaulting to internal
+
+The system SHALL store an `openAnonymiserSource` setting with values `internal` (default) or `external`. When `internal`, OpenRegister SHALL reach the OpenAnonymiser ExApp through AppAPI's signed request mechanism (`PublicFunctions::exAppRequest`) resolved by ExApp app id — NOT via a plain HTTP host:port — because ExApps reject unsigned requests. When `external`, OpenRegister SHALL issue a plain HTTP request to the operator-entered `openAnonymiserApiEndpoint`. The AppAPI dependency SHALL be resolved lazily so OpenRegister remains functional (degrading to its fallback) when AppAPI is absent. The admin UI SHALL present the source as a radio choice ("built-in / recommended" vs "external endpoint"), defaulting to internal when an ExApp is detected, with a test-connection action for each.
+
+#### Scenario: Internal source calls the ExApp via AppAPI
+- **GIVEN** `openAnonymiserSource` is `internal` and a healthy OpenAnonymiser ExApp is enabled
+- **WHEN** entity recognition runs with the `openanonymiser` method
+- **THEN** the request is issued via AppAPI `exAppRequest` to the resolved ExApp app id
+- **AND** no plain HTTP request to a configured endpoint is made
+
+#### Scenario: External source calls the configured endpoint
+- **GIVEN** `openAnonymiserSource` is `external` and `openAnonymiserApiEndpoint` is set
+- **WHEN** entity recognition runs with the `openanonymiser` method
+- **THEN** a plain HTTP request is issued to `{openAnonymiserApiEndpoint}/api/v1/analyze`
+
+#### Scenario: Recognition never throws on an unknown or legacy method value
+- **GIVEN** the stored method is `auto` (or any non-concrete value)
+- **WHEN** entity recognition resolves the method
+- **THEN** it resolves to the `effectiveMethod` from the backend state (never throwing on an unknown method)
+
 ### Requirement: An admin settings panel MUST exist where admins pick the active method and configure per-backend endpoints
 
 The system SHALL render an Anonimiseren section within the existing OpenRegisterAdmin settings page. The section SHALL allow an admin to select the active method from `regex` / `presidio` / `openanonymiser` / `llm` / `hybrid`, configure endpoint URLs for HTTP-based methods (`presidio`, `llm`) where applicable, see a live availability indicator per backend, observe AppAPI-derived ExApp availability for `openanonymiser`, and trigger a test-connection probe per applicable backend. All admin-visible strings SHALL be provided in NL and EN per ADR-005. The panel SHALL meet WCAG AA — focus order, contrast, and keyboard operability of the selector, inputs, and buttons.

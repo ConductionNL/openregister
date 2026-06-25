@@ -57,8 +57,14 @@ trait HandlesExceptionsTrait
     {
         // Log server-side when the consuming controller exposes a logger.
         if (property_exists($this, 'logger') === true && $this->logger instanceof LoggerInterface) {
+            if ($context !== '') {
+                $contextPrefix = $context.': ';
+            } else {
+                $contextPrefix = '';
+            }
+
             $this->logger->error(
-                message: '['.static::class.'] '.($context !== '' ? $context.': ' : '').$e->getMessage(),
+                message: '['.static::class.'] '.$contextPrefix.$e->getMessage(),
                 context: [
                     'file'      => __FILE__,
                     'line'      => __LINE__,

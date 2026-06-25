@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cf5ff19a2d6aeefe09fdc7952e1e8f56",
+    "content-hash": "5e3aae1631429e252963ab83d8c122e4",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -306,17 +306,11 @@
         },
         {
             "name": "ddn/sapp",
-            "version": "dev-feat/cross-line-matching",
+            "version": "dev-feat/chained-filter-text-replace",
             "source": {
                 "type": "git",
-                "url": "https://codeberg.org/Conduction/sapp.git",
-                "reference": "8952dfe"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/8952dfe5a5c60f5b83de748afde5ae333f0b008f.zip",
-                "reference": "8952dfe",
-                "shasum": ""
+                "url": "https://codeberg.org/Conduction/sapp",
+                "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56"
             },
             "require": {
                 "ext-mbstring": "*",
@@ -345,17 +339,7 @@
                 "sign",
                 "signature"
             ],
-            "support": {
-                "source": "https://codeberg.org/Conduction/sapp/branch/feat/cross-line-matching",
-                "issues": "https://codeberg.org/Conduction/sapp/issues"
-            },
-            "funding": [
-                {
-                    "type": "custom",
-                    "url": "https://paypal.me/caralla"
-                }
-            ],
-            "time": "2026-05-29T15:37:17+00:00"
+            "time": "2026-06-16T13:52:30+00:00"
         },
         {
             "name": "dompdf/dompdf",

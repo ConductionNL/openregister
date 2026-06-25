@@ -46,7 +46,7 @@ services:
 
   # Nextcloud with OpenRegister and OpenCatalogi from App Store
   nextcloud:
-    image: nextcloud
+    image: nextcloud:34.0.0-apache
     container_name: openregister-demo-nextcloud
     restart: always
     ports:

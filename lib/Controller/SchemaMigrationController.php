@@ -51,8 +51,6 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaMigrationController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -87,7 +85,6 @@ class SchemaMigrationController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get a schema's classified changelog, newest-first.
      *
@@ -99,15 +96,14 @@ class SchemaMigrationController extends Controller
      */
     public function changelog(int $id): JSONResponse
     {
-        $limit  = $this->intParam('_limit');
-        $offset = $this->intParam('_offset');
+        $limit  = $this->intParam(name: '_limit');
+        $offset = $this->intParam(name: '_offset');
 
-        $entries = $this->changelogMapper->findBySchema($id, $limit, $offset);
+        $entries = $this->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
 
         return new JSONResponse(['results' => array_map(static fn($e) => $e->jsonSerialize(), $entries)]);
 
     }//end changelog()
-
 
     /**
      * Start a revalidation (impact-analysis) run for a schema.
@@ -126,7 +122,7 @@ class SchemaMigrationController extends Controller
             return new JSONResponse(['error' => 'Schema not found'], 404);
         }
 
-        $registerId = $this->resolveRegisterId($id);
+        $registerId = $this->resolveRegisterId(schemaId: $id);
         if ($registerId === null) {
             return new JSONResponse(['error' => 'No register contains this schema'], 422);
         }
@@ -153,7 +149,6 @@ class SchemaMigrationController extends Controller
 
     }//end revalidate()
 
-
     /**
      * List runs for a schema.
      *
@@ -165,12 +160,15 @@ class SchemaMigrationController extends Controller
      */
     public function runs(int $id): JSONResponse
     {
-        $runs = $this->runMapper->findBySchema($id, $this->intParam('_limit'), $this->intParam('_offset'));
+        $runs = $this->runMapper->findBySchema(
+            schemaId: $id,
+            limit: $this->intParam(name: '_limit'),
+            offset: $this->intParam(name: '_offset')
+        );
 
         return new JSONResponse(['results' => array_map(static fn($r) => $r->jsonSerialize(), $runs)]);
 
     }//end runs()
-
 
     /**
      * Get a single run's status + report (with per-object entries).
@@ -200,10 +198,10 @@ class SchemaMigrationController extends Controller
         }
 
         $entries = $this->runEntryMapper->findByRun(
-            $run,
-            $outcome,
-            $this->intParam('_limit'),
-            $this->intParam('_offset')
+            runId: $run,
+            outcome: $outcome,
+            limit: $this->intParam(name: '_limit'),
+            offset: $this->intParam(name: '_offset')
         );
 
         $payload            = $entity->jsonSerialize();
@@ -212,7 +210,6 @@ class SchemaMigrationController extends Controller
         return new JSONResponse($payload);
 
     }//end run()
-
 
     /**
      * Preview a migration plan against a bounded sample.
@@ -241,7 +238,7 @@ class SchemaMigrationController extends Controller
             return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => $problems], 422);
         }
 
-        $registerId = $this->resolveRegisterId($id);
+        $registerId = $this->resolveRegisterId(schemaId: $id);
         if ($registerId === null) {
             return new JSONResponse(['error' => 'No register contains this schema'], 422);
         }
@@ -253,7 +250,6 @@ class SchemaMigrationController extends Controller
         return new JSONResponse(['results' => $pairs]);
 
     }//end previewMigration()
-
 
     /**
      * Execute a migration plan over a schema's population (background).
@@ -277,7 +273,7 @@ class SchemaMigrationController extends Controller
             return new JSONResponse(['error' => 'A "plan" array is required'], 422);
         }
 
-        $registerId = $this->resolveRegisterId($id);
+        $registerId = $this->resolveRegisterId(schemaId: $id);
         if ($registerId === null) {
             return new JSONResponse(['error' => 'No register contains this schema'], 422);
         }
@@ -306,7 +302,6 @@ class SchemaMigrationController extends Controller
         return new JSONResponse($run->jsonSerialize(), 201);
 
     }//end migrate()
-
 
     /**
      * Roll a migration run back.
@@ -342,7 +337,6 @@ class SchemaMigrationController extends Controller
 
     }//end rollback()
 
-
     /**
      * Resolve a register id that contains the given schema.
      *
@@ -369,7 +363,6 @@ class SchemaMigrationController extends Controller
 
     }//end resolveRegisterId()
 
-
     /**
      * Read an optional integer query parameter.
      *
@@ -388,7 +381,6 @@ class SchemaMigrationController extends Controller
 
     }//end intParam()
 
-
     /**
      * The current user id, or null.
      *
@@ -404,6 +396,4 @@ class SchemaMigrationController extends Controller
         return null;
 
     }//end currentUid()
-
-
 }//end class

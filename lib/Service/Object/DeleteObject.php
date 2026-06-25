@@ -303,13 +303,10 @@ class DeleteObject
         // in place so the object (and its attachments) can be restored. The folder is
         // only destroyed on permanent delete (above). TODO: if product wants soft-deleted
         // attachments moved to the trash for recoverability, trash the folder here.
-
-        /*
-         * Update the object in database (soft delete - keeps record with deleted metadata).
-         * Pass register/schema context for magic mapper routing.
-         * @psalm-suppress InvalidArgument - ObjectEntity extends Entity
-         */
-
+        //
+        // Update the object in database (soft delete - keeps record with deleted metadata).
+        // Pass register/schema context for magic mapper routing.
+        // @psalm-suppress InvalidArgument - ObjectEntity extends Entity.
         $result = $this->objectEntityMapper->update(
             entity: $objectEntity,
             register: $registerEntity,
@@ -500,6 +497,19 @@ class DeleteObject
         bool $_multitenancy=true,
         bool $scoped=false
     ): bool {
+        // Read-only projection guard: a schema served from an external source
+        // (x-openregister-object-source) is read-only — deletes are not allowed.
+        $objectSource = ($schema instanceof Schema) ? $schema->getObjectSource() : null;
+        if ($objectSource !== null) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
         // Reset cascade count for root deletions.
         if ($originalObjectId === null) {
             $this->lastCascadeCount = 0;

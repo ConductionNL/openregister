@@ -352,7 +352,7 @@ class TranslationMapper extends QBMapper
                 ->setMaxResults(max(1, $batchSize));
 
             try {
-                $updated = $qb->executeStatement();
+                $updated       = $qb->executeStatement();
                 $totalUpdated += $updated;
             } catch (\Throwable $e) {
                 // Driver doesn't support setMaxResults on UPDATE — fall back to
@@ -367,7 +367,7 @@ class TranslationMapper extends QBMapper
                     );
                 $totalUpdated += (int) $qb2->executeStatement();
             }
-        }
+        }//end foreach
 
         // Catch-all: rows whose object UUID no longer joins back to a
         // register (orphans). Use 'nl' as the conservative fallback.
@@ -434,7 +434,11 @@ class TranslationMapper extends QBMapper
         }
 
         $value = (string) $row['source_language'];
-        return ($value === '') ? null : $value;
+        if ($value === '') {
+            return null;
+        }
+
+        return $value;
     }//end getDominantSourceLanguage()
 
     /**

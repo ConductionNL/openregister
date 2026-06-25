@@ -105,8 +105,8 @@ class ThreeWayMerge
 
             // Present in both current and incoming → compare against baseline.
             if ($inCurrent === true && $inIncoming === true) {
-                $localModified = ($inBaseline === false || $this->differs($baseline[$name] ?? null, $current[$name]));
-                $sourceChanged = ($inBaseline === false || $this->differs($baseline[$name] ?? null, $incoming[$name]));
+                $localModified = ($inBaseline === false || $this->differs(a: $baseline[$name] ?? null, b: $current[$name]));
+                $sourceChanged = ($inBaseline === false || $this->differs(a: $baseline[$name] ?? null, b: $incoming[$name]));
 
                 if ($sourceChanged === false) {
                     // Source unchanged → keep local (covers local mods + identical).
@@ -152,7 +152,7 @@ class ThreeWayMerge
      */
     private function differs(mixed $a, mixed $b): bool
     {
-        return $this->canonical($a) !== $this->canonical($b);
+        return $this->canonical(value: $a) !== $this->canonical(value: $b);
     }//end differs()
 
     /**
@@ -167,7 +167,7 @@ class ThreeWayMerge
         if (is_array($value) === true) {
             $copy = [];
             foreach ($value as $key => $item) {
-                $copy[$key] = $this->canonical($item);
+                $copy[$key] = $this->canonical(value: $item);
             }
 
             ksort($copy);

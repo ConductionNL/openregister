@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -92,12 +94,13 @@ class EntityRecognitionHandler
     /**
      * Constructor.
      *
-     * @param ChunkMapper          $chunkMapper          Chunk mapper.
-     * @param GdprEntityMapper     $entityMapper         Entity mapper.
-     * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
-     * @param IDBConnection        $db                   Database connection.
-     * @param LoggerInterface      $logger               Logger.
-     * @param SettingsService      $settingsService      Settings service.
+     * @param ChunkMapper                 $chunkMapper                 Chunk mapper.
+     * @param GdprEntityMapper            $entityMapper                Entity mapper.
+     * @param EntityRelationMapper        $entityRelationMapper        Entity relation mapper.
+     * @param IDBConnection               $db                          Database connection.
+     * @param LoggerInterface             $logger                      Logger.
+     * @param SettingsService             $settingsService             Settings service.
+     * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
      */
     public function __construct(
         private readonly ChunkMapper $chunkMapper,
@@ -105,7 +108,8 @@ class EntityRecognitionHandler
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
-        private readonly SettingsService $settingsService
+        private readonly SettingsService $settingsService,
+        private readonly AnonymisationBackendService $anonymisationBackendService
     ) {
     }//end __construct()
 
@@ -299,10 +303,13 @@ class EntityRecognitionHandler
 
         foreach ($detectedEntities as $detected) {
             try {
-                // Find or create entity.
+                // Find or create entity. Scrub the value to valid UTF-8: text
+                // extracted from some PDFs contains ill-formed byte sequences
+                // (e.g. a stray 0xC3 lead byte) that PostgreSQL (UTF8) rejects
+                // with SQLSTATE[22021], aborting the insert and losing the entity.
                 $entity = $this->findOrCreateEntity(
                     type: $detected['type'],
-                    value: $detected['value'],
+                    value: $this->sanitizeUtf8(value: trim((string) ($detected['value'] ?? ''))),
                     category: $detected['category'] ?? self::getCategoryForType(type: $detected['type'])
                 );
 
@@ -320,7 +327,7 @@ class EntityRecognitionHandler
                     positionEnd: $detected['position_end'],
                     window: $contextWindow
                 );
-                $relation->setContext($context);
+                $relation->setContext($this->sanitizeUtf8(value: $context));
                 $relation->setCreatedAt(new DateTime());
 
                 // Set source references based on chunk source type.
@@ -383,6 +390,8 @@ class EntityRecognitionHandler
      */
     private function detectEntities(string $text, string $method, ?array $entityTypes, float $confidenceThreshold): array
     {
+        $method = $this->resolveMethod(method: $method);
+
         return match ($method) {
             self::METHOD_REGEX => $this->detectWithRegex(
                 text: $text,
@@ -412,6 +421,35 @@ class EntityRecognitionHandler
             default => throw new Exception("Unknown detection method: {$method}")
         };//end match
     }//end detectEntities()
+
+    /**
+     * Resolve the requested method to a concrete, runnable method.
+     *
+     * Guards against the removed `auto` sentinel (which legacy installs may still
+     * have stored) and any unknown/empty value by deferring to the single source
+     * of truth — `AnonymisationBackendService::getState()->effectiveMethod` — which
+     * applies the availability/precedence rules. Concrete known methods pass through.
+     *
+     * @param string $method The requested method.
+     *
+     * @return string A concrete method from BackendState::METHODS.
+     */
+    private function resolveMethod(string $method): string
+    {
+        if (in_array($method, BackendState::METHODS, true) === true) {
+            return $method;
+        }
+
+        try {
+            return $this->anonymisationBackendService->getState()->effectiveMethod;
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[EntityRecognitionHandler] Could not resolve method "'.$method.'", falling back to regex: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return self::METHOD_REGEX;
+        }
+    }//end resolveMethod()
 
     /**
      * Detect entities using regex patterns.
@@ -502,8 +540,10 @@ class EntityRecognitionHandler
     {
         try {
             // Get Presidio settings.
-            $fileSettings     = $this->settingsService->getFileSettingsOnly();
-            $presidioEndpoint = $fileSettings['presidioApiEndpoint'] ?? '';
+            $fileSettings = $this->settingsService->getFileSettingsOnly();
+            // Strip a trailing slash to avoid a double-slash "//analyze" URL
+            // (some servers 404, silently sending the run to the regex fallback).
+            $presidioEndpoint = rtrim(trim((string) ($fileSettings['presidioApiEndpoint'] ?? '')), '/');
 
             if (empty($presidioEndpoint) === true) {
                 $this->logger->warning(
@@ -576,31 +616,57 @@ class EntityRecognitionHandler
         try {
             // Get OpenAnonymiser settings.
             $fileSettings = $this->settingsService->getFileSettingsOnly();
-            $anonEndpoint = $fileSettings['openAnonymiserApiEndpoint'] ?? '';
+            // Strip a trailing slash: a configured endpoint like
+            // "https://host/" would otherwise build "https://host//api/v1/analyze"
+            // (double slash), which some servers 404 — sending the run silently
+            // to the regex fallback.
+            $anonEndpoint = rtrim(trim((string) ($fileSettings['openAnonymiserApiEndpoint'] ?? '')), '/');
+            // Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
+            $useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
 
-            if (empty($anonEndpoint) === true) {
-                $this->logger->warning(
-                    message: '[EntityRecognitionHandler] OpenAnonymiser endpoint not configured, falling back to regex',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                return $this->detectWithRegex(
-                    text: $text,
-                    entityTypes: $entityTypes,
-                    confidenceThreshold: $confidenceThreshold
-                );
-            }
-
-            // Build request body.
+            // Build request body (shared by both transports).
             $requestBody = $this->buildAnalyzeRequestBody(text: $text, language: 'nl', entityTypes: $entityTypes);
 
-            // Make HTTP request and parse response.
-            $responseData = $this->postAnalyzeRequest(
-                url: $anonEndpoint.'/api/v1/analyze',
-                requestBody: $requestBody,
-                serviceName: 'OpenAnonymiser'
-            );
+            if ($useExternal === false) {
+                // Internal: call the ExApp through AppAPI (signed; routing by app id).
+                $responseData = $this->anonymisationBackendService->requestOpenAnonymiser(
+                    route: '/api/v1/analyze',
+                    params: $requestBody
+                );
+
+                // Fall back to a configured external endpoint if the ExApp is unreachable.
+                if ($responseData === null && $anonEndpoint !== '') {
+                    $responseData = $this->postAnalyzeRequest(
+                        url: $anonEndpoint.'/api/v1/analyze',
+                        requestBody: $requestBody,
+                        serviceName: 'OpenAnonymiser'
+                    );
+                }
+            } else {
+                if ($anonEndpoint === '') {
+                    $this->logger->warning(
+                        message: '[EntityRecognitionHandler] OpenAnonymiser external endpoint not configured, falling back to regex',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
+                    return $this->detectWithRegex(
+                        text: $text,
+                        entityTypes: $entityTypes,
+                        confidenceThreshold: $confidenceThreshold
+                    );
+                }
+
+                $responseData = $this->postAnalyzeRequest(
+                    url: $anonEndpoint.'/api/v1/analyze',
+                    requestBody: $requestBody,
+                    serviceName: 'OpenAnonymiser'
+                );
+            }//end if
 
             if ($responseData === null) {
+                $this->logger->warning(
+                    message: '[EntityRecognitionHandler] OpenAnonymiser unreachable, falling back to regex',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return $this->detectWithRegex(
                     text: $text,
                     entityTypes: $entityTypes,
@@ -993,6 +1059,43 @@ class EntityRecognitionHandler
 
         return substr($text, $start, $end - $start);
     }//end extractContext()
+
+    /**
+     * Scrub a string to well-formed UTF-8 for safe PostgreSQL storage.
+     *
+     * Text extracted from some PDFs contains ill-formed UTF-8 byte sequences.
+     * PostgreSQL's UTF8 encoding rejects these on insert (SQLSTATE[22021]),
+     * which would abort the entity-relation insert and silently drop the
+     * entity — leaving residual PII in the anonymised output. Replacing the
+     * invalid bytes here keeps storage (and the downstream substitution map)
+     * intact. Operates on already-substringed context, so stored integer
+     * offsets are unaffected.
+     *
+     * @param string $value The (possibly ill-formed) input string.
+     *
+     * @return string A valid-UTF-8 string.
+     */
+    private function sanitizeUtf8(string $value): string
+    {
+        if ($value === '') {
+            return $value;
+        }
+
+        if (function_exists('mb_scrub') === true) {
+            $scrubbed = mb_scrub($value, 'UTF-8');
+            if (is_string($scrubbed) === true) {
+                return $scrubbed;
+            }
+        }
+
+        $converted = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+
+        if ($converted === false) {
+            return $value;
+        }
+
+        return $converted;
+    }//end sanitizeUtf8()
 
     /**
      * Populate the disambiguating object-context columns on a relation.

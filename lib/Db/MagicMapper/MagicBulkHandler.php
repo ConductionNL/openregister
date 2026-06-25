@@ -419,7 +419,7 @@ class MagicBulkHandler
             }//end try
 
             $allResults = array_merge($allResults, $chunkResults);
-        }
+        }//end foreach
 
         // PERFORMANCE: Event dispatching disabled by default.
         // Dispatching events for 20k+ objects causes 10x slowdown (5000 obj/s -> 500 obj/s).
@@ -493,8 +493,8 @@ class MagicBulkHandler
                 // BUG-DB-6: previously objects without a _uuid were silently
                 // dropped. Generate a UUID so the row is persisted instead of
                 // disappearing without trace.
-                $uuid                  = Uuid::v4()->toRfc4122();
-                $objectData['_uuid']   = $uuid;
+                $uuid = Uuid::v4()->toRfc4122();
+                $objectData['_uuid'] = $uuid;
                 $this->logger->debug(
                     message: '[MagicBulkHandler] Generated missing _uuid for bulk object',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
@@ -512,7 +512,7 @@ class MagicBulkHandler
             $index = count($deduplicatedChunk);
             $deduplicatedChunk[$index] = $objectData;
             $seenUuids[$uuid]          = $index;
-        }
+        }//end foreach
 
         // Re-index array after deduplication.
         $filteredChunk = array_values($deduplicatedChunk);
@@ -537,7 +537,7 @@ class MagicBulkHandler
         $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
         // Get full table name with the configured database prefix.
-        $fullTableName = $this->getFullTableName($tableName);
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
 
         // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
         // This allows us to correctly classify created vs updated regardless of timestamp values.
@@ -593,12 +593,27 @@ class MagicBulkHandler
             foreach ($columns as $column) {
                 $paramName   = 'p'.$paramIndex;
                 $rowValues[] = ':'.$paramName;
-                $parameters[$paramName] = $objectData[$column] ?? null;
+
+                $value = $objectData[$column] ?? null;
+                // The execute() call binds every parameter as PARAM_STR, which
+                // turns PHP `false` into '' — PostgreSQL then rejects '' for
+                // boolean columns (e.g. a dedicated per-schema table's
+                // `pass_through`), 500ing the whole bulk save. Normalise
+                // booleans to 0/1, which both PostgreSQL and MySQL accept for
+                // boolean columns.
+                if (is_bool($value) === true) {
+                    $value = 0;
+                    if ($objectData[$column] === true) {
+                        $value = 1;
+                    }
+                }
+
+                $parameters[$paramName] = $value;
                 $paramIndex++;
-            }
+            }//end foreach
 
             $valuesClause[] = '('.implode(',', $rowValues).')';
-        }
+        }//end foreach
 
         // Build UPSERT SQL ($fullTableName already defined above for pre-upsert UUID check).
         // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
@@ -753,7 +768,7 @@ class MagicBulkHandler
             $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
             // Get full table name with the configured database prefix.
-            $fullTableName = $this->getFullTableName($tableName);
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
 
             // MySQL/MariaDB: use SHOW COLUMNS.
             $sql = "SHOW COLUMNS FROM `$fullTableName`";

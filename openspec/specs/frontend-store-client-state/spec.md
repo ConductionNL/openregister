@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # frontend-store-client-state Specification
 
 ## Purpose

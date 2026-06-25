@@ -98,7 +98,7 @@
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^1.7",
-		"ddn/sapp": "dev-feat/cross-line-matching#8952dfe",
+		"ddn/sapp": "dev-feat/chained-filter-text-replace#5c406e91254d6936f44372db35f1cc15e5a06c56",
 		"dompdf/dompdf": "^3.1",
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
@@ -156,6 +156,9 @@
 		"patches": {
 			"theodo-group/llphant": {
 				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) \u2014 drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
+			},
+			"phpoffice/phpspreadsheet": {
+				"Prefer ZipStream3 when zipstream-php v3 is installed \u2014 a co-installed app's leaked zipstream v2 Option\\Archive otherwise mis-selects the v2 shim and 500s every .xlsx export on the shared Nextcloud autoloader": "patches/phpspreadsheet-zipstream3-prefer.patch"
 			}
 		}
 	}

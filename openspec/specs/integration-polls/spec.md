@@ -5,7 +5,7 @@ status: done
 # integration-polls Specification
 
 ## Purpose
-TBD - created by archiving change integration-polls. Update Purpose after archive.
+Links Nextcloud Polls to OpenRegister objects, showing each poll's status (draft/open/closed), vote tally, and the current user's own highlighted vote. Renders a polls card across all widget surfaces (with a mini bar-chart tally on the detail page) and for `polls` reference properties. The Polls app's own ACLs govern visibility.
 ## Requirements
 ### Requirement: Polls Provider Registration
 

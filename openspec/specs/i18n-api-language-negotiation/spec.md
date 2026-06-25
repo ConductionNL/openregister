@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # i18n-api-language-negotiation Specification
 
 ## Purpose
-TBD - created by archiving change i18n-api-language-negotiation. Update Purpose after archive.
+Negotiates the language of API responses from a `?_lang=`/`?language=` query parameter, the `Accept-Language` header, the register default, then a hardcoded `nl` fallback, applying the same precedence to single-object and bulk-listing reads. Invalid BCP-47 tags fall through with a warning rather than failing the request. On writes, an `X-Translation-Target-Language` header directs scalar body values into a specific translation language independently of the response language, with a 400 conflict when it clashes with a full language-keyed body.
 ## Requirements
 ### Requirement: The system MUST accept `?_lang=` and `?language=` query parameters
 

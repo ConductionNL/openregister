@@ -1,10 +1,13 @@
 ---
-status: implemented
+status: in-progress
 retrofit_extensions:
   - REQ-001
 ---
 
 # Computed Fields
+
+**OpenSpec changes**
+- `calc-engine-scalar-functions` (active) — adds seven pure per-object scalar operators (`max`, `min`, `coalesce`, `abs`, `round`, `year`, `monthsElapsed`) to the `CalculationEvaluator` JSON-AST engine; additive and backward-compatible. Cross-object folding stays out of scope (aggregations).
 
 ## Purpose
 
@@ -770,6 +773,129 @@ The system MUST deduplicate detected cycles by canonical signature so that enter
 - **GIVEN** an empty cycle path
 - **WHEN** `canonicaliseCycle` runs
 - **THEN** the returned signature MUST be the empty string
+
+### Requirement: Declarative cross-object reference annotation
+A schema MAY declare an `x-openregister-references` annotation: a map of named references, each resolving to at most one OTHER object whose fields the schema's calculations MAY read via `@ref.<name>.<field>`. Each reference SHALL declare a target `schema` and a `mode` of either `relatedObject` (resolve by a local foreign-key `field` holding a uuid/id) or `lookup` (resolve by a `filters` criteria map). A `lookup` reference MAY declare an optional `effectiveDate` selector to pick the most-recent row valid as-of a date. References are resolved by `CalculationOnSaveListener` (and `RematerialiseCalculationsCommand`) BEFORE any calculation is evaluated, and injected into the evaluation payload under `@ref.<name>`; the pure `CalculationEvaluator` SHALL remain free of I/O and resolve `@ref.<name>.<field>` only through its existing dotted-path `prop` mechanism. Reference resolution MUST run under the saving user's existing RBAC and multitenancy scope, MUST NOT recursively re-trigger the resolved object's own calculations, and MUST NOT fail the save when a reference is unresolvable.
+
+#### Scenario: Resolve a reference by foreign key
+- **GIVEN** a schema `DepreciationSchedule` declaring `x-openregister-references.asset` with `mode: relatedObject`, `schema: FixedAsset`, and `field: fixedAssetId`
+- **AND** an object whose `fixedAssetId` holds the uuid of a `FixedAsset` with `acquisitionCost = 10000`
+- **WHEN** the object is saved and a calculation reads `{ "prop": "@ref.asset.acquisitionCost" }`
+- **THEN** the listener MUST resolve the `FixedAsset` via `ObjectService::find()`
+- **AND** inject its data under `@ref.asset` so the calculation reads `10000`
+
+#### Scenario: Resolve a reference by effective-dated criteria
+- **GIVEN** a schema `MileageEntry` declaring `x-openregister-references.rate` with `mode: lookup`, `schema: MileageRate`, and `filters` keyed by `@self`-derived values (e.g. `{ "fiscalYear": { "year": "@self.journeyDate" }, "vehicleType": "@self.vehicleType", "country": "@self.country" }`)
+- **AND** a `MileageRate` master row matching those criteria with `ratePerKm = 0.21`
+- **WHEN** a `MileageEntry` is saved and a calculation reads `{ "prop": "@ref.rate.ratePerKm" }`
+- **THEN** the listener MUST resolve the row via `ObjectService::findAll(['filters'=>…])` parameterised by the object's values
+- **AND** inject it under `@ref.rate` so the calculation reads `0.21`
+
+#### Scenario: An unresolvable reference injects null and never fails the save
+- **GIVEN** a `lookup` reference whose criteria match no master row, OR a `relatedObject` reference whose `field` is empty or points to a missing object
+- **WHEN** the object is saved
+- **THEN** the listener MUST inject `@ref.<name>` as `null`
+- **AND** a calculation reading `{ "prop": "@ref.<name>.<field>" }` MUST yield `null`
+- **AND** the save MUST complete successfully (a warning MAY be logged)
+
+#### Scenario: Reference resolution respects RBAC and tenant scope
+- **GIVEN** a saving user without read permission on the target schema, or a referenced object owned by another tenant
+- **WHEN** a reference is resolved during save
+- **THEN** the resolution MUST use `ObjectService` with its default `_rbac: true` and `_multitenancy: true` (never bypassed)
+- **AND** the unreadable/cross-tenant object MUST resolve to `null`, NOT leak its data
+
+#### Scenario: Resolving a reference does not recursively re-trigger calculations
+- **GIVEN** the resolved object's schema also declares materialised calculations
+- **WHEN** a reference to it is resolved during another object's save
+- **THEN** resolution MUST use a read path (`find()` / `findAll()`) that does NOT dispatch creating/updating events
+- **AND** the resolved object's own calculations MUST NOT re-run as a side effect
+
+#### Scenario: Materialised reference values are save-time snapshots refreshed by rematerialise
+- **GIVEN** a `MileageEntry` whose `ratePerKm` was materialised from a `MileageRate` row at save time
+- **WHEN** that `MileageRate` row is later edited
+- **THEN** the previously saved `MileageEntry.ratePerKm` MUST remain unchanged (a snapshot) until the entry is re-saved
+- **AND** running `openregister:rematerialise-calculations <register> <schema>` MUST re-resolve the reference and refresh the materialised value
+
+### Requirement: Declarative aggregate-reference annotation
+A schema MUST be able to declare an `x-openregister-aggregate-refs` annotation: a map of
+named aggregate-references, each folding over MANY objects of a target `schema` into a
+value the declaring schema's calculations MAY read via `@aggregate.<name>` (scalar) or
+`@aggregate.<name>.<field>` (grouped). Each aggregate-reference SHALL declare a target
+`schema` and a `metric` (one of `count`, `sum`, `avg`, `min`, `max`); a non-`count`
+metric SHALL declare a `field`; it MAY declare a `filters` criteria map (each value a
+literal or a `@self.<field>` token, parameterising the aggregation by the saving
+object) and an optional `groupBy`. Aggregate-references SHALL be resolved by
+`CalculationOnSaveListener` (and `RematerialiseCalculationsCommand`) BEFORE any
+calculation is evaluated, via `AggregationRunner::runAdhoc()`, and injected into the
+evaluation payload under `@aggregate.<name>`; the pure `CalculationEvaluator` SHALL
+remain free of I/O and resolve `@aggregate.<name>` only through its existing dotted-path
+`prop` mechanism. Aggregate-reference resolution MUST run under the saving user's
+existing RBAC and multitenancy scope (inherited from `runAdhoc`), and MUST NOT fail the
+save when an aggregation is unresolvable.
+
+#### Scenario: Resolve a scalar aggregate-reference
+- **GIVEN** a schema `UrenRegistratie` declaring `x-openregister-aggregate-refs.billableHoursThisPeriod` with `schema: TimeEntry`, `metric: sum`, `field: hours`, and `filters` keyed by `@self`-derived values (e.g. `{ "resourceId": "@self.resourceId", "billable": true }`)
+- **AND** matching `TimeEntry` rows whose `hours` sum to `120`
+- **WHEN** a `UrenRegistratie` is saved and a calculation reads `{ "prop": "@aggregate.billableHoursThisPeriod" }`
+- **THEN** the listener MUST resolve the aggregation via `AggregationRunner::runAdhoc()` parameterised by the object's values
+- **AND** inject the scalar `120` under `@aggregate.billableHoursThisPeriod` so the calculation reads `120`
+
+#### Scenario: Resolve a grouped aggregate-reference
+- **GIVEN** a schema declaring an aggregate-reference with a `groupBy` (e.g. `{ "field": "status" }`)
+- **WHEN** the object is saved and a calculation reads `{ "prop": "@aggregate.<name>.<groupKey>" }`
+- **THEN** the listener MUST inject a `{<groupKey>: <value>}` map under `@aggregate.<name>`
+- **AND** the calculation MUST read the per-group value via the dotted path
+
+#### Scenario: An unresolvable aggregate-reference injects null and never fails the save
+- **GIVEN** an aggregate-reference whose target schema is missing, whose query errors, or which the saving user may not list
+- **WHEN** the object is saved
+- **THEN** the listener MUST inject `@aggregate.<name>` as `null`
+- **AND** a calculation reading `{ "prop": "@aggregate.<name>" }` MUST yield `null`
+- **AND** the save MUST complete successfully (a warning MAY be logged)
+
+#### Scenario: Aggregate-reference resolution respects RBAC and tenant scope
+- **GIVEN** a saving user without list permission on the target schema, or a target schema in another tenant
+- **WHEN** an aggregate-reference is resolved during save
+- **THEN** the resolution MUST use `AggregationRunner::runAdhoc()` with its RBAC `list` gate and multi-tenancy predicate (never bypassed)
+- **AND** the aggregation MUST NOT fold over rows the saving user cannot list, NOR leak cross-tenant data
+
+#### Scenario: Materialised aggregate values are save-time snapshots refreshed by rematerialise
+- **GIVEN** a `UrenRegistratie` whose `utilizationPercent` was materialised from aggregate-references at save time
+- **WHEN** a contributing `TimeEntry` row is later added or edited
+- **THEN** the previously saved `utilizationPercent` MUST remain unchanged (a snapshot) until the entry is re-saved
+- **AND** running `openregister:rematerialise-calculations <register> <schema>` MUST re-resolve the aggregate-references and refresh the materialised value
+
+#### Scenario: Aggregate-reference annotation is preserved on schema save
+- **GIVEN** a schema imported with an `x-openregister-aggregate-refs` block
+- **WHEN** the schema is saved
+- **THEN** the annotation MUST be retained in the schema configuration because `x-openregister-aggregate-refs` is registered in `Schema::ANNOTATION_VOCABULARY`
+- **AND** a calculation reading `@aggregate.<name>` MUST NOT be rejected as referencing an undeclared aggregate
+
+### Requirement: sha256 scalar operator
+The pure `CalculationEvaluator` SHALL support a `sha256` single-argument operator that
+returns the lowercase hex SHA-256 digest of the stringified value of its operand. The
+operator SHALL accept both `{ "sha256": [<expr>] }` and a bare `{ "sha256": <expr> }`
+argument shape, MUST be deterministic (no I/O), and MUST return `null` when its operand
+resolves to `null` (rather than hashing an empty string). The operator name SHALL be
+recognised by `CalculationAnnotationValidator`.
+
+#### Scenario: Hash a string operand deterministically
+- **GIVEN** a calculation `{ "sha256": ["abc"] }`
+- **WHEN** the calculation is evaluated
+- **THEN** the result MUST be `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`
+- **AND** repeated evaluation of the same operand MUST yield the same digest
+
+#### Scenario: Hash a stringified non-string operand
+- **GIVEN** a calculation `{ "sha256": [ { "prop": "@aggregate.contributingIds" } ] }` whose operand resolves to a non-string value
+- **WHEN** the calculation is evaluated
+- **THEN** the operand MUST be cast to its string form before hashing
+- **AND** the result MUST be the 64-character hex SHA-256 of that string
+
+#### Scenario: A null operand yields null, not a hash
+- **GIVEN** a calculation `{ "sha256": [ { "prop": "missingField" } ] }` whose operand resolves to `null`
+- **WHEN** the calculation is evaluated
+- **THEN** the result MUST be `null`
+- **AND** the calculation MUST NOT return the SHA-256 of an empty string
 
 ## Current Implementation Status
 - **Implemented:**

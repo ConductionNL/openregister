@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 ---
 
 # Schema-Driven Read Coercion

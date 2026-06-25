@@ -52,6 +52,8 @@ use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -648,6 +650,8 @@ class SchemaMapper extends QBMapper
         $this->validateLifecycleAnnotation(schema: $schema);
         $this->validateAggregationsAnnotation(schema: $schema);
         $this->validateCalculationsAnnotation(schema: $schema);
+        $this->validateQualityAnnotation(schema: $schema);
+        $this->validateDedupAnnotation(schema: $schema);
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
         $this->validateArchivalAnnotation(schema: $schema);
@@ -786,6 +790,7 @@ class SchemaMapper extends QBMapper
         $shape = [
             'properties'                  => ($schema->getProperties() ?? []),
             'x-openregister-calculations' => $annotation,
+            'x-openregister-references'   => ($configuration['x-openregister-references'] ?? []),
         ];
 
         $errors = (new CalculationAnnotationValidator())->validate($shape);
@@ -804,6 +809,78 @@ class SchemaMapper extends QBMapper
             .'invalid and was ignored (calculation not evaluated): '.implode(' ', $messages)
         );
     }//end validateCalculationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-quality` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateQualityAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-quality'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'             => ($schema->getProperties() ?? []),
+            'x-openregister-quality' => $annotation,
+        ];
+
+        $errors = (new QualityAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Quality scoring is ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed quality block must not abort the whole schema
+        // import — the schema still stores objects, the score simply won't be
+        // materialised. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-quality annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (quality score not materialised): '.implode(' ', $messages)
+        );
+    }//end validateQualityAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-dedup` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateDedupAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-dedup'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'           => ($schema->getProperties() ?? []),
+            'x-openregister-dedup' => $annotation,
+        ];
+
+        $errors = (new DedupAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Dedup match rules are ADVISORY metadata consumed on demand by
+        // DuplicateDetectionService. A malformed block must not abort the schema
+        // import — duplicate detection simply falls back to caller-supplied rules.
+        // Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-dedup annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (declared match rules not used): '.implode(' ', $messages)
+        );
+    }//end validateDedupAnnotation()
 
     /**
      * Validate the optional `x-openregister-notifications` annotation.

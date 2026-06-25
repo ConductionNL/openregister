@@ -279,7 +279,7 @@ class McpToolsService
      */
     private function findProviderForTool(string $toolId): ?array
     {
-        $first = null;
+        $first      = null;
         $collisions = 0;
 
         foreach ($this->providers as $provider) {
@@ -306,8 +306,8 @@ class McpToolsService
 
                 // Short-name collision across providers — log once below.
                 ++$collisions;
-            }
-        }
+            }//end foreach
+        }//end foreach
 
         if ($collisions > 0 && $first !== null) {
             $this->logger->warning(

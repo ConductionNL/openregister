@@ -61,7 +61,7 @@ class SchemaChangelog extends Entity implements JsonSerializable
     /**
      * The schema this changelog entry belongs to.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $schemaId = null;
 
@@ -114,7 +114,6 @@ class SchemaChangelog extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
-
     /**
      * Constructor — registers field types for hydration.
      */
@@ -130,7 +129,6 @@ class SchemaChangelog extends Entity implements JsonSerializable
         $this->addType(fieldName: 'created', type: 'datetime');
 
     }//end __construct()
-
 
     /**
      * JSON serialisation.
@@ -152,6 +150,4 @@ class SchemaChangelog extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

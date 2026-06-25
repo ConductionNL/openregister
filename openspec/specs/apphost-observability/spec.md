@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # apphost-observability Specification
 
 ## Purpose
-TBD - created by archiving change apphost-observability-engine. Update Purpose after archive.
+Serves health and Prometheus-format metrics endpoints for any Nextcloud app by executing declarative descriptors from the app's manifest, so apps get monitoring without writing endpoint code. Supports five health-check types and five metric source kinds with caching, a provider escape hatch for imperative metrics, and descriptor validation that falls back to safe defaults. Enforces the engine-owned auth posture — public health, admin-only metrics — and powers OpenRegister's own observability endpoints from its manifest.
 ## Requirements
 ### Requirement: Declarative Health Execution
 

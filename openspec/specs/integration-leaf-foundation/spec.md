@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # integration-leaf-foundation Specification
 
 ## Purpose
-TBD - created by archiving change integration-leaf-foundation-shares-analytics. Update Purpose after archive.
+Provides the OpenRegister backend foundation that leaf apps build on: minting, resolving, and revoking opaque public case-token links to objects, and registering and fetching page-level analytics chart series. Public token resolution and analytics fetches run the canonical OR read path with RBAC enforced and fail closed with uniform 404s so they cannot act as enumeration oracles. OpenRegister owns persistence and the render contract; the consuming leaf owns the maths and UI flows.
 ## Requirements
 ### Requirement: Mint a public case-token link
 

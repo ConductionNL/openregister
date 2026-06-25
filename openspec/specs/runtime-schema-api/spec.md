@@ -1,7 +1,12 @@
+---
+status: done
+---
+
 # runtime-schema-api Specification
 
 ## Purpose
-TBD - created by archiving change openregister-runtime-schema-api. Update Purpose after archive.
+Provides runtime CRUD on registers and schemas so that creating, updating, or deleting a schema or register immediately invalidates the relevant cache and re-binds the affected declarative engines (lifecycle, aggregations, calculations, notifications) without a restart. Deletions are guarded by object counts and refuse with HTTP 409 unless forced, and slug-pairs are resolved to numeric IDs at the slug-aware layer for object search and application-config imports.
+
 ## Requirements
 ### Requirement: Runtime schema creation invalidates cache and reloads declarative engines
 

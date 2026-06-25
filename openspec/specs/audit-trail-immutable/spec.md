@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # audit-trail-immutable Specification
 
 ---

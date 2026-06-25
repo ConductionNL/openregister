@@ -69,7 +69,6 @@ class SchemaRevalidationService
      */
     private const MAX_ERRORS_PER_OBJECT = 25;
 
-
     /**
      * Constructor.
      *
@@ -91,7 +90,6 @@ class SchemaRevalidationService
 
     }//end __construct()
 
-
     /**
      * Start a revalidation run.
      *
@@ -111,9 +109,9 @@ class SchemaRevalidationService
      */
     public function start(int $schemaId, int $registerId, ?array $proposedDefinition=null, ?string $startedBy=null): SchemaRun
     {
-        $this->assertNoActiveRun($schemaId);
+        $this->assertNoActiveRun(schemaId: $schemaId);
 
-        $total = $this->countPopulation($schemaId, $registerId);
+        $total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
 
         return $this->runMapper->createFromArray(
             [
@@ -129,7 +127,6 @@ class SchemaRevalidationService
         );
 
     }//end start()
-
 
     /**
      * Process one batch of a revalidation run, advancing its cursor.
@@ -153,22 +150,22 @@ class SchemaRevalidationService
         $validationSchema = $schema;
         $isDryRun         = ($run->getProposedDefinition() !== null);
         if ($isDryRun === true) {
-            $validationSchema = $this->transientSchema($schema, $run->getProposedDefinition());
+            $validationSchema = $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
         }
 
-        $objects = $this->loadBatch($run, $batchSize);
+        $objects = $this->loadBatch(run: $run, batchSize: $batchSize);
         if (count($objects) === 0) {
-            $this->finish($run, SchemaRun::STATE_COMPLETED);
+            $this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
             return false;
         }
 
-        $report  = ($run->getReport() ?? ['valid' => 0, 'invalid' => 0]);
-        $maxId   = $run->getCursor();
+        $report = ($run->getReport() ?? ['valid' => 0, 'invalid' => 0]);
+        $maxId  = $run->getCursor();
 
         foreach ($objects as $object) {
             $maxId = max($maxId, (int) $object->getId());
 
-            $errors = $this->validate($object, $validationSchema);
+            $errors = $this->validate(object: $object, schema: $validationSchema);
             if (count($errors) === 0) {
                 $report['valid'] = (($report['valid'] ?? 0) + 1);
             } else {
@@ -193,7 +190,6 @@ class SchemaRevalidationService
         return true;
 
     }//end processBatch()
-
 
     /**
      * Validate one object against a schema, returning a list of error strings.
@@ -227,7 +223,6 @@ class SchemaRevalidationService
 
     }//end validate()
 
-
     /**
      * Build a transient (unpersisted) Schema from a proposed definition.
      *
@@ -252,7 +247,6 @@ class SchemaRevalidationService
         return $schema;
 
     }//end transientSchema()
-
 
     /**
      * Load the next batch of non-deleted objects after the run's cursor.
@@ -280,7 +274,6 @@ class SchemaRevalidationService
 
     }//end loadBatch()
 
-
     /**
      * Count the non-deleted population for a schema in a register.
      *
@@ -306,7 +299,6 @@ class SchemaRevalidationService
 
     }//end countPopulation()
 
-
     /**
      * Finish a run, persisting its terminal state.
      *
@@ -324,7 +316,6 @@ class SchemaRevalidationService
 
     }//end finish()
 
-
     /**
      * Refuse a second concurrent run on the same schema.
      *
@@ -341,11 +332,9 @@ class SchemaRevalidationService
         $active = $this->runMapper->findActiveForSchema($schemaId);
         if ($active !== null) {
             throw new SchemaRunConcurrencyException(
-                sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
+                message: sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
             );
         }
 
     }//end assertNoActiveRun()
-
-
 }//end class

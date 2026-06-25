@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # integration-maps-overview Specification
 
 ## Purpose
-TBD - created by archiving change integration-maps-overview-page-surface. Update Purpose after archive.
+Lets an authenticated user register page-level map overview widgets scoped to a register and schema, then query an RBAC-scoped marker point set drawn from each object's geometry. A default Dutch PDOK WMTS base layer is applied as declarative metadata unless one is supplied, and the register/schema scope is caller-immutable so it cannot be spoofed through filters. Point queries run the canonical OR read path with RBAC enforced for non-admins, returning a uniform point list that never acts as an enumeration oracle.
 ## Requirements
 ### Requirement: Register a page-level map overview widget
 

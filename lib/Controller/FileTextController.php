@@ -585,8 +585,25 @@ class FileTextController extends Controller
             // `markAsAnonymized` directly.
             $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
 
+            // Best-effort policy: the file is produced even when some entity
+            // text could not be removed. Surface the residuals so the operator
+            // can iterate (manual entities, skip unselected occurrences). Logs
+            // stay PII-free (ADR-005); the residual TEXT is carried only in
+            // this authenticated response for the review UI (deliberate,
+            // product-owner-approved deviation from the no-PII-in-responses rule).
+            $residualEntities = $this->fileService->getLastResidualEntities();
+            $isComplete       = (count($residualEntities) === 0);
+
+            $logSuffix     = ' with residual entities';
+            $messageResult = 'File anonymized, but some entities could not be fully removed — review the output'
+                .' and refine the entities (manual entities, skip unselected occurrences).';
+            if ($isComplete === true) {
+                $logSuffix     = ' successfully';
+                $messageResult = 'File anonymized successfully';
+            }
+
             $this->logger->info(
-                message: '[FileTextController] File anonymized successfully',
+                message: '[FileTextController] File anonymized'.$logSuffix,
                 context: [
                     'file'               => __FILE__,
                     'line'               => __LINE__,
@@ -594,17 +611,23 @@ class FileTextController extends Controller
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
                     'entities_replaced'  => count($entities),
+                    'complete'           => $isComplete,
+                    // PII-free: count only, never the residual text.
+                    'residual_count'     => count($residualEntities),
                 ]
             );
 
             return new JSONResponse(
                 data: [
                     'success'            => true,
-                    'message'            => 'File anonymized successfully',
+                    'complete'           => $isComplete,
+                    'message'            => $messageResult,
                     'original_file_id'   => $fileId,
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
                     'entities_replaced'  => count($entities),
+                    'residual_count'     => count($residualEntities),
+                    'residual_entities'  => $residualEntities,
                 ]
             );
         } catch (PdfAnonymisationException $e) {
@@ -612,17 +635,17 @@ class FileTextController extends Controller
             // per the `pdf-anonymisation` spec (REQ:filter-coverage +
             // REQ:validation-gate + REQ:image-only-defer):
             //
-            //   - encrypted_pdf       → 422 (caller-correctable)
-            //   - text_layer_missing → 422 (caller MUST route to OCR via
-            //                              the `ocr-document-scanning`
-            //                              capability — the controller
-            //                              surfaces a structured body so
-            //                              the caller can dispatch; v1
-            //                              does not auto-redirect)
-            //   - validation_failed  → 500 (pipeline integrity failure;
-            //                              fail-closed for the strict
-            //                              entity-anonymisation flow)
-            //   - internal_error     → 500 (unexpected pipeline failure)
+            // - encrypted_pdf       → 422 (caller-correctable)
+            // - text_layer_missing → 422 (caller MUST route to OCR via
+            // the `ocr-document-scanning`
+            // capability — the controller
+            // surfaces a structured body so
+            // the caller can dispatch; v1
+            // does not auto-redirect)
+            // - validation_failed  → 500 (pipeline integrity failure;
+            // fail-closed for the strict
+            // entity-anonymisation flow)
+            // - internal_error     → 500 (unexpected pipeline failure)
             //
             // Per ADR-005 the response body MUST NOT echo the
             // operator-supplied entity text — the exception's diagnostic

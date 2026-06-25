@@ -93,9 +93,9 @@ class SolrQueryExecutor
         OrganisationService $organisationService,
         IUserSession $userSession
     ) {
-        $this->httpClient          = $httpClient;
-        $this->collectionManager   = $collectionManager;
-        $this->logger              = $logger;
+        $this->httpClient        = $httpClient;
+        $this->collectionManager = $collectionManager;
+        $this->logger            = $logger;
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
     }//end __construct()
@@ -296,7 +296,7 @@ class SolrQueryExecutor
      */
     private function escapeSolrQuery(string $value): string
     {
-        // Lucene special characters: + - && || ! ( ) { } [ ] ^ " ~ * ? : \ /
+        // Lucene special characters to escape are: + - && || ! ( ) { } [ ] ^ " ~ * ? : \ and /.
         $special = [
             '\\',
             '+',

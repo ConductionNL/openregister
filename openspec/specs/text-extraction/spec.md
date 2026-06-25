@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # text-extraction Specification
 
 ## Purpose

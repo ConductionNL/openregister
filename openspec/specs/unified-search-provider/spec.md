@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # unified-search-provider Specification
 
 ## Purpose

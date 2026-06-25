@@ -59,7 +59,7 @@ class NotificationDedupeState extends Entity implements JsonSerializable
     /**
      * Owning schema id.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $schemaId = null;
 
@@ -120,13 +120,13 @@ class NotificationDedupeState extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'            => $this->id,
-            'schemaId'      => $this->schemaId,
-            'ruleKey'       => $this->ruleKey,
-            'objectUuid'    => $this->objectUuid,
-            'fingerprint'   => $this->fingerprint,
-            'dispatchedAt'  => $this->dispatchedAt?->format(DateTime::ATOM),
-            'seenAt'        => $this->seenAt?->format(DateTime::ATOM),
+            'id'           => $this->id,
+            'schemaId'     => $this->schemaId,
+            'ruleKey'      => $this->ruleKey,
+            'objectUuid'   => $this->objectUuid,
+            'fingerprint'  => $this->fingerprint,
+            'dispatchedAt' => $this->dispatchedAt?->format(DateTime::ATOM),
+            'seenAt'       => $this->seenAt?->format(DateTime::ATOM),
         ];
 
     }//end jsonSerialize()

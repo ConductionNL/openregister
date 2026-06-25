@@ -1,7 +1,12 @@
+---
+status: done
+---
+
 # text-extraction-eml Specification
 
 ## Purpose
-TBD - created by archiving change text-extraction-eml. Update Purpose after archive.
+Extracts text from `message/rfc822` (EML) email files, producing both a flat plain-text output — ordered headers, body, and recursively-extracted attachment text — and a structured `EmlStructure` value object exposing parsed headers, plain/HTML bodies, and per-attachment metadata. Nested EML is recursed to depth 3, RFC 2047 encoded-words are decoded, non-UTF-8 bodies are transcoded best-effort, and the extraction never logs PII while failing gracefully on malformed input.
+
 ## Requirements
 ### Requirement: `TextExtractionService` MUST handle `message/rfc822` MIME inputs
 

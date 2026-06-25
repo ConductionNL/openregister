@@ -2237,7 +2237,6 @@ class SettingsService
         return 'integration.deck.default.'.$schemaSlug;
     }//end buildDeckDefaultKey()
 
-
     /**
      * Get the persisted Deck default board+stack for a schema (or null).
      *
@@ -2249,7 +2248,7 @@ class SettingsService
      */
     public function getDeckDefault(string $schemaSlug): ?array
     {
-        $raw = $this->config->getAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), '');
+        $raw = $this->config->getAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug), '');
         if ($raw === '') {
             return null;
         }
@@ -2268,7 +2267,6 @@ class SettingsService
             'stackId' => (int) $decoded['stackId'],
         ];
     }//end getDeckDefault()
-
 
     /**
      * Persist the Deck default board+stack for a schema. Overwrites any prior value.
@@ -2293,9 +2291,8 @@ class SettingsService
             return;
         }
 
-        $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug), $payload);
+        $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug), $payload);
     }//end setDeckDefault()
-
 
     /**
      * Clear the persisted Deck default for a schema. No-op when none stored.
@@ -2308,6 +2305,6 @@ class SettingsService
      */
     public function clearDeckDefault(string $schemaSlug): void
     {
-        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey($schemaSlug));
+        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug));
     }//end clearDeckDefault()
 }//end class

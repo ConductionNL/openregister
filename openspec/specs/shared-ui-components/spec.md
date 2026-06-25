@@ -1,7 +1,12 @@
+---
+status: done
+---
+
 # shared-ui-components Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-2b-components. Update Purpose after archive.
+Provides reusable OpenRegister frontend components with well-defined contracts: a pagination component that clamps page-change requests to the valid range, a ConfigurationCard that detects already-imported discovered configurations via a backend lookup on mount, a collapsible settings card that emits its toggle state, and a settings section that escapes HTML in detailed descriptions to prevent XSS.
+
 ## Requirements
 ### Requirement: REQ-001 — Pagination component MUST clamp page-change requests to the valid range @e2e exclude isolated Vue component contract (PaginationComponent props-in / page-changed-event-out gating logic) — covered by Vitest component unit test, not a browser-observable app surface
 

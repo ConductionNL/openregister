@@ -5,7 +5,7 @@ status: done
 # integration-xwiki Specification
 
 ## Purpose
-TBD - created by archiving change integration-xwiki. Update Purpose after archive.
+Links external XWiki pages to OpenRegister objects, routing all CRUD through an OpenConnector `xwiki` source (Basic or OAuth2). The link form accepts a full URL or a space.page path and stores a canonical reference, tab rows show the full wiki/space/page breadcrumb, the detail page renders a macro-stripped text-only preview, and an auth-expiry banner offers a reconnect link. Renders on all four widget surfaces and as a page chip for `xwiki` reference properties; XWiki's own ACLs govern access transitively.
 ## Requirements
 ### Requirement: XWiki Provider Registration
 

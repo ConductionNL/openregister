@@ -1,7 +1,12 @@
+---
+status: done
+---
+
 # schema-migration Specification
 
 ## Purpose
-TBD - created by archiving change schema-versioning-and-object-migration. Update Purpose after archive.
+Manages schema versioning and object migration by classifying every schema definition change as compatible or breaking, recording a typed changelog with the matching version bump, and stamping objects with the schema version they validated against. Provides non-mutating revalidation runs for impact analysis, declarative migration plans that transform an object population through the standard save pipeline with rollback via content versioning, and a gate that refuses breaking changes without explicit acknowledgement across every update path.
+
 ## Requirements
 ### Requirement: Schema definition changes MUST be classified and recorded as a changelog
 

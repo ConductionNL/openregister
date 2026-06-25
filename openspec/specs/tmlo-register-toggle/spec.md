@@ -4,7 +4,7 @@ status: done
 # tmlo-register-toggle Specification
 
 ## Purpose
-TBD - created by archiving change tmlo-metadata. Update Purpose after archive.
+Controls whether objects in a register carry TMLO archival metadata via a `tmloEnabled` flag in the register's configuration. When enabled, new and updated objects receive TMLO metadata fields seeded from the schema's configured `tmloDefaults` (classification, archival nomination, retention period, destruction category), with `archiefstatus` defaulting to `actief`.
 ## Requirements
 ### Requirement: Register-level TMLO toggle
 

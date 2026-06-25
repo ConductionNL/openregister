@@ -2031,8 +2031,8 @@ class PermissionHandler
             return true;
         }
 
-        $userGroupSet  = array_flip($userGroups);
-        $roleGroupMap  = null;
+        $userGroupSet = array_flip($userGroups);
+        $roleGroupMap = null;
 
         foreach ($authorizationList as $entry) {
             // Literal NC group id.

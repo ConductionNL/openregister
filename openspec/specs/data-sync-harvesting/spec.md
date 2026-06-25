@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # data-sync-harvesting Specification
 
 ## Purpose

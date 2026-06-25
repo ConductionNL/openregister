@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # reference-existence-validation Specification
 
 ## Purpose

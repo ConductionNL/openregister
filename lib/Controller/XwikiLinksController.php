@@ -278,6 +278,69 @@ class XwikiLinksController extends Controller
     }//end available()
 
     /**
+     * Free-text search the remote xWiki knowledge base (object-independent).
+     *
+     * The query-first surface a consuming app (e.g. a knowledge-base dashboard
+     * widget) calls to find xWiki pages by free text, with no OR object context.
+     * The xWiki base URL is resolved entirely from the OpenConnector `xwiki`
+     * source — the caller never holds a direct xWiki URL.
+     *
+     * Query params:
+     *   - `q` / `search` — free-text query (optional; empty lists available pages)
+     *   - `limit`        — max results (clamped 1..100, default 25)
+     *   - `offset`       — pagination offset (clamped >= 0, default 0)
+     *
+     * Read-only and null-safe: an unconfigured `xwiki` source / unreachable
+     * upstream returns 503 with `details.cause` (the 4-state UX), never a fatal.
+     *
+     * @return JSONResponse `{ results, total, limit, offset }` on success, or a
+     *                      503 `{ error, details: { cause } }` when the source is
+     *                      unconfigured/down.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/integration-xwiki-query-search/specs/integration-xwiki/spec.md
+     */
+    public function search(): JSONResponse
+    {
+        $query = $this->request->getParam('q');
+        if ($query === null) {
+            $query = $this->request->getParam('search');
+        }
+
+        if ($query !== null) {
+            $query = (string) $query;
+        }
+
+        $limit  = (int) $this->request->getParam('limit', 25);
+        $offset = (int) $this->request->getParam('offset', 0);
+
+        $result = $this->xwikiLinkService->searchPages($query, $limit, $offset);
+
+        // Unconfigured-source / upstream-down → 503 with details.cause so the
+        // consumer renders its Configure-XWiki / unavailable state (4-state UX).
+        if (($result['unavailable'] ?? false) === true) {
+            return new JSONResponse(
+                [
+                    'error'   => 'xWiki source is not available',
+                    'details' => ['cause' => $result['cause']],
+                ],
+                503
+            );
+        }
+
+        return new JSONResponse(
+            [
+                'results' => $result['results'],
+                'total'   => $result['total'],
+                'limit'   => $result['limit'],
+                'offset'  => $result['offset'],
+            ]
+        );
+    }//end search()
+
+    /**
      * Resolve an OR object from register/schema/id.
      *
      * @param string $register Register slug or id.

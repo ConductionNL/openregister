@@ -163,12 +163,15 @@ use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -247,6 +250,9 @@ use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -437,6 +443,7 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerIntegrationRegistry(context: $context);
+        $this->registerObjectSourceProviders(context: $context);
         $this->registerEventListeners(context: $context);
         $this->registerMcpToolProviders(context: $context);
         $this->registerAppHostObservability(context: $context);
@@ -1144,6 +1151,43 @@ class Application extends App implements IBootstrap
     }//end registerIntegrationRegistry()
 
     /**
+     * Register the ObjectSourceRegistry (shared) and the built-in
+     * CalDAV-VTODO object-source provider service.
+     *
+     * The registry is shared so `addProvider()` registrations made during
+     * `boot()` persist for the whole request; GetObject auto-wires it.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-1.3
+     */
+    private function registerObjectSourceProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            ObjectSourceRegistry::class,
+            function (ContainerInterface $container) {
+                return new ObjectSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            CalDavVtodoObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new CalDavVtodoObjectSourceProvider(
+                    taskService: $container->get(TaskService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+    }//end registerObjectSourceProviders()
+
+    /**
      * Register the 5 BuiltinProviders/* services so they can be
      * resolved lazily from the container.
      *
@@ -1246,6 +1290,67 @@ class Application extends App implements IBootstrap
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: KvK company lookup (external, OpenConnector-backed).
+        // Stateless, read-only — no link table; routed through
+        // ExternalIntegrationRouter, credentials (the `apikey` header) on the
+        // OpenConnector `kvk` source. Centralises pipelinq's KvkApiClient
+        // onto the canonical OR/OpenConnector path (ADR-022).
+        // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+        $context->registerService(
+            KvkProvider::class,
+            function (ContainerInterface $container) {
+                return new KvkProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: OpenCorporates company search (external,
+        // OpenConnector-backed). Stateless, read-only — no link table;
+        // routed through ExternalIntegrationRouter, credentials (the
+        // `api_token` query param) on the OpenConnector `opencorporates`
+        // source. Centralises pipelinq's OpenCorporatesApiClient onto the
+        // canonical OR/OpenConnector path (ADR-022).
+        // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+        $context->registerService(
+            OpenCorporatesProvider::class,
+            function (ContainerInterface $container) {
+                return new OpenCorporatesProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: outbound-messaging dispatch (external,
+        // OpenConnector-backed) — side-effecting SMS / WhatsApp send. Routed
+        // through ExternalIntegrationRouter, credentials on the per-call
+        // OpenConnector source (cmcom-sms / messagebird-sms / twilio-sms /
+        // whatsapp-cloud-api / whatsapp-bsp). NOT added to the IntegrationRegistry
+        // boot loop: it is a send-only leaf with no listable surface, reached
+        // via MessageDispatchController, not as an object-sidebar tab.
+        // Centralises only pipelinq's per-provider DISPATCH + credentials onto
+        // the canonical OR/OpenConnector path (ADR-022); all orchestration
+        // (provider selection, STOP opt-out, template-approval, 24h session,
+        // dedupe, delivery-status) stays in pipelinq.
+        // @spec openspec/changes/messaging-dispatch-leaf/tasks.md.
+        $context->registerService(
+            MessageDispatchProvider::class,
+            function (ContainerInterface $container) {
+                return new MessageDispatchProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
@@ -1941,6 +2046,12 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
 
+        // Quality annotation listener — materialises a per-object data-quality
+        // score (0-1) into the object payload before persistence
+        // (see x-openregister-quality). MDM foundation capability.
+        $context->registerEventListener(ObjectCreatingEvent::class, QualityScoreOnSaveListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, QualityScoreOnSaveListener::class);
+
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
         $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
@@ -1986,7 +2097,7 @@ class Application extends App implements IBootstrap
         // Scheduled-notification per-object dedup pruning (Phase 3.4):
         // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
         // - drop dedup rows for rule keys removed/renamed in the schema annotation
-        //   so orphan state does not pile up after edits.
+        // so orphan state does not pile up after edits.
         $context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
@@ -2421,6 +2532,7 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+        $this->bootObjectSourceProviders(server: $server);
 
         // Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
         // component can render submitter faces alongside the issues
@@ -2530,6 +2642,9 @@ class Application extends App implements IBootstrap
             XwikiProvider::class,
             // @spec openspec/changes/integration-openproject/tasks.md.
             OpenProjectProvider::class,
+            // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+            KvkProvider::class,
+            OpenCorporatesProvider::class,
             // Leaves: NC-native, backend-shipped (wrap existing OR services).
             // @spec openspec/changes/integration-calendar/tasks.md.
             CalendarProvider::class,
@@ -2603,4 +2718,40 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+
+    /**
+     * Register the built-in object-source providers with the shared
+     * ObjectSourceRegistry.
+     *
+     * Runs in boot() (post-registration) because addProvider() needs the
+     * registry instance. Guarded so one absent provider never takes the app
+     * down — a failing provider simply won't serve its bound schemas.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-5.2
+     */
+    private function bootObjectSourceProviders($server): void
+    {
+        try {
+            $registry = $server->get(ObjectSourceRegistry::class);
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        try {
+            $registry->addProvider($server->get(CalDavVtodoObjectSourceProvider::class));
+        } catch (\Throwable $e) {
+            try {
+                $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    '[ObjectSource] could not register CalDavVtodoObjectSourceProvider: '.$e->getMessage()
+                );
+            } catch (\Throwable $inner) {
+                // Logger unavailable on this build — nothing to do.
+            }
+        }
+
+    }//end bootObjectSourceProviders()
 }//end class

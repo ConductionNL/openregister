@@ -47,7 +47,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SyncRecordMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *
@@ -55,7 +54,7 @@ class SyncRecordMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_sync_records', SyncRecord::class);
+        parent::__construct(db: $db, tableName: 'openregister_sync_records', entityClass: SyncRecord::class);
     }//end __construct()
 
     /**
@@ -87,7 +86,7 @@ class SyncRecordMapper extends QBMapper
         $record->setCreated(new DateTime());
         $record->setUpdated(new DateTime());
 
-        return $this->insert($record);
+        return $this->insert(entity: $record);
     }//end createPending()
 
     /**
@@ -119,7 +118,7 @@ class SyncRecordMapper extends QBMapper
 
         $record->setUpdated(new DateTime());
 
-        return $this->update($record);
+        return $this->update(entity: $record);
     }//end transitionStatus()
 
     /**
@@ -140,7 +139,7 @@ class SyncRecordMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByExecution()
 
     /**
@@ -164,7 +163,7 @@ class SyncRecordMapper extends QBMapper
             ->andWhere($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)))
             ->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(SyncRecordStatus::PENDING)));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findPending()
 
     /**
@@ -187,7 +186,7 @@ class SyncRecordMapper extends QBMapper
             ->orderBy('id', 'DESC')
             ->setMaxResults(1);
 
-        $records = $this->findEntities($qb);
+        $records = $this->findEntities(query: $qb);
 
         return ($records[0] ?? null);
     }//end findByExternalId()

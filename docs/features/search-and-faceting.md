@@ -199,6 +199,34 @@ Apps declare their result URLs, icons, and display names via the boot-time
 deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
 `displayName` is what labels an app's unified-search results.
 
+## Search Trail Recording
+
+OpenRegister records a **search trail** for paginated searches so the dashboard's
+"Popular Search Terms" widget and "Searches" KPI have data to display. Each trail
+entry captures the search term, the result count on the returned page, the total
+matching results, the response time, and the execution backend (database vs.
+SOLR/index). Recording happens in `ObjectService::searchObjectsPaginated()`, so it
+covers both backends transparently.
+
+What gets recorded is governed by two retention settings, combined into an
+**effective mode**:
+
+- **`searchTrailsEnabled`** (boolean master switch) — when `false`, nothing is
+  recorded regardless of the mode below. When the setting cannot be read,
+  recording fails safe to enabled.
+- **`searchTrailRecordingMode`** (`all` | `_search` | `none`, default `_search`) —
+  configurable from the **Retention** admin page without a code deploy:
+  - `_search` (default) — record only free-text searches (non-empty `_search`);
+    plain list and pagination calls record nothing.
+  - `all` — record every paginated search call.
+  - `none` — record nothing.
+
+Recording is best-effort: a write failure logs a warning and the search returns
+normally, so analytics recording never degrades search availability. The settings
+round-trip through `GET`/`PATCH /api/settings/retention`.
+
+**Standards**: BIO (audit logging), AVG/GDPR Article 30 (processing register context).
+
 ## Related Features
 
 - [Registers & Schemas](registers-and-schemas.md) — facet configuration lives on schema properties

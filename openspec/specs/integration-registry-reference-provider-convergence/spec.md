@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # integration-registry-reference-provider-convergence Specification
 
 ## Purpose
-TBD - created by archiving change integration-registry-reference-provider-convergence. Update Purpose after archive.
+Documents a spike that evaluates whether the OpenRegister integration registry surface should converge onto Nextcloud's `IReferenceProvider`. Delivers a responsibilities matrix separating pure read/render duties from genuine value-adds, a single go/no-go recommendation with phased follow-up plan and risks, and an enumerated migration blast radius — all as documentation and spec artifacts only, with no production registry or frontend code modified.
 ## Requirements
 ### Requirement: REQ-CONV-001 — The change SHALL deliver a responsibilities matrix
 

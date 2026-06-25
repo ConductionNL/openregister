@@ -750,7 +750,7 @@ class TimeTrackerLinkService
         $startedAt = $info['startedAt'] ?? null;
         if ($startedAt instanceof DateTime
             && ($link->getStartedAt() === null
-                || $startedAt->getTimestamp() !== $link->getStartedAt()->getTimestamp())
+            || $startedAt->getTimestamp() !== $link->getStartedAt()->getTimestamp())
         ) {
             $link->setStartedAt($startedAt);
             $changed = true;

@@ -266,7 +266,7 @@ class TranslationHandler
 
                 $objectData[$propName] = $value;
                 continue;
-            }
+            }//end if
 
             // Simple value path.
             if ($value !== null) {

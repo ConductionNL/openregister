@@ -70,7 +70,7 @@ class BackfillTranslationSourceLanguageCommand extends Command
      */
     protected function configure(): void
     {
-        $this->setName('openregister:translations:backfill-source-language')
+        $this->setName(name: 'openregister:translations:backfill-source-language')
             ->setDescription(
                 'Back-fill openregister_translations.source_language from each register default. Idempotent.'
             )
@@ -115,11 +115,13 @@ class BackfillTranslationSourceLanguageCommand extends Command
         }
 
         if ((bool) $input->getOption('dry-run') === true) {
-            $output->writeln(sprintf(
+            $output->writeln(
+                    sprintf(
                 '<comment>Dry-run: would update up to %d rows (batch size %d).</comment>',
                 $pending,
                 $batchSize
-            ));
+            )
+                    );
             return Command::SUCCESS;
         }
 
@@ -144,10 +146,12 @@ class BackfillTranslationSourceLanguageCommand extends Command
 
         $remaining = $this->translationMapper->countMissingSourceLanguage();
         if ($remaining > 0) {
-            $output->writeln(sprintf(
+            $output->writeln(
+                    sprintf(
                 '<comment>%d rows still pending — re-run the command to continue back-filling.</comment>',
                 $remaining
-            ));
+            )
+                    );
         }
 
         return Command::SUCCESS;

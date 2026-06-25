@@ -50,16 +50,15 @@ use Throwable;
  */
 class SyncDataJob extends TimedJob
 {
-
     /**
      * Constructor.
      *
-     * @param ITimeFactory           $time             Time factory for scheduling
-     * @param SourceMapper           $sourceMapper     Source persistence
-     * @param SyncScheduleService    $scheduleService  Due-source selection
-     * @param SourceFetcherRegistry  $fetcherRegistry  Resolves transport per source type
-     * @param HarvestPipelineService $pipeline         Pipeline orchestrator
-     * @param LoggerInterface        $logger           Logger
+     * @param ITimeFactory           $time            Time factory for scheduling
+     * @param SourceMapper           $sourceMapper    Source persistence
+     * @param SyncScheduleService    $scheduleService Due-source selection
+     * @param SourceFetcherRegistry  $fetcherRegistry Resolves transport per source type
+     * @param HarvestPipelineService $pipeline        Pipeline orchestrator
+     * @param LoggerInterface        $logger          Logger
      */
     public function __construct(
         ITimeFactory $time,
@@ -134,7 +133,7 @@ class SyncDataJob extends TimedJob
         $this->sourceMapper->update($source);
 
         try {
-            $since   = null;
+            $since = null;
             if ($source->getLastSyncToken() !== null) {
                 $since = $source->getLastSyncToken();
             } else if ($source->getLastSyncDate() !== null) {

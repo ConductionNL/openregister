@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # workflow-operations Specification
 
 ## Purpose

@@ -110,7 +110,7 @@ class DialectDetector
         }
 
         // Schema.org JSON-LD: a @context referencing schema.org.
-        if ($this->referencesSchemaOrg($document['@context'] ?? null) === true) {
+        if ($this->referencesSchemaOrg(context: ($document['@context'] ?? null)) === true) {
             return self::DIALECT_SCHEMA_ORG;
         }
 
@@ -122,7 +122,7 @@ class DialectDetector
         }
 
         // GGM export root markers.
-        if ($this->looksLikeGgm($document) === true) {
+        if ($this->looksLikeGgm(document: $document) === true) {
             return self::DIALECT_GGM;
         }
 
@@ -131,7 +131,7 @@ class DialectDetector
             return self::DIALECT_JSON_SCHEMA;
         }
 
-        if ($this->looksLikeJsonSchema($document) === true) {
+        if ($this->looksLikeJsonSchema(document: $document) === true) {
             return self::DIALECT_JSON_SCHEMA;
         }
 

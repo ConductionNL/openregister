@@ -353,7 +353,11 @@ class DeckLinksController extends Controller
      */
     public function getDefault(string $schema): JSONResponse
     {
-        $default = $this->settingsService->getDeckDefaultBoard(schemaSlug: $schema);
+        $default = $this->settingsService->getDeckDefault(schemaSlug: $schema);
+        if ($default === null) {
+            return new JSONResponse(['boardId' => null, 'stackId' => null]);
+        }
+
         return new JSONResponse($default);
     }//end getDefault()
 

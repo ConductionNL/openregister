@@ -48,7 +48,7 @@ class SchemaImportException extends RuntimeException
         private readonly int $httpStatus=400,
         ?Throwable $previous=null
     ) {
-        parent::__construct($message, 0, $previous);
+        parent::__construct(message: $message, code: 0, previous: $previous);
     }//end __construct()
 
     /**

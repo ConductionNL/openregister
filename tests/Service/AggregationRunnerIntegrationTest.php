@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
@@ -33,16 +34,30 @@ use Symfony\Component\Uid\Uuid;
  */
 class AggregationRunnerIntegrationTest extends TestCase
 {
+
     private AggregationRunner $runner;
+
     private MagicMapper $mapper;
+
     private RegisterMapper $registerMapper;
+
     private SchemaMapper $schemaMapper;
 
-    /** @var int[] */
+    private ?string $activeOrgUuid = null;
+
+    /**
+     * @var int[]
+     */
     private array $createdSchemaIds = [];
-    /** @var int[] */
+
+    /**
+     * @var int[]
+     */
     private array $createdRegisterIds = [];
-    /** @var string[] */
+
+    /**
+     * @var string[]
+     */
     private array $createdTables = [];
 
     protected function setUp(): void
@@ -52,7 +67,33 @@ class AggregationRunnerIntegrationTest extends TestCase
         $this->mapper         = \OC::$server->get(MagicMapper::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper   = \OC::$server->get(SchemaMapper::class);
-    }
+
+        // Authenticate as admin and resolve an active organisation so the
+        // runner's RBAC list-gate passes and the native path's
+        // `_organisation = ?` tenant predicate matches the seeded rows.
+        // The low-level insertObjectEntity() seed path does not stamp the
+        // tenant column (the production SaveObject path does), so the
+        // fixture stamps it explicitly to mirror real inserts — without
+        // this, every native-path assertion fails on tenant isolation.
+        $userSession = \OC::$server->get(\OCP\IUserSession::class);
+        $userManager = \OC::$server->get(\OCP\IUserManager::class);
+        $admin       = $userManager->get('admin');
+        if ($admin !== null) {
+            $userSession->setUser($admin);
+        }
+
+        $orgService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
+        $activeOrg  = $orgService->getActiveOrganisation();
+        if ($activeOrg === null) {
+            $defaultUuid = $orgService->getDefaultOrganisationUuid();
+            if ($defaultUuid !== null) {
+                $orgService->setActiveOrganisation($defaultUuid);
+                $activeOrg = $orgService->getActiveOrganisation();
+            }
+        }
+
+        $this->activeOrgUuid = $activeOrg?->getUuid();
+    }//end setUp()
 
     protected function tearDown(): void
     {
@@ -89,7 +130,7 @@ class AggregationRunnerIntegrationTest extends TestCase
         }
 
         parent::tearDown();
-    }
+    }//end tearDown()
 
     public function testCountAllObjectsRoutesThroughPostgresNative(): void
     {
@@ -103,7 +144,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(5, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testCountAllObjectsRoutesThroughPostgresNative()
 
     public function testEqualityFilter(): void
     {
@@ -117,7 +158,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(2, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testEqualityFilter()
 
     public function testInOperatorFilter(): void
     {
@@ -133,7 +174,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(3, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testInOperatorFilter()
 
     public function testGtOperatorFilter(): void
     {
@@ -148,7 +189,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(2, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testGtOperatorFilter()
 
     public function testGteOperatorFilter(): void
     {
@@ -163,7 +204,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(3, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testGteOperatorFilter()
 
     public function testLtOperatorFilter(): void
     {
@@ -178,7 +219,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(2, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testLtOperatorFilter()
 
     public function testLteOperatorFilter(): void
     {
@@ -193,7 +234,7 @@ class AggregationRunnerIntegrationTest extends TestCase
         // 2 low (priority=1) + 1 medium (priority=5) = 3.
         $this->assertSame(3, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testLteOperatorFilter()
 
     public function testNeOperatorFilter(): void
     {
@@ -208,7 +249,7 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(3, $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testNeOperatorFilter()
 
     public function testGroupByReturnsBuckets(): void
     {
@@ -227,10 +268,11 @@ class AggregationRunnerIntegrationTest extends TestCase
         foreach ($result['groups'] as $bucket) {
             $byKey[(string) $bucket['key']] = (int) $bucket['value'];
         }
-        $this->assertSame(2, $byKey['open']        ?? null);
+
+        $this->assertSame(2, $byKey['open'] ?? null);
         $this->assertSame(1, $byKey['in-progress'] ?? null);
-        $this->assertSame(2, $byKey['completed']   ?? null);
-    }
+        $this->assertSame(2, $byKey['completed'] ?? null);
+    }//end testGroupByReturnsBuckets()
 
     public function testSumOnNumericField(): void
     {
@@ -245,7 +287,112 @@ class AggregationRunnerIntegrationTest extends TestCase
 
         $this->assertSame(27.0, (float) $result['value']);
         $this->assertSame('postgres', $result['backend'] ?? null);
-    }
+    }//end testSumOnNumericField()
+
+    public function testNotInOperatorFilter(): void
+    {
+        // `taskStatus notIn [completed, open]` excludes the 2 completed + 2
+        // open objects, leaving only the 1 in-progress object.
+        $fixture = $this->seedTaskFixture();
+
+        $result = $this->runner->run(
+            $fixture['register']->getSlug(),
+            $fixture['schema']->getSlug(),
+            'notCompletedNorOpen'
+        );
+
+        $this->assertSame(1, $result['value']);
+        $this->assertSame('postgres', $result['backend'] ?? null);
+    }//end testNotInOperatorFilter()
+
+    /**
+     * Prove the ad-hoc entry point a consuming app (e.g. pipelinq) uses.
+     *
+     * This is the contract: DI-resolve AggregationRunner, build an
+     * AggregationQuery (metric + field + filter + groupBy), and call
+     * runAdhocByRef(registerRef, schemaRef, query) — RBAC + tenant scoped
+     * — to get a grouped SUM without fetching-all-and-summing-in-PHP.
+     *
+     * priority by status: open=[1,10] sum=11; in-progress=[5] sum=5;
+     * completed=[1,10] sum=11.
+     */
+    public function testAdhocGroupedSumByRefIsConsumerReachable(): void
+    {
+        $fixture = $this->seedTaskFixture();
+
+        $query = AggregationQuery::create(
+            metric: 'sum',
+            field: 'priority',
+            filter: [],
+            groupBy: ['field' => 'taskStatus']
+        );
+
+        $result = $this->runner->runAdhocByRef(
+            $fixture['register']->getSlug(),
+            $fixture['schema']->getSlug(),
+            $query
+        );
+
+        $this->assertArrayHasKey('groups', $result);
+        $this->assertSame('postgres', $result['backend'] ?? null);
+
+        $byKey = [];
+        foreach ($result['groups'] as $bucket) {
+            $byKey[(string) $bucket['key']] = (float) $bucket['value'];
+        }
+
+        $this->assertSame(11.0, $byKey['open'] ?? null);
+        $this->assertSame(5.0, $byKey['in-progress'] ?? null);
+        $this->assertSame(11.0, $byKey['completed'] ?? null);
+    }//end testAdhocGroupedSumByRefIsConsumerReachable()
+
+    /**
+     * Prove ad-hoc AVG + a notIn filter through the same consumer entry
+     * point. priority over rows where taskStatus notIn [completed]:
+     * open=[1,10], in-progress=[5] → avg of (1,10,5) = 16/3.
+     */
+    public function testAdhocAvgWithNotInFilterByRef(): void
+    {
+        $fixture = $this->seedTaskFixture();
+
+        $query = AggregationQuery::create(
+            metric: 'avg',
+            field: 'priority',
+            filter: ['taskStatus' => ['notIn' => ['completed']]]
+        );
+
+        $result = $this->runner->runAdhocByRef(
+            $fixture['register']->getSlug(),
+            $fixture['schema']->getSlug(),
+            $query
+        );
+
+        $this->assertSame('postgres', $result['backend'] ?? null);
+        $this->assertEqualsWithDelta(16.0 / 3.0, (float) $result['value'], 0.0001);
+    }//end testAdhocAvgWithNotInFilterByRef()
+
+    /**
+     * Prove ad-hoc MIN and MAX through the same consumer entry point.
+     * priority = [1, 10, 5, 1, 10] → min=1, max=10.
+     */
+    public function testAdhocMinMaxByRef(): void
+    {
+        $fixture = $this->seedTaskFixture();
+
+        $min = $this->runner->runAdhocByRef(
+            $fixture['register']->getSlug(),
+            $fixture['schema']->getSlug(),
+            AggregationQuery::create(metric: 'min', field: 'priority')
+        );
+        $max = $this->runner->runAdhocByRef(
+            $fixture['register']->getSlug(),
+            $fixture['schema']->getSlug(),
+            AggregationQuery::create(metric: 'max', field: 'priority')
+        );
+
+        $this->assertSame(1.0, (float) $min['value']);
+        $this->assertSame(10.0, (float) $max['value']);
+    }//end testAdhocMinMaxByRef()
 
     public function testCacheHitOnSecondCall(): void
     {
@@ -254,7 +401,7 @@ class AggregationRunnerIntegrationTest extends TestCase
         // AggregationRunner::run() — not just the cache class in isolation.
         $fixture = $this->seedTaskFixture();
 
-        $first  = $this->runner->run(
+        $first = $this->runner->run(
             $fixture['register']->getSlug(),
             $fixture['schema']->getSlug(),
             'totalCount'
@@ -268,7 +415,7 @@ class AggregationRunnerIntegrationTest extends TestCase
         );
         $this->assertTrue($second['cached'] ?? false);
         $this->assertSame($first['value'], $second['value']);
-    }
+    }//end testCacheHitOnSecondCall()
 
     /**
      * Build one Register + Schema with operator-flavoured aggregations and
@@ -279,45 +426,50 @@ class AggregationRunnerIntegrationTest extends TestCase
      */
     private function seedTaskFixture(): array
     {
-        $register = $this->registerMapper->createFromArray([
-            'title'       => 'Aggregation Integration Register ' . uniqid(),
-            'description' => 'Aggregation runner integration tests',
-        ]);
+        $register = $this->registerMapper->createFromArray(
+                [
+                    'title'       => 'Aggregation Integration Register '.uniqid(),
+                    'description' => 'Aggregation runner integration tests',
+                ]
+                );
         $this->createdRegisterIds[] = $register->getId();
 
-        $schema = $this->schemaMapper->createFromArray([
-            'title'       => 'Task ' . uniqid(),
-            'description' => 'Task schema for aggregation integration tests',
-            'properties'  => [
-                'taskStatus' => [
-                    'type'  => 'string',
-                    'title' => 'Status',
-                    'enum'  => ['open', 'in-progress', 'completed'],
-                ],
-                'priority' => [
-                    'type'  => 'integer',
-                    'title' => 'Priority',
-                ],
-            ],
-            'configuration' => [
-                'x-openregister-aggregations' => [
-                    'totalCount'           => ['metric' => 'count'],
-                    'completedCount'       => ['metric' => 'count', 'filter' => ['taskStatus' => 'completed']],
-                    'nonCompletedCount'    => ['metric' => 'count', 'filter' => ['taskStatus' => ['ne' => 'completed']]],
-                    'inProgressOrOpen'     => ['metric' => 'count', 'filter' => ['taskStatus' => ['in' => ['open', 'in-progress']]]],
-                    'highPriority'         => ['metric' => 'count', 'filter' => ['priority' => ['gt' => 5]]],
-                    'priorityAtLeastFive'  => ['metric' => 'count', 'filter' => ['priority' => ['gte' => 5]]],
-                    'lowPriority'          => ['metric' => 'count', 'filter' => ['priority' => ['lt' => 5]]],
-                    'priorityAtMostFive'   => ['metric' => 'count', 'filter' => ['priority' => ['lte' => 5]]],
-                    'totalPriority'        => ['metric' => 'sum', 'field' => 'priority'],
-                    'byStatus'             => ['metric' => 'count', 'groupBy' => ['field' => 'taskStatus']],
-                ],
-            ],
-        ]);
+        $schema = $this->schemaMapper->createFromArray(
+                [
+                    'title'         => 'Task '.uniqid(),
+                    'description'   => 'Task schema for aggregation integration tests',
+                    'properties'    => [
+                        'taskStatus' => [
+                            'type'  => 'string',
+                            'title' => 'Status',
+                            'enum'  => ['open', 'in-progress', 'completed'],
+                        ],
+                        'priority'   => [
+                            'type'  => 'integer',
+                            'title' => 'Priority',
+                        ],
+                    ],
+                    'configuration' => [
+                        'x-openregister-aggregations' => [
+                            'totalCount'          => ['metric' => 'count'],
+                            'completedCount'      => ['metric' => 'count', 'filter' => ['taskStatus' => 'completed']],
+                            'nonCompletedCount'   => ['metric' => 'count', 'filter' => ['taskStatus' => ['ne' => 'completed']]],
+                            'inProgressOrOpen'    => ['metric' => 'count', 'filter' => ['taskStatus' => ['in' => ['open', 'in-progress']]]],
+                            'notCompletedNorOpen' => ['metric' => 'count', 'filter' => ['taskStatus' => ['notIn' => ['completed', 'open']]]],
+                            'highPriority'        => ['metric' => 'count', 'filter' => ['priority' => ['gt' => 5]]],
+                            'priorityAtLeastFive' => ['metric' => 'count', 'filter' => ['priority' => ['gte' => 5]]],
+                            'lowPriority'         => ['metric' => 'count', 'filter' => ['priority' => ['lt' => 5]]],
+                            'priorityAtMostFive'  => ['metric' => 'count', 'filter' => ['priority' => ['lte' => 5]]],
+                            'totalPriority'       => ['metric' => 'sum', 'field' => 'priority'],
+                            'byStatus'            => ['metric' => 'count', 'groupBy' => ['field' => 'taskStatus']],
+                        ],
+                    ],
+                ]
+                );
         $this->createdSchemaIds[] = $schema->getId();
 
         $this->mapper->ensureTableForRegisterSchema($register, $schema);
-        $this->createdTables[] = 'oc_' . $this->mapper->getTableNameForRegisterSchema($register, $schema);
+        $this->createdTables[] = 'oc_'.$this->mapper->getTableNameForRegisterSchema($register, $schema);
 
         // 5 fixture objects: 2 open, 1 in-progress, 2 completed.
         // priority: 1, 10, 5, 1, 10 (sum=27, avg=5.4, low<5: 2, gte5: 3).
@@ -336,6 +488,16 @@ class AggregationRunnerIntegrationTest extends TestCase
             $this->mapper->insertObjectEntity($entity, $register, $schema, false);
         }
 
+        // Stamp the active-organisation tenant column on the seeded rows so
+        // the native aggregation path's `_organisation = ?` predicate
+        // matches them. The production SaveObject path stamps this column;
+        // the low-level insertObjectEntity() seed path used here does not.
+        if ($this->activeOrgUuid !== null) {
+            $tableName = 'oc_'.$this->mapper->getTableNameForRegisterSchema($register, $schema);
+            $db        = \OC::$server->get(\OCP\IDBConnection::class);
+            $db->prepare("UPDATE {$tableName} SET _organisation = ?")->execute([$this->activeOrgUuid]);
+        }
+
         return ['register' => $register, 'schema' => $schema];
-    }
-}
+    }//end seedTaskFixture()
+}//end class

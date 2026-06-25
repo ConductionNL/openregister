@@ -125,7 +125,7 @@ class AnalyticsSeriesService
      */
     public function ensureReadableOrNull(string $seriesKey): ?array
     {
-        return $this->fetch($seriesKey);
+        return $this->fetch(seriesKey: $seriesKey);
     }//end ensureReadableOrNull()
 
     /**
@@ -136,14 +136,14 @@ class AnalyticsSeriesService
      * accumulating duplicates. Also (re)declares the matching page widget
      * on the IntegrationRegistry so the render layer can discover it.
      *
-     * @param string                    $seriesKey  Stable series key.
-     * @param array<int,mixed>          $labels     X-axis labels.
-     * @param array<int,array<string,mixed>> $datasets Named datasets.
-     * @param string|null               $title      Chart title.
-     * @param string                    $chartType  Chart type hint.
-     * @param string                    $visibility 'private'|'group'|'public'.
-     * @param int|null                  $registerId Optional register scope.
-     * @param int|null                  $schemaId   Optional schema scope.
+     * @param string                         $seriesKey  Stable series key.
+     * @param array<int,mixed>               $labels     X-axis labels.
+     * @param array<int,array<string,mixed>> $datasets   Named datasets.
+     * @param string|null                    $title      Chart title.
+     * @param string                         $chartType  Chart type hint.
+     * @param string                         $visibility 'private'|'group'|'public'.
+     * @param int|null                       $registerId Optional register scope.
+     * @param int|null                       $schemaId   Optional schema scope.
      *
      * @return array<string,mixed> The stored series render contract.
      *
@@ -202,18 +202,20 @@ class AnalyticsSeriesService
 
         // (Re)declare the page widget so the render layer can discover it.
         // First-write-wins inside the registry; harmless on a refresh.
-        $this->registry->registerPageWidget([
-            'id'         => 'analytics-series:'.$seriesKey,
-            'type'       => 'chart',
-            'title'      => $title,
-            'providerId' => 'analytics-series',
-            'config'     => [
-                'seriesKey'  => $seriesKey,
-                'chartType'  => $chartType,
-                'registerId' => $registerId,
-                'schemaId'   => $schemaId,
-            ],
-        ]);
+        $this->registry->registerPageWidget(
+                [
+                    'id'         => 'analytics-series:'.$seriesKey,
+                    'type'       => 'chart',
+                    'title'      => $title,
+                    'providerId' => 'analytics-series',
+                    'config'     => [
+                        'seriesKey'  => $seriesKey,
+                        'chartType'  => $chartType,
+                        'registerId' => $registerId,
+                        'schemaId'   => $schemaId,
+                    ],
+                ]
+                );
 
         return $saved->jsonSerialize();
     }//end register()
@@ -237,7 +239,7 @@ class AnalyticsSeriesService
             return null;
         }
 
-        if ($this->canRead($series) === false) {
+        if ($this->canRead(series: $series) === false) {
             return null;
         }
 

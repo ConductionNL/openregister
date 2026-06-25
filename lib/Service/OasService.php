@@ -962,7 +962,6 @@ class OasService
         ];
     }//end addCrudPaths()
 
-
     /**
      * Add the JSON-LD `@context` document endpoints for a register/schema
      * pair (json-ld-output). These are the dereferenceable URLs that object

@@ -335,4 +335,77 @@ class XwikiLinkServiceTest extends TestCase
         $this->assertSame('Departments.Legal.Handbook', $result['results'][0]['reference']);
         $this->assertSame('Handbook', $result['results'][0]['title']);
     }//end testGetAvailablePagesNormalisesBrowseRows()
+
+    public function testSearchPagesReturnsUnconfiguredWhenConnectorAbsent(): void
+    {
+        $this->connectorAvailable(false);
+
+        $result = $this->service->searchPages('passport', 10, 0);
+        $this->assertTrue($result['unavailable']);
+        $this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN, $result['cause']);
+        $this->assertSame([], $result['results']);
+        $this->assertSame(0, $result['total']);
+        // Degraded state still carries the resolved pagination envelope.
+        $this->assertSame(10, $result['limit']);
+        $this->assertSame(0, $result['offset']);
+    }//end testSearchPagesReturnsUnconfiguredWhenConnectorAbsent()
+
+    public function testSearchPagesSurfacesProviderCause(): void
+    {
+        $this->connectorAvailable(true);
+        $this->providerResolves();
+
+        $this->provider->method('list')->willThrowException(
+            new ProviderUnavailableException(
+                'auth',
+                ProviderUnavailableException::CAUSE_PROVIDER_AUTH
+            )
+        );
+
+        $result = $this->service->searchPages('foo', 25, 0);
+        $this->assertTrue($result['unavailable']);
+        $this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $result['cause']);
+        $this->assertSame(25, $result['limit']);
+    }//end testSearchPagesSurfacesProviderCause()
+
+    public function testSearchPagesReturnsPaginatedEnvelope(): void
+    {
+        $this->connectorAvailable(true);
+        $this->providerResolves();
+
+        $this->provider->expects($this->once())
+            ->method('list')
+            ->with('', '', '', ['_limit' => 10, '_page' => 1, '_search' => 'passport'])
+            ->willReturn(
+                [
+                    ['reference' => 'Kennisbank.Paspoort', 'title' => 'Paspoort', 'space' => 'Kennisbank', 'url' => 'https://wiki/p'],
+                ]
+            );
+
+        $result = $this->service->searchPages('passport', 10, 0);
+        $this->assertArrayNotHasKey('unavailable', $result);
+        $this->assertSame(1, $result['total']);
+        $this->assertSame(10, $result['limit']);
+        $this->assertSame(0, $result['offset']);
+        $this->assertSame('Kennisbank.Paspoort', $result['results'][0]['reference']);
+        $this->assertSame('Paspoort', $result['results'][0]['title']);
+    }//end testSearchPagesReturnsPaginatedEnvelope()
+
+    public function testSearchPagesClampsLimitAndOffset(): void
+    {
+        $this->connectorAvailable(true);
+        $this->providerResolves();
+
+        // Limit clamped 9999 -> 100, offset clamped -5 -> 0, so page = 1.
+        $this->provider->expects($this->once())
+            ->method('list')
+            ->with('', '', '', ['_limit' => 100, '_page' => 1])
+            ->willReturn([]);
+
+        $result = $this->service->searchPages(null, 9999, -5);
+        $this->assertArrayNotHasKey('unavailable', $result);
+        $this->assertSame(100, $result['limit']);
+        $this->assertSame(0, $result['offset']);
+        $this->assertSame(0, $result['total']);
+    }//end testSearchPagesClampsLimitAndOffset()
 }//end class

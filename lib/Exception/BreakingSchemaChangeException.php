@@ -46,10 +46,9 @@ class BreakingSchemaChangeException extends Exception
     /**
      * Count of objects invalid under the latest revalidation (or null).
      *
-     * @var int|null
+     * @var integer|null
      */
     private ?int $invalidCount;
-
 
     /**
      * Constructor.
@@ -59,12 +58,11 @@ class BreakingSchemaChangeException extends Exception
      */
     public function __construct(array $changes, ?int $invalidCount=null)
     {
-        parent::__construct('Schema change classified breaking; acknowledgeBreaking required.');
+        parent::__construct(message: 'Schema change classified breaking; acknowledgeBreaking required.');
         $this->changes      = $changes;
         $this->invalidCount = $invalidCount;
 
     }//end __construct()
-
 
     /**
      * Get the structured 409 response body.
@@ -87,7 +85,6 @@ class BreakingSchemaChangeException extends Exception
 
     }//end toResponse()
 
-
     /**
      * Get the typed change list.
      *
@@ -98,6 +95,4 @@ class BreakingSchemaChangeException extends Exception
         return $this->changes;
 
     }//end getChanges()
-
-
 }//end class

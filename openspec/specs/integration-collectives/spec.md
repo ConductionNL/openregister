@@ -5,7 +5,7 @@ status: done
 # integration-collectives Specification
 
 ## Purpose
-TBD - created by archiving change integration-collectives. Update Purpose after archive.
+Links existing Nextcloud Collectives pages to OpenRegister objects and renders their markdown content inline, both in a sidebar tab and on the detail-page surface. Page creation stays in Collectives; the integration only links and previews. Access defers entirely to Collectives' own ACLs.
 ## Requirements
 ### Requirement: Collectives Provider Registration
 

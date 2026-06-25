@@ -167,6 +167,11 @@ return [
         ['name' => 'Settings\FileSettings#testDolphinConnection', 'url' => '/api/settings/files/test-dolphin', 'verb' => 'POST'],
         ['name' => 'Settings\FileSettings#testPresidioConnection', 'url' => '/api/settings/files/test-presidio', 'verb' => 'POST'],
         ['name' => 'Settings\FileSettings#testOpenAnonymiserConnection', 'url' => '/api/settings/files/test-openanonymiser', 'verb' => 'POST'],
+
+        // Anonymisation backend selection (admin-only).
+        ['name' => 'anonymisationBackend#getBackendState', 'url' => '/api/admin/anonymisation/backend-state', 'verb' => 'GET'],
+        ['name' => 'anonymisationBackend#testConnection', 'url' => '/api/admin/anonymisation/test-connection', 'verb' => 'POST'],
+
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
@@ -285,6 +290,14 @@ return [
         ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
         ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
         ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
+        // Generic, RBAC + tenant scoped GDPR data-subject-rights endpoints
+        // (consumable by leaf apps; NOT admin-only, distinct from dsar#*).
+        ['name' => 'dataSubjectRequest#subjectData',  'url' => '/api/gdpr/subject-data',  'verb' => 'GET'],
+        ['name' => 'dataSubjectRequest#accessExport', 'url' => '/api/gdpr/access-export', 'verb' => 'GET'],
+        ['name' => 'dataSubjectRequest#rectify',      'url' => '/api/gdpr/rectify',       'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
@@ -340,6 +353,9 @@ return [
         // Aggregations — ad-hoc time-bucket primitive (must be ordered
         // BEFORE the {name} wildcard so /timeseries literal matches first).
         ['name' => 'aggregation#timeseries', 'url' => '/api/objects/aggregations/{register}/{schema}/timeseries', 'verb' => 'GET'],
+        // Aggregations — ad-hoc single-value + categorical group-by primitives (literal before {name}).
+        ['name' => 'aggregation#value', 'url' => '/api/objects/aggregations/{register}/{schema}/value', 'verb' => 'GET'],
+        ['name' => 'aggregation#grouped', 'url' => '/api/objects/aggregations/{register}/{schema}/grouped', 'verb' => 'GET'],
         // Aggregations sugar endpoint — named annotation surface.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
 
@@ -482,10 +498,40 @@ return [
         // pageRef is a url-encoded canonical page reference (`%2F` not `/`),
         // so the `[^/]+` requirement matches the whole segment.
         ['name' => 'xwikiLinks#available',    'url' => '/api/integrations/xwiki/available',                  'verb' => 'GET'],
+        ['name' => 'xwikiLinks#search',       'url' => '/api/integrations/xwiki/search',                     'verb' => 'GET'],
         ['name' => 'xwikiLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/xwiki/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/xwiki/{pageRef}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageRef' => '[^/]+']],
+
+        // KvK + OpenCorporates company lookup (external, OpenConnector-routed)
+        // — read-only, object-independent company-lookup leaves. No NC app
+        // gate; the OpenConnector `kvk` / `opencorporates` sources carry the
+        // base URL + API key. Unconfigured/down → 503 with details.cause.
+        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md.
+        ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
+        ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
+        ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
+        // BRP HaalCentraal person lookup (external, OpenConnector-routed) —
+        // read-only, object-independent person-lookup leaf. No NC app gate; the
+        // OpenConnector `brp-haalcentraal` source carries the base URL + OAuth2
+        // client_credentials secret + PKIoverheid mutual-TLS client certificate
+        // (both applied natively by CallService). Unconfigured/down → 503 with
+        // details.cause. The BSN travels in the request body only, never logged.
+        // @spec openspec/changes/integration-brp-haalcentraal/specs/integration-person-lookup/spec.md.
+        ['name' => 'personLookup#brpPerson',             'url' => '/api/integrations/brp/person',             'verb' => 'GET'],
+        // Outbound-messaging dispatch (external, OpenConnector-routed) —
+        // side-effecting send leaf. No NC app gate; the OpenConnector
+        // cmcom-sms / messagebird-sms / twilio-sms (SMS) and
+        // whatsapp-cloud-api / whatsapp-bsp (WhatsApp) sources carry the base
+        // URL + provider credential. The consuming app (pipelinq) composes the
+        // vendor-shaped body + path and owns all orchestration (provider
+        // selection, STOP opt-out, template-approval, 24h session, dedupe,
+        // delivery-status); this leaf only POSTs the message. Unconfigured/down
+        // → 503 with details.cause.
+        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md.
+        ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
+        ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
         // admin gate). The specific `/cospend/new` (create + link) route
         // MUST precede the wildcard `/cospend/{entryId}` unlink route, and

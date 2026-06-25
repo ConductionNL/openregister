@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # register-service-extensions Specification
 
 ## Purpose
-TBD - created by archiving change extend-schemas-in-register-service. Update Purpose after archive.
+Exposes serialized `RegisterService` query methods (`findAllSerialized` and `findSerialized`) that apply `_extend` transformations so DI callers get the same payload as the `RegistersController::index()` endpoint. Supports expanding schema IDs into full schema objects and attaching per-schema `@self.stats` object counts, while retaining orphan schema IDs in place on hydration failure, ignoring unknown `_extend` keys silently, and keeping the `Register` entity's serialization ID-only. The expansion logic moves out of the controller into a dedicated `RegisterSerializer` under the `OCA\OpenRegister\Service\Serializer` namespace.
 ## Requirements
 ### Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`
 

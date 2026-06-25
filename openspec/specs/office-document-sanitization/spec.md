@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # office-document-sanitization Specification
 
 ## Purpose
-TBD - created by archiving change office-document-sanitization. Update Purpose after archive.
+Sanitises DOCX and ODT documents during anonymisation by removing hidden and identifying content without mutating the original file. Strips comments and tracked changes (accepting inserts, dropping deletions), custom-XML data bindings, person-identity field codes, and hyperlink URLs, and replaces metadata fields with a `DocuDesk Anonymisation` sentinel while preserving timestamps and visible text. Produces a PII-free `SanitizationReport` persisted on the anonymisation log, guarantees the output opens cleanly in Word and LibreOffice, and raises a typed `SanitizationException` for encrypted or unsupported inputs.
 ## Requirements
 ### Requirement: `OfficeDocumentSanitizer` MUST sanitise DOCX and ODT inputs without mutating the original file
 

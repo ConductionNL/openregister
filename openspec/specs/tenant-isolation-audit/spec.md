@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # Tenant Isolation Audit
 
 ## Purpose

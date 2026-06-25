@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # file-risk-classification Specification
 
 ## Purpose

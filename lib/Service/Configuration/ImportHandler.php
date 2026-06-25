@@ -1956,9 +1956,43 @@ class ImportHandler
         // fallback admin; null when none is resolvable (folder op then skips, not the
         // whole import).
         $actingUser = $this->resolveActingUser();
-        // Process and import objects.
-        if (($data['components']['objects'] ?? null) !== null && is_array($data['components']['objects']) === true) {
-            foreach ($data['components']['objects'] as $objectData) {
+        // Process and import objects. Seed objects may be authored under
+        // components.objects (the canonical export location) OR at the top-level
+        // `objects` key (how some app register files place seed). Merge both,
+        // de-duped by @self identity (uuid, else register/schema/slug), so either
+        // authoring location seeds and re-import never duplicates.
+        $seedObjects = [];
+        $seedSeen    = [];
+        foreach ([($data['components']['objects'] ?? null), ($data['objects'] ?? null)] as $seedBucket) {
+            if (is_array($seedBucket) === false) {
+                continue;
+            }
+
+            foreach ($seedBucket as $seedCandidate) {
+                if (is_array($seedCandidate) === false) {
+                    continue;
+                }
+
+                $seedSelf = ($seedCandidate['@self'] ?? []);
+                $seedKey  = (string) ($seedSelf['uuid'] ?? '');
+                if ($seedKey === '') {
+                    $seedKey = trim(($seedSelf['register'] ?? '').'/'.($seedSelf['schema'] ?? '').'/'.($seedSelf['slug'] ?? ''), '/');
+                }
+
+                if ($seedKey !== '' && isset($seedSeen[$seedKey]) === true) {
+                    continue;
+                }
+
+                if ($seedKey !== '') {
+                    $seedSeen[$seedKey] = true;
+                }
+
+                $seedObjects[] = $seedCandidate;
+            }
+        }
+
+        if (count($seedObjects) > 0) {
+            foreach ($seedObjects as $objectData) {
                 // Log raw values before any mapping.
                 $rawRegister = $objectData['@self']['register'] ?? null;
                 $rawSchema   = $objectData['@self']['schema'] ?? null;
@@ -1977,42 +2011,42 @@ class ImportHandler
                 // Catch \Throwable so opis/json-schema validation throws and folder
                 // access denials are contained too.
                 try {
-                // Get the actual Register and Schema objects from maps (not IDs!).
-                // This is CRITICAL - passing objects avoids organisation filter in find().
-                $registerObject = $this->registersMap[$rawRegister] ?? null;
-                $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
+                    // Get the actual Register and Schema objects from maps (not IDs!).
+                    // This is CRITICAL - passing objects avoids organisation filter in find().
+                    $registerObject = $this->registersMap[$rawRegister] ?? null;
+                    $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
 
-                // Fallback for object-only bundles that reference pre-existing
-                // registers/schemas (e.g. the rapportage templates that ship a
-                // dashboard against the already-imported reports/dashboard).
-                if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
-                    try {
-                        $registerObject = $this->registerMapper->find(
+                    // Fallback for object-only bundles that reference pre-existing
+                    // registers/schemas (e.g. the rapportage templates that ship a
+                    // dashboard against the already-imported reports/dashboard).
+                    if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
+                        try {
+                            $registerObject = $this->registerMapper->find(
                             $rawRegister,
                             _rbac: false,
                             _multitenancy: false
-                        );
-                        $this->registersMap[$rawRegister] = $registerObject;
-                    } catch (\Throwable $e) {
-                        $registerObject = null;
+                            );
+                            $this->registersMap[$rawRegister] = $registerObject;
+                        } catch (\Throwable $e) {
+                            $registerObject = null;
+                        }
                     }
-                }
 
-                if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
-                    try {
-                        $schemaObject = $this->schemaMapper->find(
+                    if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
+                        try {
+                            $schemaObject = $this->schemaMapper->find(
                             $rawSchema,
                             _rbac: false,
                             _multitenancy: false
-                        );
-                        $this->schemasMap[$rawSchema] = $schemaObject;
-                    } catch (\Throwable $e) {
-                        $schemaObject = null;
+                            );
+                            $this->schemasMap[$rawSchema] = $schemaObject;
+                        } catch (\Throwable $e) {
+                            $schemaObject = null;
+                        }
                     }
-                }
 
-                if ($registerObject === null || $schemaObject === null) {
-                    $this->logger->warning(
+                    if ($registerObject === null || $schemaObject === null) {
+                        $this->logger->warning(
                         message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
                         context: [
                             'file'          => __FILE__,
@@ -2023,52 +2057,52 @@ class ImportHandler
                             'registerFound' => $registerObject !== null,
                             'schemaFound'   => $schemaObject !== null,
                         ]
-                    );
-                    continue;
-                }
+                        );
+                        continue;
+                    }
 
-                // Get IDs for searching existing objects.
-                $registerId = $registerObject->getId();
-                $schemaId   = $schemaObject->getId();
+                    // Get IDs for searching existing objects.
+                    $registerId = $registerObject->getId();
+                    $schemaId   = $schemaObject->getId();
 
-                // Use ObjectService::searchObjects to find existing object by register+schema+slug.
-                $search = [
-                    '@self'  => [
-                        'register' => (int) $registerId,
-                        'schema'   => (int) $schemaId,
-                        'slug'     => $slug,
-                    ],
-                    '_limit' => 1,
-                ];
-                $this->logger->debug(
+                    // Use ObjectService::searchObjects to find existing object by register+schema+slug.
+                    $search = [
+                        '@self'  => [
+                            'register' => (int) $registerId,
+                            'schema'   => (int) $schemaId,
+                            'slug'     => $slug,
+                        ],
+                        '_limit' => 1,
+                    ];
+                    $this->logger->debug(
                     message: '[ImportHandler] Import object search filter',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
-                );
+                    );
 
-                // Search for existing object.
-                // Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
-                // This prevents duplicate objects with the same UUID being created.
-                $this->logger->debug(
+                    // Search for existing object.
+                    // Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
+                    // This prevents duplicate objects with the same UUID being created.
+                    $this->logger->debug(
                     message: "[ImportHandler] Searching: register=$registerId, schema=$schemaId, slug=$slug",
                     context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $results     = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
-                $resultCount = 0;
-                if (is_array($results) === true) {
-                    $resultCount = count($results);
-                }
+                    );
+                    $results     = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+                    $resultCount = 0;
+                    if (is_array($results) === true) {
+                        $resultCount = count($results);
+                    }
 
-                $this->logger->debug(
+                    $this->logger->debug(
                     message: "[ImportHandler] Found $resultCount results",
                     context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $existingObject = null;
-                if ((is_array($results) === true) && count($results) > 0) {
-                    $existingObject = $results[0];
-                }
+                    );
+                    $existingObject = null;
+                    if ((is_array($results) === true) && count($results) > 0) {
+                        $existingObject = $results[0];
+                    }
 
-                if ($existingObject === null) {
-                    $this->logger->info(
+                    if ($existingObject === null) {
+                        $this->logger->info(
                         message: '[ImportHandler] No existing object found - will create new object',
                         context: [
                             'file'       => __FILE__,
@@ -2077,35 +2111,35 @@ class ImportHandler
                             'schemaId'   => $schemaId,
                             'slug'       => $slug,
                         ]
-                    );
-                }
-
-                // Replace string slugs with integer IDs in objectData's @self metadata.
-                // This prevents any internal lookups from using string slugs.
-                $objectData['@self']['register'] = (int) $registerId;
-                $objectData['@self']['schema']   = (int) $schemaId;
-
-                if ($existingObject !== null) {
-                    // Handle both ObjectEntity instances and array results from searchObjects.
-                    // searchObjects returns ObjectEntity or arrays depending on configuration.
-                    // @var ObjectEntity|array $existingObject.
-                    $existingObjectData = $existingObject->jsonSerialize();
-                    if (is_array($existingObject) === true) {
-                        $existingObjectData = $existingObject;
+                        );
                     }
 
-                    $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
-                    $existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
-                    if (version_compare($importedVersion, $existingVersion, '>') > 0) {
-                        $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
-                        // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
-                        // This avoids organisation filter issues in find().
-                        // Installer-time seeding runs in the repair/CLI context
-                        // with no user session ('Anonymous'); bypass RBAC and
-                        // multitenancy here as everywhere else in this trusted
-                        // import path, otherwise seed objects on RBAC-guarded
-                        // schemas (e.g. Retainer Drawdown) abort the whole import.
-                        $object = $this->objectService->saveObject(
+                    // Replace string slugs with integer IDs in objectData's @self metadata.
+                    // This prevents any internal lookups from using string slugs.
+                    $objectData['@self']['register'] = (int) $registerId;
+                    $objectData['@self']['schema']   = (int) $schemaId;
+
+                    if ($existingObject !== null) {
+                        // Handle both ObjectEntity instances and array results from searchObjects.
+                        // searchObjects returns ObjectEntity or arrays depending on configuration.
+                        // @var ObjectEntity|array $existingObject.
+                        $existingObjectData = $existingObject->jsonSerialize();
+                        if (is_array($existingObject) === true) {
+                            $existingObjectData = $existingObject;
+                        }
+
+                        $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+                        $existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+                        if (version_compare($importedVersion, $existingVersion, '>') > 0) {
+                            $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
+                            // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
+                            // This avoids organisation filter issues in find().
+                            // Installer-time seeding runs in the repair/CLI context
+                            // with no user session ('Anonymous'); bypass RBAC and
+                            // multitenancy here as everywhere else in this trusted
+                            // import path, otherwise seed objects on RBAC-guarded
+                            // schemas (e.g. Retainer Drawdown) abort the whole import.
+                            $object = $this->objectService->saveObject(
                             object: $objectData,
                             register: $registerObject,
                             schema: $schemaObject,
@@ -2113,12 +2147,12 @@ class ImportHandler
                             _rbac: false,
                             _multitenancy: false,
                             currentUser: $actingUser
-                        );
-                        $result['objects'][] = $object;
-                    }
+                            );
+                            $result['objects'][] = $object;
+                        }
 
-                    if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
-                        $this->logger->info(
+                        if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
+                            $this->logger->info(
                             message: '[ImportHandler] Skipped object update: imported version not higher',
                             context: [
                                 'file'            => __FILE__,
@@ -2129,29 +2163,29 @@ class ImportHandler
                                 'importedVersion' => $importedVersion,
                                 'existingVersion' => $existingVersion,
                             ]
-                        );
-                        continue;
+                            );
+                            continue;
+                        }//end if
                     }//end if
-                }//end if
 
-                if ($existingObject === null) {
-                    // Create new object.
-                    // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
-                    // This avoids organisation filter issues in find().
-                    // Installer-time seeding runs without a user session
-                    // ('Anonymous'); bypass RBAC/multitenancy as in the rest of
-                    // this trusted import path so seed objects on RBAC-guarded
-                    // schemas don't abort the whole import.
-                    $object = $this->objectService->saveObject(
+                    if ($existingObject === null) {
+                        // Create new object.
+                        // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
+                        // This avoids organisation filter issues in find().
+                        // Installer-time seeding runs without a user session
+                        // ('Anonymous'); bypass RBAC/multitenancy as in the rest of
+                        // this trusted import path so seed objects on RBAC-guarded
+                        // schemas don't abort the whole import.
+                        $object = $this->objectService->saveObject(
                         object: $objectData,
                         register: $registerObject,
                         schema: $schemaObject,
                         _rbac: false,
                         _multitenancy: false,
                         currentUser: $actingUser
-                    );
-                    $result['objects'][] = $object;
-                }//end if
+                        );
+                        $result['objects'][] = $object;
+                    }//end if
                 } catch (\Throwable $e) {
                     // PER-ENTITY RESILIENCE: skip this object, keep importing the rest.
                     $result['skipped']['objects']++;
@@ -4150,11 +4184,11 @@ class ImportHandler
                     $this->logger->warning(
                         message: "[ImportHandler] Skipping seed object for '{$schemaSlug}' - import failed: ".$e->getMessage(),
                         context: [
-                            'file'        => __FILE__,
-                            'line'        => __LINE__,
-                            'schemaSlug'  => $schemaSlug,
-                            'objectSlug'  => $objectSlug ?? null,
-                            'error'       => $e->getMessage(),
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'schemaSlug' => $schemaSlug,
+                            'objectSlug' => $objectSlug ?? null,
+                            'error'      => $e->getMessage(),
                         ]
                     );
                 }//end try

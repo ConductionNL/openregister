@@ -187,6 +187,7 @@ class RegistersController extends Controller
      * @param ContainerInterface   $container            Container for lazy loading services
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
      * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
+     * @param RegisterSerializer   $registerSerializer   Register serializer for response shaping
      *
      * @return void
      *
@@ -1262,12 +1263,25 @@ class RegistersController extends Controller
                     $type = 'excel';
                 } else if ($extension === 'csv') {
                     $type = 'csv';
-                }
-
-                if (in_array($extension, ['xlsx', 'xls', 'csv']) === false) {
+                } else if ($extension === 'json') {
+                    // A .json upload is either a configuration bundle (object/map
+                    // at the root) or an object export from
+                    // ExportService::exportToJson (a JSON array, or a
+                    // { "results": [...] } envelope). Route the array shape to the
+                    // object importer; everything else stays on the configuration
+                    // path so existing config-import behaviour is unchanged.
                     $type = 'configuration';
-                }
-            }
+                    $peek = json_decode((string) file_get_contents($uploadedFile['tmp_name']), true);
+                    if (is_array($peek) === true
+                        && (array_is_list($peek) === true
+                        || (isset($peek['results']) === true && is_array($peek['results']) === true))
+                    ) {
+                        $type = 'json';
+                    }
+                } else {
+                    $type = 'configuration';
+                }//end if
+            }//end if
 
             // Get import options for all types - support both boolean and string values.
             $includeObjects = $this->parseBooleanParam(paramName: 'includeObjects', default: false);
@@ -1298,8 +1312,8 @@ class RegistersController extends Controller
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
                     // Derive RBAC from admin status and always keep imports tenant-scoped.
-                    $rbac  = ($this->isCurrentUserAdmin() === false);
-                    $multi = true;
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
@@ -1330,9 +1344,46 @@ class RegistersController extends Controller
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
                     // Derive RBAC from admin status and always keep imports tenant-scoped.
-                    $rbac  = ($this->isCurrentUserAdmin() === false);
-                    $multi = true;
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
                     $summary = $this->importService->importFromCsv(
+                        filePath: $uploadedFile['tmp_name'],
+                        register: $register,
+                        schema: $schema,
+                        validation: $validation,
+                        events: $events,
+                        _rbac: $rbac,
+                        _multitenancy: $multi,
+                        publish: $publish,
+                        currentUser: $this->userSession->getUser(),
+                        enrich: $enrich
+                    );
+                    break;
+                case 'json':
+                    // Object import (inverse of ExportService::exportToJson). The
+                    // schema may be passed explicitly; otherwise it is derived
+                    // from the exported objects' @self.schema so a plain file
+                    // upload round-trips without extra parameters.
+                    $schemaId = $this->request->getParam('schema');
+                    if ($schemaId === null || $schemaId === '') {
+                        $peek     = json_decode((string) file_get_contents($uploadedFile['tmp_name']), true);
+                        $list     = ($peek['results'] ?? $peek);
+                        $schemaId = ($list[0]['@self']['schema'] ?? null);
+                    }
+
+                    if ($schemaId === null || $schemaId === '') {
+                        return new JSONResponse(
+                            data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'],
+                            statusCode: 400
+                        );
+                    }
+
+                    $schema = $this->schemaMapper->find($schemaId);
+
+                    // SEC-CTRL-6: derive RBAC from admin status; keep tenant-scoped.
+                    $rbac    = ($this->isCurrentUserAdmin() === false);
+                    $multi   = true;
+                    $summary = $this->importService->importFromJson(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
                         schema: $schema,

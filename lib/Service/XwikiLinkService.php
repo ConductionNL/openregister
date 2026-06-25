@@ -469,6 +469,99 @@ class XwikiLinkService
     }//end getAvailablePages()
 
     /**
+     * Free-text search of the remote xWiki knowledge base — object-independent.
+     *
+     * This is the query-first surface a consuming app (e.g. a dashboard widget)
+     * uses to find pages by free text, without an OR object context. It shares
+     * the XwikiProvider browse path with {@see getAvailablePages()} but exposes
+     * a paginated `{ results, total, limit, offset }` envelope and resolves the
+     * xWiki base URL exclusively from the OpenConnector `xwiki` source (AD-4) —
+     * the consumer never holds a direct xWiki URL.
+     *
+     * Read-only and null-safe: when no `xwiki` source is configured (or the
+     * upstream is unreachable) it returns the unconfigured-source descriptor
+     * `{ unavailable, cause, results: [], total: 0, limit, offset }` rather than
+     * throwing, so the caller degrades to an empty/Configure state and never a
+     * fatal (AD-23).
+     *
+     * @param string|null $query  Free-text query (title/content). Null/empty
+     *                            lists the most recent / available pages.
+     * @param int         $limit  Max results (clamped 1..100).
+     * @param int         $offset Pagination offset (clamped >= 0).
+     *
+     * @return array<string,mixed> `{ results, total, limit, offset }` on
+     *                             success, or `{ unavailable, cause, results,
+     *                             total, limit, offset }` when the source is
+     *                             unconfigured/down.
+     *
+     * @spec openspec/changes/integration-xwiki-query-search/specs/integration-xwiki/spec.md
+     */
+    public function searchPages(?string $query=null, int $limit=25, int $offset=0): array
+    {
+        $limit  = max(1, min(100, $limit));
+        $offset = max(0, $offset);
+
+        if ($this->isOpenConnectorAvailable() === false) {
+            return $this->degraded(cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN, limit: $limit, offset: $offset);
+        }
+
+        $provider = $this->getProvider();
+        if ($provider === null) {
+            return $this->degraded(cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN, limit: $limit, offset: $offset);
+        }
+
+        $filters = ['_limit' => $limit, '_page' => (int) (floor($offset / $limit) + 1)];
+        if ($query !== null && trim($query) !== '') {
+            $filters['_search'] = trim($query);
+        }
+
+        try {
+            // Object-independent browse/search: empty OR context, the
+            // OpenConnector source returns the matching remote pages.
+            $rows = $provider->list('', '', '', $filters);
+        } catch (ProviderUnavailableException $e) {
+            return $this->degraded(cause: $e->getCause(), limit: $limit, offset: $offset);
+        } catch (Throwable $e) {
+            $this->logger->warning('XwikiLinkService::searchPages failed: '.$e->getMessage());
+            return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, limit: $limit, offset: $offset);
+        }
+
+        $out = [];
+        foreach ($rows as $row) {
+            if (is_array($row) === true) {
+                $out[] = $this->normaliseRemoteRow(row: $row);
+            }
+        }
+
+        return [
+            'results' => $out,
+            'total'   => count($out),
+            'limit'   => $limit,
+            'offset'  => $offset,
+        ];
+    }//end searchPages()
+
+    /**
+     * Build the degraded search envelope — the unconfigured-source descriptor
+     * folded with the resolved limit/offset, so the search shape stays stable
+     * across the success + degraded paths (AD-23).
+     *
+     * @param string $cause  One of the ProviderUnavailableException CAUSE_* values.
+     * @param int    $limit  Resolved limit.
+     * @param int    $offset Resolved offset.
+     *
+     * @return array<string,mixed>
+     */
+    private function degraded(string $cause, int $limit, int $offset): array
+    {
+        $state           = $this->unavailableState(cause: $cause);
+        $state['limit']  = $limit;
+        $state['offset'] = $offset;
+
+        return $state;
+    }//end degraded()
+
+    /**
      * Resolve a remote xWiki page's canonical reference + metadata via
      * OpenConnector. Best-effort: when the upstream is unreachable the
      * caller-supplied reference is returned with empty metadata so the

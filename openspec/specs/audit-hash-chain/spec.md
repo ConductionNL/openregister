@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # audit-hash-chain Specification
 
 ---

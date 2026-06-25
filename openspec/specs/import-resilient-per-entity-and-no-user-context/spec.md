@@ -1,7 +1,14 @@
+---
+status: in-progress
+---
+
 # import-resilient-per-entity-and-no-user-context Specification
 
+**OpenSpec changes**
+- `config-import-seed-objects` (active) — makes a top-level `objects` array an accepted seed-object source in `importFromJson()`, folded into the existing `components.objects` loop and imported idempotently by `@self` identity. Fixes app seed objects authored at the top level (e.g. shillinq's 78) importing as 0. OR-side only; no app change required.
+
 ## Purpose
-TBD - created by archiving change import-resilient-per-entity-and-no-user-context. Update Purpose after archive.
+Makes configuration import resilient by wrapping each register, object, and seed-data entity in its own try/catch so a single failure is logged, counted, and skipped instead of aborting the whole import. Returns a `skipped` map of per-entity-kind counters for callers and tests to assert against. When no user session exists (the `occ`/installer/cron path), resolves a fallback admin acting user so folder and object operations succeed, without overriding a real session user when one is present.
 ## Requirements
 ### Requirement: Per-register import resilience
 The register import loop in `importFromJson()` SHALL wrap each register in its own try/catch. When `importRegister()` throws for one register, the handler SHALL log a WARNING carrying the register slug and the failure reason, increment a skipped-register counter in the returned result, and CONTINUE with the remaining registers, mappings, objects and seed data. A single failing register SHALL NOT abort the import of sibling registers or of any later import phase.

@@ -136,10 +136,12 @@ class LanguageMiddleware extends Middleware
                 if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
                     $this->languageService->setTargetLanguage($targetTrim);
                 } else {
-                    $this->logger->warning(sprintf(
+                    $this->logger->warning(
+                            sprintf(
                         '[LanguageMiddleware] Invalid X-Translation-Target-Language "%s" — ignoring.',
                         $targetTrim
-                    ));
+                    )
+                            );
                 }
             }
         }
@@ -165,7 +167,7 @@ class LanguageMiddleware extends Middleware
             $response->addHeader('X-Content-Language-Fallback', 'true');
         }
 
-        // i18n-source-of-truth: surface the dominant source language for
+        // I18n-source-of-truth: surface the dominant source language for
         // the response payload. We can only derive this when the request
         // targets a single object (the path carries a uuid). Listing /
         // multi-object endpoints skip the header.
@@ -207,16 +209,18 @@ class LanguageMiddleware extends Middleware
 
             $trimmed = trim($value);
             if (preg_match(self::BCP47_PATTERN, $trimmed) !== 1) {
-                $this->logger->warning(sprintf(
+                $this->logger->warning(
+                        sprintf(
                     "[LanguageMiddleware] Invalid ?%s value '%s' — falling through",
                     $name,
                     $trimmed
-                ));
+                )
+                        );
                 continue;
             }
 
             return $trimmed;
-        }
+        }//end foreach
 
         return null;
     }//end resolveFromQueryParams()

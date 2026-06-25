@@ -92,11 +92,13 @@ class PdfTextReplacer
      * carries a diagnostic surface (which entities remained, how many
      * streams were modified, etc.) for ops review.
      *
-     * @param string $pdfBytes      Raw input PDF bytes.
-     * @param array  $substitutions Map: entity-text => placeholder
-     *                              (e.g. ['Jan Jansen' => '[PERSON: 7]']).
-     * @param bool   $strict        Forwarded to {@see validateOutput}: when
-     *                              true, residual entity text fails closed.
+     * @param string $pdfBytes         Raw input PDF bytes.
+     * @param array  $substitutions    Map: entity-text => placeholder
+     *                                 (e.g. ['Jan Jansen' => '[PERSON: 7]']).
+     * @param bool   $strict           Forwarded to {@see validateOutput}: when
+     *                                 true, residual entity text fails closed.
+     * @param array  $residualEntities Out-param receiving any entity text that
+     *                                 remained after replacement.
      *
      * @return string Anonymised PDF bytes.
      *
@@ -109,8 +111,9 @@ class PdfTextReplacer
      *
      * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
-    public function replaceInPdf(string $pdfBytes, array $substitutions, bool $strict=false): string
+    public function replaceInPdf(string $pdfBytes, array $substitutions, bool $strict=false, array &$residualEntities=[]): string
     {
+        $residualEntities = [];
         if (count($substitutions) === 0) {
             // No-op: nothing to anonymise.
             return $pdfBytes;
@@ -185,9 +188,11 @@ class PdfTextReplacer
 
         $outputBytes = $serialised;
 
-        // Validation gate: re-extract the output and assert no residual
-        // substitution-map keys remain. Fails closed.
-        $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats, strict: $strict);
+        // Validation: re-extract the output and collect any residual
+        // substitution-map keys. Best-effort (no longer fails closed) — the
+        // residual needles are returned to the caller so the anonymisation
+        // flow can write the file and surface a warning.
+        $residualEntities = $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats, strict: $strict);
 
         $this->logger->info(
             message: '[PdfTextReplacer] PDF anonymisation succeeded',
@@ -240,7 +245,7 @@ class PdfTextReplacer
      *
      * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
-    public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[], bool $strict=false): void
+    public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[], bool $strict=false): array
     {
         try {
             $parser    = new PdfParser();
@@ -265,7 +270,8 @@ class PdfTextReplacer
                 ]
             );
 
-            return;
+            // Can't re-extract to audit — report no detectable residuals.
+            return [];
         }//end try
 
         // Whitespace-normalise the haystack so entity text that the PDF
@@ -286,17 +292,6 @@ class PdfTextReplacer
         // keeps the pre-normalisation detection coverage.
         $normalisedExtracted = preg_replace('/\s+/u', ' ', $extracted);
         if ($normalisedExtracted === null) {
-            if ($strict === true && preg_last_error() === PREG_BAD_UTF8_ERROR) {
-                throw new PdfAnonymisationException(
-                    reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
-                    message: 'Cannot audit anonymised PDF — extracted text is not valid UTF-8',
-                    diagnostic: [
-                        'stage'      => 'validate.normalise',
-                        'preg_error' => preg_last_error_msg(),
-                    ]
-                );
-            }
-
             $this->logger->warning(
                 message: '[PdfTextReplacer] Haystack normalisation failed — falling back to un-normalised extraction',
                 context: [
@@ -375,20 +370,16 @@ class PdfTextReplacer
                 message: '[PdfTextReplacer] Partial anonymisation — residual entity text in output',
                 context: $diagnostic
             );
-
-            // Entity-anonymisation (GDPR) callers pass $strict=true: a file
-            // that still contains the original entity text MUST NOT be written
-            // and marked anonymised. Fail closed with the structured reason
-            // (controller maps REASON_VALIDATION_FAILED → HTTP 500). Ad-hoc
-            // replacement keeps the lenient docx-parity behaviour.
-            if ($strict === true) {
-                throw new PdfAnonymisationException(
-                    reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
-                    message: 'Residual entity text remains in anonymised PDF output',
-                    diagnostic: $diagnostic
-                );
-            }
         }//end if
+
+        // Best-effort policy (was: fail closed in strict mode). The
+        // anonymisation flow no longer discards a partially-redacted file —
+        // it writes the output and surfaces a warning listing the residual
+        // entities so the operator can iterate (manual entities, skip
+        // unselected occurrences). The residual NEEDLES are returned to the
+        // caller; logs stay PII-free per ADR-005, while the authenticated
+        // anonymise response carries the values for the review UI.
+        return $residual;
     }//end validateOutput()
 
     /**

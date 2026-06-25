@@ -259,29 +259,31 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param MagicMapper                                            $objectEntityMapper      Object entity mapper
-     * @param MagicMapper                                            $unifiedObjectMapper     Unified object mapper for object operations
-     * @param MetadataHydrationHandler                               $metaHydrationHandler    Handler for metadata extraction
-     * @param FilePropertyHandler                                    $filePropertyHandler     Handler for file property operations
-     * @param LinkedEntityPropertyHandler                            $linkedEntityHandler     Linked entity property handler
-     * @param IUserSession                                           $userSession             User session service
-     * @param AuditTrailMapper                                       $auditTrailMapper        Audit trail mapper for logging changes
-     * @param SchemaMapper                                           $schemaMapper            Schema mapper for schema operations
-     * @param RegisterMapper                                         $registerMapper          Register mapper for register operations
-     * @param IURLGenerator                                          $urlGenerator            URL generator service
-     * @param OrganisationService                                    $organisationService     Service for organisation operations
-     * @param CacheHandler                                           $cacheHandler            Object cache service for entity and query caching
-     * @param SettingsService                                        $settingsService         Settings service for accessing trail settings
-     * @param PropertyRbacHandler                                    $propertyRbacHandler     Property-level RBAC handler
-     * @param ComputedFieldHandler                                   $computedFieldHandler    Handler for computed field evaluation
-     * @param TranslationHandler                                     $translationHandler      Handler for translation operations
-     * @param LoggerInterface                                        $logger                  Logger interface for logging operations
-     * @param TmloService                                            $tmloService             TMLO archival metadata service
-     * @param \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler Folder access-control gateway (cross-tenant denial)
-     * @param ArrayLoader                                            $arrayLoader             Twig array loader for template rendering
-     * @param IGroupManager|null                                     $groupManager            Group manager for admin-bypass detection
-     * @param IAppConfig|null                                        $appConfig               App-config reader for the admin-bypass toggle
-     * @param IEventDispatcher|null                                  $eventDispatcher         Event dispatcher for reference validation events
+     * @param MagicMapper                                            $objectEntityMapper           Object entity mapper
+     * @param MagicMapper                                            $unifiedObjectMapper          Unified object mapper for object operations
+     * @param MetadataHydrationHandler                               $metaHydrationHandler         Handler for metadata extraction
+     * @param FilePropertyHandler                                    $filePropertyHandler          Handler for file property operations
+     * @param LinkedEntityPropertyHandler                            $linkedEntityHandler          Linked entity property handler
+     * @param IUserSession                                           $userSession                  User session service
+     * @param AuditTrailMapper                                       $auditTrailMapper             Audit trail mapper for logging changes
+     * @param SchemaMapper                                           $schemaMapper                 Schema mapper for schema operations
+     * @param RegisterMapper                                         $registerMapper               Register mapper for register operations
+     * @param IURLGenerator                                          $urlGenerator                 URL generator service
+     * @param OrganisationService                                    $organisationService          Service for organisation operations
+     * @param CacheHandler                                           $cacheHandler                 Object cache service for entity and query caching
+     * @param SettingsService                                        $settingsService              Settings service for accessing trail settings
+     * @param PropertyRbacHandler                                    $propertyRbacHandler          Property-level RBAC handler
+     * @param ComputedFieldHandler                                   $computedFieldHandler         Handler for computed field evaluation
+     * @param TranslationHandler                                     $translationHandler           Handler for translation operations
+     * @param TranslationProjectionService                           $translationProjectionService Translation projection service
+     * @param TranslationStatusService                               $translationStatusService     Translation status service
+     * @param LoggerInterface                                        $logger                       Logger interface for logging operations
+     * @param TmloService                                            $tmloService                  TMLO archival metadata service
+     * @param \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler      Folder access-control gateway (cross-tenant denial)
+     * @param ArrayLoader                                            $arrayLoader                  Twig array loader for template rendering
+     * @param IGroupManager|null                                     $groupManager                 Group manager for admin-bypass detection
+     * @param IAppConfig|null                                        $appConfig                    App-config reader for the admin-bypass toggle
+     * @param IEventDispatcher|null                                  $eventDispatcher              Event dispatcher for reference validation events
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
@@ -2681,6 +2683,20 @@ class SaveObject
             register: $register
         );
 
+        // Read-only projection guard: a schema served from an external source
+        // (x-openregister-object-source) is read-only — the external system stays
+        // authoritative and OpenRegister must never become a second write path.
+        $objectSource = $schema->getObjectSource();
+        if ($persist === true && $objectSource !== null) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
         // Normalize translatable properties (wrap simple values under default language).
         $data = $this->translationHandler->normalizeTranslationsForSave(
             objectData: $data,
@@ -4972,7 +4988,7 @@ class SaveObject
             oldEntity: $oldObject
         );
 
-        // i18n-source-of-truth: when a translatable property's source-language
+        // I18n-source-of-truth: when a translatable property's source-language
         // value changes, flip every derived translation row to `outdated` so
         // editorial tooling surfaces the staleness immediately. Conservative —
         // only triggers when the source value itself changed; per-language
@@ -5010,7 +5026,7 @@ class SaveObject
         // BUG-OBJ-8: collect the names of the properties the file handler rewrote so
         // we can overlay ONLY those file-id replacements onto the merged/prepared body
         // below, instead of clobbering the whole object with the raw partial $data.
-        $filePropsProcessed     = false;
+        $filePropsProcessed      = false;
         $processedFileProperties = [];
         foreach ($data as $propertyName => $value) {
             $isFileProperty = $this->filePropertyHandler->isFileProperty(
@@ -5145,7 +5161,7 @@ class SaveObject
                 property: (string) $property,
                 sourceLanguage: $sourceLanguage
             );
-        }
+        }//end foreach
     }//end flagOutdatedDerivedTranslations()
 
     /**

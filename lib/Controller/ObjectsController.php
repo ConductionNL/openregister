@@ -91,7 +91,6 @@ class ObjectsController extends Controller
 {
     use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
-
     /**
      * Export service for handling data exports
      *
@@ -109,27 +108,27 @@ class ObjectsController extends Controller
     /**
      * Constructor for the ObjectsController
      *
-     * @param string                                          $appName          The name of the app
-     * @param IRequest                                        $request          The request object
-     * @param IAppConfig                                      $config           The app configuration object
-     * @param IAppManager                                     $appManager       The app manager
-     * @param ContainerInterface                              $container        The DI container
-     * @param RegisterMapper                                  $registerMapper   The register mapper
-     * @param SchemaMapper                                    $schemaMapper     The schema mapper
-     * @param AuditTrailMapper                                $auditTrailMapper The audit trail mapper
-     * @param ObjectService                                   $objectService    The object service
-     * @param IUserSession                                    $userSession      The user session
-     * @param IGroupManager                                   $groupManager     The group manager
-     * @param ExportService                                   $exportService    The export service
-     * @param ImportService                                   $importService    The import service
-     * @param WebhookService                                  $webhookService   The webhook service (optional)
-     * @param LoggerInterface                                 $logger           The logger (optional)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
-     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer     $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
-     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder           $pdokGeocoder         Optional PDOK geocoder (null-safe)
+     * @param string                                                     $appName              The name of the app
+     * @param IRequest                                                   $request              The request object
+     * @param IAppConfig                                                 $config               The app configuration object
+     * @param IAppManager                                                $appManager           The app manager
+     * @param ContainerInterface                                         $container            The DI container
+     * @param RegisterMapper                                             $registerMapper       The register mapper
+     * @param SchemaMapper                                               $schemaMapper         The schema mapper
+     * @param AuditTrailMapper                                           $auditTrailMapper     The audit trail mapper
+     * @param ObjectService                                              $objectService        The object service
+     * @param IUserSession                                               $userSession          The user session
+     * @param IGroupManager                                              $groupManager         The group manager
+     * @param ExportService                                              $exportService        The export service
+     * @param ImportService                                              $importService        The import service
+     * @param WebhookService                                             $webhookService       The webhook service (optional)
+     * @param LoggerInterface                                            $logger               The logger (optional)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser             $geoFilterParser      Optional geo wire-format adapter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier            $geoFilterApplier     Optional geo post-filter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer         $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService     $jsonLdContextService Optional JSON-LD context service (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder    Optional GeoJSON/WFS feature builder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder                $pdokGeocoder         Optional PDOK geocoder (null-safe)
      *
      * @return void
      *
@@ -185,7 +184,6 @@ class ObjectsController extends Controller
         return in_array('admin', $userGroups);
     }//end isCurrentUserAdmin()
 
-
     /**
      * Whether the current request asks for JSON-LD output via content negotiation.
      *
@@ -205,7 +203,6 @@ class ObjectsController extends Controller
         return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
     }//end wantsJsonLd()
 
-
     /**
      * Decorate an already-rendered single-object array as a JSON-LD JSONResponse.
      *
@@ -213,9 +210,9 @@ class ObjectsController extends Controller
      * data path, so RBAC / multitenancy / field-level security / the published
      * predicate all remain applied exactly as for the plain-JSON response.
      *
-     * @param array                                $renderedObject The rendered object array.
-     * @param \OCA\OpenRegister\Db\Register|null    $register       The resolved register entity.
-     * @param \OCA\OpenRegister\Db\Schema|null      $schema         The resolved schema entity.
+     * @param array                              $renderedObject The rendered object array.
+     * @param \OCA\OpenRegister\Db\Register|null $register       The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema         The resolved schema entity.
      *
      * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
      *
@@ -229,16 +226,15 @@ class ObjectsController extends Controller
             register: $register
         );
 
-        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+        return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
     }//end jsonLdObjectResponse()
-
 
     /**
      * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
      *
-     * @param array                                $result   The paginated result array.
-     * @param \OCA\OpenRegister\Db\Register|null    $register The resolved register entity.
-     * @param \OCA\OpenRegister\Db\Schema|null      $schema   The resolved schema entity.
+     * @param array                              $result   The paginated result array.
+     * @param \OCA\OpenRegister\Db\Register|null $register The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema   The resolved schema entity.
      *
      * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
      *
@@ -252,9 +248,8 @@ class ObjectsController extends Controller
             register: $register
         );
 
-        return $this->withJsonLdHeaders(new JSONResponse(data: $document));
+        return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
     }//end jsonLdCollectionResponse()
-
 
     /**
      * Add the JSON-LD content negotiation headers to a response.
@@ -918,8 +913,8 @@ class ObjectsController extends Controller
         // (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
         // lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
         // be wired there before cross-table search is exposed to non-admins.
-        $isAdmin                = $this->isCurrentUserAdmin();
-        $query['_rbac']         = ($isAdmin === false);
+        $isAdmin        = $this->isCurrentUserAdmin();
+        $query['_rbac'] = ($isAdmin === false);
         $query['_multitenancy'] = ($isAdmin === false);
 
         // Remove all register/schema context from query to prevent filtering.
@@ -974,7 +969,11 @@ class ObjectsController extends Controller
 
         // PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
         $wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $total     = ($wantTotal === true) ? $fetchedCount : null;
+        if ($wantTotal === true) {
+            $total = $fetchedCount;
+        } else {
+            $total = null;
+        }
 
         $pages = 1;
         $page  = 1;
@@ -1163,7 +1162,7 @@ class ObjectsController extends Controller
         $multi   = ($isAdmin === false);
         // No longer request-controlled: never treat _multi as explicitly set by the client.
         $multiExplicitlySet = false;
-        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $deleted            = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
         $registerEntity = $resolved['registerEntity'] ?? null;
@@ -1178,7 +1177,10 @@ class ObjectsController extends Controller
                 schemaSlug: $schemaEntity->getSlug()
             );
 
-            if ($isMagicMapped === true) {
+            // A schema served from an external object-source (x-openregister-object-source)
+            // must never read the magic table — fall through to searchObjectsPaginated,
+            // which delegates to the registered provider (object-source-providers).
+            if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
                 // Use MagicMapper for magic-mapped schemas.
                 $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -1256,8 +1258,14 @@ class ObjectsController extends Controller
                 // PERF-10: allow callers to skip the extra COUNT(*) query when they
                 // don't need the grand total (e.g. infinite scroll). _count=false /
                 // _noTotal=true returns total:null and skips the count round-trip.
+                if (($params['_noTotal'] ?? false) === true) {
+                    $countDefault = false;
+                } else {
+                    $countDefault = true;
+                }
+
                 $wantTotal = filter_var(
-                    $params['_count'] ?? (($params['_noTotal'] ?? false) ? false : true),
+                    $params['_count'] ?? $countDefault,
                     FILTER_VALIDATE_BOOLEAN
                 );
 
@@ -1596,9 +1604,15 @@ class ObjectsController extends Controller
         $fields  = $this->parseFieldsParam(params: $params);
         $geoProp = ($params['geo.property'] ?? null);
 
+        if ($geoProp !== null) {
+            $geoPropertyValue = (string) $geoProp;
+        } else {
+            $geoPropertyValue = null;
+        }
+
         $collection = $this->geoFeatureBuilder->buildFeatureCollection(
             rows: $rows,
-            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            geoProperty: $geoPropertyValue,
             fields: $fields,
             includeArea: true
         );
@@ -1648,10 +1662,17 @@ class ObjectsController extends Controller
             $maxFeatures = (int) $rawMax;
         }
 
-        $geoProp  = ($params['geo.property'] ?? null);
+        $geoProp = ($params['geo.property'] ?? null);
+
+        if ($geoProp !== null) {
+            $geoPropertyValue = (string) $geoProp;
+        } else {
+            $geoPropertyValue = null;
+        }
+
         $response = $this->geoFeatureBuilder->buildWfsResponse(
             rows: $rows,
-            geoProperty: ($geoProp !== null ? (string) $geoProp : null),
+            geoProperty: $geoPropertyValue,
             maxFeatures: $maxFeatures
         );
 
@@ -1732,7 +1753,11 @@ class ObjectsController extends Controller
         $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
         $payload = (array) $listing->getData();
         $rows    = ($payload['results'] ?? []);
-        return (is_array($rows) === true) ? $rows : [];
+        if (is_array($rows) === true) {
+            return $rows;
+        }
+
+        return [];
 
     }//end scopedGeoRows()
 
@@ -2532,7 +2557,7 @@ class ObjectsController extends Controller
                     ]
                     );
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($exception);
+            return $this->errorResponse(e: $exception);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -2781,7 +2806,7 @@ class ObjectsController extends Controller
                     ]
                     );
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($exception);
+            return $this->errorResponse(e: $exception);
         }//end try
     }//end patch()
 
@@ -2906,7 +2931,7 @@ class ObjectsController extends Controller
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($exception);
+            return $this->errorResponse(e: $exception);
         }//end try
     }//end postPatch()
 
@@ -3382,7 +3407,7 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (\Throwable $e) {
             // SEC-CTRL-7: do not leak internal exception detail on 500.
-            return $this->errorResponse($e);
+            return $this->errorResponse(e: $e);
         }//end try
     }//end lock()
 
@@ -3500,6 +3525,20 @@ class ObjectsController extends Controller
                 data: $content,
                 filename: "{$filenameBase}.csv",
                 contentType: 'text/csv'
+            );
+        }
+
+        if ($type === 'json') {
+            $content = $this->exportService->exportToJson(
+                register: $registerEntity,
+                schema: $schemaEntity,
+                filters: $filters
+            );
+
+            return new DataDownloadResponse(
+                data: $content,
+                filename: "{$filenameBase}.json",
+                contentType: 'application/json'
             );
         }
 

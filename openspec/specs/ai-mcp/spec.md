@@ -1,6 +1,6 @@
 ---
 retrofit: true
-status: implemented
+status: done
 ---
 
 # AI MCP — LLPhant Tool Bridge

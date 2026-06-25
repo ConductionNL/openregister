@@ -1,0 +1,23 @@
+--- a/src/PhpSpreadsheet/Writer/ZipStream0.php
++++ b/src/PhpSpreadsheet/Writer/ZipStream0.php
+@@ -10,6 +10,17 @@ class ZipStream0
+     /**
+      * @param resource $fileHandle
+      */
+     public static function newZipStream($fileHandle): ZipStream
+     {
+-        return class_exists(Archive::class) ? ZipStream2::newZipStream($fileHandle) : ZipStream3::newZipStream($fileHandle);
++        // Prefer the v3 shim whenever zipstream-php v3 is installed (its
++        // OperationMode enum exists). On Nextcloud the autoloader is shared
++        // across apps, so a co-installed app bundling zipstream-php v2 (e.g.
++        // Forms) can leak ZipStream\Option\Archive onto the classpath even
++        // though OpenRegister ships v3. The original class_exists(Archive)
++        // check then picks the v2 shim and calls v3's ZipStream(operationMode:
++        // null), throwing a TypeError and 500ing every .xlsx export.
++        if (enum_exists(\ZipStream\OperationMode::class)) {
++            return ZipStream3::newZipStream($fileHandle);
++        }
++
++        return class_exists(Archive::class) ? ZipStream2::newZipStream($fileHandle) : ZipStream3::newZipStream($fileHandle);
+     }
+ }
