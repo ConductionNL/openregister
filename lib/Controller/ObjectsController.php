@@ -1303,9 +1303,9 @@ class ObjectsController extends Controller
                 $activeOrganisation = null;
                 try {
                     $organisationService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
-                    $activeOrg           = $organisationService->getActiveOrganisation();
+                    $activeOrg           = $organisationService?->getActiveOrganisation();
                     $activeOrganisation  = $activeOrg?->getUuid();
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     // Silently ignore if organisation service is not available.
                 }
 

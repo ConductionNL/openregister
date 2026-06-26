@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -223,7 +224,8 @@ class ObjectServiceTest extends TestCase
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
 			$this->dateTimeNormalizer,
-			$this->createMock(IAppContainer::class)
+			$this->createMock(IAppContainer::class),
+			$this->createMock(ObjectSourceRegistry::class)
 		);
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
@@ -1551,6 +1553,10 @@ class ObjectServiceTest extends TestCase
 	 */
 	public function testEnsureObjectFolderCreatesFolderForExistingObject(): void
 	{
+		// Since the lazy-folder-creation change (PR #1431 follow-up), ensureObjectFolder()
+		// no longer eagerly creates a Files folder when the object has folder=null.
+		// It returns null so that a folder is only created on demand (when a file is
+		// actually uploaded). createObjectFolderWithoutUpdate() is NOT called here.
 		$entity = new ObjectEntity();
 		$entity->setId(1);
 		$entity->setFolder(null);
@@ -1560,13 +1566,12 @@ class ObjectServiceTest extends TestCase
 			->willReturn($entity);
 
 		$this->fileService
-			->expects($this->once())
-			->method('createObjectFolderWithoutUpdate')
-			->willReturn(42);
+			->expects($this->never())
+			->method('createObjectFolderWithoutUpdate');
 
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
-		$this->assertSame(42, $result);
+		$this->assertNull($result);
 	}
 
 	/**
@@ -2684,6 +2689,11 @@ class ObjectServiceTest extends TestCase
 	 */
 	public function testEnsureObjectFolderCreatesWhenFolderIsString(): void
 	{
+		// Since the lazy-folder-creation change, ensureObjectFolder() returns null
+		// even for legacy non-numeric string paths. The legacy path is treated as
+		// "needs auto-create" but the auto-create is intentionally deferred (lazy)
+		// to avoid creating empty folders that the user may never need. The folder
+		// is created on demand the first time a file is actually uploaded.
 		$entity = new ObjectEntity();
 		$entity->setId(1);
 		$entity->setFolder('some-string-path');
@@ -2691,13 +2701,12 @@ class ObjectServiceTest extends TestCase
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$this->fileService->expects($this->once())
-			->method('createObjectFolderWithoutUpdate')
-			->willReturn(99);
+		$this->fileService->expects($this->never())
+			->method('createObjectFolderWithoutUpdate');
 
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
-		$this->assertSame(99, $result);
+		$this->assertNull($result);
 	}
 
 	/**
