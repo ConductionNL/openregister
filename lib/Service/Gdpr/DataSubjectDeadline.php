@@ -71,6 +71,8 @@ class DataSubjectDeadline
      * @param DateTimeInterface $receivedAt When the request was received.
      *
      * @return DateTimeImmutable The base legal deadline.
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function computeDueAt(DateTimeInterface $receivedAt): DateTimeImmutable
     {
@@ -91,6 +93,8 @@ class DataSubjectDeadline
      * @param DateTimeInterface $dueAt The current base due date.
      *
      * @return DateTimeImmutable The extended deadline (base + 2 months).
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function extend(DateTimeInterface $dueAt): DateTimeImmutable
     {
@@ -105,6 +109,8 @@ class DataSubjectDeadline
      * @param DateTimeInterface|null $now      Reference time (defaults to now).
      *
      * @return bool True when the reference time is at or after the deadline.
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function isOverdue(DateTimeInterface $deadline, ?DateTimeInterface $now=null): bool
     {
@@ -120,6 +126,8 @@ class DataSubjectDeadline
      * @param DateTimeInterface|null $now      Reference time (defaults to now).
      *
      * @return int Whole days left; negative when the deadline is in the past.
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function daysRemaining(DateTimeInterface $deadline, ?DateTimeInterface $now=null): int
     {
