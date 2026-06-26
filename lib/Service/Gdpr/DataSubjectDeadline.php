@@ -74,7 +74,7 @@ class DataSubjectDeadline
      */
     public function computeDueAt(DateTimeInterface $receivedAt): DateTimeImmutable
     {
-        return $this->toImmutable($receivedAt)->add(new DateInterval(self::BASE_TERM));
+        return $this->toImmutable(value: $receivedAt)->add(new DateInterval(self::BASE_TERM));
 
     }//end computeDueAt()
 
@@ -94,7 +94,7 @@ class DataSubjectDeadline
      */
     public function extend(DateTimeInterface $dueAt): DateTimeImmutable
     {
-        return $this->toImmutable($dueAt)->add(new DateInterval(self::EXTENSION_TERM));
+        return $this->toImmutable(value: $dueAt)->add(new DateInterval(self::EXTENSION_TERM));
 
     }//end extend()
 
@@ -109,7 +109,7 @@ class DataSubjectDeadline
     public function isOverdue(DateTimeInterface $deadline, ?DateTimeInterface $now=null): bool
     {
         $reference = ($now ?? new DateTimeImmutable());
-        return $this->toImmutable($reference) >= $this->toImmutable($deadline);
+        return $this->toImmutable(value: $reference) >= $this->toImmutable(value: $deadline);
 
     }//end isOverdue()
 
@@ -123,8 +123,8 @@ class DataSubjectDeadline
      */
     public function daysRemaining(DateTimeInterface $deadline, ?DateTimeInterface $now=null): int
     {
-        $reference = $this->toImmutable($now ?? new DateTimeImmutable());
-        $target    = $this->toImmutable($deadline);
+        $reference = $this->toImmutable(value: ($now ?? new DateTimeImmutable()));
+        $target    = $this->toImmutable(value: $deadline);
 
         $diff = $reference->diff($target);
         $days = (int) $diff->days;
