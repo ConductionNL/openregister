@@ -115,7 +115,7 @@ class AggregateReferenceResolver
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.StaticAccess) AggregationQuery::create() is the engine's
+     * @SuppressWarnings(PHPMD.StaticAccess)         AggregationQuery::create() is the engine's
      *   fail-fast static factory (mirrors AggregationRunner's own usage); no instance
      *   alternative exists.
      *
