@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -139,7 +140,8 @@ class ObjectServiceSearchBySlugTest extends TestCase
             cacheHandler:        $this->createMock(CacheHandler::class),
             settingsService:     $this->createMock(SettingsService::class),
             dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
-            container:           $this->createMock(IAppContainer::class)
+            container:           $this->createMock(IAppContainer::class),
+            objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
         );
 
     }//end setUp()

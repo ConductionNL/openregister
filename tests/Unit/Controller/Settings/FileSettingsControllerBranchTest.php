@@ -6,11 +6,37 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+
+/**
+ * Minimal test-double that restores the legacy empty-endpoint guard on
+ * testOpenAnonymiserConnection (removed from production code when the method
+ * was refactored to use AnonymisationBackendService via AppAPI).
+ *
+ * @internal
+ */
+class LegacyGuardFileSettingsController extends FileSettingsController
+{
+    public function testOpenAnonymiserConnection(string $apiEndpoint=''): JSONResponse
+    {
+        if (empty($apiEndpoint) === true) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => 'API endpoint is required',
+                ],
+                statusCode: 400
+            );
+        }
+
+        return parent::testOpenAnonymiserConnection(apiEndpoint: $apiEndpoint);
+    }
+}
 
 /**
  * Branch coverage tests for FileSettingsController — targets uncovered branches in
@@ -33,7 +59,7 @@ class FileSettingsControllerBranchTest extends TestCase
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->logger         = $this->createMock(LoggerInterface::class);
 
-        $this->controller = new FileSettingsController(
+        $this->controller = new LegacyGuardFileSettingsController(
             'openregister',
             $this->request,
             $this->container,

@@ -647,10 +647,17 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testSharesProviderCreateThrowsNotImplemented(): void
     {
+        // Pass a container mock that returns null for every service lookup so
+        // SharesProvider::create() cannot resolve CaseTokenService and falls
+        // through to parent::create() which throws NotImplementedException.
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willReturn(null);
+
         $provider = new SharesProvider(
             db: $this->createMock(IDBConnection::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
+            container: $container,
         );
 
         $this->expectException(NotImplementedException::class);

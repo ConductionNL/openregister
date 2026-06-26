@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -66,6 +68,9 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
     /** @var SettingsService&MockObject */
     private SettingsService $settingsService;
 
+    /** @var AnonymisationBackendService&MockObject */
+    private AnonymisationBackendService $anonymisationBackendService;
+
     /**
      * Set up test dependencies
      *
@@ -81,6 +86,7 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
         $this->handler = new EntityRecognitionHandler(
             $this->chunkMapper,
@@ -88,7 +94,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
             $this->entityRelationMapper,
             $this->db,
             $this->logger,
-            $this->settingsService
+            $this->settingsService,
+            $this->anonymisationBackendService
         );
     }
 
@@ -1028,6 +1035,11 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
      */
     public function testDetectEntitiesUnknownMethodThrows(): void
     {
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities throws.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'foobar', 'foobar', []));
+
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Unknown detection method: foobar');
 

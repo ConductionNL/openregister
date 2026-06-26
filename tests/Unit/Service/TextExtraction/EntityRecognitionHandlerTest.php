@@ -22,6 +22,8 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -60,6 +62,9 @@ class EntityRecognitionHandlerTest extends TestCase
     /** @var SettingsService&MockObject */
     private SettingsService $settingsService;
 
+    /** @var AnonymisationBackendService&MockObject */
+    private AnonymisationBackendService $anonymisationBackendService;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,6 +75,7 @@ class EntityRecognitionHandlerTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
         $this->handler = new EntityRecognitionHandler(
             $this->chunkMapper,
@@ -77,7 +83,8 @@ class EntityRecognitionHandlerTest extends TestCase
             $this->entityRelationMapper,
             $this->db,
             $this->logger,
-            $this->settingsService
+            $this->settingsService,
+            $this->anonymisationBackendService
         );
     }
 
@@ -433,6 +440,12 @@ class EntityRecognitionHandlerTest extends TestCase
         $this->chunkMapper->method('findBySource')
             ->willReturn([$chunk1, $chunk2]);
 
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities
+        // throws per chunk, which processSourceChunks catches and continues.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'unknown_method', 'unknown_method', []));
+
         // Use an unknown method that will throw an exception for each chunk.
         $this->logger->expects($this->atLeastOnce())
             ->method('error');
@@ -527,6 +540,11 @@ class EntityRecognitionHandlerTest extends TestCase
     public function testExtractFromChunkWithUnknownMethodThrowsException(): void
     {
         $chunk = $this->createChunk(1, 'Some text here');
+
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities throws.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'nonexistent', 'nonexistent', []));
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Unknown detection method: nonexistent');
@@ -1008,6 +1026,11 @@ class EntityRecognitionHandlerTest extends TestCase
 
     public function testDetectEntitiesThrowsOnUnknownMethod(): void
     {
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities throws.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'foobar', 'foobar', []));
+
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Unknown detection method: foobar');
 
