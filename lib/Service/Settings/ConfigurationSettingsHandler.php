@@ -1386,18 +1386,19 @@ class ConfigurationSettingsHandler
     public function getVersionInfoOnly(): array
     {
         try {
-            $appInfo = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppInfo($this->appName);
+            $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+            $appInfo    = $appManager?->getAppInfo($this->appName);
 
             return [
-                'version'     => $appInfo['version'] ?? 'unknown',
-                'name'        => $appInfo['name'] ?? 'OpenRegister',
-                'description' => $appInfo['description'] ?? '',
-                'author'      => $appInfo['author'] ?? 'Conduction',
-                'licence'     => $appInfo['licence'] ?? 'AGPL',
+                'version'     => ($appInfo['version'] ?? null) ?? 'unknown',
+                'name'        => ($appInfo['name'] ?? null) ?? 'OpenRegister',
+                'description' => ($appInfo['description'] ?? null) ?? '',
+                'author'      => ($appInfo['author'] ?? null) ?? 'Conduction',
+                'licence'     => ($appInfo['licence'] ?? null) ?? 'AGPL',
                 'timestamp'   => time(),
                 'date'        => date('Y-m-d H:i:s'),
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'version' => 'unknown',
                 'error'   => 'Failed to retrieve version info: '.$e->getMessage(),
