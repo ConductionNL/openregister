@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -182,7 +183,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(DateTimeNormalizer::class),
-			$this->createMock(IAppContainer::class)
+			$this->createMock(IAppContainer::class),
+			$this->createMock(ObjectSourceRegistry::class)
 		);
 
 		// Set up reflection for accessing private methods.

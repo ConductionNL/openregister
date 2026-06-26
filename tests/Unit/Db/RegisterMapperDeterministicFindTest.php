@@ -153,7 +153,7 @@ class RegisterMapperDeterministicFindTest extends TestCase
 
     public function testFindCapsResolutionToOneDeterministicRowOnDuplicateSlug(): void
     {
-        $register = $this->mapper->find('shared-slug', null, false, false);
+        $register = $this->mapper->find('shared-slug', false, false);
 
         // The oldest (lowest-id) register deterministically wins.
         $this->assertSame(1, $register->getId());

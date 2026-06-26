@@ -941,7 +941,8 @@ class Application extends App implements IBootstrap
                 return new TaskService(
                     calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
                     userSession: $container->get('OCP\IUserSession'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    urlGenerator: $container->get('OCP\IURLGenerator')
                 );
             }
         );

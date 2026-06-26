@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -193,7 +194,8 @@ class AppendOnlyTest extends TestCase
             $this->createMock(CacheHandler::class),
             $this->createMock(SettingsService::class),
             $this->dateTimeNormalizer,
-            $this->createMock(IAppContainer::class)
+            $this->createMock(IAppContainer::class),
+            $this->createMock(ObjectSourceRegistry::class)
         );
 
         $this->reflection = new ReflectionClass(ObjectService::class);

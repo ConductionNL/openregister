@@ -65,6 +65,7 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
@@ -223,7 +224,8 @@ class ObjectServiceTest extends TestCase
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
 			$this->dateTimeNormalizer,
-			$this->createMock(IAppContainer::class)
+			$this->createMock(IAppContainer::class),
+			$this->createMock(ObjectSourceRegistry::class)
 		);
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
@@ -1547,7 +1549,16 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test ensureObjectFolder creates folder when object exists without folder.
+	 * Test ensureObjectFolder defers folder creation (lazy) for an existing
+	 * object that has no folder.
+	 *
+	 * The contract is LAZY folder creation: a Files folder is NOT created on
+	 * save for an object that has none. Most objects never get a file attached,
+	 * so eagerly creating a per-object folder on every save clutters the Files
+	 * tree and can bind the object to a folder created in a no-session context
+	 * a later editor cannot access. The folder is created on demand the first
+	 * time a file is actually uploaded. Therefore ensureObjectFolder MUST NOT
+	 * call createObjectFolderWithoutUpdate here and MUST return null.
 	 */
 	public function testEnsureObjectFolderCreatesFolderForExistingObject(): void
 	{
@@ -1560,13 +1571,12 @@ class ObjectServiceTest extends TestCase
 			->willReturn($entity);
 
 		$this->fileService
-			->expects($this->once())
-			->method('createObjectFolderWithoutUpdate')
-			->willReturn(42);
+			->expects($this->never())
+			->method('createObjectFolderWithoutUpdate');
 
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
-		$this->assertSame(42, $result);
+		$this->assertNull($result);
 	}
 
 	/**
@@ -2677,10 +2687,19 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame('test@example.com', $result['email']);
 	}
 
-	// ── 64. ensureObjectFolder with string folder triggers recreation ───
+	// ── 64. ensureObjectFolder with legacy string folder defers creation ──
 
 	/**
-	 * Test ensureObjectFolder creates folder when object has string folder value.
+	 * Test ensureObjectFolder defers folder creation (lazy) when the object
+	 * has a legacy non-numeric string folder value.
+	 *
+	 * A non-numeric string folder (a legacy path pre-dating the integer-id
+	 * storage convention) flags the binding as needing replacement. Under the
+	 * LAZY creation contract, however, ensureObjectFolder does NOT eagerly
+	 * call createObjectFolderWithoutUpdate on save: it leaves folderId null and
+	 * lets the folder be created on demand the first time a file is uploaded.
+	 * So this case MUST NOT call createObjectFolderWithoutUpdate and MUST
+	 * return null.
 	 */
 	public function testEnsureObjectFolderCreatesWhenFolderIsString(): void
 	{
@@ -2691,13 +2710,12 @@ class ObjectServiceTest extends TestCase
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$this->fileService->expects($this->once())
-			->method('createObjectFolderWithoutUpdate')
-			->willReturn(99);
+		$this->fileService->expects($this->never())
+			->method('createObjectFolderWithoutUpdate');
 
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
-		$this->assertSame(99, $result);
+		$this->assertNull($result);
 	}
 
 	/**

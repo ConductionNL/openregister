@@ -22,6 +22,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IURLGenerator;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -6943,5 +6945,137 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
 
         $this->assertSame(401, $result->getStatus());
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: build a controller wired with a
+     * DeepLinkRegistryService + URL generator so the `/uses` response can be
+     * exercised for `url` stamping.
+     *
+     * @param DeepLinkRegistryService&MockObject $registry The deep-link resolver.
+     * @param IURLGenerator&MockObject           $urlGen   The fallback URL generator.
+     *
+     * @return ObjectsController
+     */
+    private function makeControllerWithDeepLinks(
+        DeepLinkRegistryService&MockObject $registry,
+        IURLGenerator&MockObject $urlGen
+    ): ObjectsController {
+        return new ObjectsController(
+            'openregister',
+            $this->request,
+            $this->config,
+            $this->appManager,
+            $this->container,
+            $this->registerMapper,
+            $this->schemaMapper,
+            $this->auditTrailMapper,
+            $this->objectService,
+            $this->userSession,
+            $this->groupManager,
+            $this->exportService,
+            $this->importService,
+            $this->webhookService,
+            $this->logger,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $registry,
+            $urlGen
+        );
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: a related object from `/uses` is stamped
+     * with the `url` returned by the registered DeepLinkRegistryService template.
+     */
+    public function testUsesStampsRegisteredResourceUrl(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->request->method('getParams')->willReturn([]);
+        $this->objectService->method('getObjectUses')->willReturn(
+            [
+                'results' => [
+                    [
+                        '@self' => [
+                            'id'       => '00000000-0000-0000-0000-000000000000',
+                            'register' => 12,
+                            'schema'   => 34,
+                        ],
+                        'title' => 'Related A',
+                    ],
+                ],
+                'total' => 1,
+            ]
+        );
+
+        $registry = $this->createMock(DeepLinkRegistryService::class);
+        $registry->expects($this->once())
+            ->method('resolveUrl')
+            ->willReturn('/index.php/apps/shillinq/chart-of-accounts/00000000-0000-0000-0000-000000000000');
+        $urlGen = $this->createMock(IURLGenerator::class);
+        $urlGen->expects($this->never())->method('linkToRoute');
+
+        $controller = $this->makeControllerWithDeepLinks($registry, $urlGen);
+        $result = $controller->uses('00000000-0000-0000-0000-000000000000', 'reg', 'schema', $this->objectService);
+
+        $data = $result->getData();
+        $this->assertSame(
+            '/index.php/apps/shillinq/chart-of-accounts/00000000-0000-0000-0000-000000000000',
+            $data['results'][0]['url']
+        );
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: when no app registered a template the
+     * record falls back to OpenRegister's own `openregister.objects.show` route.
+     */
+    public function testUsesFallsBackToObjectsShowRoute(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->request->method('getParams')->willReturn([]);
+        $this->objectService->method('getObjectUses')->willReturn(
+            [
+                'results' => [
+                    [
+                        '@self' => [
+                            'id'       => '00000000-0000-0000-0000-000000000000',
+                            'register' => 12,
+                            'schema'   => 34,
+                        ],
+                    ],
+                ],
+                'total' => 1,
+            ]
+        );
+
+        $registry = $this->createMock(DeepLinkRegistryService::class);
+        $registry->method('resolveUrl')->willReturn(null);
+        $urlGen = $this->createMock(IURLGenerator::class);
+        $urlGen->expects($this->once())
+            ->method('linkToRoute')
+            ->with(
+                'openregister.objects.show',
+                [
+                    'register' => 12,
+                    'schema'   => 34,
+                    'id'       => '00000000-0000-0000-0000-000000000000',
+                ]
+            )
+            ->willReturn('/index.php/apps/openregister/api/objects/12/34/00000000-0000-0000-0000-000000000000');
+
+        $controller = $this->makeControllerWithDeepLinks($registry, $urlGen);
+        $result = $controller->uses('00000000-0000-0000-0000-000000000000', 'reg', 'schema', $this->objectService);
+
+        $data = $result->getData();
+        $this->assertSame(
+            '/index.php/apps/openregister/api/objects/12/34/00000000-0000-0000-0000-000000000000',
+            $data['results'][0]['url']
+        );
     }
 }

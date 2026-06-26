@@ -315,7 +315,7 @@ class MapLinkService
         $results = [];
         foreach ($links as $link) {
             $row        = $link->jsonSerialize();
-            $row['url'] = $this->poiDeepLink(favoriteId: (int) ($row['favoriteId'] ?? 0));
+            $row['url'] = $this->poiDeepLink(lat: (float) ($row['lat'] ?? 0), lng: (float) ($row['lng'] ?? 0));
             $results[]  = $row;
         }
 
@@ -399,7 +399,7 @@ class MapLinkService
             'category' => $category,
             'lat'      => (float) ($favorite['lat'] ?? 0),
             'lng'      => (float) ($favorite['lng'] ?? 0),
-            'url'      => $this->poiDeepLink(favoriteId: $favoriteId),
+            'url'      => $this->poiDeepLink(lat: (float) ($favorite['lat'] ?? 0), lng: (float) ($favorite['lng'] ?? 0)),
         ];
     }//end pickerRowFromFavorite()
 
@@ -451,12 +451,17 @@ class MapLinkService
     /**
      * Build the NC Maps deep link for a favorite.
      *
-     * @param int $favoriteId The favorite id.
+     * NC Maps is a single Leaflet view; its native hash centres the map via
+     * `#map={zoom}/{lat}/{lng}` (verified live — the app keeps that hash). There
+     * is no per-favorite route, so we centre on the favorite's coordinates.
+     *
+     * @param float $lat The favorite latitude.
+     * @param float $lng The favorite longitude.
      *
      * @return string
      */
-    private function poiDeepLink(int $favoriteId): string
+    private function poiDeepLink(float $lat, float $lng): string
     {
-        return $this->urlGenerator->linkToRoute('maps.page.index').'#/m='.$favoriteId;
+        return $this->urlGenerator->linkToRoute('maps.page.index').'#map=16/'.$lat.'/'.$lng;
     }//end poiDeepLink()
 }//end class

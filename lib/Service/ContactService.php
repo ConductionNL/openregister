@@ -27,6 +27,7 @@ use Exception;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -79,12 +80,20 @@ class ContactService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param ContactLinkMapper $contactLinkMapper Contact link mapper
      * @param CardDavBackend    $cardDavBackend    CardDAV backend
      * @param IUserSession      $userSession       User session
      * @param LoggerInterface   $logger            Logger
+     * @param IURLGenerator     $urlGenerator      URL generator
      *
      * @return void
      */
@@ -92,12 +101,14 @@ class ContactService
         ContactLinkMapper $contactLinkMapper,
         CardDavBackend $cardDavBackend,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->contactLinkMapper = $contactLinkMapper;
         $this->cardDavBackend    = $cardDavBackend;
         $this->userSession       = $userSession;
         $this->logger            = $logger;
+        $this->urlGenerator      = $urlGenerator;
     }//end __construct()
 
     /**
@@ -194,6 +205,15 @@ class ContactService
                     $row['avatarUrl'] = $vfields['avatarUrl'];
                 }//end if
 
+                // Deep-link to the specific contact in the Contacts app.
+                $deepLink = $this->buildContactDeepLink(
+                    addressbookId: $link->getAddressbookId(),
+                    contactUid: $link->getContactUid()
+                );
+                if ($deepLink !== null) {
+                    $row['url'] = $deepLink;
+                }
+
                 return $row;
             },
             $links
@@ -201,6 +221,54 @@ class ContactService
 
         return ['results' => $results, 'total' => $total];
     }//end getContactsForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific contact.
+     *
+     * Nextcloud Contacts (8.x) opens a contact at
+     * `/apps/contacts/All contacts/{token}` where `token` is the
+     * base64url-encoded `"{uid}~{addressbookUri}"`. The addressbook URI is
+     * resolved from the numeric addressbook id via the CardDAV backend.
+     *
+     * Returns null (record gets no `url`) when the uid is missing or the
+     * addressbook can no longer be resolved, rather than a broken link.
+     *
+     * @param int|null    $addressbookId The numeric CardDAV addressbook id.
+     * @param string|null $contactUid    The vCard UID of the contact.
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildContactDeepLink(?int $addressbookId, ?string $contactUid): ?string
+    {
+        if ($contactUid === null || $contactUid === '' || $addressbookId === null) {
+            return null;
+        }
+
+        try {
+            $addressbook = $this->cardDavBackend->getAddressBookById($addressbookId);
+            if (is_array($addressbook) === false) {
+                return null;
+            }
+
+            $addressbookUri = ($addressbook['uri'] ?? null);
+            if ($addressbookUri === null || $addressbookUri === '') {
+                return null;
+            }
+
+            // NC Contacts opens a contact via `atob(routeParam)`, i.e. STANDARD
+            // base64 of "{uid}~{addressbookUri}" (matches its own generated
+            // links, e.g. base64("admin~z-server-generated--system")). The
+            // token is URL-encoded so any `+`/`/`/`=` survive as a single path
+            // segment; NC routing decodes it back to standard base64 before atob.
+            $token = rawurlencode(base64_encode($contactUid.'~'.$addressbookUri));
+            $base  = $this->urlGenerator->linkToRoute('contacts.page.index');
+
+            return rtrim($base, '/').'/'.rawurlencode('All contacts').'/'.$token;
+        } catch (\Throwable $e) {
+            $this->logger->debug('Failed to build contact deep-link: '.$e->getMessage());
+            return null;
+        }//end try
+    }//end buildContactDeepLink()
 
     /**
      * Resolve the supplementary vCard fields (`phone`, `org`, `avatarUrl`)

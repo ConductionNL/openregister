@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
@@ -30,6 +32,7 @@ class EntityRecognitionHandlerBranchTest extends TestCase
     private IDBConnection&MockObject $db;
     private LoggerInterface&MockObject $logger;
     private SettingsService&MockObject $settingsService;
+    private AnonymisationBackendService&MockObject $anonymisationBackendService;
 
     protected function setUp(): void
     {
@@ -41,6 +44,7 @@ class EntityRecognitionHandlerBranchTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
         $this->handler = new EntityRecognitionHandler(
             $this->chunkMapper,
@@ -48,7 +52,8 @@ class EntityRecognitionHandlerBranchTest extends TestCase
             $this->entityRelationMapper,
             $this->db,
             $this->logger,
-            $this->settingsService
+            $this->settingsService,
+            $this->anonymisationBackendService
         );
     }
 
@@ -132,6 +137,12 @@ class EntityRecognitionHandlerBranchTest extends TestCase
     public function testExtractFromChunkUnknownMethodThrows(): void
     {
         $chunk = $this->createChunkMock(1, 'file', 1, 'Some text');
+
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities throws.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'unknown_method', 'unknown_method', []));
+
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Unknown detection method');
         $this->handler->extractFromChunk($chunk, ['method' => 'unknown_method']);
