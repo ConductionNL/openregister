@@ -50,27 +50,47 @@
           ],
           "transitions": {
             "startVerifying": {
-              "from": ["received", "verifying", "in-progress"],
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
               "to": "verifying",
               "description": "Begin verifying the requester's identity / eligibility."
             },
             "startProgress": {
-              "from": ["received", "verifying", "in-progress"],
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
               "to": "in-progress",
               "description": "Begin fulfilling the request (discovery, export, rectify, erase)."
             },
             "fulfil": {
-              "from": ["received", "verifying", "in-progress"],
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
               "to": "fulfilled",
               "description": "Mark the request fulfilled (the right was honoured)."
             },
             "refuse": {
-              "from": ["received", "verifying", "in-progress"],
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
               "to": "refused",
               "description": "Refuse the request (a lawful exemption applies)."
             },
             "close": {
-              "from": ["received", "verifying", "in-progress"],
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
               "to": "closed",
               "description": "Close the request without a fulfil/refuse outcome (e.g. withdrawn)."
             }
@@ -81,13 +101,15 @@
             "type": "string",
             "description": "Identifier of the data subject (e.g. email or another identifier value indexed in the PII index).",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Subject Identifier"
           },
           "subjectType": {
             "type": "string",
             "description": "Optional type hint for the subject identifier (e.g. 'email', 'phone'). Maps to a GdprEntity type when discovering data.",
             "maxLength": 64,
-            "facetable": true
+            "facetable": true,
+            "title": "Subject Type"
           },
           "type": {
             "type": "string",
@@ -100,7 +122,8 @@
               "portability",
               "objection"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Request Type"
           },
           "status": {
             "type": "string",
@@ -114,37 +137,44 @@
               "closed"
             ],
             "default": "received",
-            "facetable": true
+            "facetable": true,
+            "title": "Status"
           },
           "receivedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "When the request was received. Anchors the EU art-12 legal deadline."
+            "description": "When the request was received. Anchors the EU art-12 legal deadline.",
+            "title": "Received At"
           },
           "dueAt": {
             "type": "string",
             "format": "date-time",
-            "description": "EU art-12(3) base legal deadline: receivedAt + 1 month."
+            "description": "EU art-12(3) base legal deadline: receivedAt + 1 month.",
+            "title": "Legal Due Date"
           },
           "extendedUntil": {
             "type": "string",
             "format": "date-time",
-            "description": "Extended legal deadline when a single +2-month extension was granted (art-12(3)). Empty when not extended."
+            "description": "Extended legal deadline when a single +2-month extension was granted (art-12(3)). Empty when not extended.",
+            "title": "Extended Deadline"
           },
           "extensionReason": {
             "type": "string",
             "description": "Justification recorded when the deadline was extended.",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "title": "Extension Reason"
           },
           "outcome": {
             "type": "string",
             "description": "Generic outcome summary once the request reaches a final state.",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "title": "Outcome"
           },
           "notes": {
             "type": "string",
             "description": "Free-text handler notes (generic; no jurisdiction policy).",
-            "maxLength": 4000
+            "maxLength": 4000,
+            "title": "Handler Notes"
           }
         }
       }

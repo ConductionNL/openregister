@@ -44,13 +44,15 @@
             "pattern": "^\\d{8}$",
             "minLength": 8,
             "maxLength": 8,
-            "facetable": true
+            "facetable": true,
+            "title": "KVK Number"
           },
           "naam": {
             "type": "string",
             "description": "Primary name of the business",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Business Name"
           },
           "handelsnamen": {
             "type": "array",
@@ -60,32 +62,41 @@
               "properties": {
                 "naam": {
                   "type": "string",
-                  "description": "Trade name"
+                  "description": "Trade name",
+                  "title": "Trade Name"
                 },
                 "volgorde": {
                   "type": "integer",
-                  "description": "Display order (0 = primary)"
+                  "description": "Display order (0 = primary)",
+                  "title": "Display Order"
                 }
               },
-              "required": ["naam", "volgorde"]
+              "required": [
+                "naam",
+                "volgorde"
+              ]
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Trade Names"
           },
           "rechtsvorm": {
             "type": "string",
             "description": "Legal form description",
-            "facetable": true
+            "facetable": true,
+            "title": "Legal Form"
           },
           "uitgebreideRechtsvorm": {
             "type": "string",
             "description": "Detailed legal form description",
-            "facetable": false
+            "facetable": false,
+            "title": "Detailed Legal Form"
           },
           "formeleRegistratiedatum": {
             "type": "string",
             "description": "Formal registration date (ISO 8601)",
             "format": "date",
-            "facetable": false
+            "facetable": false,
+            "title": "Formal Registration Date"
           },
           "materieleRegistratie": {
             "type": "object",
@@ -94,21 +105,25 @@
               "datumAanvang": {
                 "type": "string",
                 "description": "Start date of material registration",
-                "format": "date"
+                "format": "date",
+                "title": "Start Date"
               },
               "datumEinde": {
                 "type": "string",
                 "description": "End date of material registration (null if active)",
-                "format": "date"
+                "format": "date",
+                "title": "End Date"
               }
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Material Registration"
           },
           "totaalWerkzamePersonen": {
             "type": "integer",
             "description": "Total number of employed persons",
             "minimum": 0,
-            "facetable": true
+            "facetable": true,
+            "title": "Total Employees"
           },
           "sbiActiviteiten": {
             "type": "array",
@@ -118,38 +133,56 @@
               "properties": {
                 "sbiCode": {
                   "type": "string",
-                  "description": "SBI code"
+                  "description": "SBI code",
+                  "title": "SBI Code"
                 },
                 "sbiOmschrijving": {
                   "type": "string",
-                  "description": "SBI activity description"
+                  "description": "SBI activity description",
+                  "title": "SBI Description"
                 },
                 "indHoofdactiviteit": {
                   "type": "string",
                   "description": "Whether this is the main activity (Ja/Nee)",
-                  "enum": ["Ja", "Nee"]
+                  "enum": [
+                    "Ja",
+                    "Nee"
+                  ],
+                  "title": "Main Activity Indicator"
                 }
               },
-              "required": ["sbiCode", "sbiOmschrijving", "indHoofdactiviteit"]
+              "required": [
+                "sbiCode",
+                "sbiOmschrijving",
+                "indHoofdactiviteit"
+              ]
             },
-            "facetable": false
+            "facetable": false,
+            "title": "SBI Activities"
           },
           "indNonMailing": {
             "type": "string",
             "description": "Non-mailing indicator (Ja/Nee)",
-            "enum": ["Ja", "Nee"],
-            "facetable": false
+            "enum": [
+              "Ja",
+              "Nee"
+            ],
+            "facetable": false,
+            "title": "Non-Mailing Indicator"
           },
           "actief": {
             "type": "boolean",
             "description": "Whether the business is currently active (computed from datumEinde)",
-            "facetable": true
+            "facetable": true,
+            "title": "Active"
           }
         },
         "hardValidation": false,
         "searchable": true,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       },
       "vestiging": {
@@ -171,49 +204,63 @@
             "pattern": "^\\d{12}$",
             "minLength": 12,
             "maxLength": 12,
-            "facetable": true
+            "facetable": true,
+            "title": "Branch Number"
           },
           "kvkNummer": {
             "type": "string",
             "description": "8-digit KVK number of the parent business",
             "pattern": "^\\d{8}$",
-            "facetable": true
+            "facetable": true,
+            "title": "KVK Number"
           },
           "eersteHandelsnaam": {
             "type": "string",
             "description": "Primary trade name of the branch",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Primary Trade Name"
           },
           "indHoofdvestiging": {
             "type": "string",
             "description": "Whether this is the main branch (Ja/Nee)",
-            "enum": ["Ja", "Nee"],
-            "facetable": true
+            "enum": [
+              "Ja",
+              "Nee"
+            ],
+            "facetable": true,
+            "title": "Main Branch Indicator"
           },
           "indCommercieleVestiging": {
             "type": "string",
             "description": "Whether this is a commercial branch (Ja/Nee)",
-            "enum": ["Ja", "Nee"],
-            "facetable": false
+            "enum": [
+              "Ja",
+              "Nee"
+            ],
+            "facetable": false,
+            "title": "Commercial Branch Indicator"
           },
           "voltijdWerkzamePersonen": {
             "type": "integer",
             "description": "Number of full-time employees",
             "minimum": 0,
-            "facetable": false
+            "facetable": false,
+            "title": "Full-Time Employees"
           },
           "deeltijdWerkzamePersonen": {
             "type": "integer",
             "description": "Number of part-time employees",
             "minimum": 0,
-            "facetable": false
+            "facetable": false,
+            "title": "Part-Time Employees"
           },
           "totaalWerkzamePersonen": {
             "type": "integer",
             "description": "Total number of employees at this branch",
             "minimum": 0,
-            "facetable": true
+            "facetable": true,
+            "title": "Total Employees"
           },
           "adressen": {
             "type": "array",
@@ -224,40 +271,54 @@
                 "type": {
                   "type": "string",
                   "description": "Address type",
-                  "enum": ["bezoekadres", "correspondentieadres"]
+                  "enum": [
+                    "bezoekadres",
+                    "correspondentieadres"
+                  ],
+                  "title": "Address Type"
                 },
                 "straatnaam": {
                   "type": "string",
-                  "description": "Street name"
+                  "description": "Street name",
+                  "title": "Street Name"
                 },
                 "huisnummer": {
                   "type": "integer",
-                  "description": "House number"
+                  "description": "House number",
+                  "title": "House Number"
                 },
                 "huisletter": {
                   "type": "string",
-                  "description": "House letter (optional)"
+                  "description": "House letter (optional)",
+                  "title": "House Letter"
                 },
                 "postbusnummer": {
                   "type": "integer",
-                  "description": "PO box number (optional)"
+                  "description": "PO box number (optional)",
+                  "title": "PO Box Number"
                 },
                 "postcode": {
                   "type": "string",
-                  "description": "Postal code (####XX)"
+                  "description": "Postal code (####XX)",
+                  "title": "Postal Code"
                 },
                 "plaats": {
                   "type": "string",
-                  "description": "City"
+                  "description": "City",
+                  "title": "City"
                 },
                 "land": {
                   "type": "string",
-                  "description": "Country"
+                  "description": "Country",
+                  "title": "Country"
                 }
               },
-              "required": ["type"]
+              "required": [
+                "type"
+              ]
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Addresses"
           },
           "handelsnamen": {
             "type": "array",
@@ -267,16 +328,22 @@
               "properties": {
                 "naam": {
                   "type": "string",
-                  "description": "Trade name"
+                  "description": "Trade name",
+                  "title": "Trade Name"
                 },
                 "volgorde": {
                   "type": "integer",
-                  "description": "Display order"
+                  "description": "Display order",
+                  "title": "Display Order"
                 }
               },
-              "required": ["naam", "volgorde"]
+              "required": [
+                "naam",
+                "volgorde"
+              ]
             },
-            "facetable": false
+            "facetable": false,
+            "title": "Trade Names"
           },
           "sbiActiviteiten": {
             "type": "array",
@@ -285,25 +352,41 @@
               "type": "object",
               "properties": {
                 "sbiCode": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "SBI Code",
+                  "description": "SBI code"
                 },
                 "sbiOmschrijving": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "SBI Description",
+                  "description": "SBI activity description"
                 },
                 "indHoofdactiviteit": {
                   "type": "string",
-                  "enum": ["Ja", "Nee"]
+                  "enum": [
+                    "Ja",
+                    "Nee"
+                  ],
+                  "title": "Main Activity Indicator",
+                  "description": "Whether this is the main activity (Ja/Nee)"
                 }
               },
-              "required": ["sbiCode", "sbiOmschrijving", "indHoofdactiviteit"]
+              "required": [
+                "sbiCode",
+                "sbiOmschrijving",
+                "indHoofdactiviteit"
+              ]
             },
-            "facetable": false
+            "facetable": false,
+            "title": "SBI Activities"
           }
         },
         "hardValidation": false,
         "searchable": true,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       }
     },
@@ -317,8 +400,14 @@
         "kvkNummer": "69599084",
         "naam": "Test EMZ Dagobert",
         "handelsnamen": [
-          { "naam": "Test EMZ Dagobert", "volgorde": 0 },
-          { "naam": "Dagobert's Goudhandel", "volgorde": 1 }
+          {
+            "naam": "Test EMZ Dagobert",
+            "volgorde": 0
+          },
+          {
+            "naam": "Dagobert's Goudhandel",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Eenmanszaak",
         "uitgebreideRechtsvorm": "Eenmanszaak",
@@ -329,8 +418,16 @@
         },
         "totaalWerkzamePersonen": 1,
         "sbiActiviteiten": [
-          { "sbiCode": "10110", "sbiOmschrijving": "Slachterijen (geen pluimvee-)", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "10120", "sbiOmschrijving": "Slachterijen (pluimvee-)", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "10110",
+            "sbiOmschrijving": "Slachterijen (geen pluimvee-)",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "10120",
+            "sbiOmschrijving": "Slachterijen (pluimvee-)",
+            "indHoofdactiviteit": "Nee"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -344,8 +441,14 @@
         "kvkNummer": "68727720",
         "naam": "Test NV Katrien",
         "handelsnamen": [
-          { "naam": "Test NV Katrien", "volgorde": 0 },
-          { "naam": "Katrien's Modehuis", "volgorde": 1 }
+          {
+            "naam": "Test NV Katrien",
+            "volgorde": 0
+          },
+          {
+            "naam": "Katrien's Modehuis",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Naamloze Vennootschap",
         "uitgebreideRechtsvorm": "Naamloze Vennootschap",
@@ -356,8 +459,16 @@
         },
         "totaalWerkzamePersonen": 12,
         "sbiActiviteiten": [
-          { "sbiCode": "4771", "sbiOmschrijving": "Winkels in kleding", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "4772", "sbiOmschrijving": "Winkels in schoenen en lederwaren", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "4771",
+            "sbiOmschrijving": "Winkels in kleding",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "4772",
+            "sbiOmschrijving": "Winkels in schoenen en lederwaren",
+            "indHoofdactiviteit": "Nee"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -371,8 +482,14 @@
         "kvkNummer": "68750110",
         "naam": "Test BV Donald",
         "handelsnamen": [
-          { "naam": "Test BV Donald", "volgorde": 0 },
-          { "naam": "Donald's Scheepvaart B.V.", "volgorde": 1 }
+          {
+            "naam": "Test BV Donald",
+            "volgorde": 0
+          },
+          {
+            "naam": "Donald's Scheepvaart B.V.",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Besloten Vennootschap",
         "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
@@ -383,8 +500,16 @@
         },
         "totaalWerkzamePersonen": 5,
         "sbiActiviteiten": [
-          { "sbiCode": "5010", "sbiOmschrijving": "Zee- en kustvaart (passagiers)", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "5020", "sbiOmschrijving": "Zee- en kustvaart (vracht)", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "5010",
+            "sbiOmschrijving": "Zee- en kustvaart (passagiers)",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "5020",
+            "sbiOmschrijving": "Zee- en kustvaart (vracht)",
+            "indHoofdactiviteit": "Nee"
+          }
         ],
         "indNonMailing": "Ja",
         "actief": true
@@ -398,7 +523,10 @@
         "kvkNummer": "69599068",
         "naam": "Test Stichting Bolderbast",
         "handelsnamen": [
-          { "naam": "Test Stichting Bolderbast", "volgorde": 0 }
+          {
+            "naam": "Test Stichting Bolderbast",
+            "volgorde": 0
+          }
         ],
         "rechtsvorm": "Stichting",
         "uitgebreideRechtsvorm": "Stichting",
@@ -409,7 +537,11 @@
         },
         "totaalWerkzamePersonen": 3,
         "sbiActiviteiten": [
-          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "8810",
+            "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -423,8 +555,14 @@
         "kvkNummer": "69599076",
         "naam": "Test VOF Guus",
         "handelsnamen": [
-          { "naam": "Test VOF Guus", "volgorde": 0 },
-          { "naam": "Guus Gelansen Goudsmederij", "volgorde": 1 }
+          {
+            "naam": "Test VOF Guus",
+            "volgorde": 0
+          },
+          {
+            "naam": "Guus Gelansen Goudsmederij",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Vennootschap Onder Firma",
         "uitgebreideRechtsvorm": "Vennootschap onder firma",
@@ -435,7 +573,11 @@
         },
         "totaalWerkzamePersonen": 4,
         "sbiActiviteiten": [
-          { "sbiCode": "3212", "sbiOmschrijving": "Vervaardiging van sieraden", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "3212",
+            "sbiOmschrijving": "Vervaardiging van sieraden",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -449,7 +591,10 @@
         "kvkNummer": "90000102",
         "naam": "Stichting Free opentrans",
         "handelsnamen": [
-          { "naam": "Stichting Free opentrans", "volgorde": 0 }
+          {
+            "naam": "Stichting Free opentrans",
+            "volgorde": 0
+          }
         ],
         "rechtsvorm": "Stichting",
         "uitgebreideRechtsvorm": "Stichting",
@@ -460,7 +605,11 @@
         },
         "totaalWerkzamePersonen": 2,
         "sbiActiviteiten": [
-          { "sbiCode": "6201", "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "6201",
+            "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -474,8 +623,14 @@
         "kvkNummer": "90001354",
         "naam": "Grand Kontex B.V.",
         "handelsnamen": [
-          { "naam": "Grand Kontex B.V.", "volgorde": 0 },
-          { "naam": "Kontex Solutions", "volgorde": 1 }
+          {
+            "naam": "Grand Kontex B.V.",
+            "volgorde": 0
+          },
+          {
+            "naam": "Kontex Solutions",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Besloten Vennootschap",
         "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
@@ -486,7 +641,11 @@
         },
         "totaalWerkzamePersonen": 8,
         "sbiActiviteiten": [
-          { "sbiCode": "6420", "sbiOmschrijving": "Financiele holdings", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "6420",
+            "sbiOmschrijving": "Financiele holdings",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -500,8 +659,14 @@
         "kvkNummer": "55344526",
         "naam": "Regional Stimflex Cooperatie",
         "handelsnamen": [
-          { "naam": "Regional Stimflex Cooperatie", "volgorde": 0 },
-          { "naam": "Stimflex Europe", "volgorde": 1 }
+          {
+            "naam": "Regional Stimflex Cooperatie",
+            "volgorde": 0
+          },
+          {
+            "naam": "Stimflex Europe",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Cooperatie",
         "uitgebreideRechtsvorm": "Cooperatie met beperkte aansprakelijkheid",
@@ -512,7 +677,11 @@
         },
         "totaalWerkzamePersonen": 15,
         "sbiActiviteiten": [
-          { "sbiCode": "7022", "sbiOmschrijving": "Overige adviesbureaus op het gebied van management", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "7022",
+            "sbiOmschrijving": "Overige adviesbureaus op het gebied van management",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -526,8 +695,14 @@
         "kvkNummer": "74123456",
         "naam": "Bakkerij De Vries B.V.",
         "handelsnamen": [
-          { "naam": "Bakkerij De Vries B.V.", "volgorde": 0 },
-          { "naam": "De Vries Brood & Banket", "volgorde": 1 }
+          {
+            "naam": "Bakkerij De Vries B.V.",
+            "volgorde": 0
+          },
+          {
+            "naam": "De Vries Brood & Banket",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Besloten Vennootschap",
         "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
@@ -538,7 +713,11 @@
         },
         "totaalWerkzamePersonen": 25,
         "sbiActiviteiten": [
-          { "sbiCode": "1071", "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "1071",
+            "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -552,8 +731,14 @@
         "kvkNummer": "81234567",
         "naam": "Van den Berg IT Solutions",
         "handelsnamen": [
-          { "naam": "Van den Berg IT Solutions", "volgorde": 0 },
-          { "naam": "VdB IT", "volgorde": 1 }
+          {
+            "naam": "Van den Berg IT Solutions",
+            "volgorde": 0
+          },
+          {
+            "naam": "VdB IT",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Eenmanszaak",
         "uitgebreideRechtsvorm": "Eenmanszaak",
@@ -564,7 +749,11 @@
         },
         "totaalWerkzamePersonen": 1,
         "sbiActiviteiten": [
-          { "sbiCode": "6201", "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "6201",
+            "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -578,7 +767,10 @@
         "kvkNummer": "50123456",
         "naam": "Gemeente Voorbeeldstad",
         "handelsnamen": [
-          { "naam": "Gemeente Voorbeeldstad", "volgorde": 0 }
+          {
+            "naam": "Gemeente Voorbeeldstad",
+            "volgorde": 0
+          }
         ],
         "rechtsvorm": "Publiekrechtelijke Rechtspersoon",
         "uitgebreideRechtsvorm": "Gemeente",
@@ -589,7 +781,11 @@
         },
         "totaalWerkzamePersonen": 450,
         "sbiActiviteiten": [
-          { "sbiCode": "8411", "sbiOmschrijving": "Algemeen overheidsbestuur", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "8411",
+            "sbiOmschrijving": "Algemeen overheidsbestuur",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -603,8 +799,14 @@
         "kvkNummer": "62345678",
         "naam": "Bouwbedrijf Jansen VOF",
         "handelsnamen": [
-          { "naam": "Bouwbedrijf Jansen VOF", "volgorde": 0 },
-          { "naam": "Jansen Bouw", "volgorde": 1 }
+          {
+            "naam": "Bouwbedrijf Jansen VOF",
+            "volgorde": 0
+          },
+          {
+            "naam": "Jansen Bouw",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Vennootschap Onder Firma",
         "uitgebreideRechtsvorm": "Vennootschap onder firma",
@@ -615,7 +817,11 @@
         },
         "totaalWerkzamePersonen": 50,
         "sbiActiviteiten": [
-          { "sbiCode": "4120", "sbiOmschrijving": "Algemene burgerlijke en utiliteitsbouw", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "4120",
+            "sbiOmschrijving": "Algemene burgerlijke en utiliteitsbouw",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -629,8 +835,14 @@
         "kvkNummer": "71234567",
         "naam": "Restaurant Het Gerecht",
         "handelsnamen": [
-          { "naam": "Restaurant Het Gerecht", "volgorde": 0 },
-          { "naam": "Het Gerecht Catering", "volgorde": 1 }
+          {
+            "naam": "Restaurant Het Gerecht",
+            "volgorde": 0
+          },
+          {
+            "naam": "Het Gerecht Catering",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Eenmanszaak",
         "uitgebreideRechtsvorm": "Eenmanszaak",
@@ -641,7 +853,11 @@
         },
         "totaalWerkzamePersonen": 8,
         "sbiActiviteiten": [
-          { "sbiCode": "5610", "sbiOmschrijving": "Restaurants, cafetaria's, snackbars, ijssalons, eetkramen e.d.", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "5610",
+            "sbiOmschrijving": "Restaurants, cafetaria's, snackbars, ijssalons, eetkramen e.d.",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -655,8 +871,14 @@
         "kvkNummer": "83456789",
         "naam": "Zorggroep Horizon",
         "handelsnamen": [
-          { "naam": "Zorggroep Horizon", "volgorde": 0 },
-          { "naam": "Horizon Ziekenhuis Maastricht", "volgorde": 1 }
+          {
+            "naam": "Zorggroep Horizon",
+            "volgorde": 0
+          },
+          {
+            "naam": "Horizon Ziekenhuis Maastricht",
+            "volgorde": 1
+          }
         ],
         "rechtsvorm": "Stichting",
         "uitgebreideRechtsvorm": "Stichting",
@@ -667,8 +889,16 @@
         },
         "totaalWerkzamePersonen": 200,
         "sbiActiviteiten": [
-          { "sbiCode": "8610", "sbiOmschrijving": "Ziekenhuizen", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "8610",
+            "sbiOmschrijving": "Ziekenhuizen",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "8810",
+            "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting",
+            "indHoofdactiviteit": "Nee"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -682,9 +912,18 @@
         "kvkNummer": "64567890",
         "naam": "TransPort Nederland NV",
         "handelsnamen": [
-          { "naam": "TransPort Nederland NV", "volgorde": 0 },
-          { "naam": "TransPort Logistiek", "volgorde": 1 },
-          { "naam": "TP Express", "volgorde": 2 }
+          {
+            "naam": "TransPort Nederland NV",
+            "volgorde": 0
+          },
+          {
+            "naam": "TransPort Logistiek",
+            "volgorde": 1
+          },
+          {
+            "naam": "TP Express",
+            "volgorde": 2
+          }
         ],
         "rechtsvorm": "Naamloze Vennootschap",
         "uitgebreideRechtsvorm": "Naamloze Vennootschap",
@@ -695,7 +934,11 @@
         },
         "totaalWerkzamePersonen": 150,
         "sbiActiviteiten": [
-          { "sbiCode": "4941", "sbiOmschrijving": "Goederenvervoer over de weg", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "4941",
+            "sbiOmschrijving": "Goederenvervoer over de weg",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Nee",
         "actief": true
@@ -709,7 +952,10 @@
         "kvkNummer": "67890123",
         "naam": "Duckstad Vastgoed B.V.",
         "handelsnamen": [
-          { "naam": "Duckstad Vastgoed B.V.", "volgorde": 0 }
+          {
+            "naam": "Duckstad Vastgoed B.V.",
+            "volgorde": 0
+          }
         ],
         "rechtsvorm": "Besloten Vennootschap",
         "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
@@ -720,7 +966,11 @@
         },
         "totaalWerkzamePersonen": 0,
         "sbiActiviteiten": [
-          { "sbiCode": "6810", "sbiOmschrijving": "Handel in eigen onroerend goed", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "6810",
+            "sbiOmschrijving": "Handel in eigen onroerend goed",
+            "indHoofdactiviteit": "Ja"
+          }
         ],
         "indNonMailing": "Ja",
         "actief": false
@@ -751,12 +1001,26 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Test EMZ Dagobert", "volgorde": 0 },
-          { "naam": "Dagobert's Goudhandel", "volgorde": 1 }
+          {
+            "naam": "Test EMZ Dagobert",
+            "volgorde": 0
+          },
+          {
+            "naam": "Dagobert's Goudhandel",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "10110", "sbiOmschrijving": "Slachterijen (geen pluimvee-)", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "10120", "sbiOmschrijving": "Slachterijen (pluimvee-)", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "10110",
+            "sbiOmschrijving": "Slachterijen (geen pluimvee-)",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "10120",
+            "sbiOmschrijving": "Slachterijen (pluimvee-)",
+            "indHoofdactiviteit": "Nee"
+          }
         ]
       },
       {
@@ -784,10 +1048,17 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Dagobert's Goudhandel Filiaal", "volgorde": 0 }
+          {
+            "naam": "Dagobert's Goudhandel Filiaal",
+            "volgorde": 0
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "10110", "sbiOmschrijving": "Slachterijen (geen pluimvee-)", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "10110",
+            "sbiOmschrijving": "Slachterijen (geen pluimvee-)",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -823,12 +1094,26 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Test NV Katrien", "volgorde": 0 },
-          { "naam": "Katrien's Modehuis", "volgorde": 1 }
+          {
+            "naam": "Test NV Katrien",
+            "volgorde": 0
+          },
+          {
+            "naam": "Katrien's Modehuis",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "4771", "sbiOmschrijving": "Winkels in kleding", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "4772", "sbiOmschrijving": "Winkels in schoenen en lederwaren", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "4771",
+            "sbiOmschrijving": "Winkels in kleding",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "4772",
+            "sbiOmschrijving": "Winkels in schoenen en lederwaren",
+            "indHoofdactiviteit": "Nee"
+          }
         ]
       },
       {
@@ -863,12 +1148,26 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Test BV Donald", "volgorde": 0 },
-          { "naam": "Donald's Scheepvaart B.V.", "volgorde": 1 }
+          {
+            "naam": "Test BV Donald",
+            "volgorde": 0
+          },
+          {
+            "naam": "Donald's Scheepvaart B.V.",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "5010", "sbiOmschrijving": "Zee- en kustvaart (passagiers)", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "5020", "sbiOmschrijving": "Zee- en kustvaart (vracht)", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "5010",
+            "sbiOmschrijving": "Zee- en kustvaart (passagiers)",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "5020",
+            "sbiOmschrijving": "Zee- en kustvaart (vracht)",
+            "indHoofdactiviteit": "Nee"
+          }
         ]
       },
       {
@@ -896,10 +1195,17 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Donald's Scheepvaart B.V. - Kantoor Amsterdam", "volgorde": 0 }
+          {
+            "naam": "Donald's Scheepvaart B.V. - Kantoor Amsterdam",
+            "volgorde": 0
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "5010", "sbiOmschrijving": "Zee- en kustvaart (passagiers)", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "5010",
+            "sbiOmschrijving": "Zee- en kustvaart (passagiers)",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -927,10 +1233,17 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Test Stichting Bolderbast", "volgorde": 0 }
+          {
+            "naam": "Test Stichting Bolderbast",
+            "volgorde": 0
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "8810",
+            "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -958,11 +1271,21 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Test VOF Guus", "volgorde": 0 },
-          { "naam": "Guus Gelansen Goudsmederij", "volgorde": 1 }
+          {
+            "naam": "Test VOF Guus",
+            "volgorde": 0
+          },
+          {
+            "naam": "Guus Gelansen Goudsmederij",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "3212", "sbiOmschrijving": "Vervaardiging van sieraden", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "3212",
+            "sbiOmschrijving": "Vervaardiging van sieraden",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -998,11 +1321,21 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Regional Stimflex Cooperatie", "volgorde": 0 },
-          { "naam": "Stimflex Europe", "volgorde": 1 }
+          {
+            "naam": "Regional Stimflex Cooperatie",
+            "volgorde": 0
+          },
+          {
+            "naam": "Stimflex Europe",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "7022", "sbiOmschrijving": "Overige adviesbureaus op het gebied van management", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "7022",
+            "sbiOmschrijving": "Overige adviesbureaus op het gebied van management",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -1030,11 +1363,21 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Bakkerij De Vries B.V.", "volgorde": 0 },
-          { "naam": "De Vries Brood & Banket", "volgorde": 1 }
+          {
+            "naam": "Bakkerij De Vries B.V.",
+            "volgorde": 0
+          },
+          {
+            "naam": "De Vries Brood & Banket",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "1071", "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "1071",
+            "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -1062,11 +1405,21 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Van den Berg IT Solutions", "volgorde": 0 },
-          { "naam": "VdB IT", "volgorde": 1 }
+          {
+            "naam": "Van den Berg IT Solutions",
+            "volgorde": 0
+          },
+          {
+            "naam": "VdB IT",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "6201", "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "6201",
+            "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -1094,11 +1447,21 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Bouwbedrijf Jansen VOF", "volgorde": 0 },
-          { "naam": "Jansen Bouw", "volgorde": 1 }
+          {
+            "naam": "Bouwbedrijf Jansen VOF",
+            "volgorde": 0
+          },
+          {
+            "naam": "Jansen Bouw",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "4120", "sbiOmschrijving": "Algemene burgerlijke en utiliteitsbouw", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "4120",
+            "sbiOmschrijving": "Algemene burgerlijke en utiliteitsbouw",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -1126,11 +1489,21 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Restaurant Het Gerecht", "volgorde": 0 },
-          { "naam": "Het Gerecht Catering", "volgorde": 1 }
+          {
+            "naam": "Restaurant Het Gerecht",
+            "volgorde": 0
+          },
+          {
+            "naam": "Het Gerecht Catering",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "5610", "sbiOmschrijving": "Restaurants, cafetaria's, snackbars, ijssalons, eetkramen e.d.", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "5610",
+            "sbiOmschrijving": "Restaurants, cafetaria's, snackbars, ijssalons, eetkramen e.d.",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       },
       {
@@ -1158,12 +1531,26 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "Zorggroep Horizon", "volgorde": 0 },
-          { "naam": "Horizon Ziekenhuis Maastricht", "volgorde": 1 }
+          {
+            "naam": "Zorggroep Horizon",
+            "volgorde": 0
+          },
+          {
+            "naam": "Horizon Ziekenhuis Maastricht",
+            "volgorde": 1
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "8610", "sbiOmschrijving": "Ziekenhuizen", "indHoofdactiviteit": "Ja" },
-          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Nee" }
+          {
+            "sbiCode": "8610",
+            "sbiOmschrijving": "Ziekenhuizen",
+            "indHoofdactiviteit": "Ja"
+          },
+          {
+            "sbiCode": "8810",
+            "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting",
+            "indHoofdactiviteit": "Nee"
+          }
         ]
       },
       {
@@ -1199,12 +1586,25 @@
           }
         ],
         "handelsnamen": [
-          { "naam": "TransPort Nederland NV", "volgorde": 0 },
-          { "naam": "TransPort Logistiek", "volgorde": 1 },
-          { "naam": "TP Express", "volgorde": 2 }
+          {
+            "naam": "TransPort Nederland NV",
+            "volgorde": 0
+          },
+          {
+            "naam": "TransPort Logistiek",
+            "volgorde": 1
+          },
+          {
+            "naam": "TP Express",
+            "volgorde": 2
+          }
         ],
         "sbiActiviteiten": [
-          { "sbiCode": "4941", "sbiOmschrijving": "Goederenvervoer over de weg", "indHoofdactiviteit": "Ja" }
+          {
+            "sbiCode": "4941",
+            "sbiOmschrijving": "Goederenvervoer over de weg",
+            "indHoofdactiviteit": "Ja"
+          }
         ]
       }
     ]

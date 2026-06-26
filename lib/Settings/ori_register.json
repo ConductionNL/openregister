@@ -49,7 +49,8 @@
             "type": "string",
             "description": "Name or title of the meeting",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Meeting Name"
           },
           "type": {
             "type": "string",
@@ -60,7 +61,8 @@
               "informatiebijeenkomst",
               "hoorzitting"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Meeting Type"
           },
           "status": {
             "type": "string",
@@ -70,41 +72,49 @@
               "bevestigd",
               "afgelast"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Status"
           },
           "startDatum": {
             "type": "string",
             "format": "date-time",
-            "description": "Start date and time of the meeting"
+            "description": "Start date and time of the meeting",
+            "title": "Start Date"
           },
           "eindDatum": {
             "type": "string",
             "format": "date-time",
-            "description": "End date and time of the meeting"
+            "description": "End date and time of the meeting",
+            "title": "End Date"
           },
           "locatie": {
             "type": "string",
             "description": "Location where the meeting takes place",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Location"
           },
           "organisatie": {
             "type": "string",
             "description": "Organization reference (municipality or body)",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Organisation"
           },
           "commissie": {
             "type": "string",
             "description": "Committee name if this is a committee meeting",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Committee"
           }
         },
         "searchable": true,
         "hardValidation": false,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       },
       "agendapunt": {
@@ -124,39 +134,47 @@
             "type": "string",
             "description": "Subject or title of the agenda item",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Subject"
           },
           "omschrijving": {
             "type": "string",
             "description": "Detailed description of the agenda item",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "title": "Description"
           },
           "volgorde": {
             "type": "integer",
             "description": "Position/order on the agenda",
-            "minimum": 1
+            "minimum": 1,
+            "title": "Order"
           },
           "vergadering": {
             "type": "string",
             "description": "Reference (slug) to the parent vergadering",
-            "facetable": true
+            "facetable": true,
+            "title": "Meeting"
           },
           "bovenliggendAgendapunt": {
             "type": "string",
-            "description": "Reference to a parent agenda item for sub-items"
+            "description": "Reference to a parent agenda item for sub-items",
+            "title": "Parent Agenda Item"
           },
           "bijlagen": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "References to related raadsdocumenten"
+            "description": "References to related raadsdocumenten",
+            "title": "Attachments"
           }
         },
         "searchable": true,
         "hardValidation": false,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       },
       "raadsdocument": {
@@ -175,7 +193,8 @@
             "type": "string",
             "description": "Title of the document",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Title"
           },
           "type": {
             "type": "string",
@@ -188,40 +207,48 @@
               "rapport",
               "notulen"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Document Type"
           },
           "classificatie": {
             "type": "string",
             "description": "Category or classification of the document",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Classification"
           },
           "url": {
             "type": "string",
             "description": "URL where the document can be accessed",
             "format": "uri",
-            "maxLength": 500
+            "maxLength": 500,
+            "title": "Document URL"
           },
           "bestandsnaam": {
             "type": "string",
             "description": "File name of the document",
-            "maxLength": 255
+            "maxLength": 255,
+            "title": "File Name"
           },
           "bestandsgrootte": {
             "type": "integer",
             "description": "File size in bytes",
-            "minimum": 0
+            "minimum": 0,
+            "title": "File Size"
           },
           "inhoudType": {
             "type": "string",
             "description": "MIME type of the document",
-            "maxLength": 100
+            "maxLength": 100,
+            "title": "Content Type"
           }
         },
         "searchable": true,
         "hardValidation": false,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       },
       "stemming": {
@@ -242,13 +269,15 @@
             "type": "string",
             "description": "Subject that was voted on",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Vote Subject"
           },
           "type": {
             "type": "string",
             "description": "Type of vote (e.g. voorstel, motie, amendement)",
             "maxLength": 100,
-            "facetable": true
+            "facetable": true,
+            "title": "Vote Type"
           },
           "resultaat": {
             "type": "string",
@@ -257,27 +286,32 @@
               "aangenomen",
               "verworpen"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Result"
           },
           "agendapunt": {
             "type": "string",
             "description": "Reference (slug) to the agenda item this vote belongs to",
-            "facetable": true
+            "facetable": true,
+            "title": "Agenda Item"
           },
           "stemmenVoor": {
             "type": "integer",
             "description": "Number of votes in favor",
-            "minimum": 0
+            "minimum": 0,
+            "title": "Votes In Favour"
           },
           "stemmenTegen": {
             "type": "integer",
             "description": "Number of votes against",
-            "minimum": 0
+            "minimum": 0,
+            "title": "Votes Against"
           },
           "onthoudingen": {
             "type": "integer",
             "description": "Number of abstentions",
-            "minimum": 0
+            "minimum": 0,
+            "title": "Abstentions"
           },
           "fractieResultaten": {
             "type": "array",
@@ -287,25 +321,35 @@
               "properties": {
                 "fractie": {
                   "type": "string",
-                  "description": "Party name"
+                  "description": "Party name",
+                  "title": "Party Name"
                 },
                 "stem": {
                   "type": "string",
                   "description": "Vote cast by this party",
-                  "enum": ["voor", "tegen", "onthouding"]
+                  "enum": [
+                    "voor",
+                    "tegen",
+                    "onthouding"
+                  ],
+                  "title": "Vote Cast"
                 },
                 "zetels": {
                   "type": "integer",
-                  "description": "Number of seats this party holds"
+                  "description": "Number of seats this party holds",
+                  "title": "Seats"
                 }
               }
-            }
+            },
+            "title": "Party Results"
           }
         },
         "searchable": true,
         "hardValidation": false,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       },
       "raadslid": {
@@ -325,12 +369,14 @@
             "type": "string",
             "description": "Full name of the council member",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Full Name"
           },
           "fractie": {
             "type": "string",
             "description": "Reference (slug) to the party/faction this member belongs to",
-            "facetable": true
+            "facetable": true,
+            "title": "Party"
           },
           "functie": {
             "type": "string",
@@ -341,18 +387,22 @@
               "burgemeester",
               "griffier"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Function"
           },
           "actief": {
             "type": "boolean",
             "description": "Whether this member is currently active",
-            "facetable": true
+            "facetable": true,
+            "title": "Active"
           }
         },
         "searchable": true,
         "hardValidation": false,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       },
       "fractie": {
@@ -371,12 +421,14 @@
             "type": "string",
             "description": "Name of the party or faction",
             "maxLength": 255,
-            "facetable": true
+            "facetable": true,
+            "title": "Party Name"
           },
           "zetels": {
             "type": "integer",
             "description": "Number of seats in the council",
-            "minimum": 0
+            "minimum": 0,
+            "title": "Seats"
           },
           "classificatie": {
             "type": "string",
@@ -385,13 +437,16 @@
               "coalitiepartij",
               "oppositiepartij"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Council Role"
           }
         },
         "searchable": true,
         "hardValidation": false,
         "authorization": {
-          "read": ["public"]
+          "read": [
+            "public"
+          ]
         }
       }
     },
@@ -1706,14 +1761,46 @@
         "stemmenTegen": 16,
         "onthoudingen": 0,
         "fractieResultaten": [
-          { "fractie": "Voorbeeldstad Vooruit", "stem": "voor", "zetels": 8 },
-          { "fractie": "Groen Links Voorbeeldstad", "stem": "voor", "zetels": 6 },
-          { "fractie": "Democraten Voorbeeldstad", "stem": "voor", "zetels": 5 },
-          { "fractie": "Lokaal Belang", "stem": "tegen", "zetels": 5 },
-          { "fractie": "PvdA Voorbeeldstad", "stem": "tegen", "zetels": 4 },
-          { "fractie": "VVD Voorbeeldstad", "stem": "tegen", "zetels": 3 },
-          { "fractie": "SP Voorbeeldstad", "stem": "tegen", "zetels": 2 },
-          { "fractie": "Forum Voorbeeldstad", "stem": "tegen", "zetels": 2 }
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "stem": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "stem": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          }
         ]
       },
       {
@@ -1730,14 +1817,46 @@
         "stemmenTegen": 10,
         "onthoudingen": 0,
         "fractieResultaten": [
-          { "fractie": "Voorbeeldstad Vooruit", "stem": "voor", "zetels": 8 },
-          { "fractie": "Groen Links Voorbeeldstad", "stem": "voor", "zetels": 6 },
-          { "fractie": "Democraten Voorbeeldstad", "stem": "voor", "zetels": 5 },
-          { "fractie": "Lokaal Belang", "stem": "tegen", "zetels": 5 },
-          { "fractie": "PvdA Voorbeeldstad", "stem": "voor", "zetels": 4 },
-          { "fractie": "VVD Voorbeeldstad", "stem": "tegen", "zetels": 3 },
-          { "fractie": "SP Voorbeeldstad", "stem": "voor", "zetels": 2 },
-          { "fractie": "Forum Voorbeeldstad", "stem": "tegen", "zetels": 2 }
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "stem": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "stem": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          }
         ]
       },
       {
@@ -1754,14 +1873,46 @@
         "stemmenTegen": 12,
         "onthoudingen": 0,
         "fractieResultaten": [
-          { "fractie": "Voorbeeldstad Vooruit", "stem": "voor", "zetels": 8 },
-          { "fractie": "Groen Links Voorbeeldstad", "stem": "voor", "zetels": 6 },
-          { "fractie": "Democraten Voorbeeldstad", "stem": "voor", "zetels": 5 },
-          { "fractie": "Lokaal Belang", "stem": "tegen", "zetels": 5 },
-          { "fractie": "PvdA Voorbeeldstad", "stem": "voor", "zetels": 4 },
-          { "fractie": "VVD Voorbeeldstad", "stem": "tegen", "zetels": 3 },
-          { "fractie": "SP Voorbeeldstad", "stem": "tegen", "zetels": 2 },
-          { "fractie": "Forum Voorbeeldstad", "stem": "tegen", "zetels": 2 }
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "stem": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "stem": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          }
         ]
       },
       {
@@ -1778,14 +1929,46 @@
         "stemmenTegen": 25,
         "onthoudingen": 0,
         "fractieResultaten": [
-          { "fractie": "Voorbeeldstad Vooruit", "stem": "tegen", "zetels": 8 },
-          { "fractie": "Groen Links Voorbeeldstad", "stem": "tegen", "zetels": 6 },
-          { "fractie": "Democraten Voorbeeldstad", "stem": "tegen", "zetels": 5 },
-          { "fractie": "Lokaal Belang", "stem": "voor", "zetels": 5 },
-          { "fractie": "PvdA Voorbeeldstad", "stem": "tegen", "zetels": 4 },
-          { "fractie": "VVD Voorbeeldstad", "stem": "voor", "zetels": 3 },
-          { "fractie": "SP Voorbeeldstad", "stem": "tegen", "zetels": 2 },
-          { "fractie": "Forum Voorbeeldstad", "stem": "voor", "zetels": 2 }
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "stem": "tegen",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 2
+          }
         ]
       },
       {
@@ -1802,14 +1985,46 @@
         "stemmenTegen": 0,
         "onthoudingen": 0,
         "fractieResultaten": [
-          { "fractie": "Voorbeeldstad Vooruit", "stem": "voor", "zetels": 8 },
-          { "fractie": "Groen Links Voorbeeldstad", "stem": "voor", "zetels": 6 },
-          { "fractie": "Democraten Voorbeeldstad", "stem": "voor", "zetels": 5 },
-          { "fractie": "Lokaal Belang", "stem": "voor", "zetels": 5 },
-          { "fractie": "PvdA Voorbeeldstad", "stem": "voor", "zetels": 4 },
-          { "fractie": "VVD Voorbeeldstad", "stem": "voor", "zetels": 3 },
-          { "fractie": "SP Voorbeeldstad", "stem": "voor", "zetels": 2 },
-          { "fractie": "Forum Voorbeeldstad", "stem": "voor", "zetels": 2 }
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "stem": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 2
+          }
         ]
       },
       {
@@ -1826,14 +2041,46 @@
         "stemmenTegen": 8,
         "onthoudingen": 0,
         "fractieResultaten": [
-          { "fractie": "Voorbeeldstad Vooruit", "stem": "voor", "zetels": 8 },
-          { "fractie": "Groen Links Voorbeeldstad", "stem": "voor", "zetels": 6 },
-          { "fractie": "Democraten Voorbeeldstad", "stem": "voor", "zetels": 5 },
-          { "fractie": "Lokaal Belang", "stem": "tegen", "zetels": 5 },
-          { "fractie": "PvdA Voorbeeldstad", "stem": "voor", "zetels": 4 },
-          { "fractie": "VVD Voorbeeldstad", "stem": "voor", "zetels": 3 },
-          { "fractie": "SP Voorbeeldstad", "stem": "tegen", "zetels": 2 },
-          { "fractie": "Forum Voorbeeldstad", "stem": "tegen", "zetels": 1 }
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "stem": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "stem": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "stem": "voor",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "stem": "tegen",
+            "zetels": 1
+          }
         ]
       }
     ]
