@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -205,7 +206,8 @@ class ObjectServiceDeepTest extends TestCase
             $cacheHandler,
             $settingsService,
             $dateTimeNormalizer,
-            $this->container
+            $this->container,
+            $this->createMock(ObjectSourceRegistry::class)
         );
 
     }//end setUp()
