@@ -186,6 +186,18 @@ class MagicMapper extends AbstractObjectMapper
     public const MAX_TABLE_NAME_LENGTH = 64;
 
     /**
+     * Property-column budget for a cross-schema UNION projection.
+     *
+     * Postgres caps a SELECT target list at 1664 entries. Each UNION arm also
+     * projects ~30 metadata columns plus a couple of synthetic columns, so the
+     * property superset must stay well under 1664. When it exceeds this budget
+     * the cross-schema search falls back to a metadata-only projection so the
+     * query never trips SQLSTATE 54011 ("target lists can have at most 1664
+     * entries"), regardless of how many schemas are searched.
+     */
+    private const UNION_PROPERTY_COLUMN_BUDGET = 1500;
+
+    /**
      * Cache for table existence to avoid repeated database queries
      * Key format: 'registerId_schemaId' => timestamp
      *
@@ -1173,6 +1185,32 @@ class MagicMapper extends AbstractObjectMapper
         // Each SELECT must include the same columns; schemas that lack a column get NULL AS alias.
         $allPropertyColumns = $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
 
+        // Postgres caps a SELECT target list at 1664 entries. Each UNION arm
+        // projects ~30 metadata columns plus this property superset, so with
+        // many schemas the superset alone blows the cap (SQLSTATE 54011) and
+        // the entire cross-schema search fails — e.g. the unified-search
+        // provider returns nothing. When the superset is too large, fall back
+        // to a metadata-only projection: each arm projects only the constant
+        // `_`-prefixed metadata columns (uuid / name / description / summary /
+        // register / schema / …), which is enough to build a result row. The
+        // search term still matches each table's OWN property columns in the
+        // WHERE/score clauses (see buildUnionSelectPart); a caller needing full
+        // property values re-hydrates by id.
+        $metadataOnly = false;
+        if (count($allPropertyColumns) > self::UNION_PROPERTY_COLUMN_BUDGET) {
+            $metadataOnly       = true;
+            $allPropertyColumns = [];
+            $this->logger->warning(
+                message: '[MagicMapper] Cross-schema property superset exceeds the column budget; using metadata-only projection',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'budget'      => self::UNION_PROPERTY_COLUMN_BUDGET,
+                    'schemaCount' => count($registerSchemaPairs),
+                ]
+            );
+        }
+
         // Build a SELECT for each table.
         foreach ($registerSchemaPairs as $pair) {
             $register = $pair['register'] ?? null;
@@ -1215,7 +1253,8 @@ class MagicMapper extends AbstractObjectMapper
                 query: $query,
                 schema: $schema,
                 register: $register,
-                allPropertyColumns: $allPropertyColumns
+                allPropertyColumns: $allPropertyColumns,
+                metadataOnly: $metadataOnly
             );
 
             if ($selectPart !== null) {
@@ -1372,7 +1411,8 @@ class MagicMapper extends AbstractObjectMapper
         array $query,
         Schema $schema,
         Register $register,
-        array $allPropertyColumns=[]
+        array $allPropertyColumns=[],
+        bool $metadataOnly=false
     ): ?string {
         $qb = $this->db->getQueryBuilder();
 
@@ -1410,33 +1450,47 @@ class MagicMapper extends AbstractObjectMapper
          */
 
         $existingColumns = [];
-        foreach (array_keys($allPropertyColumns) as $columnName) {
-            $quotedCol = $this->quoteIdentifier(
-                name: $columnName,
-                isPostgres: $isPostgres
-            );
-            // Absent column: emit a typed NULL placeholder.
-            $colExpr = "NULL AS {$quotedCol}";
-            if ($isPostgres === true) {
-                $colExpr = "NULL::text AS {$quotedCol}";
+        if ($metadataOnly === true) {
+            // Metadata-only projection: do NOT project per-schema property
+            // columns (that superset is what trips Postgres's 1664-column cap).
+            // Still resolve THIS table's own searchable property columns so the
+            // term match + relevance score below run against real data — they
+            // are referenced in WHERE/score expressions, not in the projection.
+            foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
+                $ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+                if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
+                    $existingColumns[] = $ownColumn;
+                }
             }
-
-            $columnInTable = $this->columnExistsInTable(
-                tableName: $tableName,
-                columnName: $columnName
-            );
-            if ($columnInTable === true) {
-                // Present column: cast to text for cross-schema type compatibility.
-                $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+        } else {
+            foreach (array_keys($allPropertyColumns) as $columnName) {
+                $quotedCol = $this->quoteIdentifier(
+                    name: $columnName,
+                    isPostgres: $isPostgres
+                );
+                // Absent column: emit a typed NULL placeholder.
+                $colExpr = "NULL AS {$quotedCol}";
                 if ($isPostgres === true) {
-                    $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                    $colExpr = "NULL::text AS {$quotedCol}";
                 }
 
-                $existingColumns[] = $columnName;
-            }
+                $columnInTable = $this->columnExistsInTable(
+                    tableName: $tableName,
+                    columnName: $columnName
+                );
+                if ($columnInTable === true) {
+                    // Present column: cast to text for cross-schema type compatibility.
+                    $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+                    if ($isPostgres === true) {
+                        $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                    }
 
-            $selectColumns[] = $colExpr;
-        }//end foreach
+                    $existingColumns[] = $columnName;
+                }
+
+                $selectColumns[] = $colExpr;
+            }//end foreach
+        }//end if
 
         $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
@@ -1508,8 +1562,21 @@ class MagicMapper extends AbstractObjectMapper
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
         // Pass existing columns so property-based search only targets columns in this table.
+        //
+        // Scope the `@self.schema` filter to THIS arm's schema: the incoming
+        // query may carry a large allow-list (every searchable schema), but each
+        // UNION arm already targets a single schema's table, so re-applying the
+        // full list as an IN() is redundant and trips the database's
+        // 1000-element IN-list cap when many schemas are searchable.
+        $armQuery = $query;
+        if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
+            && array_key_exists('schema', $armQuery['@self']) === true
+        ) {
+            $armQuery['@self']['schema'] = $schema->getId();
+        }
+
         $whereClauses = $this->searchHandler->buildWhereConditionsSql(
-            query: $query,
+            query: $armQuery,
             schema: $schema,
             existingColumns: $existingColumns
         );
@@ -8531,6 +8598,13 @@ class MagicMapper extends AbstractObjectMapper
                 $schemaCountQuery          = $countQuery;
                 $schemaCountQuery['_rbac'] = $_rbac;
                 $schemaCountQuery['_multitenancy'] = $_multitenancy;
+                // Scope the per-table count to THIS schema. The incoming query
+                // may carry a large `@self.schema` allow-list (every searchable
+                // schema); re-applying it as an IN() on each single-table count
+                // is redundant — the table IS this schema — and trips the
+                // database's 1000-element IN-list cap when many schemas are
+                // searchable. Pin it to this schema's own id.
+                $schemaCountQuery['@self']['schema'] = $schema->getId();
                 $schemaCount = $this->countObjectsInRegisterSchemaTable(
                     query: $schemaCountQuery,
                     register: $matchedRegister,
