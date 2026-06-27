@@ -2,9 +2,18 @@
 
 ## Overview
 
-OpenRegister provides a comprehensive, backend-agnostic search and filtering system for register objects. The system supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, and cursor/offset pagination. A single unified API surface (`ObjectService.searchObjectsPaginated()`) operates transparently against PostgreSQL, Apache Solr, or Elasticsearch.
+OpenRegister provides a comprehensive, backend-agnostic search and filtering system for register objects. The system supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, and cursor/offset pagination. A single unified API surface (`ObjectService.searchObjectsPaginated()`) operates against the object magic tables in the database (PostgreSQL / MariaDB). Apache Solr and Elasticsearch are deprecated as search backends and are not used by unified search.
 
 **Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities.
+
+## Nextcloud Unified (Top-Bar) Search
+
+OpenRegister objects participate in Nextcloud's unified (top-bar) search through one fleet-wide provider (`lib/Search/ObjectsProvider.php`, id `openregister_objects`). When a user searches from the magnifier, the provider asks for every **searchable** schema (the `searchable` flag on the schema) with no register filter, and `MagicMapper` resolves each schema to its real owning register and queries the per-(register, schema) magic tables directly.
+
+- **Magic tables only.** Unified search reads the magic tables; it does **not** use a secondary/denormalised index. Apache **Solr and Elasticsearch are deprecated for unified search** — the cross-schema top-bar path never touches them. (The legacy external `search-index` capability was removed in a separate change.)
+- **Cross-schema is not register-scoped.** A cross-schema query (a `@self.schema` array / `_schemas`) is never narrowed to the ambient "current register"; each searched schema is paired with its own register so objects in *every* register surface, not just one.
+- **Scale.** The multi-schema union projects only constant metadata columns and scopes each arm's `@self.schema` to its own schema id, so a fleet with 1000+ searchable schemas stays under the database's target-list (1664-column) and `IN`-list (1000-element) limits.
+- **Security.** Results still respect RBAC, tenant isolation (active organisation), the `searchable` flag, and the published predicate; a schema with no resolvable register or missing magic table is skipped and logged, never fatal.
 
 ## Full-Text Search
 
@@ -15,7 +24,6 @@ Triggered via the `_search` query parameter:
 - Case-insensitive matching via `ILIKE` in the database backend
 - String properties with `format: date`, `format: date-time`, or `format: time` are excluded from text search
 - PostgreSQL `pg_trgm` extension enables fuzzy matching when installed
-- Solr and Elasticsearch backends use their native query parsers
 
 ```
 GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast

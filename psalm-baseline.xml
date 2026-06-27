@@ -136,10 +136,6 @@
     </UndefinedClass>
   </file>
   <file src="lib/Db/MagicMapper.php">
-    <TooManyArguments>
-      <code><![CDATA[find]]></code>
-      <code><![CDATA[find]]></code>
-    </TooManyArguments>
     <UndefinedClass>
       <code><![CDATA[PostgreSQLPlatform]]></code>
       <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
