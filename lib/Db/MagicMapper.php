@@ -7053,7 +7053,7 @@ class MagicMapper extends AbstractObjectMapper
     ): array {
         if ($register === null && $entity->getRegister() !== null) {
             try {
-                $register = $this->registerMapper->find((int) $entity->getRegister(), null, true, false);
+                $register = $this->registerMapper->find(id: (int) $entity->getRegister(), _rbac: false, _multitenancy: false);
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve register from entity',
@@ -7069,7 +7069,7 @@ class MagicMapper extends AbstractObjectMapper
 
         if ($schema === null && $entity->getSchema() !== null) {
             try {
-                $schema = $this->schemaMapper->find((int) $entity->getSchema(), [], null, true, false);
+                $schema = $this->schemaMapper->find(id: (int) $entity->getSchema(), _rbac: false, _multitenancy: false);
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve schema from entity',
