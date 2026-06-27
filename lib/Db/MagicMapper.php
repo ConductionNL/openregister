@@ -8360,17 +8360,24 @@ class MagicMapper extends AbstractObjectMapper
 
         $registerIds = $searchQuery['@self']['registers'] ?? $searchQuery['_registers'] ?? null;
 
-        // Multi-schema search.
+        // Multi-schema search. Fires whenever a non-empty set of schema ids is
+        // given — even with NO register filter. The unified-search provider
+        // passes a searchable-schema set and no register; previously that fell
+        // through to the (empty) central table and returned nothing. When no
+        // register filter is present, registerIds is left empty and
+        // searchObjectsPaginatedMultiSchema resolves each schema's real owning
+        // register from a schema->register map.
+        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
         $isMultiSchemaSearch = $schemaId === null
             && $schemaIds !== null
             && is_array($schemaIds) === true
-            && count($schemaIds) > 0
-            && ($registerId !== null
-                || ($registerIds !== null
-                    && is_array($registerIds) === true
-                    && count($registerIds) > 0));
+            && count($schemaIds) > 0;
         if ($isMultiSchemaSearch === true) {
-            $allRegisterIds = [(int) $registerId];
+            $allRegisterIds = [];
+            if ($registerId !== null) {
+                $allRegisterIds = [(int) $registerId];
+            }
+
             if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
                 $allRegisterIds = array_map('intval', $registerIds);
             }
@@ -8542,18 +8549,36 @@ class MagicMapper extends AbstractObjectMapper
         $schemasCache   = [];
 
         $registers = [];
-        foreach ($registerIds as $regId) {
+        if (empty($registerIds) === false) {
+            foreach ($registerIds as $regId) {
+                try {
+                    $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
+                    $registers[$register->getId()]      = $register;
+                    $registersCache[$register->getId()] = $register->jsonSerialize();
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[MagicMapper] Failed to find register for multi-schema search',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
+                    );
+                }
+            }
+        } else {
+            // No register filter (e.g. unified search passes only a
+            // searchable-schema set): load every register so each schema can be
+            // paired with its REAL owning register via the schema->register map
+            // below — instead of guessing one and hitting a non-existent table.
             try {
-                $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
-                $registers[$register->getId()]      = $register;
-                $registersCache[$register->getId()] = $register->jsonSerialize();
+                foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+                    $registers[$register->getId()]      = $register;
+                    $registersCache[$register->getId()] = $register->jsonSerialize();
+                }
             } catch (\Exception $e) {
                 $this->logger->warning(
-                    message: '[MagicMapper] Failed to find register for multi-schema search',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
+                    message: '[MagicMapper] Failed to load registers for schema-only multi-schema search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
             }
-        }
+        }//end if
 
         if (empty($registers) === true) {
             return [
@@ -8564,34 +8589,53 @@ class MagicMapper extends AbstractObjectMapper
             ];
         }
 
+        // Build a schema_id -> owning register map once (the register whose
+        // getSchemas() lists the schema id — by value or key, int or numeric
+        // string). Each schema is then paired with its REAL register so the
+        // correct magic table is targeted; a schema with no owning register is
+        // SKIPPED (logged) rather than forced onto an unrelated register, which
+        // is what produced the "Register+schema table does not exist" empties.
+        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+        $schemaToRegister = [];
+        foreach ($registers as $register) {
+            $registerSchemas = $register->getSchemas();
+            if (is_array($registerSchemas) === false) {
+                continue;
+            }
+
+            foreach ($registerSchemas as $schemaKey => $schemaValue) {
+                foreach ([$schemaValue, $schemaKey] as $candidate) {
+                    if (is_int($candidate) === true
+                        || (is_string($candidate) === true && ctype_digit($candidate) === true)
+                    ) {
+                        $mappedId = (int) $candidate;
+                        if (isset($schemaToRegister[$mappedId]) === false) {
+                            $schemaToRegister[$mappedId] = $register;
+                        }
+                    }
+                }
+            }
+        }
+
         $registerSchemaPairs = [];
         $totalCount          = 0;
 
         foreach ($schemaIds as $sId) {
+            $schemaIdInt     = (int) $sId;
+            $matchedRegister = ($schemaToRegister[$schemaIdInt] ?? null);
+            if ($matchedRegister === null) {
+                // No owning register -> the magic table cannot be resolved; skip
+                // (logged) instead of guessing a wrong register.
+                $this->logger->debug(
+                    message: '[MagicMapper] Skipping schema with no resolvable owning register',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaIdInt]
+                );
+                continue;
+            }
+
             try {
-                $schema = $this->schemaMapper->find((int) $sId, _multitenancy: false, _rbac: false);
+                $schema = $this->schemaMapper->find($schemaIdInt, _multitenancy: false, _rbac: false);
                 $schemasCache[$schema->getId()] = $schema->jsonSerialize();
-
-                $matchedRegister = null;
-                foreach ($registers as $register) {
-                    $registerSchemas = $register->getSchemas() ?? [];
-                    if (is_array($registerSchemas) === true) {
-                        $schemaIdStr = (string) $sId;
-                        $schemaIdInt = (int) $sId;
-                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
-                            || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
-                            || array_key_exists($schemaIdStr, $registerSchemas);
-                        if ($inValues === true || $inKeys === true) {
-                            $matchedRegister = $register;
-                            break;
-                        }
-                    }
-                }
-
-                if ($matchedRegister === null) {
-                    $matchedRegister = reset($registers);
-                }
 
                 $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
 
