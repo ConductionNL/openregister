@@ -142,6 +142,7 @@ use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Listener\FlowActionListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
@@ -1999,6 +2000,13 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+
+        // Declarative flow engine — runs x-openregister-flows actions (calendar
+        // agenda tasks, email, ...) declared on the schema when an object's
+        // create/update/delete lifecycle event fires.
+        $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
 
         // System-entity notification bridge — routes create/update signals from
         // OpenRegister's own system entities through the same annotation-notification
