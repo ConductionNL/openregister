@@ -1907,6 +1907,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-object-source',
         'x-openregister-quality',
         'x-openregister-dedup',
+        'x-openregister-flows',
     ];
 
     /**
