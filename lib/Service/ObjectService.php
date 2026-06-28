@@ -2415,9 +2415,23 @@ class ObjectService
         // response time regardless of which backend (index/database) runs.
         $searchStartTime = microtime(true);
 
+        // Detect a cross-schema search: a `@self.schema` array, `_schemas`, or
+        // `@self.schemas` means the caller wants to search MANY schemas (e.g. the
+        // unified-search provider passes every searchable schema). Such a search
+        // must NOT be scoped to a single register — each schema is resolved to
+        // its own owning register downstream — so the ambient currentRegister
+        // (often a default like the first register) must not leak in.
+        $selfSchema       = ($query['@self']['schema'] ?? null);
+        $isMultiSchemaCtx = (is_array($selfSchema) === true && count($selfSchema) > 0)
+            || array_key_exists('_schemas', $query) === true
+            || (isset($query['@self']['schemas']) === true);
+
         // Add register and schema context to query for magic mapper routing.
         // Use array_key_exists to allow explicit null values to disable auto-setting.
-        if ($this->currentRegister !== null && array_key_exists('_register', $query) === false) {
+        if ($this->currentRegister !== null
+            && array_key_exists('_register', $query) === false
+            && $isMultiSchemaCtx === false
+        ) {
             $query['_register'] = $this->currentRegister->getId();
         }
 
