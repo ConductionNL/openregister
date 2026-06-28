@@ -311,17 +311,15 @@ class RegistersController extends Controller
 
         // Read-visibility guard: this endpoint is @PublicPage so it stays
         // reachable when OpenRegister is restricted to a user group. Anonymous
-        // callers may only see PUBLISHED registers; authenticated users are
-        // unaffected. Visibility is derived from server-side published/
-        // depublished entity state, never from client-supplied parameters.
+        // callers may only see registers whose RBAC authorization grants read
+        // access to the `public` group; authenticated users are unaffected.
+        // Visibility is derived from server-side authorization rules, never
+        // from client-supplied parameters.
         if ($this->isAnonymousRequest() === true) {
             $registers = array_values(
                 array_filter(
                     $registers,
-                    fn($register) => $this->isPublishedEntity(
-                        published: $register->getPublished(),
-                        depublished: $register->getDepublished()
-                    )
+                    fn($register) => $this->isPublicReadable(authorization: $register->getAuthorization())
                 )
             );
         }
@@ -400,13 +398,11 @@ class RegistersController extends Controller
         $register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
 
         // Read-visibility guard (@PublicPage): an anonymous caller may only view
-        // a PUBLISHED register. Derived from server-side published/depublished
-        // entity state, never from client-supplied parameters.
+        // a register whose RBAC authorization grants read access to the `public`
+        // group. Derived from server-side authorization rules, never from
+        // client-supplied parameters.
         if ($this->isAnonymousRequest() === true
-            && $this->isPublishedEntity(
-                published: $register->getPublished(),
-                depublished: $register->getDepublished()
-            ) === false
+            && $this->isPublicReadable(authorization: $register->getAuthorization()) === false
         ) {
             return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
         }
@@ -1700,21 +1696,27 @@ class RegistersController extends Controller
     }//end isAnonymousRequest()
 
     /**
-     * Whether an entity is currently published.
+     * Whether an entity is anonymously readable via RBAC authorization.
      *
-     * A resource is published when its `published` timestamp is set and it has
-     * not since been depublished. Both values come from persisted entity state.
+     * A resource is visible to anonymous callers when its authorization block
+     * grants `read` access to the `public` group. This replaces the former
+     * published/depublished column gate: anonymous publication is an RBAC
+     * concern, expressed as a `public`-group read rule on the entity.
      *
-     * @param \DateTime|null $published   The published timestamp, or null.
-     * @param \DateTime|null $depublished The depublished timestamp, or null.
+     * @param array|null $authorization The entity's authorization block, or null.
      *
-     * @return bool True if the entity is published and not depublished.
+     * @return bool True if the `public` group has read access.
      */
-    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
+    private function isPublicReadable(?array $authorization): bool
     {
-        return $published !== null && $depublished === null;
+        if (is_array($authorization) === false) {
+            return false;
+        }
 
-    }//end isPublishedEntity()
+        $readGroups = ($authorization['read'] ?? []);
+        return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+
+    }//end isPublicReadable()
 
     /**
      * Check whether the currently authenticated user is a Nextcloud administrator.

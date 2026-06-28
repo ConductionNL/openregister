@@ -55,37 +55,18 @@ export default {
 ### Settings Section Example
 
 ```vue
-<!-- src/views/settings/sections/SolrConfiguration.vue -->
+<!-- src/views/settings/sections/RbacConfiguration.vue -->
 <template>
   <SettingsSection
-    name="Search Configuration"
-    description="Configure Apache SOLR search engine"
-    detailed-description="SOLR provides powerful full-text search capabilities for your data. Configure connection settings and manage search indexes."
+    name="Access Control"
+    description="Configure role-based access control"
     :loading="loading"
     :error="error"
     :error-message="errorMessage"
     :on-retry="loadData">
-    
-    <template #actions>
-      <NcButton type="secondary" @click="refreshStats">
-        <template #icon>
-          <Refresh :size="20" />
-        </template>
-        Refresh Stats
-      </NcButton>
-      
-      <NcActions>
-        <NcActionButton @click="openConnectionDialog">
-          <template #icon>
-            <Connection :size="20" />
-          </template>
-          Connection Settings
-        </NcActionButton>
-      </NcActions>
-    </template>
 
     <!-- Your settings content -->
-    <div class="solr-settings">
+    <div class="rbac-settings">
       <!-- ... -->
     </div>
   </SettingsSection>
@@ -93,19 +74,13 @@ export default {
 
 <script>
 import SettingsSection from '../../components/shared/SettingsSection.vue'
-import { NcButton, NcActions, NcActionButton } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Connection from 'vue-material-design-icons/Connection.vue'
+import { NcButton } from '@nextcloud/vue'
 
 export default {
-  name: 'SolrConfiguration',
+  name: 'RbacConfiguration',
   components: {
     SettingsSection,
     NcButton,
-    NcActions,
-    NcActionButton,
-    Refresh,
-    Connection,
   },
   // ...
 }

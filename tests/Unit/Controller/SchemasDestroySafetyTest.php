@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -148,7 +149,8 @@ class SchemasDestroySafetyTest extends TestCase
             $this->facetCacheSvc,
             $this->createMock(SchemaService::class),
             $this->logger,
-            $this->container
+            $this->container,
+            $this->createMock(SchemaVersioningService::class)
         );
 
     }//end setUp()

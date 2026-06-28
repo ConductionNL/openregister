@@ -1549,19 +1549,23 @@ class FilePropertyHandlerTest extends TestCase
     }
 
     // =========================================================================
-    // handleFileProperty — autoPublish from schema configuration
+    // handleFileProperty — autoShare from schema configuration (replaces legacy autoPublish)
     // =========================================================================
 
     public function testHandleFilePropertyAutoPublishFromSchemaConfig(): void
     {
-        $entity = $this->createObjectEntity(1, 'uuid-autopub');
+        // Renamed: autoPublish was renamed to autoShare in 2026.
+        // This test verifies that schema-level autoShare: true causes the file to be shared.
+        // A Schema mock is used so getConfiguration() returns ['autoShare' => true] without
+        // Schema::validateConfigurationArray() stripping the key (it only validates known keys).
+        $entity = $this->createObjectEntity(1, 'uuid-autoshare-schema');
         $entity->setObject([]);
 
-        $schema = new Schema();
-        $schema->setProperties([
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn([
             'document' => ['type' => 'file'],
         ]);
-        $schema->setConfiguration(['autoPublish' => true]);
+        $schema->method('getConfiguration')->willReturn(['autoShare' => true]);
 
         $content = 'some content';
         $dataUri = 'data:text/plain;base64,' . base64_encode($content);
@@ -1589,12 +1593,14 @@ class FilePropertyHandlerTest extends TestCase
 
     public function testHandleFilePropertyAutoPublishAtPropertyLevel(): void
     {
-        $entity = $this->createObjectEntity(1, 'uuid-autopub-prop');
+        // Renamed: autoPublish was renamed to autoShare in 2026.
+        // This test verifies that property-level autoShare: true causes the file to be shared.
+        $entity = $this->createObjectEntity(1, 'uuid-autoshare-prop');
         $entity->setObject([]);
 
         $schema = new Schema();
         $schema->setProperties([
-            'document' => ['type' => 'file', 'autoPublish' => true],
+            'document' => ['type' => 'file', 'autoShare' => true],
         ]);
 
         $content = 'some content';

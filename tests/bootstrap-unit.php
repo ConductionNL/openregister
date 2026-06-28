@@ -26,6 +26,15 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Load minimal Doctrine DBAL stubs so nextcloud/ocp v31 interface constants
+// (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated
+// in the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
+require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
+
+// Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
+// the nextcloud/ocp v31 stubs reference but are not shipped by the OCP package.
+require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+
 // Bootstrap Nextcloud — since we run inside the Docker container,
 // the full environment (including \OC::$server) is available.
 if (file_exists(__DIR__ . '/../../../lib/base.php')) {
@@ -102,4 +111,7 @@ foreach (spl_autoload_functions() as $autoload) {
     }
 }
 
-error_log('[UNIT TEST BOOTSTRAP] Full Nextcloud bootstrap complete - \OC::$server available');
+// Bootstrap message suppressed: error_log() writes to STDERR and PHPUnit's
+// beStrictAboutOutputDuringTests mode treats any output during the bootstrap
+// as a test error (PHPUnit\Framework\Exception).  The bootstrap runs once and
+// the message is only useful during active debugging.

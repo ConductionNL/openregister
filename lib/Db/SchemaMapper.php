@@ -217,7 +217,6 @@ class SchemaMapper extends QBMapper
      *
      * @param int|string $id            The id of the schema
      * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *                                  Set to false to bypass organization filter
@@ -233,7 +232,6 @@ class SchemaMapper extends QBMapper
     public function find(
         string | int $id,
         ?array $_extend=[],
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): Schema {
@@ -248,17 +246,7 @@ class SchemaMapper extends QBMapper
             $mtFlag = '1';
         }
 
-        // BUG-DB-10: $published changes which rows are visible, so it MUST be part
-        // of the cache key; otherwise a published-only lookup could return a
-        // result cached from an unfiltered lookup (or vice versa).
-        $publishedFlag = 'n';
-        if ($published === true) {
-            $publishedFlag = '1';
-        } else if ($published === false) {
-            $publishedFlag = '0';
-        }
-
-        $cacheSuffix = ':'.$rbacFlag.':'.$mtFlag.':'.$publishedFlag;
+        $cacheSuffix = ':'.$rbacFlag.':'.$mtFlag;
         $cacheKey    = strtolower((string) $id).$cacheSuffix;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
@@ -309,11 +297,8 @@ class SchemaMapper extends QBMapper
             );
         }
 
-        // Apply organisation filter with published entity bypass support
-        // Published schemas can bypass multi-tenancy restrictions if configured
+        // Apply organisation filter.
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
-        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
-        // Use $published parameter if provided, otherwise check config.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -387,10 +372,9 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array     $ids           The ids of the schemas
-     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param array $ids           The ids of the schemas
+     * @param bool  $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool  $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
@@ -404,7 +388,7 @@ class SchemaMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
-    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
+    public function findMultiple(array $ids, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $result = [];
         foreach ($ids as $id) {
@@ -412,7 +396,6 @@ class SchemaMapper extends QBMapper
                 $result[] = $this->find(
                     id: $id,
                     _extend: [],
-                    published: $published,
                     _rbac: $_rbac,
                     _multitenancy: $_multitenancy
                 );
@@ -467,12 +450,11 @@ class SchemaMapper extends QBMapper
      * Searches for schemas matching the given slug with optional
      * multi-tenancy and RBAC filtering.
      *
-     * @param string    $slug          The slug to search for
-     * @param int       $limit         Maximum number of results (default: 10)
-     * @param int       $offset        Offset for pagination (default: 0)
-     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param string $slug          The slug to search for
+     * @param int    $limit         Maximum number of results (default: 10)
+     * @param int    $offset        Offset for pagination (default: 0)
+     * @param bool   $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool   $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Schema[] Array of matching schemas
      *
@@ -484,7 +466,6 @@ class SchemaMapper extends QBMapper
         string $slug,
         int $limit=10,
         int $offset=0,
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -496,7 +477,7 @@ class SchemaMapper extends QBMapper
                 $qb->expr()->eq('slug', $qb->createNamedParameter($slug, IQueryBuilder::PARAM_STR))
             );
 
-        // Apply organisation filter with published entity bypass support.
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -529,7 +510,6 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
@@ -548,7 +528,6 @@ class SchemaMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[],
         ?array $_extend=[],
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -586,10 +565,7 @@ class SchemaMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter with published entity bypass support
-        // Published schemas can bypass multi-tenancy restrictions if configured.
-        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
-        // Use $published parameter if provided, otherwise check config.
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',

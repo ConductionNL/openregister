@@ -1160,15 +1160,6 @@ class ObjectHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test isSolrAvailable.
-     */
-    public function testIsSolrAvailable(): void
-    {
-        $result = $this->searchQueryHandler->isSolrAvailable();
-        $this->assertIsBool($result);
-    }
-
-    /**
      * Test isSearchTrailsEnabled.
      */
     public function testIsSearchTrailsEnabled(): void

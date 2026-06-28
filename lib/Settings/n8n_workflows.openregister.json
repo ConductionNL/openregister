@@ -52,27 +52,33 @@
                 "required": ["title", "workflowId"],
                 "properties": {
                     "title": {
+                        "title": "Workflow Title",
                         "type": "string",
                         "description": "The title of the workflow",
                         "minLength": 1,
                         "maxLength": 255
                     },
                     "workflowId": {
+                        "title": "Workflow ID",
                         "type": "string",
                         "description": "The n8n workflow ID",
                         "pattern": "^[a-zA-Z0-9-_]+$"
                     },
                     "description": {
+                        "title": "Description",
                         "type": "string",
                         "description": "Description of what the workflow does"
                     },
                     "active": {
+                        "title": "Active",
                         "type": "boolean",
                         "description": "Whether the workflow is currently active",
                         "default": false
                     },
                     "tags": {
+                        "title": "Tags",
                         "type": "array",
+                        "description": "Labels used to categorise and filter the workflow.",
                         "items": {"type": "string"}
                     }
                 }
@@ -83,12 +89,24 @@
                 "type": "object",
                 "required": ["workflowId", "type"],
                 "properties": {
-                    "workflowId": {"type": "string", "format": "uuid"},
-                    "type": {
+                    "workflowId": {
+                        "title": "Workflow ID",
                         "type": "string",
+                        "format": "uuid",
+                        "description": "UUID reference to the workflow this trigger is associated with."
+                    },
+                    "type": {
+                        "title": "Trigger Type",
+                        "type": "string",
+                        "description": "The mechanism that initiates the workflow execution.",
                         "enum": ["webhook", "schedule", "event", "manual"]
                     },
-                    "active": {"type": "boolean", "default": true}
+                    "active": {
+                        "title": "Active",
+                        "type": "boolean",
+                        "description": "Whether this trigger is currently enabled.",
+                        "default": true
+                    }
                 }
             },
             "webhook": {
@@ -97,12 +115,24 @@
                 "type": "object",
                 "required": ["path", "method", "workflowId"],
                 "properties": {
-                    "path": {"type": "string", "pattern": "^/[a-zA-Z0-9/_-]+$"},
-                    "method": {
+                    "path": {
+                        "title": "Webhook Path",
                         "type": "string",
+                        "description": "The URL path at which the webhook endpoint is exposed.",
+                        "pattern": "^/[a-zA-Z0-9/_-]+$"
+                    },
+                    "method": {
+                        "title": "HTTP Method",
+                        "type": "string",
+                        "description": "The HTTP method the webhook listens for.",
                         "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
                     },
-                    "workflowId": {"type": "string", "format": "uuid"}
+                    "workflowId": {
+                        "title": "Workflow ID",
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID reference to the workflow triggered by this webhook."
+                    }
                 }
             },
             "schedule": {
@@ -112,12 +142,29 @@
                 "required": ["cronExpression", "workflowId"],
                 "properties": {
                     "cronExpression": {
+                        "title": "Cron Expression",
                         "type": "string",
+                        "description": "Standard five-field cron expression defining when the workflow runs.",
                         "pattern": "^[0-9*,/-]+ [0-9*,/-]+ [0-9*,/-]+ [0-9*,/-]+ [0-9*,/-]+$"
                     },
-                    "workflowId": {"type": "string", "format": "uuid"},
-                    "timezone": {"type": "string", "default": "UTC"},
-                    "active": {"type": "boolean", "default": true}
+                    "workflowId": {
+                        "title": "Workflow ID",
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID reference to the workflow executed on this schedule."
+                    },
+                    "timezone": {
+                        "title": "Timezone",
+                        "type": "string",
+                        "description": "IANA timezone name used to interpret the cron expression.",
+                        "default": "UTC"
+                    },
+                    "active": {
+                        "title": "Active",
+                        "type": "boolean",
+                        "description": "Whether this scheduled trigger is currently enabled.",
+                        "default": true
+                    }
                 }
             },
             "notification": {
@@ -126,14 +173,26 @@
                 "type": "object",
                 "required": ["title", "channel"],
                 "properties": {
-                    "title": {"type": "string"},
-                    "channel": {
+                    "title": {
+                        "title": "Notification Title",
                         "type": "string",
+                        "description": "The subject or heading displayed in the notification."
+                    },
+                    "channel": {
+                        "title": "Delivery Channel",
+                        "type": "string",
+                        "description": "The medium through which the notification is delivered.",
                         "enum": ["email", "slack", "webhook", "sms", "push"]
                     },
-                    "template": {"type": "string"},
+                    "template": {
+                        "title": "Message Template",
+                        "type": "string",
+                        "description": "Template string used to render the notification body."
+                    },
                     "recipients": {
+                        "title": "Recipients",
                         "type": "array",
+                        "description": "List of addresses or identifiers that receive the notification.",
                         "items": {"type": "string"}
                     }
                 }

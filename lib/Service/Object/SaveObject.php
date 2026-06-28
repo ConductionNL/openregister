@@ -518,7 +518,7 @@ class SaveObject
         // Try direct slug match as last resort.
         try {
             // SchemaMapper->find() supports id, uuid, and slug via orX().
-            $schema = $this->schemaMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            $schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
             if ($schema !== null) {
                 $schemaId = (string) $schema->getId();
                 $this->schemaCache[$schemaId]           = $schema;
@@ -610,7 +610,7 @@ class SaveObject
         // Try direct slug match as last resort.
         try {
             // RegisterMapper->find() supports id, uuid, and slug via orX().
-            $register = $this->registerMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            $register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
             if ($register !== null) {
                 return (string) $register->getId();
             }
@@ -939,7 +939,6 @@ class SaveObject
                 try {
                     $targetSchema = $this->schemaMapper->find(
                         id: $targetSchemaSlug,
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );

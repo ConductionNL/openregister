@@ -173,11 +173,11 @@ class RegistersControllerTest extends TestCase
 
     public function testShowAnonymousUnpublishedRegisterReturns401(): void
     {
-        // Anonymous (no user) + unpublished register → 401 (read-visibility guard).
+        // Anonymous (no user) + register without public read → 401 (RBAC visibility guard).
+        // Use a real Register entity so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $register = $this->createMock(Register::class);
-        $register->method('getPublished')->willReturn(null);
-        $register->method('getDepublished')->willReturn(null);
+        $register = $this->createRealRegister(1, 'Private');
+        // No authorization set → getAuthorization() returns null → isPublicReadable = false.
 
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')->willReturn($register);
@@ -189,12 +189,11 @@ class RegistersControllerTest extends TestCase
 
     public function testShowAnonymousPublishedRegisterReturns200(): void
     {
-        // Anonymous + published register → 200.
+        // Anonymous + register with public read authorization → 200.
+        // Use a real Register entity so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $register = $this->createMock(Register::class);
-        $register->method('getPublished')->willReturn(new \DateTime());
-        $register->method('getDepublished')->willReturn(null);
-        $register->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+        $register = $this->createRealRegister(1, 'Public');
+        $register->setAuthorization(['read' => ['public']]);
 
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')->willReturn($register);
@@ -206,17 +205,14 @@ class RegistersControllerTest extends TestCase
 
     public function testIndexAnonymousFiltersUnpublishedRegisters(): void
     {
-        // Anonymous list returns only published registers.
+        // Anonymous list returns only registers whose authorization grants public read.
+        // Use real Register entities so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $published = $this->createMock(Register::class);
-        $published->method('getPublished')->willReturn(new \DateTime());
-        $published->method('getDepublished')->willReturn(null);
-        $published->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Published']);
+        $published = $this->createRealRegister(1, 'Published');
+        $published->setAuthorization(['read' => ['public']]);
 
-        $unpublished = $this->createMock(Register::class);
-        $unpublished->method('getPublished')->willReturn(null);
-        $unpublished->method('getDepublished')->willReturn(null);
-        $unpublished->method('jsonSerialize')->willReturn(['id' => 2, 'title' => 'Unpublished']);
+        $unpublished = $this->createRealRegister(2, 'Unpublished');
+        // No authorization set → getAuthorization() returns null → isPublicReadable = false.
 
         $this->request->method('getParams')->willReturn([]);
         $this->registerService->method('findAll')->willReturn([$published, $unpublished]);

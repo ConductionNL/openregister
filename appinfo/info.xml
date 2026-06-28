@@ -12,7 +12,7 @@
 
 - **Schema-based registers** — Define data structures with JSON Schema and organize them into registers
 - **Full CRUD API** — Create, read, update, and delete objects through a powerful REST API
-- **Full-text search with faceting** — Search across registers with filters, powered by magic tables or Solr
+- **Full-text search with faceting** — Search across registers with filters, powered by magic tables
 - **Role-based access control** — Fine-grained permissions with organization-level multitenancy
 - **Event-driven architecture** — React to data changes with events for tasks, notifications, and integrations
 - **CalDAV tasks and notes** — Attach Nextcloud tasks and comments directly to your data objects
@@ -29,7 +29,7 @@ Free and open source under the EUPL license.
 
 - **Schema-gebaseerde registers** — Definieer datastructuren met JSON Schema en organiseer ze in registers
 - **Volledige CRUD API** — Maak, lees, wijzig en verwijder objecten via een krachtige REST API
-- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables of Solr
+- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables
 - **Rolgebaseerde toegangscontrole** — Fijnmazige rechten met multitenancy op organisatieniveau
 - **Event-driven architectuur** — Reageer op datawijzigingen met events voor taken, notificaties en integraties
 - **CalDAV taken en notities** — Koppel Nextcloud-taken en opmerkingen direct aan je dataobjecten
@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.16-unstable.4</version>
+    <version>0.2.17-unstable.4</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -84,7 +84,6 @@ Vrij en open source onder de EUPL-licentie.
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
@@ -125,11 +124,8 @@ Vrij en open source onder de EUPL-licentie.
 	</settings>
 
 	<commands>
-		<!-- Solr / migrate-storage commands trigger circular DI during occ
-		     bootstrap (SettingsService → IndexService → many other services).
+		<!-- migrate-storage command triggers circular DI during occ bootstrap.
 		     Disabled until that's untangled. -->
-		<!-- <command>OCA\OpenRegister\Command\SolrDebugCommand</command> -->
-		<!-- <command>OCA\OpenRegister\Command\SolrManagementCommand</command> -->
 		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>

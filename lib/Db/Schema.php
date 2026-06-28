@@ -376,28 +376,6 @@ class Schema extends Entity implements JsonSerializable
     protected ?array $anyOf = null;
 
     /**
-     * Publication timestamp.
-     *
-     * When set, this schema becomes publicly accessible regardless of organisation restrictions
-     * if published bypass is enabled. The schema is considered published when:
-     * - published <= now AND
-     * - (depublished IS NULL OR depublished > now)
-     *
-     * @var DateTime|null Publication timestamp
-     */
-    protected ?DateTime $published = null;
-
-    /**
-     * Depublication timestamp.
-     *
-     * When set, this schema becomes inaccessible after this date/time.
-     * Used together with published to control publication lifecycle.
-     *
-     * @var DateTime|null Depublication timestamp
-     */
-    protected ?DateTime $depublished = null;
-
-    /**
      * Hooks configuration for the schema
      *
      * @var array|null Hooks configuration
@@ -490,8 +468,6 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'published', type: 'datetime');
-        $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'hooks', type: 'json');
         $this->addType(fieldName: 'mail', type: 'json');
         $this->addType(fieldName: 'contacts', type: 'json');
@@ -1271,7 +1247,7 @@ class Schema extends Entity implements JsonSerializable
             }//end if
 
             // Convert datetime strings to DateTime objects for datetime fields.
-            if (in_array($key, ['published', 'depublished', 'created', 'updated', 'deleted'], true) === true) {
+            if (in_array($key, ['created', 'updated', 'deleted'], true) === true) {
                 if (is_string($value) === true && $value !== '') {
                     try {
                         $value = new DateTime($value);
@@ -1322,8 +1298,7 @@ class Schema extends Entity implements JsonSerializable
      *     maxDepth: int, owner: null|string, application: null|string,
      *     organisation: null|string,
      *     groups: array<string, list<string>>|null, authorization: array|null,
-     *     deleted: null|string, published: null|string,
-     *     depublished: null|string, configuration: array|null|string,
+     *     deleted: null|string, configuration: array|null|string,
      *     allOf: array|null, oneOf: array|null, anyOf: array|null}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -1361,16 +1336,6 @@ class Schema extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
-        $published = null;
-        if (isset($this->published) === true) {
-            $published = $this->published->format('c');
-        }
-
-        $depublished = null;
-        if (isset($this->depublished) === true) {
-            $depublished = $this->depublished->format('c');
-        }
-
         return [
             'id'             => $this->id,
             'uuid'           => $this->uuid,
@@ -1399,8 +1364,6 @@ class Schema extends Entity implements JsonSerializable
             'groups'         => $this->groups,
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
-            'published'      => $published,
-            'depublished'    => $depublished,
             'configuration'  => $this->configuration,
             'allOf'          => $this->allOf,
             'oneOf'          => $this->oneOf,
@@ -1949,6 +1912,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-object-source',
         'x-openregister-quality',
         'x-openregister-dedup',
+        'x-openregister-flows',
     ];
 
     /**
@@ -2449,60 +2413,6 @@ class Schema extends Entity implements JsonSerializable
         $this->anyOf = $anyOf;
         $this->markFieldUpdated(attribute: 'anyOf');
     }//end setAnyOf()
-
-    /**
-     * Get the publication timestamp
-     *
-     * @return DateTime|null Publication timestamp
-     */
-    public function getPublished(): ?DateTime
-    {
-        return $this->published;
-    }//end getPublished()
-
-    /**
-     * Set the publication timestamp
-     *
-     * @param DateTime|string|null $published Publication timestamp (DateTime object or ISO 8601 string)
-     *
-     * @return void
-     */
-    public function setPublished(DateTime|string|null $published): void
-    {
-        if (is_string($published) === true) {
-            $published = new DateTime($published);
-        }
-
-        $this->published = $published;
-        $this->markFieldUpdated(attribute: 'published');
-    }//end setPublished()
-
-    /**
-     * Get the depublication timestamp
-     *
-     * @return DateTime|null Depublication timestamp
-     */
-    public function getDepublished(): ?DateTime
-    {
-        return $this->depublished;
-    }//end getDepublished()
-
-    /**
-     * Set the depublication timestamp
-     *
-     * @param DateTime|string|null $depublished Depublication timestamp (DateTime object or ISO 8601 string)
-     *
-     * @return void
-     */
-    public function setDepublished(DateTime|string|null $depublished): void
-    {
-        if (is_string($depublished) === true) {
-            $depublished = new DateTime($depublished);
-        }
-
-        $this->depublished = $depublished;
-        $this->markFieldUpdated(attribute: 'depublished');
-    }//end setDepublished()
 
     /**
      * Check if this schema is managed by any configuration

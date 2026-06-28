@@ -31,7 +31,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             git curl ca-certificates gnupg jq unzip zip \
-            libzip-dev libpng-dev python3
+            libzip-dev libpng-dev python3 nodejs
           docker-php-ext-install -j"$(nproc)" zip gd
           curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 

@@ -103,7 +103,6 @@ class AggregationRunnerAdhocCacheTest extends TestCase
             permissionHandler: $this->permissionHandler,
             userSession: $this->userSession,
             organisationService: $this->organisationService,
-            searchBackend: null
         );
 
     }//end setUp()
