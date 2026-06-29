@@ -122,6 +122,8 @@ jobs:
           node-version: ${{ inputs.node-version }}
 
       - name: Install composer deps (production)
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-dev --no-interaction --no-progress --prefer-dist
 
       - name: Install npm deps + Newman
