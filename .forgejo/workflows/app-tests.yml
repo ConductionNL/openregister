@@ -32,6 +32,7 @@ permissions:
 jobs:
   tests:
     uses: ./.forgejo/workflows/tests.yml
+    secrets: inherit
     with:
       app-id: openregister
       # The reusable tests.yml phpunit-unit job runs in a BARE PHP container

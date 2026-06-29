@@ -26,6 +26,8 @@ jobs:
           ref: development
 
       - name: Install composer deps
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run composer check:strict (catches silent baseline regression)
