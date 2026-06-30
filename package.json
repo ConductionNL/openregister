@@ -72,7 +72,7 @@
     "remark-preset-lint-consistent": "^5.1.1",
     "remark-preset-lint-recommended": "^6.1.2",
     "style-loader": "^3.3.3",
-    "vue": "^2.6 || ^3.0",
+    "vue": "^2.7.16",
     "vue-apexcharts": "^1.7.0",
     "vue-codemirror6": "^1.1.5",
     "vue-draggable-plus": "^0.2.6",

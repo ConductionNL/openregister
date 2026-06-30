@@ -943,9 +943,14 @@ class Schema extends Entity implements JsonSerializable
             return true;
         }
 
-        // If action is not specified in authorization, everyone has permission.
-        if (isset($this->authorization[$action]) === false) {
-            return true;
+        // Fail-closed (rbac-default-deny): once a schema opts into authorization
+        // (non-empty block), an action that is not explicitly listed is denied —
+        // including the `public` pseudo-group. The empty-block open-default above
+        // and the admin/owner bypasses still apply. Kept consistent with the
+        // active enforcement paths (PermissionHandler / MagicRbacHandler) even
+        // though this entity-level helper currently has no lib/ enforcement callers.
+        if (empty($this->authorization[$action]) === true) {
+            return false;
         }
 
         // Check each authorization entry for this action.

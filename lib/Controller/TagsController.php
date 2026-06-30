@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Exception;
 
@@ -64,6 +65,7 @@ class TagsController extends Controller
      * @param ObjectService  $objectService  Object service instance
      * @param FileService    $fileService    File service instance for tag retrieval
      * @param TaggingHandler $taggingHandler Tagging handler for object-level tags
+     * @param IUserSession   $userSession    Session for the @PublicPage anonymous-deny guard
      *
      * @return void
      */
@@ -73,6 +75,7 @@ class TagsController extends Controller
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
         private readonly TaggingHandler $taggingHandler,
+        private readonly ?IUserSession $userSession=null,
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -85,6 +88,8 @@ class TagsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @return JSONResponse JSON response with all tags
      *
      * @psalm-return JSONResponse<200, list<string>, array<never, never>>
@@ -93,6 +98,20 @@ class TagsController extends Controller
      */
     public function getAllTags(): JSONResponse
     {
+        // @PublicPage opens this route past the group-locked app gate so a
+        // consuming app (e.g. OpenCatalogi) can populate its label picker even
+        // when the user has no direct OpenRegister access — the same approach
+        // #185 applied to the object/file endpoints. The tag list is global and
+        // read-only, but must not be served to anonymous callers, so require an
+        // authenticated user (mirrors the file endpoints' anonymous-deny guard).
+        // See openregister#194.
+        if ($this->userSession === null || $this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication is required'],
+                statusCode: 401
+            );
+        }
+
         $tags = $this->fileService->getAllTags();
 
         return new JSONResponse(data: $tags);
