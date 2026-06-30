@@ -234,6 +234,7 @@ class EmlParser
             'from'      => $message->getHeaderValue(name: 'From'),
             'to'        => $this->splitAddressList(raw: $message->getHeaderValue(name: 'To')),
             'cc'        => $this->splitAddressList(raw: $message->getHeaderValue(name: 'Cc')),
+            'replyTo'   => $message->getHeaderValue(name: 'Reply-To'),
             'subject'   => $message->getSubject(),
             'date'      => $this->parseDate(raw: $rawDate),
             'messageId' => $message->getMessageId(),

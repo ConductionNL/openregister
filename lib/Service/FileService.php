@@ -681,7 +681,7 @@ class FileService
                 ]
             );
             return null;
-        }
+        }//end try
     }//end createEntityFolder()
 
     /**
@@ -1773,6 +1773,40 @@ class FileService
             dossierKey: $dossierKey
         );
     }//end anonymizeDocument()
+
+    /**
+     * Anonymise an EML (`message/rfc822`) message into a redacted structure
+     * (DELEGATED to DocumentProcessingHandler).
+     *
+     * The cross-app entry point consumed by DocuDesk's `eml-pdf-assembly`:
+     * returns an {@see \OCA\OpenRegister\Service\File\AnonymisedEmlStructure}
+     * (redacted headers + body + attachments + inline-image map). OpenRegister
+     * does NOT render a PDF — the consumer assembles it. EML inputs MUST use
+     * this method, not `anonymizeDocument()` (which throws on message/rfc822).
+     *
+     * @param Node                                                                $node       The EML file node.
+     * @param array<int, array{text?: string, entityType?: string, key?: string}> $entities   Detected entities.
+     * @param string                                                              $scope      'document' (default) or 'dossier'.
+     * @param string|null                                                         $dossierKey Stable dossier folder id, or null.
+     *
+     * @return \OCA\OpenRegister\Service\File\AnonymisedEmlStructure The redacted structure.
+     *
+     * @spec openspec/changes/anonymise-eml-structured/specs/eml-anonymisation/spec.md
+     *       "FileService::anonymizeEmlStructured is the cross-app entry point"
+     */
+    public function anonymizeEmlStructured(
+        Node $node,
+        array $entities,
+        string $scope='document',
+        ?string $dossierKey=null
+    ): \OCA\OpenRegister\Service\File\AnonymisedEmlStructure {
+        return $this->documentProcessingHandler->anonymizeEmlStructured(
+            node: $node,
+            entities: $entities,
+            scope: $scope,
+            dossierKey: $dossierKey
+        );
+    }//end anonymizeEmlStructured()
 
     /**
      * Residual entities from the most recent anonymizeDocument() call.

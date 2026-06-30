@@ -21,6 +21,9 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\TextExtraction\EmlAttachment;
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Service\TextExtraction\EmlStructure;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -127,13 +130,18 @@ class DocumentProcessingHandler
      *                                                                        (PERSON → PERSOON on a Dutch instance).
      *                                                                        Nullable: when absent the raw English
      *                                                                        label is emitted (construct-safe).
+     * @param EmlParser                                 $emlParser            Structured EML parser, used by the
+     *                                                                        message/rfc822 anonymise path to
+     *                                                                        redact decoded body parts, headers
+     *                                                                        and attachments (anonymise-eml-structured).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
         private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
-        private readonly ?IL10N $l10n=null
+        private readonly ?IL10N $l10n=null,
+        private readonly ?EmlParser $emlParser=null
     ) {
     }//end __construct()
 
@@ -263,6 +271,17 @@ class DocumentProcessingHandler
         string $scope='document',
         ?string $dossierKey=null
     ): File {
+        // EML must NEVER fall through to the raw-byte text fallback (which
+        // leaks base64/quoted-printable body parts and attachments). It has
+        // its own decoded-redaction path that returns an AnonymisedEmlStructure
+        // (not a File), so callers MUST use anonymizeEmlStructured() instead
+        // (the anonymise-eml-structured change).
+        if ($this->isEmlNode(node: $node) === true) {
+            throw new Exception(
+                'EML inputs must be anonymised via anonymizeEmlStructured(); anonymizeDocument() does not support message/rfc822.'
+            );
+        }
+
         // Reset residuals + placeholder map from a prior call on this
         // (potentially reused) handler.
         $this->lastResidualEntities = [];
@@ -288,6 +307,90 @@ class DocumentProcessingHandler
             $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
         }
 
+        // Build the entity → placeholder replacement map (stable scope-local
+        // numbering, skip-aware, localised TYPE label). Shared with the
+        // message/rfc822 anonymise path so a person gets the SAME placeholder
+        // in a document and in an EML body/attachment.
+        $replacements = $this->buildEntityReplacements(
+            node: $node,
+            fileId: $fileId,
+            entities: $entities,
+            skippedValues: $skippedValues,
+            scope: $scope,
+            dossierKey: $dossierKey
+        );
+
+        // Generate anonymized file name.
+        $fileName      = $node->getName();
+        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $fileBaseName  = pathinfo($fileName, PATHINFO_FILENAME);
+
+        $anonymizedFileName = $fileBaseName.'_anonymized';
+        if (empty($fileExtension) === false) {
+            $anonymizedFileName .= '.'.$fileExtension;
+        }
+
+        $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
+
+        // Flip the source's EntityRelation rows to `anonymized = 1` so the
+        // anonymised state is queryable downstream. Skip-aware (rows where
+        // `skip_anonymization = 1` are preserved per the
+        // `entity-relation-grondslagen` contract). Each relation's
+        // `anonymized_value` is set to the EXACT placeholder emitted for its
+        // entity (scope-local number + localized label, from
+        // `lastPlaceholderMap`) — the only durable record of the scope-local
+        // number, which isn't recoverable from the stored rows later. This
+        // lets the grondslagen-summary render the same placeholder the
+        // document carries without re-deriving from the global id. The
+        // persistence lives exactly as long as the relation (overwritten on
+        // re-anonymise, gone on delete). Relations whose entity is absent from
+        // the map keep the legacy "[REDACTED]" marker.
+        if ($fileId > 0 && empty($replacements) === false) {
+            try {
+                $this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
+            } catch (\Throwable $e) {
+                // Persistence-side failure on the audit flag MUST NOT mask
+                // the successful redaction; the file is already written.
+                // Surface via warning log; downstream summary reports
+                // simply won't see this file until the next anonymise
+                // call retries the mark.
+                $this->logger->warning(
+                    'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
+                    ['fileId' => $fileId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return $anonymizedFile;
+    }//end anonymizeDocument()
+
+    /**
+     * Build the entity → placeholder replacement map for a file.
+     *
+     * Extracted from {@see anonymizeDocument()} so the message/rfc822
+     * anonymise path reuses the EXACT same logic — stable scope-local
+     * numbering (`PlaceholderIdTranslator`), skip-awareness, and localised
+     * TYPE labels — guaranteeing one entity yields the same placeholder in a
+     * document and across an EML's body, headers and attachments. Populates
+     * `$this->lastPlaceholderMap` as a side effect (callers reset it first).
+     *
+     * @param Node                                                                $node          The source file node.
+     * @param int                                                                 $fileId        Resolved source file id (0 when unknown).
+     * @param array<int, array{text?: string, entityType?: string, key?: string}> $entities      Detected entities.
+     * @param array<int, string>                                                  $skippedValues Operator-skipped entity values.
+     * @param string                                                              $scope         'document' or 'dossier'.
+     * @param string|null                                                         $dossierKey    Stable dossier folder id, or null.
+     *
+     * @return array<string, string> Map of entity-text needle => `[<TYPE>: <number>]` placeholder.
+     */
+    private function buildEntityReplacements(
+        Node $node,
+        int $fileId,
+        array $entities,
+        array $skippedValues,
+        string $scope,
+        ?string $dossierKey
+    ): array {
         // Resolve the existing entity-id map for this file so substitutions
         // use the stable `[<TYPE>: <entity_id>]` placeholder format —
         // matches what DocuDesk's grondslagen-summary report shows and
@@ -361,49 +464,449 @@ class DocumentProcessingHandler
             }
         }//end foreach
 
-        // Generate anonymized file name.
-        $fileName      = $node->getName();
-        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $fileBaseName  = pathinfo($fileName, PATHINFO_FILENAME);
+        return $replacements;
+    }//end buildEntityReplacements()
 
-        $anonymizedFileName = $fileBaseName.'_anonymized';
-        if (empty($fileExtension) === false) {
-            $anonymizedFileName .= '.'.$fileExtension;
+    /**
+     * Whether a node is an EML (`message/rfc822`) message.
+     *
+     * Checks the MIME type when resolvable, falling back to the `.eml`
+     * filename extension. Used to keep EML off the raw-byte text fallback.
+     *
+     * @param Node $node The node to test.
+     *
+     * @return bool True when the node is an EML message.
+     */
+    private function isEmlNode(Node $node): bool
+    {
+        if (method_exists($node, 'getMimeType') === true
+            && (string) $node->getMimeType() === 'message/rfc822'
+        ) {
+            return true;
         }
 
-        $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
+        return strtolower(pathinfo($node->getName(), PATHINFO_EXTENSION)) === 'eml';
+    }//end isEmlNode()
 
-        // Flip the source's EntityRelation rows to `anonymized = 1` so the
-        // anonymised state is queryable downstream. Skip-aware (rows where
-        // `skip_anonymization = 1` are preserved per the
-        // `entity-relation-grondslagen` contract). Each relation's
-        // `anonymized_value` is set to the EXACT placeholder emitted for its
-        // entity (scope-local number + localized label, from
-        // `lastPlaceholderMap`) — the only durable record of the scope-local
-        // number, which isn't recoverable from the stored rows later. This
-        // lets the grondslagen-summary render the same placeholder the
-        // document carries without re-deriving from the global id. The
-        // persistence lives exactly as long as the relation (overwritten on
-        // re-anonymise, gone on delete). Relations whose entity is absent from
-        // the map keep the legacy "[REDACTED]" marker.
-        if ($fileId > 0 && empty($replacements) === false) {
-            try {
-                $this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
-            } catch (\Throwable $e) {
-                // Persistence-side failure on the audit flag MUST NOT mask
-                // the successful redaction; the file is already written.
-                // Surface via warning log; downstream summary reports
-                // simply won't see this file until the next anonymise
-                // call retries the mark.
-                $this->logger->warning(
-                    'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
-                    ['fileId' => $fileId, 'error' => $e->getMessage()]
-                );
+    /**
+     * Anonymise an EML (`message/rfc822`) message into a redacted structure.
+     *
+     * Parses the message via {@see EmlParser}, then redacts on DECODED content
+     * (so base64 / quoted-printable parts are never leaked): the body parts,
+     * the display headers, and each attachment (materialised and run through
+     * the matching per-format redactor). Nested EML attachments recurse on the
+     * already-parsed structure within the parser's depth cap. Unsupported
+     * attachment formats are flagged and their content dropped. OpenRegister
+     * produces NO PDF — the DocuDesk consumer assembles the result.
+     *
+     * @param Node                                                                $node       The EML file node.
+     * @param array<int, array{text?: string, entityType?: string, key?: string}> $entities   Detected entities.
+     * @param string                                                              $scope      'document' (default) or 'dossier'.
+     * @param string|null                                                         $dossierKey Stable dossier folder id, or null.
+     *
+     * @throws Exception When EmlParser is unavailable or parsing fails irrecoverably.
+     *
+     * @return AnonymisedEmlStructure The redacted structure (contract.md shape).
+     *
+     * @spec openspec/changes/anonymise-eml-structured/specs/eml-anonymisation/spec.md
+     *       "Anonymising a message/rfc822 file MUST redact on decoded content"
+     */
+    public function anonymizeEmlStructured(
+        Node $node,
+        array $entities,
+        string $scope='document',
+        ?string $dossierKey=null
+    ): AnonymisedEmlStructure {
+        if ($this->emlParser === null) {
+            throw new Exception('EML anonymisation requires EmlParser; none injected.');
+        }
+
+        // Reset per-run state (mirrors anonymizeDocument).
+        $this->lastResidualEntities = [];
+        $this->lastPlaceholderMap   = [];
+
+        $fileId = 0;
+        if (method_exists($node, 'getId') === true) {
+            $candidate = $node->getId();
+            if (is_int($candidate) === true && $candidate > 0) {
+                $fileId = $candidate;
             }
         }
 
-        return $anonymizedFile;
-    }//end anonymizeDocument()
+        $skippedValues = [];
+        if ($fileId > 0) {
+            $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+        }
+
+        // ONE replacement map for the whole message — body, headers and every
+        // attachment share it, so a person yields the same placeholder
+        // everywhere (the consumer's grondslagen cross-reference holds).
+        $replacements = $this->buildEntityReplacements(
+            node: $node,
+            fileId: $fileId,
+            entities: $entities,
+            skippedValues: $skippedValues,
+            scope: $scope,
+            dossierKey: $dossierKey
+        );
+
+        if (($node instanceof File) === false) {
+            throw new Exception('EML anonymisation requires a file node.');
+        }
+
+        $structure = $this->emlParser->parse(file: $node);
+
+        // Working folder for materialising attachment bytes (the per-format
+        // redactors are Node-based). Created beside the source EML and removed
+        // in finally — never left behind.
+        $workFolder = $this->createEmlWorkFolder(node: $node, fileId: $fileId);
+        try {
+            return $this->redactEmlStructure(
+                structure: $structure,
+                replacements: $replacements,
+                workFolder: $workFolder,
+                depth: 0
+            );
+        } finally {
+            $this->deleteEmlWorkFolder(folder: $workFolder);
+        }
+    }//end anonymizeEmlStructured()
+
+    /**
+     * Redact a parsed EmlStructure (recursively for nested EML) into an
+     * AnonymisedEmlStructure. Pure of side effects beyond temp-file churn in
+     * $workFolder.
+     *
+     * @param EmlStructure          $structure    The parsed structure.
+     * @param array<string, string> $replacements Shared entity → placeholder map.
+     * @param Folder                $workFolder   Scratch folder for attachment materialisation.
+     * @param int                   $depth        Current nesting depth (root = 0).
+     *
+     * @return AnonymisedEmlStructure
+     */
+    private function redactEmlStructure(
+        EmlStructure $structure,
+        array $replacements,
+        Folder $workFolder,
+        int $depth
+    ): AnonymisedEmlStructure {
+        $body = new AnonymisedEmlBody(
+            plain: $this->redactText(text: $structure->body->plainText, replacements: $replacements),
+            html: $this->redactText(text: $structure->body->html, replacements: $replacements)
+        );
+
+        $headers = $this->redactHeaders(headers: $structure->headers, replacements: $replacements);
+
+        $attachments  = [];
+        $inlineImages = [];
+        foreach ($structure->attachments as $index => $attachment) {
+            $redacted      = $this->redactAttachment(
+                attachment: $attachment,
+                replacements: $replacements,
+                workFolder: $workFolder,
+                depth: $depth,
+                index: (int) $index
+            );
+            $attachments[] = $redacted;
+
+            // Inline images referenced by the HTML body via cid: — only carry
+            // bytes the consumer can use, and only when actually redacted.
+            if ($attachment->isInline === true
+                && $attachment->contentId !== null
+                && $redacted->redactedContent !== null
+            ) {
+                $inlineImages[$attachment->contentId] = $redacted->redactedContent;
+            }
+        }
+
+        return new AnonymisedEmlStructure(
+            headers: $headers,
+            body: $body,
+            attachments: $attachments,
+            inlineImages: $inlineImages
+        );
+    }//end redactEmlStructure()
+
+    /**
+     * Apply the replacement map to a decoded text string (null-safe).
+     * Mirrors the text redactor's case-insensitive pass.
+     *
+     * @param string|null           $text         The decoded text, or null.
+     * @param array<string, string> $replacements Entity → placeholder map.
+     *
+     * @return string|null The redacted text, or null when input was null.
+     */
+    private function redactText(?string $text, array $replacements): ?string
+    {
+        if ($text === null) {
+            return null;
+        }
+
+        foreach ($replacements as $needle => $placeholder) {
+            $text = str_ireplace((string) $needle, $placeholder, $text);
+        }
+
+        return $text;
+    }//end redactText()
+
+    /**
+     * Redact the display-header subset (from / to[] / cc[] / replyTo / subject)
+     * and normalise the date. Header values can carry PII (names, addresses).
+     *
+     * @param array<string, mixed>  $headers      The parsed headers.
+     * @param array<string, string> $replacements Entity → placeholder map.
+     *
+     * @return array<string, mixed> Redacted display headers.
+     */
+    private function redactHeaders(array $headers, array $replacements): array
+    {
+        $redactList = function (array $values) use ($replacements): array {
+            $out = [];
+            foreach ($values as $value) {
+                $out[] = (string) $this->redactText(text: (string) $value, replacements: $replacements);
+            }
+
+            return $out;
+        };
+
+        $date     = ($headers['date'] ?? null);
+        $dateText = '';
+        if ($date instanceof \DateTimeInterface) {
+            $dateText = $date->format('c');
+        } else if (is_string($date) === true) {
+            $dateText = $date;
+        }
+
+        return [
+            'from'    => (string) $this->redactText(text: (string) ($headers['from'] ?? ''), replacements: $replacements),
+            'to'      => $redactList(($headers['to'] ?? [])),
+            'cc'      => $redactList(($headers['cc'] ?? [])),
+            'replyTo' => (string) $this->redactText(text: (string) ($headers['replyTo'] ?? ''), replacements: $replacements),
+            'subject' => (string) $this->redactText(text: (string) ($headers['subject'] ?? ''), replacements: $replacements),
+            'date'    => $dateText,
+        ];
+    }//end redactHeaders()
+
+    /**
+     * Redact one EML attachment. Nested EML recurses on the parser-provided
+     * structure (depth cap owned by the parser); supported document formats
+     * are materialised and run through the matching redactor; everything else
+     * is flagged unsupported with no content. A redactor failure is fail-safe:
+     * the attachment is flagged unsupported, NEVER emitted unredacted.
+     *
+     * @param EmlAttachment         $attachment   The source attachment.
+     * @param array<string, string> $replacements Shared entity → placeholder map.
+     * @param Folder                $workFolder   Scratch folder.
+     * @param int                   $depth        Current depth.
+     * @param int                   $index        Attachment index (for unique temp names + PII-free logs).
+     *
+     * @return AnonymisedEmlAttachment
+     */
+    private function redactAttachment(
+        EmlAttachment $attachment,
+        array $replacements,
+        Folder $workFolder,
+        int $depth,
+        int $index
+    ): AnonymisedEmlAttachment {
+        $filename = $attachment->filename;
+        $mimeType = $attachment->mimeType;
+        $ext      = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        // Nested EML → recurse on the already-parsed nested structure. The
+        // parser only populates nestedEml within its depth cap; beyond it,
+        // nestedEml is null and we flag the attachment unsupported.
+        if ($mimeType === 'message/rfc822' || $ext === 'eml') {
+            if ($attachment->nestedEml !== null) {
+                $nested = $this->redactEmlStructure(
+                    structure: $attachment->nestedEml,
+                    replacements: $replacements,
+                    workFolder: $workFolder,
+                    depth: ($depth + 1)
+                );
+
+                return new AnonymisedEmlAttachment($filename, $mimeType, null, false, $nested);
+            }
+
+            return new AnonymisedEmlAttachment($filename, $mimeType, null, true, null);
+        }
+
+        $kind = $this->resolveAttachmentRedactor(mimeType: $mimeType, extension: $ext);
+        if ($kind === null) {
+            // No anonymiser for this MIME (xlsx, ods, images, archives, …):
+            // flag + drop content (the consumer renders a placeholder page).
+            return new AnonymisedEmlAttachment($filename, $mimeType, null, true, null);
+        }
+
+        try {
+            $bytes = $this->materialiseAndRedactAttachment(
+                attachment: $attachment,
+                replacements: $replacements,
+                workFolder: $workFolder,
+                kind: $kind,
+                depth: $depth,
+                index: $index
+            );
+
+            return new AnonymisedEmlAttachment($filename, $mimeType, $bytes, false, null);
+        } catch (\Throwable $e) {
+            // Fail-safe: a redactor failure MUST NOT emit unredacted bytes.
+            // PII-free log (index/MIME/redactor/exception class only).
+            $this->logger->warning(
+                'DocumentProcessingHandler: EML attachment redaction failed; flagged unsupported',
+                [
+                    'attachmentIndex' => $index,
+                    'mimeType'        => $mimeType,
+                    'redactor'        => $kind,
+                    'depth'           => $depth,
+                    'exception'       => get_class($e),
+                ]
+            );
+
+            return new AnonymisedEmlAttachment($filename, $mimeType, null, true, null);
+        }//end try
+    }//end redactAttachment()
+
+    /**
+     * Map an attachment MIME / extension to a redactor kind, or null when
+     * unsupported. `word` covers the PhpWord readers (doc/docx/odt/rtf);
+     * `pdf` the byte-level PDF pipeline; `text` the raw text replacer.
+     *
+     * @param string $mimeType  The attachment MIME type.
+     * @param string $extension The lowercased extension (no dot).
+     *
+     * @return string|null 'word' | 'pdf' | 'text', or null when unsupported.
+     */
+    private function resolveAttachmentRedactor(string $mimeType, string $extension): ?string
+    {
+        $wordExt  = ['doc', 'docx', 'odt', 'rtf'];
+        $wordMime = [
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.oasis.opendocument.text',
+            'application/rtf',
+            'text/rtf',
+        ];
+        if (in_array($extension, $wordExt, true) === true || in_array($mimeType, $wordMime, true) === true) {
+            return 'word';
+        }
+
+        if ($extension === 'pdf' || $mimeType === 'application/pdf') {
+            return 'pdf';
+        }
+
+        $textExt = ['txt', 'csv', 'html', 'htm', 'md', 'log'];
+        if (in_array($extension, $textExt, true) === true || str_starts_with($mimeType, 'text/') === true) {
+            return 'text';
+        }
+
+        return null;
+    }//end resolveAttachmentRedactor()
+
+    /**
+     * Materialise an attachment's decoded bytes into the scratch folder and run
+     * the matching Node-based redactor, returning the redacted bytes. Word
+     * inputs are emitted as Word2007 (docx) by the redactor regardless of the
+     * source format.
+     *
+     * @param EmlAttachment         $attachment   The source attachment (decoded bytes).
+     * @param array<string, string> $replacements Shared entity → placeholder map.
+     * @param Folder                $workFolder   Scratch folder.
+     * @param string                $kind         'word' | 'pdf' | 'text'.
+     * @param int                   $depth        Current depth (for unique names).
+     * @param int                   $index        Attachment index (for unique names).
+     *
+     * @throws Exception When the redacted output cannot be read.
+     *
+     * @return string The decoded redacted bytes.
+     */
+    private function materialiseAndRedactAttachment(
+        EmlAttachment $attachment,
+        array $replacements,
+        Folder $workFolder,
+        string $kind,
+        int $depth,
+        int $index
+    ): string {
+        $ext = strtolower(pathinfo($attachment->filename, PATHINFO_EXTENSION));
+        if ($ext === '') {
+            $ext = 'bin';
+        }
+
+        $inName = sprintf('in_%d_%d.%s', $depth, $index, $ext);
+        if ($workFolder->nodeExists($inName) === true) {
+            $workFolder->get($inName)->delete();
+        }
+
+        $in = $workFolder->newFile(path: $inName, content: $attachment->content);
+
+        switch ($kind) {
+            case 'word':
+                $out = $this->replaceWordsInWordDocument(
+                    node: $in,
+                    replacements: $replacements,
+                    outputName: sprintf('out_%d_%d.docx', $depth, $index)
+                );
+                break;
+            case 'pdf':
+                $out = $this->replaceWordsInPdfDocument(
+                    node: $in,
+                    replacements: $replacements,
+                    outputName: sprintf('out_%d_%d.pdf', $depth, $index)
+                );
+                break;
+            default:
+                $out = $this->replaceWordsInTextDocument(
+                    node: $in,
+                    replacements: $replacements,
+                    outputName: sprintf('out_%d_%d.%s', $depth, $index, $ext)
+                );
+        }//end switch
+
+        // Return the redacted bytes. getContent() returns a string and throws
+        // on failure (caught by the caller's per-attachment fail-safe).
+        return $out->getContent();
+    }//end materialiseAndRedactAttachment()
+
+    /**
+     * Create the scratch folder for EML attachment materialisation, beside the
+     * source EML. Any stale folder from a prior run is removed first.
+     *
+     * @param Node $node   The source EML node.
+     * @param int  $fileId Resolved file id (0 when unknown).
+     *
+     * @return Folder The fresh scratch folder.
+     */
+    private function createEmlWorkFolder(Node $node, int $fileId): Folder
+    {
+        $parent = $node->getParent();
+        $name   = '.openregister-eml-anon-'.($fileId > 0 ? (string) $fileId : 'tmp');
+        if ($parent->nodeExists($name) === true) {
+            $parent->get($name)->delete();
+        }
+
+        return $parent->newFolder(path: $name);
+    }//end createEmlWorkFolder()
+
+    /**
+     * Best-effort removal of the EML scratch folder. A cleanup failure is
+     * logged (PII-free) and swallowed — it never affects the redaction result.
+     *
+     * @param Folder $folder The scratch folder to delete.
+     *
+     * @return void
+     */
+    private function deleteEmlWorkFolder(Folder $folder): void
+    {
+        try {
+            $folder->delete();
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'DocumentProcessingHandler: failed to remove EML scratch folder',
+                ['exception' => get_class($e)]
+            );
+        }
+    }//end deleteEmlWorkFolder()
 
     /**
      * Localise an entity-type label to the acting user's language for the

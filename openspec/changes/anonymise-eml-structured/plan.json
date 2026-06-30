@@ -14,115 +14,115 @@
       "id": 1,
       "ref": "1.1",
       "title": "Add `lib/Service/File/AnonymisedEmlBody.php` (`?string $plain`, `?string $html`; `JsonSerializable`) with EUPL-1.2 SPDX header.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 2,
       "ref": "1.2",
       "title": "Add `lib/Service/File/AnonymisedEmlAttachment.php` (`filename`, `mimeType`, `?string $redactedContent`, `bool $unsupported`; base64-encode bytes in `jsonSerialize()`) with SPDX header.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 3,
       "ref": "1.3",
       "title": "Add `lib/Service/File/AnonymisedEmlStructure.php` (`headers`, `AnonymisedEmlBody $body`, `AnonymisedEmlAttachment[] $attachments`, `array $inlineImages`; base64 byte fields in `jsonSerialize()`) matching `contract.md`.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 4,
       "ref": "2.1",
       "title": "Detect `message/rfc822` in the `anonymizeDocument` / `replaceWords` dispatch and route to the new EML path (never to `replaceWordsInTextDocument`).",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 5,
       "ref": "2.2",
       "title": "Build the entity\u2192placeholder replacement map ONCE for the message (reuse the existing builder + `PlaceholderIdTranslator`; honour `scope` / `dossierKey`), then parse via `TextExtractionService::parseEmlStructured()`.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 6,
       "ref": "2.3",
       "title": "Redact the decoded body parts (`text/plain` and `text/html`, preserving HTML markup) and the display headers (From / To / Cc / Reply-To / Subject / Date / other display headers) with the shared map.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 7,
       "ref": "2.4",
       "title": "Add the attachment loop: materialise each `EmlAttachment`'s decoded bytes and dispatch to the matching existing redactor (docx/odt/rtf/html \u2192 Word path, pdf \u2192 PDF path, plain-text \u2192 text path); collect redacted bytes; clean up temp resources in `finally`.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 8,
       "ref": "2.5",
       "title": "Recurse the EML path for `message/rfc822` attachments using `EmlParser::MAX_DEPTH` accounting; treat a nested EML beyond the cap as unsupported (flag, drop content).",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 9,
       "ref": "2.6",
       "title": "Apply the unsupported-attachment policy for any MIME with no redactor (xlsx, ods, archives, calendar, images, octet-stream): set `unsupported: true`, emit no content.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 10,
       "ref": "2.7",
       "title": "Build the inline-image map (`contentId \u2192 redacted bytes`) for `cid:` resolution; assemble and return the `AnonymisedEmlStructure`.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 11,
       "ref": "2.8",
       "title": "Ensure all logging on this path is PII-free (file id, MIME, attachment index, redactor class, depth only) per ADR-005.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 12,
       "ref": "3.1",
       "title": "Add `FileService::anonymizeEmlStructured(Node, entities, scope, dossierKey): AnonymisedEmlStructure` delegating to the handler, and route EML inputs of `anonymizeDocument()` into the EML path.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 13,
       "ref": "4.1",
       "title": "Body redaction: base64 and quoted-printable bodies redact on DECODED content (entity gone from output, raw-text fallback NOT used); both plain + html redacted; HTML markup preserved.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 14,
       "ref": "4.2",
       "title": "Display-header redaction: From / Subject with PII are redacted.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 15,
       "ref": "4.3",
       "title": "Attachment redaction routing: PDF via PDF path, DOCX via Word path, plain-text via text path each produce redacted bytes.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 16,
       "ref": "4.4",
       "title": "Nested EML recursion redacts at depth 1; chain beyond depth 3 is flagged unsupported with no raw bytes.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 17,
       "ref": "4.5",
       "title": "Unsupported attachment (xlsx, image) is flagged `unsupported: true` with no content; inline-image map populated for `cid:` images.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 18,
       "ref": "4.6",
       "title": "Placeholder-numbering consistency: same entity yields the same `[<TYPE>: <number>]` in body and attachment; PII-free logging asserted.",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": 19,
       "ref": "5.1",
       "title": "Add a CHANGELOG \"Behavior changes\" entry (EML inputs were silently leaking; now produce a redacted `AnonymisedEmlStructure`) and reference `contract.md` for the DocuDesk consumer.",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
