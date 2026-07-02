@@ -63,11 +63,12 @@ class DocumentProcessingHandlerEmlTest extends TestCase
      * Build a File-node mock whose fopen() yields the given EML string and
      * whose parent provides a throwaway work folder.
      *
-     * @param string $eml The raw EML source.
+     * @param string $eml    The raw EML source.
+     * @param int    $fileId The node id reported by getId() (0 = FS-free path).
      *
      * @return File
      */
-    private function emlNode(string $eml): File
+    private function emlNode(string $eml, int $fileId=0): File
     {
         $workFolder = $this->createMock(Folder::class);
         $workFolder->method('delete');
@@ -77,7 +78,7 @@ class DocumentProcessingHandlerEmlTest extends TestCase
         $parent->method('newFolder')->willReturn($workFolder);
 
         $node = $this->createMock(File::class);
-        $node->method('getId')->willReturn(0);
+        $node->method('getId')->willReturn($fileId);
         $node->method('getName')->willReturn('message.eml');
         $node->method('getMimeType')->willReturn('message/rfc822');
         $node->method('getParent')->willReturn($parent);
@@ -252,6 +253,48 @@ class DocumentProcessingHandlerEmlTest extends TestCase
         $this->assertNull($resolve->invoke($this->handler, 'image/png', 'png'));
 
     }//end testResolveAttachmentRedactorRouting()
+
+
+    /**
+     * A real file id (>0) marks the source's EntityRelation rows anonymised
+     * with their scope-local placeholders — mirrors anonymizeDocument() so
+     * DocuDesk's grondslagen-summary can query this EML's redacted entities the
+     * same way it does for other formats. Regression: without the mark the rows
+     * stay `anonymized = 0` and the summary is empty though the EML redacted.
+     *
+     * @return void
+     */
+    public function testMarksSourceRelationsAnonymisedForRealFileId(): void
+    {
+        $eml = "From: Jan de Vries <jan@example.nl>\r\nTo: r@example.nl\r\n"
+            ."Subject: Re\r\nContent-Type: text/plain\r\n\r\nGroet aan jan@example.nl\r\n";
+
+        $relationMapper = $this->createMock(EntityRelationMapper::class);
+        $relationMapper->method('findSkippedEntityValuesForFile')->willReturn([]);
+        $relationMapper->method('findEntityIdsByValueForFile')
+            ->willReturn(['jan@example.nl' => ['id' => 7, 'type' => 'EMAIL']]);
+        $relationMapper->expects($this->once())
+            ->method('markAsAnonymizedWithPlaceholders')
+            ->with(42, ['7' => '[EMAIL: 1]'])
+            ->willReturn(1);
+
+        $handler = new DocumentProcessingHandler(
+            rootFolder: $this->createMock(IRootFolder::class),
+            userSession: $this->createMock(IUserSession::class),
+            logger: $this->createMock(LoggerInterface::class),
+            entityRelationMapper: $relationMapper,
+            l10n: null,
+            emlParser: new EmlParser(logger: $this->createMock(LoggerInterface::class))
+        );
+
+        $result = $handler->anonymizeEmlStructured(
+            node: $this->emlNode($eml, 42),
+            entities: [['text' => 'jan@example.nl', 'entityType' => 'EMAIL', 'key' => '1']]
+        );
+
+        $this->assertInstanceOf(AnonymisedEmlStructure::class, $result);
+
+    }//end testMarksSourceRelationsAnonymisedForRealFileId()
 
 
     /**

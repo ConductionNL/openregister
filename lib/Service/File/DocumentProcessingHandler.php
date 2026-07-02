@@ -561,7 +561,7 @@ class DocumentProcessingHandler
         // in finally — never left behind.
         $workFolder = $this->createEmlWorkFolder(node: $node, fileId: $fileId);
         try {
-            return $this->redactEmlStructure(
+            $anonymised = $this->redactEmlStructure(
                 structure: $structure,
                 replacements: $replacements,
                 workFolder: $workFolder,
@@ -570,6 +570,29 @@ class DocumentProcessingHandler
         } finally {
             $this->deleteEmlWorkFolder(folder: $workFolder);
         }
+
+        // Flip the source's EntityRelation rows to `anonymized = 1` and persist
+        // each relation's scope-local placeholder — mirrors anonymizeDocument()
+        // so DocuDesk's grondslagen-summary can query this EML's redacted
+        // entities the same way it does for every other format. Without this the
+        // rows stay `anonymized = 0`, the summary query returns nothing, and the
+        // report is empty even though the message was redacted.
+        if ($fileId > 0 && empty($replacements) === false) {
+            try {
+                $this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
+            } catch (\Throwable $e) {
+                // Persistence-side failure on the audit flag MUST NOT mask the
+                // successful redaction; the assembled PDF is already the
+                // authoritative output. Surface via warning; the next
+                // anonymise call retries the mark.
+                $this->logger->warning(
+                    'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after EML redaction',
+                    ['fileId' => $fileId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return $anonymised;
     }//end anonymizeEmlStructured()
 
     /**
