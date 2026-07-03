@@ -381,6 +381,32 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // DSAR case-engine (dsar-case-engine): bind the swappable PAdES signing
+        // seam to its default SHA-256-only stub. The real PAdES-LTV signer drops
+        // in here later by replacing this binding — the ExportBundleService
+        // depends only on the PadesSigner interface, so nothing else changes.
+        // TODO(ADR-047 Phase-1b): swap UnsignedPadesSigner for the chosen
+        // PAdES-LTV signer (library decision pending).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Export\PadesSigner::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner();
+            }
+        );
+
+        // DSAR evidence-source registry (shared, so leaf-app addProvider()
+        // registrations during boot() persist for the whole request). The
+        // harvest service auto-wires it; OR core enumerates only registered
+        // providers (ADR-019 — an unregistered source contributes nothing).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         // Web Push hex-icon service (openregister-web-push-engine): needs an
         // app-scoped IAppData for its rendered-PNG cache, which is not
         // auto-wirable, so resolve it via IAppDataFactory here.

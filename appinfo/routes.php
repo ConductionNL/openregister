@@ -241,6 +241,17 @@ return [
         ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // DSAR case-management engine (dsar-case-engine): stateful case workflow.
+        // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
+        // one-time download (browser navigation). Case-level access control
+        // (handler-scopes-own + officer-override, fail-closed) enforced in-body.
+        ['name' => 'dsarCase#create',         'url' => '/api/gdpr/cases',                        'verb' => 'POST'],
+        ['name' => 'dsarCase#transition',     'url' => '/api/gdpr/cases/{id}/transition',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#evidence',       'url' => '/api/gdpr/cases/{id}/evidence',          'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#redact',         'url' => '/api/gdpr/cases/{id}/redactions',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#generateBundle', 'url' => '/api/gdpr/cases/{id}/bundle',            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#downloadBundle', 'url' => '/api/gdpr/cases/{id}/bundle/download',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#dossier',        'url' => '/api/gdpr/cases/{id}/dossier',           'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
