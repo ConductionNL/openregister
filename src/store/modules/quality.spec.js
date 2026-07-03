@@ -148,4 +148,112 @@ describe('Quality Store', () => {
 			expect(store.webhookFailures).toHaveLength(1)
 		})
 	})
+
+	describe('previewMerge', () => {
+		it('posts { from, into } to the preview endpoint and returns the payload', async () => {
+			const payload = {
+				from: 'obj-a',
+				into: 'obj-b',
+				postMergeGoldenRecord: { name: 'Acme' },
+				attributeProvenance: { name: { sourceSystem: 'obj-b' } },
+				reversalDeadline: '2026-07-10T00:00:00Z',
+			}
+			axios.post.mockResolvedValueOnce({ data: payload })
+
+			const store = useQualityStore()
+			const result = await store.previewMerge('obj-a', 'obj-b')
+
+			expect(axios.post).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/merge/preview'),
+				{ from: 'obj-a', into: 'obj-b' },
+			)
+			expect(result).toEqual(payload)
+		})
+
+		it('records an error on failure', async () => {
+			axios.post.mockRejectedValueOnce({ response: { data: { error: 'Forbidden' } } })
+			const store = useQualityStore()
+
+			await expect(store.previewMerge('obj-a', 'obj-b')).rejects.toBeTruthy()
+			expect(store.error).toBe('Forbidden')
+		})
+	})
+
+	describe('executeMerge', () => {
+		it('posts { from, into, reason } to the execute endpoint and returns the persisted operation', async () => {
+			const operation = { id: 'op-1', from: 'obj-a', into: 'obj-b', reason: 'duplicate-confirmed' }
+			axios.post.mockResolvedValueOnce({ data: operation })
+
+			const store = useQualityStore()
+			const result = await store.executeMerge('obj-a', 'obj-b', 'duplicate-confirmed')
+
+			expect(axios.post).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/merge/execute'),
+				{ from: 'obj-a', into: 'obj-b', reason: 'duplicate-confirmed' },
+			)
+			expect(result).toEqual(operation)
+		})
+
+		it('records an error on failure', async () => {
+			axios.post.mockRejectedValueOnce({ message: 'boom' })
+			const store = useQualityStore()
+
+			await expect(store.executeMerge('obj-a', 'obj-b', 'reason')).rejects.toBeTruthy()
+			expect(store.error).toBe('boom')
+		})
+	})
+
+	describe('fetchMergeOperations', () => {
+		it('fetches and paginates merge-operation rows via the generic object-read surface', async () => {
+			axios.get.mockResolvedValueOnce({
+				data: {
+					results: [{ id: 'op-1', from: 'obj-a', into: 'obj-b', reversible: true }],
+					total: 1,
+					limit: 20,
+					offset: 0,
+				},
+			})
+
+			const store = useQualityStore()
+			await store.fetchMergeOperations()
+
+			expect(axios.get).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/merge-operation/mergeOperation'),
+				expect.any(Object),
+			)
+			expect(store.mergeOperations).toHaveLength(1)
+			expect(store.mergeOperationsTotal).toBe(1)
+		})
+
+		it('records an error on failure', async () => {
+			axios.get.mockRejectedValueOnce({ message: 'boom' })
+			const store = useQualityStore()
+
+			await expect(store.fetchMergeOperations()).rejects.toBeTruthy()
+			expect(store.error).toBe('boom')
+		})
+	})
+
+	describe('reverseMerge', () => {
+		it('posts to the reverse endpoint with the operation id and returns the updated operation', async () => {
+			const updated = { id: 'op-1', reversible: false }
+			axios.post.mockResolvedValueOnce({ data: updated })
+
+			const store = useQualityStore()
+			const result = await store.reverseMerge('op-1')
+
+			expect(axios.post).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/merge/op-1/reverse'),
+			)
+			expect(result).toEqual(updated)
+		})
+
+		it('records an error on failure', async () => {
+			axios.post.mockRejectedValueOnce({ response: { data: { error: 'Not found' } } })
+			const store = useQualityStore()
+
+			await expect(store.reverseMerge('op-1')).rejects.toBeTruthy()
+			expect(store.error).toBe('Not found')
+		})
+	})
 })

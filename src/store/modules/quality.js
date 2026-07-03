@@ -1,14 +1,15 @@
 /**
  * MDM Quality Store Module
  *
- * Backs the four steward-facing "Data quality" views (Data Quality
- * dashboard, Duplicate Candidates, Master entities, Queue / sync-health)
- * added by the mdm-frontend change. Mirrors `reports.js`: Options-API
- * `defineStore` + `@nextcloud/axios` + `generateUrl`, no custom store base
- * class. Every action is a GET-only read against the already-merged
- * `mdm-surface-api` / `mdm-survivorship-engine` backends plus the existing
- * webhook telemetry endpoints — this module introduces no new backend
- * surface.
+ * Backs the steward-facing "Data quality" views (Data Quality dashboard,
+ * Duplicate Candidates, Master entities, Queue / sync-health, Merge
+ * Operations) added by the mdm-frontend (#3) and mdm-merge-ui (#C) changes.
+ * Mirrors `reports.js`: Options-API `defineStore` + `@nextcloud/axios` +
+ * `generateUrl`, no custom store base class. The read-only actions are
+ * GET-only passthroughs; the merge actions (`previewMerge`, `executeMerge`,
+ * `fetchMergeOperations`, `reverseMerge`) are thin wrappers over the
+ * already-merged MDM merge engine (#B) — no merge/survivorship logic lives
+ * client-side.
  *
  * @package
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -16,6 +17,7 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/mdm-frontend/tasks.md#task-1.1
+ * @spec openspec/changes/mdm-merge-ui/tasks.md#task-1
  */
 
 import { defineStore } from 'pinia'
@@ -48,6 +50,11 @@ export const useQualityStore = defineStore('quality', {
 		masterEntities: [],
 		masterEntitiesTotal: 0,
 		goldenRecord: null,
+
+		mergeOperations: [],
+		mergeOperationsTotal: 0,
+		mergeOperationsLimit: 20,
+		mergeOperationsOffset: 0,
 
 		webhooks: [],
 		webhookStats: {},
@@ -285,6 +292,112 @@ export const useQualityStore = defineStore('quality', {
 			} catch (e) {
 				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch golden record'
 				console.error('[quality.fetchGoldenRecord]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Side-effect-free preview of a merge: projected survivor golden
+		 * record, per-attribute provenance and reversal deadline. Thin
+		 * wrapper over the merge engine's preview endpoint — no
+		 * survivorship/conflict-resolution logic lives here (design.md).
+		 *
+		 * @param {string|number} from Merged-away object id.
+		 * @param {string|number} into Surviving object id.
+		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-previews-the-post-merge-golden-record-before-executing
+		 */
+		async previewMerge(from, into) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.post(`${API_BASE}/objects/merge/preview`, { from, into })
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to preview merge'
+				console.error('[quality.previewMerge]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Execute an auditable merge: relink source records, recompute the
+		 * survivor, and persist a `mergeOperation` row. Thin wrapper over the
+		 * merge engine's execute endpoint.
+		 *
+		 * @param {string|number} from   Merged-away object id.
+		 * @param {string|number} into   Surviving object id.
+		 * @param {string}        reason Steward-supplied merge reason.
+		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-captures-a-reason-and-executes-an-auditable-merge
+		 */
+		async executeMerge(from, into, reason) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.post(`${API_BASE}/objects/merge/execute`, { from, into, reason })
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to execute merge'
+				console.error('[quality.executeMerge]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * List recent `mergeOperation` audit rows, read through the generic
+		 * object-read surface (no dedicated merge-operations endpoint).
+		 *
+		 * @param {object} params { register, schema, limit, offset } — register/schema
+		 *                        default to the mergeOperation register/schema (#B).
+		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
+		 */
+		async fetchMergeOperations(params = {}) {
+			this.loading = true
+			this.error = null
+			const limit = params.limit ?? this.mergeOperationsLimit
+			const offset = params.offset ?? this.mergeOperationsOffset
+			try {
+				const response = await axios.get(
+					`${API_BASE}/objects/merge-operation/mergeOperation`,
+					{ params: { ...params, limit, offset } },
+				)
+				const data = response.data ?? {}
+				this.mergeOperations = data.results ?? data.items ?? []
+				this.mergeOperationsTotal = data.total ?? this.mergeOperations.length
+				this.mergeOperationsLimit = data.limit ?? limit
+				this.mergeOperationsOffset = data.offset ?? offset
+				return data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch merge operations'
+				console.error('[quality.fetchMergeOperations]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Reverse a merge within its reversal window, restoring both objects
+		 * and flipping the operation to non-reversible. Thin wrapper over
+		 * the merge engine's reverse endpoint.
+		 *
+		 * @param {string|number} id `mergeOperation` uuid.
+		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reverses-a-merge-within-its-reversal-window
+		 */
+		async reverseMerge(id) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.post(`${API_BASE}/objects/merge/${encodeURIComponent(id)}/reverse`)
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to reverse merge'
+				console.error('[quality.reverseMerge]', e)
 				throw e
 			} finally {
 				this.loading = false
