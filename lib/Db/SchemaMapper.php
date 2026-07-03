@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -628,6 +629,7 @@ class SchemaMapper extends QBMapper
         $this->validateCalculationsAnnotation(schema: $schema);
         $this->validateQualityAnnotation(schema: $schema);
         $this->validateDedupAnnotation(schema: $schema);
+        $this->validateSurvivorshipAnnotation(schema: $schema);
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
         $this->validateArchivalAnnotation(schema: $schema);
@@ -857,6 +859,42 @@ class SchemaMapper extends QBMapper
             .'invalid and was ignored (declared match rules not used): '.implode(' ', $messages)
         );
     }//end validateDedupAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-survivorship` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateSurvivorshipAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-survivorship'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-survivorship' => $annotation,
+        ];
+
+        $errors = (new SurvivorshipAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Survivorship is ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed survivorship block must not abort the whole
+        // schema import — the schema still stores objects, the golden record
+        // simply won't be materialised. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-survivorship annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (golden record not materialised): '.implode(' ', $messages)
+        );
+    }//end validateSurvivorshipAnnotation()
 
     /**
      * Validate the optional `x-openregister-notifications` annotation.

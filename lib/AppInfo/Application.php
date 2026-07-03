@@ -150,6 +150,7 @@ use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
@@ -1994,6 +1995,12 @@ class Application extends App implements IBootstrap
         // (see x-openregister-quality). MDM foundation capability.
         $context->registerEventListener(ObjectCreatingEvent::class, QualityScoreOnSaveListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, QualityScoreOnSaveListener::class);
+
+        // Survivorship annotation listener — materialises a declared golden
+        // record + attribute provenance into the object payload before
+        // persistence (see x-openregister-survivorship). MDM capability.
+        $context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
