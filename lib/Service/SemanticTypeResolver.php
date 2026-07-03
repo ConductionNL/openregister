@@ -13,9 +13,14 @@
  * The resolver is deliberately null-safe: when no installed schema implements
  * the URI it returns `null` and NEVER raises, so a property that references a
  * cross-app object kind degrades gracefully when the providing app is absent
- * (ADR-048). When more than one schema implements the same URI it applies a
- * deterministic tie-break and emits a WARN log naming the pick, so ambiguous
- * vocabulary is observable without breaking rendering.
+ * (ADR-048). A schema whose owning register's app is installed but DISABLED is
+ * treated as no provider — its lingering schemas do not resolve. Any schema
+ * that adheres to the requested URI (from a top-level/`configuration`
+ * `x-schema-org` marker, `configuration.jsonld.type`, or `implements[]`) is an
+ * acceptable provider; when more than one matches the resolver keeps a
+ * deterministic pick (first by slug, optionally biased to the consuming
+ * register) and emits a WARN log naming the pick, so ambiguous vocabulary is
+ * observable without breaking rendering.
  *
  * Mirrors the request-scoped-cache + typed-mapper style of
  * {@see \OCA\OpenRegister\Service\RegisterResolverService}.
@@ -46,6 +51,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -77,12 +83,16 @@ final class SemanticTypeResolver
      * @param RegisterMapper       $registerMapper       Register enumeration for register/app resolution + tie-break.
      * @param JsonLdContextService $jsonLdContextService Computes a schema's implemented semantic types.
      * @param LoggerInterface      $logger               Logger for ambiguity WARN.
+     * @param IAppManager|null     $appManager           App manager used to treat a provider whose owning
+     *                                                   app is disabled as unavailable; null-safe (when
+     *                                                   unavailable the app-enabled filter is skipped).
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly JsonLdContextService $jsonLdContextService,
         private readonly LoggerInterface $logger,
+        private readonly ?IAppManager $appManager=null,
     ) {
 
     }//end __construct()
@@ -134,9 +144,19 @@ final class SemanticTypeResolver
         $candidates = [];
         foreach ($schemas as $schema) {
             $implemented = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
-            if (in_array($uri, $implemented, true) === true) {
-                $candidates[] = $schema;
+            if (in_array($uri, $implemented, true) === false) {
+                continue;
             }
+
+            // A provider whose owning register's app is disabled is NOT an
+            // available provider (ADR-048): its schemas may linger in OR after
+            // `occ app:disable`, but the app that gives them meaning is gone, so
+            // resolution must degrade exactly as if no provider were installed.
+            if ($this->isSchemaProvidedByEnabledApp(schema: $schema) === false) {
+                continue;
+            }
+
+            $candidates[] = $schema;
         }
 
         if ($candidates === []) {
@@ -196,6 +216,86 @@ final class SemanticTypeResolver
         return null;
 
     }//end findRegisterForSchema()
+
+    /**
+     * Whether the app that owns a candidate schema is installed AND enabled.
+     *
+     * A schema resolves ONLY when its owning app is enabled — a disabled
+     * provider app degrades to "no provider" even though its schemas may still
+     * linger in OR after `occ app:disable`. The owning app id is taken, in
+     * order, from the schema's own `application` field (the reliable per-schema
+     * signal — a register's `application` column is frequently null in practice)
+     * then the owning register's `application`. Fully null-safe: when the app
+     * manager is unavailable, no owning app id can be determined, or the id is
+     * core OR (`openregister`), the schema is treated as available so this check
+     * never *removes* a provider that no leaf app claimed. Only a concrete owning
+     * app that is NOT enabled filters the schema out.
+     *
+     * @param Schema $schema The candidate provider schema.
+     *
+     * @return bool True when the owning app is enabled (or the check does not apply); false only when a named owning app is disabled.
+     *
+     * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+     *   (Requirement: A disabled provider app degrades to no provider)
+     */
+    private function isSchemaProvidedByEnabledApp(Schema $schema): bool
+    {
+        if ($this->appManager === null) {
+            return true;
+        }
+
+        $appId = $this->owningAppId(schema: $schema);
+        if ($appId === null || $appId === '' || $appId === 'openregister') {
+            return true;
+        }
+
+        try {
+            return $this->appManager->isEnabledForUser($appId);
+        } catch (\Throwable $e) {
+            // Some app entities reject anonymous / user-less contexts; fall back
+            // to install-state so resolution never raises.
+            try {
+                return $this->appManager->isInstalled($appId);
+            } catch (\Throwable $inner) {
+                return true;
+            }
+        }
+
+    }//end isSchemaProvidedByEnabledApp()
+
+    /**
+     * Determine the id of the app that owns a schema, or null when none is
+     * declared.
+     *
+     * Prefers the schema's own `application` field (present and reliable on real
+     * fleet schemas — e.g. `shillinq`), then falls back to the owning register's
+     * `application`. Returns null when neither names an app, in which case the
+     * app-enabled gate does not apply.
+     *
+     * @param Schema $schema The candidate provider schema.
+     *
+     * @return string|null The owning app id, or null when undeclared.
+     */
+    private function owningAppId(Schema $schema): ?string
+    {
+        $appId = $schema->getApplication();
+        if (is_string($appId) === true && $appId !== '') {
+            return $appId;
+        }
+
+        $register = $this->findRegisterForSchema(schema: $schema);
+        if ($register === null) {
+            return null;
+        }
+
+        $registerApp = $register->getApplication();
+        if (is_string($registerApp) === true && $registerApp !== '') {
+            return $registerApp;
+        }
+
+        return null;
+
+    }//end owningAppId()
 
     /**
      * Clear the request-scoped resolve cache. Test hook.

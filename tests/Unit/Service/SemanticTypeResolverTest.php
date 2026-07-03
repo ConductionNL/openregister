@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -52,6 +53,8 @@ class SemanticTypeResolverTest extends TestCase
 
     private LoggerInterface&MockObject $logger;
 
+    private IAppManager&MockObject $appManager;
+
     private SemanticTypeResolver $resolver;
 
     private const ORG_URI = 'https://schema.org/Organization';
@@ -62,14 +65,20 @@ class SemanticTypeResolverTest extends TestCase
         $this->schemaMapper   = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         // Real JsonLdContextService — its implemented-types logic is under test too.
-        $this->jsonLd = new JsonLdContextService($this->createMock(IURLGenerator::class));
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->jsonLd     = new JsonLdContextService($this->createMock(IURLGenerator::class));
+        $this->logger     = $this->createMock(LoggerInterface::class);
+        $this->appManager = $this->createMock(IAppManager::class);
+        // Default: every app enabled, so the app-enabled gate is a no-op unless
+        // a test overrides it (the interesting disabled-app cases do so below).
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $this->appManager->method('isInstalled')->willReturn(true);
 
         $this->resolver = new SemanticTypeResolver(
             schemaMapper: $this->schemaMapper,
             registerMapper: $this->registerMapper,
             jsonLdContextService: $this->jsonLd,
             logger: $this->logger,
+            appManager: $this->appManager,
         );
 
     }//end setUp()
@@ -297,4 +306,118 @@ class SemanticTypeResolverTest extends TestCase
         $this->assertSame('shillinq', $result->getSlug());
 
     }//end testFindRegisterForSchemaMatchesMembership()
+
+
+    public function testDisabledProviderAppDegradesToNull(): void
+    {
+        // Payee implements the URI but its owning app (shillinq) is disabled;
+        // resolution must degrade to null as if no provider were installed. The
+        // owning app is read from the schema's own `application` field — the
+        // reliable per-schema signal on real fleet schemas.
+        $payee = $this->schema(id: 42, slug: 'payee', configuration: ['jsonld' => ['type' => self::ORG_URI]]);
+        $payee->setApplication('shillinq');
+        $this->schemaMapper->method('findAll')->willReturn([$payee]);
+
+        // Fresh app manager so we can assert the disabled outcome.
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('isEnabledForUser')->with('shillinq')->willReturn(false);
+        $resolver = new SemanticTypeResolver(
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            jsonLdContextService: $this->jsonLd,
+            logger: $this->logger,
+            appManager: $appManager,
+        );
+
+        $this->assertNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
+
+    }//end testDisabledProviderAppDegradesToNull()
+
+
+    public function testEnabledProviderAppResolves(): void
+    {
+        // Same shape, but shillinq is enabled → Payee resolves.
+        $payee = $this->schema(id: 42, slug: 'payee', configuration: ['jsonld' => ['type' => self::ORG_URI]]);
+        $payee->setApplication('shillinq');
+        $this->schemaMapper->method('findAll')->willReturn([$payee]);
+
+        $result = $this->resolver->resolveSchemaByImplements(uri: self::ORG_URI);
+
+        $this->assertNotNull($result);
+        $this->assertSame(42, $result->getId());
+
+    }//end testEnabledProviderAppResolves()
+
+
+    public function testDisabledAppDeterminedFromRegisterWhenSchemaHasNoApp(): void
+    {
+        // A schema with no `application` of its own falls back to the owning
+        // register's `application` for the enabled check.
+        $payee = $this->schema(id: 42, slug: 'payee', configuration: ['jsonld' => ['type' => self::ORG_URI]]);
+        $this->schemaMapper->method('findAll')->willReturn([$payee]);
+
+        $reg = $this->register(id: 3, slug: 'shillinq', app: 'shillinq', schemaIds: [42]);
+        $this->registerMapper->method('findAll')->willReturn([$reg]);
+
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('isEnabledForUser')->with('shillinq')->willReturn(false);
+        $resolver = new SemanticTypeResolver(
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            jsonLdContextService: $this->jsonLd,
+            logger: $this->logger,
+            appManager: $appManager,
+        );
+
+        $this->assertNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
+
+    }//end testDisabledAppDeterminedFromRegisterWhenSchemaHasNoApp()
+
+
+    public function testAppEnabledCheckIsNullSafeWithoutAppManager(): void
+    {
+        // With no app manager injected the gate is skipped entirely — a provider
+        // still resolves even though its owning app cannot be queried.
+        $payee = $this->schema(id: 42, slug: 'payee', configuration: ['jsonld' => ['type' => self::ORG_URI]]);
+        $this->schemaMapper->method('findAll')->willReturn([$payee]);
+
+        $resolver = new SemanticTypeResolver(
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            jsonLdContextService: $this->jsonLd,
+            logger: $this->logger,
+            appManager: null,
+        );
+
+        $result = $resolver->resolveSchemaByImplements(uri: self::ORG_URI);
+        $this->assertNotNull($result);
+        $this->assertSame(42, $result->getId());
+
+    }//end testAppEnabledCheckIsNullSafeWithoutAppManager()
+
+
+    public function testCoreOpenregisterAppNotFilteredOut(): void
+    {
+        // A provider owned by core `openregister` must never be filtered out by
+        // the app-enabled gate, regardless of the app manager's answer.
+        $payee = $this->schema(id: 42, slug: 'payee', configuration: ['jsonld' => ['type' => self::ORG_URI]]);
+        $this->schemaMapper->method('findAll')->willReturn([$payee]);
+
+        $reg = $this->register(id: 1, slug: 'core', app: 'openregister', schemaIds: [42]);
+        $this->registerMapper->method('findAll')->willReturn([$reg]);
+
+        // Even if isEnabledForUser said false, the 'openregister' short-circuit wins.
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('isEnabledForUser')->willReturn(false);
+        $resolver = new SemanticTypeResolver(
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            jsonLdContextService: $this->jsonLd,
+            logger: $this->logger,
+            appManager: $appManager,
+        );
+
+        $this->assertNotNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
+
+    }//end testCoreOpenregisterAppNotFilteredOut()
 }//end class
