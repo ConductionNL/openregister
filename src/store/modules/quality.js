@@ -8,7 +8,10 @@
  * `generateUrl`, no custom store base class. The read-only actions are
  * GET-only passthroughs; the merge actions (`previewMerge`, `executeMerge`,
  * `fetchMergeOperations`, `reverseMerge`) are thin wrappers over the
- * already-merged MDM merge engine (#B) — no merge/survivorship logic lives
+ * already-merged MDM merge engine (#B); the conflict-resolution actions
+ * (`setAttributeOverride`, `clearAttributeOverride`, `persistTrustRule`) are
+ * thin wrappers over the per-object override endpoint (#E) and the generic
+ * object CRUD surface (ADR-022) — no merge/survivorship logic lives
  * client-side.
  *
  * @package
@@ -18,6 +21,7 @@
  *
  * @spec openspec/changes/mdm-frontend/tasks.md#task-1.1
  * @spec openspec/changes/mdm-merge-ui/tasks.md#task-1
+ * @spec openspec/changes/mdm-survivorship-override/tasks.md#2.1
  */
 
 import { defineStore } from 'pinia'
@@ -398,6 +402,124 @@ export const useQualityStore = defineStore('quality', {
 			} catch (e) {
 				this.error = e.response?.data?.error ?? e.message ?? 'Failed to reverse merge'
 				console.error('[quality.reverseMerge]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Set (with a value) or clear (with `clear: true`) one attribute
+		 * override on a master object via the survivorship override endpoint
+		 * (#E). The endpoint triggers a recompute server-side; the caller is
+		 * responsible for refreshing the golden record afterwards.
+		 *
+		 * @param {string|number} id        Master object id/uuid.
+		 * @param {string} attribute        Attribute name to override.
+		 * @param {*} value                 Winning value to pin.
+		 * @param {string} [rationale]      Optional steward rationale.
+		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-setattributeoverride-posts-to-the-override-endpoint
+		 */
+		async setAttributeOverride(id, attribute, value, rationale) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.post(
+					`${API_BASE}/objects/survivorship/${encodeURIComponent(id)}/override`,
+					{ attribute, value, rationale },
+				)
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to set the attribute override'
+				console.error('[quality.setAttributeOverride]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Clear a previously-set attribute override, falling back to
+		 * tier-based resolution for that attribute on recompute.
+		 *
+		 * @param {string|number} id   Master object id/uuid.
+		 * @param {string} attribute   Attribute name whose override to clear.
+		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-survivorship/spec.md#scenario-clearing-an-override-falls-back-to-trust-resolution
+		 */
+		async clearAttributeOverride(id, attribute) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.post(
+					`${API_BASE}/objects/survivorship/${encodeURIComponent(id)}/override`,
+					{ attribute, clear: true },
+				)
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to clear the attribute override'
+				console.error('[quality.clearAttributeOverride]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Persist a `trustConfiguration` row for an (entityType, attribute,
+		 * sourceSystem) tuple via the generic `/api/objects` CRUD surface
+		 * (ADR-022) — no bespoke trust-rule endpoint.
+		 *
+		 * @param {object} params              Trust-rule fields.
+		 * @param {string} params.entityType   Entity type the rule applies to.
+		 * @param {string} params.attribute    Attribute the rule applies to.
+		 * @param {string} params.sourceSystem Source system the rule applies to.
+		 * @param {string} params.trustTier    Winning trust tier for this tuple.
+		 * @param {string} [params.rationale]  Optional steward rationale.
+		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-persisttrustrule-creates-a-trust-configuration-object
+		 */
+		async persistTrustRule({ entityType, attribute, sourceSystem, trustTier, rationale }) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.post(
+					`${API_BASE}/objects/trust-configuration/trustConfiguration`,
+					{ entityType, attribute, sourceSystem, trustTier, rationale },
+				)
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to persist the trust rule'
+				console.error('[quality.persistTrustRule]', e)
+				throw e
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Touch-save a master object (empty PATCH) via the generic object
+		 * CRUD surface (ADR-022) so its `SurvivorshipRecomputeListener`
+		 * recompute runs against freshly-persisted trust rows. Used after a
+		 * persistent trust-rule write, which does not itself touch the
+		 * master object and therefore would not otherwise trigger a
+		 * recompute of this object's golden record (design.md).
+		 *
+		 * @param {string|number} register Register reference.
+		 * @param {string|number} schema   Schema reference.
+		 * @param {string|number} id       Master object id/uuid.
+		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
+		 */
+		async touchObject(register, schema, id) {
+			this.loading = true
+			this.error = null
+			try {
+				const response = await axios.patch(
+					`${API_BASE}/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`,
+					{},
+				)
+				return response.data
+			} catch (e) {
+				this.error = e.response?.data?.error ?? e.message ?? 'Failed to recompute the master object'
+				console.error('[quality.touchObject]', e)
 				throw e
 			} finally {
 				this.loading = false

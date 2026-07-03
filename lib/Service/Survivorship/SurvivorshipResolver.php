@@ -40,6 +40,14 @@ use Throwable;
  * records, driven entirely by the `x-openregister-survivorship` config.
  *
  * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class owns the full
+ *   pure resolution pipeline (candidate collection, tier ranking, tie-break,
+ *   freshness decay, AND now per-object override short-circuiting) as one
+ *   cohesive, side-effect-free algorithm per the spec; splitting the override
+ *   short-circuit into a separate collaborator would scatter one resolution
+ *   contract across two classes for a step that is intrinsically the last
+ *   stage of the same pipeline (ADR-045 #E design.md D1/D2).
  */
 class SurvivorshipResolver
 {
@@ -70,7 +78,8 @@ class SurvivorshipResolver
      *
      * Never throws: a malformed source record (non-array, or one that raises
      * while being processed) is simply skipped so one bad record cannot
-     * abort the whole resolution.
+     * abort the whole resolution. Likewise a malformed override map (or
+     * malformed override entry) is skipped without throwing.
      *
      * @param string                           $entityType    Entity type (passed through to the trust lookup; never hardcoded).
      * @param array<int, array<string, mixed>> $sourceRecords Linked source records.
@@ -78,10 +87,14 @@ class SurvivorshipResolver
      * @param array<int, array<string, mixed>> $trustRows     Candidate trust-configuration rows.
      * @param TrustTierResolver                $trustResolver Pure trust-tier lookup + decay engine.
      * @param DateTimeImmutable                $asOf          Reference instant for effectiveFrom + decay.
+     * @param mixed                            $overrides     Optional per-object attribute-override map
+     *                                                        (`attribute => {value, overriddenBy, rationale?}`
+     *                                                        or a bare `attribute => value` shorthand);
+     *                                                        untrusted input, validated defensively.
      *
      * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
      *
-     * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
+     * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
      */
     public function resolveGoldenRecord(
         string $entityType,
@@ -89,7 +102,8 @@ class SurvivorshipResolver
         array $config,
         array $trustRows,
         TrustTierResolver $trustResolver,
-        DateTimeImmutable $asOf
+        DateTimeImmutable $asOf,
+        mixed $overrides=null
     ): array {
         $tierOrder   = $this->tierOrder(config: $config);
         $defaultTier = (string) ($config['defaultTier'] ?? self::DEFAULT_TIER);
@@ -108,6 +122,8 @@ class SurvivorshipResolver
             asOf: $asOf
         );
 
+        $overrideMap = $this->normaliseOverrides(overrides: $overrides);
+
         $goldenRecord = [];
         $provenance   = [];
         foreach ($candidates as $attribute => $options) {
@@ -125,11 +141,105 @@ class SurvivorshipResolver
             ];
         }
 
+        // Overrides short-circuit tier selection unconditionally — an override
+        // can also populate an attribute no source supplies at all.
+        foreach ($overrideMap as $attribute => $override) {
+            $goldenRecord[$attribute] = $override['value'];
+            $provenance[$attribute]   = [
+                'value'        => $override['value'],
+                'override'     => true,
+                'overriddenBy' => $override['overriddenBy'],
+                'rationale'    => $override['rationale'],
+            ];
+        }
+
         return [
             'goldenRecord'        => $goldenRecord,
             'attributeProvenance' => $provenance,
         ];
     }//end resolveGoldenRecord()
+
+    /**
+     * Normalise a raw override map into `attribute => {value, overriddenBy,
+     * rationale}` entries, silently dropping malformed entries. Accepts
+     * either the canonical `attribute => {value, overriddenBy?, rationale?}`
+     * shape or a bare `attribute => value` shorthand (`overriddenBy` then
+     * defaults to an empty string).
+     *
+     * @param mixed $overrides Raw override map (untrusted; may be non-array or malformed).
+     *
+     * @return array<string, array{value: mixed, overriddenBy: string, rationale: string|null}>
+     *
+     * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+     */
+    private function normaliseOverrides(mixed $overrides): array
+    {
+        if (is_array($overrides) === false) {
+            return [];
+        }
+
+        $clean = [];
+        foreach ($overrides as $attribute => $entry) {
+            if (is_string($attribute) === false || $attribute === '') {
+                continue;
+            }
+
+            try {
+                $normalised = $this->normaliseOverrideEntry(entry: $entry);
+            } catch (Throwable) {
+                // A malformed override entry must never abort resolution of the rest.
+                continue;
+            }
+
+            if ($normalised !== null) {
+                $clean[$attribute] = $normalised;
+            }
+        }//end foreach
+
+        return $clean;
+    }//end normaliseOverrides()
+
+    /**
+     * Normalise a single override entry, accepting either the canonical
+     * `{value, overriddenBy?, rationale?}` shape or a bare scalar-value
+     * shorthand. Returns null when the entry is malformed or its value is
+     * not present (the caller then drops it from the override map).
+     *
+     * @param mixed $entry Raw override entry (untrusted; may be malformed).
+     *
+     * @return array{value: mixed, overriddenBy: string, rationale: string|null}|null
+     *
+     * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+     */
+    private function normaliseOverrideEntry(mixed $entry): ?array
+    {
+        if (is_array($entry) === true) {
+            if (array_key_exists('value', $entry) === false || $this->isPresent(value: $entry['value']) === false) {
+                return null;
+            }
+
+            $rationale = null;
+            if (($entry['rationale'] ?? null) !== null) {
+                $rationale = (string) $entry['rationale'];
+            }
+
+            return [
+                'value'        => $entry['value'],
+                'overriddenBy' => (string) ($entry['overriddenBy'] ?? ''),
+                'rationale'    => $rationale,
+            ];
+        }
+
+        if ($this->isPresent(value: $entry) === true) {
+            return [
+                'value'        => $entry,
+                'overriddenBy' => '',
+                'rationale'    => null,
+            ];
+        }
+
+        return null;
+    }//end normaliseOverrideEntry()
 
     /**
      * Collect, per attribute, the competing candidate values across all
