@@ -2257,26 +2257,54 @@ class ObjectsControllerTest extends TestCase
     }
 
     /**
-     * Test create() with no user session — anonymous writes must be rejected.
+     * Test create() with no user session — RBAC (not a getUser() guard) is the
+     * sole authorization layer for anonymous callers.
      *
-     * Pre-wave-3-C13 this test asserted 201 (anonymous create succeeded).
-     * The C13 fix short-circuits anonymous writes with 401 BEFORE the webhook
-     * intercept runs — see ObjectsController::create(). The test is preserved
-     * as a regression guard: if someone accidentally removes the auth guard,
-     * this test (and testCreateRejectsAnonymousWith401) will catch it.
+     * Historically (pre-#195) create() short-circuited with a 401 the moment
+     * getUser() returned null, before the webhook intercept or saveObject ran.
+     * Commit 54da00a98 ("fix(objects): stop publish/depublish failing with
+     * spurious unlock 403 (#195)") deliberately removed that guard: OpenRegister
+     * enforces its own per-object RBAC, which is the intended sole authorization
+     * layer, and the RBAC schema can legitimately permit anonymous create. This
+     * test now asserts the current contract: an anonymous caller reaches
+     * saveObject() with _rbac=true (RBAC enabled, since isCurrentUserAdmin()
+     * is false for a null user) and a successful save still returns 201.
      */
-    public function testCreateWithNoUserSessionReturns401(): void
+    public function testCreateWithNoUserSessionDelegatesToRbacAndReturns201(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
 
-        // The mocks below are intentionally left untouched — none of them
-        // should be reached because the anonymous guard short-circuits.
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Public']);
+
         $this->request->method('getParams')->willReturn(['title' => 'Public']);
         $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        // RBAC is the sole authorization layer: assert saveObject is invoked
+        // with _rbac=true (anonymous is never treated as admin) rather than
+        // asserting a hardcoded 401 short-circuit. saveObject()'s signature is
+        // (object, extend, register, schema, uuid, _rbac, _multitenancy, ...),
+        // so _rbac is the 6th positional argument.
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                true,
+                true
+            )
+            ->willReturn($objectEntity);
 
         $result = $this->controller->create('1', '2', $this->objectService);
 
-        $this->assertSame(401, $result->getStatus());
+        $this->assertSame(201, $result->getStatus());
     }
 
     // =========================================================================
@@ -6865,19 +6893,27 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
-    // Wave-3 C13: anonymous-write must not reach the webhook intercept
+    // Anonymous callers on create()/postPatch(): RBAC is the sole
+    // authorization layer (commit 54da00a98, "fix(objects): stop
+    // publish/depublish failing with spurious unlock 403 (#195)").
     //
     // ObjectsController::create() and postPatch() are #[PublicPage] so that
     // anonymous reads can survive an app-group restriction (per
-    // /openspec/.../register-schema-read-accessibility). The bug: writes
-    // shared that public attribute, AND the create() handler invoked
-    // webhookService->interceptRequest() before any auth/RBAC check. Result:
-    // an anonymous POST would fire the pre-event webhook (with side effects
-    // in n8n flows, file ingest, audit logs) BEFORE the request was rejected.
-    //
-    // The fix short-circuits anonymous callers at the top of create() and
-    // postPatch() with a 401, BEFORE the webhook intercept runs. These tests
-    // verify (a) anonymous gets 401, (b) the webhook is never invoked.
+    // /openspec/.../register-schema-read-accessibility). An earlier revision
+    // (wave-3-C13) additionally short-circuited anonymous writes with a 401
+    // BEFORE the webhook intercept / RBAC check ran. That guard was
+    // deliberately removed by #195: OpenRegister enforces its own per-object
+    // RBAC, which is the intended sole authorization layer, and a
+    // getUser()===null guard blocked RBAC-configured anonymous mutations
+    // before RBAC was ever consulted (the RBAC schema can legitimately permit
+    // anonymous create/patch). There is no distinct "anonymous short-circuit"
+    // behavior left to regression-guard in this controller; these tests now
+    // verify (a) the webhook intercept and saveObject/findSilent DO run for
+    // anonymous callers, and (b) authorization is delegated to
+    // ObjectService::saveObject via the _rbac/_multitenancy flags (true for
+    // anonymous, since isCurrentUserAdmin() is false for a null user), and
+    // (c) an RBAC denial surfaced by ObjectService as an exception still maps
+    // to the controller's existing error responses.
     // =========================================================================
 
     /**
@@ -6888,60 +6924,161 @@ class ObjectsControllerTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
     }
 
-    public function testCreateRejectsAnonymousWith401(): void
+    public function testCreateAnonymousInvokesWebhookIntercept(): void
     {
+        // No pre-webhook short-circuit exists anymore: the webhook intercept
+        // MUST run for anonymous callers exactly like any other caller.
         $this->setupAnonymousUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Public']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willReturn($objectEntity);
+
+        $this->webhookService->expects($this->once())
+            ->method('interceptRequest')
+            ->willReturn(['title' => 'Public']);
 
         $result = $this->controller->create('reg', 'schema', $this->objectService);
 
-        $this->assertSame(401, $result->getStatus());
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    public function testCreateAnonymousDelegatesAuthorizationToRbacFlags(): void
+    {
+        // Authorization for anonymous callers is delegated entirely to
+        // ObjectService::saveObject via the _rbac/_multitenancy flags, not to
+        // a controller-level identity check. isCurrentUserAdmin() is false
+        // for a null user, so _rbac must be true (RBAC enabled/enforced).
+        $this->setupAnonymousUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Public']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+
+        // saveObject()'s signature is
+        // (object, extend, register, schema, uuid, _rbac, _multitenancy, ...);
+        // _rbac/_multitenancy are the 6th/7th positional arguments.
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                true,
+                true
+            )
+            ->willReturn($objectEntity);
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    public function testCreateAnonymousRbacDenialReturns403(): void
+    {
+        // Exercises the real RBAC-denial path: ObjectService::saveObject is
+        // the sole authorization layer, so when RBAC rejects an anonymous
+        // create it throws a generic \Exception, which create()'s existing
+        // catch (\Exception $exception) block (see ObjectsController::create(),
+        // the block after FolderAccessDeniedException) maps to a 403.
+        $this->setupAnonymousUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new Exception('RBAC: anonymous create not permitted for this schema'));
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(403, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('error', $data);
     }
 
-    public function testCreateAnonymousDoesNotInvokeWebhookIntercept(): void
+    public function testPostPatchAnonymousInvokesFindSilentAndSaveObject(): void
     {
-        // The whole point of the C13 fix: webhook MUST NOT fire for
-        // unauthenticated writes — even though the endpoint is @PublicPage.
+        // No pre-lookup short-circuit exists anymore: findSilent()/saveObject()
+        // MUST run for anonymous callers exactly like any other caller.
         $this->setupAnonymousUser();
 
-        $this->webhookService->expects($this->never())->method('interceptRequest');
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-1');
+        $existingObject->setObject(['title' => 'Old']);
 
-        $result = $this->controller->create('reg', 'schema', $this->objectService);
+        $patchedObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $patchedObject->setUuid('uuid-1');
+        $patchedObject->setObject(['title' => 'PostPatched']);
 
-        $this->assertSame(401, $result->getStatus());
-    }
+        $this->request->method('getParams')->willReturn(['title' => 'PostPatched']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
 
-    public function testCreateAnonymousDoesNotInvokeSaveObject(): void
-    {
-        $this->setupAnonymousUser();
-
-        // Sanity: the request short-circuits before any business logic.
-        $this->objectService->expects($this->never())->method('saveObject');
-
-        $result = $this->controller->create('reg', 'schema', $this->objectService);
-
-        $this->assertSame(401, $result->getStatus());
-    }
-
-    public function testPostPatchRejectsAnonymousWith401(): void
-    {
-        $this->setupAnonymousUser();
+        $this->objectService->expects($this->once())
+            ->method('findSilent')
+            ->willReturn($existingObject);
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturn($patchedObject);
+        $this->objectService->method('unlockObject')->willReturn(true);
 
         $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
 
-        $this->assertSame(401, $result->getStatus());
+        $this->assertSame(200, $result->getStatus());
     }
 
-    public function testPostPatchAnonymousDoesNotInvokeSaveObject(): void
+    public function testPostPatchAnonymousRbacDenialReturns500WithoutLeakingDetail(): void
     {
+        // Exercises the real RBAC-denial path for postPatch(): saveObject()
+        // is the sole authorization layer, so an RBAC rejection surfaces as a
+        // generic \Exception. Unlike create(), postPatch()'s
+        // catch (\Exception $exception) block routes through
+        // HandlesExceptionsTrait::errorResponse() (SEC-CTRL-7): it returns a
+        // generic 500 envelope and never echoes the real exception message to
+        // the client. See ObjectsController::postPatch().
         $this->setupAnonymousUser();
 
-        $this->objectService->expects($this->never())->method('saveObject');
-        $this->objectService->expects($this->never())->method('findSilent');
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-1');
+        $existingObject->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'PostPatched']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new Exception('RBAC: anonymous patch not permitted for this schema'));
 
         $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
 
-        $this->assertSame(401, $result->getStatus());
+        $this->assertSame(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame('Internal server error', $data['error']);
     }
 }

@@ -90,9 +90,10 @@ class TagsController extends Controller
      *
      * @PublicPage
      *
-     * @return JSONResponse JSON response with all tags
+     * @return JSONResponse JSON response with all tags, or a 401 error
+     *                       envelope when no user is authenticated.
      *
-     * @psalm-return JSONResponse<200, list<string>, array<never, never>>
+     * @psalm-return JSONResponse<200, list<string>, array<never, never>>|JSONResponse<401, array{error: string}, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
