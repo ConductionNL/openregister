@@ -581,8 +581,8 @@ export default {
 					// Check if a different vector backend is configured
 					let performanceNote = db.performanceNote
 					let vectorSupport = db.vectorSupport
-					let displayType = db.type || 'Unknown'
-					let displayVersion = db.version || 'Unknown'
+					const displayType = db.type || 'Unknown'
+					const displayVersion = db.version || 'Unknown'
 
 					// Check LLM settings for vector backend
 					let recommendedPlugin = db.recommendedPlugin
