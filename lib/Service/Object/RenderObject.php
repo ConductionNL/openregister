@@ -555,6 +555,100 @@ class RenderObject
     }//end attachLightweightFilesToRows()
 
     /**
+     * Resolve translatable properties on a batch of un-rendered list rows.
+     *
+     * List pipelines that bypass the full renderEntity pipeline (the cheap-path
+     * when no extend/fields/filter/unset is requested) never resolve translatable
+     * properties, so translatable fields come back as raw language-keyed maps
+     * (e.g. `{"nl":"Foo","en":"Bar"}`) instead of the single projected string the
+     * single-object read path returns. This method closes that gap by delegating
+     * each row to TranslationHandler::resolveTranslationsForRender(), mirroring
+     * the resolution done in renderEntity().
+     *
+     * Behaviour:
+     * - No-op when the request opts in to `?_translations=all` and when the row's
+     *   schema declares no translatable properties (both early-return inside the
+     *   translation handler), so there is no cost for non-translatable schemas.
+     * - Multi-schema results resolve each row against ITS OWN schema and register.
+     *
+     * Shape-tolerant: rows may be ObjectEntity instances or serialized arrays.
+     * Rows whose schema cannot be resolved are left untouched.
+     *
+     * @param array $rows Result rows by reference. Each row is mutated in place.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    public function resolveTranslationsForRows(array &$rows): void
+    {
+        if (empty($rows) === true) {
+            return;
+        }
+
+        // Fast global skip: when `?_translations=all` is requested, no projection
+        // happens at all — resolveTranslationsForRender early-returns per row, but
+        // we short-circuit here to avoid resolving schemas/registers needlessly.
+        if ($this->languageService->shouldReturnAllTranslations() === true) {
+            return;
+        }
+
+        foreach ($rows as &$row) {
+            if ($row instanceof ObjectEntity === true) {
+                $schemaId = $row->getSchema();
+                if ($schemaId === null) {
+                    continue;
+                }
+
+                $schema = $this->getSchema(id: $schemaId);
+                if ($schema === null) {
+                    continue;
+                }
+
+                $registerId = $row->getRegister();
+                $register   = null;
+                if ($registerId !== null) {
+                    $register = $this->getRegister(id: $registerId);
+                }
+
+                $resolved = $this->translationHandler->resolveTranslationsForRender(
+                    objectData: $row->getObject(),
+                    schema: $schema,
+                    register: $register
+                );
+                $row->setObject($resolved);
+                continue;
+            }//end if
+
+            if (is_array($row) === true) {
+                $schemaId = $row['@self']['schema'] ?? null;
+                if (is_int($schemaId) === false && is_string($schemaId) === false) {
+                    continue;
+                }
+
+                $schema = $this->getSchema(id: $schemaId);
+                if ($schema === null) {
+                    continue;
+                }
+
+                $registerId = $row['@self']['register'] ?? null;
+                $register   = null;
+                if (is_int($registerId) === true || is_string($registerId) === true) {
+                    $register = $this->getRegister(id: $registerId);
+                }
+
+                $row = $this->translationHandler->resolveTranslationsForRender(
+                    objectData: $row,
+                    schema: $schema,
+                    register: $register
+                );
+            }//end if
+        }//end foreach
+
+        unset($row);
+    }//end resolveTranslationsForRows()
+
+    /**
      * Extract the UUID from a list-row of unknown shape (ObjectEntity or array).
      *
      * @param mixed $row The row to inspect.

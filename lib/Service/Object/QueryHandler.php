@@ -466,6 +466,16 @@ class QueryHandler
             $filesStart = microtime(true);
             $this->renderHandler->attachLightweightFilesToRows(rows: $results);
             $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+
+            // Cheap path also skips renderEntity, which is where translatable
+            // properties get projected to the negotiated language. Without this,
+            // list rows return raw language-keyed maps (e.g. {"nl":...}) while the
+            // single-object read returns a projected string. Resolve them here so
+            // both paths agree. No-op for `?_translations=all` and for schemas with
+            // no translatable properties (both early-return in the handler).
+            $translateStart = microtime(true);
+            $this->renderHandler->resolveTranslationsForRows(rows: $results);
+            $metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
         }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).
