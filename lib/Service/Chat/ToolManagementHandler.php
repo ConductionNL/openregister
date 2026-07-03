@@ -220,25 +220,6 @@ class ToolManagementHandler
     }//end convertToolsToFunctions()
 
     /**
-     * Convert array-based function definitions to FunctionInfo objects
-     *
-     * Converts the array format returned by Tool classes into
-     * FunctionInfo objects that LLPhant expects for setTools().
-     * Includes the tool instance so LLPhant can call methods directly.
-     *
-     * @param array $functions Array of function definitions.
-     * @param array $tools     Tool instances that have the methods.
-     *
-     * @return array Array of FunctionInfo objects
-     *
-     * @psalm-return list<FunctionInfo>
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-chat-ai/tasks.md#task-1
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types
-     */
-    /**
      * Convert a single JSON-schema property into an LLPhant Parameter.
      *
      * LLPhant's formatters require `itemsOrProperties` to be either a STRING
@@ -270,7 +251,7 @@ class ToolManagementHandler
                 // Ollama rejects with "Value looks like object, but can't find
                 // closing '}'". Represent it as a JSON string the model fills.
                 $type        = 'string';
-                $description = ($description === '') ? 'A JSON object.' : ($description.' (pass as a JSON object).');
+                $description = $this->freeFormObjectDescription(description: $description);
             } else {
                 $itemsOrProperties = $properties;
             }
@@ -300,6 +281,23 @@ class ToolManagementHandler
     }//end schemaToParameter()
 
     /**
+     * Build the description used when a free-form object (no declared
+     * sub-properties) is represented as a JSON string instead.
+     *
+     * @param string $description Original property description (may be empty).
+     *
+     * @return string Description guiding the model to pass a JSON object.
+     */
+    private function freeFormObjectDescription(string $description): string
+    {
+        if ($description === '') {
+            return 'A JSON object.';
+        }
+
+        return ($description.' (pass as a JSON object).');
+    }//end freeFormObjectDescription()
+
+    /**
      * Convert a JSON-schema `properties` map into an array of Parameter objects.
      *
      * @param array<string,mixed> $properties The properties map (name => schema).
@@ -310,9 +308,14 @@ class ToolManagementHandler
     {
         $out = [];
         foreach ($properties as $propName => $propDef) {
+            $propDefArray = [];
+            if (is_array($propDef) === true) {
+                $propDefArray = $propDef;
+            }
+
             $out[] = $this->schemaToParameter(
                 name: (string) $propName,
-                def: (is_array($propDef) === true) ? $propDef : []
+                def: $propDefArray
             );
         }
 
@@ -320,6 +323,25 @@ class ToolManagementHandler
 
     }//end propertiesToParameters()
 
+    /**
+     * Convert array-based function definitions to FunctionInfo objects
+     *
+     * Converts the array format returned by Tool classes into
+     * FunctionInfo objects that LLPhant expects for setTools().
+     * Includes the tool instance so LLPhant can call methods directly.
+     *
+     * @param array $functions Array of function definitions.
+     * @param array $tools     Tool instances that have the methods.
+     *
+     * @return array Array of FunctionInfo objects
+     *
+     * @psalm-return list<FunctionInfo>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-chat-ai/tasks.md#task-1
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types
+     */
     public function convertFunctionsToFunctionInfo(array $functions, array $tools): array
     {
         $functionInfoObjects = [];
@@ -331,9 +353,14 @@ class ToolManagementHandler
 
             if (($func['parameters']['properties'] ?? null) !== null) {
                 foreach ($func['parameters']['properties'] as $paramName => $paramDef) {
+                    $paramDefArray = [];
+                    if (is_array($paramDef) === true) {
+                        $paramDefArray = $paramDef;
+                    }
+
                     $parameters[] = $this->schemaToParameter(
                         name: (string) $paramName,
-                        def: (is_array($paramDef) === true) ? $paramDef : []
+                        def: $paramDefArray
                     );
                 }//end foreach
             }//end if

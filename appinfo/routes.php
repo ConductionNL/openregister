@@ -302,6 +302,14 @@ return [
         // Aggregations sugar endpoint — named annotation surface.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
 
+        // MDM read-only surface — quality statistics + lowest-quality listing
+        // (must be ordered BEFORE the bare {register}/{schema} listing so the
+        // literal /stats segment matches first).
+        ['name' => 'quality#stats', 'url' => '/api/objects/quality/{register}/{schema}/stats', 'verb' => 'GET'],
+        ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
+        // MDM read-only surface — duplicate-candidate listing.
+        ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
 

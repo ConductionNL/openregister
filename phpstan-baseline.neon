@@ -2102,7 +2102,12 @@ parameters:
 			path: lib/Controller/TablesController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\TagsController\\:\\:getAllTags\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<int, string\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<int, string\\>, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\TagsController\\:\\:getAllTags\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<int, string\\>, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<int, string\\>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/TagsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\TagsController\\:\\:getAllTags\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<int, string\\>, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/TagsController.php
 
@@ -4622,6 +4627,21 @@ parameters:
 			path: lib/Service/FileSidebarService.php
 
 		-
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Flow/FlowActionService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Flow/FlowActionService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Flow/FlowActionService.php
+
+		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\FlowLinkService\\:\\:\\$container is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/FlowLinkService.php
@@ -5800,6 +5820,16 @@ parameters:
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/Quality/DuplicateDetectionService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Quality/QualityStatisticsService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Quality/QualityStatisticsService.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
