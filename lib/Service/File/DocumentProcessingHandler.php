@@ -1140,7 +1140,10 @@ class DocumentProcessingHandler
                     if (method_exists($element, 'getText') === true && method_exists($element, 'setText') === true) {
                         $text = $element->getText();
                         foreach ($replacements as $original => $replacement) {
-                            $text = str_ireplace($original, $replacement, $text);
+                            // Cast $original to string: PHP silently coerces numeric-string
+                            // array keys (e.g. a 9-digit BSN) to int, and str_ireplace()
+                            // rejects an int as its $search argument.
+                            $text = str_ireplace((string) $original, $replacement, $text);
                         }
 
                         $element->setText($text);
@@ -1235,6 +1238,20 @@ class DocumentProcessingHandler
             $outputTempFile = tempnam(sys_get_temp_dir(), 'openregister_word_output_');
             IOFactory::createWriter($phpWord, 'Word2007')->save($outputTempFile);
 
+            // PhpWord roundtrip-safety workaround for the soft-line-break bug
+            // (PHPOffice/PHPWord issue #1274, open since 2018 and unfixed even
+            // on master). The Word2007 writer emits a soft line break as a BARE
+            // <w:br/> placed directly under <w:p> — a sibling of the runs —
+            // instead of wrapping it in a run as <w:r><w:br/></w:r>. PhpWord's
+            // own Word2007 reader (Reader\Word2007\AbstractPart::readRun) only
+            // recognises <w:br/> that sits INSIDE a <w:r>, so every soft break
+            // is silently dropped the next time the document is loaded — e.g.
+            // by the docx→PDF conversion — collapsing multi-line blocks onto a
+            // single line. We correct the writer's OWN output here (never
+            // PhpWord's source, so there is no fork to maintain); the pass is
+            // idempotent and self-deletes as a concern once #1274 is fixed.
+            $this->wrapSoftLineBreaksInRuns($outputTempFile);
+
             // Get the parent folder and create the new file.
             $parentFolder = $node->getParent();
             if ($parentFolder->nodeExists($outputName) === true) {
@@ -1277,6 +1294,80 @@ class DocumentProcessingHandler
             throw new Exception('Failed to replace words in Word document: '.$e->getMessage(), 0, $e);
         }//end try
     }//end replaceWordsInWordDocument()
+
+
+    /**
+     * Wrap bare `<w:br/>` soft line breaks in a run inside a saved .docx.
+     *
+     * Works around PHPOffice/PHPWord issue #1274: the Word2007 writer emits a
+     * soft line break as a bare `<w:br/>` directly under `<w:p>`, which its own
+     * reader ignores (only `<w:br/>` inside a `<w:r>` is read), so the break is
+     * lost on the next load. This rewrites the run-content XML parts of the
+     * just-written document so every `<w:br .../>` is wrapped as
+     * `<w:r><w:br .../></w:r>`, which both PhpWord and Word read correctly.
+     *
+     * The transform is idempotent: an already-wrapped break is first unwrapped
+     * and then re-wrapped, so running it more than once (or after PhpWord is
+     * eventually fixed) yields the same result and never nests runs. Only the
+     * main document, header and footer parts are touched.
+     *
+     * @param string $docxPath Absolute path to the .docx file to fix in place.
+     *
+     * @return void
+     */
+    private function wrapSoftLineBreaksInRuns(string $docxPath): void
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($docxPath) !== true) {
+            return;
+        }
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if ($name === false
+                || preg_match('#^word/(document|header\d*|footer\d*)\.xml$#', $name) !== 1
+            ) {
+                continue;
+            }
+
+            $xml = $zip->getFromName($name);
+            if ($xml === false || strpos($xml, '<w:br') === false) {
+                continue;
+            }
+
+            $fixed = $this->wrapSoftLineBreaksInXml($xml);
+            if ($fixed !== $xml) {
+                $zip->addFromString($name, $fixed);
+            }
+        }
+
+        $zip->close();
+
+    }//end wrapSoftLineBreaksInRuns()
+
+
+    /**
+     * Wrap bare `<w:br .../>` elements in a `<w:r>` within a WordprocessingML
+     * XML string. Pure string transform, extracted for testability.
+     *
+     * Idempotent: any break already wrapped in a run is normalised (unwrapped)
+     * first, so the result contains exactly one run wrapper per break and never
+     * nests runs.
+     *
+     * @param string $xml A WordprocessingML part (document/header/footer).
+     *
+     * @return string The same XML with every break wrapped as `<w:r><w:br .../></w:r>`.
+     */
+    private function wrapSoftLineBreaksInXml(string $xml): string
+    {
+        // 1. Unwrap any break that is the sole content of a run, so the wrap in
+        // step 2 cannot double-nest it (keeps the pass idempotent).
+        $xml = preg_replace('#<w:r>\s*(<w:br(?:\s[^>]*)?/>)\s*</w:r>#', '$1', $xml) ?? $xml;
+
+        // 2. Wrap every bare break in a run.
+        return preg_replace('#<w:br(?:\s[^>]*)?/>#', '<w:r>$0</w:r>', $xml) ?? $xml;
+
+    }//end wrapSoftLineBreaksInXml()
 
     /**
      * Replace words in a text-based document.
