@@ -48,6 +48,10 @@ import ReportsIndex from './views/reports/ReportsIndex.vue'
 import ReportView from './views/reports/ReportView.vue'
 import FeaturesRoadmapIndex from './views/roadmap/FeaturesRoadmapIndex.vue'
 import IntegrationsView from './views/integration/IntegrationsView.vue'
+import QualityIndex from './views/quality/QualityIndex.vue'
+import DuplicatesIndex from './views/quality/DuplicatesIndex.vue'
+import MasterEntitiesIndex from './views/quality/MasterEntitiesIndex.vue'
+import QueueHealthIndex from './views/quality/QueueHealthIndex.vue'
 
 /**
  * Wrap a Vue component into the v2 registry shape required by CnAppRoot's
@@ -95,4 +99,8 @@ export default {
 	ReportView: page(ReportView),
 	FeaturesRoadmapIndex: page(FeaturesRoadmapIndex),
 	IntegrationsView: page(IntegrationsView),
+	QualityIndex: page(QualityIndex),
+	DuplicatesIndex: page(DuplicatesIndex),
+	MasterEntitiesIndex: page(MasterEntitiesIndex),
+	QueueHealthIndex: page(QueueHealthIndex),
 }
