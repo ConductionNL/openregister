@@ -284,6 +284,14 @@
 			"title": "Queue / sync health",
 			"component": "QueueHealthIndex",
 			"_note": "MDM steward surface (ADR-045 #3): read-only webhook queue-health summary consuming OR's EXISTING webhook telemetry (webhooks#index/logStats/allLogs); no new backend endpoint (design.md D1)."
+		},
+		{
+			"id": "mergeOperations",
+			"route": "/mergeOperations",
+			"type": "custom",
+			"title": "Merge Operations",
+			"component": "MergeOperationsIndex",
+			"_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
 		}
 	],
 	"menu": [
@@ -369,7 +377,8 @@
 				{ "id": "Quality", "label": "Data Quality", "icon": "ChartBoxOutline", "route": "quality", "order": 10 },
 				{ "id": "Duplicates", "label": "Duplicate Candidates", "icon": "ContentDuplicate", "route": "duplicates", "order": 20 },
 				{ "id": "MasterEntities", "label": "Master entities", "icon": "AccountMultipleOutline", "route": "masterEntities", "order": 30 },
-				{ "id": "QueueHealth", "label": "Queue / sync health", "icon": "Webhook", "route": "queueHealth", "order": 40 }
+				{ "id": "QueueHealth", "label": "Queue / sync health", "icon": "Webhook", "route": "queueHealth", "order": 40 },
+				{ "id": "MergeOperations", "label": "Merge Operations", "icon": "Merge", "route": "mergeOperations", "order": 50 }
 			]
 		},
 		{

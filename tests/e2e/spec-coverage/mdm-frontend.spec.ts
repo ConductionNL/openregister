@@ -193,12 +193,16 @@ test.describe('mdm-frontend — Data Quality dashboard', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#candidate-pairs-render-with-score-and-matched-attributes
-// @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#no-merge-or-write-action-is-present
+// NOTE: mdm-frontend's original "no-merge-or-write-action-is-present" scenario
+// (DuplicatesIndex is strictly read-only) is superseded by mdm-merge-ui (#C),
+// which adds the per-pair "Merge" action by design — see
+// openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-merge-action-is-offered-per-candidate-pair.
+// Delete/write actions beyond the merge wizard launch remain absent.
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — Duplicate Candidates', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('duplicate candidates render read-only with no merge/write action', async ({ page }) => {
+	test('duplicate candidates render with a per-pair merge action and no delete/write action', async ({ page }) => {
 		await gotoApp(page, '/duplicates')
 		const selected = await selectFirstRegisterAndSchema(page)
 		test.skip(!selected, 'No register/schema options available — seed data needed')
@@ -207,8 +211,7 @@ test.describe('mdm-frontend — Duplicate Candidates', () => {
 		const table = page.locator('.duplicatesTable')
 		await expect(emptyState.or(table)).toBeVisible({ timeout: 15_000 })
 
-		// No merge/delete/write control anywhere on the view.
-		await expect(page.getByRole('button', { name: /merge/i })).toHaveCount(0)
+		// No delete/write control anywhere on the view beyond the merge launch.
 		await expect(page.getByRole('button', { name: /^delete$/i })).toHaveCount(0)
 	})
 })

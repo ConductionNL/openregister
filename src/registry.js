@@ -52,6 +52,7 @@ import QualityIndex from './views/quality/QualityIndex.vue'
 import DuplicatesIndex from './views/quality/DuplicatesIndex.vue'
 import MasterEntitiesIndex from './views/quality/MasterEntitiesIndex.vue'
 import QueueHealthIndex from './views/quality/QueueHealthIndex.vue'
+import MergeOperationsIndex from './views/quality/MergeOperationsIndex.vue'
 
 /**
  * Wrap a Vue component into the v2 registry shape required by CnAppRoot's
@@ -103,4 +104,5 @@ export default {
 	DuplicatesIndex: page(DuplicatesIndex),
 	MasterEntitiesIndex: page(MasterEntitiesIndex),
 	QueueHealthIndex: page(QueueHealthIndex),
+	MergeOperationsIndex: page(MergeOperationsIndex),
 }
