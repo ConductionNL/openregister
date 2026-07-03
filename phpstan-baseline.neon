@@ -1127,6 +1127,16 @@ parameters:
 			path: lib/Controller/MappingsController.php
 
 		-
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\NotAuthorizedException is never thrown in the try block\\.$#"
+			count: 3
+			path: lib/Controller/MergeController.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Merge/MergeService.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\NamesController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', message\\?\\: string, cache_statistics\\?\\: array\\{hits\\: int, misses\\: int, preloads\\: int, query_hits\\: int, query_misses\\: int, name_hits\\: int, name_misses\\: int, name_warmups\\: int, \\.\\.\\.\\}, performance_metrics\\?\\: array\\{name_cache_enabled\\: true, distributed_cache_available\\: true, warmup_available\\: true\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{cache_statistics\\: array\\{hits\\: int, misses\\: int, preloads\\: int, query_hits\\: int, query_misses\\: int, name_hits\\: int, name_misses\\: int, name_warmups\\: int, \\.\\.\\.\\}, performance_metrics\\: array\\{name_cache_enabled\\: bool, distributed_cache_available\\: bool, warmup_available\\: bool\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/NamesController.php

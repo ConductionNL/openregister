@@ -1914,6 +1914,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-dedup',
         'x-openregister-flows',
         'x-openregister-survivorship',
+        'x-openregister-merge',
     ];
 
     /**

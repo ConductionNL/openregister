@@ -309,6 +309,10 @@ return [
         ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
         // MDM read-only surface — duplicate-candidate listing.
         ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
+        ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
+        ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
+        ['name' => 'merge#reverse', 'url' => '/api/objects/merge/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
