@@ -772,6 +772,10 @@ return [
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
         // Schemas.
+        // Cross-app semantic reference discovery (ADR-048): resolve a canonical
+        // semantic-type URI to the installed provider schema. Static path,
+        // registered before the `{id}` schema routes so it is not shadowed.
+        ['name' => 'schemas#resolveByImplements', 'url' => '/api/schemas/resolve-by-implements', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

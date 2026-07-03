@@ -135,6 +135,124 @@ class JsonLdContextService
     }//end getTypeForSchema()
 
     /**
+     * Compute the canonical semantic types a schema implements.
+     *
+     * The implemented type set is the union of, in order:
+     *   1. `configuration.implements[]` — absolute IRIs (non-IRI entries dropped);
+     *   2. `configuration.jsonld.type` — the single object `@type` IRI, when set;
+     *   3. a schema-level `x-schema-org` marker (top-level field, or under
+     *      `configuration`) carrying a compact schema.org CURIE such as
+     *      `schema:Organization`, expanded to `https://schema.org/Organization`.
+     *      Both string and array forms are accepted, so existing schema.org-
+     *      annotated schemas (ADR-011) become resolvable with no edit.
+     *
+     * When `configuration.implements` is present it is authoritative and the
+     * `jsonld.type` / `x-schema-org` defaults are NOT merged (an explicit list
+     * is an explicit contract). Otherwise the `jsonld.type` and `x-schema-org`
+     * markers are unioned.
+     *
+     * Unlike {@see getTypeForSchema()} this never falls back to the schema
+     * slug: a schema with no absolute-IRI semantic marker implements nothing
+     * resolvable and MUST NOT be picked up by a URI lookup. Only schema-LEVEL
+     * markers count — property-level `x-schema-org` annotations describe a
+     * field, not the schema, and are ignored here.
+     *
+     * @param Schema $schema The schema.
+     *
+     * @return array<int, string> The list of implemented absolute-IRI types (may be empty).
+     *
+     * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+     *   (Requirement: Schemas advertise the canonical types they implement)
+     */
+    public function getImplementedTypes(Schema $schema): array
+    {
+        $configuration = $schema->getConfiguration();
+        if (is_array($configuration) === false) {
+            $configuration = [];
+        }
+
+        // Explicit `implements` list is authoritative; keep only absolute IRIs.
+        $implements = ($configuration['implements'] ?? null);
+        if (is_array($implements) === true) {
+            $types = [];
+            foreach ($implements as $candidate) {
+                if ($this->isAbsoluteIri(value: $candidate) === true) {
+                    $types[] = $candidate;
+                }
+            }
+
+            return array_values(array_unique($types));
+        }
+
+        // Otherwise union the default markers.
+        $types = [];
+
+        // (a) `jsonld.type` IRI, when absolute.
+        $jsonld = $this->jsonLdConfig(schema: $schema);
+        $type   = ($jsonld['type'] ?? null);
+        if ($this->isAbsoluteIri(value: $type) === true) {
+            $types[] = $type;
+        }
+
+        // (b) schema-level `x-schema-org` CURIE(s) — top-level or in configuration.
+        $xSchemaOrg = ($configuration['x-schema-org'] ?? null);
+        foreach ($this->expandSchemaOrgMarker(marker: $xSchemaOrg) as $iri) {
+            $types[] = $iri;
+        }
+
+        return array_values(array_unique($types));
+    }//end getImplementedTypes()
+
+    /**
+     * Expand a schema-level `x-schema-org` marker into absolute schema.org IRIs.
+     *
+     * Accepts a single value or an array. Each entry may be a compact CURIE
+     * (`schema:Organization` → `https://schema.org/Organization`) or an already-
+     * absolute IRI (passed through). Non-string / unresolvable entries are
+     * dropped.
+     *
+     * @param mixed $marker The raw `x-schema-org` marker value (string, array, or null).
+     *
+     * @return array<int, string> Expanded absolute IRIs (may be empty).
+     */
+    private function expandSchemaOrgMarker(mixed $marker): array
+    {
+        if ($marker === null) {
+            return [];
+        }
+
+        if (is_array($marker) === true) {
+            $entries = $marker;
+        } else {
+            $entries = [$marker];
+        }
+
+        $iris = [];
+        foreach ($entries as $entry) {
+            if (is_string($entry) === false || $entry === '') {
+                continue;
+            }
+
+            // Compact schema.org CURIE, e.g. `schema:Organization`.
+            if (str_starts_with($entry, 'schema:') === true) {
+                $term = substr($entry, strlen('schema:'));
+                if ($term !== '') {
+                    $iris[] = 'https://schema.org/'.$term;
+                }
+
+                continue;
+            }
+
+            // Already an absolute IRI — accept as-is.
+            if ($this->isAbsoluteIri(value: $entry) === true) {
+                $iris[] = $entry;
+            }
+        }
+
+        return $iris;
+    }//end expandSchemaOrgMarker()
+
+    /**
      * Build the JSON-LD context map for a single schema.
      *
      * The returned array is the *value* of a `@context` key, i.e.
@@ -461,7 +579,7 @@ class JsonLdContextService
      *
      * @return bool True when the value is an absolute IRI.
      */
-    private function isAbsoluteIri(mixed $value): bool
+    public function isAbsoluteIri(mixed $value): bool
     {
         if (is_string($value) === false || $value === '') {
             return false;
