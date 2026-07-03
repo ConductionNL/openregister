@@ -1,8 +1,5 @@
-# duplicate-detection Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change mdm-foundation. Update Purpose after archive.
-## Requirements
 ### Requirement: Declarative duplicate detection over a register/schema
 OpenRegister SHALL provide a DI-resolvable service `DuplicateDetectionService` exposing
 `findDuplicates(register, schema, matchRules?, threshold?)` that returns scored
@@ -76,4 +73,3 @@ empty result).
 #### Scenario: Plain top-level field resolution is unchanged
 - **WHEN** a match rule or blocking key declares a plain, dot-free field name (e.g. `"email"`)
 - **THEN** resolution MUST behave exactly as a direct top-level array read, with no change in outcome from prior behaviour
-
