@@ -3422,6 +3422,11 @@ parameters:
 			path: lib/Listener/QualityScoreOnSaveListener.php
 
 		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Listener/SurvivorshipRecomputeListener.php
+
+		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Mcp/BuiltIn/SchemasToolProvider.php
