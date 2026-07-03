@@ -2,9 +2,14 @@
 	<div class="goldenRecordPanel">
 		<div class="goldenRecordHeader">
 			<h2>{{ t('openregister', 'Golden record') }}</h2>
-			<NcButton type="tertiary" @click="$emit('close')">
-				{{ t('openregister', 'Close') }}
-			</NcButton>
+			<div class="goldenRecordHeader__actions">
+				<NcButton v-if="object" type="secondary" @click="showConflictResolution = true">
+					{{ t('openregister', 'Resolve conflicts') }}
+				</NcButton>
+				<NcButton type="tertiary" @click="$emit('close')">
+					{{ t('openregister', 'Close') }}
+				</NcButton>
+			</div>
 		</div>
 
 		<template v-if="!object">
@@ -49,6 +54,12 @@
 				</tbody>
 			</table>
 		</template>
+
+		<MdmConflictResolutionModal
+			v-if="showConflictResolution && object"
+			:object="object"
+			@close="showConflictResolution = false"
+			@saved="handleConflictsResolved" />
 	</div>
 </template>
 
@@ -56,6 +67,8 @@
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
 import AccountBoxOutline from 'vue-material-design-icons/AccountBoxOutline.vue'
+import MdmConflictResolutionModal from '../../modals/mdm/MdmConflictResolutionModal.vue'
+import { qualityStore } from '../../store/store.js'
 
 /**
  * Golden-record detail panel — NOT a modal/dialog (hydra-gate-modal-isolation).
@@ -71,6 +84,7 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		AccountBoxOutline,
+		MdmConflictResolutionModal,
 	},
 
 	props: {
@@ -81,6 +95,12 @@ export default {
 	},
 
 	emits: ['close'],
+
+	data() {
+		return {
+			showConflictResolution: false,
+		}
+	},
 
 	computed: {
 		/**
@@ -97,8 +117,13 @@ export default {
 		 * Defensive read of `attributeProvenance` — tolerates absence,
 		 * non-object shapes, and per-attribute entries that are either a
 		 * plain source string or a `{source, confidence, timestamp}` object.
+		 * An overridden attribute (`override: true`) is labelled with its
+		 * `overriddenBy` actor rather than a trust-tier source, so a steward
+		 * reading the golden record sees WHY an attribute took a manual value
+		 * (design.md D3).
 		 *
 		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
+		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-survivorship/spec.md#requirement-per-object-attribute-overrides-are-materialised-and-preserved
 		 * @return {Array<object>}
 		 */
 		provenanceEntries() {
@@ -106,15 +131,41 @@ export default {
 			if (!provenance || typeof provenance !== 'object') return []
 			return Object.entries(provenance).map(([attribute, value]) => {
 				if (value && typeof value === 'object') {
+					if (value.override === true) {
+						return {
+							attribute,
+							source: t('openregister', 'Manual override ({actor})', { actor: value.overriddenBy || t('openregister', 'unknown') }),
+							confidence: value.rationale,
+							timestamp: undefined,
+						}
+					}
 					return {
 						attribute,
-						source: value.source ?? value.winningSource ?? '—',
+						source: value.source ?? value.winningSource ?? value.sourceSystem ?? '—',
 						confidence: value.confidence,
 						timestamp: value.timestamp ?? value.at,
 					}
 				}
 				return { attribute, source: value, confidence: undefined, timestamp: undefined }
 			})
+		},
+	},
+
+	methods: {
+		/**
+		 * Refresh the golden record after the conflict-resolution modal saves.
+		 *
+		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#requirement-steward-chooses-persistent-rule-or-one-off-outcome
+		 * @return {Promise<void>}
+		 */
+		async handleConflictsResolved() {
+			this.showConflictResolution = false
+			const register = this.object?.['@self']?.register ?? this.object?.register ?? qualityStore.selectedRegister
+			const schema = this.object?.['@self']?.schema ?? this.object?.schema ?? qualityStore.selectedSchema
+			const id = this.object?.id
+			if (register && schema && id) {
+				await qualityStore.fetchGoldenRecord(register, schema, id)
+			}
 		},
 	},
 }
@@ -131,6 +182,11 @@ export default {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+}
+
+.goldenRecordHeader__actions {
+	display: flex;
+	gap: 8px;
 }
 
 .goldenRecordMeta {

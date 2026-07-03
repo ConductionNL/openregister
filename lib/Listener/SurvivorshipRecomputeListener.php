@@ -5,14 +5,18 @@
  *
  * Subscribes to ObjectCreatingEvent + ObjectUpdatingEvent. When a schema
  * declares an `x-openregister-survivorship` annotation, loads the linked
- * source records from `sourceLinkField`, resolves the golden record via the
- * pure `SurvivorshipResolver` (backed by the `trustConfiguration` register
- * through `TrustTierResolver`), and materialises `goldenRecordField` +
- * `provenanceField` into the object payload before persistence — only when
- * the computed values differ from the stored ones. Mirrors the
- * materialise-on-save contract of {@see QualityScoreOnSaveListener}: runs
- * before the write, is fail-soft (logs a warning and continues on any
- * error), and never aborts the save.
+ * source records from `sourceLinkField`, reads the per-object attribute
+ * overrides from `overridesField` (default `attributeOverrides`), resolves
+ * the golden record via the pure `SurvivorshipResolver` (backed by the
+ * `trustConfiguration` register through `TrustTierResolver`, with the
+ * override map short-circuiting tier selection), and materialises
+ * `goldenRecordField` + `provenanceField` into the object payload before
+ * persistence — only when the computed values differ from the stored ones.
+ * The `overridesField` itself is steward input, not derived: it is read but
+ * NEVER cleared or rewritten here, so an unrelated recompute always
+ * preserves it. Mirrors the materialise-on-save contract of
+ * {@see QualityScoreOnSaveListener}: runs before the write, is fail-soft
+ * (logs a warning and continues on any error), and never aborts the save.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -72,6 +76,14 @@ class SurvivorshipRecomputeListener implements IEventListener
     private const DEFAULT_PROVENANCE_FIELD = 'attributeProvenance';
 
     /**
+     * Default field the per-object attribute-override map is read from when
+     * the annotation omits `overridesField`.
+     *
+     * @var string
+     */
+    private const DEFAULT_OVERRIDES_FIELD = 'attributeOverrides';
+
+    /**
      * Slug of the OR-owned trust-configuration register schema.
      *
      * @var string
@@ -127,13 +139,20 @@ class SurvivorshipRecomputeListener implements IEventListener
      * Compute and patch the golden record + provenance onto the object data.
      *
      * Fail-soft: any error during resolution is logged and swallowed — the
-     * object is still persisted with its data unchanged.
+     * object is still persisted with its data unchanged. The override map is
+     * read from `overridesField` and threaded into the resolver but is never
+     * itself written here — {@see materialise()} only ever patches
+     * `goldenRecordField` / `provenanceField`, so the raw `$data` array
+     * (including any override map already on the object) flows through to
+     * `ObjectEntity::setObject()` untouched, preserving overrides across an
+     * unrelated recompute.
      *
      * @param ObjectEntity $object Object being created or updated.
      *
      * @return void
      *
      * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
+     * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.3
      */
     private function process(ObjectEntity $object): void
     {
@@ -160,13 +179,21 @@ class SurvivorshipRecomputeListener implements IEventListener
             $trustRows  = $this->loadTrustRows(entityType: $entityType);
             $now        = new DateTimeImmutable();
 
+            $overridesField = (string) ($config['overridesField'] ?? self::DEFAULT_OVERRIDES_FIELD);
+            if ($overridesField === '') {
+                $overridesField = self::DEFAULT_OVERRIDES_FIELD;
+            }
+
+            $overrides = ($data[$overridesField] ?? null);
+
             $resolution = $this->resolver->resolveGoldenRecord(
                 entityType: $entityType,
                 sourceRecords: $sourceRecords,
                 config: $config,
                 trustRows: $trustRows,
                 trustResolver: $this->trustResolver,
-                asOf: $now
+                asOf: $now,
+                overrides: $overrides
             );
 
             $this->materialise(object: $object, data: $data, config: $config, resolution: $resolution);

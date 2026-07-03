@@ -95,6 +95,7 @@ class SurvivorshipAnnotationValidator
 
         $errors = array_merge($errors, $this->validateTierOrder(annotation: $annotation));
         $errors = array_merge($errors, $this->validateTrustLookup(annotation: $annotation));
+        $errors = array_merge($errors, $this->validateOverridesField(annotation: $annotation));
 
         return $errors;
     }//end validate()
@@ -182,4 +183,35 @@ class SurvivorshipAnnotationValidator
 
         return [];
     }//end validateTrustLookup()
+
+    /**
+     * Validate the optional `overridesField` key: when present it MUST be a
+     * non-empty string naming the object field holding the per-object
+     * attribute-override map. Absent is valid — callers default to
+     * `attributeOverrides`.
+     *
+     * @param array<string, mixed> $annotation Survivorship annotation.
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
+     */
+    private function validateOverridesField(array $annotation): array
+    {
+        if (array_key_exists('overridesField', $annotation) === false) {
+            return [];
+        }
+
+        $overridesField = $annotation['overridesField'];
+        if (is_string($overridesField) === false || $overridesField === '') {
+            return [
+                [
+                    'code'    => 'survivorship.overrides-field-invalid',
+                    'message' => 'x-openregister-survivorship "overridesField" must be a non-empty string.',
+                ],
+            ];
+        }
+
+        return [];
+    }//end validateOverridesField()
 }//end class

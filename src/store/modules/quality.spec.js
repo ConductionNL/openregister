@@ -9,6 +9,7 @@ jest.mock('@nextcloud/axios', () => ({
 	default: {
 		get: jest.fn(),
 		post: jest.fn(),
+		patch: jest.fn(),
 	},
 }))
 
@@ -230,6 +231,108 @@ describe('Quality Store', () => {
 			const store = useQualityStore()
 
 			await expect(store.fetchMergeOperations()).rejects.toBeTruthy()
+			expect(store.error).toBe('boom')
+		})
+	})
+
+	describe('setAttributeOverride', () => {
+		it('posts { attribute, value, rationale } to the override endpoint and returns the recomputed object', async () => {
+			const recomputed = { id: 'obj-1', goldenRecord: { legalName: 'Steward Co' } }
+			axios.post.mockResolvedValueOnce({ data: recomputed })
+
+			const store = useQualityStore()
+			const result = await store.setAttributeOverride('obj-1', 'legalName', 'Steward Co', 'Confirmed with client')
+
+			expect(axios.post).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/survivorship/obj-1/override'),
+				{ attribute: 'legalName', value: 'Steward Co', rationale: 'Confirmed with client' },
+			)
+			expect(result).toEqual(recomputed)
+		})
+
+		it('records an error on failure', async () => {
+			axios.post.mockRejectedValueOnce({ response: { data: { error: 'Forbidden' } } })
+			const store = useQualityStore()
+
+			await expect(store.setAttributeOverride('obj-1', 'legalName', 'Steward Co')).rejects.toBeTruthy()
+			expect(store.error).toBe('Forbidden')
+		})
+	})
+
+	describe('clearAttributeOverride', () => {
+		it('posts { attribute, clear: true } to the override endpoint', async () => {
+			const recomputed = { id: 'obj-1', goldenRecord: { legalName: 'Gold Co' } }
+			axios.post.mockResolvedValueOnce({ data: recomputed })
+
+			const store = useQualityStore()
+			const result = await store.clearAttributeOverride('obj-1', 'legalName')
+
+			expect(axios.post).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/survivorship/obj-1/override'),
+				{ attribute: 'legalName', clear: true },
+			)
+			expect(result).toEqual(recomputed)
+		})
+
+		it('records an error on failure', async () => {
+			axios.post.mockRejectedValueOnce({ message: 'boom' })
+			const store = useQualityStore()
+
+			await expect(store.clearAttributeOverride('obj-1', 'legalName')).rejects.toBeTruthy()
+			expect(store.error).toBe('boom')
+		})
+	})
+
+	describe('persistTrustRule', () => {
+		it('posts a trustConfiguration row to the generic objects surface and returns the created row', async () => {
+			const created = { id: 'trust-1', entityType: 'organisation', attribute: 'legalName', sourceSystem: 'registry', trustTier: 'gold' }
+			axios.post.mockResolvedValueOnce({ data: created })
+
+			const store = useQualityStore()
+			const result = await store.persistTrustRule({
+				entityType: 'organisation',
+				attribute: 'legalName',
+				sourceSystem: 'registry',
+				trustTier: 'gold',
+				rationale: 'Confirmed',
+			})
+
+			expect(axios.post).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/trust-configuration/trustConfiguration'),
+				{ entityType: 'organisation', attribute: 'legalName', sourceSystem: 'registry', trustTier: 'gold', rationale: 'Confirmed' },
+			)
+			expect(result).toEqual(created)
+		})
+
+		it('records an error on failure', async () => {
+			axios.post.mockRejectedValueOnce({ message: 'boom' })
+			const store = useQualityStore()
+
+			await expect(store.persistTrustRule({ entityType: 'organisation', attribute: 'legalName', sourceSystem: 'registry', trustTier: 'gold' })).rejects.toBeTruthy()
+			expect(store.error).toBe('boom')
+		})
+	})
+
+	describe('touchObject', () => {
+		it('sends an empty PATCH to the generic object endpoint and returns the recomputed object', async () => {
+			const recomputed = { id: 'obj-1', goldenRecord: { legalName: 'Gold Co' } }
+			axios.patch.mockResolvedValueOnce({ data: recomputed })
+
+			const store = useQualityStore()
+			const result = await store.touchObject('16', '1207', 'obj-1')
+
+			expect(axios.patch).toHaveBeenCalledWith(
+				expect.stringContaining('/objects/16/1207/obj-1'),
+				{},
+			)
+			expect(result).toEqual(recomputed)
+		})
+
+		it('records an error on failure', async () => {
+			axios.patch.mockRejectedValueOnce({ message: 'boom' })
+			const store = useQualityStore()
+
+			await expect(store.touchObject('16', '1207', 'obj-1')).rejects.toBeTruthy()
 			expect(store.error).toBe('boom')
 		})
 	})

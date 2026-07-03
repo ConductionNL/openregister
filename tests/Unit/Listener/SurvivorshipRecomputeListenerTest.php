@@ -231,4 +231,124 @@ class SurvivorshipRecomputeListenerTest extends TestCase
         $this->assertSame('Acme', $data['goldenRecord']['legalName']);
         $this->assertSame('a@b.co', $data['goldenRecord']['email']);
     }//end testEmbeddedAndReferencedSourcesBothResolve()
+
+    public function testOverrideIsThreadedIntoResolutionAndWinsOverTier(): void
+    {
+        $this->schemaWithSurvivorship(self::BASE_CONFIG);
+        $this->objectService->method('findAll')->willReturn([]);
+
+        $object = new ObjectEntity();
+        $object->setSchema('organisation');
+        $object->setUuid('obj-7');
+        $object->setObject(
+            [
+                'sources'            => [
+                    ['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Acme']],
+                ],
+                'attributeOverrides' => [
+                    'legalName' => ['value' => 'Acme Steward Override', 'overriddenBy' => 'alice'],
+                ],
+            ]
+        );
+
+        $event = new ObjectCreatingEvent($object);
+        $this->listener->handle($event);
+
+        $data = $object->getObject();
+        $this->assertSame('Acme Steward Override', $data['goldenRecord']['legalName']);
+        $this->assertTrue($data['attributeProvenance']['legalName']['override']);
+        $this->assertSame('alice', $data['attributeProvenance']['legalName']['overriddenBy']);
+        // The override map itself must be preserved untouched in the payload.
+        $this->assertSame(
+            ['legalName' => ['value' => 'Acme Steward Override', 'overriddenBy' => 'alice']],
+            $data['attributeOverrides']
+        );
+    }//end testOverrideIsThreadedIntoResolutionAndWinsOverTier()
+
+    public function testOverridePreservedAcrossAnUnrelatedRecompute(): void
+    {
+        $this->schemaWithSurvivorship(self::BASE_CONFIG);
+        $this->objectService->method('findAll')->willReturn([]);
+
+        // Simulate a second, unrelated save on the same object: the override
+        // map is already on the payload (as persisted by a prior override
+        // call) and must survive this recompute untouched even though this
+        // save was not about the override at all.
+        $old = new ObjectEntity();
+        $old->setSchema('organisation');
+
+        $new = new ObjectEntity();
+        $new->setSchema('organisation');
+        $new->setUuid('obj-8');
+        $new->setObject(
+            [
+                'sources'            => [
+                    ['sourceSystem' => 'crm', 'lastUpdated' => '2026-06-01', 'values' => ['legalName' => 'Acme', 'phone' => '555-0100']],
+                ],
+                'attributeOverrides' => [
+                    'legalName' => ['value' => 'Pinned Co', 'overriddenBy' => 'alice'],
+                ],
+            ]
+        );
+
+        $event = new ObjectUpdatingEvent($new, $old);
+        $this->listener->handle($event);
+
+        $data = $new->getObject();
+        // Golden record still reflects the override.
+        $this->assertSame('Pinned Co', $data['goldenRecord']['legalName']);
+        // The unrelated attribute (phone) resolved normally by tier.
+        $this->assertSame('555-0100', $data['goldenRecord']['phone']);
+        // The override map itself was not dropped or reset.
+        $this->assertSame(
+            ['legalName' => ['value' => 'Pinned Co', 'overriddenBy' => 'alice']],
+            $data['attributeOverrides']
+        );
+    }//end testOverridePreservedAcrossAnUnrelatedRecompute()
+
+    public function testOverridesAreIsolatedBetweenObjects(): void
+    {
+        $this->schemaWithSurvivorship(self::BASE_CONFIG);
+        $this->objectService->method('findAll')->willReturn([]);
+
+        // Object A has an override; object B (same schema) does not.
+        $objectA = new ObjectEntity();
+        $objectA->setSchema('organisation');
+        $objectA->setUuid('obj-a');
+        $objectA->setObject(
+            [
+                'sources'            => [
+                    ['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'A Co']],
+                ],
+                'attributeOverrides' => [
+                    'legalName' => ['value' => 'A Overridden', 'overriddenBy' => 'alice'],
+                ],
+            ]
+        );
+
+        $objectB = new ObjectEntity();
+        $objectB->setSchema('organisation');
+        $objectB->setUuid('obj-b');
+        $objectB->setObject(
+            [
+                'sources' => [
+                    ['sourceSystem' => 'crm', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'B Co']],
+                ],
+            ]
+        );
+
+        $this->listener->handle(new ObjectCreatingEvent($objectA));
+        $this->listener->handle(new ObjectCreatingEvent($objectB));
+
+        $dataA = $objectA->getObject();
+        $dataB = $objectB->getObject();
+
+        $this->assertSame('A Overridden', $dataA['goldenRecord']['legalName']);
+        $this->assertTrue($dataA['attributeProvenance']['legalName']['override']);
+
+        // Object B resolves purely from its own source, unaffected by A's override.
+        $this->assertSame('B Co', $dataB['goldenRecord']['legalName']);
+        $this->assertArrayNotHasKey('override', $dataB['attributeProvenance']['legalName']);
+        $this->assertArrayNotHasKey('attributeOverrides', $dataB);
+    }//end testOverridesAreIsolatedBetweenObjects()
 }//end class

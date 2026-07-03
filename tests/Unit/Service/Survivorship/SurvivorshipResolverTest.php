@@ -207,4 +207,142 @@ class SurvivorshipResolverTest extends TestCase
 
         $this->assertSame('Legacy Co', $result['goldenRecord']['legalName']);
     }//end testMappedAttributesKeyIsAlsoSupported()
+
+    public function testOverrideWinsOverTheTierSelectedValue(): void
+    {
+        $sources   = [
+            ['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co']],
+        ];
+        $trustRows = [
+            ['entityType' => 'organisation', 'attribute' => 'legalName', 'sourceSystem' => 'registry', 'trustTier' => 'gold', 'effectiveFrom' => '2026-01-01'],
+        ];
+        $overrides = [
+            'legalName' => ['value' => 'Steward Co', 'overriddenBy' => 'alice', 'rationale' => 'Confirmed with client'],
+        ];
+
+        $result = $this->resolver->resolveGoldenRecord(
+            'organisation',
+            $sources,
+            $this->baseConfig,
+            $trustRows,
+            $this->trustResolver,
+            $this->asOf,
+            $overrides
+        );
+
+        $this->assertSame('Steward Co', $result['goldenRecord']['legalName']);
+        $this->assertTrue($result['attributeProvenance']['legalName']['override']);
+        $this->assertSame('alice', $result['attributeProvenance']['legalName']['overriddenBy']);
+        $this->assertSame('Confirmed with client', $result['attributeProvenance']['legalName']['rationale']);
+        $this->assertArrayNotHasKey('trustTier', $result['attributeProvenance']['legalName']);
+    }//end testOverrideWinsOverTheTierSelectedValue()
+
+    public function testOverridePopulatesAnAttributeNoSourceSupplies(): void
+    {
+        $sources   = [
+            ['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co']],
+        ];
+        $overrides = ['website' => ['value' => 'https://example.test', 'overriddenBy' => 'bob']];
+
+        $result = $this->resolver->resolveGoldenRecord(
+            'organisation',
+            $sources,
+            $this->baseConfig,
+            [],
+            $this->trustResolver,
+            $this->asOf,
+            $overrides
+        );
+
+        $this->assertSame('https://example.test', $result['goldenRecord']['website']);
+        $this->assertTrue($result['attributeProvenance']['website']['override']);
+    }//end testOverridePopulatesAnAttributeNoSourceSupplies()
+
+    public function testOverrideShorthandValueIsAccepted(): void
+    {
+        // Bare `attribute => value` shorthand (no overriddenBy/rationale wrapper).
+        $sources   = [
+            ['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co']],
+        ];
+        $overrides = ['legalName' => 'Shorthand Co'];
+
+        $result = $this->resolver->resolveGoldenRecord(
+            'organisation',
+            $sources,
+            $this->baseConfig,
+            [],
+            $this->trustResolver,
+            $this->asOf,
+            $overrides
+        );
+
+        $this->assertSame('Shorthand Co', $result['goldenRecord']['legalName']);
+        $this->assertTrue($result['attributeProvenance']['legalName']['override']);
+        $this->assertSame('', $result['attributeProvenance']['legalName']['overriddenBy']);
+    }//end testOverrideShorthandValueIsAccepted()
+
+    public function testMalformedOverrideMapIsSkippedNeverThrows(): void
+    {
+        $sources = [
+            ['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co']],
+        ];
+
+        // Non-array override map entirely.
+        $result = $this->resolver->resolveGoldenRecord(
+            'organisation',
+            $sources,
+            $this->baseConfig,
+            [],
+            $this->trustResolver,
+            $this->asOf,
+            'not-an-array'
+        );
+        $this->assertSame('Gold Co', $result['goldenRecord']['legalName']);
+        $this->assertArrayNotHasKey('override', $result['attributeProvenance']['legalName']);
+    }//end testMalformedOverrideMapIsSkippedNeverThrows()
+
+    public function testMalformedOverrideEntryIsSkippedRestResolveByTier(): void
+    {
+        $sources   = [
+            ['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co', 'phone' => '555-0100']],
+        ];
+        $overrides = [
+            // Malformed: missing `value` key entirely.
+            'legalName' => ['overriddenBy' => 'alice'],
+            // Non-string key is skipped via the int cast below never matching a string attribute.
+            0           => ['value' => 'ignored'],
+            // Valid entry alongside the malformed ones must still apply.
+            'phone'     => ['value' => '555-9999', 'overriddenBy' => 'alice'],
+        ];
+
+        $result = $this->resolver->resolveGoldenRecord(
+            'organisation',
+            $sources,
+            $this->baseConfig,
+            [],
+            $this->trustResolver,
+            $this->asOf,
+            $overrides
+        );
+
+        // legalName falls back to the tier-selected source value.
+        $this->assertSame('Gold Co', $result['goldenRecord']['legalName']);
+        $this->assertArrayNotHasKey('override', $result['attributeProvenance']['legalName']);
+
+        // phone is overridden.
+        $this->assertSame('555-9999', $result['goldenRecord']['phone']);
+        $this->assertTrue($result['attributeProvenance']['phone']['override']);
+    }//end testMalformedOverrideEntryIsSkippedRestResolveByTier()
+
+    public function testNullOverridesIsEquivalentToNoOverrides(): void
+    {
+        $sources = [
+            ['sourceSystem' => 'registry', 'lastUpdated' => '2026-05-01', 'values' => ['legalName' => 'Gold Co']],
+        ];
+
+        $result = $this->resolver->resolveGoldenRecord('organisation', $sources, $this->baseConfig, [], $this->trustResolver, $this->asOf, null);
+
+        $this->assertSame('Gold Co', $result['goldenRecord']['legalName']);
+        $this->assertArrayNotHasKey('override', $result['attributeProvenance']['legalName']);
+    }//end testNullOverridesIsEquivalentToNoOverrides()
 }//end class

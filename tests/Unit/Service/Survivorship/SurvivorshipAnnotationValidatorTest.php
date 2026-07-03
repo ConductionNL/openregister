@@ -144,4 +144,51 @@ class SurvivorshipAnnotationValidatorTest extends TestCase
         $codes  = array_column($errors, 'code');
         $this->assertContains('survivorship.trust-lookup-keys-invalid', $codes);
     }//end testTrustLookupEmptyKeysIsInvalid()
+
+    public function testOverridesFieldAbsentIsValid(): void
+    {
+        $shape = [
+            'x-openregister-survivorship' => [
+                'sourceLinkField' => 'sources',
+            ],
+        ];
+        $this->assertSame([], $this->validator->validate($shape));
+    }//end testOverridesFieldAbsentIsValid()
+
+    public function testOverridesFieldValidStringIsValid(): void
+    {
+        $shape = [
+            'x-openregister-survivorship' => [
+                'sourceLinkField' => 'sources',
+                'overridesField'  => 'attributeOverrides',
+            ],
+        ];
+        $this->assertSame([], $this->validator->validate($shape));
+    }//end testOverridesFieldValidStringIsValid()
+
+    public function testOverridesFieldNonStringIsInvalid(): void
+    {
+        $shape  = [
+            'x-openregister-survivorship' => [
+                'sourceLinkField' => 'sources',
+                'overridesField'  => ['nope'],
+            ],
+        ];
+        $errors = $this->validator->validate($shape);
+        $codes  = array_column($errors, 'code');
+        $this->assertContains('survivorship.overrides-field-invalid', $codes);
+    }//end testOverridesFieldNonStringIsInvalid()
+
+    public function testOverridesFieldEmptyStringIsInvalid(): void
+    {
+        $shape  = [
+            'x-openregister-survivorship' => [
+                'sourceLinkField' => 'sources',
+                'overridesField'  => '',
+            ],
+        ];
+        $errors = $this->validator->validate($shape);
+        $codes  = array_column($errors, 'code');
+        $this->assertContains('survivorship.overrides-field-invalid', $codes);
+    }//end testOverridesFieldEmptyStringIsInvalid()
 }//end class
