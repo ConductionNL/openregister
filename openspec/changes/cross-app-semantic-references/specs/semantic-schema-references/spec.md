@@ -43,10 +43,11 @@ a non-IRI value is rejected on schema write.
 
 ### Requirement: A property can reference a semantic type
 
-A schema property MAY declare `referenceSemanticType` (an absolute IRI) and an
-optional `referenceSemanticApp` hint. The stored value is the referenced
-object's UUID. `referenceSemanticType` is validated as a well-formed IRI on
-schema write; it is independent of `referenceType` (an integration id) and of
+The system SHALL let a schema property reference cross-app objects by canonical
+semantic type. A property MAY declare `referenceSemanticType` (an absolute IRI)
+and an optional `referenceSemanticApp` hint; the stored value is the referenced
+object's UUID. `referenceSemanticType` MUST be validated as a well-formed IRI on
+schema write, and is independent of `referenceType` (an integration id) and of
 `$ref` (a concrete schema).
 
 #### Scenario: Valid semantic reference accepted
@@ -86,12 +87,12 @@ implements it, enumerating all registers (org/RBAC-scoped), and SHALL return
 
 ### Requirement: Absent provider degrades to a disabled, explained form field
 
-When a property declares `referenceSemanticType` and no installed schema
-provides it, the generated form SHALL render the field **disabled** with a
-mouse-over tooltip explaining the supporting app is not installed, reusing the
-integration-availability reason copy. When a provider IS resolved, the field
-SHALL render as a searchable object picker over the provider schema, storing the
-referenced UUID. A property without `referenceSemanticType` is unaffected.
+The generated form SHALL render a `referenceSemanticType` field as **disabled**,
+with a mouse-over tooltip explaining the supporting app is not installed, when no
+installed schema provides that semantic type — reusing the integration-availability
+reason copy. When a provider IS resolved, the field SHALL render as a searchable
+object picker over the provider schema, storing the referenced UUID. A property
+without `referenceSemanticType` MUST be unaffected.
 
 #### Scenario: Provider present → object picker
 
