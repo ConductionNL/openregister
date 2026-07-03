@@ -23,21 +23,39 @@ affordance** when no provider is installed.
 
 ## What is genuinely new
 
-1. `configuration.implements: string[]` (alias, defaults to `[jsonld.type]`).
-2. Property keyword `referenceSemanticType: <IRI>`.
-3. `SemanticTypeResolver::resolveSchemaByImplements(uri): ?Schema`.
-4. Discovery of resolved providers to the frontend.
-5. `CnFormDialog` degradation branch for an unresolved semantic reference.
+1. `configuration.implements: string[]` (alias, defaults to the union of
+   `jsonld.type` and the `x-schema-org` marker).
+2. A schema-level `x-schema-org` marker that survives save/import: a **top-level**
+   `x-schema-org` (the fleet's ADR-011 annotation form, a sibling of
+   `properties`) is folded into `configuration['x-schema-org']` on hydrate — the
+   same fold already applied to `x-openregister-*` blocks — so the live schema
+   keeps the marker instead of dropping it (the previous behaviour that left
+   every real imported schema unresolvable).
+3. Property keyword `referenceSemanticType: <IRI>`.
+4. `SemanticTypeResolver::resolveSchemaByImplements(uri): ?Schema`, which
+   additionally treats a provider whose owning app is **disabled** as absent.
+5. Discovery of resolved providers to the frontend.
+6. `CnFormDialog` degradation branch for an unresolved semantic reference.
 
 ## Data model
 
 ### Provider side (e.g. shillinq `Payee`)
+
+Fleet schemas declare the marker at the **top level** (schema.org-first,
+ADR-011); on save it is folded into `configuration` and becomes resolvable with
+no manual `implements`:
 ```jsonc
-"configuration": {
-  "jsonld": { "type": "https://schema.org/Organization" }
+{
+  "title": "Payee",
+  "x-schema-org": "schema:Organization",   // top-level, folded on save →
+  "properties": { /* ... */ }
+  // configuration['x-schema-org'] = "schema:Organization"  (persisted)
   // implements defaults to ["https://schema.org/Organization"]
 }
 ```
+Equivalently, a schema MAY carry `configuration.jsonld.type`,
+`configuration['x-schema-org']`, or an explicit `configuration.implements[]` —
+all three feed `JsonLdContextService::getImplementedTypes()`.
 
 ### Consumer side (pipelinq `product`)
 ```jsonc
@@ -61,16 +79,26 @@ is still by URI, so any app exposing `schema.org/Organization` satisfies it.
 resolveSchemaByImplements(uri):
   cache-hit? return it
   candidates = SchemaMapper.findAll()  # org/RBAC-scoped, all registers
-      .filter(s => uri in (s.configuration.implements ?? [s.configuration.jsonld.type]))
+      .filter(s => uri in getImplementedTypes(s))   # implements[] ∪ jsonld.type ∪ x-schema-org
+      .filter(s => owning app of s is installed AND enabled)   # disabled app ⇒ absent
   if empty: cache null; return null            # standalone-safe
-  pick = tie-break(candidates):
-      1. same register as the consuming schema (when known)
-      2. schema whose register's app == referenceSemanticApp hint
-      3. first by slug (deterministic)
+  pick = deterministic(candidates):            # any adherer is acceptable — no clever tie-break
+      first by slug, optionally biased to the consuming register when that hint is given
   cache pick; return pick
 ```
+- **No sophisticated tie-break** (product-owner decision): any schema adhering to
+  the URI is an acceptable provider. Selection is just deterministic-first-by-slug,
+  with an optional trivial bias to the consuming register kept from the earlier
+  design because it costs nothing.
+- **App-enabled gate**: a provider whose owning app is not enabled is skipped as
+  if uninstalled — via `IAppManager::isEnabledForUser` (falling back to
+  `isInstalled`), fully null-safe. The owning app id is taken from the schema's
+  own `application` field first (the reliable per-schema signal — a register's
+  `application` column is frequently null), then the owning register's
+  `application`. Core `openregister` / schemas with no declared owning app are
+  never filtered out.
 - Never throws on "not found" — returns `null`.
-- Request-scoped cache keyed by `uri` (+ consuming register when tie-breaking),
+- Request-scoped cache keyed by `uri` (+ consuming register when biasing),
   mirroring `JsonLdContextService::$contextCache`.
 - A `WARN`-level log (not an error) when >1 candidate matches, naming the pick,
   so ambiguous vocab is observable without breaking rendering.
@@ -106,9 +134,10 @@ capability payload (no round-trip) and falls back to the endpoint.
 
 - schema.org-first (ADR-011); a small Conduction canonical vocabulary under
   `https://openregister.app/ns#` only where schema.org has no fit.
-- Multiple providers for one URI → deterministic tie-break above +
-  `referenceSemanticApp` hint to narrow. A future change may add an
-  admin-level preferred-provider map if collisions become common.
+- Multiple providers for one URI → any adherer is acceptable; the resolver just
+  picks deterministically (first by slug) and WARN-logs. No preferred-provider
+  map is introduced (product-owner decision); a future change may add one if
+  collisions ever become a real problem.
 
 ## Non-goals
 
