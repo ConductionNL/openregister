@@ -1686,7 +1686,11 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld'];
+        // `implements` + `x-schema-org` carry the cross-app semantic-type
+        // markers (ADR-048); they must round-trip through the configuration
+        // column so SemanticTypeResolver can discover the schema. Their IRI
+        // shape is validated on read by JsonLdContextService::getImplementedTypes.
+        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {

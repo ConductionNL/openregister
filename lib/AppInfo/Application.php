@@ -230,6 +230,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
+use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -1032,6 +1033,20 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new PropertyReferenceTypeValidator(
                     registry: $container->get(IntegrationRegistry::class),
+                );
+            }
+        );
+
+        // PropertySemanticReferenceValidator — validates the opt-in
+        // `referenceSemanticType` property marker (ADR-048, cross-app
+        // semantic references) as a well-formed absolute IRI. Standalone,
+        // mirroring PropertyReferenceTypeValidator; wire into schema-save
+        // when write-time enforcement is desired.
+        $context->registerService(
+            PropertySemanticReferenceValidator::class,
+            function (ContainerInterface $container) {
+                return new PropertySemanticReferenceValidator(
+                    jsonLd: $container->get(\OCA\OpenRegister\Service\JsonLd\JsonLdContextService::class),
                 );
             }
         );
