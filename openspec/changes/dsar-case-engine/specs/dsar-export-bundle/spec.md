@@ -3,8 +3,10 @@
 ### Requirement: Assemble and sign the export bundle
 OpenRegister SHALL assemble a data-subject export bundle for a case by reusing
 `DataSubjectRequestService::assembleAccessExport`, and SHALL NOT re-implement subject-data
-discovery or assembly (ADR-011). The assembled bundle SHALL be signed with a PAdES-LTV signature
-and SHALL carry a SHA-256 content hash so its integrity is verifiable. The assembly MUST run
+discovery or assembly (ADR-011). The bundle SHALL be rendered as a **PDF disclosure document**, and
+that PDF SHALL be signed with a PAdES-LTV signature and SHALL carry a SHA-256 content hash so its
+integrity is verifiable. (A machine-readable art-20 *portability* payload — e.g. JSON/CSV with a
+JAdES/CAdES signature — is a deferred follow-up and out of scope here.) The assembly MUST run
 through `ObjectService` under the caller's RBAC + multitenancy scope, and the bundle-generation
 action MUST be recorded in the case's immutable audit trail pinned to the DSAR processing activity
 (`ObjectEntity::setProcessingActivityId()`).
@@ -16,7 +18,7 @@ action MUST be recorded in the case's immutable audit trail pinned to the DSAR p
 
 #### Scenario: Bundle is signed and integrity-verifiable
 - **WHEN** an export bundle is generated
-- **THEN** the bundle MUST carry a PAdES-LTV signature and a SHA-256 content hash
+- **THEN** the PDF bundle MUST carry a PAdES-LTV signature and a SHA-256 content hash
 - **AND** altering the bundle bytes MUST invalidate the recorded hash
 
 ### Requirement: One-time secure download token

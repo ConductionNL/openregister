@@ -204,10 +204,12 @@ provider / `RetentionService` doubles; any fixture ids/tokens use safe placehold
 
 ## Resolved decisions
 
-- **Bundle signing** — full **PAdES-LTV signing is REQUIRED in Phase 1** (not deferred to a
-  SHA-256-only interim). Selecting + vendoring the PAdES-LTV signing library is an in-scope Phase-1
-  task; signing is isolated behind the export-bundle service as a single swappable dependency, with a
-  SHA-256 content hash carried alongside the signature.
+- **Bundle format + signing** — the export bundle is a **PDF disclosure document** (art-15 access);
+  full **PAdES-LTV signing is REQUIRED in Phase 1** (not deferred to a SHA-256-only interim), which
+  is why a PDF/PAdES signer is the dependency. Selecting + vendoring the PAdES-LTV signing library is
+  an in-scope Phase-1 task; signing is isolated behind the export-bundle service as a single swappable
+  dependency, with a SHA-256 content hash carried alongside the signature. A machine-readable art-20
+  *portability* payload (JSON/CSV + JAdES/CAdES) is a deferred follow-up, out of scope here.
 - **Route namespace** — case-management endpoints live under **`/api/gdpr/cases/...`**, mirroring the
   existing DSAR routes.
 - **Officer-override access control** — resolved from an admin-configured **ADR-023 action/group
