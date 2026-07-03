@@ -6602,4 +6602,130 @@ class RenderObjectTest extends TestCase
         $this->assertSame(expected: [7, 8], actual: $resultWithFiles->getFiles());
     }//end testSetLightweightFileIdsCacheHitReturnsCachedValue()
 
+
+    /**
+     * Build a RenderObject wired with a REAL TranslationHandler +
+     * LanguageService (so the language chain is genuinely exercised) and a
+     * schema whose `title` property is translatable. The schema/register
+     * mappers resolve to that translatable schema and a Dutch-default
+     * register, matching the list cheap-path's per-row resolution.
+     *
+     * @param bool $translationsAll Whether the request opted into `?_translations=all`.
+     *
+     * @return RenderObject The handler under test.
+     */
+    private function buildHandlerWithRealTranslation(bool $translationsAll): RenderObject
+    {
+        $languageService = new \OCA\OpenRegister\Service\LanguageService();
+        if ($translationsAll === true) {
+            $languageService->setReturnAllTranslations(true);
+        }
+
+        $translationHandler = new \OCA\OpenRegister\Service\Object\TranslationHandler(
+            $languageService,
+            $this->createMock(LoggerInterface::class)
+        );
+
+        $schema = $this->createSchema(id: 42, slug: 'lead');
+        $schema->setProperties(
+            [
+                'title' => [
+                    'type'         => 'string',
+                    'translatable' => true,
+                ],
+            ]
+        );
+
+        $register = $this->createRegister(id: 7);
+        $register->setLanguages(['nl', 'en']);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->willReturn($schema);
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->willReturn($register);
+
+        return new RenderObject(
+            $this->fileMapper,
+            $this->objectMapper,
+            $registerMapper,
+            $schemaMapper,
+            $this->systemTagManager,
+            $this->systemTagMapper,
+            $this->cacheHandler,
+            $this->objectCacheService,
+            $this->propertyRbacHandler,
+            $this->logger,
+            $this->fileService,
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $translationHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $languageService
+        );
+    }//end buildHandlerWithRealTranslation()
+
+
+    /**
+     * Task 1: the list cheap-path MUST project a translatable field's raw
+     * language-keyed map down to the negotiated-language string, exactly
+     * like the single-object read path does — so list and detail responses
+     * agree.
+     *
+     * @return void
+     */
+    public function testResolveTranslationsForRowsProjectsTranslatableFieldToString(): void
+    {
+        $handler = $this->buildHandlerWithRealTranslation(translationsAll: false);
+
+        $entity = $this->createObjectEntity(
+            id: 1,
+            uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            objectData: ['title' => ['nl' => 'Nederlandse titel', 'en' => 'English title']]
+        );
+        $entity->setSchema(42);
+        $entity->setRegister(7);
+
+        $rows = [$entity];
+        $handler->resolveTranslationsForRows($rows);
+
+        $this->assertSame(
+            'Nederlandse titel',
+            $rows[0]->getObject()['title'],
+            'list cheap-path MUST project the translatable map to the negotiated (nl) string'
+        );
+    }//end testResolveTranslationsForRowsProjectsTranslatableFieldToString()
+
+
+    /**
+     * Task 1: with `?_translations=all` the list cheap-path MUST return the
+     * full language-keyed map unchanged (no projection).
+     *
+     * @return void
+     */
+    public function testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll(): void
+    {
+        $handler = $this->buildHandlerWithRealTranslation(translationsAll: true);
+
+        $map    = ['nl' => 'Nederlandse titel', 'en' => 'English title'];
+        $entity = $this->createObjectEntity(
+            id: 1,
+            uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            objectData: ['title' => $map]
+        );
+        $entity->setSchema(42);
+        $entity->setRegister(7);
+
+        $rows = [$entity];
+        $handler->resolveTranslationsForRows($rows);
+
+        $this->assertSame(
+            $map,
+            $rows[0]->getObject()['title'],
+            '?_translations=all MUST return the full language-keyed map unchanged'
+        );
+    }//end testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll()
+
 }
