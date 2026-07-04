@@ -34,7 +34,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(value, key) in preview.postMergeGoldenRecord" :key="key">
+						<tr v-for="(value, key) in preview.postMergeGoldenRecord" :key="key" data-testid="mdm-merge-preview-row">
 							<td>{{ key }}</td>
 							<td>{{ displayValue(value) }}</td>
 							<td>{{ provenanceFor(key) }}</td>
@@ -49,6 +49,7 @@
 				<div class="mergeWizard__reason">
 					<NcSelect
 						v-model="reasonModel"
+						data-testid="mdm-merge-reason"
 						:options="reasonOptions"
 						:input-label="t('openregister', 'Merge reason')"
 						:placeholder="t('openregister', 'Select a reason')"
@@ -68,6 +69,7 @@
 			</NcButton>
 			<NcButton
 				type="primary"
+				data-testid="mdm-merge-confirm"
 				:disabled="!canConfirm"
 				@click="confirm">
 				<template #icon>

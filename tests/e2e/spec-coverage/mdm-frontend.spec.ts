@@ -7,42 +7,45 @@
  * TAG CONVENTION: each test carries
  *   @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#<scenario-slug>
  *
- * Methodology: drive the real UI — select register/schema via the shared
- * RegisterSchemaSelector's NcSelect comboboxes, navigate via the "Data
- * quality" nav group, and assert rendered DOM. The register/schema pair is
- * discovered at runtime from the register combobox's first option rather
- * than hardcoding UUIDs (design.md: register 16 / schema 1207 is the
- * canonical scored dataset, but e2e should not assume fixed ids in a fresh
- * environment).
- *
- * Scenarios covered (UI test):
- *   mdm-group-appears-in-the-app-navigation
- *   each-mdm-route-renders-its-own-view-component
- *   schema-select-is-disabled-until-a-register-is-chosen
- *   selection-persists-across-mdm-views
- *   ncselect-carries-an-accessible-label
- *   kpi-cards-and-histogram-reflect-the-stats-envelope
- *   lowest-quality-table-lists-scored-objects
- *   empty-state-on-an-unscored-schema
- *   candidate-pairs-render-with-score-and-matched-attributes
- *   no-merge-or-write-action-is-present
- *   master-entities-show-quality-columns
- *   golden-record-detail-shows-attribute-provenance
- *   per-webhook-health-counts-render
- *   empty-state-when-no-webhooks-are-configured
+ * Methodology: drive the real UI. The five MDM views live under the hash-mode
+ * router (`/index.php/apps/openregister/#/<route>`); the shared
+ * RegisterSchemaSelector is now route-scoped, so when the self-seeding MDM
+ * fixture (tests/e2e/mdm-seed.ts, run in globalSetup) has planted data, these
+ * tests DEEP-LINK straight to the seeded register/schema
+ * (`#/quality?register=<id>&schema=<id>`) and assert populated surfaces.
+ * Without a seed (no pipelinq instance) they fall back to driving the selector
+ * and degrade to test.skip(), so the suite still runs everywhere.
  */
 
 import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
+import { readMdmSeed } from '../mdm-seed'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
+const seed = readMdmSeed()
 
-/** Navigate to an OR app subpath and wait for NC header + app content. */
-async function gotoApp(page: Page, subpath: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister${subpath}`, { waitUntil: 'domcontentloaded' })
+/** `?register=&schema=` deep-link query for the seeded pair, or '' when unseeded. */
+function scopedQuery(): string {
+	return seed ? `?register=${seed.register}&schema=${seed.masterEntitySchema}` : ''
+}
+
+/** Navigate to a hash-mode OR route and wait for NC header + app content. */
+async function gotoApp(page: Page, route: string): Promise<void> {
+	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	await page.waitForTimeout(800)
+	await dismissFirstRun(page)
+}
+
+/** Best-effort dismissal of the NC first-run wizard / OR support dialog. */
+async function dismissFirstRun(page: Page): Promise<void> {
+	for (const name of [/first run/i, /welcome/i, /support/i]) {
+		const dlg = page.getByRole('dialog', { name }).first()
+		if (await dlg.isVisible().catch(() => false)) {
+			await dlg.getByRole('button', { name: /close|dismiss|got it|skip|no thanks/i }).first().click().catch(() => {})
+		}
+	}
 }
 
 /** Click a combobox and wait for its options to appear; returns false on timeout. */
@@ -83,6 +86,21 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 	return true
 }
 
+/**
+ * Land on `route` with a (register, schema) selection active. With a seed the
+ * route query pre-selects it (no clicks); otherwise the selector is driven.
+ * Returns whether a selection is active.
+ */
+async function gotoScoped(page: Page, route: string): Promise<boolean> {
+	if (seed) {
+		await gotoApp(page, `${route}${scopedQuery()}`)
+		await expect(page.getByTestId('mdm-register-select')).toBeVisible({ timeout: 10_000 })
+		return true
+	}
+	await gotoApp(page, route)
+	return selectFirstRegisterAndSchema(page)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#mdm-group-appears-in-the-app-navigation
 // @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#each-mdm-route-renders-its-own-view-component
@@ -90,19 +108,23 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 test.describe('mdm-frontend — navigation group', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('Data quality nav group has four entries and each mounts its own view', async ({ page }) => {
+	test('Data quality nav group has five entries and each mounts its own view', async ({ page }) => {
 		await gotoApp(page, '/')
-		const nav = page.locator('[id^="app-navigation"], .app-navigation, nav').first()
+		// The OR sidebar is `.app-navigation`; a bare `nav` selector can match the
+		// header/user-menu nav first, so scope explicitly to the sidebar.
+		const nav = page.locator('.app-navigation').first()
 
 		const groupToggle = nav.getByText('Data quality', { exact: true }).first()
 		await expect(groupToggle).toBeVisible({ timeout: 10_000 })
 		await groupToggle.click().catch(() => {})
 
+		// #C added a fifth entry ("Merge Operations") to the group.
 		const entries = [
 			{ label: 'Data Quality', heading: /Data Quality/i },
 			{ label: 'Duplicate Candidates', heading: /Duplicate Candidates/i },
 			{ label: 'Master entities', heading: /Master entities/i },
 			{ label: 'Queue / sync health', heading: /Queue \/ sync health/i },
+			{ label: 'Merge Operations', heading: /Merge Operations/i },
 		]
 
 		for (const entry of entries) {
@@ -118,11 +140,13 @@ test.describe('mdm-frontend — navigation group', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#schema-select-is-disabled-until-a-register-is-chosen
 // @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#ncselect-carries-an-accessible-label
+// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selects-expose-stable-test-handles
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — register/schema selector', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('schema combobox is disabled until a register is chosen, both expose accessible labels', async ({ page }) => {
+		// Plain (un-scoped) navigation so the fresh selector is exercised.
 		await gotoApp(page, '/quality')
 
 		const registerCombo = page.getByRole('combobox', { name: 'Register' }).first()
@@ -131,23 +155,34 @@ test.describe('mdm-frontend — register/schema selector', () => {
 		await expect(registerCombo).toBeVisible({ timeout: 10_000 })
 		await expect(schemaCombo).toBeVisible({ timeout: 10_000 })
 		await expect(schemaCombo).toBeDisabled({ timeout: 8_000 })
+
+		// The selects expose stable data-testids for robust targeting.
+		await expect(page.getByTestId('mdm-register-select')).toBeVisible()
+		await expect(page.getByTestId('mdm-schema-select')).toBeVisible()
 	})
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
+// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
+// @e2e openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mdm-frontend — selection persistence', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('register/schema selection on Data Quality persists on Duplicate Candidates', async ({ page }) => {
-		await gotoApp(page, '/quality')
-		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		const selected = await gotoScoped(page, '/quality')
+		test.skip(!selected, 'No register/schema available — seed data needed')
 
 		const registerCombo = page.getByRole('combobox', { name: 'Register' }).first()
 		const selectedRegisterLabel = (await registerCombo.innerText().catch(() => '')) || ''
 
+		// With a seed the URL now mirrors the selection (route-scoping).
+		if (seed) {
+			await expect(page).toHaveURL(new RegExp(`register=${seed.register}`))
+		}
+
+		// Navigate PLAIN (no query) — the shared store must carry the selection.
 		await gotoApp(page, '/duplicates')
 		const duplicatesRegisterCombo = page.getByRole('combobox', { name: 'Register' }).first()
 		await expect(duplicatesRegisterCombo).toBeVisible({ timeout: 10_000 })
@@ -166,9 +201,8 @@ test.describe('mdm-frontend — Data Quality dashboard', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('selecting a register/schema shows KPI cards, histogram or table fallback, and lowest-quality listing', async ({ page }) => {
-		await gotoApp(page, '/quality')
-		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		const selected = await gotoScoped(page, '/quality')
+		test.skip(!selected, 'No register/schema available — seed data needed')
 
 		// Either the empty state (unscored schema) or the KPI + histogram
 		// surface renders — never a blank panel.
@@ -176,17 +210,30 @@ test.describe('mdm-frontend — Data Quality dashboard', () => {
 		const kpiRow = page.locator('.kpiRow')
 		await expect(emptyState.or(kpiRow)).toBeVisible({ timeout: 15_000 })
 
+		// With the seeded masterEntity schema the dashboard is populated.
+		if (seed) {
+			await expect(kpiRow).toBeVisible({ timeout: 15_000 })
+		}
+
 		const hasKpis = await kpiRow.isVisible().catch(() => false)
 		if (hasKpis) {
-			await expect(page.getByText(/Average score/i)).toBeVisible()
-			await expect(page.getByText(/^Good$/i)).toBeVisible()
-			await expect(page.getByText(/^Fair$/i)).toBeVisible()
-			await expect(page.getByText(/^Poor$/i)).toBeVisible()
+			// Scope KPI labels to the .kpiRow container — "Good"/"Fair"/"Poor"
+			// also render as qualityStatus cells in the lowest-quality table, so
+			// an un-scoped getByText is a strict-mode violation (multiple hits).
+			await expect(kpiRow.getByText(/Average score/i)).toBeVisible()
+			await expect(kpiRow.getByText(/^Good$/i)).toBeVisible()
+			await expect(kpiRow.getByText(/^Fair$/i)).toBeVisible()
+			await expect(kpiRow.getByText(/^Poor$/i)).toBeVisible()
 
 			// Histogram: either the chart widget or the bucket-table fallback.
 			const histogramTable = page.locator('[data-testid="histogram-fallback-table"]')
-			const chart = page.locator('.histogramSection').locator('svg, canvas, .apexcharts-canvas')
+			const chart = page.locator('.histogramSection').locator('svg, canvas, .apexcharts-canvas').first()
 			await expect(histogramTable.or(chart)).toBeVisible({ timeout: 10_000 })
+
+			// Lowest-quality listing is populated for the seeded schema.
+			if (seed) {
+				await expect(page.locator('.lowestQualityTable tbody tr').first()).toBeVisible({ timeout: 10_000 })
+			}
 		}
 	})
 })
@@ -203,13 +250,19 @@ test.describe('mdm-frontend — Duplicate Candidates', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('duplicate candidates render with a per-pair merge action and no delete/write action', async ({ page }) => {
-		await gotoApp(page, '/duplicates')
-		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		const selected = await gotoScoped(page, '/duplicates')
+		test.skip(!selected, 'No register/schema available — seed data needed')
 
 		const emptyState = page.getByText(/No duplicate candidates found/i)
 		const table = page.locator('.duplicatesTable')
 		await expect(emptyState.or(table)).toBeVisible({ timeout: 15_000 })
+
+		// With the seeded duplicate pair, at least one candidate row + its
+		// per-pair Merge launch renders.
+		if (seed) {
+			await expect(page.getByTestId('mdm-duplicate-row').first()).toBeVisible({ timeout: 15_000 })
+			await expect(page.getByTestId('mdm-merge-launch').first()).toBeVisible()
+		}
 
 		// No delete/write control anywhere on the view beyond the merge launch.
 		await expect(page.getByRole('button', { name: /^delete$/i })).toHaveCount(0)
@@ -224,31 +277,44 @@ test.describe('mdm-frontend — Master entities + golden record', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('master entities list quality columns and opening one shows the golden-record panel', async ({ page }) => {
-		await gotoApp(page, '/master-entities')
-		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		const selected = await gotoScoped(page, '/master-entities')
+		test.skip(!selected, 'No register/schema available — seed data needed')
 
 		const emptyState = page.getByText(/No master entities found/i)
 		const table = page.locator('.masterEntitiesTable')
 		await expect(emptyState.or(table)).toBeVisible({ timeout: 15_000 })
 
+		if (seed) {
+			await expect(page.getByTestId('mdm-master-entity-row').first()).toBeVisible({ timeout: 15_000 })
+		}
+
 		const hasRows = await table.isVisible().catch(() => false)
 		if (hasRows) {
-			await expect(page.getByText(/Quality score/i).first()).toBeVisible()
-			await expect(page.getByText(/Quality status/i).first()).toBeVisible()
+			await expect(table.locator('thead').getByText(/Quality score/i).first()).toBeVisible()
+			await expect(table.locator('thead').getByText(/Quality status/i).first()).toBeVisible()
 
-			const viewButton = page.getByRole('button', { name: /View golden record/i }).first()
+			// Open a SEEDED row (known to carry attribute provenance). Pre-existing
+			// masterEntity rows may lack a materialised provenance map, so opening
+			// "the first row" is not deterministic — target the seeded dup survivor.
+			const viewButton = seed
+				? page.getByTestId('mdm-master-entity-row').filter({ hasText: seed.dupPair[0] }).first().getByTestId('mdm-view-golden-record')
+				: page.getByTestId('mdm-view-golden-record').first()
+			await expect(viewButton).toBeVisible({ timeout: 10_000 })
 			await viewButton.click()
 
-			// The panel is NOT a modal — assert no dialog role appears, and the
-			// panel renders inline.
-			await expect(page.locator('[role="dialog"]')).toHaveCount(0)
+			// The golden-record panel is an INLINE panel, not a modal/dialog.
 			const panel = page.locator('.goldenRecordPanel')
 			await expect(panel).toBeVisible({ timeout: 10_000 })
+			await expect(panel).not.toHaveAttribute('role', 'dialog')
 
 			const provenanceTable = panel.locator('[data-testid="provenance-table"]')
 			const noProvenance = panel.getByText(/No golden-record provenance/i)
 			await expect(provenanceTable.or(noProvenance)).toBeVisible({ timeout: 10_000 })
+
+			// The seeded survivor carries a materialised attribute-provenance map.
+			if (seed) {
+				await expect(provenanceTable).toBeVisible({ timeout: 10_000 })
+			}
 		}
 	})
 })

@@ -43,13 +43,13 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(pair, index) in duplicates" :key="index">
+						<tr v-for="(pair, index) in duplicates" :key="index" data-testid="mdm-duplicate-row">
 							<td>{{ pair.objectA }}</td>
 							<td>{{ pair.objectB }}</td>
 							<td>{{ pair.score }}</td>
 							<td>{{ (pair.matchedOn || []).join(', ') }}</td>
 							<td>
-								<NcButton type="tertiary" @click="openMergeWizard(pair)">
+								<NcButton type="tertiary" data-testid="mdm-merge-launch" @click="openMergeWizard(pair)">
 									{{ t('openregister', 'Merge') }}
 								</NcButton>
 							</td>
