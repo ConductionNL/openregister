@@ -58,7 +58,7 @@ class ExportBundleService
     public function __construct(
         private readonly DataSubjectRequestService $dsrService,
         private readonly CaseObjectAccessor $accessor,
-        // TODO(ADR-047 Phase-1b): swap UnsignedPadesSigner for the chosen PAdES-LTV signer (library decision pending).
+        // TODO(ADR-047 Phase-1b): swap UnsignedPadesSigner for a tc-lib-pdf-backed PAdES-LTV signer (tecnickcom/tc-lib-pdf, LGPL-3; configurable RFC-3161 TSA URL; pyHanko fallback). Spike-confirm B-LT first.
         private readonly PadesSigner $signer,
         private readonly OneTimeDownloadTokenStore $tokenStore,
         private readonly AuditTrailMapper $auditTrailMapper,

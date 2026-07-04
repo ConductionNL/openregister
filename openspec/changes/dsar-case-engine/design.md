@@ -166,11 +166,12 @@ registered in `appinfo/routes.php` (ADR-016, ADR-029). None is `@PublicPage`.
   the head's transition and resolved at runtime (same way decidesk's `MeetingTransitionGuard`
   reference resolves).
 - **[PAdES-LTV signing is a genuinely new dependency in OR]** → No existing PAdES/secure-token
-  primitive was found under `lib/`. **Decision: full PAdES-LTV signing is REQUIRED in Phase 1**
-  (not deferred). Selecting + vendoring the PAdES-LTV signing library is therefore an in-scope
-  Phase-1 task (see tasks §2.1). Mitigation for the new dependency: isolate signing behind the
-  export-bundle service so the library is a single, swappable dependency; the SHA-256 content hash
-  is an additional integrity guarantee carried alongside the signature, not a fallback for it.
+  primitive was found under `lib/`. **Resolved: signer = `tecnickcom/tc-lib-pdf`** (LGPL-3, EUPL-1.2
+  compatible, pure PHP, native LTV), behind the swappable `PadesSigner` interface, with a configurable
+  RFC-3161 **TSA URL**; **fallback = `pyHanko` sidecar** (MIT). A spike must confirm B-LT before the
+  real signer lands (its LTV support is recent). SetaPDF was rejected (commercial → cannot bundle in an
+  EUPL app). Mitigation: the SHA-256 content hash is an additional integrity guarantee carried
+  alongside the signature, not a fallback for it.
 - **[One-time download token could leak or be replayed]** → Mitigation: mint a
   single-use, time-boxed token that is burned on first successful download; the token is never a
   realistic-looking secret in any artifact (`YOUR_TOKEN_HERE` placeholder only); the download route
@@ -205,11 +206,17 @@ provider / `RetentionService` doubles; any fixture ids/tokens use safe placehold
 ## Resolved decisions
 
 - **Bundle format + signing** — the export bundle is a **PDF disclosure document** (art-15 access);
-  full **PAdES-LTV signing is REQUIRED in Phase 1** (not deferred to a SHA-256-only interim), which
-  is why a PDF/PAdES signer is the dependency. Selecting + vendoring the PAdES-LTV signing library is
-  an in-scope Phase-1 task; signing is isolated behind the export-bundle service as a single swappable
-  dependency, with a SHA-256 content hash carried alongside the signature. A machine-readable art-20
-  *portability* payload (JSON/CSV + JAdES/CAdES) is a deferred follow-up, out of scope here.
+  full **PAdES-LTV signing is REQUIRED** (not a SHA-256-only interim). Signing is isolated behind the
+  export-bundle service's swappable `PadesSigner` interface, with a SHA-256 content hash carried
+  alongside the signature. **Chosen signer: `tecnickcom/tc-lib-pdf`** (LGPL-3 → EUPL-1.2 compatible;
+  pure PHP, no sidecar; native LTV — OCSP/CRL/DSS/VRI + RFC-3161 timestamp as of v8.65). It requires a
+  configurable **TSA URL** (RFC-3161 timestamp authority — e.g. DigiCert / FreeTSA; a qualified TSA for
+  eIDAS-grade), surfaced as a `PadesSigner` config input, not hard-coded. **Fallback: `pyHanko` CLI
+  sidecar** (MIT, most-proven B-LTA) if the tc-lib-pdf spike falls short — a config/adapter swap, not a
+  call-site change. Before the real `PadesSigner` implementation, a **spike** must confirm tc-lib-pdf
+  reaches **B-LT** (signature still verifies after the signing cert expires; B-LTA archival is a
+  nice-to-have) by validating the signed PDF in Acrobat / the EU DSS validator. A machine-readable
+  art-20 *portability* payload (JSON/CSV + JAdES/CAdES) is a deferred follow-up, out of scope here.
 - **Route namespace** — case-management endpoints live under **`/api/gdpr/cases/...`**, mirroring the
   existing DSAR routes.
 - **Officer-override access control** — resolved from an admin-configured **ADR-023 action/group

@@ -385,8 +385,9 @@ class Application extends App implements IBootstrap
         // seam to its default SHA-256-only stub. The real PAdES-LTV signer drops
         // in here later by replacing this binding — the ExportBundleService
         // depends only on the PadesSigner interface, so nothing else changes.
-        // TODO(ADR-047 Phase-1b): swap UnsignedPadesSigner for the chosen
-        // PAdES-LTV signer (library decision pending).
+        // TODO(ADR-047 Phase-1b): swap UnsignedPadesSigner for a tc-lib-pdf-backed
+        // PAdES-LTV signer (tecnickcom/tc-lib-pdf, LGPL-3; configurable RFC-3161
+        // TSA URL; pyHanko sidecar fallback). Spike-confirm B-LT first.
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Export\PadesSigner::class,
             function () {
