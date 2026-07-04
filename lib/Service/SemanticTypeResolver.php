@@ -143,7 +143,7 @@ final class SemanticTypeResolver
 
         $candidates = [];
         foreach ($schemas as $schema) {
-            $implemented = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
+            $implemented = $this->implementedTypesWithAncestors(schema: $schema);
             if (in_array($uri, $implemented, true) === false) {
                 continue;
             }
@@ -175,6 +175,80 @@ final class SemanticTypeResolver
         return $pick;
 
     }//end resolveSchemaByImplements()
+
+    /**
+     * Compute a schema's implemented semantic types INCLUDING those inherited via
+     * `allOf`.
+     *
+     * A schema's implemented types are the union of its OWN markers
+     * ({@see \OCA\OpenRegister\Service\JsonLd\JsonLdContextService::getImplementedTypes()})
+     * and the implemented types of every schema it extends via `allOf`, resolved
+     * recursively with a visited-set circular guard (mirroring
+     * {@see \OCA\OpenRegister\Db\SchemaMapper::resolveAllOf()}). A child ADDS,
+     * never removes — so a schema that `allOf`-extends a `schema:Person` schema
+     * resolves for `https://schema.org/Person` even with no marker of its own. A
+     * schema with no `allOf` is unaffected (exactly its own markers).
+     *
+     * The ancestor walk lives here rather than in `JsonLdContextService` so that
+     * service stays dependency-light; this resolver already holds a `SchemaMapper`
+     * to load each `allOf` parent by id/uuid/slug.
+     *
+     * @param Schema             $schema  The schema whose implemented types to compute.
+     * @param array<int, string> $visited Visited schema identifiers (circular guard).
+     *
+     * @return array<int, string> The union of own + inherited implemented types.
+     *
+     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-1.1
+     */
+    private function implementedTypesWithAncestors(Schema $schema, array $visited=[]): array
+    {
+        // Mark this schema visited so a cyclic `allOf` never loops.
+        $currentId = (string) $schema->getId();
+        if ($currentId !== '' && in_array($currentId, $visited, true) === true) {
+            return [];
+        }
+
+        if ($currentId !== '') {
+            $visited[] = $currentId;
+        }
+
+        // Start with the schema's own markers.
+        $types = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
+
+        $allOf = $schema->getAllOf();
+        if (is_array($allOf) === false || $allOf === []) {
+            return array_values(array_unique($types));
+        }
+
+        // Union each `allOf` ancestor's implemented types (recursive).
+        foreach ($allOf as $parentRef) {
+            if (is_string($parentRef) === false && is_int($parentRef) === false) {
+                continue;
+            }
+
+            if ((string) $parentRef === '') {
+                continue;
+            }
+
+            try {
+                $parent = $this->schemaMapper->find(id: $parentRef);
+            } catch (\Throwable $e) {
+                // A missing/unreadable ancestor contributes nothing; never raise.
+                $this->logger->debug(
+                    message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'ref' => (string) $parentRef, 'exception' => $e->getMessage()]
+                );
+                continue;
+            }
+
+            foreach ($this->implementedTypesWithAncestors(schema: $parent, visited: $visited) as $inherited) {
+                $types[] = $inherited;
+            }
+        }//end foreach
+
+        return array_values(array_unique($types));
+
+    }//end implementedTypesWithAncestors()
 
     /**
      * Find the register a resolved schema belongs to.
