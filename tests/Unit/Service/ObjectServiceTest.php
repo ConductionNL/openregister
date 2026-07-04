@@ -2025,46 +2025,6 @@ class ObjectServiceTest extends TestCase
 		$this->assertCount(1, $uuids);
 	}
 
-	// ── 54. ensureObjectFolderExists ─────────────────────────────────
-
-	public function testEnsureObjectFolderExistsCreatesFolder(): void
-	{
-		$entity = new ObjectEntity();
-		$entity->setUuid('test-uuid');
-		$entity->setFolder(null);
-
-		$folderNode = $this->createMock(\OCP\Files\Folder::class);
-		$folderNode->method('getId')->willReturn(42);
-
-		$this->fileService->expects($this->once())
-			->method('createEntityFolder')
-			->willReturn($folderNode);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('update')
-			->willReturnArgument(0);
-
-		$this->service->ensureObjectFolderExists($entity);
-
-		$this->assertSame('42', $entity->getFolder());
-	}
-
-	public function testEnsureObjectFolderExistsHandlesException(): void
-	{
-		$entity = new ObjectEntity();
-		$entity->setUuid('test-uuid');
-		$entity->setFolder(null);
-
-		$this->fileService->expects($this->once())
-			->method('createEntityFolder')
-			->willThrowException(new Exception('Folder creation failed'));
-
-		// Should not throw - exception is caught
-		$this->service->ensureObjectFolderExists($entity);
-
-		$this->assertNull($entity->getFolder());
-	}
-
 	// ── 55. getObject / setObject ───────────────────────────────────────
 
 	public function testGetObjectReturnsSetObject(): void
@@ -2199,37 +2159,6 @@ class ObjectServiceTest extends TestCase
 		$this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
 
 		$this->invokePrivate('validateObjectIfRequired', [[]]);
-	}
-
-	// ── 55d. ensureObjectFolderExists when getFolderId returns null ────
-
-	/**
-	 * Test ensureObjectFolderExists sets folder to null and still calls update
-	 * when folderNode->getId() returns null (entity needs persisting regardless).
-	 */
-	public function testEnsureObjectFolderExistsCallsUpdateWhenNodeIdNull(): void
-	{
-		$entity = new ObjectEntity();
-		$entity->setUuid('test-uuid');
-		$entity->setFolder(null);
-
-		$folderNode = $this->createMock(\OCP\Files\Folder::class);
-		$folderNode->method('getId')->willReturn(null);
-
-		$this->fileService->expects($this->once())
-			->method('createEntityFolder')
-			->willReturn($folderNode);
-
-		// When folderNode->getId() returns null, the entity is still updated
-		// (folder set to null, then update called).
-		$this->objectEntityMapper->expects($this->once())
-			->method('update')
-			->willReturnArgument(0);
-
-		$this->service->ensureObjectFolderExists($entity);
-
-		// Folder should be null since getId() returned null.
-		$this->assertNull($entity->getFolder());
 	}
 
 	// ── 55e. getFacetableFields delegation ───────────────────────────────

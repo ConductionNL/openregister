@@ -348,55 +348,6 @@ class ObjectService
     }//end checkPermission()
 
     /**
-     * Ensure folder exists for an ObjectEntity.
-     *
-     * This method checks if the object has a valid folder ID and creates one if needed.
-     * It handles legacy cases where the folder property might be null, empty, or a string path.
-     *
-     * @param ObjectEntity $entity The object entity to ensure folder for
-     *
-     * @return void
-     *
-     * @psalm-return   void
-     * @phpstan-return void
-     *
-     * @spec exclude Lazily creates the object's storage folder via FileService when missing; file-folder plumbing.
-     */
-    public function ensureObjectFolderExists(ObjectEntity $entity): void
-    {
-        $folderProperty = $entity->getFolder();
-
-        // Check if folder needs to be created (null, empty string, or legacy string path).
-        $isString = is_string($folderProperty) === true;
-        if ($folderProperty === null || $folderProperty === '' || $isString === true) {
-            try {
-                // Create folder and get the folder node.
-                $folderNode = $this->fileService->createEntityFolder($entity);
-
-                if ($folderNode !== null) {
-                    // Update the entity with the folder ID.
-                    $folderIdValue = $folderNode->getId();
-                    $folderStr     = null;
-                    if ($folderIdValue !== null) {
-                        $folderStr = (string) $folderIdValue;
-                    }
-
-                    $entity->setFolder($folderStr);
-
-                    // Save the entity with the new folder ID.
-                    $this->objectMapper->update($entity);
-                }
-            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
-                // Access denials must propagate to the controller for HTTP 403 mapping.
-                throw $e;
-            } catch (Exception $e) {
-                // Log the error but don't fail the object creation/update.
-                // The object can still function without a folder.
-            }//end try
-        }//end if
-    }//end ensureObjectFolderExists()
-
-    /**
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID
