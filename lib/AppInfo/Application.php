@@ -164,6 +164,8 @@ use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -1276,6 +1278,30 @@ class Application extends App implements IBootstrap
                 return new FilesObjectSourceProvider(
                     rootFolder: $container->get('OCP\Files\IRootFolder'),
                     userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            DeckObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new DeckObjectSourceProvider(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TalkObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new TalkObjectSourceProvider(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2850,6 +2876,8 @@ class Application extends App implements IBootstrap
             ContactsObjectSourceProvider::class,
             CalendarEventObjectSourceProvider::class,
             FilesObjectSourceProvider::class,
+            DeckObjectSourceProvider::class,
+            TalkObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {
             try {

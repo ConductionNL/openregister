@@ -113,9 +113,33 @@ final class NcEntitySemanticMap
             'requiredApp' => null,
             'application' => 'files',
         ],
-        // Further follow-on rows (each ships in its own change — see tasks.md §5.1):
-        // deck → nc-card / schema:Action via deck-source (app deck).
-        // talk → nc-room / schema:Conversation via talk-source (app spreed).
+        'card'    => [
+            'register'    => 'deck',
+            'schema'      => 'nc-card',
+            'schemaOrg'   => 'schema:Action',
+            'provider'    => 'deck-source',
+            'requiredApp' => 'deck',
+            'application' => 'deck',
+        ],
+        'talk'    => [
+            'register'    => 'talk',
+            'schema'      => 'nc-conversation',
+            'schemaOrg'   => 'schema:Conversation',
+            'provider'    => 'talk-source',
+            'requiredApp' => 'spreed',
+            'application' => 'spreed',
+        ],
+        // Tasks reuse the EXISTING `caldav-vtodo` provider (no new provider
+        // class) — VTODOs are served from the core `dav` app, so the register's
+        // `application` gates on the optional `tasks` UI app.
+        'task'    => [
+            'register'    => 'tasks',
+            'schema'      => 'nc-task',
+            'schemaOrg'   => 'schema:Action',
+            'provider'    => 'caldav-vtodo',
+            'requiredApp' => 'tasks',
+            'application' => 'tasks',
+        ],
     ];
 
     /**
