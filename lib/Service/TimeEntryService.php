@@ -237,6 +237,10 @@ class TimeEntryService
      * @return TimeLink The persisted link entity.
      *
      * @throws \InvalidArgumentException When duration is less than 1 minute.
+     * @throws \OCP\AppFramework\OCS\OCSForbiddenException When the configured
+     *                                                     backend is unavailable
+     *                                                     or the session has no
+     *                                                     authenticated user.
      *
      * @spec openspec/changes/integration-time-tracker/tasks.md#task-2
      */
@@ -251,11 +255,14 @@ class TimeEntryService
             throw new \InvalidArgumentException('Duration must be at least 1 minute.');
         }
 
-        $user = $this->userSession->getUser();
-        $uid  = '';
-        if ($user !== null) {
-            $uid = $user->getUID();
+        // Time can only be logged when the configured tracking backend app is
+        // installed/enabled (mirrors TimeTrackerLinksController's guard) and by
+        // an authenticated user (the entry is attributed to their UID).
+        if ($this->isBackendAvailable() === false) {
+            throw new \OCP\AppFramework\OCS\OCSForbiddenException('Time-tracking backend is not available.');
         }
+
+        $uid = $this->requireAuthenticatedUser();
 
         $link = new TimeLink();
         $link->setObjectUuid($objectUuid);

@@ -13,7 +13,6 @@
  * - checkSavePermissions (null schema, null uuid, uuid exists, uuid not found)
  * - normalizeDateValues (no schema, date format, datetime conversion)
  * - ensureObjectFolder (null uuid, existing folder, DoesNotExistException)
- * - ensureObjectFolderExists (null folder, string path, folder creation)
  * - count
  * - findByRelations
  * - deleteObject
@@ -783,111 +782,6 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($result);
 
     }//end testEnsureObjectFolderObjectNotFound()
-
-
-    // =========================================================================
-    // ensureObjectFolderExists (public)
-    // =========================================================================
-
-    /**
-     * Test ensureObjectFolderExists with null folder creates folder
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsNullFolder(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder(null);
-
-        $folderNode = $this->createMock(\OCP\Files\Folder::class);
-        $folderNode->method('getId')->willReturn(42);
-
-        $this->fileService->method('createEntityFolder')->willReturn($folderNode);
-
-        $this->objectEntityMapper->expects($this->once())
-            ->method('update')
-            ->willReturnArgument(0);
-
-        $this->service->ensureObjectFolderExists($entity);
-
-        $this->assertSame('42', $entity->getFolder());
-
-    }//end testEnsureObjectFolderExistsNullFolder()
-
-
-    /**
-     * Test ensureObjectFolderExists with empty string creates folder
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsEmptyString(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder('');
-
-        $folderNode = $this->createMock(\OCP\Files\Folder::class);
-        $folderNode->method('getId')->willReturn(99);
-
-        $this->fileService->method('createEntityFolder')->willReturn($folderNode);
-
-        $this->objectEntityMapper->method('update')->willReturnArgument(0);
-
-        $this->service->ensureObjectFolderExists($entity);
-
-        $this->assertSame('99', $entity->getFolder());
-
-    }//end testEnsureObjectFolderExistsEmptyString()
-
-
-    /**
-     * Test ensureObjectFolderExists handles createEntityFolder returning null
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsFolderNull(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder(null);
-
-        $this->fileService->method('createEntityFolder')->willReturn(null);
-
-        // Should not call update since no folder node returned.
-        $this->objectEntityMapper->expects($this->never())
-            ->method('update');
-
-        $this->service->ensureObjectFolderExists($entity);
-
-    }//end testEnsureObjectFolderExistsFolderNull()
-
-
-    /**
-     * Test ensureObjectFolderExists handles folder creation exception
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsException(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder(null);
-
-        $this->fileService->method('createEntityFolder')
-            ->willThrowException(new \Exception('Cannot create folder'));
-
-        // Should not call update since exception is caught before update.
-        $this->objectEntityMapper->expects($this->never())
-            ->method('update');
-
-        // Should not throw - silently handles exception.
-        $this->service->ensureObjectFolderExists($entity);
-
-        // Folder should remain null since creation failed.
-        $this->assertNull($entity->getFolder());
-
-    }//end testEnsureObjectFolderExistsException()
 
 
     // =========================================================================

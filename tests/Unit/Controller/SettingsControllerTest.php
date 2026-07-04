@@ -166,24 +166,6 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * Test updatePublishingOptions returns proper JSON structure
-     *
-     * @return void
-     */
-    public function testUpdatePublishingOptionsReturnsValidJson(): void
-    {
-        $this->settingsService
-            ->method('updatePublishingOptions')
-            ->willReturn(['success' => true]);
-
-        $response = $this->controller->updatePublishingOptions();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $data = $response->getData();
-        $this->assertIsArray($data);
-    }
-
-    /**
      * Test rebase endpoint returns proper JSON structure
      *
      * @return void
@@ -448,25 +430,6 @@ class SettingsControllerTest extends TestCase
             ->willThrowException(new \Exception('Update failed'));
 
         $response = $this->controller->update();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $data = $response->getData();
-        $this->assertIsArray($data);
-        $this->assertArrayHasKey('error', $data);
-    }
-
-    /**
-     * Test updatePublishingOptions handles service exceptions gracefully
-     *
-     * @return void
-     */
-    public function testUpdatePublishingOptionsHandlesServiceExceptions(): void
-    {
-        $this->settingsService
-            ->method('updatePublishingOptions')
-            ->willThrowException(new \Exception('Publish options error'));
-
-        $response = $this->controller->updatePublishingOptions();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $data = $response->getData();
@@ -748,7 +711,6 @@ class SettingsControllerTest extends TestCase
         // Mock all service methods to return valid data.
         $this->settingsService->method('getSettings')->willReturn(['settings' => []]);
         $this->settingsService->method('updateSettings')->willReturn(['success' => true]);
-        $this->settingsService->method('updatePublishingOptions')->willReturn(['success' => true]);
         $this->settingsService->method('rebase')->willReturn(['success' => true]);
         $this->settingsService->method('getStats')->willReturn(['total' => 0]);
         $this->settingsService->method('getVersionInfoOnly')->willReturn(['version' => '1.0.0']);
@@ -759,7 +721,6 @@ class SettingsControllerTest extends TestCase
             'index',
             'load',
             'update',
-            'updatePublishingOptions',
             'rebase',
             'stats',
             'getStatistics',

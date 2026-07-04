@@ -116,6 +116,7 @@ class TimeEntryServiceTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
 
         $this->appConfig->method('getValueString')->willReturn('timemanager');
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
 
         $saved = new TimeLink();
         $saved->setObjectUuid('obj-2');
