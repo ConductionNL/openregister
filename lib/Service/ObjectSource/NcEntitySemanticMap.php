@@ -55,33 +55,65 @@ final class NcEntitySemanticMap
      * Canonical NC-entity → virtual-schema rows.
      *
      * Row shape:
-     *  - `register`    — virtual register slug (all core rows live in `directory`);
-     *  - `schema`      — virtual schema slug;
+     *  - `register`    — virtual register slug (core rows live in `directory`; each
+     *                    app-gated row lives in its own app-named register so the
+     *                    ADR-048 app-enabled gate degrades it when the app is gone);
+     *  - `schema`      — virtual schema slug (always `nc-`-prefixed so it never
+     *                    collides with a leaf-app schema of the same bare name);
      *  - `schemaOrg`   — schema.org CURIE → the schema's `x-schema-org` marker;
      *  - `provider`    — the ObjectSourceProvider id that serves its objects;
-     *  - `requiredApp` — the NC app that must be installed (`null` = core).
+     *  - `requiredApp` — the NC app that must be installed for the provider to be
+     *                    usable (`null` = Nextcloud core, always available);
+     *  - `application` — the register's `application` (drives the ADR-048 gate).
      *
-     * @var array<string, array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null}>
+     * @var array<string, array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null, application: string}>
      */
     public const ENTITIES = [
-        'user'  => [
+        'user'    => [
             'register'    => self::DIRECTORY_REGISTER,
             'schema'      => 'nc-user',
             'schemaOrg'   => 'schema:Person',
             'provider'    => 'user-directory-source',
             'requiredApp' => null,
+            'application' => 'openregister',
         ],
-        'group' => [
+        'group'   => [
             'register'    => self::DIRECTORY_REGISTER,
             'schema'      => 'nc-group',
             'schemaOrg'   => 'schema:Organization',
             'provider'    => 'group-source',
             'requiredApp' => null,
+            'application' => 'openregister',
         ],
-        // Follow-on rows (each ships in its own change — see tasks.md §5.1):
-        // contact → nc-contact / schema:Person via contacts-source (app contacts).
-        // event → nc-event / schema:Event via calendar-source (app calendar).
-        // file → nc-file / schema:DigitalDocument via files-source (core).
+        // App-gated rows — each lives on its OWN app-named register (application =
+        // register slug) so the ADR-048 app-enabled gate degrades the projection
+        // when the backing app is uninstalled. Schemas are `nc-`-prefixed to avoid
+        // colliding with same-named leaf-app schemas (e.g. `contact`, `event`).
+        'contact' => [
+            'register'    => 'contacts',
+            'schema'      => 'nc-contact',
+            'schemaOrg'   => 'schema:Person',
+            'provider'    => 'contacts-source',
+            'requiredApp' => 'contacts',
+            'application' => 'contacts',
+        ],
+        'event'   => [
+            'register'    => 'calendar',
+            'schema'      => 'nc-event',
+            'schemaOrg'   => 'schema:Event',
+            'provider'    => 'calendar-event-source',
+            'requiredApp' => 'calendar',
+            'application' => 'calendar',
+        ],
+        'file'    => [
+            'register'    => 'files',
+            'schema'      => 'nc-file',
+            'schemaOrg'   => 'schema:DigitalDocument',
+            'provider'    => 'files-source',
+            'requiredApp' => null,
+            'application' => 'files',
+        ],
+        // Further follow-on rows (each ships in its own change — see tasks.md §5.1):
         // deck → nc-card / schema:Action via deck-source (app deck).
         // talk → nc-room / schema:Conversation via talk-source (app spreed).
     ];

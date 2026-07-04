@@ -17,6 +17,22 @@ parameters:
 			count: 1
 			path: lib/Repair/SeedDirectoryVirtualSchemas.php
 		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Repair/SeedAppVirtualSchemas.php
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Repair/SeedAppVirtualSchemas.php
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Repair/SeedAppVirtualSchemas.php
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Repair/SeedAppVirtualSchemas.php
+		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 2
 			path: lib/Search/ObjectsProvider.php
