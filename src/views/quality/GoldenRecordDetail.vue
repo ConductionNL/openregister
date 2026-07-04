@@ -3,7 +3,10 @@
 		<div class="goldenRecordHeader">
 			<h2>{{ t('openregister', 'Golden record') }}</h2>
 			<div class="goldenRecordHeader__actions">
-				<NcButton v-if="object" type="secondary" @click="showConflictResolution = true">
+				<NcButton v-if="object"
+					type="secondary"
+					data-testid="mdm-resolve-conflicts"
+					@click="showConflictResolution = true">
 					{{ t('openregister', 'Resolve conflicts') }}
 				</NcButton>
 				<NcButton type="tertiary" @click="$emit('close')">

@@ -53,12 +53,15 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="entity in masterEntities" :key="entity.id" :class="{ selectedRow: selectedObject && selectedObject.id === entity.id }">
+						<tr v-for="entity in masterEntities"
+							:key="entity.id"
+							data-testid="mdm-master-entity-row"
+							:class="{ selectedRow: selectedObject && selectedObject.id === entity.id }">
 							<td>{{ entity.id }}</td>
 							<td>{{ entity.qualityScore ?? '—' }}</td>
 							<td><span :class="'badge badge-status-' + entity.qualityStatus">{{ entity.qualityStatus ?? '—' }}</span></td>
 							<td>
-								<NcButton type="tertiary" @click="selectEntity(entity)">
+								<NcButton type="tertiary" data-testid="mdm-view-golden-record" @click="selectEntity(entity)">
 									{{ t('openregister', 'View golden record') }}
 								</NcButton>
 							</td>

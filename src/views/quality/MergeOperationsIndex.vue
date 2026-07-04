@@ -37,7 +37,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="operation in mergeOperations" :key="operation.id">
+						<tr v-for="operation in mergeOperations" :key="operation.id" data-testid="mdm-merge-operation-row">
 							<td>{{ operation.into }}</td>
 							<td>{{ operation.from }}</td>
 							<td>{{ operation.reason || '—' }}</td>
@@ -51,6 +51,7 @@
 								<NcButton
 									v-if="isReversible(operation)"
 									type="tertiary"
+									data-testid="mdm-merge-reverse"
 									:disabled="reversingId === operation.id"
 									@click="reverse(operation)">
 									<template #icon>

@@ -31,6 +31,7 @@
 
 					<NcSelect
 						v-model="selections[conflict.attribute]"
+						data-testid="mdm-conflict-source-select"
 						:options="conflict.options"
 						:input-label="t('openregister', 'Winning source for {attribute}', { attribute: conflict.attribute })"
 						:clearable="false"
@@ -77,6 +78,7 @@
 			<NcButton
 				v-if="conflicts.length > 0"
 				type="primary"
+				data-testid="mdm-conflict-save"
 				:disabled="!canSave"
 				@click="save">
 				<template #icon>
