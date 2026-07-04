@@ -252,6 +252,10 @@ return [
         ['name' => 'dsarCase#generateBundle', 'url' => '/api/gdpr/cases/{id}/bundle',            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'dsarCase#downloadBundle', 'url' => '/api/gdpr/cases/{id}/bundle/download',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
         ['name' => 'dsarCase#dossier',        'url' => '/api/gdpr/cases/{id}/dossier',           'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        // DSAR integration seams (dsar-integration-seams): pack-selector-driven,
+        // fail-closed identity-verify + regulator-escalate call-outs.
+        ['name' => 'dsarCase#identityVerify', 'url' => '/api/gdpr/cases/{id}/verify-identity',   'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#escalate',       'url' => '/api/gdpr/cases/{id}/escalate',          'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],

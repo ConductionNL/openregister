@@ -408,6 +408,44 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // DSAR integration seams (dsar-integration-seams): two pluggable seams —
+        // identity-verify and regulator-escalate — as shared per-request
+        // registries (so a leaf app's addProvider() during boot() persists for
+        // the whole request, ADR-019) each pre-seeded with the OR fail-closed
+        // default in its constructor. Resolution is pack-selector-driven and
+        // fail-closed: an unset/unknown selector resolves the default that
+        // refuses (never null, never "verified"/"escalated" — ADR-005/CWE-863).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    default: $container->get(\OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class)
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    default: $container->get(\OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class)
+                );
+            }
+        );
+
         // Web Push hex-icon service (openregister-web-push-engine): needs an
         // app-scoped IAppData for its rendered-PNG cache, which is not
         // auto-wirable, so resolve it via IAppDataFactory here.

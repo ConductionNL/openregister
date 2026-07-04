@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * DsarCaseController Unit Tests
  *
  * Verifies the case-management controller's auth posture (every method
+ *
  * @NoAdminRequired, never @PublicPage, @NoCSRFRequired only on the download),
  * route↔method reachability (no orphan methods, no orphan routes), anonymous
  * rejection, and the case-level access guard (handler-own allowed, others
@@ -25,7 +26,12 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
+use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
+use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
@@ -54,6 +60,8 @@ class DsarCaseControllerTest extends TestCase
         'generateBundle',
         'downloadBundle',
         'dossier',
+        'identityVerify',
+        'escalate',
     ];
 
     /**
@@ -75,9 +83,10 @@ class DsarCaseControllerTest extends TestCase
     /**
      * Build a controller wired with mocks + an optional session user.
      *
-     * @param IUserSession|null   $userSession Session (null → build one with a user).
-     * @param CaseObjectAccessor|null $accessor Accessor mock.
-     * @param CaseAccessControl|null  $access   Access-control mock.
+     * @param IUserSession|null       $userSession Session (null → build one with a
+     *                                             user).
+     * @param CaseObjectAccessor|null $accessor    Accessor mock.
+     * @param CaseAccessControl|null  $access      Access-control mock.
      *
      * @return DsarCaseController
      */
@@ -103,7 +112,10 @@ class DsarCaseControllerTest extends TestCase
             $this->createMock(EvidenceHarvestService::class),
             $this->createMock(RedactionWriteService::class),
             $this->createMock(ExportBundleService::class),
-            $userSession
+            $userSession,
+            $this->createMock(DsarPolicyPackResolver::class),
+            $this->createMock(IdentityVerifyRegistry::class),
+            $this->createMock(RegulatorEscalateRegistry::class)
         );
 
     }//end build()
@@ -158,8 +170,8 @@ class DsarCaseControllerTest extends TestCase
      */
     public function testRouteMethodReachability(): void
     {
-        $routes  = (include __DIR__.'/../../../appinfo/routes.php')['routes'];
-        $mapped  = [];
+        $routes = (include __DIR__.'/../../../appinfo/routes.php')['routes'];
+        $mapped = [];
         foreach ($routes as $route) {
             if (str_starts_with((string) $route['name'], 'dsarCase#') === true) {
                 $mapped[] = substr((string) $route['name'], strlen('dsarCase#'));
@@ -210,7 +222,7 @@ class DsarCaseControllerTest extends TestCase
      */
     public function testAccessDeniedRefusesWithForbidden(): void
     {
-        $case     = new ObjectEntity();
+        $case = new ObjectEntity();
         $case->setObject(['handler' => 'handler2']);
         $accessor = $this->createMock(CaseObjectAccessor::class);
         $accessor->method('load')->willReturn($case);
@@ -231,7 +243,10 @@ class DsarCaseControllerTest extends TestCase
             $harvest,
             $this->createMock(RedactionWriteService::class),
             $this->createMock(ExportBundleService::class),
-            $this->userSessionWith('handler1')
+            $this->userSessionWith('handler1'),
+            $this->createMock(DsarPolicyPackResolver::class),
+            $this->createMock(IdentityVerifyRegistry::class),
+            $this->createMock(RegulatorEscalateRegistry::class)
         );
 
         $response = $controller->evidence('case-1');
@@ -255,6 +270,131 @@ class DsarCaseControllerTest extends TestCase
         $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 
     }//end testMissingCaseYields404()
+
+    /**
+     * identityVerify resolves the seam through the registry from the pack
+     * selector and, with no leaf provider bound, fails closed (needs-more).
+     *
+     * @return void
+     */
+    public function testIdentityVerifyFailsClosedThroughRegistry(): void
+    {
+        $case = new ObjectEntity();
+        $case->setObject(['handler' => 'handler1', 'jurisdiction' => 'default']);
+
+        $accessor = $this->createMock(CaseObjectAccessor::class);
+        $accessor->method('load')->willReturn($case);
+        $accessor->method('save')->willReturn($case);
+
+        $access = $this->createMock(CaseAccessControl::class);
+        $access->method('mayAct')->willReturn(true);
+
+        // The pack selects the OR default id; the registry resolves it to the
+        // fail-closed default (exercised via the real Null provider).
+        $resolver = $this->createMock(DsarPolicyPackResolver::class);
+        $resolver->method('identityVerifyProviderId')->willReturn('or.default.identity-verify.null');
+
+        $identityRegistry = $this->createMock(IdentityVerifyRegistry::class);
+        $identityRegistry->expects($this->once())
+            ->method('resolve')
+            ->with('or.default.identity-verify.null')
+            ->willReturn(new NullIdentityVerifyProvider());
+
+        $controller = $this->buildWithSeams(
+            accessor: $accessor,
+            access: $access,
+            resolver: $resolver,
+            identityRegistry: $identityRegistry,
+            regulatorRegistry: $this->createMock(RegulatorEscalateRegistry::class)
+        );
+
+        $response = $controller->identityVerify('case-1');
+        $this->assertSame(200, $response->getStatus());
+        $this->assertSame('needs-more', $response->getData()['status']);
+    }//end testIdentityVerifyFailsClosedThroughRegistry()
+
+    /**
+     * escalate resolves the seam through the registry and, with no leaf
+     * provider bound, refuses — never claims success, never mints a reference.
+     *
+     * @return void
+     */
+    public function testEscalateFailsClosedThroughRegistry(): void
+    {
+        $case = new ObjectEntity();
+        $case->setObject(['handler' => 'handler1', 'jurisdiction' => 'default']);
+
+        $captured = null;
+        $accessor = $this->createMock(CaseObjectAccessor::class);
+        $accessor->method('load')->willReturn($case);
+        $accessor->method('save')->willReturnCallback(
+            function ($case, $data) use (&$captured) {
+                $captured = $data;
+                return $case;
+            }
+        );
+
+        $access = $this->createMock(CaseAccessControl::class);
+        $access->method('mayAct')->willReturn(true);
+
+        $resolver = $this->createMock(DsarPolicyPackResolver::class);
+        $resolver->method('regulatorEscalateProviderId')->willReturn('or.default.regulator-escalate.null');
+
+        $regulatorRegistry = $this->createMock(RegulatorEscalateRegistry::class);
+        $regulatorRegistry->expects($this->once())
+            ->method('resolve')
+            ->with('or.default.regulator-escalate.null')
+            ->willReturn(new NullRegulatorEscalateProvider());
+
+        $controller = $this->buildWithSeams(
+            accessor: $accessor,
+            access: $access,
+            resolver: $resolver,
+            identityRegistry: $this->createMock(IdentityVerifyRegistry::class),
+            regulatorRegistry: $regulatorRegistry
+        );
+
+        $response = $controller->escalate('case-1');
+        $this->assertSame(200, $response->getStatus());
+        $this->assertSame('refused', $response->getData()['status']);
+        // A refusal MUST NOT write a regulatorReference on the case.
+        $this->assertArrayNotHasKey('regulatorReference', (array) $captured);
+    }//end testEscalateFailsClosedThroughRegistry()
+
+    /**
+     * Build a controller with explicit seam collaborators for the seam tests.
+     *
+     * @param CaseObjectAccessor        $accessor          Case load/save mock.
+     * @param CaseAccessControl         $access            Access-control mock.
+     * @param DsarPolicyPackResolver    $resolver          Pack-selector resolver mock.
+     * @param IdentityVerifyRegistry    $identityRegistry  Identity seam registry mock.
+     * @param RegulatorEscalateRegistry $regulatorRegistry Regulator seam registry mock.
+     *
+     * @return DsarCaseController
+     */
+    private function buildWithSeams(
+        CaseObjectAccessor $accessor,
+        CaseAccessControl $access,
+        DsarPolicyPackResolver $resolver,
+        IdentityVerifyRegistry $identityRegistry,
+        RegulatorEscalateRegistry $regulatorRegistry
+    ): DsarCaseController {
+        return new DsarCaseController(
+            'openregister',
+            $this->createMock(IRequest::class),
+            $this->createMock(ObjectService::class),
+            $accessor,
+            $access,
+            $this->createMock(TransitionEngine::class),
+            $this->createMock(EvidenceHarvestService::class),
+            $this->createMock(RedactionWriteService::class),
+            $this->createMock(ExportBundleService::class),
+            $this->userSessionWith('handler1'),
+            $resolver,
+            $identityRegistry,
+            $regulatorRegistry
+        );
+    }//end buildWithSeams()
 
     /**
      * Build a user session for a uid.
