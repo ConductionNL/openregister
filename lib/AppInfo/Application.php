@@ -159,6 +159,8 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -1149,6 +1151,29 @@ class Application extends App implements IBootstrap
                 return new CalDavVtodoObjectSourceProvider(
                     taskService: $container->get(TaskService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            UserDirectoryObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new UserDirectoryObjectSourceProvider(
+                    userManager: $container->get('OCP\IUserManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            GroupObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new GroupObjectSourceProvider(
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userSession: $container->get('OCP\IUserSession'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2713,15 +2738,25 @@ class Application extends App implements IBootstrap
             return;
         }
 
-        try {
-            $registry->addProvider($server->get(CalDavVtodoObjectSourceProvider::class));
-        } catch (\Throwable $e) {
+        // Register each built-in provider independently so one absent provider
+        // never blocks the others — a failing provider simply won't serve its
+        // bound schemas.
+        $providerClasses = [
+            CalDavVtodoObjectSourceProvider::class,
+            UserDirectoryObjectSourceProvider::class,
+            GroupObjectSourceProvider::class,
+        ];
+        foreach ($providerClasses as $providerClass) {
             try {
-                $server->get(\Psr\Log\LoggerInterface::class)->warning(
-                    '[ObjectSource] could not register CalDavVtodoObjectSourceProvider: '.$e->getMessage()
-                );
-            } catch (\Throwable $inner) {
-                // Logger unavailable on this build — nothing to do.
+                $registry->addProvider($server->get($providerClass));
+            } catch (\Throwable $e) {
+                try {
+                    $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                        '[ObjectSource] could not register '.$providerClass.': '.$e->getMessage()
+                    );
+                } catch (\Throwable $inner) {
+                    // Logger unavailable on this build — nothing to do.
+                }
             }
         }
 
