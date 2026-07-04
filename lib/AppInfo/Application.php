@@ -161,6 +161,9 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -1238,6 +1241,39 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new GroupObjectSourceProvider(
                     groupManager: $container->get('OCP\IGroupManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            ContactsObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new ContactsObjectSourceProvider(
+                    contactsManager: $container->get('OCP\Contacts\IManager'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            CalendarEventObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new CalendarEventObjectSourceProvider(
+                    calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            FilesObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new FilesObjectSourceProvider(
+                    rootFolder: $container->get('OCP\Files\IRootFolder'),
                     userSession: $container->get('OCP\IUserSession'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -2810,6 +2846,9 @@ class Application extends App implements IBootstrap
             CalDavVtodoObjectSourceProvider::class,
             UserDirectoryObjectSourceProvider::class,
             GroupObjectSourceProvider::class,
+            ContactsObjectSourceProvider::class,
+            CalendarEventObjectSourceProvider::class,
+            FilesObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {
             try {

@@ -118,10 +118,11 @@ class SeedDirectoryVirtualSchemas implements IRepairStep
             $changed   = false;
 
             foreach (NcEntitySemanticMap::ENTITIES as $row) {
-                // This first slice only seeds the always-available core rows.
-                /** @var string|null $requiredApp */
-                $requiredApp = $row['requiredApp'];
-                if ($requiredApp !== null) {
+                // This step only owns the core rows that live on the always-available
+                // `directory` register (all of which are Nextcloud-core, requiredApp
+                // null); app-gated rows on their own app-named registers are seeded by
+                // SeedAppVirtualSchemas.
+                if ($row['register'] !== NcEntitySemanticMap::DIRECTORY_REGISTER) {
                     continue;
                 }
 
@@ -132,7 +133,7 @@ class SeedDirectoryVirtualSchemas implements IRepairStep
                 }
 
                 $output->info(sprintf('Directory schema "%s" (id %s) ready', $row['schema'], (string) $schema->getId()));
-            }
+            }//end foreach
 
             if ($changed === true) {
                 $register->setSchemas($schemaIds);
