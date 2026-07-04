@@ -1487,6 +1487,7 @@ class AuditTrailMapper extends QBMapper
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+        $auditTrail->setObject($object->getId());
         $auditTrail->setObjectUuid($object->getUuid());
         $auditTrail->setRegister($object->getRegister());
         $auditTrail->setSchema($object->getSchema());
