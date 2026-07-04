@@ -166,12 +166,12 @@ registered in `appinfo/routes.php` (ADR-016, ADR-029). None is `@PublicPage`.
   the head's transition and resolved at runtime (same way decidesk's `MeetingTransitionGuard`
   reference resolves).
 - **[PAdES-LTV signing is a genuinely new dependency in OR]** → No existing PAdES/secure-token
-  primitive was found under `lib/`. **Resolved: signer = `tecnickcom/tc-lib-pdf`** (LGPL-3, EUPL-1.2
-  compatible, pure PHP, native LTV), behind the swappable `PadesSigner` interface, with a configurable
-  RFC-3161 **TSA URL**; **fallback = `pyHanko` sidecar** (MIT). A spike must confirm B-LT before the
-  real signer lands (its LTV support is recent). SetaPDF was rejected (commercial → cannot bundle in an
-  EUPL app). Mitigation: the SHA-256 content hash is an additional integrity guarantee carried
-  alongside the signature, not a fallback for it.
+  primitive under `lib/`, and the 2026-07-04 spike found **no ready EUPL-compatible LTV signer**
+  (tc-lib-pdf stubs B-T; SetaPDF commercial). **Interim: SHA-256 hash-only** via the swappable
+  `PadesSigner` interface (`UnsignedPadesSigner`); **real PAdES-LTV DEFERRED**, leading candidate
+  `pyHanko` (MIT sidecar) or a tc-lib-pdf re-spike. This is a genuine integrity-vs-signature gap the
+  interim accepts: the SHA-256 hash proves the bytes weren't altered but is not a cryptographic
+  signature binding a signer identity — flagged for the deferred follow-up.
 - **[One-time download token could leak or be replayed]** → Mitigation: mint a
   single-use, time-boxed token that is burned on first successful download; the token is never a
   realistic-looking secret in any artifact (`YOUR_TOKEN_HERE` placeholder only); the download route
@@ -205,18 +205,20 @@ provider / `RetentionService` doubles; any fixture ids/tokens use safe placehold
 
 ## Resolved decisions
 
-- **Bundle format + signing** — the export bundle is a **PDF disclosure document** (art-15 access);
-  full **PAdES-LTV signing is REQUIRED** (not a SHA-256-only interim). Signing is isolated behind the
-  export-bundle service's swappable `PadesSigner` interface, with a SHA-256 content hash carried
-  alongside the signature. **Chosen signer: `tecnickcom/tc-lib-pdf`** (LGPL-3 → EUPL-1.2 compatible;
-  pure PHP, no sidecar; native LTV — OCSP/CRL/DSS/VRI + RFC-3161 timestamp as of v8.65). It requires a
-  configurable **TSA URL** (RFC-3161 timestamp authority — e.g. DigiCert / FreeTSA; a qualified TSA for
-  eIDAS-grade), surfaced as a `PadesSigner` config input, not hard-coded. **Fallback: `pyHanko` CLI
-  sidecar** (MIT, most-proven B-LTA) if the tc-lib-pdf spike falls short — a config/adapter swap, not a
-  call-site change. Before the real `PadesSigner` implementation, a **spike** must confirm tc-lib-pdf
-  reaches **B-LT** (signature still verifies after the signing cert expires; B-LTA archival is a
-  nice-to-have) by validating the signed PDF in Acrobat / the EU DSS validator. A machine-readable
-  art-20 *portability* payload (JSON/CSV + JAdES/CAdES) is a deferred follow-up, out of scope here.
+- **Bundle format + signing** — the export bundle is a **PDF disclosure document** (art-15 access)
+  carrying a **SHA-256 content hash**, behind the swappable `PadesSigner` interface. **Interim (now):
+  hash-only** (`UnsignedPadesSigner`). **PAdES-LTV signing is DEFERRED** (decision 2026-07-04, reversing
+  the earlier "required in Phase 1"): the spike found NO ready EUPL-compatible LTV signer —
+  `tecnickcom/tc-lib-pdf` 8.65.4 is LGPL-3/EUPL-clean and has the API but is **mid-development**
+  (fetches then **discards** the RFC-3161 timestamp → B-T stubbed; legacy `adbe.pkcs7.detached`
+  subfilter; no ESS signing-cert attr → not spec-strict PAdES; DSS/VRI structurally present but
+  meaningless without B-T). When PAdES-LTV is resumed the **leading candidate is `pyHanko`** (MIT
+  sidecar — real ETSI.CAdES.detached + embedded doc-timestamp + DSS/VRI, EU-DSS-validated; cost = a
+  Python runtime to package/secure), with a **re-spike of tc-lib-pdf** on a later release as the
+  license-clean pure-PHP alternative once its timestamp-embedding "next slice" lands. Either needs a
+  configurable RFC-3161 **TSA URL** (DigiCert/FreeTSA reachable; qualified TSA for eIDAS-grade). The
+  interface keeps this a config/adapter swap, not a call-site change. A machine-readable art-20
+  *portability* payload (JSON/CSV + JAdES/CAdES) is likewise a deferred follow-up, out of scope here.
 - **Route namespace** — case-management endpoints live under **`/api/gdpr/cases/...`**, mirroring the
   existing DSAR routes.
 - **Officer-override access control** — resolved from an admin-configured **ADR-023 action/group
