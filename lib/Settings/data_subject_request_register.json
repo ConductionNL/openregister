@@ -40,6 +40,16 @@
           "status",
           "receivedAt"
         ],
+        "x-openregister-references": {
+          "pack": {
+            "mode": "lookup",
+            "schema": "dsarPolicyPack",
+            "register": "dsar-policy-packs",
+            "filters": {
+              "jurisdiction": "@self.jurisdiction"
+            }
+          }
+        },
         "x-openregister-lifecycle": {
           "field": "status",
           "initial": "received",
@@ -201,37 +211,55 @@
             "type": "string",
             "materialise": true,
             "title": "Escalation Tier",
-            "description": "Deadline-tracking tier derived from daysRemaining: on-track (> 7 days), reminder (0-7 days), escalation replaced by breached once overdue. Provisional thresholds; final tiers are candidate Phase-2 policy-pack values.",
+            "description": "Deadline-tracking tier (on-track, reminder, escalation, breached) derived from daysRemaining. The tier boundaries are NOT hard-coded: they resolve from the active dsarPolicyPack's escalationTiers via @ref.pack (index 0 = reminder, 1 = escalation, 2 = breach). The tier activates when the days-past-deadline value (-daysRemaining) reaches a tier's offsetDays; breach when daysRemaining < 0. When no pack resolves (@ref.pack is null) every boundary comparison yields false and the case stays on-track (fail-safe, no false escalation) — the seeded default pack ensures a pack always resolves.",
             "expression": {
               "if": [
                 {
-                  "lt": [
+                  "gt": [
                     {
-                      "prop": "daysRemaining"
+                      "-": [
+                        {
+                          "prop": "daysRemaining"
+                        }
+                      ]
                     },
-                    0
+                    {
+                      "prop": "@ref.pack.escalationTiers.2.offsetDays"
+                    }
                   ]
                 },
                 "breached",
                 {
                   "if": [
                     {
-                      "lte": [
+                      "gte": [
                         {
-                          "prop": "daysRemaining"
+                          "-": [
+                            {
+                              "prop": "daysRemaining"
+                            }
+                          ]
                         },
-                        2
+                        {
+                          "prop": "@ref.pack.escalationTiers.1.offsetDays"
+                        }
                       ]
                     },
                     "escalation",
                     {
                       "if": [
                         {
-                          "lte": [
+                          "gte": [
                             {
-                              "prop": "daysRemaining"
+                              "-": [
+                                {
+                                  "prop": "daysRemaining"
+                                }
+                              ]
                             },
-                            7
+                            {
+                              "prop": "@ref.pack.escalationTiers.0.offsetDays"
+                            }
                           ]
                         },
                         "reminder",
@@ -284,14 +312,12 @@
           "deadlineAdvanceReminder": {
             "trigger": {
               "type": "calculatedChange",
-              "field": "daysRemaining",
+              "field": "escalationTier",
               "condition": {
-                "operator": "lte",
-                "value": 7
+                "eq": "reminder"
               },
               "previously": {
-                "operator": "gt",
-                "value": 7
+                "ne": "reminder"
               }
             },
             "enabled": true,
@@ -317,14 +343,12 @@
           "deadlineEscalation": {
             "trigger": {
               "type": "calculatedChange",
-              "field": "daysRemaining",
+              "field": "escalationTier",
               "condition": {
-                "operator": "lte",
-                "value": 2
+                "eq": "escalation"
               },
               "previously": {
-                "operator": "gt",
-                "value": 2
+                "ne": "escalation"
               }
             },
             "enabled": true,
@@ -350,14 +374,12 @@
           "deadlineBreach": {
             "trigger": {
               "type": "calculatedChange",
-              "field": "daysRemaining",
+              "field": "escalationTier",
               "condition": {
-                "operator": "lt",
-                "value": 0
+                "eq": "breached"
               },
               "previously": {
-                "operator": "gte",
-                "value": 0
+                "ne": "breached"
               }
             },
             "enabled": true,
@@ -467,6 +489,14 @@
             "maxLength": 64,
             "facetable": true,
             "title": "Subject Type"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Jurisdiction / tenant key selecting which dsarPolicyPack supplies this case's escalation-tier thresholds, denial-ground wording, and retention durations (resolved via the pack cross-object reference). Defaults to 'default', which resolves the jurisdiction-neutral default pack. Full tenant-scoped/override selection semantics are delivered by the successor dsar-integration-seams / dsar-case-ui changes.",
+            "maxLength": 128,
+            "default": "default",
+            "facetable": true,
+            "title": "Jurisdiction"
           },
           "type": {
             "type": "string",

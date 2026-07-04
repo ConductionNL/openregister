@@ -1,0 +1,282 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AVG/DSAR Policy Packs",
+    "description": "Per-jurisdiction / per-tenant AVG-DSAR policy pack register (ADR-047). A pack is a declarative configuration object (ADR-031) that supplies the jurisdiction-specific VALUES the generic data-subject-request workflow reads at runtime: deadline and extension durations, escalation-tier thresholds, denial-ground wording (generic key -> label + statutory citation), named retention windows, intake channels, the DPO/FG/handler role mapping, letter/notification template references, and the two integration-seam provider selectors (identity-verify, regulator-escalate). Jurisdiction is data, not code: the Phase-1 dataSubjectRequest schema binds to the active pack via a declarative cross-object reference and holds no hard-coded jurisdiction values. Real NL policy values (BSN/BRP/RvIG, AP) live in the Phase-3 pipelinq consumer, NOT in OpenRegister core.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational AVG/DSAR policy-pack register shipped by OpenRegister; supplies the jurisdiction values the generic data-subject-request workflow (data-subject-requests register) resolves from."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "dsar-policy-packs": {
+        "slug": "dsar-policy-packs",
+        "title": "AVG/DSAR Policy Packs",
+        "version": "1.0.0",
+        "description": "Per-jurisdiction / per-tenant AVG-DSAR policy packs supplying deadline durations, escalation-tier thresholds, denial-ground wording, retention windows, intake channels, the DPO/FG role mapping, template references, and the two integration-seam provider selectors.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "dsarPolicyPack"
+        ],
+        "folder": "Open Registers/AVG DSAR Policy Packs"
+      }
+    },
+    "schemas": {
+      "dsarPolicyPack": {
+        "slug": "dsarPolicyPack",
+        "title": "AVG/DSAR Policy Pack",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A per-jurisdiction / per-tenant AVG-DSAR policy pack supplying the values the generic data-subject-request workflow resolves from.",
+        "description": "Declarative configuration object (ADR-031) holding the jurisdiction-specific AVG/DSAR policy. The generic dataSubjectRequest case resolves its escalation-tier thresholds, denial-ground wording, and retention durations from the ACTIVE pack (selected by the case's jurisdiction, falling back to the jurisdiction-neutral default pack). Every value here is data a steward may edit without a code change. The two seam selectors name which registered provider a jurisdiction binds for identity verification and regulator escalation; an unset or unknown selector is resolved fail-closed to the OR safe-default (refusing) provider by the successor dsar-integration-seams change.",
+        "required": [
+          "jurisdiction"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of this policy pack (e.g. 'Default AVG/DSAR policy pack').",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Pack Name"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Jurisdiction / tenant key that selects this pack for a case (e.g. 'default', 'nl-example'). The neutral fail-closed baseline uses 'default'; a dataSubjectRequest case resolves the pack whose jurisdiction matches the case's jurisdiction field, falling back to the default pack.",
+            "maxLength": 128,
+            "facetable": true,
+            "title": "Jurisdiction Key"
+          },
+          "deadlineDurationDays": {
+            "type": "integer",
+            "description": "Base statutory response deadline in days measured from receipt (EU art-12(3): one month). Conservative neutral default is 30.",
+            "minimum": 1,
+            "title": "Deadline Duration (days)"
+          },
+          "extensionDurationDays": {
+            "type": "integer",
+            "description": "Additional days granted by the single permitted deadline extension (EU art-12(3): up to two further months). Conservative neutral default is 60.",
+            "minimum": 1,
+            "title": "Extension Duration (days)"
+          },
+          "escalationTiers": {
+            "type": "array",
+            "description": "Ordered deadline-tracking escalation tiers. ORDER IS SIGNIFICANT: index 0 = reminder, index 1 = escalation, index 2 = breach. The dataSubjectRequest escalationTier calculation reads each tier's offsetDays by this position, so a jurisdiction pack MUST keep the three tiers in this order.",
+            "title": "Escalation Tiers",
+            "items": {
+              "type": "object",
+              "title": "Escalation Tier",
+              "description": "One deadline-tracking tier: a name and the day offset relative to the deadline at which the tier becomes active.",
+              "properties": {
+                "tier": {
+                  "type": "string",
+                  "description": "Tier name (reminder, escalation, or breach). Used for human display; the case calculation resolves the boundary by array position.",
+                  "maxLength": 64,
+                  "title": "Tier Name"
+                },
+                "offsetDays": {
+                  "type": "integer",
+                  "description": "Day offset relative to the deadline at which this tier activates: negative = before the deadline (e.g. -7 = seven days before), 0 = on the deadline. The case escalationTier calculation activates the tier when daysRemaining <= -offsetDays (breach when daysRemaining < 0).",
+                  "title": "Offset Days"
+                }
+              }
+            }
+          },
+          "intakeChannels": {
+            "type": "array",
+            "description": "Channels through which a data-subject request may be received in this jurisdiction (e.g. web-form, email, post).",
+            "title": "Intake Channels",
+            "items": {
+              "type": "string",
+              "title": "Intake Channel",
+              "description": "A single intake channel identifier.",
+              "maxLength": 64
+            }
+          },
+          "roleMapping": {
+            "type": "object",
+            "description": "Maps the abstract case roles to the jurisdiction's role identifiers (ADR-023). Placeholders (<role-id>) are used in seed data; a leaf app binds real Nextcloud group/role ids.",
+            "title": "Role Mapping",
+            "properties": {
+              "dpo": {
+                "type": "string",
+                "description": "Role identifier for the Data Protection Officer (used in jurisdictions with a DPO).",
+                "maxLength": 255,
+                "title": "DPO Role"
+              },
+              "fg": {
+                "type": "string",
+                "description": "Role identifier for the Functionaris Gegevensbescherming (the NL-context equivalent of a DPO).",
+                "maxLength": 255,
+                "title": "FG Role"
+              },
+              "handler": {
+                "type": "string",
+                "description": "Role identifier for the case handler who processes the request day to day.",
+                "maxLength": 255,
+                "title": "Handler Role"
+              }
+            }
+          },
+          "templates": {
+            "type": "object",
+            "description": "References to the letter / notification templates this jurisdiction uses (template: references resolved by a document leaf per ADR-022; not inline content).",
+            "title": "Template References",
+            "properties": {
+              "acknowledgement": {
+                "type": "string",
+                "description": "Template reference for the request-acknowledgement letter sent on intake.",
+                "maxLength": 255,
+                "title": "Acknowledgement Template"
+              },
+              "denial": {
+                "type": "string",
+                "description": "Template reference for the denial letter sent when a request is refused.",
+                "maxLength": 255,
+                "title": "Denial Template"
+              },
+              "extension": {
+                "type": "string",
+                "description": "Template reference for the deadline-extension notice sent when the deadline is extended.",
+                "maxLength": 255,
+                "title": "Extension Template"
+              }
+            }
+          },
+          "denialGrounds": {
+            "type": "array",
+            "description": "Maps each generic Phase-1 denial-ground key to this jurisdiction's human wording and statutory citation. The generic keys live on the dataSubjectRequest schema; the jurisdiction label + citation live here.",
+            "title": "Denial Grounds",
+            "items": {
+              "type": "object",
+              "title": "Denial Ground",
+              "description": "One denial-ground mapping: a generic key plus the jurisdiction label and statutory citation shown to handlers and data subjects.",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Generic denial-ground key matching a value of the dataSubjectRequest denialGround enum (e.g. manifestly-unfounded, third-party-rights).",
+                  "maxLength": 128,
+                  "title": "Ground Key"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Jurisdiction-specific human-readable label for this denial ground.",
+                  "maxLength": 512,
+                  "title": "Ground Label"
+                },
+                "citation": {
+                  "type": "string",
+                  "description": "Statutory citation supporting this denial ground (illustrative in the shipped example packs; authoritative wording is supplied by the leaf consumer).",
+                  "maxLength": 512,
+                  "title": "Statutory Citation"
+                }
+              }
+            }
+          },
+          "retentionWindows": {
+            "type": "array",
+            "description": "Named retention windows this jurisdiction offers. Each maps a window key (selected by the case's retentionWindow field) to a duration; the consuming retention engine computes retainUntil from the finalisation date plus this duration.",
+            "title": "Retention Windows",
+            "items": {
+              "type": "object",
+              "title": "Retention Window",
+              "description": "One named retention window: a key selectable on a case and the duration the finalised dossier is retained.",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Retention-window key matching the dataSubjectRequest retentionWindow selector (e.g. standard, extended).",
+                  "maxLength": 64,
+                  "title": "Window Key"
+                },
+                "durationMonths": {
+                  "type": "integer",
+                  "description": "Number of months a finalised case dossier is retained under this window before the retention sweep may purge it.",
+                  "minimum": 1,
+                  "title": "Duration (months)"
+                }
+              }
+            }
+          },
+          "identityVerifyProvider": {
+            "type": "string",
+            "description": "Selector naming the registered identity-verify seam provider this jurisdiction binds. Unset or unknown resolves fail-closed to the OR safe-default (refusing) provider id (never fail-open); the default pack sets this to or.default.identity-verify.null. Provider interface/registry/resolution are delivered by the successor dsar-integration-seams change.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Identity-Verify Provider"
+          },
+          "regulatorEscalateProvider": {
+            "type": "string",
+            "description": "Selector naming the registered regulator-escalate seam provider this jurisdiction binds. Unset or unknown resolves fail-closed to the OR safe-default (refusing) provider id (never fail-open); the default pack sets this to or.default.regulator-escalate.null. Provider interface/registry/resolution are delivered by the successor dsar-integration-seams change.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Regulator-Escalate Provider"
+          }
+        },
+        "x-openregister-seeds": [
+          {
+            "@self": {
+              "register": "dsar-policy-packs",
+              "schema": "dsarPolicyPack",
+              "slug": "pack-default"
+            },
+            "name": "Default AVG/DSAR policy pack",
+            "jurisdiction": "default",
+            "deadlineDurationDays": 30,
+            "extensionDurationDays": 60,
+            "escalationTiers": [
+              { "tier": "reminder", "offsetDays": -7 },
+              { "tier": "escalation", "offsetDays": -2 },
+              { "tier": "breach", "offsetDays": 0 }
+            ],
+            "intakeChannels": ["web-form", "email", "post"],
+            "roleMapping": { "dpo": "<role-id>", "handler": "<role-id>" },
+            "templates": { "acknowledgement": "template:ack-default", "denial": "template:denial-default" },
+            "denialGrounds": [
+              { "key": "manifestly-unfounded", "label": "Manifestly unfounded or excessive request", "citation": "GDPR Art 12(5)" },
+              { "key": "third-party-rights", "label": "Would adversely affect the rights of third parties", "citation": "GDPR Art 15(4)" },
+              { "key": "overriding-legitimate-grounds", "label": "Compelling legitimate grounds override the objection", "citation": "GDPR Art 21(1)" }
+            ],
+            "retentionWindows": [
+              { "key": "standard", "durationMonths": 12 },
+              { "key": "extended", "durationMonths": 24 }
+            ],
+            "identityVerifyProvider": "or.default.identity-verify.null",
+            "regulatorEscalateProvider": "or.default.regulator-escalate.null"
+          },
+          {
+            "@self": {
+              "register": "dsar-policy-packs",
+              "schema": "dsarPolicyPack",
+              "slug": "pack-nl-example"
+            },
+            "name": "Voorbeeld NL AVG-beleidspakket (illustratief)",
+            "jurisdiction": "nl-example",
+            "deadlineDurationDays": 30,
+            "extensionDurationDays": 60,
+            "escalationTiers": [
+              { "tier": "reminder", "offsetDays": -7 },
+              { "tier": "escalation", "offsetDays": -3 },
+              { "tier": "breach", "offsetDays": 0 }
+            ],
+            "intakeChannels": ["web-form", "email"],
+            "roleMapping": { "fg": "<role-id>", "handler": "<role-id>" },
+            "templates": { "denial": "template:denial-nl-example" },
+            "denialGrounds": [
+              { "key": "manifestly-unfounded", "label": "Kennelijk ongegrond of buitensporig verzoek", "citation": "AVG art. 12 lid 5 (illustratief)" }
+            ],
+            "retentionWindows": [
+              { "key": "boekhoudplicht", "durationMonths": 84 }
+            ],
+            "identityVerifyProvider": "<provider-id>",
+            "regulatorEscalateProvider": "<provider-id>"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -40,7 +40,10 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -62,16 +65,19 @@ class DsarCaseController extends Controller
     /**
      * Constructor.
      *
-     * @param string                 $appName          The app name.
-     * @param IRequest               $request          The request.
-     * @param ObjectService          $objectService    RBAC + tenant scoped object store (case creation).
-     * @param CaseObjectAccessor     $accessor         RBAC-scoped case load helper.
-     * @param CaseAccessControl      $accessControl    Case-level access-control check (fail closed).
-     * @param TransitionEngine       $transitionEngine Lifecycle transition driver (runs the guard on save).
-     * @param EvidenceHarvestService $harvestService   Evidence-collection service.
-     * @param RedactionWriteService  $redactionService Field-level redaction write path.
-     * @param ExportBundleService    $bundleService    Export-bundle + dossier service.
-     * @param IUserSession           $userSession      Current caller (anonymous rejection).
+     * @param string                    $appName           The app name.
+     * @param IRequest                  $request           The request.
+     * @param ObjectService             $objectService     RBAC + tenant scoped object store (case creation).
+     * @param CaseObjectAccessor        $accessor          RBAC-scoped case load helper.
+     * @param CaseAccessControl         $accessControl     Case-level access-control check (fail closed).
+     * @param TransitionEngine          $transitionEngine  Lifecycle transition driver (runs the guard on save).
+     * @param EvidenceHarvestService    $harvestService    Evidence-collection service.
+     * @param RedactionWriteService     $redactionService  Field-level redaction write path.
+     * @param ExportBundleService       $bundleService     Export-bundle + dossier service.
+     * @param IUserSession              $userSession       Current caller (anonymous rejection).
+     * @param DsarPolicyPackResolver    $packResolver      Resolves the case's active pack seam selectors.
+     * @param IdentityVerifyRegistry    $identityRegistry  Identity-verify seam registry (pack-selector-driven, fail-closed).
+     * @param RegulatorEscalateRegistry $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
      */
     public function __construct(
         string $appName,
@@ -83,7 +89,10 @@ class DsarCaseController extends Controller
         private readonly EvidenceHarvestService $harvestService,
         private readonly RedactionWriteService $redactionService,
         private readonly ExportBundleService $bundleService,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly DsarPolicyPackResolver $packResolver,
+        private readonly IdentityVerifyRegistry $identityRegistry,
+        private readonly RegulatorEscalateRegistry $regulatorRegistry
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -360,6 +369,128 @@ class DsarCaseController extends Controller
 
         return new JSONResponse(data: $result);
     }//end dossier()
+
+    /**
+     * POST /api/gdpr/cases/{id}/verify-identity — verify the data-subject's
+     * identity via the pack-selected identity-verify seam provider.
+     *
+     * Resolves the provider named by the case's active `dsarPolicyPack`
+     * `identityVerifyProvider` selector through {@see IdentityVerifyRegistry}
+     * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
+     * unset/unknown selector resolves to the OR default that returns `needs-more`
+     * (never `verified`), so a missing provider can never pass identity
+     * verification (ADR-005 / CWE-863). The three-state result is recorded on the
+     * case and returned to the caller so the case flow can drive its transition.
+     *
+     * @param string $id The case uuid.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+     */
+    public function identityVerify(string $id): JSONResponse
+    {
+        $guard = $this->guardCase(caseUuid: $id);
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $case = $this->accessor->load(caseUuid: $id);
+        if ($case === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not found or not authorised.'],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        $data = $case->getObject();
+
+        // Resolve the provider from the active pack selector through the
+        // registry — never a hardcoded provider. resolve() ALWAYS returns a
+        // provider (the fail-closed default when unset/unknown), so there is no
+        // null branch to (mis)treat as "verified".
+        $selectorId = $this->packResolver->identityVerifyProviderId(case: $data);
+        $provider   = $this->identityRegistry->resolve(selectorId: $selectorId);
+        $result     = $provider->verify(caseUuid: $id, case: $data);
+
+        // Record the three-state outcome on the case (audited via the accessor).
+        $data['identityVerification'] = $result->toArray();
+        try {
+            $this->accessor->save(case: $case, data: $data);
+        } catch (Throwable $e) {
+            // Persisting the record failed, but the verification DECISION stands
+            // — surface it as a 400 rather than pretend the case verified.
+            return new JSONResponse(
+                data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        return new JSONResponse(data: $result->toArray());
+    }//end identityVerify()
+
+    /**
+     * POST /api/gdpr/cases/{id}/escalate — escalate the case to a supervisory
+     * authority via the pack-selected regulator-escalate seam provider.
+     *
+     * Resolves the provider named by the case's active `dsarPolicyPack`
+     * `regulatorEscalateProvider` selector through {@see RegulatorEscalateRegistry}
+     * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
+     * unset/unknown selector resolves to the OR default that REFUSES (never a
+     * silent success), so a case is never recorded as escalated when the seam is
+     * unbound (ADR-005 / CWE-863). Only an `escalated` outcome writes the
+     * `regulatorReference` that the dossier/denial-finalise gate reads.
+     *
+     * @param string $id The case uuid.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+     */
+    public function escalate(string $id): JSONResponse
+    {
+        $guard = $this->guardCase(caseUuid: $id);
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $case = $this->accessor->load(caseUuid: $id);
+        if ($case === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not found or not authorised.'],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        $data = $case->getObject();
+
+        $selectorId = $this->packResolver->regulatorEscalateProviderId(case: $data);
+        $provider   = $this->regulatorRegistry->resolve(selectorId: $selectorId);
+        $result     = $provider->escalate(caseUuid: $id, case: $data);
+
+        // Record the outcome. Only a positive escalation writes the
+        // regulatorReference the denial-finalise gate + dossier consume — a
+        // refusal MUST NOT mint or claim a reference.
+        $data['regulatorEscalation'] = $result->toArray();
+        if ($result->isEscalated() === true && $result->getReference() !== '') {
+            $data['regulatorReference'] = $result->getReference();
+        }
+
+        try {
+            $this->accessor->save(case: $case, data: $data);
+        } catch (Throwable $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        return new JSONResponse(data: $result->toArray());
+    }//end escalate()
 
     /**
      * Reject anonymous callers before any case is read or written.
