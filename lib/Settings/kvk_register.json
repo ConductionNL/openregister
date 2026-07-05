@@ -33,6 +33,7 @@
         "published": "2026-01-01T00:00:00+00:00",
         "summary": "A business entity registered at the Chamber of Commerce",
         "description": "Represents a maatschappelijke activiteit (business entity) in the KVK Handelsregister. Each record corresponds to a unique KVK number and contains the legal form, trade names, SBI activity codes, employee count, and registration dates.",
+        "x-schema-org": "schema:Organization",
         "required": [
           "kvkNummer",
           "naam"
@@ -192,6 +193,7 @@
         "published": "2026-01-01T00:00:00+00:00",
         "summary": "A branch/establishment of a business",
         "description": "Represents a vestiging (branch/establishment) in the KVK Handelsregister. Each vestiging has a unique 12-digit vestigingsnummer and is linked to a parent business via kvkNummer. Contains address information, employee counts, and SBI activity codes.",
+        "x-schema-org": "schema:Organization",
         "required": [
           "vestigingsnummer",
           "kvkNummer",
