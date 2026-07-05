@@ -58,6 +58,12 @@ use Psr\Log\LoggerInterface;
  * Resolve a canonical semantic-type URI to the installed schema implementing
  * it, null-safe across all registers, with a deterministic tie-break.
  *
+ * Class complexity is inherent: every resolution path is deliberately
+ * null-safe (each mapper/app-manager call is individually guarded so a missing
+ * provider degrades rather than raises), which unavoidably raises the WMC.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
 final class SemanticTypeResolver
@@ -222,33 +228,54 @@ final class SemanticTypeResolver
 
         // Union each `allOf` ancestor's implemented types (recursive).
         foreach ($allOf as $parentRef) {
-            if (is_string($parentRef) === false && is_int($parentRef) === false) {
-                continue;
-            }
-
-            if ((string) $parentRef === '') {
-                continue;
-            }
-
-            try {
-                $parent = $this->schemaMapper->find(id: $parentRef);
-            } catch (\Throwable $e) {
-                // A missing/unreadable ancestor contributes nothing; never raise.
-                $this->logger->debug(
-                    message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'ref' => (string) $parentRef, 'exception' => $e->getMessage()]
-                );
-                continue;
-            }
-
-            foreach ($this->implementedTypesWithAncestors(schema: $parent, visited: $visited) as $inherited) {
+            foreach ($this->ancestorTypesForRef(parentRef: $parentRef, visited: $visited) as $inherited) {
                 $types[] = $inherited;
             }
-        }//end foreach
+        }
 
         return array_values(array_unique($types));
 
     }//end implementedTypesWithAncestors()
+
+    /**
+     * Resolve the implemented types contributed by a single `allOf` parent
+     * reference, empty when the ref is unusable or its ancestor cannot be read.
+     *
+     * Extracted from {@see self::implementedTypesWithAncestors()} so the ancestor
+     * walk stays within complexity limits; behaviour is identical (an unusable or
+     * unresolved parent contributes nothing and never raises).
+     *
+     * @param mixed              $parentRef A single `allOf` entry (schema id/uuid/slug).
+     * @param array<int, string> $visited   Visited schema identifiers (circular guard).
+     *
+     * @return array<int, string> The parent's (recursive) implemented types.
+     *
+     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-1.1
+     */
+    private function ancestorTypesForRef(mixed $parentRef, array $visited): array
+    {
+        if (is_string($parentRef) === false && is_int($parentRef) === false) {
+            return [];
+        }
+
+        if ((string) $parentRef === '') {
+            return [];
+        }
+
+        try {
+            $parent = $this->schemaMapper->find(id: $parentRef);
+        } catch (\Throwable $e) {
+            // A missing/unreadable ancestor contributes nothing; never raise.
+            $this->logger->debug(
+                message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'ref' => (string) $parentRef, 'exception' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        return $this->implementedTypesWithAncestors(schema: $parent, visited: $visited);
+
+    }//end ancestorTypesForRef()
 
     /**
      * Find the register a resolved schema belongs to.

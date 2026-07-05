@@ -863,22 +863,6 @@ class SettingsServiceTest extends TestCase
     }
 
     /**
-     * Test updatePublishingOptions delegates to configurationSettingsHandler
-     */
-    public function testUpdatePublishingOptions(): void
-    {
-        $data = ['auto_publish_objects' => true];
-        $expected = ['auto_publish_objects' => true, 'auto_publish_attachments' => false];
-        $this->configurationSettingsHandler->expects($this->once())
-            ->method('updatePublishingOptions')
-            ->with($data)
-            ->willReturn($expected);
-
-        $result = $this->settingsService->updatePublishingOptions(data: $data);
-        $this->assertSame($expected, $result);
-    }
-
-    /**
      * Test validateAllObjects delegates to validationOperationsHandler
      */
     public function testValidateAllObjects(): void

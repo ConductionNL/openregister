@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -1481,22 +1482,41 @@ class SchemasController extends Controller
             'schemaSlug' => $schema->getSlug(),
         ];
 
-        if ($register !== null) {
-            $payload['register']     = $register->getId();
-            $payload['registerSlug'] = $register->getSlug();
-
-            $appId = $register->getApplication();
-            if (is_string($appId) === true && $appId !== '') {
-                $payload['appId'] = $appId;
-            }
-        } else {
-            $payload['register']     = null;
-            $payload['registerSlug'] = null;
-        }
-
-        return new JSONResponse($payload);
+        return new JSONResponse(array_merge($payload, $this->registerPayload(register: $register)));
 
     }//end resolveByImplements()
+
+    /**
+     * Build the register portion of a {@see self::resolveByImplements()} payload.
+     *
+     * Extracted so the discovery endpoint stays within complexity limits;
+     * behaviour is identical. When the schema has no owning register the
+     * register/slug keys are explicitly null; otherwise the register id + slug
+     * are returned, plus `appId` when the register names an owning app.
+     *
+     * @param Register|null $register The owning register, or null when none.
+     *
+     * @return array<string, mixed> The register keys to merge into the payload.
+     */
+    private function registerPayload(?Register $register): array
+    {
+        if ($register === null) {
+            return ['register' => null, 'registerSlug' => null];
+        }
+
+        $payload = [
+            'register'     => $register->getId(),
+            'registerSlug' => $register->getSlug(),
+        ];
+
+        $appId = $register->getApplication();
+        if (is_string($appId) === true && $appId !== '') {
+            $payload['appId'] = $appId;
+        }
+
+        return $payload;
+
+    }//end registerPayload()
 
     /**
      * Whether the current request has no resolved Nextcloud user (anonymous).
