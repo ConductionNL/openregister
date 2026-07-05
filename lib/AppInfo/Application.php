@@ -350,6 +350,15 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Credential broker (credential-broker-service): bind the CredentialStore
+        // abstraction to its first concrete leaf, the NC encrypted per-user vault
+        // (design.md D3). Future leaves (Vault, AWS KMS) slot in by replacing this
+        // alias — the broker depends only on the CredentialStore interface.
+        $context->registerServiceAlias(
+            \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+            \OCA\OpenRegister\Service\Credential\NextcloudVaultCredentialStore::class
+        );
+
         // Register the LanguageMiddleware for Accept-Language header parsing.
         $context->registerMiddleware(LanguageMiddleware::class);
 

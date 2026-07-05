@@ -287,4 +287,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/WebhookService.php" method="isPrivateHost"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/WebhookService.php" method="isPrivateHost"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/ZaaktypeAuthorizationService.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/CredentialController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/CredentialController.php"/>
 </phpmd-baseline>

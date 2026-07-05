@@ -22,6 +22,17 @@ return [
         ['name' => 'webPush#hexIcon',  'url' => '/webpush/icon/{app}',  'verb' => 'GET', 'requirements' => ['app' => '[a-z0-9_-]+']],
         ['name' => 'webPush#hexBadge', 'url' => '/webpush/badge/{app}', 'verb' => 'GET', 'requirements' => ['app' => '[a-z0-9_-]+']],
 
+        // Credential broker (credential-broker-service) — owner-scoped credential
+        // metadata CRUD + per-app signing-secret registration + the guarded broker
+        // call. The broker call reads the app token from the X-Credential-Token
+        // header (never the body). All owner-scoped, static errors, no secret leak.
+        ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
+        ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
+        ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
+        ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+
         // Integration registry (read-only discovery API) —
         // pluggable-integration-registry task 4.3 / tasks.md#task-20.
         ['name' => 'integrations#index', 'url' => '/api/integrations', 'verb' => 'GET'],
