@@ -631,10 +631,12 @@ This docker-compose setup is designed for **development and testing only**. For 
 
 ## Additional Resources
 
+- [Solr Setup Guide](../technical/solr-setup-configuration.md)
 - [AI Features Documentation](../Features/ai.md)
 - [CLI Commands Reference](../development/commands.md)
 - [Official Nextcloud Development Guide](https://docs.nextcloud.com/server/latest/developer_manual/)
 - [Ollama Documentation](https://ollama.com)
+- [Apache Solr Documentation](https://solr.apache.org)
 
 ## Support
 

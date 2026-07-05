@@ -338,6 +338,15 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        // Credential broker (credential-broker-service): bind the CredentialStore
+        // abstraction to its first concrete leaf, the NC encrypted per-user vault
+        // (design.md D3). Future leaves (Vault, AWS KMS) slot in by replacing this
+        // alias — the broker depends only on the CredentialStore interface.
+        $context->registerServiceAlias(
+            \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+            \OCA\OpenRegister\Service\Credential\NextcloudVaultCredentialStore::class
+        );
+
         // Register request-scoped LanguageService as a singleton (shared per request).
         $context->registerService(
             LanguageService::class,
