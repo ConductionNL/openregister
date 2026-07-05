@@ -95,6 +95,15 @@ class ResponseGenerationHandler
     private LoggerInterface $logger;
 
     /**
+     * Token/latency usage from the last generateResponse() call, for per-run cost recording
+     * (run-analytics). Populated from the LLPhant chat instance; empty when the provider
+     * does not expose usage. Keys: promptTokens, completionTokens, totalDurationMs, llmSeconds.
+     *
+     * @var array<string, int|float>
+     */
+    public array $lastUsage = [];
+
+    /**
      * Constructor
      *
      * @param SettingsService       $settingsService Settings service for LLM config.
@@ -462,6 +471,15 @@ class ResponseGenerationHandler
                     ],
                 ]
             );
+
+            // Expose the LLM token/latency usage for per-run cost recording (run-analytics).
+            // Only OllamaChat accumulates usage today; other providers leave it empty.
+            $this->lastUsage = [];
+            if ($chat instanceof OllamaChat) {
+                $this->lastUsage = $chat->lastUsage;
+            }
+
+            $this->lastUsage['llmSeconds'] = round($llmTime, 2);
 
             return $response;
         } catch (Exception $e) {
