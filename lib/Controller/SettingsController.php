@@ -272,26 +272,6 @@ class SettingsController extends Controller
     }//end load()
 
     /**
-     * Update the publishing options.
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with updated publishing options
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
-     */
-    public function updatePublishingOptions(): JSONResponse
-    {
-        try {
-            $data   = $this->request->getParams();
-            $result = $this->settingsService->updatePublishingOptions($data);
-            return new JSONResponse(data: $result);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end updatePublishingOptions()
-
-    /**
      * Rebase all objects and logs with current retention settings.
      *
      * This method recalculates deletion times for all objects and logs based on current retention settings.

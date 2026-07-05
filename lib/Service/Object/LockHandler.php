@@ -482,6 +482,16 @@ class LockHandler
 
             $objectBefore = $context['object'];
 
+            // No-op when the object isn't actually locked. Releasing a lock that
+            // does not exist must not require unlock permission: an empty or expired
+            // `_locked` means there is nothing to authorize. This keeps unlock
+            // idempotent and prevents spurious "permission to unlock" failures on
+            // flows that defensively unlock after a successful write (e.g. the
+            // object update endpoint's post-save unlock). See openregister#195.
+            if ($objectBefore->isLocked() === false) {
+                return true;
+            }
+
             if ($this->callerMayUnlock(object: $objectBefore) === false) {
                 $this->logger->warning(
                     message: '[LockHandler] Unauthorized unlock attempt',

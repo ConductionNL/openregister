@@ -943,9 +943,14 @@ class Schema extends Entity implements JsonSerializable
             return true;
         }
 
-        // If action is not specified in authorization, everyone has permission.
-        if (isset($this->authorization[$action]) === false) {
-            return true;
+        // Fail-closed (rbac-default-deny): once a schema opts into authorization
+        // (non-empty block), an action that is not explicitly listed is denied —
+        // including the `public` pseudo-group. The empty-block open-default above
+        // and the admin/owner bypasses still apply. Kept consistent with the
+        // active enforcement paths (PermissionHandler / MagicRbacHandler) even
+        // though this entity-level helper currently has no lib/ enforcement callers.
+        if (empty($this->authorization[$action]) === true) {
+            return false;
         }
 
         // Check each authorization entry for this action.
@@ -1701,13 +1706,22 @@ class Schema extends Entity implements JsonSerializable
     private function validateConfigurationArray(array $configuration): array
     {
         $validatedConfig = [];
+<<<<<<< HEAD
+=======
+        $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
+        $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
+>>>>>>> origin/development
         // `implements` + `x-schema-org` carry the cross-app semantic-type
         // markers (ADR-048); they must round-trip through the configuration
         // column so SemanticTypeResolver can discover the schema. Their IRI
         // shape is validated on read by JsonLdContextService::getImplementedTypes.
+<<<<<<< HEAD
         $stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields   = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
         $passThrough  = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
+=======
+        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
+>>>>>>> origin/development
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
@@ -1934,6 +1948,8 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-quality',
         'x-openregister-dedup',
         'x-openregister-flows',
+        'x-openregister-survivorship',
+        'x-openregister-merge',
     ];
 
     /**

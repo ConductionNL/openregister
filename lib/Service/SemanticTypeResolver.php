@@ -58,6 +58,15 @@ use Psr\Log\LoggerInterface;
  * Resolve a canonical semantic-type URI to the installed schema implementing
  * it, null-safe across all registers, with a deterministic tie-break.
  *
+<<<<<<< HEAD
+=======
+ * Class complexity is inherent: every resolution path is deliberately
+ * null-safe (each mapper/app-manager call is individually guarded so a missing
+ * provider degrades rather than raises), which unavoidably raises the WMC.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+>>>>>>> origin/development
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
 final class SemanticTypeResolver
@@ -143,7 +152,11 @@ final class SemanticTypeResolver
 
         $candidates = [];
         foreach ($schemas as $schema) {
+<<<<<<< HEAD
             $implemented = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
+=======
+            $implemented = $this->implementedTypesWithAncestors(schema: $schema);
+>>>>>>> origin/development
             if (in_array($uri, $implemented, true) === false) {
                 continue;
             }
@@ -177,6 +190,104 @@ final class SemanticTypeResolver
     }//end resolveSchemaByImplements()
 
     /**
+<<<<<<< HEAD
+=======
+     * Compute a schema's implemented semantic types INCLUDING those inherited via
+     * `allOf`.
+     *
+     * A schema's implemented types are the union of its OWN markers
+     * ({@see \OCA\OpenRegister\Service\JsonLd\JsonLdContextService::getImplementedTypes()})
+     * and the implemented types of every schema it extends via `allOf`, resolved
+     * recursively with a visited-set circular guard (mirroring
+     * {@see \OCA\OpenRegister\Db\SchemaMapper::resolveAllOf()}). A child ADDS,
+     * never removes — so a schema that `allOf`-extends a `schema:Person` schema
+     * resolves for `https://schema.org/Person` even with no marker of its own. A
+     * schema with no `allOf` is unaffected (exactly its own markers).
+     *
+     * The ancestor walk lives here rather than in `JsonLdContextService` so that
+     * service stays dependency-light; this resolver already holds a `SchemaMapper`
+     * to load each `allOf` parent by id/uuid/slug.
+     *
+     * @param Schema             $schema  The schema whose implemented types to compute.
+     * @param array<int, string> $visited Visited schema identifiers (circular guard).
+     *
+     * @return array<int, string> The union of own + inherited implemented types.
+     *
+     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-1.1
+     */
+    private function implementedTypesWithAncestors(Schema $schema, array $visited=[]): array
+    {
+        // Mark this schema visited so a cyclic `allOf` never loops.
+        $currentId = (string) $schema->getId();
+        if ($currentId !== '' && in_array($currentId, $visited, true) === true) {
+            return [];
+        }
+
+        if ($currentId !== '') {
+            $visited[] = $currentId;
+        }
+
+        // Start with the schema's own markers.
+        $types = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
+
+        $allOf = $schema->getAllOf();
+        if (is_array($allOf) === false || $allOf === []) {
+            return array_values(array_unique($types));
+        }
+
+        // Union each `allOf` ancestor's implemented types (recursive).
+        foreach ($allOf as $parentRef) {
+            foreach ($this->ancestorTypesForRef(parentRef: $parentRef, visited: $visited) as $inherited) {
+                $types[] = $inherited;
+            }
+        }
+
+        return array_values(array_unique($types));
+
+    }//end implementedTypesWithAncestors()
+
+    /**
+     * Resolve the implemented types contributed by a single `allOf` parent
+     * reference, empty when the ref is unusable or its ancestor cannot be read.
+     *
+     * Extracted from {@see self::implementedTypesWithAncestors()} so the ancestor
+     * walk stays within complexity limits; behaviour is identical (an unusable or
+     * unresolved parent contributes nothing and never raises).
+     *
+     * @param mixed              $parentRef A single `allOf` entry (schema id/uuid/slug).
+     * @param array<int, string> $visited   Visited schema identifiers (circular guard).
+     *
+     * @return array<int, string> The parent's (recursive) implemented types.
+     *
+     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-1.1
+     */
+    private function ancestorTypesForRef(mixed $parentRef, array $visited): array
+    {
+        if (is_string($parentRef) === false && is_int($parentRef) === false) {
+            return [];
+        }
+
+        if ((string) $parentRef === '') {
+            return [];
+        }
+
+        try {
+            $parent = $this->schemaMapper->find(id: $parentRef);
+        } catch (\Throwable $e) {
+            // A missing/unreadable ancestor contributes nothing; never raise.
+            $this->logger->debug(
+                message: '[SemanticTypeResolver] allOf ancestor unresolved — skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'ref' => (string) $parentRef, 'exception' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        return $this->implementedTypesWithAncestors(schema: $parent, visited: $visited);
+
+    }//end ancestorTypesForRef()
+
+    /**
+>>>>>>> origin/development
      * Find the register a resolved schema belongs to.
      *
      * Registers hold their schema ids in `Register::getSchemas()`; a schema

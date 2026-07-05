@@ -8,6 +8,7 @@ the `AvgIndex.vue` extension land in the successor changes `dsar-integration-sea
 
 ## 1. Policy-pack schema + register (config)
 
+<<<<<<< HEAD
 - [ ] 1.1 Add `lib/Settings/dsar_policy_pack_register.json` — a `dsar-policy-packs` register + `dsarPolicyPack` schema with a `jurisdiction`/tenant key, `deadlineDurationDays`, `extensionDurationDays`, an `escalationTiers` collection (tier + offsetDays), `intakeChannels`, `roleMapping` (dpo/fg/handler), and `templates` (references); every property + nested item property carries a `title` + `description` (ADR-011).
 - [ ] 1.2 Add the `denialGrounds` collection (generic `key` ← Phase-1 → jurisdiction `label` + statutory `citation`) and the `retentionWindows` collection (`key` → duration) to the `dsarPolicyPack` schema, with `title`/`description` on every item property.
 - [ ] 1.3 Add the two integration-seam selector fields `identityVerifyProvider` and `regulatorEscalateProvider` (string provider ids, fail-closed to the OR safe-default id when unset/unknown), with `title`/`description`.
@@ -25,6 +26,25 @@ the `AvgIndex.vue` extension land in the successor changes `dsar-integration-sea
 
 - [ ] 4.1 Validate both register JSONs parse and import cleanly (`x-openregister-*` blocks fold into `configuration`); confirm the Phase-1 register change is additive (calculation/reference fields only, all optional; no existing required property removed/renamed) and the new register is standalone/additive.
 - [ ] 4.2 Run the config-relevant Hydra gates (`notification-dialect` gate-18, `schema-property-titles` gate-28) and `openspec validate --change dsar-policy-pack-and-seams --strict`; fix any pre-existing issues touched.
+=======
+- [x] 1.1 Add `lib/Settings/dsar_policy_pack_register.json` — a `dsar-policy-packs` register + `dsarPolicyPack` schema with a `jurisdiction`/tenant key, `deadlineDurationDays`, `extensionDurationDays`, an `escalationTiers` collection (tier + offsetDays), `intakeChannels`, `roleMapping` (dpo/fg/handler), and `templates` (references); every property + nested item property carries a `title` + `description` (ADR-011).
+- [x] 1.2 Add the `denialGrounds` collection (generic `key` ← Phase-1 → jurisdiction `label` + statutory `citation`) and the `retentionWindows` collection (`key` → duration) to the `dsarPolicyPack` schema, with `title`/`description` on every item property.
+- [x] 1.3 Add the two integration-seam selector fields `identityVerifyProvider` and `regulatorEscalateProvider` (string provider ids, fail-closed to the OR safe-default id when unset/unknown), with `title`/`description`.
+
+## 2. Bind Phase-1 to the pack (declarative)
+
+- [x] 2.1 Bind the Phase-1 `escalationTier` `x-openregister-calculations` and the reminder/escalation/breach `x-openregister-notifications` on `data_subject_request_register.json` to resolve their tier boundaries from the active pack via a declarative cross-object reference (ADR-031) — remove every hard-coded threshold from the register JSON, falling back to the default pack when no jurisdiction pack is bound.
+- [x] 2.2 Bind the Phase-1 `denialGround` enum wording and the `retentionWindow` durations to resolve from the active pack; ensure the register JSON holds only the generic keys/selectors, not jurisdiction wording or durations, and that no existing Phase-1 lifecycle transition or denial guard is altered.
+
+## 3. Seed data
+
+- [x] 3.1 Seed a jurisdiction-neutral **default** `dsarPolicyPack` (generic denial labels, conservative thresholds, retention windows, both seam selectors set to the OR safe-default fail-closed provider id) and an illustrative **NL-shaped example** pack — per the design Seed Data section, safe placeholders only (nil UUID `00000000-0000-0000-0000-000000000000`, `YOUR_TOKEN_HERE`, `<role-id>`, `<provider-id>`).
+
+## 4. Verification
+
+- [x] 4.1 Validate both register JSONs parse and import cleanly (`x-openregister-*` blocks fold into `configuration`); confirm the Phase-1 register change is additive (calculation/reference fields only, all optional; no existing required property removed/renamed) and the new register is standalone/additive.
+- [x] 4.2 Run the config-relevant Hydra gates (`notification-dialect` gate-18, `schema-property-titles` gate-28) and `openspec validate --change dsar-policy-pack-and-seams --strict`; fix any pre-existing issues touched.
+>>>>>>> origin/development
 
 ## Acceptance Criteria
 

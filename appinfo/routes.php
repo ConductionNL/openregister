@@ -52,6 +52,9 @@ return [
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#patch', 'url' => '/api/sources/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 
+        // Curated MDI glyph as an SVG image (used to render a schema's icon in unified search).
+        ['name' => 'icon#mdi', 'url' => '/api/icon/mdi/{name}', 'verb' => 'GET', 'requirements' => ['name' => '[A-Za-z0-9-]+']],
+
         // Data sync / harvesting — manual trigger + status (data-sync-harvesting spec).
         ['name' => 'sources#syncNow',    'url' => '/api/sources/{id}/sync',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#syncStatus', 'url' => '/api/sources/{id}/sync-status', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
@@ -250,6 +253,21 @@ return [
         ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
         ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // DSAR case-management engine (dsar-case-engine): stateful case workflow.
+        // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
+        // one-time download (browser navigation). Case-level access control
+        // (handler-scopes-own + officer-override, fail-closed) enforced in-body.
+        ['name' => 'dsarCase#create',         'url' => '/api/gdpr/cases',                        'verb' => 'POST'],
+        ['name' => 'dsarCase#transition',     'url' => '/api/gdpr/cases/{id}/transition',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#evidence',       'url' => '/api/gdpr/cases/{id}/evidence',          'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#redact',         'url' => '/api/gdpr/cases/{id}/redactions',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#generateBundle', 'url' => '/api/gdpr/cases/{id}/bundle',            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#downloadBundle', 'url' => '/api/gdpr/cases/{id}/bundle/download',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#dossier',        'url' => '/api/gdpr/cases/{id}/dossier',           'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        // DSAR integration seams (dsar-integration-seams): pack-selector-driven,
+        // fail-closed identity-verify + regulator-escalate call-outs.
+        ['name' => 'dsarCase#identityVerify', 'url' => '/api/gdpr/cases/{id}/verify-identity',   'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#escalate',       'url' => '/api/gdpr/cases/{id}/escalate',          'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
@@ -310,6 +328,26 @@ return [
         ['name' => 'aggregation#grouped', 'url' => '/api/objects/aggregations/{register}/{schema}/grouped', 'verb' => 'GET'],
         // Aggregations sugar endpoint — named annotation surface.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
+
+        // MDM read-only surface — quality statistics + lowest-quality listing
+        // (must be ordered BEFORE the bare {register}/{schema} listing so the
+        // literal /stats segment matches first).
+        ['name' => 'quality#stats', 'url' => '/api/objects/quality/{register}/{schema}/stats', 'verb' => 'GET'],
+        ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
+        // MDM read-only surface — duplicate-candidate listing.
+        ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
+        ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
+        ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
+        ['name' => 'merge#reverse', 'url' => '/api/objects/merge/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+        // MDM per-object attribute-override primitive (ADR-045 follow-on #E) —
+        // sets/clears one attribute override on a master object and recomputes
+        // its golden record.
+        ['name' => 'survivorship#override', 'url' => '/api/objects/survivorship/{id}/override', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Resolve a master's competing source records (embedded or reverse-FK)
+        // for the conflict-resolution UI.
+        ['name' => 'survivorship#sources', 'url' => '/api/objects/survivorship/{id}/sources', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],

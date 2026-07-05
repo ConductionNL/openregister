@@ -63,7 +63,7 @@ class CredentialBrokerService
      *
      * @var string
      */
-    public const SCHEMA = 'credential';
+    public const SCHEMA = 'brokeredcredential';
 
     /**
      * Constructor.

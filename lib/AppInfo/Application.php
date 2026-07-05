@@ -150,6 +150,8 @@ use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\SourceRecordChangeListener;
+use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
@@ -158,6 +160,11 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
@@ -392,6 +399,72 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
             function () {
                 return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+            }
+        );
+
+        // DSAR case-engine (dsar-case-engine): bind the swappable PAdES signing
+        // seam to its default SHA-256-only stub. The real PAdES-LTV signer drops
+        // in here later by replacing this binding — the ExportBundleService
+        // depends only on the PadesSigner interface, so nothing else changes.
+        // TODO(ADR-047 Phase-1b, DEFERRED): PAdES-LTV signing deferred — the
+        // 2026-07-04 tc-lib-pdf spike was No-Go (8.65 stubs the B-T timestamp).
+        // Interim = SHA-256 hash-only. When resumed, bind a real PadesSigner
+        // against pyHanko (MIT sidecar) or a matured tc-lib-pdf; TSA URL config.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Export\PadesSigner::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner();
+            }
+        );
+
+        // DSAR evidence-source registry (shared, so leaf-app addProvider()
+        // registrations during boot() persist for the whole request). The
+        // harvest service auto-wires it; OR core enumerates only registered
+        // providers (ADR-019 — an unregistered source contributes nothing).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // DSAR integration seams (dsar-integration-seams): two pluggable seams —
+        // identity-verify and regulator-escalate — as shared per-request
+        // registries (so a leaf app's addProvider() during boot() persists for
+        // the whole request, ADR-019) each pre-seeded with the OR fail-closed
+        // default in its constructor. Resolution is pack-selector-driven and
+        // fail-closed: an unset/unknown selector resolves the default that
+        // refuses (never null, never "verified"/"escalated" — ADR-005/CWE-863).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    default: $container->get(\OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class)
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    default: $container->get(\OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class)
+                );
             }
         );
 
@@ -975,20 +1048,6 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-            \OCA\OpenRegister\Service\TimeEntryService::class,
-            function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\TimeEntryService(
-                    timeLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeLinkMapper::class),
-                    appConfig: $container->get('OCP\IAppConfig'),
-                    appManager: $container->get('OCP\App\IAppManager'),
-                    userSession: $container->get('OCP\IUserSession'),
-                    groupManager: $container->get('OCP\IGroupManager'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                );
-            }
-        );
-
-        $context->registerService(
             \OCA\OpenRegister\Service\Integration\TimeProvider::class,
             function (ContainerInterface $container) {
                 return new \OCA\OpenRegister\Service\Integration\TimeProvider(
@@ -1168,6 +1227,32 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
+<<<<<<< HEAD
+=======
+            UserDirectoryObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new UserDirectoryObjectSourceProvider(
+                    userManager: $container->get('OCP\IUserManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            GroupObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new GroupObjectSourceProvider(
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+>>>>>>> origin/development
             ContactsObjectSourceProvider::class,
             function (ContainerInterface $container) {
                 return new ContactsObjectSourceProvider(
@@ -2081,6 +2166,20 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatingEvent::class, QualityScoreOnSaveListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, QualityScoreOnSaveListener::class);
 
+        // Survivorship annotation listener — materialises a declared golden
+        // record + attribute provenance into the object payload before
+        // persistence (see x-openregister-survivorship). MDM capability.
+        $context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
+
+        // Reverse-FK source-change listener — when a source object (declared via
+        // a master schema's x-openregister-survivorship sourceLink.reverseFk)
+        // is created/updated/deleted, recompute the referenced master's golden
+        // record so it stays current as its sources change. MDM capability.
+        $context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
+
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
         $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
@@ -2777,8 +2876,18 @@ class Application extends App implements IBootstrap
             return;
         }
 
+<<<<<<< HEAD
         $providerClasses = [
             CalDavVtodoObjectSourceProvider::class,
+=======
+        // Register each built-in provider independently so one absent provider
+        // never blocks the others — a failing provider simply won't serve its
+        // bound schemas.
+        $providerClasses = [
+            CalDavVtodoObjectSourceProvider::class,
+            UserDirectoryObjectSourceProvider::class,
+            GroupObjectSourceProvider::class,
+>>>>>>> origin/development
             ContactsObjectSourceProvider::class,
             CalendarEventObjectSourceProvider::class,
             FilesObjectSourceProvider::class,

@@ -348,55 +348,6 @@ class ObjectService
     }//end checkPermission()
 
     /**
-     * Ensure folder exists for an ObjectEntity.
-     *
-     * This method checks if the object has a valid folder ID and creates one if needed.
-     * It handles legacy cases where the folder property might be null, empty, or a string path.
-     *
-     * @param ObjectEntity $entity The object entity to ensure folder for
-     *
-     * @return void
-     *
-     * @psalm-return   void
-     * @phpstan-return void
-     *
-     * @spec exclude Lazily creates the object's storage folder via FileService when missing; file-folder plumbing.
-     */
-    public function ensureObjectFolderExists(ObjectEntity $entity): void
-    {
-        $folderProperty = $entity->getFolder();
-
-        // Check if folder needs to be created (null, empty string, or legacy string path).
-        $isString = is_string($folderProperty) === true;
-        if ($folderProperty === null || $folderProperty === '' || $isString === true) {
-            try {
-                // Create folder and get the folder node.
-                $folderNode = $this->fileService->createEntityFolder($entity);
-
-                if ($folderNode !== null) {
-                    // Update the entity with the folder ID.
-                    $folderIdValue = $folderNode->getId();
-                    $folderStr     = null;
-                    if ($folderIdValue !== null) {
-                        $folderStr = (string) $folderIdValue;
-                    }
-
-                    $entity->setFolder($folderStr);
-
-                    // Save the entity with the new folder ID.
-                    $this->objectMapper->update($entity);
-                }
-            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
-                // Access denials must propagate to the controller for HTTP 403 mapping.
-                throw $e;
-            } catch (Exception $e) {
-                // Log the error but don't fail the object creation/update.
-                // The object can still function without a folder.
-            }//end try
-        }//end if
-    }//end ensureObjectFolderExists()
-
-    /**
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID
@@ -2415,9 +2366,23 @@ class ObjectService
         // response time regardless of which backend (index/database) runs.
         $searchStartTime = microtime(true);
 
+        // Detect a cross-schema search: a `@self.schema` array, `_schemas`, or
+        // `@self.schemas` means the caller wants to search MANY schemas (e.g. the
+        // unified-search provider passes every searchable schema). Such a search
+        // must NOT be scoped to a single register — each schema is resolved to
+        // its own owning register downstream — so the ambient currentRegister
+        // (often a default like the first register) must not leak in.
+        $selfSchema       = ($query['@self']['schema'] ?? null);
+        $isMultiSchemaCtx = (is_array($selfSchema) === true && count($selfSchema) > 0)
+            || array_key_exists('_schemas', $query) === true
+            || (isset($query['@self']['schemas']) === true);
+
         // Add register and schema context to query for magic mapper routing.
         // Use array_key_exists to allow explicit null values to disable auto-setting.
-        if ($this->currentRegister !== null && array_key_exists('_register', $query) === false) {
+        if ($this->currentRegister !== null
+            && array_key_exists('_register', $query) === false
+            && $isMultiSchemaCtx === false
+        ) {
             $query['_register'] = $this->currentRegister->getId();
         }
 

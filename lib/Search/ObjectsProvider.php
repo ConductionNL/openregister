@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Search;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -493,20 +494,40 @@ class ObjectsProvider implements IFilteringProvider
                     );
                 }
 
-                // Use registered app icon or fall back to OpenRegister icon.
-                $icon = $this->deepLinkRegistry->resolveIcon(
-                    registerId: $registerId,
-                    schemaId: $schemaId
-                ) ?? 'icon-openregister';
-
                 // Resolve the per-app label for this (register, schema) pair.
                 $appLabel = $this->deepLinkRegistry->resolveDisplayName(
                     registerId: $registerId,
                     schemaId: $schemaId
                 );
 
-                // Use the registered (rounded) app icon for claimed pairs.
-                $rounded = ($appLabel !== null);
+                // Icon precedence:
+                // 1. the schema's own MDI icon (an explicit, per-schema choice
+                // by the app author), rendered as a self-hosted data: SVG so
+                // it renders in the search dropdown and passes the image CSP;
+                // 2. the consuming app's registered (rounded) icon;
+                // 3. the generic OpenRegister icon class.
+                // The rounded avatar style only applies to the registered app
+                // icon — a schema glyph is a square monochrome icon.
+                // The schema glyph is served from the icon endpoint as a real
+                // same-origin SVG URL and passed as the THUMBNAIL, because
+                // Nextcloud search only paints a thumbnail from a URL — an
+                // icon-class name or a data: URI is not rendered as an image.
+                $schemaIconName = $this->resolveSchemaIcon(schemaId: $schemaId);
+                $thumbnailUrl   = '';
+                if (MdiIconRenderer::has(icon: $schemaIconName) === true) {
+                    $thumbnailUrl = $this->urlGenerator->linkToRoute(
+                        'openregister.icon.mdi',
+                        ['name' => $schemaIconName]
+                    );
+                    $icon         = 'icon-openregister';
+                    $rounded      = false;
+                } else {
+                    $icon    = $this->deepLinkRegistry->resolveIcon(
+                        registerId: $registerId,
+                        schemaId: $schemaId
+                    ) ?? 'icon-openregister';
+                    $rounded = ($appLabel !== null);
+                }
 
                 // Create descriptive title and subline.
                 $name = $selfData['name'] ?? '';
@@ -529,7 +550,7 @@ class ObjectsProvider implements IFilteringProvider
                 );
 
                 $searchResultEntries[] = new SearchResultEntry(
-                    $icon,
+                    $thumbnailUrl,
                     $title,
                     $subline,
                     $objectUrl,
@@ -756,7 +777,11 @@ class ObjectsProvider implements IFilteringProvider
         $key = 'schema_'.$schemaId;
         if (isset($this->nameCache[$key]) === false) {
             try {
-                $schema = $this->schemaMapper->find($schemaId);
+                // Resolve display metadata with tenancy/RBAC bypassed: the
+                // result object already passed those gates, and a schema owned by
+                // a different organisation than the active one must still resolve
+                // its human title (otherwise the result falls back to the bare id).
+                $schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
                 $title  = $schema->getTitle();
                 $this->nameCache[$key] = (string) $schemaId;
                 if ($title !== null && $title !== '') {
@@ -769,6 +794,38 @@ class ObjectsProvider implements IFilteringProvider
 
         return $this->nameCache[$key];
     }//end resolveSchemaName()
+
+    /**
+     * Resolve a schema ID to its MDI icon reference (e.g. "Dog"), if set.
+     *
+     * @param int $schemaId The schema ID
+     *
+     * @return string|null The schema's icon reference, or null when unset/unknown
+     *
+     * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+     */
+    private function resolveSchemaIcon(int $schemaId): ?string
+    {
+        $key = 'schemaicon_'.$schemaId;
+        if (array_key_exists($key, $this->nameCache) === false) {
+            $this->nameCache[$key] = '';
+            try {
+                // Tenancy/RBAC bypassed for the same reason as resolveSchemaName().
+                $icon = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->getIcon();
+                if ($icon !== null) {
+                    $this->nameCache[$key] = $icon;
+                }
+            } catch (\Exception $e) {
+                $this->nameCache[$key] = '';
+            }
+        }
+
+        if ($this->nameCache[$key] === '') {
+            return null;
+        }
+
+        return $this->nameCache[$key];
+    }//end resolveSchemaIcon()
 
     /**
      * Resolve a register ID to its human-readable title.
@@ -784,7 +841,8 @@ class ObjectsProvider implements IFilteringProvider
         $key = 'register_'.$registerId;
         if (isset($this->nameCache[$key]) === false) {
             try {
-                $register = $this->registerMapper->find($registerId);
+                // Tenancy/RBAC bypassed for the same reason as resolveSchemaName().
+                $register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
                 $title    = $register->getTitle();
                 $this->nameCache[$key] = (string) $registerId;
                 if ($title !== null && $title !== '') {

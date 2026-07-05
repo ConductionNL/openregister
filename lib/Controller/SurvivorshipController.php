@@ -41,6 +41,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+>>>>>>> origin/development
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -63,23 +67,78 @@ class SurvivorshipController extends Controller
     /**
      * Constructor.
      *
+<<<<<<< HEAD
      * @param string        $appName       The application name.
      * @param IRequest      $request       The current request.
      * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
      * @param SchemaMapper  $schemaMapper  Schema lookup for the survivorship annotation.
      * @param IUserSession  $userSession   Current user session, for actor attribution.
+=======
+     * @param string               $appName              The application name.
+     * @param IRequest             $request              The current request.
+     * @param ObjectService        $objectService        Object read/write path (RBAC + tenant scoped).
+     * @param SchemaMapper         $schemaMapper         Schema lookup for the survivorship annotation.
+     * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
+     * @param IUserSession         $userSession          Current user session, for actor attribution.
+>>>>>>> origin/development
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
+<<<<<<< HEAD
+=======
+        private readonly SourceRecordResolver $sourceRecordResolver,
+>>>>>>> origin/development
         private readonly IUserSession $userSession
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
+<<<<<<< HEAD
+=======
+     * Return a master object's resolved competing source records, honouring
+     * the schema's `sourceLink` mode (embedded or reverse-FK). Used by the
+     * conflict-resolution UI, which computes per-attribute disagreements from
+     * these sources — a reverse-FK master carries no embedded source array, so
+     * the client cannot resolve them without this endpoint.
+     *
+     * @param string $id Uuid of the master object.
+     *
+     * @return JSONResponse `{ sources: [...] }`, or an error status.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+     */
+    public function sources(string $id): JSONResponse
+    {
+        try {
+            $object = $this->objectService->find(id: $id, _rbac: true, _multitenancy: true);
+            if ($object === null) {
+                return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
+            }
+
+            $sources = $this->sourceRecordResolver->resolveSources(
+                masterData: ($object->getObject() ?? []),
+                masterUuid: (string) $object->getUuid(),
+                config: $this->survivorshipConfigFor(object: $object),
+                masterRegister: (string) $object->getRegister()
+            );
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        } catch (Throwable $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse(['sources' => $sources]);
+    }//end sources()
+
+    /**
+>>>>>>> origin/development
      * Set (with a value) or clear (with a null/absent value) one attribute
      * override on a master object, then save it — the save fires
      * `SurvivorshipRecomputeListener`, which recomputes the golden record
@@ -116,6 +175,22 @@ class SurvivorshipController extends Controller
 
             $this->applyOverride(object: $object, attribute: $attribute);
 
+<<<<<<< HEAD
+=======
+            // Warm the reverse-FK source resolution in this (clean) request
+            // context before saving: resolving the source schema by slug here
+            // populates the request-scoped schema cache, so the nested
+            // recompute-on-save can resolve the sources by their numeric schema
+            // id rather than a slug lookup that would run inside the save
+            // transaction. Result discarded — this is a cache warm-up only.
+            $this->sourceRecordResolver->resolveSources(
+                masterData: ($object->getObject() ?? []),
+                masterUuid: (string) $object->getUuid(),
+                config: $this->survivorshipConfigFor(object: $object),
+                masterRegister: (string) $object->getRegister()
+            );
+
+>>>>>>> origin/development
             // The RBAC/tenant-scoped write path: a caller who cannot write
             // this object throws NotAuthorizedException here, caught below.
             $saved = $this->objectService->saveObject(
@@ -230,6 +305,35 @@ class SurvivorshipController extends Controller
     }//end overridesFieldFor()
 
     /**
+<<<<<<< HEAD
+=======
+     * Resolve the full `x-openregister-survivorship` config for an object's
+     * schema (carrying the `sourceLink` block), or an empty array when absent.
+     *
+     * @param ObjectEntity $object Object whose schema to inspect.
+     *
+     * @return array<string, mixed> Survivorship config.
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+     */
+    private function survivorshipConfigFor(ObjectEntity $object): array
+    {
+        $schema = $this->loadSchema(object: $object);
+        if ($schema === null) {
+            return [];
+        }
+
+        $config = ($schema->getConfiguration() ?? []);
+        $value  = ($config['x-openregister-survivorship'] ?? null);
+        if (is_array($value) === false) {
+            return [];
+        }
+
+        return $value;
+    }//end survivorshipConfigFor()
+
+    /**
+>>>>>>> origin/development
      * Look up the schema referenced by an object instance.
      *
      * @param ObjectEntity $object Object whose schema reference to resolve.

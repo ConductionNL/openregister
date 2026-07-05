@@ -3,8 +3,18 @@
 ### Requirement: Assemble and sign the export bundle
 OpenRegister SHALL assemble a data-subject export bundle for a case by reusing
 `DataSubjectRequestService::assembleAccessExport`, and SHALL NOT re-implement subject-data
+<<<<<<< HEAD
 discovery or assembly (ADR-011). The assembled bundle SHALL be signed with a PAdES-LTV signature
 and SHALL carry a SHA-256 content hash so its integrity is verifiable. The assembly MUST run
+=======
+discovery or assembly (ADR-011). The bundle SHALL be rendered as a **PDF disclosure document** and
+SHALL carry a **SHA-256 content hash** so its integrity is verifiable. Signing is isolated behind a
+swappable `PadesSigner` interface. **A PAdES-LTV digital signature is a deferred enhancement** (the
+interim signer attaches the SHA-256 hash only) — the 2026-07-04 spike found no ready EUPL-compatible
+LTV signer (tc-lib-pdf 8.65 discards the timestamp / stubs B-T; pyHanko is the leading candidate when
+resumed). (A machine-readable art-20 *portability* payload — e.g. JSON/CSV with a JAdES/CAdES
+signature — is likewise a deferred follow-up and out of scope here.) The assembly MUST run
+>>>>>>> origin/development
 through `ObjectService` under the caller's RBAC + multitenancy scope, and the bundle-generation
 action MUST be recorded in the case's immutable audit trail pinned to the DSAR processing activity
 (`ObjectEntity::setProcessingActivityId()`).
@@ -14,10 +24,18 @@ action MUST be recorded in the case's immutable audit trail pinned to the DSAR p
 - **THEN** the bundle contents MUST be assembled via `DataSubjectRequestService::assembleAccessExport`
 - **AND** the generation MUST be recorded in the case's immutable audit trail
 
+<<<<<<< HEAD
 #### Scenario: Bundle is signed and integrity-verifiable
 - **WHEN** an export bundle is generated
 - **THEN** the bundle MUST carry a PAdES-LTV signature and a SHA-256 content hash
 - **AND** altering the bundle bytes MUST invalidate the recorded hash
+=======
+#### Scenario: Bundle is integrity-verifiable
+- **WHEN** an export bundle is generated
+- **THEN** the PDF bundle MUST carry a SHA-256 content hash via the `PadesSigner` seam
+- **AND** altering the bundle bytes MUST invalidate the recorded hash
+- **AND** a real PAdES-LTV signature MAY later replace the interim hash-only signer with no call-site change
+>>>>>>> origin/development
 
 ### Requirement: One-time secure download token
 OpenRegister SHALL issue a single-use, time-boxed secure download token for a generated bundle. The

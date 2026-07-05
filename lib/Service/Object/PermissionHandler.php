@@ -193,6 +193,8 @@ class PermissionHandler
      * - Admin group always has all permissions
      * - Object owner always has all permissions for their specific objects
      * - If no authorization configured, all users have all permissions
+     * - If authorization is configured but the action is not granted, access is
+     *   denied (fail-closed)
      * - Otherwise, check if user's groups match the required groups for the action
      *
      * TODO: Implement property-level RBAC checks
@@ -961,7 +963,8 @@ class PermissionHandler
      * - Admin group always has all permissions
      * - Object owner always has all permissions for their specific objects
      * - If no authorization is set, everyone has permission
-     * - If authorization is set but action is not specified, everyone has permission
+     * - If authorization is set but the action is not listed, no one has
+     *   permission (fail-closed) — except the admin/owner bypasses above
      *
      * Deduplication note:
      *   Conditional match evaluation (rules with a `match` clause) is delegated to
@@ -1013,9 +1016,12 @@ class PermissionHandler
             return true;
         }
 
-        // If action is not specified in authorization, everyone has permission.
-        if (isset($authorization[$action]) === false) {
-            return true;
+        // Fail-closed: once a schema opts into authorization (non-empty block),
+        // an action that is not explicitly listed is denied — including for the
+        // `public`/unauthenticated pseudo-group. Only the empty-block default
+        // above still grants by default; the admin/owner bypasses precede this.
+        if (empty($authorization[$action]) === true) {
+            return false;
         }
 
         // Check each authorization entry for this action.

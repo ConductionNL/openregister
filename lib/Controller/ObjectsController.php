@@ -2297,6 +2297,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @psalm-return JSONResponse<201|401|403|404,
      *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
      *     message?: mixed|string, error?: mixed|string,...},
@@ -2314,16 +2316,6 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Defense-in-depth: ensure a session user is present even though
-        // @NoAdminRequired already restricts this to authenticated callers.
-        // Guards against any future middleware changes that could bypass NC auth.
-        if ($this->userSession->getUser() === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required to create objects'],
-                statusCode: 401
-            );
-        }
-
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -2454,6 +2446,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
@@ -2590,8 +2584,12 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectService->unlockObject($objectEntity->getUuid());
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful.
+                // NOTE: must be the global \Exception — the unqualified `Exception`
+                // resolves to OCP\DB\Exception here (see `use` block) and would NOT
+                // catch the \Exception thrown by LockHandler::unlock(), which then
+                // surfaced as a spurious 403. See openregister#195.
             }
 
             // Return the successfully saved object directly.
@@ -2633,6 +2631,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @PublicPage
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
@@ -2828,6 +2828,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-13
      */
     public function postPatch(
@@ -2836,16 +2838,6 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Defense-in-depth: ensure a session user is present even though
-        // @NoAdminRequired already restricts this to authenticated callers.
-        // Guards against any future middleware changes that could bypass NC auth.
-        if ($this->userSession->getUser() === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required to update objects'],
-                statusCode: 401
-            );
-        }
-
         try {
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
@@ -2959,6 +2951,7 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      */

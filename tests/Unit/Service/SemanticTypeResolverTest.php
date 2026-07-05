@@ -420,4 +420,132 @@ class SemanticTypeResolverTest extends TestCase
         $this->assertNotNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
 
     }//end testCoreOpenregisterAppNotFilteredOut()
+<<<<<<< HEAD
+=======
+
+
+    private const PERSON_URI = 'https://schema.org/Person';
+
+
+    /**
+     * A child schema that `allOf`-extends a Person-marked schema, and declares no
+     * marker of its own, implements Person via inheritance and resolves for the
+     * Person URI (tasks.md §1.1/§1.2).
+     *
+     * @return void
+     */
+    public function testChildAllOfInheritsPersonType(): void
+    {
+        $base = $this->schema(id: 10, slug: 'base-person', configuration: ['x-schema-org' => 'schema:Person']);
+
+        $citizen = $this->schema(id: 11, slug: 'citizen', configuration: []);
+        $citizen->setAllOf(['10']);
+
+        // Only the child is enumerated; the parent is loaded via find().
+        $this->schemaMapper->method('findAll')->willReturn([$citizen]);
+        $this->schemaMapper->method('find')->willReturnCallback(
+            function ($id) use ($base) {
+                if ((string) $id === '10') {
+                    return $base;
+                }
+
+                throw new \Exception('not found');
+            }
+        );
+
+        $result = $this->resolver->resolveSchemaByImplements(uri: self::PERSON_URI);
+        $this->assertNotNull($result);
+        $this->assertSame('citizen', $result->getSlug());
+
+    }//end testChildAllOfInheritsPersonType()
+
+
+    /**
+     * A child's own markers and its `allOf` ancestor's markers union: it resolves
+     * for both its own Vendor IRI and the inherited Organization URI.
+     *
+     * @return void
+     */
+    public function testOwnAndAncestorMarkersUnion(): void
+    {
+        $vendor = 'https://openregister.app/ns#Vendor';
+
+        $orgBase = $this->schema(id: 20, slug: 'org-base', configuration: ['x-schema-org' => 'schema:Organization']);
+
+        $child = $this->schema(id: 21, slug: 'vendor-child', configuration: ['implements' => [$vendor]]);
+        $child->setAllOf(['20']);
+
+        $this->schemaMapper->method('findAll')->willReturn([$child]);
+        $this->schemaMapper->method('find')->willReturnCallback(
+            function ($id) use ($orgBase) {
+                if ((string) $id === '20') {
+                    return $orgBase;
+                }
+
+                throw new \Exception('not found');
+            }
+        );
+
+        // Resolves for the inherited Organization URI.
+        $this->assertSame('vendor-child', $this->resolver->resolveSchemaByImplements(uri: self::ORG_URI)?->getSlug());
+        // And for its own Vendor IRI.
+        $this->assertSame('vendor-child', $this->resolver->resolveSchemaByImplements(uri: $vendor)?->getSlug());
+
+    }//end testOwnAndAncestorMarkersUnion()
+
+
+    /**
+     * A schema with no `allOf` is unaffected — it resolves for exactly its own
+     * markers and nothing more (no regression from the ancestor walk).
+     *
+     * @return void
+     */
+    public function testNoAllOfIsUnchanged(): void
+    {
+        $s = $this->schema(id: 30, slug: 'plain-org', configuration: ['x-schema-org' => 'schema:Organization']);
+        // find() must never be needed when there is no allOf.
+        $this->schemaMapper->expects($this->never())->method('find');
+        $this->schemaMapper->method('findAll')->willReturn([$s]);
+
+        $this->assertSame('plain-org', $this->resolver->resolveSchemaByImplements(uri: self::ORG_URI)?->getSlug());
+        $this->assertNull($this->resolver->resolveSchemaByImplements(uri: self::PERSON_URI));
+
+    }//end testNoAllOfIsUnchanged()
+
+
+    /**
+     * A cyclic `allOf` (A extends B, B extends A) must not loop — the visited-set
+     * guard terminates the ancestor walk and resolution still returns.
+     *
+     * @return void
+     */
+    public function testCircularAllOfDoesNotLoop(): void
+    {
+        $schemaA = $this->schema(id: 40, slug: 'a', configuration: ['x-schema-org' => 'schema:Person']);
+        $schemaA->setAllOf(['41']);
+        $schemaB = $this->schema(id: 41, slug: 'b', configuration: []);
+        $schemaB->setAllOf(['40']);
+
+        $this->schemaMapper->method('findAll')->willReturn([$schemaA]);
+        $this->schemaMapper->method('find')->willReturnCallback(
+            function ($id) use ($schemaA, $schemaB) {
+                if ((string) $id === '40') {
+                    return $schemaA;
+                }
+
+                if ((string) $id === '41') {
+                    return $schemaB;
+                }
+
+                throw new \Exception('not found');
+            }
+        );
+
+        // Must terminate (no infinite recursion) and still resolve A for Person.
+        $result = $this->resolver->resolveSchemaByImplements(uri: self::PERSON_URI);
+        $this->assertNotNull($result);
+        $this->assertSame('a', $result->getSlug());
+
+    }//end testCircularAllOfDoesNotLoop()
+>>>>>>> origin/development
 }//end class

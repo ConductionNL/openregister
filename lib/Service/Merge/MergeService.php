@@ -46,6 +46,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Service\ObjectService;
+<<<<<<< HEAD
+=======
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+>>>>>>> origin/development
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -125,6 +129,7 @@ class MergeService
     /**
      * Wire collaborators.
      *
+<<<<<<< HEAD
      * @param ObjectService        $objectService   Object read/write path (RBAC + tenant scoped).
      * @param SchemaMapper         $schemaMapper    Schema lookup for the merge + survivorship annotations.
      * @param SurvivorshipResolver $resolver        Pure golden-record resolver, reused for recompute.
@@ -133,12 +138,28 @@ class MergeService
      * @param LoggerInterface      $logger          PSR logger.
      *
      * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
+=======
+     * @param ObjectService        $objectService        Object read/write path (RBAC + tenant scoped).
+     * @param SchemaMapper         $schemaMapper         Schema lookup for the merge + survivorship annotations.
+     * @param SurvivorshipResolver $resolver             Pure golden-record resolver, reused for recompute.
+     * @param TrustTierResolver    $trustResolver        Pure trust-tier lookup + decay engine.
+     * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
+     * @param IEventDispatcher     $eventDispatcher      Dispatcher used to fire `ObjectsMergedEvent`.
+     * @param LoggerInterface      $logger               PSR logger.
+     *
+     * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.1
+>>>>>>> origin/development
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
         private readonly SurvivorshipResolver $resolver,
         private readonly TrustTierResolver $trustResolver,
+<<<<<<< HEAD
+=======
+        private readonly SourceRecordResolver $sourceRecordResolver,
+>>>>>>> origin/development
         private readonly IEventDispatcher $eventDispatcher,
         private readonly LoggerInterface $logger
     ) {
@@ -237,6 +258,7 @@ class MergeService
             throw new RuntimeException('Target object is not active and cannot receive a merge.');
         }
 
+<<<<<<< HEAD
         $snapshot = $this->buildSnapshot(from: $fromObject, into: $intoObject);
 
         // 1. Relink the losing object's source records onto the survivor.
@@ -247,6 +269,38 @@ class MergeService
             sourceLinkField: $sourceLinkField
         );
         $intoData        = $relinked['intoData'];
+=======
+        $snapshot           = $this->buildSnapshot(from: $fromObject, into: $intoObject);
+        $survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
+
+        // 1. Relink the losing object's source records onto the survivor.
+        // Reverse-FK: rewrite each losing source object's back-reference to the
+        // survivor uuid (persisted), recording the moves for reversal. Embedded:
+        // merge the loser's `sourceLinkField` array onto the survivor payload.
+        $isReverseFk   = $this->sourceRecordResolver->isReverseFk(config: $survivorshipConfig);
+        $relinkedCount = 0;
+        if ($isReverseFk === true) {
+            $reverseFkMoves = $this->relinkReverseFk(
+                fromUuid: $from,
+                intoUuid: $into,
+                config: $survivorshipConfig,
+                register: (string) $fromObject->getRegister()
+            );
+            $snapshot['reverseFkMoves'] = $reverseFkMoves;
+            $relinkedCount = count($reverseFkMoves);
+        }
+
+        if ($isReverseFk === false) {
+            $sourceLinkField = (string) ($config['sourceLinkField'] ?? '');
+            $relinked        = $this->relinkSourceRecords(
+                fromData: $fromData,
+                intoData: $intoData,
+                sourceLinkField: $sourceLinkField
+            );
+            $intoData        = $relinked['intoData'];
+            $relinkedCount   = $relinked['count'];
+        }
+>>>>>>> origin/development
 
         // 2. Mark the losing object as merged.
         $fromData[$statusField] = $mergedStatus;
@@ -267,9 +321,14 @@ class MergeService
             intoDataOverride: $intoData
         );
 
+<<<<<<< HEAD
         $survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
         $goldenField        = (string) ($survivorshipConfig['goldenRecordField'] ?? 'goldenRecord');
         $provenanceField    = (string) ($survivorshipConfig['provenanceField'] ?? 'attributeProvenance');
+=======
+        $goldenField     = (string) ($survivorshipConfig['goldenRecordField'] ?? 'goldenRecord');
+        $provenanceField = (string) ($survivorshipConfig['provenanceField'] ?? 'attributeProvenance');
+>>>>>>> origin/development
 
         $intoData[$goldenField]     = $resolution['goldenRecord'];
         $intoData[$provenanceField] = $resolution['attributeProvenance'];
@@ -302,7 +361,11 @@ class MergeService
 
         $this->logger->info(
             'OpenRegister MDM: merge executed',
+<<<<<<< HEAD
             ['from' => $from, 'into' => $into, 'relinked' => $relinked['count'], 'by' => $mergedBy]
+=======
+            ['from' => $from, 'into' => $into, 'relinked' => $relinkedCount, 'by' => $mergedBy]
+>>>>>>> origin/development
         );
 
         // 5. Dispatch the propagation event (no app-specific sync queue).
@@ -350,12 +413,29 @@ class MergeService
             throw new RuntimeException('Merge operation has no restorable snapshot.');
         }
 
+<<<<<<< HEAD
         // 1. Restore each object's golden record, provenance and status (best-effort).
+=======
+        // 1. Reverse-FK: restore each moved source object's back-reference to
+        // its pre-merge master FIRST, so restoring the master payloads below
+        // recomputes each golden record over the correct (restored) source set.
+        foreach (($snapshot['reverseFkMoves'] ?? []) as $move) {
+            if (is_array($move) === true) {
+                $this->restoreReverseFkMove(move: $move);
+            }
+        }
+
+        // 2. Restore each object's golden record, provenance and status (best-effort).
+>>>>>>> origin/development
         foreach ($snapshot['objects'] as $uuid => $state) {
             $this->restoreObjectState(uuid: (string) $uuid, state: $state);
         }
 
+<<<<<<< HEAD
         // 2. Restore source-record linkages (best-effort — skip unresolvable records).
+=======
+        // 3. Restore embedded source-record linkages (best-effort — skip unresolvable records).
+>>>>>>> origin/development
         foreach (($snapshot['sourceLinks'] ?? []) as $sourceUuid => $link) {
             $this->restoreSourceLink(sourceUuid: (string) $sourceUuid, link: $link);
         }
@@ -545,6 +625,122 @@ class MergeService
     }//end relinkSourceRecords()
 
     /**
+<<<<<<< HEAD
+=======
+     * Reverse-FK relink: rewrite each of the losing master's source objects'
+     * back-reference field to the surviving master's uuid (a persisted write
+     * per source object), returning the list of moves for the reversal
+     * snapshot. Unresolvable/failed writes are logged and skipped.
+     *
+     * @param string               $fromUuid Losing master uuid.
+     * @param string               $intoUuid Surviving master uuid.
+     * @param array<string, mixed> $config   Survivorship config (carrying the reverse-FK `sourceLink`).
+     * @param string               $register Master's register ref — the source register when the
+     *                                       annotation omits one (the magic-table query needs it).
+     *
+     * @return array<int, array{sourceUuid: string, referenceField: string, prior: string}>
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.2
+     */
+    private function relinkReverseFk(string $fromUuid, string $intoUuid, array $config, string $register): array
+    {
+        $descriptor = $this->sourceRecordResolver->reverseFkDescriptor(config: $config);
+        if ($descriptor === null) {
+            return [];
+        }
+
+        $referenceField = $descriptor['referenceField'];
+        $sourceRegister = ($descriptor['sourceRegister'] !== '' ? $descriptor['sourceRegister'] : $register);
+        $filters        = [
+            'schema'        => $this->sourceRecordResolver->schemaQueryFilter(ref: $descriptor['sourceSchema']),
+            $referenceField => $fromUuid,
+        ];
+        if ($sourceRegister !== '') {
+            $filters['register'] = $sourceRegister;
+        }
+
+        try {
+            $objects = $this->objectService->findAll(['filters' => $filters], _rbac: true, _multitenancy: true);
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                sprintf('Reverse-FK relink could not query sources for master "%s": %s', $fromUuid, $e->getMessage())
+            );
+            return [];
+        }
+
+        $moves = [];
+        foreach ($objects as $object) {
+            if (($object instanceof ObjectEntity) === false) {
+                continue;
+            }
+
+            $data = ($object->getObject() ?? []);
+            if ((string) ($data[$referenceField] ?? '') !== $fromUuid) {
+                continue;
+            }
+
+            $data                  = self::normaliseRoundTripDates(data: $data);
+            $data[$referenceField] = $intoUuid;
+            $object->setObject($data);
+
+            try {
+                $this->objectService->saveObject(
+                    object: $object,
+                    register: $object->getRegister(),
+                    schema: $object->getSchema(),
+                    uuid: $object->getUuid()
+                );
+                $moves[] = [
+                    'sourceUuid'     => (string) $object->getUuid(),
+                    'referenceField' => $referenceField,
+                    'prior'          => $fromUuid,
+                ];
+            } catch (Throwable $e) {
+                $this->logger->warning(
+                    sprintf('Reverse-FK relink could not move source "%s": %s', (string) $object->getUuid(), $e->getMessage())
+                );
+            }
+        }//end foreach
+
+        return $moves;
+    }//end relinkReverseFk()
+
+    /**
+     * Normalise OpenRegister's stored `YYYY-MM-DD HH:MM:SS` date-time strings
+     * back to ISO-8601 (`...T...+00:00`) before an object is re-saved. OR
+     * stores date-time values in a space-separated form that its OWN schema
+     * validation later rejects against the `date-time` format on a
+     * getObject → mutate → saveObject round-trip; a reverse-FK relink / recompute
+     * only mutates one field but re-persists the whole object, so it must
+     * normalise the untouched date fields or the save fails. Recurses into
+     * nested arrays; leaves all non-date strings untouched.
+     *
+     * @param array<string, mixed> $data Object payload.
+     *
+     * @return array<string, mixed> Payload with space-format dates converted to ISO.
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.2
+     */
+    public static function normaliseRoundTripDates(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value) === true) {
+                $data[$key] = self::normaliseRoundTripDates(data: $value);
+                continue;
+            }
+
+            if (is_string($value) === true
+                && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) === 1
+            ) {
+                $data[$key] = str_replace(' ', 'T', $value).'+00:00';
+            }
+        }
+
+        return $data;
+    }//end normaliseRoundTripDates()
+
+    /**
+>>>>>>> origin/development
      * Recompute the survivor's golden record over the union of both objects'
      * linked source records, via the pure `SurvivorshipResolver`.
      *
@@ -566,11 +762,15 @@ class MergeService
         ?array $intoDataOverride=null
     ): array {
         $survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
+<<<<<<< HEAD
         $sourceLinkField    = (string) ($survivorshipConfig['sourceLinkField'] ?? ($config['sourceLinkField'] ?? ''));
+=======
+>>>>>>> origin/development
 
         $intoData = ($intoDataOverride ?? ($intoObject->getObject() ?? []));
         $fromData = ($fromObject->getObject() ?? []);
 
+<<<<<<< HEAD
         $sources = [];
         if ($sourceLinkField !== '') {
             $sources = array_merge(
@@ -578,6 +778,28 @@ class MergeService
                 $this->loadSourceRecords(data: $fromData, sourceLinkField: $sourceLinkField)
             );
         }
+=======
+        // Resolve the union of both masters' source records via the mode-aware
+        // resolver. Embedded: reads each payload's `sourceLinkField`. Reverse-FK:
+        // queries each master's uuid — this is correct both for preview (the
+        // loser's sources still point at the loser) and after relink at execute
+        // time (they now point at the survivor; the loser query then yields
+        // none). A single-valued back-reference means no source is double-counted.
+        $sources = array_merge(
+            $this->sourceRecordResolver->resolveSources(
+                masterData: $intoData,
+                masterUuid: (string) $intoObject->getUuid(),
+                config: $survivorshipConfig,
+                masterRegister: (string) $intoObject->getRegister()
+            ),
+            $this->sourceRecordResolver->resolveSources(
+                masterData: $fromData,
+                masterUuid: (string) $fromObject->getUuid(),
+                config: $survivorshipConfig,
+                masterRegister: (string) $fromObject->getRegister()
+            )
+        );
+>>>>>>> origin/development
 
         $entityType = (string) (
             $config['entityType'] ?? $survivorshipConfig['entityType'] ?? ($schema?->getSlug() ?? '')
@@ -658,6 +880,7 @@ class MergeService
     }//end restoreSourceLink()
 
     /**
+<<<<<<< HEAD
      * Load the linked source records from a `sourceLinkField`, resolving
      * embedded arrays directly and uuid references via `ObjectService::find`.
      * Mirrors `SurvivorshipRecomputeListener::loadSourceRecords()`.
@@ -698,6 +921,49 @@ class MergeService
 
         return $records;
     }//end loadSourceRecords()
+=======
+     * Reverse-FK reversal: rewrite one moved source object's back-reference
+     * field back to its pre-merge master uuid. Best-effort — an unresolvable
+     * source or a failed write is logged and skipped rather than aborting the
+     * whole reversal.
+     *
+     * @param array{sourceUuid?: string, referenceField?: string, prior?: string} $move Recorded move.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.3
+     */
+    private function restoreReverseFkMove(array $move): void
+    {
+        $sourceUuid     = (string) ($move['sourceUuid'] ?? '');
+        $referenceField = (string) ($move['referenceField'] ?? '');
+        $prior          = (string) ($move['prior'] ?? '');
+        if ($sourceUuid === '' || $referenceField === '') {
+            return;
+        }
+
+        try {
+            $entity = $this->objectService->find(id: $sourceUuid, _rbac: true, _multitenancy: true);
+            if ($entity === null) {
+                return;
+            }
+
+            $data = self::normaliseRoundTripDates(data: ($entity->getObject() ?? []));
+            $data[$referenceField] = $prior;
+            $entity->setObject($data);
+            $this->objectService->saveObject(
+                object: $entity,
+                register: $entity->getRegister(),
+                schema: $entity->getSchema(),
+                uuid: $entity->getUuid()
+            );
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                sprintf('Merge reversal could not restore source back-reference "%s": %s', $sourceUuid, $e->getMessage())
+            );
+        }
+    }//end restoreReverseFkMove()
+>>>>>>> origin/development
 
     /**
      * Resolve a source-record entry's own uuid (for the snapshot's

@@ -12,10 +12,12 @@ use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\Message;
 use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
@@ -432,25 +434,80 @@ class ChatControllerTest extends TestCase
 
     // ── getChatStats success path ──
 
-    public function testGetChatStatsSuccess(): void
-    {
-        // Build a mock result that returns a scalar count for fetchOne().
-        $resultMock = $this->createMock(IResult::class);
-        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('3', '7', '42');
-
-        // The func() helper must return something that can be passed to select().
+    /**
+     * Build a mock IQueryBuilder wired for getChatStats(): select/from/where/
+     * andWhere/expr/createNamedParameter all chain or return usable stand-ins,
+     * and func()->count(...) returns a stand-in usable as a select() argument.
+     *
+     * Does NOT configure executeQuery() — callers configure that themselves
+     * (some tests assert an exact call count on it).
+     *
+     * @param array $capturedParams Reference filled with each
+     *                              [$value, $type] passed to createNamedParameter()
+     * @param array $capturedEqCols Reference filled with each column name
+     *                              passed to expr()->eq()
+     *
+     * @return IQueryBuilder&MockObject
+     */
+    private function createChatStatsQueryBuilderMock(
+        array &$capturedParams,
+        array &$capturedEqCols
+    ): MockObject {
         $funcMock = $this->createMock(IQueryFunction::class);
+
+        $exprMock = $this->createMock(IExpressionBuilder::class);
+        $exprMock->method('eq')->willReturnCallback(
+            function (string $col, $val) use (&$capturedEqCols) {
+                $capturedEqCols[] = $col;
+                return 'eq-condition';
+            }
+        );
+        $exprMock->method('in')->willReturn('in-condition');
 
         $qb = $this->createMock(IQueryBuilder::class);
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('expr')->willReturn($exprMock);
+        $qb->method('createNamedParameter')->willReturnCallback(
+            function ($value, $type = IQueryBuilder::PARAM_STR) use (&$capturedParams) {
+                $capturedParams[] = [$value, $type];
+                return ':param';
+            }
+        );
         $qb->method('func')->willReturn(
             new class($funcMock) {
                 private $f;
-                public function __construct($f) { $this->f = $f; }
-                public function count(string $col, string $alias): mixed { return $this->f; }
+                public function __construct($f)
+                {
+                    $this->f = $f;
+                }
+                public function count(string $col, string $alias): mixed
+                {
+                    return $this->f;
+                }
             }
         );
+
+        return $qb;
+    }
+
+    public function testGetChatStatsSuccess(): void
+    {
+        // No active organisation in this scenario — the organisation filter
+        // is skipped entirely (same "filter only if provided" convention as
+        // ConversationMapper::countByUser()), but the conversation-id
+        // collection + message scoping still runs.
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+
+        $resultMock = $this->createMock(IResult::class);
+        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('3', '7', '42');
+        $resultMock->method('fetch')->willReturnOnConsecutiveCalls(['id' => '10'], false);
+
+        $capturedParams = [];
+        $capturedEqCols = [];
+        $qb = $this->createChatStatsQueryBuilderMock($capturedParams, $capturedEqCols);
         $qb->method('executeQuery')->willReturn($resultMock);
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
@@ -459,9 +516,83 @@ class ChatControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
-        $this->assertArrayHasKey('total_agents', $data);
-        $this->assertArrayHasKey('total_conversations', $data);
-        $this->assertArrayHasKey('total_messages', $data);
+        $this->assertSame(3, $data['total_agents']);
+        $this->assertSame(7, $data['total_conversations']);
+        $this->assertSame(42, $data['total_messages']);
+
+        // No active organisation means no organisation equality filter should
+        // have been built at all.
+        $this->assertSame([], $capturedEqCols);
+    }
+
+    public function testGetChatStatsScopesCountsToActiveOrganisation(): void
+    {
+        // With an active organisation, every count must be filtered by it —
+        // this is the regression guard for the cross-tenant stats leak.
+        // Organisation is an Entity subclass (magic getters/setters via
+        // __call), so a real instance is used rather than a mock — mirroring
+        // how Conversation/Agent/Message are constructed elsewhere in this
+        // test file.
+        $organisation = new Organisation();
+        $organisation->setUuid('org-uuid-123');
+        $this->organisationService->method('getActiveOrganisation')->willReturn($organisation);
+
+        $resultMock = $this->createMock(IResult::class);
+        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('1', '2', '5');
+        $resultMock->method('fetch')->willReturnOnConsecutiveCalls(['id' => '10'], ['id' => '11'], false);
+
+        $capturedParams = [];
+        $capturedEqCols = [];
+        $qb = $this->createChatStatsQueryBuilderMock($capturedParams, $capturedEqCols);
+        $qb->method('executeQuery')->willReturn($resultMock);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $result = $this->controller->getChatStats();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(1, $data['total_agents']);
+        $this->assertSame(2, $data['total_conversations']);
+        $this->assertSame(5, $data['total_messages']);
+
+        // The active organisation's UUID must have been bound as a query
+        // parameter (agents count + conversations count + conversation id
+        // collection all filter on it).
+        $this->assertContains(['org-uuid-123', IQueryBuilder::PARAM_STR], $capturedParams);
+
+        // The organisation column must be the one being filtered on.
+        $this->assertNotEmpty($capturedEqCols);
+        foreach ($capturedEqCols as $col) {
+            $this->assertSame('organisation', $col);
+        }
+    }
+
+    public function testGetChatStatsWithNoConversationsSkipsMessageQuery(): void
+    {
+        // No active organisation and no conversations found at all: the
+        // message count must short-circuit to 0 without querying the
+        // messages table (an empty IN (...) clause would be invalid SQL).
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+
+        $resultMock = $this->createMock(IResult::class);
+        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('0', '0');
+        $resultMock->method('fetch')->willReturn(false);
+
+        $capturedParams = [];
+        $capturedEqCols = [];
+        $qb = $this->createChatStatsQueryBuilderMock($capturedParams, $capturedEqCols);
+        $qb->expects($this->exactly(3))->method('executeQuery')->willReturn($resultMock);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $result = $this->controller->getChatStats();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(0, $data['total_agents']);
+        $this->assertSame(0, $data['total_conversations']);
+        $this->assertSame(0, $data['total_messages']);
     }
 
     // ── sendMessage — new conversation via agentUuid ──
