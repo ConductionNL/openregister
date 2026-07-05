@@ -85,13 +85,6 @@ class SurvivorshipAnnotationValidator
 
         $errors = [];
 
-<<<<<<< HEAD
-        $sourceLinkField = (string) ($annotation['sourceLinkField'] ?? '');
-        if ($sourceLinkField === '') {
-            $errors[] = [
-                'code'    => 'survivorship.missing-source-link-field',
-                'message' => 'x-openregister-survivorship requires a "sourceLinkField".',
-=======
         // A reverse-FK `sourceLink` block supplies the source linkage instead
         // of an embedded `sourceLinkField`; when it is present and well-formed,
         // `sourceLinkField` is not required.
@@ -103,7 +96,6 @@ class SurvivorshipAnnotationValidator
             $errors[] = [
                 'code'    => 'survivorship.missing-source-link-field',
                 'message' => 'x-openregister-survivorship requires a "sourceLinkField" (or a reverse-FK "sourceLink" block).',
->>>>>>> origin/development
             ];
         }
 
@@ -115,8 +107,6 @@ class SurvivorshipAnnotationValidator
     }//end validate()
 
     /**
-<<<<<<< HEAD
-=======
      * Validate an optional `sourceLink` block. A `reverseFk` mode requires
      * `sourceSchema` and `referenceField`; anything else is accepted (embedded
      * mode). Errors are non-fatal (surfaced as warnings by the caller).
@@ -182,7 +172,6 @@ class SurvivorshipAnnotationValidator
     }//end hasReverseFkSourceLink()
 
     /**
->>>>>>> origin/development
      * Validate `tierOrder` plus `defaultTier` / `discardTier` membership.
      *
      * @param array<string, mixed> $annotation Survivorship annotation.

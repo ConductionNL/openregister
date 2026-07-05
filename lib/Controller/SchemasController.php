@@ -1482,24 +1482,6 @@ class SchemasController extends Controller
             'schemaSlug' => $schema->getSlug(),
         ];
 
-<<<<<<< HEAD
-        if ($register !== null) {
-            $payload['register']     = $register->getId();
-            $payload['registerSlug'] = $register->getSlug();
-
-            $appId = $register->getApplication();
-            if (is_string($appId) === true && $appId !== '') {
-                $payload['appId'] = $appId;
-            }
-        } else {
-            $payload['register']     = null;
-            $payload['registerSlug'] = null;
-        }
-
-        return new JSONResponse($payload);
-
-    }//end resolveByImplements()
-=======
         return new JSONResponse(array_merge($payload, $this->registerPayload(register: $register)));
 
     }//end resolveByImplements()
@@ -1535,7 +1517,6 @@ class SchemasController extends Controller
         return $payload;
 
     }//end registerPayload()
->>>>>>> origin/development
 
     /**
      * Whether the current request has no resolved Nextcloud user (anonymous).

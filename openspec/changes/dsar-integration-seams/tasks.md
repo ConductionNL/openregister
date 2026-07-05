@@ -9,30 +9,6 @@ Fail-closed is the security invariant (ADR-005, CWE-863).
 
 ## 1. Identity-verify seam
 
-<<<<<<< HEAD
-- [ ] 1.1 Define the `IdentityVerifyProvider` PHP interface (stable provider `id` + verify-for-case → a status result of exactly `verified`/`failed`/`needs-more`) under the DSAR service namespace; SPDX/@license docblock + @spec tags per ADR-011/gate conventions.
-- [ ] 1.2 Add the `IdentityVerifyRegistry` shared per-request service (`addProvider()`, `private array $providers` keyed by id, first-wins collision + `LoggerInterface` warning) mirroring `lib/Service/Integration/IntegrationRegistry.php`.
-- [ ] 1.3 Add a `resolve($selectorId)` on the registry that returns the registered provider for the active `dsarPolicyPack` `identityVerifyProvider` selector, and returns the OR fail-closed default when the id is unset or not registered — MUST NOT return null.
-- [ ] 1.4 Add the OR fail-closed default `IdentityVerifyProvider` (returns unverified: `failed`/`needs-more`, never `verified`); SECURITY-REVIEW: it must never auto-verify and resolution must never fail open (CWE-863).
-
-## 2. Regulator-escalate seam
-
-- [ ] 2.1 Define the `RegulatorEscalateProvider` PHP interface (stable provider `id` + escalate-for-case → an outcome carrying a regulator reference + status) under the DSAR service namespace; SPDX/@license docblock + @spec tags.
-- [ ] 2.2 Add the `RegulatorEscalateRegistry` shared per-request service (same `addProvider()` + first-wins + logger shape as the identity registry / `ObjectSourceRegistry`).
-- [ ] 2.3 Add a `resolve($selectorId)` on the registry driven by the pack's `regulatorEscalateProvider` selector, falling back to the OR fail-closed default when unset/unknown — MUST NOT return null.
-- [ ] 2.4 Add the OR fail-closed default `RegulatorEscalateProvider` (refuses: reports escalation not performed, never a silent success); SECURITY-REVIEW: escalation must never be silently skipped or recorded as done when the seam is unbound (CWE-863).
-
-## 3. Bootstrap + case-engine wiring
-
-- [ ] 3.1 Register both registries as shared per-request services and register each OR fail-closed default provider at bootstrap in `lib/AppInfo/Application.php`, mirroring the existing `IntegrationRegistry`/built-in-provider registration.
-- [ ] 3.2 Wire the Phase-1 case engine (`dsar-case-engine`) to call identity-verify at the `verifying` lifecycle state via `IdentityVerifyRegistry::resolve(pack.identityVerifyProvider)` — never a hardcoded provider; the returned status drives the transition.
-- [ ] 3.3 Wire the Phase-1 case engine to call regulator-escalate at the denial/escalation point via `RegulatorEscalateRegistry::resolve(pack.regulatorEscalateProvider)` — never a hardcoded provider; SECURITY-REVIEW: no `if ($provider !== null)` fail-open branch (hydra-gate-unsafe-auth-resolver anti-pattern).
-
-## 4. Verification
-
-- [ ] 4.1 Add unit tests: registration + first-wins collision per registry; resolve returns the pack-selected provider; resolve of unset/unknown selector returns the fail-closed default (never null); identity default = unverified; regulator default = refuse.
-- [ ] 4.2 Run the relevant Hydra gates (spdx-headers, forbidden-patterns, stub-scan, unsafe-auth-resolver, orphan-auth, spec-coverage gate-16, e2e-coverage gate-19) and `openspec validate --change dsar-integration-seams --strict`; fix any pre-existing issues touched.
-=======
 - [x] 1.1 Define the `IdentityVerifyProvider` PHP interface (stable provider `id` + verify-for-case → a status result of exactly `verified`/`failed`/`needs-more`) under the DSAR service namespace; SPDX/@license docblock + @spec tags per ADR-011/gate conventions.
 - [x] 1.2 Add the `IdentityVerifyRegistry` shared per-request service (`addProvider()`, `private array $providers` keyed by id, first-wins collision + `LoggerInterface` warning) mirroring `lib/Service/Integration/IntegrationRegistry.php`.
 - [x] 1.3 Add a `resolve($selectorId)` on the registry that returns the registered provider for the active `dsarPolicyPack` `identityVerifyProvider` selector, and returns the OR fail-closed default when the id is unset or not registered — MUST NOT return null.
@@ -55,7 +31,6 @@ Fail-closed is the security invariant (ADR-005, CWE-863).
 
 - [x] 4.1 Add unit tests: registration + first-wins collision per registry; resolve returns the pack-selected provider; resolve of unset/unknown selector returns the fail-closed default (never null); identity default = unverified; regulator default = refuse.
 - [x] 4.2 Run the relevant Hydra gates (spdx-headers, forbidden-patterns, stub-scan, unsafe-auth-resolver, orphan-auth, spec-coverage gate-16, e2e-coverage gate-19) and `openspec validate --change dsar-integration-seams --strict`; fix any pre-existing issues touched.
->>>>>>> origin/development
 
 ## Acceptance Criteria
 

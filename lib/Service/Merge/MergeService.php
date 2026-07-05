@@ -46,10 +46,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Service\ObjectService;
-<<<<<<< HEAD
-=======
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
->>>>>>> origin/development
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -129,16 +126,6 @@ class MergeService
     /**
      * Wire collaborators.
      *
-<<<<<<< HEAD
-     * @param ObjectService        $objectService   Object read/write path (RBAC + tenant scoped).
-     * @param SchemaMapper         $schemaMapper    Schema lookup for the merge + survivorship annotations.
-     * @param SurvivorshipResolver $resolver        Pure golden-record resolver, reused for recompute.
-     * @param TrustTierResolver    $trustResolver   Pure trust-tier lookup + decay engine.
-     * @param IEventDispatcher     $eventDispatcher Dispatcher used to fire `ObjectsMergedEvent`.
-     * @param LoggerInterface      $logger          PSR logger.
-     *
-     * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
-=======
      * @param ObjectService        $objectService        Object read/write path (RBAC + tenant scoped).
      * @param SchemaMapper         $schemaMapper         Schema lookup for the merge + survivorship annotations.
      * @param SurvivorshipResolver $resolver             Pure golden-record resolver, reused for recompute.
@@ -149,17 +136,13 @@ class MergeService
      *
      * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
      * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.1
->>>>>>> origin/development
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
         private readonly SurvivorshipResolver $resolver,
         private readonly TrustTierResolver $trustResolver,
-<<<<<<< HEAD
-=======
         private readonly SourceRecordResolver $sourceRecordResolver,
->>>>>>> origin/development
         private readonly IEventDispatcher $eventDispatcher,
         private readonly LoggerInterface $logger
     ) {
@@ -258,18 +241,6 @@ class MergeService
             throw new RuntimeException('Target object is not active and cannot receive a merge.');
         }
 
-<<<<<<< HEAD
-        $snapshot = $this->buildSnapshot(from: $fromObject, into: $intoObject);
-
-        // 1. Relink the losing object's source records onto the survivor.
-        $sourceLinkField = (string) ($config['sourceLinkField'] ?? '');
-        $relinked        = $this->relinkSourceRecords(
-            fromData: $fromData,
-            intoData: $intoData,
-            sourceLinkField: $sourceLinkField
-        );
-        $intoData        = $relinked['intoData'];
-=======
         $snapshot           = $this->buildSnapshot(from: $fromObject, into: $intoObject);
         $survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
 
@@ -300,7 +271,6 @@ class MergeService
             $intoData        = $relinked['intoData'];
             $relinkedCount   = $relinked['count'];
         }
->>>>>>> origin/development
 
         // 2. Mark the losing object as merged.
         $fromData[$statusField] = $mergedStatus;
@@ -321,14 +291,8 @@ class MergeService
             intoDataOverride: $intoData
         );
 
-<<<<<<< HEAD
-        $survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
-        $goldenField        = (string) ($survivorshipConfig['goldenRecordField'] ?? 'goldenRecord');
-        $provenanceField    = (string) ($survivorshipConfig['provenanceField'] ?? 'attributeProvenance');
-=======
         $goldenField     = (string) ($survivorshipConfig['goldenRecordField'] ?? 'goldenRecord');
         $provenanceField = (string) ($survivorshipConfig['provenanceField'] ?? 'attributeProvenance');
->>>>>>> origin/development
 
         $intoData[$goldenField]     = $resolution['goldenRecord'];
         $intoData[$provenanceField] = $resolution['attributeProvenance'];
@@ -361,11 +325,7 @@ class MergeService
 
         $this->logger->info(
             'OpenRegister MDM: merge executed',
-<<<<<<< HEAD
-            ['from' => $from, 'into' => $into, 'relinked' => $relinked['count'], 'by' => $mergedBy]
-=======
             ['from' => $from, 'into' => $into, 'relinked' => $relinkedCount, 'by' => $mergedBy]
->>>>>>> origin/development
         );
 
         // 5. Dispatch the propagation event (no app-specific sync queue).
@@ -413,9 +373,6 @@ class MergeService
             throw new RuntimeException('Merge operation has no restorable snapshot.');
         }
 
-<<<<<<< HEAD
-        // 1. Restore each object's golden record, provenance and status (best-effort).
-=======
         // 1. Reverse-FK: restore each moved source object's back-reference to
         // its pre-merge master FIRST, so restoring the master payloads below
         // recomputes each golden record over the correct (restored) source set.
@@ -426,16 +383,11 @@ class MergeService
         }
 
         // 2. Restore each object's golden record, provenance and status (best-effort).
->>>>>>> origin/development
         foreach ($snapshot['objects'] as $uuid => $state) {
             $this->restoreObjectState(uuid: (string) $uuid, state: $state);
         }
 
-<<<<<<< HEAD
-        // 2. Restore source-record linkages (best-effort — skip unresolvable records).
-=======
         // 3. Restore embedded source-record linkages (best-effort — skip unresolvable records).
->>>>>>> origin/development
         foreach (($snapshot['sourceLinks'] ?? []) as $sourceUuid => $link) {
             $this->restoreSourceLink(sourceUuid: (string) $sourceUuid, link: $link);
         }
@@ -625,8 +577,6 @@ class MergeService
     }//end relinkSourceRecords()
 
     /**
-<<<<<<< HEAD
-=======
      * Reverse-FK relink: rewrite each of the losing master's source objects'
      * back-reference field to the surviving master's uuid (a persisted write
      * per source object), returning the list of moves for the reversal
@@ -740,7 +690,6 @@ class MergeService
     }//end normaliseRoundTripDates()
 
     /**
->>>>>>> origin/development
      * Recompute the survivor's golden record over the union of both objects'
      * linked source records, via the pure `SurvivorshipResolver`.
      *
@@ -762,23 +711,10 @@ class MergeService
         ?array $intoDataOverride=null
     ): array {
         $survivorshipConfig = $this->getSurvivorshipConfig(schema: $schema);
-<<<<<<< HEAD
-        $sourceLinkField    = (string) ($survivorshipConfig['sourceLinkField'] ?? ($config['sourceLinkField'] ?? ''));
-=======
->>>>>>> origin/development
 
         $intoData = ($intoDataOverride ?? ($intoObject->getObject() ?? []));
         $fromData = ($fromObject->getObject() ?? []);
 
-<<<<<<< HEAD
-        $sources = [];
-        if ($sourceLinkField !== '') {
-            $sources = array_merge(
-                $this->loadSourceRecords(data: $intoData, sourceLinkField: $sourceLinkField),
-                $this->loadSourceRecords(data: $fromData, sourceLinkField: $sourceLinkField)
-            );
-        }
-=======
         // Resolve the union of both masters' source records via the mode-aware
         // resolver. Embedded: reads each payload's `sourceLinkField`. Reverse-FK:
         // queries each master's uuid — this is correct both for preview (the
@@ -799,7 +735,6 @@ class MergeService
                 masterRegister: (string) $fromObject->getRegister()
             )
         );
->>>>>>> origin/development
 
         $entityType = (string) (
             $config['entityType'] ?? $survivorshipConfig['entityType'] ?? ($schema?->getSlug() ?? '')
@@ -880,48 +815,6 @@ class MergeService
     }//end restoreSourceLink()
 
     /**
-<<<<<<< HEAD
-     * Load the linked source records from a `sourceLinkField`, resolving
-     * embedded arrays directly and uuid references via `ObjectService::find`.
-     * Mirrors `SurvivorshipRecomputeListener::loadSourceRecords()`.
-     *
-     * @param array<string, mixed> $data            Object payload.
-     * @param string               $sourceLinkField Field holding the linked source records.
-     *
-     * @return array<int, array<string, mixed>> Resolved source-record payloads.
-     *
-     * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
-     */
-    private function loadSourceRecords(array $data, string $sourceLinkField): array
-    {
-        $raw = ($data[$sourceLinkField] ?? null);
-        if (is_array($raw) === false) {
-            return [];
-        }
-
-        $records = [];
-        foreach ($raw as $entry) {
-            if (is_array($entry) === true) {
-                $records[] = $entry;
-                continue;
-            }
-
-            if (is_string($entry) === true && $entry !== '') {
-                try {
-                    $resolved = $this->objectService->find(id: $entry, _rbac: true, _multitenancy: true);
-                } catch (Throwable) {
-                    continue;
-                }
-
-                if ($resolved !== null) {
-                    $records[] = ($resolved->getObject() ?? []);
-                }
-            }
-        }
-
-        return $records;
-    }//end loadSourceRecords()
-=======
      * Reverse-FK reversal: rewrite one moved source object's back-reference
      * field back to its pre-merge master uuid. Best-effort — an unresolvable
      * source or a failed write is logged and skipped rather than aborting the
@@ -963,7 +856,6 @@ class MergeService
             );
         }
     }//end restoreReverseFkMove()
->>>>>>> origin/development
 
     /**
      * Resolve a source-record entry's own uuid (for the snapshot's

@@ -41,10 +41,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-<<<<<<< HEAD
-=======
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
->>>>>>> origin/development
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -67,38 +64,25 @@ class SurvivorshipController extends Controller
     /**
      * Constructor.
      *
-<<<<<<< HEAD
-     * @param string        $appName       The application name.
-     * @param IRequest      $request       The current request.
-     * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
-     * @param SchemaMapper  $schemaMapper  Schema lookup for the survivorship annotation.
-     * @param IUserSession  $userSession   Current user session, for actor attribution.
-=======
      * @param string               $appName              The application name.
      * @param IRequest             $request              The current request.
      * @param ObjectService        $objectService        Object read/write path (RBAC + tenant scoped).
      * @param SchemaMapper         $schemaMapper         Schema lookup for the survivorship annotation.
      * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
      * @param IUserSession         $userSession          Current user session, for actor attribution.
->>>>>>> origin/development
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
-<<<<<<< HEAD
-=======
         private readonly SourceRecordResolver $sourceRecordResolver,
->>>>>>> origin/development
         private readonly IUserSession $userSession
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
-<<<<<<< HEAD
-=======
      * Return a master object's resolved competing source records, honouring
      * the schema's `sourceLink` mode (embedded or reverse-FK). Used by the
      * conflict-resolution UI, which computes per-attribute disagreements from
@@ -138,7 +122,6 @@ class SurvivorshipController extends Controller
     }//end sources()
 
     /**
->>>>>>> origin/development
      * Set (with a value) or clear (with a null/absent value) one attribute
      * override on a master object, then save it — the save fires
      * `SurvivorshipRecomputeListener`, which recomputes the golden record
@@ -175,8 +158,6 @@ class SurvivorshipController extends Controller
 
             $this->applyOverride(object: $object, attribute: $attribute);
 
-<<<<<<< HEAD
-=======
             // Warm the reverse-FK source resolution in this (clean) request
             // context before saving: resolving the source schema by slug here
             // populates the request-scoped schema cache, so the nested
@@ -190,7 +171,6 @@ class SurvivorshipController extends Controller
                 masterRegister: (string) $object->getRegister()
             );
 
->>>>>>> origin/development
             // The RBAC/tenant-scoped write path: a caller who cannot write
             // this object throws NotAuthorizedException here, caught below.
             $saved = $this->objectService->saveObject(
@@ -305,8 +285,6 @@ class SurvivorshipController extends Controller
     }//end overridesFieldFor()
 
     /**
-<<<<<<< HEAD
-=======
      * Resolve the full `x-openregister-survivorship` config for an object's
      * schema (carrying the `sourceLink` block), or an empty array when absent.
      *
@@ -333,7 +311,6 @@ class SurvivorshipController extends Controller
     }//end survivorshipConfigFor()
 
     /**
->>>>>>> origin/development
      * Look up the schema referenced by an object instance.
      *
      * @param ObjectEntity $object Object whose schema reference to resolve.

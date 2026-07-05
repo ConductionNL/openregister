@@ -160,11 +160,8 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
-<<<<<<< HEAD
-=======
 use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
->>>>>>> origin/development
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
@@ -1227,8 +1224,6 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-<<<<<<< HEAD
-=======
             UserDirectoryObjectSourceProvider::class,
             function (ContainerInterface $container) {
                 return new UserDirectoryObjectSourceProvider(
@@ -1252,7 +1247,6 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
->>>>>>> origin/development
             ContactsObjectSourceProvider::class,
             function (ContainerInterface $container) {
                 return new ContactsObjectSourceProvider(
@@ -2876,10 +2870,6 @@ class Application extends App implements IBootstrap
             return;
         }
 
-<<<<<<< HEAD
-        $providerClasses = [
-            CalDavVtodoObjectSourceProvider::class,
-=======
         // Register each built-in provider independently so one absent provider
         // never blocks the others — a failing provider simply won't serve its
         // bound schemas.
@@ -2887,7 +2877,6 @@ class Application extends App implements IBootstrap
             CalDavVtodoObjectSourceProvider::class,
             UserDirectoryObjectSourceProvider::class,
             GroupObjectSourceProvider::class,
->>>>>>> origin/development
             ContactsObjectSourceProvider::class,
             CalendarEventObjectSourceProvider::class,
             FilesObjectSourceProvider::class,

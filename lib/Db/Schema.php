@@ -1706,22 +1706,13 @@ class Schema extends Entity implements JsonSerializable
     private function validateConfigurationArray(array $configuration): array
     {
         $validatedConfig = [];
-<<<<<<< HEAD
-=======
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
->>>>>>> origin/development
         // `implements` + `x-schema-org` carry the cross-app semantic-type
         // markers (ADR-048); they must round-trip through the configuration
         // column so SemanticTypeResolver can discover the schema. Their IRI
         // shape is validated on read by JsonLdContextService::getImplementedTypes.
-<<<<<<< HEAD
-        $stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields   = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
-        $passThrough  = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
-=======
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
->>>>>>> origin/development
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {

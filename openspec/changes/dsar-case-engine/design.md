@@ -166,20 +166,12 @@ registered in `appinfo/routes.php` (ADR-016, ADR-029). None is `@PublicPage`.
   the head's transition and resolved at runtime (same way decidesk's `MeetingTransitionGuard`
   reference resolves).
 - **[PAdES-LTV signing is a genuinely new dependency in OR]** → No existing PAdES/secure-token
-<<<<<<< HEAD
-  primitive was found under `lib/`. **Decision: full PAdES-LTV signing is REQUIRED in Phase 1**
-  (not deferred). Selecting + vendoring the PAdES-LTV signing library is therefore an in-scope
-  Phase-1 task (see tasks §2.1). Mitigation for the new dependency: isolate signing behind the
-  export-bundle service so the library is a single, swappable dependency; the SHA-256 content hash
-  is an additional integrity guarantee carried alongside the signature, not a fallback for it.
-=======
   primitive under `lib/`, and the 2026-07-04 spike found **no ready EUPL-compatible LTV signer**
   (tc-lib-pdf stubs B-T; SetaPDF commercial). **Interim: SHA-256 hash-only** via the swappable
   `PadesSigner` interface (`UnsignedPadesSigner`); **real PAdES-LTV DEFERRED**, leading candidate
   `pyHanko` (MIT sidecar) or a tc-lib-pdf re-spike. This is a genuine integrity-vs-signature gap the
   interim accepts: the SHA-256 hash proves the bytes weren't altered but is not a cryptographic
   signature binding a signer identity — flagged for the deferred follow-up.
->>>>>>> origin/development
 - **[One-time download token could leak or be replayed]** → Mitigation: mint a
   single-use, time-boxed token that is burned on first successful download; the token is never a
   realistic-looking secret in any artifact (`YOUR_TOKEN_HERE` placeholder only); the download route
@@ -213,12 +205,6 @@ provider / `RetentionService` doubles; any fixture ids/tokens use safe placehold
 
 ## Resolved decisions
 
-<<<<<<< HEAD
-- **Bundle signing** — full **PAdES-LTV signing is REQUIRED in Phase 1** (not deferred to a
-  SHA-256-only interim). Selecting + vendoring the PAdES-LTV signing library is an in-scope Phase-1
-  task; signing is isolated behind the export-bundle service as a single swappable dependency, with a
-  SHA-256 content hash carried alongside the signature.
-=======
 - **Bundle format + signing** — the export bundle is a **PDF disclosure document** (art-15 access)
   carrying a **SHA-256 content hash**, behind the swappable `PadesSigner` interface. **Interim (now):
   hash-only** (`UnsignedPadesSigner`). **PAdES-LTV signing is DEFERRED** (decision 2026-07-04, reversing
@@ -233,7 +219,6 @@ provider / `RetentionService` doubles; any fixture ids/tokens use safe placehold
   configurable RFC-3161 **TSA URL** (DigiCert/FreeTSA reachable; qualified TSA for eIDAS-grade). The
   interface keeps this a config/adapter swap, not a call-site change. A machine-readable art-20
   *portability* payload (JSON/CSV + JAdES/CAdES) is likewise a deferred follow-up, out of scope here.
->>>>>>> origin/development
 - **Route namespace** — case-management endpoints live under **`/api/gdpr/cases/...`**, mirroring the
   existing DSAR routes.
 - **Officer-override access control** — resolved from an admin-configured **ADR-023 action/group

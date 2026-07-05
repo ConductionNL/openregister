@@ -420,8 +420,6 @@ class SemanticTypeResolverTest extends TestCase
         $this->assertNotNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
 
     }//end testCoreOpenregisterAppNotFilteredOut()
-<<<<<<< HEAD
-=======
 
 
     private const PERSON_URI = 'https://schema.org/Person';
@@ -547,5 +545,4 @@ class SemanticTypeResolverTest extends TestCase
         $this->assertSame('a', $result->getSlug());
 
     }//end testCircularAllOfDoesNotLoop()
->>>>>>> origin/development
 }//end class

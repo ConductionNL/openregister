@@ -58,15 +58,12 @@ use Psr\Log\LoggerInterface;
  * Resolve a canonical semantic-type URI to the installed schema implementing
  * it, null-safe across all registers, with a deterministic tie-break.
  *
-<<<<<<< HEAD
-=======
  * Class complexity is inherent: every resolution path is deliberately
  * null-safe (each mapper/app-manager call is individually guarded so a missing
  * provider degrades rather than raises), which unavoidably raises the WMC.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
->>>>>>> origin/development
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
 final class SemanticTypeResolver
@@ -152,11 +149,7 @@ final class SemanticTypeResolver
 
         $candidates = [];
         foreach ($schemas as $schema) {
-<<<<<<< HEAD
-            $implemented = $this->jsonLdContextService->getImplementedTypes(schema: $schema);
-=======
             $implemented = $this->implementedTypesWithAncestors(schema: $schema);
->>>>>>> origin/development
             if (in_array($uri, $implemented, true) === false) {
                 continue;
             }
@@ -190,8 +183,6 @@ final class SemanticTypeResolver
     }//end resolveSchemaByImplements()
 
     /**
-<<<<<<< HEAD
-=======
      * Compute a schema's implemented semantic types INCLUDING those inherited via
      * `allOf`.
      *
@@ -287,7 +278,6 @@ final class SemanticTypeResolver
     }//end ancestorTypesForRef()
 
     /**
->>>>>>> origin/development
      * Find the register a resolved schema belongs to.
      *
      * Registers hold their schema ids in `Register::getSchemas()`; a schema

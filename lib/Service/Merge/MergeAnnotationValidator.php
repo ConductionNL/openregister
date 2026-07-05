@@ -75,17 +75,12 @@ class MergeAnnotationValidator
         }
 
         $errors = array_merge($errors, $this->validateStringFields(annotation: $annotation));
-<<<<<<< HEAD
-=======
         $errors = array_merge($errors, $this->validateSourceLink(annotation: $annotation));
->>>>>>> origin/development
 
         return $errors;
     }//end validate()
 
     /**
-<<<<<<< HEAD
-=======
      * Validate an optional `sourceLink` block. A `reverseFk` mode requires
      * `sourceSchema` and `referenceField`; anything else is accepted (embedded
      * mode). Errors are non-fatal (surfaced as warnings by the caller).
@@ -130,7 +125,6 @@ class MergeAnnotationValidator
     }//end validateSourceLink()
 
     /**
->>>>>>> origin/development
      * Validate the optional string-valued fields, when present.
      *
      * @param array<string, mixed> $annotation Merge annotation.

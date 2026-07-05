@@ -3474,8 +3474,6 @@ parameters:
 			path: lib/Listener/SurvivorshipRecomputeListener.php
 
 		-
-<<<<<<< HEAD
-=======
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: lib/Listener/SourceRecordChangeListener.php
@@ -3501,7 +3499,6 @@ parameters:
 			path: lib/Listener/SourceRecordChangeListener.php
 
 		-
->>>>>>> origin/development
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Mcp/BuiltIn/SchemasToolProvider.php
