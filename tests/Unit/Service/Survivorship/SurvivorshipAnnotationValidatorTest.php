@@ -191,4 +191,49 @@ class SurvivorshipAnnotationValidatorTest extends TestCase
         $codes  = array_column($errors, 'code');
         $this->assertContains('survivorship.overrides-field-invalid', $codes);
     }//end testOverridesFieldEmptyStringIsInvalid()
+
+    public function testReverseFkSourceLinkSatisfiesSourceLinkRequirement(): void
+    {
+        // No sourceLinkField, but a well-formed reverse-FK sourceLink → valid.
+        $shape  = [
+            'x-openregister-survivorship' => [
+                'sourceLink' => [
+                    'mode'           => 'reverseFk',
+                    'sourceSchema'   => 'sourceRecord',
+                    'referenceField' => 'currentMasterEntity',
+                ],
+            ],
+        ];
+        $errors = $this->validator->validate($shape);
+        $codes  = array_column($errors, 'code');
+        $this->assertNotContains('survivorship.missing-source-link-field', $codes);
+        $this->assertNotContains('survivorship.source-link-reverse-fk-incomplete', $codes);
+    }//end testReverseFkSourceLinkSatisfiesSourceLinkRequirement()
+
+    public function testIncompleteReverseFkSourceLinkIsFlagged(): void
+    {
+        $shape  = [
+            'x-openregister-survivorship' => [
+                'sourceLink' => ['mode' => 'reverseFk', 'sourceSchema' => 'sourceRecord'],
+            ],
+        ];
+        $errors = $this->validator->validate($shape);
+        $codes  = array_column($errors, 'code');
+        $this->assertContains('survivorship.source-link-reverse-fk-incomplete', $codes);
+        // Still missing an embedded field too, since the reverseFk block is incomplete.
+        $this->assertContains('survivorship.missing-source-link-field', $codes);
+    }//end testIncompleteReverseFkSourceLinkIsFlagged()
+
+    public function testNonObjectSourceLinkIsFlagged(): void
+    {
+        $shape  = [
+            'x-openregister-survivorship' => [
+                'sourceLinkField' => 'sources',
+                'sourceLink'      => 'nope',
+            ],
+        ];
+        $errors = $this->validator->validate($shape);
+        $codes  = array_column($errors, 'code');
+        $this->assertContains('survivorship.source-link-not-object', $codes);
+    }//end testNonObjectSourceLinkIsFlagged()
 }//end class

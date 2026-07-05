@@ -6,7 +6,7 @@
 				<NcButton v-if="object"
 					type="secondary"
 					data-testid="mdm-resolve-conflicts"
-					@click="showConflictResolution = true">
+					@click="openConflicts">
 					{{ t('openregister', 'Resolve conflicts') }}
 				</NcButton>
 				<NcButton type="tertiary" @click="$emit('close')">
@@ -60,7 +60,7 @@
 
 		<MdmConflictResolutionModal
 			v-if="showConflictResolution && object"
-			:object="object"
+			:object="objectForModal"
 			@close="showConflictResolution = false"
 			@saved="handleConflictsResolved" />
 	</div>
@@ -102,6 +102,7 @@ export default {
 	data() {
 		return {
 			showConflictResolution: false,
+			resolvedSources: [],
 		}
 	},
 
@@ -114,6 +115,19 @@ export default {
 		 */
 		t() {
 			return t
+		},
+
+		/**
+		 * The object handed to the conflict-resolution modal, augmented with the
+		 * server-resolved `sources` (embedded or reverse-FK). The modal computes
+		 * per-attribute conflicts from `object.sources`; a reverse-FK master has
+		 * no embedded source array, so we attach the fetched sources here.
+		 *
+		 * @return {object|null}
+		 */
+		objectForModal() {
+			if (!this.object) return null
+			return { ...this.object, sources: this.resolvedSources }
 		},
 
 		/**
@@ -155,6 +169,21 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Fetch the master's resolved source records, then open the
+		 * conflict-resolution modal. The modal derives per-attribute conflicts
+		 * from `object.sources`; a reverse-FK master carries none inline, so we
+		 * resolve them server-side first (embedded masters resolve to their own
+		 * inline sources, so this is correct for both modes).
+		 *
+		 * @return {Promise<void>}
+		 */
+		async openConflicts() {
+			const id = this.object?.id
+			this.resolvedSources = id ? await qualityStore.fetchMasterSources(id) : []
+			this.showConflictResolution = true
+		},
+
 		/**
 		 * Refresh the golden record after the conflict-resolution modal saves.
 		 *

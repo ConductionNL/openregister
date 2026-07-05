@@ -27,6 +27,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -55,6 +56,7 @@ class SurvivorshipRecomputeListenerTest extends TestCase
             $this->objectService,
             new SurvivorshipResolver(),
             new TrustTierResolver(),
+            new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger),
             $this->logger
         );
     }//end setUp()

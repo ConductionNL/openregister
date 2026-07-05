@@ -68,6 +68,40 @@ interface DiscoveredIds {
 	mergeOperationSchema: number | null
 }
 
+/**
+ * The OR-owned MDM registers the merge/survivorship write-back persists into
+ * (merge-operation audit rows + trust-configuration rules). Their config JSONs
+ * ship in OpenRegister's lib/Settings but are NOT auto-seeded on install — the
+ * merge/survivorship engine assumes they exist. This fixture imports them so
+ * the merge-execute + conflict-save chains have somewhere to write.
+ *
+ * NB production follow-up: OpenRegister should auto-seed these two registers via
+ * a repair step (like the virtual-schema seeders) so the MDM write-back works
+ * out of the box; until then any instance needs them imported. Tracked in the
+ * mdm-reverse-fk-source-resolution design.md Findings.
+ */
+const MDM_REGISTER_CONFIGS: Array<{ slug: string; file: string }> = [
+	{ slug: 'merge-operation', file: 'merge_operation_register.json' },
+	{ slug: 'trust-configuration', file: 'trust_configuration_register.json' },
+]
+
+/** Import the OR-owned MDM registers if they are not already present. */
+async function ensureMdmRegisters(request: APIRequestContext): Promise<void> {
+	const resp = await request.get(`${API}/registers?_limit=500`, { headers: { Accept: 'application/json' } })
+	const present = resp.ok() ? new Set(rows(await resp.json()).map((r) => r.slug)) : new Set<string>()
+
+	for (const { slug, file } of MDM_REGISTER_CONFIGS) {
+		if (present.has(slug)) continue
+		const configPath = path.resolve(__dirname, '../../lib/Settings', file)
+		if (!fs.existsSync(configPath)) continue
+		await request.post(`${API}/configurations/import`, {
+			multipart: {
+				file: { name: file, mimeType: 'application/json', buffer: fs.readFileSync(configPath) },
+			},
+		}).catch(() => {})
+	}
+}
+
 /** Normalise a list endpoint's envelope to a plain array. */
 function rows(body: unknown): Array<Record<string, any>> {
 	if (Array.isArray(body)) return body as Array<Record<string, any>>
@@ -120,6 +154,20 @@ async function cleanPriorSeed(request: APIRequestContext, register: number, sche
 	}
 }
 
+/** Delete any prior `e2e-mdm-` source records so re-seeding is idempotent. */
+async function cleanPriorSources(request: APIRequestContext, register: number, schema: number | null): Promise<void> {
+	if (schema === null) return
+	const resp = await request.get(`${API}/objects/${register}/${schema}?_limit=500`, { headers: { Accept: 'application/json' } })
+	if (!resp.ok()) return
+	for (const obj of rows(await resp.json())) {
+		const sourceRecordId = String(obj.sourceRecordId ?? '')
+		const id = objectId(obj)
+		if (sourceRecordId.startsWith(MDM_MARKER) && id) {
+			await request.delete(`${API}/objects/${register}/${schema}/${id}`).catch(() => {})
+		}
+	}
+}
+
 /** Create one master entity and return its uuid. */
 async function createMaster(
 	request: APIRequestContext,
@@ -136,9 +184,84 @@ async function createMaster(
 	return id
 }
 
-/** Build a source-record entry (sourceSystem + mappedAttributes + freshness anchor). */
-function source(sourceSystem: string, lastChange: string, mapped: Record<string, unknown>): Record<string, unknown> {
-	return { sourceSystem, lastChange, mappedAttributes: mapped }
+/** A competing source for a master: which system, freshness anchor, mapped values. */
+interface SourceSpec {
+	sourceSystem: string
+	lastChange: string
+	mapped: Record<string, unknown>
+}
+
+/** Build a source spec (sourceSystem + mappedAttributes + freshness anchor). */
+function source(sourceSystem: string, lastChange: string, mapped: Record<string, unknown>): SourceSpec {
+	return { sourceSystem, lastChange, mapped }
+}
+
+/**
+ * Create one `sourceRecord` object referencing its master via
+ * `currentMasterEntity` (reverse-FK). This is what OpenRegister's survivorship
+ * engine resolves + recomputes the master's golden record from; the master's
+ * SourceRecordChangeListener fires on this create and rematerialises the golden
+ * record. Populates every required sourceRecord field.
+ */
+async function createSourceRecord(
+	request: APIRequestContext,
+	register: number,
+	schema: number,
+	masterUuid: string,
+	entityType: string,
+	s: SourceSpec,
+): Promise<void> {
+	const nativeId = `${MDM_MARKER}${s.sourceSystem}-${masterUuid.slice(0, 8)}`
+	const data = {
+		sourceRecordId: nativeId,
+		sourceSystem: s.sourceSystem,
+		nativeId,
+		entityType,
+		currentMasterEntity: masterUuid,
+		rawAttributes: s.mapped,
+		mappedAttributes: s.mapped,
+		firstSeen: s.lastChange,
+		lastSeen: s.lastChange,
+		lastChange: s.lastChange,
+		linkageMethod: 'deterministic-key',
+		linkageConfidence: 1,
+	}
+	const resp = await request.post(`${API}/objects/${register}/${schema}`, { headers: JSON_HEADERS, data })
+	if (resp.status() > 201) {
+		throw new Error(`mdm-seed: createSourceRecord(${nativeId}) failed ${resp.status()}: ${await resp.text()}`)
+	}
+}
+
+/**
+ * Seed one master entity plus its reverse-FK source records. The master is
+ * created first (carrying a provided goldenRecord/provenance to satisfy the
+ * schema's required fields); each source is then created referencing it, which
+ * drives the golden record recompute over the real source set. Returns the
+ * master uuid.
+ */
+async function seedMasterWithSources(
+	request: APIRequestContext,
+	register: number,
+	masterSchema: number,
+	sourceSchema: number | null,
+	opts: { masterId: string; entityType: string; golden: Record<string, unknown>; sources: SourceSpec[]; lastSourceUpdate?: string },
+): Promise<string> {
+	const masterUuid = await createMaster(request, register, masterSchema, {
+		masterId: opts.masterId,
+		entityType: opts.entityType,
+		status: 'active',
+		goldenRecord: opts.golden,
+		attributeProvenance: provenance(opts.sources[0]?.sourceSystem ?? 'seed', opts.golden),
+		lastSourceUpdate: opts.lastSourceUpdate ?? '2026-06-01T00:00:00Z',
+	})
+
+	if (sourceSchema !== null) {
+		for (const s of opts.sources) {
+			await createSourceRecord(request, register, sourceSchema, masterUuid, opts.entityType, s)
+		}
+	}
+
+	return masterUuid
 }
 
 /** Build a minimal, self-consistent provenance map for a golden record. */
@@ -182,82 +305,74 @@ export async function seedMdm(request: APIRequestContext): Promise<MdmSeed | nul
 		return null
 	}
 
-	const { register, masterEntitySchema } = ids
+	// Ensure the OR-owned MDM registers (merge-operation / trust-configuration)
+	// exist so the merge-execute + conflict-save write-back can persist.
+	await ensureMdmRegisters(request)
+
+	const { register, masterEntitySchema, sourceRecordSchema } = ids
+	// Clean sources before masters (sources reference masters via currentMasterEntity).
+	await cleanPriorSources(request, register, sourceRecordSchema)
 	await cleanPriorSeed(request, register, masterEntitySchema)
 
 	// ── Duplicate pair: identical kvkNumber + email, slightly different name. ──
 	const dupGoldenA = { kvkNumber: '77777777', email: 'info@rijkswaterstaat.nl', name: 'Rijkswaterstaat' }
-	const dupA = await createMaster(request, register, masterEntitySchema, {
+	const dupA = await seedMasterWithSources(request, register, masterEntitySchema, sourceRecordSchema, {
 		masterId: `${MDM_MARKER}dup-a`,
 		entityType: 'account',
-		status: 'active',
-		goldenRecord: dupGoldenA,
-		attributeProvenance: provenance('kvk', dupGoldenA),
-		sourceRecords: [source('kvk', '2026-01-10T00:00:00Z', dupGoldenA)],
-		lastSourceUpdate: '2026-06-01T00:00:00Z',
+		golden: dupGoldenA,
+		sources: [source('kvk', '2026-01-10T00:00:00Z', dupGoldenA)],
 	})
 
 	const dupGoldenB = { kvkNumber: '77777777', email: 'info@rijkswaterstaat.nl', name: 'Rijkswaterstaat B.V.' }
-	const dupB = await createMaster(request, register, masterEntitySchema, {
+	const dupB = await seedMasterWithSources(request, register, masterEntitySchema, sourceRecordSchema, {
 		masterId: `${MDM_MARKER}dup-b`,
 		entityType: 'account',
-		status: 'active',
-		goldenRecord: dupGoldenB,
-		attributeProvenance: provenance('kamer', dupGoldenB),
-		sourceRecords: [source('kamer', '2026-02-10T00:00:00Z', dupGoldenB)],
-		lastSourceUpdate: '2026-06-01T00:00:00Z',
+		golden: dupGoldenB,
+		sources: [source('kamer', '2026-02-10T00:00:00Z', dupGoldenB)],
 	})
 
 	// ── Multi-source conflict: two sources disagree on `name`, agree on email. ──
 	const conflictGolden = { kvkNumber: '88888888', email: 'contact@acme.nl', name: 'ACME NV' }
-	const conflictUuid = await createMaster(request, register, masterEntitySchema, {
+	const conflictUuid = await seedMasterWithSources(request, register, masterEntitySchema, sourceRecordSchema, {
 		masterId: `${MDM_MARKER}conflict`,
 		entityType: 'account',
-		status: 'active',
-		goldenRecord: conflictGolden,
-		attributeProvenance: provenance('crm', conflictGolden),
-		sourceRecords: [
+		golden: conflictGolden,
+		sources: [
 			source('crm', '2026-03-01T00:00:00Z', { kvkNumber: '88888888', email: 'contact@acme.nl', name: 'ACME NV' }),
 			source('erp', '2026-03-05T00:00:00Z', { kvkNumber: '88888888', email: 'contact@acme.nl', name: 'ACME B.V.' }),
 		],
-		lastSourceUpdate: '2026-06-01T00:00:00Z',
 	})
 
 	// ── A few plain scored entities (good / fair / poor completeness). ──
 	const goodGolden = { kvkNumber: '12345678', email: 'hello@complete.example', name: 'Complete Data BV' }
-	await createMaster(request, register, masterEntitySchema, {
+	await seedMasterWithSources(request, register, masterEntitySchema, sourceRecordSchema, {
 		masterId: `${MDM_MARKER}score-good`,
 		entityType: 'account',
-		status: 'active',
-		goldenRecord: goodGolden,
-		attributeProvenance: provenance('kvk', goodGolden),
-		sourceRecords: [source('kvk', '2026-06-20T00:00:00Z', goodGolden)],
+		golden: goodGolden,
+		sources: [source('kvk', '2026-06-20T00:00:00Z', goodGolden)],
 		lastSourceUpdate: '2026-06-20T00:00:00Z',
 	})
 
 	const fairGolden = { kvkNumber: 'not-valid', email: 'partial@fair.example', name: 'Partial Data BV' }
-	await createMaster(request, register, masterEntitySchema, {
+	await seedMasterWithSources(request, register, masterEntitySchema, sourceRecordSchema, {
 		masterId: `${MDM_MARKER}score-fair`,
 		entityType: 'account',
-		status: 'active',
-		goldenRecord: fairGolden,
-		attributeProvenance: provenance('crm', fairGolden),
-		sourceRecords: [source('crm', '2026-01-01T00:00:00Z', fairGolden)],
+		golden: fairGolden,
+		sources: [source('crm', '2026-01-01T00:00:00Z', fairGolden)],
 		lastSourceUpdate: '2026-01-01T00:00:00Z',
 	})
 
 	const poorGolden = { kvkNumber: 'xx', email: 'not-an-email', name: 'Sparse Record' }
-	await createMaster(request, register, masterEntitySchema, {
+	await seedMasterWithSources(request, register, masterEntitySchema, sourceRecordSchema, {
 		masterId: `${MDM_MARKER}score-poor`,
 		entityType: 'account',
-		status: 'active',
-		goldenRecord: poorGolden,
-		attributeProvenance: provenance('legacy', poorGolden),
-		sourceRecords: [source('legacy', '2023-01-01T00:00:00Z', poorGolden)],
+		golden: poorGolden,
+		sources: [source('legacy', '2023-01-01T00:00:00Z', poorGolden)],
 		lastSourceUpdate: '2023-01-01T00:00:00Z',
 	})
 
-	// Best-effort verification that the pair is now detectable.
+	// Best-effort verification that the pair is now detectable (confirms the
+	// reverse-FK recompute populated the masters' goldenRecords from sources).
 	await verifyDuplicates(request, register, masterEntitySchema)
 
 	const seed: MdmSeed = {

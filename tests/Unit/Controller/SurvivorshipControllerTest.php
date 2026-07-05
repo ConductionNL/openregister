@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+use Psr\Log\LoggerInterface;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -72,6 +74,7 @@ class SurvivorshipControllerTest extends TestCase
             $this->request,
             $this->objectService,
             $this->schemaMapper,
+            new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->createMock(LoggerInterface::class)),
             $this->userSession
         );
     }//end setUp()
@@ -270,4 +273,41 @@ class SurvivorshipControllerTest extends TestCase
 
         $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
     }//end testUnauthorisedWriteIsRejectedAndNoOverrideIsWritten()
+
+    public function testSourcesReturnsResolvedSources(): void
+    {
+        $schema = new Schema();
+        $schema->setConfiguration(['x-openregister-survivorship' => ['sourceLinkField' => 'sources']]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $object = $this->objectWithData(
+            ['sources' => [['sourceSystem' => 'crm', 'mappedAttributes' => ['name' => 'Acme']]]]
+        );
+        $this->objectService->method('find')->willReturn($object);
+
+        $response = $this->controller->sources('obj-1');
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+        $data = $response->getData();
+        $this->assertCount(1, $data['sources']);
+        $this->assertSame('crm', $data['sources'][0]['sourceSystem']);
+    }//end testSourcesReturnsResolvedSources()
+
+    public function testSourcesReturns404WhenObjectMissing(): void
+    {
+        $this->objectService->method('find')->willReturn(null);
+
+        $response = $this->controller->sources('missing');
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+    }//end testSourcesReturns404WhenObjectMissing()
+
+    public function testSourcesCarriesAuthAnnotations(): void
+    {
+        $reflection = new ReflectionClass(SurvivorshipController::class);
+        $doc        = $reflection->getMethod('sources')->getDocComment();
+
+        $this->assertNotFalse($doc, 'sources() must have a docblock.');
+        $this->assertStringContainsString('@NoAdminRequired', $doc);
+        $this->assertStringNotContainsString('@PublicPage', $doc);
+    }//end testSourcesCarriesAuthAnnotations()
 }//end class

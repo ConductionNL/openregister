@@ -117,6 +117,14 @@ async function openResolveConflicts(page: Page): Promise<boolean> {
 	const resolveButton = page.getByTestId('mdm-resolve-conflicts')
 	await expect(resolveButton).toBeVisible({ timeout: 10_000 })
 	await resolveButton.click()
+	// openConflicts() fetches the reverse-FK sources asynchronously before it
+	// shows the modal — wait for the dialog + its conflict/empty surface to
+	// settle so callers observe the resolved state, not a pre-fetch frame.
+	const dialog = page.getByRole('dialog', { name: /Resolve conflicts/i })
+	await dialog.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
+	const conflictRow = dialog.locator('[data-testid="conflict-row"]').first()
+	const emptyState = dialog.getByText(/No conflicts to resolve/i)
+	await expect(conflictRow.or(emptyState)).toBeVisible({ timeout: 10_000 }).catch(() => {})
 	return true
 }
 
@@ -141,17 +149,16 @@ test.describe('mdm-survivorship-override — conflict-resolution modal opens fro
 		await expect(conflictRow.or(emptyState)).toBeVisible({ timeout: 10_000 })
 
 		const hasConflicts = await conflictRow.isVisible().catch(() => false)
-		// KNOWN GAP: the masterEntity schema has no `sourceRecords` property, so
-		// the seeded object's disagreeing sources are stripped on save and the
-		// conflict-resolution modal computes zero conflicts (empty state). Skip
-		// the resolution assertions with a documented reason rather than fail —
-		// the modal-opens + surface (conflicts-or-empty-state) contract above
-		// still runs. See design.md Findings / ADR-045 follow-up.
-		test.skip(!hasConflicts, 'No disagreeing-source conflict present — masterEntity has no persisted sourceRecords (survivorship sourceLinkField linkage gap; OR expects reverse-FK sourceRecord objects). See design.md Findings / ADR-045 follow-up.')
-
-		// The seeded conflict is on `name` (crm: "ACME NV" vs erp: "ACME B.V.").
+		// Reverse-FK source resolution (mdm-reverse-fk-source-resolution): the
+		// seeded conflict master has two `sourceRecord` objects disagreeing on
+		// `name` (crm "ACME NV" vs erp "ACME B.V."). The modal fetches them via
+		// the survivorship sources endpoint and lists the disagreement. When
+		// seeded this MUST be present; unseeded instances skip.
 		if (seed) {
+			expect(hasConflicts).toBe(true)
 			await expect(conflictRow.getByText(/name/i).first()).toBeVisible()
+		} else {
+			test.skip(!hasConflicts, 'No disagreeing-source conflict present — seed data needed')
 		}
 
 		const saveButton = page.getByTestId('mdm-conflict-save')
@@ -179,13 +186,14 @@ test.describe('mdm-survivorship-override — persistent outcome', () => {
 		const dialog = page.getByRole('dialog', { name: /Resolve conflicts/i })
 		const conflictRow = dialog.locator('[data-testid="conflict-row"]').first()
 		const hasConflicts = await conflictRow.isVisible({ timeout: 10_000 }).catch(() => false)
-		// KNOWN GAP: the masterEntity schema has no `sourceRecords` property, so
-		// the seeded object's disagreeing sources are stripped on save and the
-		// conflict-resolution modal computes zero conflicts (empty state). Skip
-		// the resolution assertions with a documented reason rather than fail —
-		// the modal-opens + surface (conflicts-or-empty-state) contract above
-		// still runs. See design.md Findings / ADR-045 follow-up.
-		test.skip(!hasConflicts, 'No disagreeing-source conflict present — masterEntity has no persisted sourceRecords (survivorship sourceLinkField linkage gap; OR expects reverse-FK sourceRecord objects). See design.md Findings / ADR-045 follow-up.')
+		// Reverse-FK: the seeded conflict master surfaces a real `name`
+		// disagreement across its two sourceRecord objects. Assert when seeded;
+		// unseeded instances skip.
+		if (seed) {
+			expect(hasConflicts).toBe(true)
+		} else {
+			test.skip(!hasConflicts, 'No disagreeing-source conflict present — seed data needed')
+		}
 
 		const winnerCombo = dialog.getByTestId('mdm-conflict-source-select').first()
 		await winnerCombo.click()
@@ -217,13 +225,14 @@ test.describe('mdm-survivorship-override — one-off outcome', () => {
 		const dialog = page.getByRole('dialog', { name: /Resolve conflicts/i })
 		const conflictRow = dialog.locator('[data-testid="conflict-row"]').first()
 		const hasConflicts = await conflictRow.isVisible({ timeout: 10_000 }).catch(() => false)
-		// KNOWN GAP: the masterEntity schema has no `sourceRecords` property, so
-		// the seeded object's disagreeing sources are stripped on save and the
-		// conflict-resolution modal computes zero conflicts (empty state). Skip
-		// the resolution assertions with a documented reason rather than fail —
-		// the modal-opens + surface (conflicts-or-empty-state) contract above
-		// still runs. See design.md Findings / ADR-045 follow-up.
-		test.skip(!hasConflicts, 'No disagreeing-source conflict present — masterEntity has no persisted sourceRecords (survivorship sourceLinkField linkage gap; OR expects reverse-FK sourceRecord objects). See design.md Findings / ADR-045 follow-up.')
+		// Reverse-FK: the seeded conflict master surfaces a real `name`
+		// disagreement across its two sourceRecord objects. Assert when seeded;
+		// unseeded instances skip.
+		if (seed) {
+			expect(hasConflicts).toBe(true)
+		} else {
+			test.skip(!hasConflicts, 'No disagreeing-source conflict present — seed data needed')
+		}
 
 		const winnerCombo = dialog.getByTestId('mdm-conflict-source-select').first()
 		await winnerCombo.click()

@@ -107,4 +107,33 @@ class MergeAnnotationValidatorTest extends TestCase
         );
         $this->assertGreaterThanOrEqual(3, count($errors));
     }//end testMultipleErrorsAreAllReported()
+
+    public function testWellFormedReverseFkSourceLinkIsAccepted(): void
+    {
+        $errors = $this->validator->validate(
+            [
+                'x-openregister-merge' => [
+                    'sourceLink' => [
+                        'mode'           => 'reverseFk',
+                        'sourceSchema'   => 'sourceRecord',
+                        'referenceField' => 'currentMasterEntity',
+                    ],
+                ],
+            ]
+        );
+        $this->assertSame([], $errors);
+    }//end testWellFormedReverseFkSourceLinkIsAccepted()
+
+    public function testIncompleteReverseFkSourceLinkIsFlagged(): void
+    {
+        $errors = $this->validator->validate(
+            [
+                'x-openregister-merge' => [
+                    'sourceLink' => ['mode' => 'reverseFk', 'referenceField' => 'currentMasterEntity'],
+                ],
+            ]
+        );
+        $codes = array_column($errors, 'code');
+        $this->assertContains('merge.source-link-reverse-fk-incomplete', $codes);
+    }//end testIncompleteReverseFkSourceLinkIsFlagged()
 }//end class

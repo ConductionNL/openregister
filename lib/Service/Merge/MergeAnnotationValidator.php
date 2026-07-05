@@ -75,9 +75,54 @@ class MergeAnnotationValidator
         }
 
         $errors = array_merge($errors, $this->validateStringFields(annotation: $annotation));
+        $errors = array_merge($errors, $this->validateSourceLink(annotation: $annotation));
 
         return $errors;
     }//end validate()
+
+    /**
+     * Validate an optional `sourceLink` block. A `reverseFk` mode requires
+     * `sourceSchema` and `referenceField`; anything else is accepted (embedded
+     * mode). Errors are non-fatal (surfaced as warnings by the caller).
+     *
+     * @param array<string, mixed> $annotation Merge annotation.
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#1.1
+     */
+    private function validateSourceLink(array $annotation): array
+    {
+        $sourceLink = ($annotation['sourceLink'] ?? null);
+        if ($sourceLink === null) {
+            return [];
+        }
+
+        if (is_array($sourceLink) === false) {
+            return [
+                [
+                    'code'    => 'merge.source-link-not-object',
+                    'message' => 'x-openregister-merge "sourceLink" must be an object.',
+                ],
+            ];
+        }
+
+        if ((string) ($sourceLink['mode'] ?? 'embedded') !== 'reverseFk') {
+            return [];
+        }
+
+        $errors = [];
+        if ((string) ($sourceLink['sourceSchema'] ?? '') === ''
+            || (string) ($sourceLink['referenceField'] ?? '') === ''
+        ) {
+            $errors[] = [
+                'code'    => 'merge.source-link-reverse-fk-incomplete',
+                'message' => 'x-openregister-merge reverseFk "sourceLink" requires "sourceSchema" and "referenceField".',
+            ];
+        }
+
+        return $errors;
+    }//end validateSourceLink()
 
     /**
      * Validate the optional string-valued fields, when present.
