@@ -150,6 +150,7 @@ use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
@@ -2155,6 +2156,14 @@ class Application extends App implements IBootstrap
         // persistence (see x-openregister-survivorship). MDM capability.
         $context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
+
+        // Reverse-FK source-change listener — when a source object (declared via
+        // a master schema's x-openregister-survivorship sourceLink.reverseFk)
+        // is created/updated/deleted, recompute the referenced master's golden
+        // record so it stays current as its sources change. MDM capability.
+        $context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.

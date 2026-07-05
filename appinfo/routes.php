@@ -333,6 +333,9 @@ return [
         // sets/clears one attribute override on a master object and recomputes
         // its golden record.
         ['name' => 'survivorship#override', 'url' => '/api/objects/survivorship/{id}/override', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Resolve a master's competing source records (embedded or reverse-FK)
+        // for the conflict-resolution UI.
+        ['name' => 'survivorship#sources', 'url' => '/api/objects/survivorship/{id}/sources', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],

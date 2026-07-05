@@ -303,6 +303,29 @@ export const useQualityStore = defineStore('quality', {
 		},
 
 		/**
+		 * Fetch a master's resolved competing source records (embedded or
+		 * reverse-FK), for the conflict-resolution modal. A reverse-FK master
+		 * carries no embedded source array, so the modal cannot compute
+		 * per-attribute conflicts without this server-resolved list.
+		 *
+		 * @param {string|number} id Master object id.
+		 * @return {Promise<Array<object>>} Resolved source records (empty on failure).
+		 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+		 */
+		async fetchMasterSources(id) {
+			if (!id) return []
+			try {
+				const response = await axios.get(
+					`${API_BASE}/objects/survivorship/${encodeURIComponent(id)}/sources`,
+				)
+				return response.data?.sources ?? []
+			} catch (e) {
+				console.error('[quality.fetchMasterSources]', e)
+				return []
+			}
+		},
+
+		/**
 		 * Side-effect-free preview of a merge: projected survivor golden
 		 * record, per-attribute provenance and reversal deadline. Thin
 		 * wrapper over the merge engine's preview endpoint — no
@@ -366,9 +389,12 @@ export const useQualityStore = defineStore('quality', {
 			const limit = params.limit ?? this.mergeOperationsLimit
 			const offset = params.offset ?? this.mergeOperationsOffset
 			try {
+				// The generic objects endpoint treats `limit`/`offset` as data
+				// FILTERS; pagination uses the underscored `_limit`/`_offset`.
+				// Passing `limit` here filtered the list down to nothing.
 				const response = await axios.get(
 					`${API_BASE}/objects/merge-operation/mergeOperation`,
-					{ params: { ...params, limit, offset } },
+					{ params: { _limit: limit, _offset: offset } },
 				)
 				const data = response.data ?? {}
 				this.mergeOperations = data.results ?? data.items ?? []

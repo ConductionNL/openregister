@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -67,6 +68,7 @@ class MergeServiceTest extends TestCase
             $this->schemaMapper,
             new SurvivorshipResolver(),
             new TrustTierResolver(),
+            new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger),
             $this->eventDispatcher,
             $this->logger
         );

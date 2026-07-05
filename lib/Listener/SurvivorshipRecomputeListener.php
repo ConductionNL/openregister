@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\Event;
@@ -58,6 +59,12 @@ use Throwable;
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  *
  * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Reuses the survivorship
+ *   collaborators (SchemaMapper, ObjectService, SurvivorshipResolver,
+ *   TrustTierResolver, SourceRecordResolver) plus the logger, per ADR-011
+ *   reuse — a facade purely to hide the dependency count would add indirection
+ *   without reducing coupling, mirroring MergeService.
  */
 class SurvivorshipRecomputeListener implements IEventListener
 {
@@ -94,21 +101,24 @@ class SurvivorshipRecomputeListener implements IEventListener
      * Wire collaborators used to look up the schema, load linked sources +
      * trust rows, and resolve the golden record.
      *
-     * @param SchemaMapper         $schemaMapper  Schema lookup mapper.
-     * @param ObjectService        $objectService Object read path (RBAC + tenant scoped).
-     * @param SurvivorshipResolver $resolver      Pure golden-record resolver.
-     * @param TrustTierResolver    $trustResolver Pure trust-tier lookup + decay engine.
-     * @param LoggerInterface      $logger        PSR logger for warnings.
+     * @param SchemaMapper         $schemaMapper         Schema lookup mapper.
+     * @param ObjectService        $objectService        Object read path (RBAC + tenant scoped).
+     * @param SurvivorshipResolver $resolver             Pure golden-record resolver.
+     * @param TrustTierResolver    $trustResolver        Pure trust-tier lookup + decay engine.
+     * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
+     * @param LoggerInterface      $logger               PSR logger for warnings.
      *
      * @return void
      *
      * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.2
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectService $objectService,
         private readonly SurvivorshipResolver $resolver,
         private readonly TrustTierResolver $trustResolver,
+        private readonly SourceRecordResolver $sourceRecordResolver,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -167,13 +177,23 @@ class SurvivorshipRecomputeListener implements IEventListener
                 return;
             }
 
-            $sourceLinkField = (string) ($config['sourceLinkField'] ?? '');
-            if ($sourceLinkField === '') {
+            // Skip schemas with no resolvable source linkage — neither an
+            // embedded `sourceLinkField` nor a reverse-FK `sourceLink` block.
+            if ($this->hasSourceLinkage(config: $config) === false) {
                 return;
             }
 
             $data          = ($object->getObject() ?? []);
-            $sourceRecords = $this->loadSourceRecords(data: $data, sourceLinkField: $sourceLinkField);
+            $sourceRecords = $this->sourceRecordResolver->resolveSources(
+                masterData: $data,
+                masterUuid: (string) $object->getUuid(),
+                config: $config,
+                masterRegister: (string) $object->getRegister()
+            );
+
+            if ($this->shouldPreserveGoldenRecord(sourceRecords: $sourceRecords, config: $config, data: $data) === true) {
+                return;
+            }
 
             $entityType = (string) ($config['entityType'] ?? ($schema->getSlug() ?? ''));
             $trustRows  = $this->loadTrustRows(entityType: $entityType);
@@ -294,67 +314,53 @@ class SurvivorshipRecomputeListener implements IEventListener
     }//end getSurvivorshipConfig()
 
     /**
-     * Resolve the linked source records from `sourceLinkField`.
+     * Whether the survivorship config declares a resolvable source linkage —
+     * an embedded `sourceLinkField` or a reverse-FK `sourceLink` block.
      *
-     * The field may hold either an array of already-embedded source-record
-     * objects, or an array of uuid/id strings referencing objects elsewhere
-     * in the register (resolved via ObjectService::find, RBAC + tenant
-     * scoped under the saving user's session). Unresolvable entries are
-     * skipped rather than aborting the resolution.
+     * @param array<string, mixed> $config Survivorship config.
      *
-     * @param array<string, mixed> $data            Object's current data.
-     * @param string               $sourceLinkField Field holding the linked source records.
+     * @return bool
      *
-     * @return array<int, array<string, mixed>> Resolved source-record payloads.
-     *
-     * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.2
      */
-    private function loadSourceRecords(array $data, string $sourceLinkField): array
+    private function hasSourceLinkage(array $config): bool
     {
-        $raw = ($data[$sourceLinkField] ?? null);
-        if (is_array($raw) === false) {
-            return [];
+        if ((string) ($config['sourceLinkField'] ?? '') !== '') {
+            return true;
         }
 
-        $records = [];
-        foreach ($raw as $entry) {
-            if (is_array($entry) === true) {
-                $records[] = $entry;
-                continue;
-            }
-
-            if (is_string($entry) === true && $entry !== '') {
-                $resolved = $this->resolveSourceReference(uuid: $entry);
-                if ($resolved !== null) {
-                    $records[] = $resolved;
-                }
-            }
-        }
-
-        return $records;
-    }//end loadSourceRecords()
+        return $this->sourceRecordResolver->isReverseFk(config: $config);
+    }//end hasSourceLinkage()
 
     /**
-     * Resolve a single source-record reference by uuid/id.
+     * Reverse-FK guard: a recompute with NO resolvable sources must not clobber
+     * an existing golden record. Covers create time (no uuid yet → no sources
+     * can reference the master) and any context where the source query yields
+     * nothing — the record is only recomputed from sources that exist, never
+     * wiped by a transient empty resolution. Embedded mode keeps its prior
+     * behaviour (an empty embedded array legitimately clears the record).
      *
-     * @param string $uuid Referenced object's uuid/id.
+     * @param array<int, array<string, mixed>> $sourceRecords Resolved sources.
+     * @param array<string, mixed>             $config        Survivorship config.
+     * @param array<string, mixed>             $data          Object payload.
      *
-     * @return array<string, mixed>|null Resolved payload, or null on lookup failure.
+     * @return bool True when the existing golden record must be preserved as-is.
+     *
+     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.2
      */
-    private function resolveSourceReference(string $uuid): ?array
+    private function shouldPreserveGoldenRecord(array $sourceRecords, array $config, array $data): bool
     {
-        try {
-            $entity = $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true);
-        } catch (Throwable) {
-            return null;
+        if (empty($sourceRecords) === false) {
+            return false;
         }
 
-        if ($entity === null) {
-            return null;
+        if ($this->sourceRecordResolver->isReverseFk(config: $config) === false) {
+            return false;
         }
 
-        return ($entity->getObject() ?? []);
-    }//end resolveSourceReference()
+        $goldenField = (string) ($config['goldenRecordField'] ?? self::DEFAULT_GOLDEN_FIELD);
+        return empty(($data[$goldenField] ?? null)) === false;
+    }//end shouldPreserveGoldenRecord()
 
     /**
      * Load the candidate trust-configuration rows for an entity type via the
