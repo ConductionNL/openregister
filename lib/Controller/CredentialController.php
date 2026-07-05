@@ -120,6 +120,43 @@ class CredentialController extends Controller
     }//end index()
 
     /**
+     * GET /api/credentials/providers — list the read-only provider catalogue (id + title only).
+     *
+     * Powers the settings-UI provider picker. Exposes ONLY the identifier and title — never a
+     * secret (there is none in the catalogue) and never the allow-rules (an internal guardrail).
+     *
+     * @return JSONResponse `{results: Array<{identifier, title}>}`.
+     *
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     */
+    #[NoAdminRequired]
+    public function providers(): JSONResponse
+    {
+        if ($this->currentUid() === null) {
+            return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $out = [];
+        foreach ($this->catalogue->all() as $entry) {
+            if (is_array($entry) === false) {
+                continue;
+            }
+
+            $identifier = (string) ($entry['identifier'] ?? '');
+            if ($identifier === '') {
+                continue;
+            }
+
+            $out[] = [
+                'identifier' => $identifier,
+                'title'      => (string) ($entry['title'] ?? $identifier),
+            ];
+        }
+
+        return new JSONResponse(['results' => $out]);
+    }//end providers()
+
+    /**
      * POST /api/credentials — create a credential and store its secret to the vault.
      *
      * Body: `{name, provider, allowedApps?, secret?}`. The secret (if given) is written

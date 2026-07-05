@@ -27,6 +27,7 @@ return [
         // call. The broker call reads the app token from the X-Credential-Token
         // header (never the body). All owner-scoped, static errors, no secret leak.
         ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
+        ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
         ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
