@@ -1190,6 +1190,28 @@ class Schema extends Entity implements JsonSerializable
             }
         }
 
+        // Fold a schema-LEVEL top-level `x-schema-org` marker into
+        // `configuration['x-schema-org']` the same way (ADR-048). Fleet
+        // schemas declare the canonical schema.org CURIE (e.g.
+        // `"x-schema-org": "schema:Organization"`) as a sibling of
+        // `properties`, NOT inside `configuration`; without this fold the
+        // marker falls through to a non-existent `setXSchemaOrg()` setter,
+        // is swallowed by the silent-catch below, and the live schema loses
+        // its semantic type — so SemanticTypeResolver can never discover the
+        // provider. Folding it into the configuration column (which is in the
+        // passThrough allowlist and read by
+        // JsonLdContextService::getImplementedTypes) makes the marker survive
+        // save/import. An explicit `configuration['x-schema-org']` already
+        // supplied by the caller wins over the top-level convenience form.
+        if (array_key_exists('x-schema-org', $object) === true) {
+            if (array_key_exists('x-schema-org', $existingConfig) === false) {
+                $existingConfig['x-schema-org'] = $object['x-schema-org'];
+                $annotationsFolded = true;
+            }
+
+            unset($object['x-schema-org']);
+        }
+
         if ($annotationsFolded === true) {
             $object['configuration'] = $existingConfig;
         }
@@ -1679,9 +1701,13 @@ class Schema extends Entity implements JsonSerializable
     private function validateConfigurationArray(array $configuration): array
     {
         $validatedConfig = [];
-        $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld'];
+        // `implements` + `x-schema-org` carry the cross-app semantic-type
+        // markers (ADR-048); they must round-trip through the configuration
+        // column so SemanticTypeResolver can discover the schema. Their IRI
+        // shape is validated on read by JsonLdContextService::getImplementedTypes.
+        $stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
+        $boolFields   = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
+        $passThrough  = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {

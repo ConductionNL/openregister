@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -113,6 +114,7 @@ class SchemasController extends Controller
      * @param SchemaVersioningService $schemaVersioningService Schema versioning service for version operations
      * @param JsonLdContextService    $jsonLdContextService    JSON-LD context service
      * @param SchemaImportService     $schemaImportService     Schema import service for importing schemas
+     * @param SemanticTypeResolver    $semanticTypeResolver    Semantic-type → schema resolver (cross-app references)
      *
      * @return void
      *
@@ -134,7 +136,8 @@ class SchemasController extends Controller
         private readonly ContainerInterface $container,
         private readonly SchemaVersioningService $schemaVersioningService,
         private readonly ?JsonLdContextService $jsonLdContextService=null,
-        private readonly ?SchemaImportService $schemaImportService=null
+        private readonly ?SchemaImportService $schemaImportService=null,
+        private readonly ?SemanticTypeResolver $semanticTypeResolver=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -1414,6 +1417,86 @@ class SchemasController extends Controller
             return $this->errorResponse(e: $e);
         }//end try
     }//end updateFromExploration()
+
+    /**
+     * Resolve a canonical semantic-type URI to the installed provider schema.
+     *
+     * Discovery endpoint for cross-app semantic references (ADR-048). Given a
+     * `uri` query parameter (an absolute semantic-type IRI such as
+     * `https://schema.org/Organization`), returns the register + schema slugs of
+     * the installed schema that implements it, so the frontend can build an
+     * object picker over the provider schema. When no installed schema provides
+     * the type, returns `{ resolved: false }` with HTTP 200 — never 500 — so a
+     * consuming form degrades gracefully to a disabled field.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @PublicPage
+     *
+     * @return JSONResponse `{ resolved: bool, register, registerSlug, schema, schemaSlug, appId? }`
+     *                      or `{ resolved: false }`.
+     *
+     * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+     *   (Requirement: Resolution is null-safe across installed schemas)
+     */
+    public function resolveByImplements(): JSONResponse
+    {
+        $uri = (string) ($this->request->getParam('uri', ''));
+        if ($uri === '' || $this->semanticTypeResolver === null) {
+            return new JSONResponse(['resolved' => false]);
+        }
+
+        // Optional consuming-register hint biases the tie-break; never required.
+        $consumingRegisterId = null;
+        $rawRegister         = $this->request->getParam('register');
+        if ($rawRegister !== null && is_numeric($rawRegister) === true) {
+            $consumingRegisterId = (int) $rawRegister;
+        }
+
+        try {
+            $schema = $this->semanticTypeResolver->resolveSchemaByImplements(
+                uri: $uri,
+                consumingRegisterId: $consumingRegisterId
+            );
+        } catch (\Throwable $e) {
+            // Resolution is contractually null-safe; log and degrade, never 500.
+            $this->logger->warning(
+                message: '[SchemasController] resolveByImplements failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uri' => $uri]
+            );
+            return new JSONResponse(['resolved' => false]);
+        }
+
+        if ($schema === null) {
+            return new JSONResponse(['resolved' => false]);
+        }
+
+        $register = $this->semanticTypeResolver->findRegisterForSchema(schema: $schema);
+
+        $payload = [
+            'resolved'   => true,
+            'schema'     => $schema->getId(),
+            'schemaSlug' => $schema->getSlug(),
+        ];
+
+        if ($register !== null) {
+            $payload['register']     = $register->getId();
+            $payload['registerSlug'] = $register->getSlug();
+
+            $appId = $register->getApplication();
+            if (is_string($appId) === true && $appId !== '') {
+                $payload['appId'] = $appId;
+            }
+        } else {
+            $payload['register']     = null;
+            $payload['registerSlug'] = null;
+        }
+
+        return new JSONResponse($payload);
+
+    }//end resolveByImplements()
 
     /**
      * Whether the current request has no resolved Nextcloud user (anonymous).

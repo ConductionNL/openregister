@@ -158,6 +158,11 @@ use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -229,6 +234,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
+use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -1035,6 +1041,20 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // PropertySemanticReferenceValidator — validates the opt-in
+        // `referenceSemanticType` property marker (ADR-048, cross-app
+        // semantic references) as a well-formed absolute IRI. Standalone,
+        // mirroring PropertyReferenceTypeValidator; wire into schema-save
+        // when write-time enforcement is desired.
+        $context->registerService(
+            PropertySemanticReferenceValidator::class,
+            function (ContainerInterface $container) {
+                return new PropertySemanticReferenceValidator(
+                    jsonLd: $container->get(\OCA\OpenRegister\Service\JsonLd\JsonLdContextService::class),
+                );
+            }
+        );
+
         // Repair step LogDanglingLinkedTypes — runs on install +
         // post-migration to surface schemas whose linkedTypes contain
         // ids that the registry can no longer resolve. Strictly
@@ -1133,6 +1153,63 @@ class Application extends App implements IBootstrap
                 return new CalDavVtodoObjectSourceProvider(
                     taskService: $container->get(TaskService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            ContactsObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new ContactsObjectSourceProvider(
+                    contactsManager: $container->get('OCP\Contacts\IManager'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            CalendarEventObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new CalendarEventObjectSourceProvider(
+                    calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            FilesObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new FilesObjectSourceProvider(
+                    rootFolder: $container->get('OCP\Files\IRootFolder'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            DeckObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new DeckObjectSourceProvider(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TalkObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new TalkObjectSourceProvider(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2691,15 +2768,25 @@ class Application extends App implements IBootstrap
             return;
         }
 
-        try {
-            $registry->addProvider($server->get(CalDavVtodoObjectSourceProvider::class));
-        } catch (\Throwable $e) {
+        $providerClasses = [
+            CalDavVtodoObjectSourceProvider::class,
+            ContactsObjectSourceProvider::class,
+            CalendarEventObjectSourceProvider::class,
+            FilesObjectSourceProvider::class,
+            DeckObjectSourceProvider::class,
+            TalkObjectSourceProvider::class,
+        ];
+        foreach ($providerClasses as $providerClass) {
             try {
-                $server->get(\Psr\Log\LoggerInterface::class)->warning(
-                    '[ObjectSource] could not register CalDavVtodoObjectSourceProvider: '.$e->getMessage()
-                );
-            } catch (\Throwable $inner) {
-                // Logger unavailable on this build — nothing to do.
+                $registry->addProvider($server->get($providerClass));
+            } catch (\Throwable $e) {
+                try {
+                    $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                        '[ObjectSource] could not register '.$providerClass.': '.$e->getMessage()
+                    );
+                } catch (\Throwable $inner) {
+                    // Logger unavailable on this build — nothing to do.
+                }
             }
         }
 
