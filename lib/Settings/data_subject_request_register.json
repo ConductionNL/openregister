@@ -662,6 +662,30 @@
             "description": "Write-once stamp of the instant the case's escalationTier first crossed into 'breached'. Populated declaratively by the breachedAt calculation on the tier write that crosses the boundary; empty while the deadline has never been breached. Read by the regulator dossier and breach reporting.",
             "title": "Breached At"
           },
+          "daysRemaining": {
+            "type": "number",
+            "description": "Engine-materialised value of the daysRemaining calculation (whole days until the effective deadline; negative once passed). Declared as a property so the materialised value persists to a magic-table column — calculation outputs without a backing property are dropped at persist time. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "facetable": true,
+            "title": "Days Remaining"
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "description": "Engine-materialised value of the isOverdue calculation (true when the effective deadline has passed). Declared as a property so the materialised value persists to a magic-table column and the overdueCaseCount aggregation can filter on it. Do not edit by hand.",
+            "facetable": true,
+            "title": "Is Overdue"
+          },
+          "escalationTier": {
+            "type": "string",
+            "description": "Engine-materialised value of the escalationTier calculation (on-track, reminder, escalation, breached — boundaries from the active dsarPolicyPack). Declared as a property so the materialised value persists to a magic-table column, the breachedCaseCount aggregation can filter on it, and the calculatedChange notification rules see old/new values. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "enum": [
+              "on-track",
+              "reminder",
+              "escalation",
+              "breached"
+            ],
+            "facetable": true,
+            "title": "Escalation Tier"
+          },
           "retentionWindow": {
             "type": "string",
             "description": "Configured retention window key selecting how long the finalised case dossier is retained before the retention sweep (delivered by dsar-case-engine) may purge it.",
