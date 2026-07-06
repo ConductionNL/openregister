@@ -91,7 +91,12 @@ jobs:
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
         # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
-        continue-on-error: false
+        # Wired to the input so a caller passing `unit-gating: false` (e.g.
+        # openregister — the suite is GREEN but failOnWarning trips on carried
+        # PHP-warning debt, and its real hard gate is the in-container run in
+        # api-test-coverage.yml) actually gets the documented non-blocking
+        # behaviour instead of a hardcoded hard failure.
+        continue-on-error: ${{ inputs.unit-gating == false }}
         run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
 
   # ---------------------------------------------------------------------------
