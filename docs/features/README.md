@@ -94,6 +94,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay
+- [Semantic Object Handoff](semantic-object-handoff.md) — Cross-app object conversion via canonical kinds (ns#Case, ns#Quote, …), declarative dialect, queue-mode deferral, provenance both ways (ADR-051)
 
 ### AI & Agent Interfaces
 Enabling AI systems and LLMs to access register data.
