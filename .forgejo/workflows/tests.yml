@@ -207,19 +207,21 @@ jobs:
           VITEST_VER="$(node -e "console.log(require('./node_modules/vitest/package.json').version)")"
           npm install --no-save --legacy-peer-deps "@vitest/coverage-v8@${VITEST_VER}"
 
-      - name: Run Vitest WITH coverage (json-summary over src/**)
+      - name: Run Vitest coverage + ratchet (honors each app's own --coverage.include)
         run: |
-          npx vitest run --coverage --coverage.provider=v8 \
-            --coverage.reporter=json-summary --coverage.reporter=text-summary \
-            --coverage.include='src/**' \
-            --coverage.reportsDirectory=coverage-vitest || true
-          test -f coverage-vitest/coverage-summary.json \
-            || { echo "no coverage-summary.json — vitest coverage unavailable; skipping ratchet"; exit 0; }
-
-      - name: Coverage ratchet (fail on drop)
-        run: |
-          test -f coverage-vitest/coverage-summary.json || exit 0
-          bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json
+          # Use the app's OWN coverage script so its per-app --coverage.include is
+          # honored (apps keep frontend JS under src/** OR js/**; hardcoding src/**
+          # here makes js/**-based apps measure 0 files -> "Unknown" -> ratchet exit 2).
+          if npm run 2>/dev/null | grep -qE '(^|[[:space:]])test:coverage-ratchet([[:space:]]|$)'; then
+            npm run test:coverage-ratchet
+          elif npm run 2>/dev/null | grep -qE '(^|[[:space:]])test:coverage([[:space:]]|$)'; then
+            npm run test:coverage
+            test -f coverage-vitest/coverage-summary.json \
+              && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json \
+              || { echo "no coverage-summary.json — vitest coverage unavailable; skipping ratchet"; exit 0; }
+          else
+            echo "no frontend coverage script for this app; skipping ratchet"; exit 0
+          fi
 
   # ---------------------------------------------------------------------------
   # SCAFFOLD — deep e2e (Playwright tests/e2e/workflows/). Opt-in via run-e2e.
