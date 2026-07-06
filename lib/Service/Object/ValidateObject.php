@@ -1151,6 +1151,20 @@ class ValidateObject
             $handling = $config->handling;
         }
 
+        // Relation markers are the only signal that these items describe a reference to
+        // another object rather than an inline value object: explicit objectConfiguration
+        // handling, or a $ref pointing at another schema.
+        $hasRelationMarkers = ($config !== null && $handling !== null) || (($itemsSchema->{'$ref'} ?? null) !== null);
+
+        // Inline value-object arrays (e.g. [{register, label}]) declare their own properties
+        // and carry no relation markers at all. They are not references to other objects, so
+        // they must be left untouched - replacing their properties with a bare {id} stub while
+        // an authored `additionalProperties: false` survives the clean would reject every one
+        // of the schema's own sub-properties. See or#290.
+        if ($hasRelationMarkers === false && isset($itemsSchema->properties) === true) {
+            return $itemsSchema;
+        }
+
         // Determine whether to use UUID strings or simple object structure.
         // UUID strings: related-object handling, $ref references, or unknown handling types.
         // Simple object: nested-object handling or no configuration and no $ref.
