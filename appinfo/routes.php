@@ -13,6 +13,18 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Credential broker (credential-broker-service) — owner-scoped credential
+        // metadata CRUD + per-app signing-secret registration + the guarded broker
+        // call. The broker call reads the app token from the X-Credential-Token
+        // header (never the body). All owner-scoped, static errors, no secret leak.
+        ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
+        ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
+        ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
+        ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
+        ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+
         // Web Push channel (openregister-web-push-engine).
         // VAPID public key (browser subscribe key) + current-user subscription CRUD
         // (owner-scoped, no IDOR) + per-originApp cobalt-hex notification icon/badge.
@@ -793,6 +805,12 @@ return [
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+
+        // Semantic-object handoff engine (ADR-051): availability + execute.
+        // Both #[NoAdminRequired] with a per-object RBAC guard in the method
+        // body (ADR-005/016/029); CSRF stays enabled on the POST.
+        ['name' => 'handoff#availability', 'url' => '/api/objects/{register}/{schema}/{id}/handoffs', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'handoff#execute', 'url' => '/api/objects/{register}/{schema}/{id}/handoffs/{handoffId}', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'handoffId' => '[^/]+']],
 
         // Schemas.
         // Cross-app semantic reference discovery (ADR-048): resolve a canonical

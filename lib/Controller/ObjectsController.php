@@ -1963,7 +1963,14 @@ class ObjectsController extends Controller
             );
         }
 
-        // Single register+schema: check if magic mapping is enabled.
+        // Single register+schema: resolve slugs/IDs to numeric IDs (same
+        // resolution semantics as the path-style index() route) and check
+        // whether magic mapping is enabled. The resolved numeric IDs are
+        // captured in $resolvedRegisterId/$resolvedSchemaId so the fallback
+        // buildSearchQuery() call below can filter correctly instead of
+        // silently matching zero rows against an unresolved slug string.
+        $resolvedRegisterId = null;
+        $resolvedSchemaId   = null;
         if ($registerParam !== null && $schemaParam !== null) {
             try {
                 $resolved = $this->resolveRegisterSchemaIds(
@@ -1971,6 +1978,9 @@ class ObjectsController extends Controller
                     schema: $schemaParam,
                     objectService: $objectService
                 );
+
+                $resolvedRegisterId = $resolved['register'];
+                $resolvedSchemaId   = $resolved['schema'];
 
                 // Check if magic mapping is enabled for this register+schema.
                 $registerEntity = $resolved['registerEntity'] ?? null;
@@ -2058,7 +2068,18 @@ class ObjectsController extends Controller
         }//end if
 
         // Build search query and execute via normal route (magic tables or SOLR).
-        $query = $objectService->buildSearchQuery($this->request->getParams());
+        // Pass the already-resolved numeric register/schema IDs (when a
+        // register/schema query parameter was supplied) so the query filters
+        // on '@self.register' / '@self.schema' the same way the path-style
+        // index() route does. Without this, buildSearchQuery() falls back to
+        // treating the raw 'register'/'schema' query-string values (slugs)
+        // as the metadata filter, which never matches the numeric register
+        // ID column and silently returns zero results.
+        $query = $objectService->buildSearchQuery(
+            requestParams: $this->request->getParams(),
+            register: $resolvedRegisterId,
+            schema: $resolvedSchemaId
+        );
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
         $result = $objectService->searchObjectsPaginated($query);

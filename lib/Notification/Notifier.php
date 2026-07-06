@@ -100,6 +100,9 @@ class Notifier implements INotifier
             case 'configuration_update_available':
                 return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
+            case 'handoff_drain_failed':
+                return $this->prepareHandoffDrainFailed(notification: $notification, l: $l);
+
             default:
                 // Unknown subject. Object-lifecycle subjects
                 // (object_created / object_updated / object_transitioned)
@@ -158,4 +161,50 @@ class Notifier implements INotifier
 
         return $notification;
     }//end prepareConfigurationUpdate()
+
+    /**
+     * Prepare the queue-mode handoff drain-failure notification (ADR-051):
+     * a parked handoff could not execute when a provider appeared — the
+     * requester lost create permission or the mapped object failed target
+     * validation. The requester is informed so the parked work is never
+     * silently lost.
+     *
+     * @param INotification $notification The notification to prepare
+     * @param mixed         $l            The localization instance
+     *
+     * @return INotification The prepared notification
+     *
+     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+     *   (Scenario: No provider installed, queue mode)
+     */
+    private function prepareHandoffDrainFailed(INotification $notification, $l): INotification
+    {
+        $parameters = $notification->getSubjectParameters();
+
+        $handoffId  = $parameters['handoffId'] ?? 'handoff';
+        $targetKind = $parameters['targetKind'] ?? '';
+        $status     = $parameters['status'] ?? 'failed';
+
+        $notification->setParsedSubject(
+            $l->t('Queued handoff "%s" could not be executed', [$handoffId])
+        );
+
+        $reason = $l->t('The target schema rejected the converted object.');
+        if ($status === 'failed-permission') {
+            $reason = $l->t('You no longer have permission to create objects in the providing schema.');
+        }
+
+        $notification->setParsedMessage(
+            $l->t(
+                'Your queued handoff to "%s" was attempted when a provider became available, but failed: %s',
+                [$targetKind, $reason]
+            )
+        );
+
+        $notification->setIcon(
+            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+        );
+
+        return $notification;
+    }//end prepareHandoffDrainFailed()
 }//end class

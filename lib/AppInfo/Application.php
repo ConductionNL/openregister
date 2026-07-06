@@ -154,6 +154,8 @@ use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\HandoffLifecycleListener;
+use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\NoteService;
@@ -341,6 +343,15 @@ class Application extends App implements IBootstrap
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
+
+        // Credential broker (credential-broker-service): bind the CredentialStore
+        // abstraction to its first concrete leaf, the NC encrypted per-user vault
+        // (design.md D3). Future leaves (Vault, AWS KMS) slot in by replacing this
+        // alias — the broker depends only on the CredentialStore interface.
+        $context->registerServiceAlias(
+            \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+            \OCA\OpenRegister\Service\Credential\NextcloudVaultCredentialStore::class
+        );
 
         // Register request-scoped LanguageService as a singleton (shared per request).
         $context->registerService(
@@ -2213,6 +2224,15 @@ class Application extends App implements IBootstrap
         // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+
+        // Semantic-object handoff engine (ADR-051):
+        // - lifecycle-triggered handoffs run off ObjectTransitionedEvent (real actors only);
+        // - queue-mode drain triggers: schema save + app enable (a provider may
+        // have appeared); the fallback HandoffQueueDrainJob catches the rest.
+        $context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+        $context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 
         // Scheduled-notification per-object dedup pruning (Phase 3.4):
         // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;

@@ -50,6 +50,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
@@ -635,6 +637,8 @@ class SchemaMapper extends QBMapper
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
         $this->validateArchivalAnnotation(schema: $schema);
+        $this->validateHandoffAnnotation(schema: $schema);
+        $this->validateHandoffContractBinding(schema: $schema);
         $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
 
@@ -1043,6 +1047,89 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-archival: '.implode(' ', $messages));
     }//end validateArchivalAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-handoff` annotation (ADR-051).
+     *
+     * The annotation is stored under `configuration['x-openregister-handoff']`.
+     * A malformed handoff declaration REJECTS the schema (contract: schema-save
+     * validation SHALL reject with the typed handoff-* error codes) — unlike
+     * advisory annotations, a broken handoff would otherwise surface as a
+     * runtime conversion failure on user action.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+     *   (Requirement: `x-openregister-handoff` declarative dialect)
+     */
+    private function validateHandoffAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-handoff'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'               => ($schema->getProperties() ?? []),
+            'x-openregister-handoff'   => $annotation,
+            'x-openregister-lifecycle' => ($configuration['x-openregister-lifecycle'] ?? null),
+        ];
+
+        $errors = (new HandoffAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('x-openregister-handoff: '.implode(' ', $messages));
+    }//end validateHandoffAnnotation()
+
+    /**
+     * Validate the optional `handoffContract` binding block (ADR-051,
+     * provider side). Stored at `configuration['handoffContract']`; when
+     * present, every mandatory contract field of each bound kind must map to
+     * an existing own property — otherwise the schema is rejected with
+     * `handoff-contract-incomplete` listing the missing fields. A schema that
+     * implements a kind with NO binding block passes untouched (it is simply
+     * not a handoff provider).
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the binding block is incomplete or malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+     *   (Scenario: Implementer omits a mandatory contract field)
+     */
+    private function validateHandoffContractBinding(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        if (array_key_exists('handoffContract', $configuration) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'      => ($schema->getProperties() ?? []),
+            'handoffContract' => $configuration['handoffContract'],
+            'implements'      => ($configuration['implements'] ?? null),
+            'jsonld'          => ($configuration['jsonld'] ?? null),
+            'x-schema-org'    => ($configuration['x-schema-org'] ?? null),
+        ];
+
+        $errors = (new HandoffContractBindingValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('handoffContract: '.implode(' ', $messages));
+    }//end validateHandoffContractBinding()
 
     /**
      * Clean $ref properties to ensure they are strings

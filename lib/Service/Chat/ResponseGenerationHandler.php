@@ -369,7 +369,7 @@ class ResponseGenerationHandler
                 $functions = $this->toolHandler->convertToolsToFunctions($tools);
             }
 
-            // Initialize $response (and $llmTime) BEFORE entering any
+            // Initialize $response (and $llmTime, $chat) BEFORE entering any
             // provider branch. The Ollama branch skips the OpenAIChat
             // initialisation block; without this default-empty seed the
             // logger access on `$response` below would tank with an
@@ -377,6 +377,9 @@ class ResponseGenerationHandler
             // not to assign — an easy regression vector when a new
             // provider is added. The Fireworks/Ollama branches below
             // overwrite this unconditionally for their own provider.
+            // $chat = null keeps the `instanceof OllamaChat` usage-capture
+            // check below well-defined on every provider path.
+            $chat         = null;
             $response     = '';
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);

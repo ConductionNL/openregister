@@ -600,8 +600,12 @@ class MergeService
         }
 
         $referenceField = $descriptor['referenceField'];
-        $sourceRegister = ($descriptor['sourceRegister'] !== '' ? $descriptor['sourceRegister'] : $register);
-        $filters        = [
+        $sourceRegister = $descriptor['sourceRegister'];
+        if ($sourceRegister === '') {
+            $sourceRegister = $register;
+        }
+
+        $filters = [
             'schema'        => $this->sourceRecordResolver->schemaQueryFilter(ref: $descriptor['sourceSchema']),
             $referenceField => $fromUuid,
         ];
@@ -629,7 +633,7 @@ class MergeService
                 continue;
             }
 
-            $data                  = self::normaliseRoundTripDates(data: $data);
+            $data = self::normaliseRoundTripDates(data: $data);
             $data[$referenceField] = $intoUuid;
             $object->setObject($data);
 

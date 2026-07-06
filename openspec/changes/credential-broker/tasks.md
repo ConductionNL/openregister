@@ -1,17 +1,17 @@
 ## 1. Declarative descriptors (this config head)
 
-- [ ] 1.1 Create `lib/Settings/credential_broker_register.json` — the `credential-broker` register descriptor (`x-openregister.type: application`) with the `credential` schema (`name`, `provider`, `owner`, `allowedApps[]`, `createdAt`; NO secret-bearing property) and 2 secret-less example `credential` objects (general org data, nil-UUID `owner`) under `components.objects[]`. This is the declarative source the **service-phase** Repair step imports — OpenRegister does NOT self-import register JSON at boot (ADR-037; OR seeds its own schemas via `lib/Repair/` steps, cf. `SeedAppVirtualSchemas`).
-- [ ] 1.2 Add `lib/Settings/credential-providers.json` — the runtime-immutable provider catalogue with `github` + `gitlab` entries (`identifier`, `title`, `baseUrl` host-lock, `authScheme{header,template}`, `allowRules[]{method,pathPattern}`). Read-only at runtime; NOT a register schema and NOT seeded objects (D2).
+- [x] 1.1 Create `lib/Settings/credential_broker_register.json` — the `credential-broker` register descriptor (`x-openregister.type: application`) with the `credential` schema (`name`, `provider`, `owner`, `allowedApps[]`, `createdAt`; NO secret-bearing property) and 2 secret-less example `credential` objects (general org data, nil-UUID `owner`) under `components.objects[]`. This is the declarative source the **service-phase** Repair step imports — OpenRegister does NOT self-import register JSON at boot (ADR-037; OR seeds its own schemas via `lib/Repair/` steps, cf. `SeedAppVirtualSchemas`).
+- [x] 1.2 Add `lib/Settings/credential-providers.json` — the runtime-immutable provider catalogue with `github` + `gitlab` entries (`identifier`, `title`, `baseUrl` host-lock, `authScheme{header,template}`, `allowRules[]{method,pathPattern}`). Read-only at runtime; NOT a register schema and NOT seeded objects (D2).
 
 ## 2. Manifest schema field
 
-- [ ] 2.1 Add the additive optional `credentials[]` field (`{provider, reason, scopes}`) to `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` and `app-manifest-v2.schema.json`.
-- [ ] 2.2 Bump the manifest schema version additively and confirm `npm run check:manifest` passes for a manifest with and without `credentials`.
+- [x] 2.1 Add the additive optional `credentials[]` field (`{provider, reason, scopes}`) to `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` and `app-manifest-v2.schema.json`.
+- [x] 2.2 Bump the manifest schema version additively and confirm `npm run check:manifest` passes for a manifest with and without `credentials`.
 
 ## 3. Verification
 
-- [ ] 3.1 Deduplication check — document that no existing OR service/schema covers a credential broker; confirm the service phase reuses `ObjectService`, `IClientService`, `ICredentialsManager`, `ConfigurationService` (findings recorded even if "no overlap").
-- [ ] 3.2 JSON-validate the new register + catalogue files; run `composer check:strict`; confirm no regression to opencatalogi/softwarecatalog manifest validation.
+- [x] 3.1 Deduplication check — document that no existing OR service/schema covers a credential broker; confirm the service phase reuses `ObjectService`, `IClientService`, `ICredentialsManager`, `ConfigurationService` (findings recorded even if "no overlap").
+- [x] 3.2 JSON-validate the new register + catalogue files; run `composer check:strict`; confirm no regression to opencatalogi/softwarecatalog manifest validation.
 
 ## Deferred to `credential-broker-service` (code phase)
 

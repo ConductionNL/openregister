@@ -1712,7 +1712,10 @@ class Schema extends Entity implements JsonSerializable
         // markers (ADR-048); they must round-trip through the configuration
         // column so SemanticTypeResolver can discover the schema. Their IRI
         // shape is validated on read by JsonLdContextService::getImplementedTypes.
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org'];
+        // `handoffContract` is the ADR-051 provider-side binding block
+        // (contract field → own property, per kind URI); its shape is
+        // validated at save time by HandoffContractBindingValidator.
+        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
@@ -1941,6 +1944,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-flows',
         'x-openregister-survivorship',
         'x-openregister-merge',
+        'x-openregister-handoff',
     ];
 
     /**
