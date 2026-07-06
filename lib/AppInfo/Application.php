@@ -339,18 +339,24 @@ class Application extends App implements IBootstrap
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
      */
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        // Credential broker (credential-broker-service): bind the CredentialStore
-        // abstraction to its first concrete leaf, the NC encrypted per-user vault
-        // (design.md D3). Future leaves (Vault, AWS KMS) slot in by replacing this
-        // alias — the broker depends only on the CredentialStore interface.
-        $context->registerServiceAlias(
+        // Credential broker (credential-broker-service + credential-doriath-leaf):
+        // bind the CredentialStore abstraction through the CredentialStoreResolver
+        // (design D-A) — the Doriath application-vault leaf when the doriath app is
+        // eligible (enabled + service classes + application-scoped seam methods +
+        // OR self-registration), else the NC encrypted per-user vault leaf. The
+        // broker and controller keep depending only on the CredentialStore
+        // interface; this factory is the ONLY place the selection happens.
+        $context->registerService(
             \OCA\OpenRegister\Service\Credential\CredentialStore::class,
-            \OCA\OpenRegister\Service\Credential\NextcloudVaultCredentialStore::class
+            static function ($c) {
+                return $c->get(\OCA\OpenRegister\Service\Credential\CredentialStoreResolver::class)->resolve();
+            }
         );
 
         // Register request-scoped LanguageService as a singleton (shared per request).

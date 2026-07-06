@@ -77,6 +77,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
@@ -84,6 +85,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</install>
 	</repair-steps>
 

@@ -11,9 +11,12 @@
  * keeps its own copy). {@see issueToken()} mints a token binding
  * `{appId, credentialId, iat, exp}` signed with the app's secret; {@see verify()}
  * recomputes the signature against the registered secret for the claimed appId and
- * checks expiry, so a forged or expired token is rejected. The same mechanism
- * authenticates in-process AND cross-runtime callers identically — there is no
- * HTTP-only gap. Signing secrets are never logged or returned by verify().
+ * checks expiry, so a forged or expired token is rejected. Signed tokens are the
+ * HTTP / cross-runtime identity mechanism; trusted SAME-INSTANCE PHP callers pass
+ * their appId to `CredentialBrokerService::request` directly without a token
+ * (credential-doriath-leaf design D-G) — the token authenticates claims across a
+ * trust boundary that an in-process call does not cross. Signing secrets are
+ * never logged or returned by verify().
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -85,11 +88,18 @@ class CredentialAppTokenService
      * returns the plaintext to the caller. The secret is returned only here; it is
      * never retrievable through any read API and never logged.
      *
+     * ROTATES on every call. Automated callers (the D-G manifest auto-onboarding
+     * in `GenericInitializeSettings`) MUST therefore guard with
+     * {@see isRegistered()} so an auto-run never silently invalidates an app's
+     * held copy — rotation stays an explicit admin action via
+     * `POST /api/credentials/apps/{appId}/register`.
+     *
      * @param string $appId The consuming app's id.
      *
      * @return string The newly generated signing secret (shown once).
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
      */
     public function registerApp(string $appId): string
     {
