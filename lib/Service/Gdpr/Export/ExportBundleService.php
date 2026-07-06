@@ -58,7 +58,12 @@ class ExportBundleService
     public function __construct(
         private readonly DataSubjectRequestService $dsrService,
         private readonly CaseObjectAccessor $accessor,
-        // TODO(ADR-047 Phase-1b, DEFERRED): PAdES-LTV signing deferred — the 2026-07-04 tc-lib-pdf spike was No-Go (8.65 stubs the B-T timestamp). Interim = SHA-256 hash-only (UnsignedPadesSigner). When resumed, implement a real PadesSigner against pyHanko (MIT sidecar, real B-LTA) or a matured tc-lib-pdf; configurable RFC-3161 TSA URL.
+        // TODO(ADR-047 Phase-1b, DEFERRED): PAdES-LTV signing deferred — the
+        // 2026-07-04 tc-lib-pdf spike was No-Go (8.65 stubs the B-T
+        // timestamp). Interim = SHA-256 hash-only (UnsignedPadesSigner).
+        // When resumed, implement a real PadesSigner against pyHanko (MIT
+        // sidecar, real B-LTA) or a matured tc-lib-pdf; configurable
+        // RFC-3161 TSA URL.
         private readonly PadesSigner $signer,
         private readonly OneTimeDownloadTokenStore $tokenStore,
         private readonly AuditTrailMapper $auditTrailMapper,
