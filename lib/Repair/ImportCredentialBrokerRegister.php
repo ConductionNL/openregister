@@ -104,9 +104,18 @@ class ImportCredentialBrokerRegister implements IRepairStep
                 return;
             }
 
-            $this->configurationService->importFromFilePath(
+            // Import the DECODED descriptor via importFromApp() — NOT importFromFilePath(),
+            // which rejects an absolute path (it expects a Nextcloud-root-relative one) and
+            // would fail closed here. importFromApp() takes the data directly.
+            $data = json_decode((string) file_get_contents($path), true);
+            if (is_array($data) === false) {
+                $output->warning('Credential-broker register descriptor is not valid JSON: '.$path);
+                return;
+            }
+
+            $this->configurationService->importFromApp(
                 appId: 'openregister',
-                filePath: $path,
+                data: $data,
                 version: self::REGISTER_VERSION,
                 force: false
             );
