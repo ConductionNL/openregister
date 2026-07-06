@@ -395,6 +395,14 @@ class Application extends App implements IBootstrap
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
 
+        // Register the ChatCompatMiddleware (or-chat-proxy-deprecation): adds
+        // Deprecation/Sunset/Link response headers to every chat/agents/
+        // conversations controller response, and — only when an operator
+        // opts in via the `openregister.chat.proxyTo` appconfig value —
+        // forwards those requests server-side to hermiq. Off by default;
+        // any failure falls back to serving the request locally unchanged.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
+
         // Bind the dormant Path B PDF anonymisation fallback bridge to its
         // null implementation. Tenants enabling Path B replace this binding
         // with a concrete NcOfficeConverterInterface implementation that
