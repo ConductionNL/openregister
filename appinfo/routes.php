@@ -806,6 +806,12 @@ return [
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
+        // Semantic-object handoff engine (ADR-051): availability + execute.
+        // Both #[NoAdminRequired] with a per-object RBAC guard in the method
+        // body (ADR-005/016/029); CSRF stays enabled on the POST.
+        ['name' => 'handoff#availability', 'url' => '/api/objects/{register}/{schema}/{id}/handoffs', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'handoff#execute', 'url' => '/api/objects/{register}/{schema}/{id}/handoffs/{handoffId}', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'handoffId' => '[^/]+']],
+
         // Schemas.
         // Cross-app semantic reference discovery (ADR-048): resolve a canonical
         // semantic-type URI to the installed provider schema. Static path,
