@@ -7,10 +7,16 @@ status, dispatch `TransferExecutionJob`, and record the dispatch — never execu
 synchronously in the request and never return a success shape without having enqueued the job.
 
 #### Scenario: Initiation dispatches the job
+
+@e2e exclude controller dispatch — covered by PHPUnit TransferControllerTest::testCreateDispatchesApprovedTransfer + the Newman transfer#create case
+
 - **WHEN** an archivist initiates a transfer for an approved list
 - **THEN** `TransferExecutionJob` is enqueued for that list and the response reflects the real queued state
 
 #### Scenario: Non-approved lists are refused
+
+@e2e exclude controller refusal — covered by PHPUnit TransferControllerTest::testCreateRefusesNonApprovedList + the Newman non-approved case
+
 - **WHEN** initiation is requested for a list that is not in `approved` status
 - **THEN** the request is rejected with a client error and no job is enqueued
 
@@ -26,19 +32,31 @@ retry MUST NOT rebuild or resend packages for objects already confirmed transfer
 partial success.
 
 #### Scenario: Transport failure reschedules instead of blocking
+
+@e2e openspec/specs/edepot-durable-retry/spec.md#transport-failure-reschedules-instead-of-blocking
+
 - **WHEN** a transport attempt fails
 - **THEN** the attempt is recorded append-only and a new execution is scheduled after the backoff interval
 - **AND** no worker process sleeps through the backoff window
 
 #### Scenario: Backoff grows to the cap
+
+@e2e exclude backoff arithmetic — covered by PHPUnit TransferExecutionJobTest::testBackoffFormula (exponential, 8h cap, ±10 % jitter)
+
 - **WHEN** consecutive attempts keep failing
 - **THEN** the interval between attempts grows exponentially from ~1 minute and never exceeds ~8 hours
 
 #### Scenario: Exhaustion escalates to archivists
+
+@e2e openspec/specs/edepot-durable-retry/spec.md#exhaustion-escalates-to-archivists
+
 - **WHEN** the configured attempt limit is exhausted
 - **THEN** the transfer enters the failed state, archivists are notified via the existing notification path, and no further automatic attempts occur
 
 #### Scenario: Partial success is not re-sent
+
+@e2e exclude idempotent-resend semantics — covered by the executeAttempt outstanding-objects filter (already-confirmed archiefstatus excluded from rebuild/resend); the retry journey in the @e2e flow exercises it end-to-end
+
 - **WHEN** a multi-package transfer succeeded for some objects and failed for others
 - **THEN** the retry covers only the unconfirmed objects; confirmed objects keep their transferred status and are not re-ingested
 

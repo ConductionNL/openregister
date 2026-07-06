@@ -11,15 +11,24 @@ the tag files, and the SIP content (per-object MDTO XML, metadata JSON, and payl
 `data/`. The same transfer content MUST serialize losslessly in either format.
 
 #### Scenario: Connection configured for BagIt produces a valid bag
+
+@e2e openspec/specs/edepot-bagit-output/spec.md#connection-configured-for-bagit-produces-a-valid-bag
+
 - **WHEN** a transfer executes against an e-Depot connection whose output format is `bagit`
 - **THEN** the produced package contains `bagit.txt`, `bag-info.txt`, `manifest-sha256.txt`, `tagmanifest-sha256.txt`, and all SIP content under `data/`
 - **AND** every payload file's SHA-256 in the manifest matches its content
 
 #### Scenario: Default connections are unaffected
+
+@e2e exclude serializer default — covered by PHPUnit SipPackageBuilderTest (the existing zip-layout entry assertions are unchanged)
+
 - **WHEN** a transfer executes against a connection with no output format configured
 - **THEN** the package is the existing plain-zip SIP layout, byte-structure unchanged
 
 #### Scenario: Manifest completeness is enforced
+
+@e2e exclude build-time guard not UI-observable — covered by PHPUnit SipPackageBuilderTest::testBuildBagitFailsOnUnchecksummableFile
+
 - **WHEN** the builder assembles a bag and any payload file cannot be checksummed
 - **THEN** the build fails (no bag with an incomplete manifest is ever handed to a transport)
 
