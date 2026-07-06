@@ -52,6 +52,9 @@ class EmbeddingGeneratorHandler
         'text-embedding-ada-002' => 1536,
         'text-embedding-3-small' => 1536,
         'text-embedding-3-large' => 3072,
+        'nomic-embed-text'       => 768,
+        'mxbai-embed-large'      => 1024,
+        'all-minilm'             => 384,
         'ollama-default'         => 384,
     ];
 
@@ -132,7 +135,7 @@ class EmbeddingGeneratorHandler
      *
      * @return int Default dimensions
      *
-     * @psalm-return 384|1536|3072
+     * @psalm-return 384|768|1024|1536|3072
      *
      * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */

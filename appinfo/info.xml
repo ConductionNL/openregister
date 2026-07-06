@@ -79,6 +79,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
@@ -88,6 +89,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</install>
 	</repair-steps>
 
@@ -96,6 +98,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>

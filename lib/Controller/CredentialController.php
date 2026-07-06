@@ -327,11 +327,18 @@ class CredentialController extends Controller
      * The calling app id is taken ONLY from the verified `X-Credential-Token` header
      * (never a body field). Body: `{method, path, headers?, body?}`.
      *
+     * NEVER forwards an acting user (credential-doriath-leaf design D-K): on the
+     * HTTP path identity is session-only — the broker's optional `actingUserId`
+     * parameter is deliberately NOT read from any request field here, so any
+     * caller-supplied acting-user value is ignored entirely and a broker call
+     * carrying one is by construction an in-process PHP caller.
+     *
      * @param string $id The credential UUID.
      *
      * @return JSONResponse `{status, headers, body}` from the upstream, or a static error.
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
