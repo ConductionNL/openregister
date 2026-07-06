@@ -10,11 +10,13 @@
  *   - DELETE /api/credentials/{id}                  delete the object + the vault secret (owner only)
  *   - POST   /api/credentials/apps/{appId}/register register/rotate an app signing secret (admin only; returned once)
  *   - POST   /api/credentials/{id}/request          the broker call (app token in the X-Credential-Token header)
+ *   - POST   /api/credentials/{id}/session-request  the browser broker call (session auth + CSRF; app id in the body)
  *
  * Every endpoint is `#[NoAdminRequired]` with a per-object owner IDOR guard (ADR-005);
- * identity comes only from `IUserSession` and, for the broker call, the app id comes
- * ONLY from the verified signed token — never from a body field. The stored secret is
- * NEVER returned in any response; client errors are static and generic.
+ * identity comes only from `IUserSession`. For the token broker call the app id comes
+ * ONLY from the verified signed token; for the session broker call it comes from the
+ * request body but the owner guard still fires against the session user. The stored
+ * secret is NEVER returned in any response; client errors are static and generic.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -374,6 +376,64 @@ class CredentialController extends Controller
 
         return new JSONResponse($result);
     }//end brokerRequest()
+
+    /**
+     * POST /api/credentials/{id}/session-request — the session-authenticated browser broker call.
+     *
+     * The browser-side counterpart to {@see brokerRequest()}: a manifest-driven app's
+     * frontend (nc-vue) makes a constrained brokered outbound call through OpenRegister
+     * WITHOUT holding the secret and WITHOUT minting a signed HMAC token. Identity is the
+     * logged-in Nextcloud SESSION user and the request MUST carry the CSRF `requesttoken`
+     * — this method is deliberately NOT `#[NoCSRFRequired]`, the key difference from the
+     * token endpoint which is CSRF-exempt for server / cross-runtime callers.
+     *
+     * The calling app id is taken from the `appId` body field (the manifest app id); the
+     * owner IDOR guard still fires because the broker resolves the owner identity from the
+     * SESSION user (design D-K: session identity wins unconditionally), so a user can never
+     * use a credential they do not own via this endpoint. No `actingUserId` is ever
+     * forwarded — the session path lets the broker evaluate the owner guard against the
+     * current session user naturally.
+     *
+     * Body: `{appId, method?, path, headers?, body?}`.
+     *
+     * @param string $id The credential UUID.
+     *
+     * @return JSONResponse `{status, headers, body}` from the upstream, or a static error.
+     *
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     */
+    #[NoAdminRequired]
+    public function sessionBrokerRequest(string $id): JSONResponse
+    {
+        if ($this->currentUid() === null) {
+            return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $appId = trim((string) $this->request->getParam('appId', ''));
+        if ($appId === '') {
+            return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
+        }
+
+        try {
+            $result = $this->broker->request(
+                credentialId: $id,
+                appId: $appId,
+                method: (string) $this->request->getParam('method', 'GET'),
+                path: (string) $this->request->getParam('path', ''),
+                headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
+                body: $this->normaliseBody(value: $this->request->getParam('body'))
+            );
+        } catch (CredentialAccessDeniedException $e) {
+            return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
+        } catch (CredentialUpstreamException $e) {
+            return new JSONResponse(['message' => 'Upstream request failed'], Http::STATUS_BAD_GATEWAY);
+        } catch (Throwable $e) {
+            return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
+        }//end try
+
+        return new JSONResponse($result);
+    }//end sessionBrokerRequest()
 
     /**
      * Resolve the current user's id, or null when unauthenticated.
