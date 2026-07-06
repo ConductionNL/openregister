@@ -15,10 +15,16 @@ and a group that already triggered does not re-trigger for the same membership.
 - **AND** the audit entry names the detection rule, group key, window, and count
 
 #### Scenario: Re-runs are idempotent
+
+@e2e exclude job idempotency — covered by PHPUnit DsarDpiaDetectionJobTest::testReRunOverFlaggedGroupIsNoOp + DpiaPatternDetectionServiceTest::testIdempotentReRunExposesNoUnflaggedMembers
+
 - **WHEN** the detection job runs again over an already-flagged group with no new members
 - **THEN** no case is re-written, no audit entry is added, and no notification is re-sent
 
 #### Scenario: Below-threshold groups stay untouched
+
+@e2e exclude below-threshold + manual-flag ratchet — covered by PHPUnit DpiaPatternDetectionServiceTest (window/threshold matrices) + DsarDpiaDetectionJobTest (ratchet never clears a manual flag)
+
 - **WHEN** a group's size inside the window is below the threshold
 - **THEN** no case in it is flagged and `dpiaRequired` set manually by a handler is never cleared by the job
 
@@ -31,10 +37,16 @@ The seeded default pack SHALL carry the generalised defaults (threshold 10, wind
 group by type + scope — pipelinq `DpiaDetectionService` parity).
 
 #### Scenario: Pack-driven thresholds
+
+@e2e exclude config-as-data threshold — covered by PHPUnit DpiaPatternDetectionServiceTest::testPackDrivenThreshold
+
 - **WHEN** an administrator lowers the active pack's `dpiaDetection.threshold`
 - **THEN** the next detection run applies the new threshold without any code change
 
 #### Scenario: No pack, no detection
+
+@e2e exclude fail-safe no-op — covered by PHPUnit DsarDpiaDetectionJobTest::testNoPackOrNoBlockIsFailSafe + DpiaPatternDetectionServiceTest::testFailSafeConfigurationMatrix
+
 - **WHEN** no `dsarPolicyPack` resolves
 - **THEN** the detection run exits without flagging, auditing, or notifying
 
@@ -49,6 +61,9 @@ than a bespoke dispatch path in the job.
 - **THEN** the declared rule dispatches one notification to the privacy-officer recipient naming the case
 
 #### Scenario: Manual flagging uses the same rule
+
+@e2e exclude one declared calculatedChange rule covers both paths — the shared dpiaFlagged rule is declarative register config (no job-specific dispatch); the resolver is covered by PrivacyOfficerRecipientResolverTest
+
 - **WHEN** a handler manually sets `dpiaRequired = true` on a case
 - **THEN** the same declared rule dispatches — detection and manual flagging share one notification path
 
