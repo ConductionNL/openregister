@@ -112,7 +112,13 @@ class FilePropertyHandler
                 continue;
             }
 
-            // Read file content.
+            // Read file content. Check readability first so an absent/unreadable
+            // tmp path throws our clear exception instead of leaking a
+            // file_get_contents() warning before returning false.
+            if (is_readable((string) ($fileInfo['tmp_name'] ?? '')) === false) {
+                throw new Exception("Failed to read uploaded file for field '$fieldName'");
+            }
+
             $fileContent = file_get_contents($fileInfo['tmp_name']);
             if ($fileContent === false) {
                 throw new Exception("Failed to read uploaded file for field '$fieldName'");

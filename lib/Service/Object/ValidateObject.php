@@ -1912,7 +1912,6 @@ class ValidateObject
                 $fieldNames = implode(', ', $uniqueFields);
             }
 
-            $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
             if (is_array($uniqueFields) === true) {
                 $fieldValues = implode(
                     ', ',
@@ -1923,11 +1922,16 @@ class ValidateObject
                         $uniqueFields
                     )
                 );
+            } else {
+                // Scalar field name only — guarding the concat here avoids an
+                // "Array to string conversion" when $uniqueFields is an array.
+                $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
             }
 
-            $errorName = (string) $uniqueFields;
             if (is_array($uniqueFields) === true) {
                 $errorName = (string) (array_shift($uniqueFields) ?? 'uniqueField');
+            } else {
+                $errorName = (string) $uniqueFields;
             }
 
             $errMsg  = "The identifying fields ({$fieldNames}) are not unique. ";

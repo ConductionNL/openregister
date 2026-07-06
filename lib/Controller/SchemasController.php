@@ -854,7 +854,7 @@ class SchemasController extends Controller
             // in the @self filter, and silently returns 0 on single-axis queries,
             // which would let DELETE silently succeed on schemas with objects.
             $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
-            $objectCount = (int) $objectStats['total'];
+            $objectCount = (int) ($objectStats['total'] ?? 0);
 
             if ($objectCount > 0 && $force === false) {
                 // Refuse: structured 409 with the orphan count for the caller.
@@ -1252,16 +1252,16 @@ class SchemasController extends Controller
 
             // Calculate comprehensive statistics for this schema.
             $stats = [
-                'objectCount'   => $objectStats['total'],
+                'objectCount'   => ($objectStats['total'] ?? 0),
             // Keep for backward compatibility.
-                'objects_count' => $objectStats['total'],
+                'objects_count' => ($objectStats['total'] ?? 0),
             // Alternative field name for compatibility.
                 'objects'       => [
-                    'total'   => $objectStats['total'],
-                    'invalid' => $objectStats['invalid'],
-                    'deleted' => $objectStats['deleted'],
-                    'locked'  => $objectStats['locked'],
-                    'size'    => $objectStats['size'],
+                    'total'   => ($objectStats['total'] ?? 0),
+                    'invalid' => ($objectStats['invalid'] ?? 0),
+                    'deleted' => ($objectStats['deleted'] ?? 0),
+                    'locked'  => ($objectStats['locked'] ?? 0),
+                    'size'    => ($objectStats['size'] ?? 0),
                 ],
                 'logs'          => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
                 'files'         => ['total' => 0, 'size' => 0],
