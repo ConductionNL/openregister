@@ -1,6 +1,7 @@
 <template>
 	<CnAppRoot
 		app-id="openregister"
+		:ai-companion="true"
 		:manifest="manifest"
 		:registry="registry"
 		:page-types="pageTypes"

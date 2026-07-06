@@ -17,14 +17,23 @@ materialised calculations.
 - **AND** the declared `deadlineAdvanceReminder` notification is dispatched to the case handler
 
 #### Scenario: Tier crossing notifies exactly once
+
+@e2e exclude unchanged-value skip + boundary dedup are not UI-observable — covered by PHPUnit TemporalCalculationSweepServiceTest (unchanged recompute produces no write) + the dispatcher's previously.ne guard
+
 - **WHEN** consecutive sweep runs recompute a case whose tier remains `reminder`
 - **THEN** no write occurs for the unchanged value and no duplicate reminder is dispatched (the `calculatedChange` previously/eq boundary guard fires only on the crossing)
 
 #### Scenario: Terminal cases are left alone
+
+@e2e exclude sweep terminal-state skip — covered by PHPUnit TemporalCalculationSweepServiceTest::testSweepRewritesOnlyChangedNonTerminalObjects
+
 - **WHEN** a case is in a terminal lifecycle state (fulfilled, refused, closed)
 - **THEN** the sweep does not recompute or rewrite it
 
 #### Scenario: No resolvable policy pack stays fail-safe
+
+@e2e exclude fail-safe recompute is not UI-observable — covered by PHPUnit TemporalCalculationSweepServiceTest against the real escalationTier expression (null pack ref → on-track)
+
 - **WHEN** no `dsarPolicyPack` resolves for a case's jurisdiction
 - **THEN** the recomputed tier remains on-track (existing fail-safe convention) and no escalation notification is produced
 
@@ -41,6 +50,9 @@ declared on the register (ADR-031), not hard-coded in the job.
 - **AND** `breachedAt` is set on the case through the same audited write
 
 #### Scenario: Breach stamp is written once
+
+@e2e exclude write-once stamp semantics — covered by PHPUnit TemporalCalculationSweepServiceTest::testRecomputeMatrixIncludingBreachStamp (already-breached case keeps its original stamp)
+
 - **WHEN** later sweeps recompute an already-breached case
 - **THEN** `breachedAt` keeps its original value and no further breach notification is dispatched
 
