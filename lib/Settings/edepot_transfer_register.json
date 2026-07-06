@@ -1,0 +1,220 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "e-Depot Transfers",
+    "description": "System register for durable e-Depot (Archiefwet overbrenging) transfer records: the transfer list itself (status machine, approvals, exclusions, append-only delivery attempts) and the immutable per-object proof-of-transfer records (ingest confirmation, SIP identity, per-file checksums). Making the transfer API's placeholder comments true (archival-transfer-hardening, OR-AD-2/OR-AD-3). Proof records are write-once and live here — not in the transferred object's register — so destruction of the source object after handover never cascades to the proof (the Archiefwet accountability point).",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational e-Depot transfer register shipped by OpenRegister; backs the durable transfer-list + proof-of-transfer records the transfer API serves."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "edepot-transfers": {
+        "slug": "edepot-transfers",
+        "title": "e-Depot Transfers",
+        "version": "1.0.0",
+        "description": "Durable e-Depot transfer records: transfer lists (status, approvals, exclusions, delivery attempts) and immutable per-object proof-of-transfer records.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "edepotTransfer",
+          "edepotTransferProof"
+        ],
+        "folder": "Open Registers/e-Depot Transfers"
+      }
+    },
+    "schemas": {
+      "edepotTransfer": {
+        "slug": "edepotTransfer",
+        "title": "e-Depot Transfer List",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A durable e-Depot transfer list tracked through its review-approve-execute status machine.",
+        "description": "The durable record of an e-Depot transfer: which objects are pending/approved/completed, archivist approvals + exclusions, the append-only history of delivery attempts (long-horizon retry), the final transfer result, and the SIP package format/identity. Persisted through ObjectService so status transitions ride OR's audited write path (making TransferController's former placeholder responses real).",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Transfer list lifecycle state.",
+            "enum": [
+              "in_review",
+              "approved",
+              "rejected",
+              "in_progress",
+              "completed",
+              "partially_failed",
+              "failed"
+            ],
+            "default": "in_review",
+            "facetable": true,
+            "title": "Status"
+          },
+          "objectReferences": {
+            "type": "array",
+            "description": "Objects included in this transfer, each as {uuid, schema, register}.",
+            "title": "Object References",
+            "items": {
+              "type": "object",
+              "title": "Object Reference",
+              "description": "A reference to one object included in the transfer.",
+              "properties": {
+                "uuid": { "type": "string", "maxLength": 255, "title": "Object UUID" },
+                "schema": { "type": "integer", "title": "Schema Id" },
+                "register": { "type": "integer", "title": "Register Id" }
+              }
+            }
+          },
+          "exclusions": {
+            "type": "array",
+            "description": "Objects excluded from the transfer during review, each with a reason and timestamp.",
+            "title": "Exclusions",
+            "items": {
+              "type": "object",
+              "title": "Exclusion",
+              "description": "One excluded object.",
+              "properties": {
+                "uuid": { "type": "string", "maxLength": 255, "title": "Object UUID" },
+                "reason": { "type": "string", "maxLength": 2000, "title": "Reason" },
+                "excludedAt": { "type": "string", "format": "date-time", "title": "Excluded At" }
+              }
+            }
+          },
+          "approvalMetadata": {
+            "type": "object",
+            "description": "Archivist approval / rejection metadata (who, when, rejection reason).",
+            "title": "Approval Metadata"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Append-only history of delivery attempts (long-horizon retry): attempt number, timestamp, transport, per-package outcome, and error. Never rewritten — the WebhookLog attempt semantics, stored on this durable aggregate.",
+            "title": "Delivery Attempts",
+            "items": {
+              "type": "object",
+              "title": "Delivery Attempt",
+              "description": "One transport attempt for the transfer.",
+              "properties": {
+                "attempt": { "type": "integer", "title": "Attempt Number" },
+                "timestamp": { "type": "string", "format": "date-time", "title": "Attempted At" },
+                "transport": { "type": "string", "maxLength": 128, "title": "Transport" },
+                "outcome": { "type": "string", "maxLength": 64, "title": "Outcome" },
+                "error": { "type": "string", "maxLength": 4000, "title": "Error" }
+              }
+            }
+          },
+          "transferResult": {
+            "type": "object",
+            "description": "The final transfer result (completion timestamp + per-object outcomes).",
+            "title": "Transfer Result"
+          },
+          "packageFormat": {
+            "type": "string",
+            "description": "SIP serialization format used for this transfer.",
+            "enum": ["zip", "bagit"],
+            "default": "zip",
+            "facetable": true,
+            "title": "Package Format"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the transfer list was created.",
+            "title": "Created At"
+          }
+        }
+      },
+      "edepotTransferProof": {
+        "slug": "edepotTransferProof",
+        "title": "e-Depot Proof of Transfer",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "immutable": true,
+        "summary": "An immutable proof-of-transfer record for one object confirmed ingested by an e-Depot.",
+        "description": "The durable, write-once ingest-confirmation artefact an archivist or auditor can produce years later (Archiefwet accountability). Created per confirmed object when the transfer completes; captures the e-Depot ingest reference/archivId + raw transport receipt, the SIP package identity (id, format, manifest SHA-256), and the per-file checksums as sent. Immutable (schema-level + service-level refusal); lives in this system register so destruction of the source object after handover never cascades to it. procest's retired archiefBewijs records migrate 1:1 onto this schema.",
+        "required": [
+          "objectUuid",
+          "transferUuid",
+          "confirmedAt"
+        ],
+        "properties": {
+          "objectUuid": {
+            "type": "string",
+            "description": "UUID of the transferred (confirmed) object this proof attests.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Object UUID"
+          },
+          "transferUuid": {
+            "type": "string",
+            "description": "UUID of the edepotTransfer list this proof belongs to.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Transfer UUID"
+          },
+          "eDepotReference": {
+            "type": "string",
+            "description": "The e-Depot ingest reference / archivId returned on confirmation.",
+            "maxLength": 512,
+            "facetable": true,
+            "title": "e-Depot Reference"
+          },
+          "transportReceipt": {
+            "type": "string",
+            "description": "Raw transport receipt / confirmation payload as returned by the e-Depot (opaque).",
+            "maxLength": 8000,
+            "title": "Transport Receipt"
+          },
+          "transportName": {
+            "type": "string",
+            "description": "Name of the transport used (sftp, rest_api, openconnector).",
+            "maxLength": 128,
+            "title": "Transport"
+          },
+          "packageId": {
+            "type": "string",
+            "description": "Identity of the SIP package the object was delivered in.",
+            "maxLength": 255,
+            "title": "Package Id"
+          },
+          "packageFormat": {
+            "type": "string",
+            "description": "SIP serialization format of the delivered package.",
+            "enum": ["zip", "bagit"],
+            "title": "Package Format"
+          },
+          "packageManifestSha256": {
+            "type": "string",
+            "description": "SHA-256 over the package payload manifest (the manifest-sha256.txt content for bagit, the sip-manifest.json content for zip).",
+            "maxLength": 64,
+            "title": "Package Manifest SHA-256"
+          },
+          "fileChecksums": {
+            "type": "array",
+            "description": "Per-file checksums as sent, each {name, sha256}.",
+            "title": "File Checksums",
+            "items": {
+              "type": "object",
+              "title": "File Checksum",
+              "description": "One payload file's name and SHA-256.",
+              "properties": {
+                "name": { "type": "string", "maxLength": 1024, "title": "File Name" },
+                "sha256": { "type": "string", "maxLength": 64, "title": "SHA-256" }
+              }
+            }
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the e-Depot confirmed ingest of this object.",
+            "title": "Confirmed At"
+          }
+        }
+      }
+    }
+  }
+}
