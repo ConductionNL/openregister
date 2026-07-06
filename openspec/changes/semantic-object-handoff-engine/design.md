@@ -39,19 +39,30 @@ execute(sourceRef, handoffId, actor):
        from: copy | const | template ({{prop}}, HTML-escaped, existing interpolation convention)
        semanticRef: carry the UUID reference, never dereference/copy
        provenance: engine-filled {app, register, schema, uuid} of the source
-  6. TRANSACTION (IDBConnection):
+  6. ALL-OR-NOTHING execution (see the atomicity note below):
        a. create target object (ObjectService write path — schema validation, RBAC, tenancy)
-       b. relations: source += {type: handoff, dir: handed-off-to, target}, target += {…, originated-from, source}
-       c. audit row on both sides (actor, kind, handoff id, mapping hash, resolved schema, deferred?)
-       d. onSuccess.set applied to the source through the lifecycle-aware write path
-     any failure → rollback: no object, no relation, no audit, no source mutation; error to caller
-  7. post-commit: dispatch HandoffExecutedEvent (never inside the transaction)
+       b. onSuccess.set applied to the source through the lifecycle-aware write path
+          — failure ⇒ compensation: created target removed, error to caller
+       c. TRANSACTION (IDBConnection): relations both ways (source += handed-off-to,
+          target += originated-from) + audit row on both sides (actor, kind, handoff id,
+          mapping hash, resolved schema, deferred?)
+          — failure ⇒ rollback + compensation: target removed, source data restored
+  7. afterwards: dispatch HandoffExecutedEvent (never inside a transaction)
 ```
 
-Step 6d sits **inside** the transaction deliberately: the hydra contract requires "either fully
-happens or leaves no partial state", and a source stuck without its `handed-off` status while the
-target exists is partial state. Event dispatch is post-commit so a throwing listener can never
-roll back a completed handoff (mirrors `ObjectCreatedEvent` conventions).
+**Atomicity — implementation note (verified live on postgres, 2026-07-06).** The originally
+drafted single `IDBConnection` transaction around create→relations→audit→onSuccess is
+**infeasible**: `ObjectService::saveObject` issues best-effort probe queries that fail and are
+swallowed by design (e.g. the MySQL-only `SHOW VARIABLES LIKE 'max_allowed_packet'` — now
+platform-guarded by this change — and cross-schema magic-table `COUNT(*)` probes against tables
+that may not exist), and on PostgreSQL **any** failed statement inside an open caller-managed
+transaction aborts the whole transaction (SQLSTATE 25P02). The engine therefore implements the
+contract's observable guarantee ("either fully happens or leaves no partial state") as: the target
+create is atomic within OR's own write path; the source update and the relations+audit transaction
+are each compensated on failure by removing the created target and restoring the source's
+pre-handoff data. Failure at any step leaves no target, no provenance relation, no `handoff.*`
+audit row, and no source mutation. Event dispatch happens only after everything succeeded, so a
+throwing listener can never undo a completed handoff (mirrors `ObjectCreatedEvent` conventions).
 
 `trigger: lifecycle:<state>` handoffs run through the same `execute()` from a lifecycle-transition
 listener; v1 gates them to transitions performed by a real actor (the transition's user is the

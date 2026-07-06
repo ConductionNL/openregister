@@ -21,20 +21,28 @@ reference), or `provenance` (engine-filled source pointer), an optional
 
 #### Scenario: Valid handoff declaration is accepted
 
+@e2e exclude schema-save validator behaviour — covered by PHPUnit tests/Unit/Service/Handoff/HandoffAnnotationValidatorTest.php
+
 - **WHEN** a schema is saved with a handoff entry declaring `targetSemanticType: "https://openregister.app/ns#Case"`, a mapping using only the five expression kinds, and `onSuccess.set: { "status": "handed-off" }`
 - **THEN** schema-save validation SHALL accept the schema and the handoff becomes available on that schema's objects
 
 #### Scenario: Unknown mapping expression kind is rejected
+
+@e2e exclude schema-save validator behaviour — covered by PHPUnit tests/Unit/Service/Handoff/HandoffAnnotationValidatorTest.php
 
 - **WHEN** a schema is saved with a mapping value using an expression kind outside `[from, const, template, semanticRef, provenance]`
 - **THEN** schema-save validation SHALL reject the schema with a `handoff-bad-mapping-expression` error naming the offending field
 
 #### Scenario: Target kind URI is malformed
 
+@e2e exclude schema-save validator behaviour — covered by PHPUnit tests/Unit/Service/Handoff/HandoffAnnotationValidatorTest.php
+
 - **WHEN** a handoff entry declares a `targetSemanticType` that is not an absolute URI
 - **THEN** schema-save validation SHALL reject the schema with a `handoff-bad-target-type` error
 
 #### Scenario: `onSuccess.set` names a property missing from the source schema
+
+@e2e exclude schema-save validator behaviour — covered by PHPUnit tests/Unit/Service/Handoff/HandoffAnnotationValidatorTest.php
 
 - **WHEN** a handoff entry declares `onSuccess.set` for a property the source schema does not define
 - **THEN** schema-save validation SHALL reject the schema with a `handoff-bad-success-update` error
@@ -50,10 +58,14 @@ emitting schema never names a concrete target property.
 
 #### Scenario: Implementer binds all mandatory contract fields
 
+@e2e exclude schema-save validator behaviour — covered by PHPUnit tests/Unit/Service/Handoff/HandoffContractBindingValidatorTest.php
+
 - **WHEN** a schema declaring `implements: ["https://openregister.app/ns#Case"]` is saved with a `handoffContract` binding covering every mandatory `ns#Case` contract field
 - **THEN** schema-save validation SHALL accept it and the schema becomes a resolvable handoff provider for `ns#Case`
 
 #### Scenario: Implementer omits a mandatory contract field
+
+@e2e exclude schema-save validator behaviour — covered by PHPUnit tests/Unit/Service/Handoff/HandoffContractBindingValidatorTest.php
 
 - **WHEN** a schema declares `implements` for a kind but its `handoffContract` binding omits a mandatory field of that kind's contract
 - **THEN** schema-save validation SHALL reject the schema with a `handoff-contract-incomplete` error listing the missing fields
@@ -78,10 +90,14 @@ atomic: a handoff either fully happens or leaves no partial state.
 
 #### Scenario: Target create fails mid-handoff
 
+@e2e exclude transactional rollback is not UI-observable — covered by PHPUnit HandoffServiceTest::testAtomicRollbackOnTargetCreateFailure
+
 - **WHEN** the target object create is rejected (e.g. target schema validation failure)
 - **THEN** no provenance relation, no audit entry, and no source status update SHALL be persisted, and the caller receives the validation error
 
 #### Scenario: Caller lacks create permission on the target schema
+
+@e2e exclude RBAC refusal covered by PHPUnit HandoffServiceTest::testCreateRefusalHappensBeforeAnyWrite + the Newman auth cases
 
 - **WHEN** a user triggers a handoff but OR RBAC denies create on the resolved implementing schema
 - **THEN** the engine SHALL refuse with a permission error and SHALL NOT escalate privileges to complete the conversion
@@ -128,10 +144,14 @@ as the transport (ADR-041 / gate-27).
 
 #### Scenario: Consumer intake listener runs after handoff
 
+@e2e exclude requires a consuming app's listener — verified in the adoption changes (procest semantic-case-intake); event fields covered by PHPUnit HandoffServiceTest
+
 - **WHEN** a `ns#Case` handoff completes and the providing app registers a listener for the handoff-executed event
 - **THEN** the listener receives full provenance + the created object's identifiers and can apply intake logic (e.g. case numbering) through its own services
 
 #### Scenario: No listener registered
+
+@e2e exclude listener-absence is not UI-observable — event dispatch + success without subscribers covered by PHPUnit HandoffServiceTest
 
 - **WHEN** a handoff completes for a kind whose providing app registers no listener
 - **THEN** the handoff still succeeds (object + provenance + audit); the event simply has no subscriber
@@ -157,6 +177,8 @@ posture and per-object authorization (ADR-005, ADR-016, ADR-029).
 - **THEN** the response lists the handoff as unavailable with a machine-readable reason code suitable for the "provider not installed" UI copy
 
 #### Scenario: Execute endpoint on an object whose schema declares no handoffs
+
+@e2e exclude API error-shape case — covered by the Newman collection tests/newman/openregister-handoff.postman_collection.json + PHPUnit HandoffServiceTest::testExecuteNotDeclared
 
 - **WHEN** the execute endpoint is called with a handoff id on an object whose schema declares no `x-openregister-handoff` entries
 - **THEN** the endpoint returns a `handoff-not-declared` client error and performs no writes
