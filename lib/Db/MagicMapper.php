@@ -8300,6 +8300,16 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getMaxAllowedPacketSize(): int
     {
+        // `SHOW VARIABLES` is a MySQL-ism. On PostgreSQL the statement is a
+        // syntax error — and although the exception is swallowed here, a
+        // failed statement inside an OPEN TRANSACTION aborts the whole
+        // transaction on postgres (SQLSTATE 25P02: "current transaction is
+        // aborted"), breaking any caller that wraps a save in a transaction
+        // (e.g. the ADR-051 handoff engine). Only probe on MySQL/MariaDB.
+        if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+            return 16777216;
+        }
+
         try {
             $result = $this->db->executeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
             $row    = $result->fetch();
