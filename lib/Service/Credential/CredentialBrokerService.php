@@ -22,6 +22,25 @@
  * line, or an error. Guard failures throw {@see CredentialAccessDeniedException}
  * (mapped to a static 403); the real reason is logged server-side, secret-free.
  *
+ * TRUSTED IN-PROCESS PATH (credential-doriath-leaf design D-G): same-instance
+ * PHP consumers (e.g. openconnector, background jobs) call {@see request()}
+ * directly, passing their `appId` WITHOUT an HMAC token — token minting and
+ * verification ({@see CredentialAppTokenService}) is the CONTROLLER's mechanism
+ * for proving app identity across the HTTP boundary, a boundary an in-process
+ * call does not cross (a malicious in-process caller could equally forge a
+ * token, so it adds no security there). Signed tokens REMAIN required for every
+ * HTTP / cross-runtime caller; the controller path is unchanged. All four
+ * guards run identically on both paths.
+ *
+ * BACKGROUND / SYSTEM CONSUMPTION (design D-K): `request()` accepts an optional
+ * `actingUserId`, honored ONLY when NO user session exists — the owner guard
+ * then evaluates against it. With a session, the session identity wins
+ * unconditionally. The HTTP controller NEVER forwards an acting user, so any
+ * call carrying one is by construction an in-process PHP caller. The value is
+ * an ASSERTION by trusted same-instance code (derive it from durable job
+ * context, never request input); the broker applies the full guard chain
+ * against it, failing closed.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
  *
@@ -90,13 +109,23 @@ class CredentialBrokerService
     /**
      * Broker a single constrained outbound call on a credential's behalf.
      *
+     * On the HTTP path `appId` comes ONLY from a verified `X-Credential-Token`.
+     * In-process same-instance PHP callers pass their `appId` directly without a
+     * token (design D-G — the token authenticates claims across the HTTP trust
+     * boundary, which an in-process call does not cross). `actingUserId` (design
+     * D-K) is honored ONLY when no user session exists: the owner guard then
+     * evaluates against it; a session identity wins unconditionally, and the
+     * HTTP controller never forwards it.
+     *
      * @param string                $credentialId The `credential` object UUID.
-     * @param string                $appId        The authenticated calling app id (from a verified token — never a body
-     *                                            field).
+     * @param string                $appId        The authenticated calling app id (verified token claim on HTTP; the
+     *                                            caller's own app id on the trusted in-process path — never a body field).
      * @param string                $method       The HTTP method (e.g. `GET`).
      * @param string                $path         The provider-relative path (caller supplies ONLY a path, never a full URL).
      * @param array<string, string> $headers      Optional extra request headers (the auth header is broker-controlled).
      * @param string|null           $body         Optional raw request body.
+     * @param string|null           $actingUserId Optional asserted user for SESSIONLESS in-process callers only
+     *                                            (background jobs); ignored whenever a user session exists.
      *
      * @return array{status: int, headers: array<string, mixed>, body: string} The upstream status, headers, and body.
      *
@@ -104,6 +133,8 @@ class CredentialBrokerService
      * @throws CredentialUpstreamException     When the outbound call fails at the transport level (mapped to a static 502).
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
      */
     public function request(
         string $credentialId,
@@ -111,13 +142,14 @@ class CredentialBrokerService
         string $method,
         string $path,
         array $headers=[],
-        ?string $body=null
+        ?string $body=null,
+        ?string $actingUserId=null
     ): array {
         $method    = strtoupper($method);
         $matchPath = $this->normalisePath(path: $path);
 
         // Guard 1 — owner (per-object IDOR).
-        $credential = $this->loadOwnedCredential(credentialId: $credentialId);
+        $credential = $this->loadOwnedCredential(credentialId: $credentialId, actingUserId: $actingUserId);
         $data       = $credential->jsonSerialize();
 
         // Guard 2 — allowed app.
@@ -146,20 +178,27 @@ class CredentialBrokerService
     }//end request()
 
     /**
-     * Guard 1 — load the credential and assert the current user owns it.
+     * Guard 1 — load the credential and assert the acting identity owns it.
      *
-     * @param string $credentialId The `credential` object UUID.
+     * The identity is the SESSION user whenever one exists (unconditionally —
+     * a session caller cannot impersonate another user via `actingUserId`);
+     * only a sessionless in-process caller may assert `actingUserId` (design
+     * D-K). No identity at all denies as before.
+     *
+     * @param string      $credentialId The `credential` object UUID.
+     * @param string|null $actingUserId Asserted user for sessionless in-process callers only.
      *
      * @return ObjectEntity The owned credential entity.
      *
      * @throws CredentialAccessDeniedException When missing, unauthenticated, or not owned.
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
      */
-    private function loadOwnedCredential(string $credentialId): ObjectEntity
+    private function loadOwnedCredential(string $credentialId, ?string $actingUserId=null): ObjectEntity
     {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
+        $ownerUid = $this->resolveActingIdentity(actingUserId: $actingUserId);
+        if ($ownerUid === null) {
             $this->deny(reason: 'unauthenticated', credentialId: $credentialId);
         }
 
@@ -178,12 +217,42 @@ class CredentialBrokerService
             $this->deny(reason: 'credential not found', credentialId: $credentialId);
         }
 
-        if ($credential->getOwner() !== $user->getUID()) {
+        if ($credential->getOwner() !== $ownerUid) {
             $this->deny(reason: 'caller is not the credential owner', credentialId: $credentialId);
         }
 
         return $credential;
     }//end loadOwnedCredential()
+
+    /**
+     * Resolve the identity the owner guard evaluates against (design D-K).
+     *
+     * Session identity wins UNCONDITIONALLY when a user session exists —
+     * `actingUserId` is ignored there, so a session-context caller can never
+     * impersonate another user. Only when no session exists (background /
+     * cron, in-process by construction: the HTTP controller never forwards an
+     * acting user) is a non-empty `actingUserId` honored. Returns null when
+     * neither identity exists (the caller then denies, failing closed).
+     *
+     * @param string|null $actingUserId Asserted user for sessionless in-process callers only.
+     *
+     * @return string|null The identity for the owner guard, or null when unauthenticated.
+     *
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     */
+    private function resolveActingIdentity(?string $actingUserId): ?string
+    {
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        if ($actingUserId !== null && $actingUserId !== '') {
+            return $actingUserId;
+        }
+
+        return null;
+    }//end resolveActingIdentity()
 
     /**
      * Guard 2 — assert the calling app is in the credential's allow-list.
