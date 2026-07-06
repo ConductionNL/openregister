@@ -537,6 +537,7 @@ class SettingsController extends Controller
                 'recommendedPlugin' => $recommendedPlugin,
                 'performanceNote'   => $performanceNote,
                 'extensions'        => $extensions,
+                'hybridSearch'      => $this->getHybridSearchDiagnostics(isPostgres: $dbType === 'PostgreSQL'),
                 'lastUpdated'       => (new DateTime())->format('c'),
             ];
 
@@ -596,6 +597,132 @@ class SettingsController extends Controller
         // The getDatabaseInfo method will now fetch fresh data since cache is empty.
         return $this->getDatabaseInfo();
     }//end refreshDatabaseInfo()
+
+    /**
+     * Hybrid-document-search readiness diagnostics.
+     *
+     * Reports whether the hybrid-search schema surface exists — the
+     * `openregister_vec_ann` pgvector ANN sidecar table + HNSW index (the
+     * sidecar replaces the originally-designed in-table column, which broke
+     * Doctrine schema introspection) and the functional tsvector GIN index on
+     * openregister_chunks — plus vectorization/backfill progress so an
+     * operator can watch the job-only warm-up converge (DECIDED 2026-07-06).
+     *
+     * All lookups are tolerant: a failed catalog query reports `false`/zero
+     * rather than failing the database-info panel.
+     *
+     * @param bool $isPostgres Whether the active platform is PostgreSQL
+     *
+     * @return array<string, mixed> Diagnostics payload
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Independent tolerant lookups
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#6.1
+     */
+    private function getHybridSearchDiagnostics(bool $isPostgres): array
+    {
+        $diagnostics = [
+            'annSidecarTable'          => false,
+            'embeddingVectorDimension' => null,
+            'hnswIndex'                => false,
+            'textSearchGinIndex'       => false,
+            'chunks'                   => [
+                'total'      => 0,
+                'vectorized' => 0,
+            ],
+            'vectors'                  => [
+                'total'             => 0,
+                'pgvectorPopulated' => 0,
+            ],
+        ];
+
+        $sidecar = \OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
+
+        if ($isPostgres === true) {
+            try {
+                $result = $this->db->executeQuery(
+                    'SELECT a.atttypmod FROM pg_attribute a '
+                    ."WHERE a.attrelid = '".$sidecar."'::regclass "
+                    ."AND a.attname = 'embedding' AND NOT a.attisdropped"
+                );
+                $typmod = $result->fetchOne();
+                $result->closeCursor();
+
+                if ($typmod !== false && (int) $typmod > 0) {
+                    $diagnostics['annSidecarTable']          = true;
+                    $diagnostics['embeddingVectorDimension'] = (int) $typmod;
+                }
+            } catch (\Throwable $e) {
+                // Sidecar unavailable — reported as false.
+            }
+
+            try {
+                $result = $this->db->executeQuery(
+                    'SELECT indexname FROM pg_indexes WHERE indexname IN '
+                    ."('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+                );
+                while (($row = $result->fetch()) !== false) {
+                    if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
+                        $diagnostics['hnswIndex'] = true;
+                    }
+
+                    if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
+                        $diagnostics['textSearchGinIndex'] = true;
+                    }
+                }
+
+                $result->closeCursor();
+            } catch (\Throwable $e) {
+                // Reported as false.
+            }
+
+            try {
+                $result = $this->db->executeQuery(
+                    'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
+                    .'FROM *PREFIX*openregister_vectors v '
+                    ."LEFT JOIN $sidecar a ON a.vector_id = v.id"
+                );
+                $row    = $result->fetch();
+                $result->closeCursor();
+
+                if ($row !== false) {
+                    $diagnostics['vectors']['total'] = (int) $row['total'];
+                    $diagnostics['vectors']['pgvectorPopulated'] = (int) $row['populated'];
+                }
+            } catch (\Throwable $e) {
+                // The ANN sidecar may not exist yet — plain row count only.
+                try {
+                    $result = $this->db->executeQuery(
+                        'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
+                    );
+                    $total  = $result->fetchOne();
+                    $result->closeCursor();
+
+                    if ($total !== false) {
+                        $diagnostics['vectors']['total'] = (int) $total;
+                    }
+                } catch (\Throwable $inner) {
+                    // Reported as zero.
+                }
+            }//end try
+        }//end if
+
+        // Chunk vectorization progress (platform-agnostic).
+        try {
+            $chunkMapper = $this->container->get(\OCA\OpenRegister\Db\ChunkMapper::class);
+            if ($chunkMapper instanceof \OCA\OpenRegister\Db\ChunkMapper) {
+                $diagnostics['chunks']['total']      = $chunkMapper->countAll();
+                $diagnostics['chunks']['vectorized'] = $chunkMapper->countVectorized();
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[SettingsController] Failed to fetch chunk vectorization progress',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+
+        return $diagnostics;
+    }//end getHybridSearchDiagnostics()
 
     /**
      * Get version information only

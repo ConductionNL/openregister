@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 retrofit_extensions:
   - search-trail-analytics-dashboard
 ---
@@ -12,6 +12,9 @@ retrofit_extensions:
 Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails. The system MUST transparently operate against PostgreSQL (with optional pg_trgm fuzzy matching), Apache Solr, or Elasticsearch as interchangeable backends, while exposing a single unified API surface through `ObjectService.searchObjectsPaginated()` and `SearchBackendInterface`.
 
 **Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities, including full-text search, faceted navigation, and multi-criteria filtering across structured data.
+
+**OpenSpec changes**
+- `searchable-property-index` (in progress) — backs the existing `_name` fuzzy/full-text search with a `pg_trgm` GIN index (was an unindexed `similarity()`/`ILIKE` scan); adds an opt-in `searchable: true` schema-property flag (mirroring `facetable`) for indexed search on other string properties.
 ## Requirements
 ### Requirement: Full-text search across object properties
 The system MUST support free-text search across all string-typed properties of register objects. The `_search` query parameter MUST trigger a case-insensitive search that matches against every string column in the schema's dynamic table, plus the metadata fields `_name`, `_description`, and `_summary`. Search MUST be performed using SQL `ILIKE` patterns in the database backend and native query parsing in Solr/Elasticsearch.

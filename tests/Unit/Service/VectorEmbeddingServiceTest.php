@@ -19,9 +19,11 @@ class VectorEmbeddingServiceTest extends TestCase
 		parent::setUp();
 
 		$db = $this->createMock(\OCP\IDBConnection::class);
+		$pgVector = $this->createMock(\OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::class);
+		$pgVector->method('getVectorColumnDimension')->willReturn(null);
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 
-		$this->handler = new VectorSearchHandler($db, $logger);
+		$this->handler = new VectorSearchHandler($db, $pgVector, $logger);
 	}
 
 	/**

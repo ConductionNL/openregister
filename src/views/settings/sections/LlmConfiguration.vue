@@ -166,6 +166,42 @@
 						</ul>
 					</details>
 				</div>
+				<!-- Hybrid search readiness (hybrid-document-search) -->
+				<div v-if="databaseInfo.hybridSearch" class="extensions-section">
+					<details>
+						<summary>{{ t('openregister', 'Hybrid search readiness') }}</summary>
+						<ul class="extensions-list">
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'pgvector ANN sidecar') }}</span>
+								<span class="ext-version">
+									{{ databaseInfo.hybridSearch.annSidecarTable
+										? '✓' + (databaseInfo.hybridSearch.embeddingVectorDimension ? ' (' + databaseInfo.hybridSearch.embeddingVectorDimension + 'd)' : '')
+										: '✗' }}
+								</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'HNSW index') }}</span>
+								<span class="ext-version">{{ databaseInfo.hybridSearch.hnswIndex ? '✓' : '✗' }}</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'Keyword GIN index') }}</span>
+								<span class="ext-version">{{ databaseInfo.hybridSearch.textSearchGinIndex ? '✓' : '✗' }}</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'Chunks vectorized') }}</span>
+								<span class="ext-version">
+									{{ databaseInfo.hybridSearch.chunks.vectorized }}/{{ databaseInfo.hybridSearch.chunks.total }}
+								</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'Vectors on pgvector fast path') }}</span>
+								<span class="ext-version">
+									{{ databaseInfo.hybridSearch.vectors.pgvectorPopulated }}/{{ databaseInfo.hybridSearch.vectors.total }}
+								</span>
+							</li>
+						</ul>
+					</details>
+				</div>
 				<p v-if="databaseInfo.lastUpdated" class="last-updated">
 					{{ t('openregister', 'Updated:') }} {{ formatDate(databaseInfo.lastUpdated) }}
 				</p>
@@ -388,6 +424,7 @@ export default {
 				recommendedPlugin: null,
 				performanceNote: null,
 				extensions: [],
+				hybridSearch: null,
 				lastUpdated: null,
 			},
 			refreshingDatabase: false,
@@ -614,6 +651,7 @@ export default {
 						recommendedPlugin: recommendedPlugin || null,
 						performanceNote,
 						extensions: db.extensions || [],
+						hybridSearch: db.hybridSearch || null,
 						lastUpdated: db.lastUpdated || null,
 					}
 				}
