@@ -50,14 +50,14 @@ class DpiaPatternDetectionService
 {
 
     /**
-     * pipelinq-parity default threshold (`DpiaDetectionService::DEFAULT_THRESHOLD`).
+     * Default threshold, matching pipelinq's `DpiaDetectionService::DEFAULT_THRESHOLD`.
      *
      * @var int
      */
     public const DEFAULT_THRESHOLD = 10;
 
     /**
-     * pipelinq-parity default rolling window (`DpiaDetectionService::WINDOW_DAYS`).
+     * Default rolling window, matching pipelinq's `DpiaDetectionService::WINDOW_DAYS`.
      *
      * @var int
      */
@@ -81,7 +81,9 @@ class DpiaPatternDetectionService
      * reflects real volume) but are listed separately so the caller never
      * re-writes them (idempotency).
      *
-     * @param array<int, array<string, mixed>> $cases  Case payloads; each needs `receivedAt` + the group-by fields + optionally `dpiaRequired` and a caller-supplied `@uuid`.
+     * @param array<int, array<string, mixed>> $cases  Case payloads; each needs `receivedAt` + the
+     *                                                 group-by fields + optionally `dpiaRequired`
+     *                                                 and a caller-supplied `@uuid`.
      * @param array<string, mixed>             $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
      * @param DateTimeImmutable                $now    The evaluation clock.
      *

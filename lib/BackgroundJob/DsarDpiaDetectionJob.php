@@ -208,7 +208,7 @@ class DsarDpiaDetectionJob extends TimedJob
         foreach ($partitions as $partitionCases) {
             $summary['partitions']++;
 
-            $pack = $this->packResolver->activePackForCase(case: $partitionCases[0], systemContext: true);
+            $pack   = $this->packResolver->activePackForCase(case: $partitionCases[0], systemContext: true);
             $config = null;
             if ($pack !== null) {
                 $config = ($pack['dpiaDetection'] ?? null);
@@ -233,9 +233,9 @@ class DsarDpiaDetectionJob extends TimedJob
     /**
      * Flag every unflagged case of a triggering group (audited write).
      *
-     * @param array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>} $group   The triggering group.
-     * @param array<string, mixed>                                                                              $config  The pack's `dpiaDetection` block.
-     * @param array{cases: int, partitions: int, groupsTriggered: int, flagged: int, errors: int}               $summary Running summary (by reference).
+     * @param array<string, mixed> $group   The triggering group (key, count, caseUuids, unflaggedUuids).
+     * @param array<string, mixed> $config  The pack's `dpiaDetection` block.
+     * @param array<string, int>   $summary Running summary (by reference).
      *
      * @return void
      *
