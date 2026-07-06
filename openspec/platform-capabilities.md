@@ -93,6 +93,7 @@ OpenRegister wraps Nextcloud's native subsystems behind a unified API. Every obj
 | Mappings (cross-system transformation) | implemented | (mappings spec) | Twig-based payload transformation between source + target schemas. |
 | Geospatial metadata + map view | proposed | `geo-metadata-kaart` change | Lat/long extraction, map sidebar, geo-search. (Spec is in `openspec/changes/`; status reverts to `implemented` when it graduates to `openspec/specs/`.) |
 | MCP discovery (AI agents) | implemented | `mcp-discovery` | AI-agent discovery endpoint exposing every OR-backed capability. |
+| Tool-registry facade (cross-app tool-loop consumption) | implemented | `ai-mcp` (`or-tool-registry-facade` change) | `OCA\OpenRegister\Service\Mcp\ToolRegistryFacade` — a small, additive, public `listTools()`/`invokeTool()` surface over the chat-side `ToolRegistry`/`McpProviderBridge` wiring, for another app's own engine (e.g. Hermiq's ported `ToolLoop`) to call instead of depending on OR's internal registry classes directly. No impersonation; auth flows through the ambient NC session. |
 | GraphQL API + SSE | implemented | `graphql-api` + `realtime-updates` | GraphQL surface over registers; subscriptions via Server-Sent Events. |
 | OAS / OpenAPI generation | implemented | `openapi-generation` + `oas-validation` | Per-register OpenAPI 3 spec auto-generated from schemas. |
 | Data import / export | implemented | `data-import-export` | Bulk import (CSV/JSON), bulk export (CSV/JSON/Excel/PDF). |

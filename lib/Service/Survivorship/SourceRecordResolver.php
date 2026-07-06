@@ -52,6 +52,7 @@ use Throwable;
  */
 class SourceRecordResolver
 {
+
     /**
      * Cross-request cache of source-schema reference (slug/uuid) => numeric
      * schema id. Populated only from successful resolutions (a mid-save slug
@@ -170,7 +171,11 @@ class SourceRecordResolver
     public function schemaQueryFilter(string $ref): string
     {
         $id = $this->resolveSchemaId(ref: $ref);
-        return ($id !== '' ? $id : $ref);
+        if ($id !== '') {
+            return $id;
+        }
+
+        return $ref;
     }//end schemaQueryFilter()
 
     /**

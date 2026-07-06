@@ -298,7 +298,7 @@ class SourceRecordChangeListener implements IEventListener
             $this->logger->warning(
                 sprintf('Source-record change: could not recompute master "%s": %s', $masterUuid, $e->getMessage())
             );
-        }
+        }//end try
     }//end recomputeMaster()
 
     /**

@@ -89,7 +89,11 @@ class ProviderCatalogue
     /**
      * Return the whole provider map (`identifier => entry`).
      *
-     * @return array<string, array<string, mixed>> The parsed provider catalogue.
+     * Values are EXPECTED to be entry arrays, but load() only validates the
+     * top-level `providers` map — not each entry — so consumers must guard
+     * per-entry shape themselves (the file is read unvalidated from disk).
+     *
+     * @return array<string, mixed> The parsed provider catalogue.
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
      */
@@ -108,9 +112,10 @@ class ProviderCatalogue
      *
      * Fails soft: any read/parse error logs a warning and yields an empty
      * catalogue, so a broker call fails closed (no provider resolves) rather
-     * than the whole app erroring.
+     * than the whole app erroring. Only the top-level `providers` map is
+     * validated; per-entry shape is the consumer's responsibility.
      *
-     * @return array<string, array<string, mixed>> The parsed provider map, or empty on error.
+     * @return array<string, mixed> The parsed provider map, or empty on error.
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
      */
