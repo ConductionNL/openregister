@@ -122,6 +122,49 @@ class DsarPolicyPackResolver
     }//end regulatorEscalateProviderId()
 
     /**
+     * The full policy-pack payload active for a case (jurisdiction match,
+     * `default` fallback), or null when no pack resolves.
+     *
+     * Public read surface for consumers that need MORE than the two seam
+     * selectors: the DPIA pattern-detection job reads the pack's
+     * `dpiaDetection` block and the privacy-officer notification recipient
+     * resolver reads `privacyOfficerGroup`. Both inherit the resolver's
+     * fail-safe semantics — no pack ⇒ null ⇒ the consumer no-ops.
+     *
+     * @param array<string, mixed> $case          The case's serialised payload.
+     * @param bool                 $systemContext True for background-job (user-less) reads: the
+     *                                            pack query bypasses RBAC/tenancy scoping, because
+     *                                            a system sweep has no session to scope by.
+     *
+     * @return array<string, mixed>|null The active pack payload, or null.
+     *
+     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
+     *   (Requirement: Detection configuration lives in the DSAR policy pack)
+     */
+    public function activePackForCase(array $case, bool $systemContext=false): ?array
+    {
+        if ($systemContext === false) {
+            return $this->resolveActivePack(case: $case);
+        }
+
+        $wanted  = $this->stringField(data: $case, key: 'jurisdiction');
+        $default = null;
+        foreach ($this->loadPacks(_rbac: false, _multitenancy: false) as $pack) {
+            $packJurisdiction = $this->stringField(data: $pack, key: 'jurisdiction');
+            if ($wanted !== '' && $packJurisdiction === $wanted) {
+                return $pack;
+            }
+
+            if ($packJurisdiction === self::DEFAULT_JURISDICTION) {
+                $default = $pack;
+            }
+        }
+
+        return $default;
+
+    }//end activePackForCase()
+
+    /**
      * Read one selector field off the case's active pack.
      *
      * @param array<string, mixed> $case  The case's serialised payload.
@@ -195,9 +238,14 @@ class DsarPolicyPackResolver
      * through the registry default (never fail-open) — an unreadable pack MUST
      * NOT be treated as "identity verified" / "escalation done".
      *
+     * @param bool $_rbac         Whether the pack read is RBAC scoped (false only for system sweeps).
+     * @param bool $_multitenancy Whether the pack read is tenant scoped (false only for system sweeps).
+     *
      * @return array<int, array<string, mixed>> The rendered pack rows.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns.
      */
-    private function loadPacks(): array
+    private function loadPacks(bool $_rbac=true, bool $_multitenancy=true): array
     {
         try {
             $rows = $this->objectService->findAll(
@@ -207,8 +255,8 @@ class DsarPolicyPackResolver
                         'schema'   => self::SCHEMA_SLUG,
                     ],
                 ],
-                _rbac: true,
-                _multitenancy: true
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
         } catch (Throwable $e) {
             $this->logger->warning(
