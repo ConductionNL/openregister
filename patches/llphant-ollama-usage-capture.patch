@@ -1,6 +1,6 @@
 --- a/src/Chat/OllamaChat.php
 +++ b/src/Chat/OllamaChat.php
-@@ -43,6 +43,15 @@
+@@ -43,6 +43,14 @@
      /** @var CalledFunction[] */
      public array $functionsCalled = [];
 
@@ -14,8 +14,8 @@
 +
      public function __construct(protected OllamaConfig $config, ?LoggerInterface $logger = null)
      {
-         $this->client = new Client([
-@@ -170,6 +179,14 @@
+         if (! isset($config->model)) {
+@@ -174,6 +182,13 @@
          $contents = $response->getBody()->getContents();
          $json = Utility::decodeJson($contents);
 
