@@ -1,13 +1,13 @@
 ## 1. Catalogue entry
 
-- [ ] 1.1 Add the `doffin` entry to `lib/Settings/credential-providers.json`: `identifier` `doffin`, `title` `Doffin (Norway)`, `baseUrl` `https://betaapi.doffin.no/public/v2`, `authScheme` `{header: "Ocp-Apim-Subscription-Key", template: "{secret}"}`, `allowRules` `[{method: "GET", pathPattern: "/notices"}]` — GET-only, nothing else. Leave `github`/`gitlab` byte-identical.
-- [ ] 1.2 Bump the catalogue's top-level `version` and extend the file's `$comment` only if the doffin caveat (beta host, path carried from the spectr connector contract) needs recording there.
+- [x] 1.1 Add the `doffin` entry to `lib/Settings/credential-providers.json`: `identifier` `doffin`, `title` `Doffin (Norway)`, `baseUrl` `https://betaapi.doffin.no/public/v2`, `authScheme` `{header: "Ocp-Apim-Subscription-Key", template: "{secret}"}`, `allowRules` `[{method: "GET", pathPattern: "/notices"}]` — GET-only, nothing else. Leave `github`/`gitlab` byte-identical.
+- [x] 1.2 Bump the catalogue's top-level `version` and extend the file's `$comment` only if the doffin caveat (beta host, path carried from the spectr connector contract) needs recording there.
 
 ## 2. Verification
 
-- [ ] 2.1 JSON-validate the catalogue file; run `composer check:strict`.
-- [ ] 2.2 Add/extend unit coverage: `ProviderCatalogue::get('doffin')` returns the entry; broker rule matching permits `GET /notices` (with query string) and denies `POST /notices` and `GET` on any other path; host-lock resolves to `betaapi.doffin.no`.
-- [ ] 2.3 Confirm no new mutation surface: no route, controller method, or service writes the catalogue (unchanged invariant; grep-level check is enough).
+- [x] 2.1 JSON-validate the catalogue file; run `composer check:strict`.
+- [x] 2.2 Add/extend unit coverage: `ProviderCatalogue::get('doffin')` returns the entry; broker rule matching permits `GET /notices` (with query string) and denies `POST /notices` and `GET` on any other path; host-lock resolves to `betaapi.doffin.no`.
+- [x] 2.3 Confirm no new mutation surface: no route, controller method, or service writes the catalogue (unchanged invariant; grep-level check is enough).
 
 ## Acceptance criteria
 
