@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -89,6 +91,11 @@ class WebhookServiceTest extends TestCase
     private MappingMapper $mappingMapper;
 
     /**
+     * @var IJobList&MockObject
+     */
+    private IJobList $jobList;
+
+    /**
      * Mock logger.
      *
      * @var LoggerInterface&MockObject
@@ -114,13 +121,15 @@ class WebhookServiceTest extends TestCase
         $this->mappingService   = $this->createMock(MappingService::class);
         $this->mappingMapper    = $this->createMock(MappingMapper::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
+        $this->jobList          = $this->createMock(IJobList::class);
 
         $this->service = new WebhookService(
             webhookMapper: $this->webhookMapper,
             logger: $this->logger,
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
-            mappingMapper: $this->mappingMapper
+            mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList
         );
 
         $this->reflection = new \ReflectionClass($this->service);
@@ -384,6 +393,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -585,6 +595,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -645,6 +656,41 @@ class WebhookServiceTest extends TestCase
         $this->webhookLogMapper->expects($this->never())->method('insert');
 
         $this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+    }
+
+    public function testDispatchEventEnqueuesDeliveryJobPerWebhookAndDoesNotDeliverSynchronously(): void
+    {
+        $event = $this->createMock(\OCP\EventDispatcher\Event::class);
+
+        $webhook1 = $this->createMock(Webhook::class);
+        $webhook1->method('getId')->willReturn(1);
+        $webhook2 = $this->createMock(Webhook::class);
+        $webhook2->method('getId')->willReturn(2);
+
+        $this->webhookMapper->method('findForEvent')->willReturn([$webhook1, $webhook2]);
+
+        // The write must NOT block on delivery: no synchronous HTTP log insert.
+        $this->webhookLogMapper->expects($this->never())->method('insert');
+
+        // Instead, one delivery job is enqueued per matching webhook.
+        $enqueued = [];
+        $this->jobList->expects($this->exactly(2))
+            ->method('add')
+            ->willReturnCallback(function (string $job, array $arg) use (&$enqueued) {
+                $enqueued[] = [$job, $arg];
+            });
+
+        $this->service->dispatchEvent(
+            $event,
+            'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
+            ['test' => 'data']
+        );
+
+        $this->assertCount(2, $enqueued);
+        $this->assertSame(WebhookDeliveryJob::class, $enqueued[0][0]);
+        $this->assertSame(1, $enqueued[0][1]['webhook_id']);
+        $this->assertSame('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', $enqueued[0][1]['event_name']);
+        $this->assertSame(2, $enqueued[1][1]['webhook_id']);
     }
 
     // ─── deliverWebhook tests ────────────────────────────────────────
@@ -1680,6 +1726,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -2206,6 +2253,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
