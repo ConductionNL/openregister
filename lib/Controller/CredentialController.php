@@ -348,10 +348,15 @@ class CredentialController extends Controller
             return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
         }
 
-        $token = $this->request->getHeader('X-Credential-Token');
+        $token  = $this->request->getHeader('X-Credential-Token');
+        $method = (string) $this->request->getParam('method', 'GET');
+        $path   = (string) $this->request->getParam('path', '');
 
         try {
-            $claims = $this->tokenService->verify(token: $token);
+            // Pass method+path so a request-bound token (harden-credential-token-binding)
+            // is only accepted for the exact call it was minted for. Unbound tokens
+            // ignore these (backward-compatible).
+            $claims = $this->tokenService->verify(token: $token, method: $method, path: $path);
             if ($claims['credentialId'] !== $id) {
                 throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
             }
@@ -359,8 +364,8 @@ class CredentialController extends Controller
             $result = $this->broker->request(
                 credentialId: $id,
                 appId: $claims['appId'],
-                method: (string) $this->request->getParam('method', 'GET'),
-                path: (string) $this->request->getParam('path', ''),
+                method: $method,
+                path: $path,
                 headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
                 body: $this->normaliseBody(value: $this->request->getParam('body'))
             );
