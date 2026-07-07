@@ -149,6 +149,9 @@ return [
         // Object validation endpoint.
         ['name' => 'objects#validate', 'url' => '/api/objects/validate', 'verb' => 'POST'],
 
+        // Batched object-count endpoint (one round-trip for many register/schema pairs).
+        ['name' => 'objects#counts', 'url' => '/api/objects/counts', 'verb' => 'POST'],
+
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller).
         // NOTE: Specific routes MUST come before parameterized routes like {id}
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
