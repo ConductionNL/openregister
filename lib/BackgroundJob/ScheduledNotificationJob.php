@@ -328,21 +328,61 @@ final class ScheduledNotificationJob extends TimedJob
         }
 
         // Bound the in-memory scan so a pathologically large schema cannot OOM or
-        // stall the cron run (OPS-6 / PERF-3). Excess objects are deferred to the
-        // next run rather than processed all at once.
+        // stall the cron run (OPS-6 / PERF-3). Excess objects are processed via a
+        // ROTATING window keyed by a persisted per-(schema, notification) offset
+        // cursor: each run handles the next MAX_OBJECTS_PER_FIRE slice and advances
+        // the cursor (wrapping at the end), so every object is eventually swept —
+        // fixing the previous behaviour where array_slice(0, MAX) always processed
+        // the same first N and objects beyond N never fired.
         if (count($objects) > self::MAX_OBJECTS_PER_FIRE) {
+            $total     = count($objects);
+            $offsetKey = 'sched_offset:'.((int) $schema->getId()).':'.$notificationName;
+
+            $offset = 0;
+            try {
+                $offset = (int) $this->appConfig->getValueString('openregister', $offsetKey, '0');
+            } catch (\Throwable $e) {
+                $offset = 0;
+            }
+
+            if ($offset < 0 || $offset >= $total) {
+                $offset = 0;
+            }
+
             $this->logger->warning(
                 sprintf(
                     '[ScheduledNotificationJob] schema %d / "%s" returned %d objects; '
-                    .'capping this run at %d (PERF-3 SQL filter pushdown pending)',
+                    .'processing rotating window [%d, %d) this run (PERF-3 SQL filter pushdown pending)',
                     $schema->getId(),
                     $notificationName,
-                    count($objects),
-                    self::MAX_OBJECTS_PER_FIRE
+                    $total,
+                    $offset,
+                    min($offset + self::MAX_OBJECTS_PER_FIRE, $total)
                 )
             );
-            $objects = array_slice($objects, 0, self::MAX_OBJECTS_PER_FIRE);
-        }
+
+            $objects = array_slice($objects, $offset, self::MAX_OBJECTS_PER_FIRE);
+
+            // Advance the cursor for the next run; wrap once the schema is swept.
+            $nextOffset = ($offset + self::MAX_OBJECTS_PER_FIRE);
+            if ($nextOffset >= $total) {
+                $nextOffset = 0;
+            }
+
+            try {
+                $this->appConfig->setValueString('openregister', $offsetKey, (string) $nextOffset);
+            } catch (\Throwable $e) {
+                // Non-fatal: worst case the window does not advance this run.
+                $this->logger->warning(
+                    sprintf(
+                        '[ScheduledNotificationJob] failed to persist rotation offset for schema %d / "%s": %s',
+                        $schema->getId(),
+                        $notificationName,
+                        $e->getMessage()
+                    )
+                );
+            }
+        }//end if
 
         $watchedFields = $this->resolveWatchedFields(trigger: $trigger);
         $schemaId      = (int) $schema->getId();

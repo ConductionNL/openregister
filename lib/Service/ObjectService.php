@@ -813,12 +813,19 @@ class ObjectService
             objects: $objects
         );
 
-        // Render all objects asynchronously.
-        return $this->renderObjectsAsync(
-            objects: $objects,
-            config: $config,
-            registers: $registers,
-            schemas: $schemas,
+        // Render via renderEntities, which batch-preloads ALL related objects in
+        // one query before the per-row render (optimize-object-render-hot-path).
+        // The previous renderObjectsAsync() looped renderEntity() per row, so each
+        // row resolved its relations individually — an N+1 on any `?_extend=` list.
+        // renderEntities() performs the identical per-row renderEntity() rendering,
+        // only with the relation/file caches pre-warmed, so output is unchanged;
+        // registers/schemas were a pre-resolution optimization renderEntity()
+        // reproduces internally, not a correctness input.
+        return $this->renderHandler->renderEntities(
+            entities: $objects,
+            _extend: ($config['extend'] ?? []),
+            _filter: ($config['unset'] ?? null),
+            _fields: ($config['fields'] ?? null),
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );

@@ -596,7 +596,7 @@ class SchemaMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         // Verify RBAC permission to create
-        // $this->verifyRbacPermission('create', 'schema');
+        $this->verifyRbacPermission('create', 'schema');
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate(entity: $entity);
 
@@ -1506,7 +1506,7 @@ class SchemaMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Verify RBAC permission to update
-        // $this->verifyRbacPermission('update', 'schema');
+        $this->verifyRbacPermission('update', 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
@@ -1586,7 +1586,7 @@ class SchemaMapper extends QBMapper
     public function delete(Entity $entity): Schema
     {
         // Verify RBAC permission to delete
-        // $this->verifyRbacPermission('delete', 'schema');
+        $this->verifyRbacPermission('delete', 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
