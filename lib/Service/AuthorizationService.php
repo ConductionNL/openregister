@@ -342,8 +342,16 @@ class AuthorizationService
     protected function authorizeBasic(string $header, array $users=[], array $groups=[]): void
     {
         $header = substr(string: $header, offset: strlen(string: 'Basic '));
-        $decode = base64_decode(string: $header);
-        [$username, $password] = explode(separator: ':', string: $decode);
+
+        // Guard against malformed base64 (base64_decode returns false on
+        // invalid input, which explode() cannot accept in PHP 8).
+        $decode = base64_decode(string: $header, strict: true);
+        if ($decode === false || str_contains($decode, ':') === false) {
+            throw new AuthenticationException(message: 'Invalid username or password', details: []);
+        }
+
+        // Limit to 2 parts so a password containing ':' is preserved intact.
+        [$username, $password] = explode(separator: ':', string: $decode, limit: 2);
 
         $user = $this->userManager->checkPassword($username, $password);
 

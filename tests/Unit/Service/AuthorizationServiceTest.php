@@ -364,10 +364,12 @@ class AuthorizationServiceTest extends TestCase
     {
         $user = $this->createMock(IUser::class);
 
+        // The full password after the first colon is preserved (explode limit 2),
+        // not truncated at the second colon.
         $this->userManager
             ->expects($this->once())
             ->method('checkPassword')
-            ->with('admin', 'pass')
+            ->with('admin', 'pass:extra')
             ->willReturn($user);
 
         $this->userSession
@@ -377,6 +379,26 @@ class AuthorizationServiceTest extends TestCase
 
         $header = 'Basic ' . base64_encode('admin:pass:extra');
         $this->callAuth('authorizeBasic',$header);
+    }
+
+    public function testAuthorizeBasicRejectsMalformedBase64(): void
+    {
+        // Invalid base64 (strict) must fail authentication, not raise a TypeError.
+        $this->userManager->expects($this->never())->method('checkPassword');
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->callAuth('authorizeBasic', 'Basic @@not-valid-base64@@');
+    }
+
+    public function testAuthorizeBasicRejectsMissingColon(): void
+    {
+        // A decoded credential with no colon separator is malformed.
+        $this->userManager->expects($this->never())->method('checkPassword');
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->callAuth('authorizeBasic', 'Basic ' . base64_encode('nocolonhere'));
     }
 
     public function testAuthorizeBasicEmptyDetailsOnFailure(): void
