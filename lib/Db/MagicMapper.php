@@ -3059,6 +3059,23 @@ class MagicMapper extends AbstractObjectMapper
                 $this->db->executeStatement(
                     "CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
                 );
+            } else {
+                // MySQL/MariaDB do not support partial indexes, so the
+                // "WHERE _owner = ? AND _deleted IS NULL" access pattern is
+                // supported here with a composite (_deleted, _owner) index — the
+                // best available approximation. `CREATE INDEX IF NOT EXISTS` is
+                // not portable across older MySQL, so create it defensively and
+                // treat a duplicate-index error as a no-op (idempotent).
+                $deletedCol      = self::METADATA_PREFIX.'deleted';
+                $ownerColForIdx  = self::METADATA_PREFIX.'owner';
+                $deletedOwnerIdx = "{$tableName}_deleted_owner_idx";
+                try {
+                    $this->db->executeStatement(
+                        "CREATE INDEX {$deletedOwnerIdx} ON {$fullTableName} ({$deletedCol}, {$ownerColForIdx})"
+                    );
+                } catch (\Throwable $e) {
+                    // Index already exists (no IF NOT EXISTS on MySQL) — ignore.
+                }
             }
 
             // Create indexes for schema-specific properties.
