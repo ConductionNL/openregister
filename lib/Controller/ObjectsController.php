@@ -86,6 +86,8 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ *
+ * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
  */
 class ObjectsController extends Controller
 {
@@ -1503,6 +1505,233 @@ class ObjectsController extends Controller
 
         return $response;
     }//end index()
+
+    /**
+     * Batched object-count endpoint — POST /api/objects/counts.
+     *
+     * Accepts a JSON body of the shape
+     * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object?> } ] }`
+     * and returns `{ "results": [ { "register": ..., "schema": ..., "count": <int|null> } ] }`
+     * with exactly one result per input entry, in the same order as the
+     * request array. Identical `(register, schema, filter)` triples are
+     * deduped server-side so the aggregate runs once per distinct triple;
+     * every input entry still receives a result (duplicates share the count).
+     * An empty or missing `counts` array returns `{ results: [] }`.
+     *
+     * SECURITY — authorization parity with collection reads: each count is
+     * produced through the SAME RBAC + multitenancy scoping the collection
+     * list read (`index()` / `GET /api/objects/{register}/{schema}?_limit=1`)
+     * applies. The RBAC/multitenancy posture is derived from the caller's
+     * admin status (mirrors `index()` lines 1160-1162), never from request
+     * parameters, and threaded into the identical count paths `index()` uses
+     * (see `countPairScoped()`). A caller therefore cannot obtain a count for
+     * objects they are not permitted to list. A pair that cannot be resolved
+     * (unknown or withheld) yields `count: null` without disclosing whether it
+     * does not exist or is access-restricted.
+     *
+     * The route carries `@NoAdminRequired` and is deliberately NOT a public
+     * page: any authenticated user may call it; an unauthenticated request is
+     * rejected by the security middleware exactly like a non-public read.
+     *
+     * @param ObjectService $objectService The object service (DI).
+     *
+     * @return JSONResponse `{ results: [ { register, schema, count } ] }`
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     *
+     * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
+     */
+    public function counts(ObjectService $objectService): JSONResponse
+    {
+        $params  = $this->request->getParams();
+        $entries = ($params['counts'] ?? null);
+
+        // Missing counts key → empty success (spec: empty or missing → { results: [] }).
+        if ($entries === null) {
+            return new JSONResponse(data: ['results' => []]);
+        }
+
+        // A present-but-non-array counts value is a malformed request.
+        if (is_array($entries) === false) {
+            return new JSONResponse(
+                data: ['error' => 'counts must be an array of { register, schema, filter? } entries'],
+                statusCode: 400
+            );
+        }
+
+        // Empty array → empty success.
+        if ($entries === []) {
+            return new JSONResponse(data: ['results' => []]);
+        }
+
+        // Derive the RBAC + multitenancy posture from the caller's admin
+        // status — identical to the collection read (index() lines 1160-1162).
+        // Never honour request-supplied rbac/multi flags on a data endpoint.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = ($isAdmin === false);
+        $multi   = ($isAdmin === false);
+
+        // Validate every entry up-front so a malformed batch is rejected
+        // wholesale rather than silently skipping entries.
+        foreach ($entries as $index => $entry) {
+            if (is_array($entry) === false
+                || isset($entry['register']) === false
+                || isset($entry['schema']) === false
+                || is_scalar($entry['register']) === false
+                || is_scalar($entry['schema']) === false
+                || (isset($entry['filter']) === true && is_array($entry['filter']) === false)
+            ) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'Malformed counts entry at index '.$index
+                            .': register and schema are required scalars and filter must be an object',
+                    ],
+                    statusCode: 400
+                );
+            }
+        }
+
+        // Dedupe identical (register, schema, filter) triples: run one
+        // aggregate per distinct triple, but return one result per input
+        // entry in request order (duplicates share the deduped count).
+        $cache   = [];
+        $results = [];
+        foreach ($entries as $entry) {
+            $register = (string) $entry['register'];
+            $schema   = (string) $entry['schema'];
+            $filter   = ($entry['filter'] ?? []);
+
+            $cacheKey = $register.'|'.$schema.'|'.json_encode($filter);
+            if (array_key_exists($cacheKey, $cache) === false) {
+                $cache[$cacheKey] = $this->countPairScoped(
+                    register: $register,
+                    schema: $schema,
+                    filter: $filter,
+                    rbac: $rbac,
+                    multi: $multi,
+                    objectService: $objectService
+                );
+            }
+
+            $results[] = [
+                'register' => $entry['register'],
+                'schema'   => $entry['schema'],
+                'count'    => $cache[$cacheKey],
+            ];
+        }//end foreach
+
+        return new JSONResponse(data: ['results' => $results]);
+    }//end counts()
+
+    /**
+     * Produce a single (register, schema, filter) object count with the exact
+     * RBAC + multitenancy scoping the collection read applies.
+     *
+     * This mirrors `index()`'s count logic so a batched count can never leak a
+     * total the equivalent list read would not surface. It resolves the pair,
+     * then routes through the same two count paths `index()` uses:
+     * - magic-mapped schema → `MagicMapper::countObjectsInRegisterSchemaTable()`
+     *   with `_rbac` / `_multitenancy` threaded into the query
+     *   (mirrors index() lines 1194-1198 + 1279-1283);
+     * - database-backed schema → `ObjectService::searchObjectsPaginated()`
+     *   total, produced by the same RBAC/multitenancy-scoped query
+     *   (mirrors index() lines 1443-1448), read at `?_limit=1` like the
+     *   reference collection read.
+     *
+     * Returns null when the pair cannot be resolved, so a restricted or
+     * unknown pair is withheld without disclosing which.
+     *
+     * @param string        $register      Register id or slug.
+     * @param string        $schema        Schema id or slug.
+     * @param array         $filter        Object-property filters for this entry.
+     * @param bool          $rbac          Whether to apply RBAC (parity with the list read).
+     * @param bool          $multi         Whether to apply multitenancy (parity with the list read).
+     * @param ObjectService $objectService The object service (DI).
+     *
+     * @return int|null The scoped count, or null when the pair is withheld.
+     *
+     * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
+     */
+    private function countPairScoped(
+        string $register,
+        string $schema,
+        array $filter,
+        bool $rbac,
+        bool $multi,
+        ObjectService $objectService
+    ): ?int {
+        try {
+            // Resolve slugs/ids to numeric ids + entities (same as index()).
+            $resolved = $this->resolveRegisterSchemaIds(
+                register: $register,
+                schema: $schema,
+                objectService: $objectService
+            );
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+            // Withhold: never disclose whether the pair is missing or restricted.
+            return null;
+        }
+
+        $registerEntity = ($resolved['registerEntity'] ?? null);
+        $schemaEntity   = ($resolved['schemaEntity'] ?? null);
+
+        // Build the search query from the per-entry filter using the same
+        // builder index() uses, scoped to the resolved numeric ids.
+        $query = $objectService->buildSearchQuery(
+            requestParams: $filter,
+            register: $resolved['register'],
+            schema: $resolved['schema']
+        );
+
+        // Magic-mapped parity: count via the magic table with RBAC /
+        // multitenancy threaded into the query (index() lines 1194-1198, 1279-1283).
+        if ($registerEntity !== null && $schemaEntity !== null) {
+            $isMagicMapped = $registerEntity->isMagicMappingEnabledForSchema(
+                schemaId: $schemaEntity->getId(),
+                schemaSlug: $schemaEntity->getSlug()
+            );
+
+            if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
+                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
+                $countQuery = $query;
+                unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+                $countQuery['_rbac']         = $rbac;
+                $countQuery['_multitenancy'] = $multi;
+                $countQuery['_multitenancy_explicit'] = false;
+
+                return (int) $magicMapper->countObjectsInRegisterSchemaTable(
+                    query: $countQuery,
+                    register: $registerEntity,
+                    schema: $schemaEntity
+                );
+            }
+        }//end if
+
+        // Database-backed parity: read the paginated total at _limit=1, which
+        // is produced by the same RBAC/multitenancy-scoped query the
+        // collection read runs (index() lines 1443-1448).
+        $query['_limit'] = 1;
+        unset($query['_offset'], $query['_page']);
+
+        $result = $objectService->searchObjectsPaginated(
+            query: $query,
+            _rbac: $rbac,
+            _multitenancy: $multi,
+            deleted: false
+        );
+
+        $total = ($result['total'] ?? null);
+        if ($total === null) {
+            return null;
+        }
+
+        return (int) $total;
+    }//end countPairScoped()
 
     /**
      * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
