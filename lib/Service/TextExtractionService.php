@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -52,7 +53,6 @@ use Throwable;
 // Document parsing libraries.
 use Smalot\PdfParser\Parser as PdfParser;
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
-use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 
 /**
  * TextExtractionService
@@ -166,7 +166,8 @@ class TextExtractionService
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly SettingsService $settingsService,
         private readonly RiskLevelService $riskLevelService,
-        private readonly EmlParser $emlParser
+        private readonly EmlParser $emlParser,
+        private readonly SpreadsheetExtractor $spreadsheetExtractor
     ) {
     }//end __construct()
 
@@ -1738,114 +1739,9 @@ class TextExtractionService
      */
     private function extractSpreadsheet(\OCP\Files\File $file): ?string
     {
-        // PhpSpreadsheet should already be installed (in composer.json).
-        if (class_exists('PhpOffice\PhpSpreadsheet\IOFactory') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PhpSpreadsheet library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. ";
-            $msg .= "Run: composer require phpoffice/phpspreadsheet";
-            throw new Exception($msg);
-        }
-
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting spreadsheet',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
-
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PhpSpreadsheet.
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Load spreadsheet.
-            $spreadsheet = SpreadsheetIOFactory::load($tempPath);
-
-            // Extract text from all sheets.
-            $text = '';
-            foreach ($spreadsheet->getAllSheets() as $sheet) {
-                $text .= "Sheet: ".$sheet->getTitle()."\n";
-
-                $highestRow    = $sheet->getHighestRow();
-                $highestColumn = $sheet->getHighestColumn();
-
-                // Iterate through rows and columns.
-                for ($row = 1; $row <= $highestRow; $row++) {
-                    $rowData = [];
-                    // @psalm-suppress StringIncrement - Excel column increment is intentional
-                    for ($col = 'A'; $col !== $highestColumn; $col++) {
-                        $value = $sheet->getCell($col.$row)->getValue();
-                        if ($value !== null && $value !== '') {
-                            $rowData[] = $value;
-                        }
-                    }
-
-                    // Add last column.
-                    $value = $sheet->getCell($highestColumn.$row)->getValue();
-                    if ($value !== null && $value !== '') {
-                        $rowData[] = $value;
-                    }
-
-                    if (empty($rowData) === false) {
-                        $text .= implode("\t", $rowData)."\n";
-                    }
-                }
-
-                $text .= "\n";
-            }//end foreach
-
-            // Clean up.
-            fclose($tempFile);
-
-            if (trim($text) === '' || trim($text) === null) {
-                $this->logger->warning(
-                    message: '[TextExtractionService] Spreadsheet extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] Spreadsheet extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[TextExtractionService] Spreadsheet extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("Spreadsheet extraction failed: ".$e->getMessage());
-        }//end try
+        // Delegated to the dedicated SpreadsheetExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->spreadsheetExtractor->extract(file: $file);
     }//end extractSpreadsheet()
 
     /**
