@@ -263,8 +263,6 @@ class AggregationCache
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function evictForSchema(string $registerSlug, string $schemaSlug): void
@@ -274,11 +272,20 @@ class AggregationCache
         }
 
         try {
-            // ICache doesn't have prefix delete. Do a best-effort clear of
-            // the whole openregister_aggregations cache — coarse but safe
-            // because TTL is short. A future refinement can swap to a
-            // backing store with prefix scan support.
-            $this->cache->clear();
+            // Scoped eviction: bump this (register, schema)'s version counter so
+            // its cached aggregations become unreachable, WITHOUT wiping every
+            // other schema's/user's cache (scope-cache-invalidation). The counter
+            // outlives the data TTL so a bump can never be undone by expiry while
+            // stale data is still live.
+            $versionKey = $this->versionKey(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+            $current    = $this->cache->get($versionKey);
+            $next       = 1;
+            if (is_numeric($current) === true) {
+                $next = ((int) $current + 1);
+            }
+
+            // TTL well beyond the data TTL (self::TTL) so the bump persists.
+            $this->cache->set($versionKey, $next, (self::TTL * 60));
         } catch (\Throwable $e) {
             $this->logger->debug(
                 sprintf('[AggregationCache] evict failed: %s', $e->getMessage())
@@ -311,8 +318,58 @@ class AggregationCache
 
         $filterHash = sha1($filterStr);
         $rbacHash   = $this->rbacScopeHash();
-        return sprintf('agg:%s:%s:%s:%s:%s', $registerSlug, $schemaSlug, $name, $filterHash, $rbacHash);
+
+        // Fold the per-(register, schema) version into the key so eviction can be
+        // scoped by bumping that version (scope-cache-invalidation) rather than
+        // wiping the whole aggregation cache: after a bump, every key for the
+        // schema carries the new version and old entries become unreachable.
+        $version = $this->schemaVersion(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+
+        return sprintf(
+            'agg:%s:%s:v%d:%s:%s:%s',
+            $registerSlug,
+            $schemaSlug,
+            $version,
+            $name,
+            $filterHash,
+            $rbacHash
+        );
     }//end key()
+
+    /**
+     * Version-counter cache key for a (register, schema) pair.
+     *
+     * @param string $registerSlug Register slug.
+     * @param string $schemaSlug   Schema slug.
+     *
+     * @return string
+     */
+    private function versionKey(string $registerSlug, string $schemaSlug): string
+    {
+        return sprintf('aggver:%s:%s', $registerSlug, $schemaSlug);
+    }//end versionKey()
+
+    /**
+     * Current aggregation-cache version for a (register, schema) pair.
+     *
+     * @param string $registerSlug Register slug.
+     * @param string $schemaSlug   Schema slug.
+     *
+     * @return int The current version (0 when never evicted).
+     */
+    private function schemaVersion(string $registerSlug, string $schemaSlug): int
+    {
+        if ($this->cache === null) {
+            return 0;
+        }
+
+        $current = $this->cache->get($this->versionKey(registerSlug: $registerSlug, schemaSlug: $schemaSlug));
+        if (is_numeric($current) === true) {
+            return (int) $current;
+        }
+
+        return 0;
+    }//end schemaVersion()
 
     /**
      * Hash the current RBAC scope (user UID + active organisation).
