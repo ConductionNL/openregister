@@ -50,6 +50,15 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaService
 {
+    /**
+     * Maximum number of objects sampled when exploring a schema's properties.
+     *
+     * Property exploration is statistical, so a bounded sample is sufficient;
+     * loading every object of a schema (potentially hundreds of thousands) into
+     * memory to analyse it is an OOM hazard (bound-unbounded-query-memory).
+     */
+    private const SCHEMA_EXPLORE_SAMPLE_SIZE = 1000;
+
 
     /**
      * Schema mapper for schema operations
@@ -124,11 +133,13 @@ class SchemaService
             throw new Exception('Schema not found with ID: '.$schemaId);
         }
 
-        // Get all objects for this schema.
-        $objects = $this->objectEntityMapper->findBySchema($schemaId);
+        // Sample a bounded set of objects for this schema. Exploration is
+        // statistical, so a capped sample avoids loading the full (potentially
+        // huge) object set into memory (bound-unbounded-query-memory).
+        $objects = $this->objectEntityMapper->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
 
         $this->logger->info(
-            message: '[SchemaService] Found '.count($objects).' objects to analyze',
+            message: '[SchemaService] Analyzing a sample of '.count($objects).' objects (cap '.self::SCHEMA_EXPLORE_SAMPLE_SIZE.')',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
