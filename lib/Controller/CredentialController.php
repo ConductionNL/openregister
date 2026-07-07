@@ -327,11 +327,18 @@ class CredentialController extends Controller
      * The calling app id is taken ONLY from the verified `X-Credential-Token` header
      * (never a body field). Body: `{method, path, headers?, body?}`.
      *
+     * NEVER forwards an acting user (credential-doriath-leaf design D-K): on the
+     * HTTP path identity is session-only — the broker's optional `actingUserId`
+     * parameter is deliberately NOT read from any request field here, so any
+     * caller-supplied acting-user value is ignored entirely and a broker call
+     * carrying one is by construction an in-process PHP caller.
+     *
      * @param string $id The credential UUID.
      *
      * @return JSONResponse `{status, headers, body}` from the upstream, or a static error.
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -341,10 +348,15 @@ class CredentialController extends Controller
             return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
         }
 
-        $token = $this->request->getHeader('X-Credential-Token');
+        $token  = $this->request->getHeader('X-Credential-Token');
+        $method = (string) $this->request->getParam('method', 'GET');
+        $path   = (string) $this->request->getParam('path', '');
 
         try {
-            $claims = $this->tokenService->verify(token: $token);
+            // Pass method+path so a request-bound token (harden-credential-token-binding)
+            // is only accepted for the exact call it was minted for. Unbound tokens
+            // ignore these (backward-compatible).
+            $claims = $this->tokenService->verify(token: $token, method: $method, path: $path);
             if ($claims['credentialId'] !== $id) {
                 throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
             }
@@ -352,8 +364,8 @@ class CredentialController extends Controller
             $result = $this->broker->request(
                 credentialId: $id,
                 appId: $claims['appId'],
-                method: (string) $this->request->getParam('method', 'GET'),
-                path: (string) $this->request->getParam('path', ''),
+                method: $method,
+                path: $path,
                 headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
                 body: $this->normaliseBody(value: $this->request->getParam('body'))
             );

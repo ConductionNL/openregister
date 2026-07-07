@@ -265,6 +265,11 @@ class EmbeddingGeneratorHandler
                 $ch = curl_init($url);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                // Bound the request: without timeouts a hung/slow embedding
+                // provider blocks the whole batch (and cron) until PHP's
+                // max_execution_time kills it (optimize-vectorization-pipeline).
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
                 curl_setopt(
                     $ch,
                     CURLOPT_HTTPHEADER,

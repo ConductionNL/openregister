@@ -2747,6 +2747,29 @@ class ObjectsController extends Controller
                 return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
             }//end try
 
+            // Optimistic concurrency (fix-object-patch-lost-update): PATCH is a
+            // read-merge-write, so two concurrent PATCHes can silently clobber each
+            // other's untouched fields. A caller that read the object may pass the
+            // `updated` value it saw as `_expectedUpdated` (If-Match semantics); if
+            // the stored object changed since, the caller is working from stale data
+            // and the write is rejected with 409 instead of overwriting the newer
+            // version. Opt-in: callers that omit `_expectedUpdated` behave as before.
+            // Read from the raw request: the patchData filter strips `_`-prefixed keys.
+            $expectedUpdated = $this->request->getParam('_expectedUpdated');
+            if ($expectedUpdated !== null) {
+                $currentUpdated = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
+                if ((string) $currentUpdated !== (string) $expectedUpdated) {
+                    return new JSONResponse(
+                        data: [
+                            'error'           => 'Conflict: the object was modified since it was read. Re-read and retry.',
+                            'expectedUpdated' => (string) $expectedUpdated,
+                            'currentUpdated'  => (string) $currentUpdated,
+                        ],
+                        statusCode: 409
+                    );
+                }
+            }
+
             // Get the existing object data and merge with patch data.
             $existingData = $existingObject->getObject();
             $mergedData   = array_merge($existingData ?? [], $patchData);

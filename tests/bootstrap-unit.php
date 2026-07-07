@@ -35,6 +35,10 @@ require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
 // the nextcloud/ocp v31 stubs reference but are not shipped by the OCP package.
 require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
 
+// Load the Doriath contract stubs + test fixtures for the credential-broker
+// Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
+require_once __DIR__ . '/stubs/DoriathStubs.php';
+
 // Bootstrap Nextcloud — since we run inside the Docker container,
 // the full environment (including \OC::$server) is available.
 if (file_exists(__DIR__ . '/../../../lib/base.php')) {

@@ -11,9 +11,12 @@
  * keeps its own copy). {@see issueToken()} mints a token binding
  * `{appId, credentialId, iat, exp}` signed with the app's secret; {@see verify()}
  * recomputes the signature against the registered secret for the claimed appId and
- * checks expiry, so a forged or expired token is rejected. The same mechanism
- * authenticates in-process AND cross-runtime callers identically — there is no
- * HTTP-only gap. Signing secrets are never logged or returned by verify().
+ * checks expiry, so a forged or expired token is rejected. Signed tokens are the
+ * HTTP / cross-runtime identity mechanism; trusted SAME-INSTANCE PHP callers pass
+ * their appId to `CredentialBrokerService::request` directly without a token
+ * (credential-doriath-leaf design D-G) — the token authenticates claims across a
+ * trust boundary that an in-process call does not cross. Signing secrets are
+ * never logged or returned by verify().
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -85,11 +88,18 @@ class CredentialAppTokenService
      * returns the plaintext to the caller. The secret is returned only here; it is
      * never retrievable through any read API and never logged.
      *
+     * ROTATES on every call. Automated callers (the D-G manifest auto-onboarding
+     * in `GenericInitializeSettings`) MUST therefore guard with
+     * {@see isRegistered()} so an auto-run never silently invalidates an app's
+     * held copy — rotation stays an explicit admin action via
+     * `POST /api/credentials/apps/{appId}/register`.
+     *
      * @param string $appId The consuming app's id.
      *
      * @return string The newly generated signing secret (shown once).
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
      */
     public function registerApp(string $appId): string
     {
@@ -129,7 +139,7 @@ class CredentialAppTokenService
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
      */
-    public function issueToken(string $appId, string $credentialId): string
+    public function issueToken(string $appId, string $credentialId, ?string $method=null, ?string $path=null): string
     {
         $secret = $this->lookupSecret(appId: $appId);
         if ($secret === null) {
@@ -145,6 +155,14 @@ class CredentialAppTokenService
             'iat'          => $now,
             'exp'          => ($now + self::TOKEN_TTL),
         ];
+
+        // Optional request binding (harden-credential-token-binding): bind the
+        // token to a specific method + path so a captured token cannot be replayed
+        // against a *different* allow-rule-permitted call within its TTL. Opt-in —
+        // tokens minted without method/path stay unbound (backward-compatible).
+        if ($method !== null && $path !== null) {
+            $payload['req'] = $this->requestDigest(method: $method, path: $path);
+        }
 
         $payloadJson = json_encode($payload);
         if ($payloadJson === false) {
@@ -174,7 +192,7 @@ class CredentialAppTokenService
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
      */
-    public function verify(string $token): array
+    public function verify(string $token, ?string $method=null, ?string $path=null): array
     {
         $parts = explode('.', $token);
         if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
@@ -199,11 +217,44 @@ class CredentialAppTokenService
             throw new CredentialAccessDeniedException(message: 'Expired broker token');
         }
 
+        // Request binding (harden-credential-token-binding): a token bound to a
+        // specific method+path is valid ONLY for that call — the actual method and
+        // path MUST match, so a captured token cannot be replayed against a
+        // different allow-rule-permitted call. Fail-closed: a bound token verified
+        // without a method/path is rejected.
+        if (isset($payload['req']) === true) {
+            $matches = ($method !== null && $path !== null
+                && hash_equals(
+                    (string) $payload['req'],
+                    $this->requestDigest(method: $method, path: $path)
+                ) === true);
+            if ($matches === false) {
+                throw new CredentialAccessDeniedException(message: 'Broker token request-binding mismatch');
+            }
+        }
+
         return [
             'appId'        => $appId,
             'credentialId' => (string) $payload['credentialId'],
         ];
     }//end verify()
+
+    /**
+     * Compute the request-binding digest for a method + path.
+     *
+     * Normalises the method to upper-case and the path to a single leading slash
+     * so the digest is stable across trivially-different representations of the
+     * same call.
+     *
+     * @param string $method The HTTP method (e.g. `GET`, `PUT`).
+     * @param string $path   The provider-relative path.
+     *
+     * @return string A SHA-256 hex digest of the normalised `METHOD /path`.
+     */
+    private function requestDigest(string $method, string $path): string
+    {
+        return hash('sha256', strtoupper($method).' /'.ltrim($path, '/'));
+    }//end requestDigest()
 
     /**
      * Decode and structurally validate a token's base64url payload segment.

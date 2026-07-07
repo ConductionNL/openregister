@@ -83,6 +83,13 @@ class BootstrapFactoryChainTest extends TestCase
         $map[HealthCheckExecutor::class] = $this->createMock(HealthCheckExecutor::class);
         $map[MetricsEngine::class]       = $this->createMock(MetricsEngine::class);
 
+        // The InitializeSettings factory injects the credential-broker app
+        // registry for the D-G manifest auto-onboarding hook
+        // (credential-doriath-leaf); a mock is enough — the repair step only
+        // calls it at run() time, never at construction.
+        $map['OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService']
+            = $this->createMock(\OCA\OpenRegister\Service\Credential\CredentialAppTokenService::class);
+
         $container = $this->createMock(ContainerInterface::class);
         $container->method('get')->willReturnCallback(
             function (string $id) use (&$map, $container) {

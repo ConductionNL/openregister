@@ -364,10 +364,12 @@ class AuthorizationServiceTest extends TestCase
     {
         $user = $this->createMock(IUser::class);
 
+        // The full password after the first colon is preserved (explode limit 2),
+        // not truncated at the second colon.
         $this->userManager
             ->expects($this->once())
             ->method('checkPassword')
-            ->with('admin', 'pass')
+            ->with('admin', 'pass:extra')
             ->willReturn($user);
 
         $this->userSession
@@ -377,6 +379,26 @@ class AuthorizationServiceTest extends TestCase
 
         $header = 'Basic ' . base64_encode('admin:pass:extra');
         $this->callAuth('authorizeBasic',$header);
+    }
+
+    public function testAuthorizeBasicRejectsMalformedBase64(): void
+    {
+        // Invalid base64 (strict) must fail authentication, not raise a TypeError.
+        $this->userManager->expects($this->never())->method('checkPassword');
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->callAuth('authorizeBasic', 'Basic @@not-valid-base64@@');
+    }
+
+    public function testAuthorizeBasicRejectsMissingColon(): void
+    {
+        // A decoded credential with no colon separator is malformed.
+        $this->userManager->expects($this->never())->method('checkPassword');
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->callAuth('authorizeBasic', 'Basic ' . base64_encode('nocolonhere'));
     }
 
     public function testAuthorizeBasicEmptyDetailsOnFailure(): void
@@ -970,7 +992,16 @@ class AuthorizationServiceTest extends TestCase
             'exp' => $now + 3600,
         ];
 
-        $token = $this->buildHmacJwt($payload, $secret, 'HS256');
+        // Token header algorithm matches the issuer's pinned algorithm (EdDSA)
+        // so the header/config mismatch guard passes and the unsupported-algorithm
+        // path is exercised. EdDSA is neither HMAC nor a supported asymmetric alg,
+        // so verification must reject it as unsupported. Built manually because the
+        // HMAC helper cannot sign a non-HMAC algorithm; the token is rejected
+        // before signature verification, so a dummy signature is sufficient.
+        $b64url = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+        $token = $b64url(json_encode(['typ' => 'JWT', 'alg' => 'EdDSA']))
+            . '.' . $b64url(json_encode($payload))
+            . '.' . $b64url('dummy-signature');
         $consumer = $this->createHmacConsumer('test-unsupported', $secret, 'EdDSA');
 
         $this->consumerMapper
@@ -982,6 +1013,123 @@ class AuthorizationServiceTest extends TestCase
         $this->expectExceptionMessage('not supported');
 
         $this->callAuth('authorizeJwt','Bearer ' . $token);
+    }
+
+    /**
+     * Algorithm-confusion attack: an issuer configured for an asymmetric
+     * algorithm (RS256) stores an RSA *public* key. An attacker forges an HS256
+     * token, signing it with that public key as the HMAC secret. The fix pins
+     * the algorithm server-side and rejects the header/config mismatch, so the
+     * forged token is refused rather than HMAC-verified against the public key.
+     */
+    public function testAuthorizeJwtRejectsAlgorithmConfusionHsWithAsymmetricConfig(): void
+    {
+        $now = time();
+        $payload = [
+            'iss' => 'confusion-issuer',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        // The "public key" is public knowledge; the attacker uses it as an HMAC
+        // secret to forge a valid-looking HS256 token.
+        $publicKey = 'public-rsa-key-material-not-secret-value-here';
+        $token = $this->buildHmacJwt($payload, $publicKey, 'HS256');
+
+        $consumer = new Consumer();
+        $consumer->setName('confusion-issuer');
+        $consumer->setUserId('admin');
+        $consumer->setAuthorizationConfiguration([
+            'publicKey' => $publicKey,
+            'algorithm' => 'RS256',
+        ]);
+
+        $this->consumerMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$consumer]);
+
+        // Must NOT authenticate the attacker.
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->callAuth('authorizeJwt', 'Bearer ' . $token);
+    }
+
+    /**
+     * The verification algorithm must be pinned in the issuer configuration.
+     * When it is absent, the token is rejected rather than falling back to the
+     * attacker-supplied header algorithm.
+     */
+    public function testAuthorizeJwtRejectsWhenNoAlgorithmConfigured(): void
+    {
+        $now = time();
+        $payload = [
+            'iss' => 'no-alg-issuer',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        $secret = 'some-shared-secret-value-at-least-32-bytes-long';
+        $token = $this->buildHmacJwt($payload, $secret, 'HS256');
+
+        $consumer = new Consumer();
+        $consumer->setName('no-alg-issuer');
+        $consumer->setUserId('admin');
+        // No 'algorithm' pinned in the configuration.
+        $consumer->setAuthorizationConfiguration(['publicKey' => $secret]);
+
+        $this->consumerMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$consumer]);
+
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->callAuth('authorizeJwt', 'Bearer ' . $token);
+    }
+
+    /**
+     * An asymmetric-configured issuer (RS256) with a matching-header token must
+     * fail closed until real asymmetric verification is implemented — it must
+     * never fall through to HMAC verification with the public key.
+     */
+    public function testAuthorizeJwtFailsClosedForAsymmetricAlgorithm(): void
+    {
+        $now = time();
+        $payload = [
+            'iss' => 'rs256-issuer',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        $b64url = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+        $token = $b64url(json_encode(['typ' => 'JWT', 'alg' => 'RS256']))
+            . '.' . $b64url(json_encode($payload))
+            . '.' . $b64url('dummy-signature');
+
+        $consumer = new Consumer();
+        $consumer->setName('rs256-issuer');
+        $consumer->setUserId('admin');
+        $consumer->setAuthorizationConfiguration([
+            'publicKey' => 'some-rsa-public-key',
+            'algorithm' => 'RS256',
+        ]);
+
+        $this->consumerMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$consumer]);
+
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('not supported');
+
+        $this->callAuth('authorizeJwt', 'Bearer ' . $token);
     }
 
     public function testAuthorizeJwtWithMultipleConsumersReturnsFirst(): void
