@@ -47,13 +47,13 @@ Vrij en open source onder de EUPL-licentie.
     <category>organization</category>
     <category>tools</category>
     <category>search</category>
-    <website>https://github.com/ConductionNL/OpenRegister</website>
-    <discussion>https://github.com/ConductionNL/OpenRegister/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenRegister</repository>
+    <website>https://codeberg.org/Conduction/openregister</website>
+    <bugs>https://codeberg.org/Conduction/openregister/issues</bugs>
+    <repository>https://codeberg.org/Conduction/openregister</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/OpenRegister/main/img/app-store.svg</screenshot>
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-registers.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-objects.png</screenshot>
 
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
