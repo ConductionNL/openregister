@@ -84,7 +84,10 @@ class TextExtractionServiceTest extends TestCase
             $this->entityRelationMapper,
             $this->settingsService,
             $this->riskLevelService,
-            $this->emlParser
+            $this->emlParser,
+            new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+            new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
+            new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger)
         );
     }
 

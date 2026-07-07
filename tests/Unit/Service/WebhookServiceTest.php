@@ -662,10 +662,10 @@ class WebhookServiceTest extends TestCase
     {
         $event = $this->createMock(\OCP\EventDispatcher\Event::class);
 
-        $webhook1 = $this->createMock(Webhook::class);
-        $webhook1->method('getId')->willReturn(1);
-        $webhook2 = $this->createMock(Webhook::class);
-        $webhook2->method('getId')->willReturn(2);
+        // Webhook is an NC Entity (uses __call magic getters/setters), which
+        // createMock() cannot stub — use real instances with an id set.
+        $webhook1 = $this->createTestWebhook(id: 1);
+        $webhook2 = $this->createTestWebhook(id: 2);
 
         $this->webhookMapper->method('findForEvent')->willReturn([$webhook1, $webhook2]);
 
@@ -1631,39 +1631,10 @@ class WebhookServiceTest extends TestCase
     }//end testFindWebhooksForInterceptionFiltersByEventType()
 
     // ─── dispatchEvent with matching webhooks ───────────────────────
-
-    /**
-     * Test dispatchEvent delivers to matching webhooks.
-     *
-     * @return void
-     */
-    public function testDispatchEventDeliversToMatchingWebhooks(): void
-    {
-        $event = $this->createMock(\OCP\EventDispatcher\Event::class);
-
-        $webhook = $this->createTestWebhook(enabled: true);
-        $webhook->setMethod('POST');
-
-        $this->webhookMapper->method('findForEvent')->willReturn([$webhook]);
-
-        // Inject mock client for successful delivery.
-        $mockResponse = new GuzzleResponse(200, [], '{"ok":true}');
-        $mockClient   = $this->createMock(GuzzleClient::class);
-        $mockClient->method('request')->willReturn($mockResponse);
-        $this->injectMockClient($mockClient);
-
-        $this->webhookMapper->expects($this->once())
-            ->method('updateStatistics');
-
-        $this->webhookLogMapper->expects($this->once())
-            ->method('insert');
-
-        $this->service->dispatchEvent(
-            $event,
-            'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-            ['objectType' => 'object']
-        );
-    }//end testDispatchEventDeliversToMatchingWebhooks()
+    // Note: synchronous delivery from dispatchEvent was removed in
+    // async-webhook-delivery — dispatchEvent now enqueues a WebhookDeliveryJob
+    // per matching webhook (see testDispatchEventEnqueuesDeliveryJobPerWebhook...).
+    // updateStatistics / log insert happen in the job, not synchronously here.
 
     /**
      * Test dispatchEvent logs debug when no webhooks found.
