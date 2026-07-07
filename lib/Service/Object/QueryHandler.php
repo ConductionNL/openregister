@@ -60,6 +60,13 @@ use Psr\Log\LoggerInterface;
 class QueryHandler
 {
     /**
+     * Hard maximum page size for list/search requests. A client-supplied
+     * `_limit` above this is clamped down, so an oversized request (e.g.
+     * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
+     */
+    public const MAX_PAGE_SIZE = 1000;
+
+    /**
      * Constructor for QueryHandler.
      *
      * @param MagicMapper                    $objectMapper       Unified mapper for objects.
@@ -341,7 +348,8 @@ class QueryHandler
         $metrics   = [];
 
         // Extract pagination parameters (limit=0 is valid for count/facets-only requests).
-        $limit  = max(0, (int) ($query['_limit'] ?? 20));
+        // Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
+        $limit  = min(max(0, (int) ($query['_limit'] ?? 20)), self::MAX_PAGE_SIZE);
         $offset = $query['_offset'] ?? null;
         $page   = $query['_page'] ?? null;
 
