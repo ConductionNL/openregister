@@ -169,8 +169,13 @@ class TextExtractionService
      * 2. Checks if re-extraction is needed (file modified since last extraction)
      * 3. Performs extraction if needed
      *
-     * @param int  $fileId         Nextcloud file ID from oc_filecache
-     * @param bool $forceReExtract Force re-extraction even if file hasn't changed
+     * @param int             $fileId         Nextcloud file ID from oc_filecache
+     * @param bool            $forceReExtract Force re-extraction even if file hasn't changed
+     * @param array|null      $entityTypes    Optional whitelist of entity types to detect. When null
+     *                                         (or empty) detection is unconstrained (all types) — the
+     *                                         default that preserves existing behaviour. A non-empty
+     *                                         list restricts recognition to those types; callers such
+     *                                         as DocuDesk pass their own configured selection.
      *
      * @return void
      *
@@ -179,7 +184,7 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
      */
-    public function extractFile(int $fileId, bool $forceReExtract=false): void
+    public function extractFile(int $fileId, bool $forceReExtract=false, ?array $entityTypes=null): void
     {
         $this->logger->info(
             message: '[TextExtractionService] Starting file extraction',
@@ -246,12 +251,18 @@ class TextExtractionService
                 return;
             }
 
+            // An empty whitelist is normalised to null so it means "all types"
+            // rather than "no types" — the regex path treats an empty list as
+            // "match nothing", so passing it through would suppress detection.
+            $entityTypesFilter = (empty($entityTypes) === true) ? null : array_values($entityTypes);
+
             $entityResult = $this->entityHandler->processSourceChunks(
                 sourceType: 'file',
                 sourceId: $fileId,
                 options: [
                     'method'               => $entityMethod,
                     'confidence_threshold' => 0.5,
+                    'entity_types'         => $entityTypesFilter,
                 ]
             );
 

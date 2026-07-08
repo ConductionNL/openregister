@@ -1101,8 +1101,11 @@ class EntityRecognitionHandlerTest extends TestCase
             ['TOTALLY_UNKNOWN'],
         ]);
 
-        // Unknown types produce empty mapping, so no entities key.
-        $this->assertArrayNotHasKey('entities', $body);
+        // Unmapped types are passed through (not dropped), so the whitelist is
+        // still sent. Dropping them would mean disabling one type silently
+        // removes every unmapped type (BSN, STREET_ADDRESS, …) from detection.
+        $this->assertArrayHasKey('entities', $body);
+        $this->assertSame(['TOTALLY_UNKNOWN'], $body['entities']);
     }
 
     // =========================================================================
@@ -1140,13 +1143,26 @@ class EntityRecognitionHandlerTest extends TestCase
             ['TOTALLY_UNKNOWN'],
         ]);
 
-        $this->assertEmpty($result);
+        // Unmapped types pass through unchanged so a whitelist can still carry
+        // the Dutch/GLiNER tags (BSN, STREET_ADDRESS, …) OpenAnonymiser emits.
+        $this->assertSame(['TOTALLY_UNKNOWN'], $result);
     }
 
     public function testMapToPresidioEntityTypesWithEmptyArray(): void
     {
         $result = $this->invokePrivateMethod('mapToPresidioEntityTypes', [[]]);
         $this->assertEmpty($result);
+    }
+
+    public function testMapToPresidioEntityTypesPassesThroughUnmappedAlongsideMapped(): void
+    {
+        $result = $this->invokePrivateMethod('mapToPresidioEntityTypes', [
+            ['PHONE', 'BSN', 'STREET_ADDRESS'],
+        ]);
+
+        // Mapped type translated to its Presidio tag; unmapped types preserved
+        // in order.
+        $this->assertSame(['PHONE_NUMBER', 'BSN', 'STREET_ADDRESS'], $result);
     }
 
     // =========================================================================

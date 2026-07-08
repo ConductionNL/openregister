@@ -1016,6 +1016,70 @@ class TextExtractionServiceTest extends TestCase
         $this->service->extractFile(1);
     }
 
+    /**
+     * Prime the shared mocks for a successful file extraction with entity
+     * recognition enabled (regex method), capturing the options handed to
+     * processSourceChunks so a test can assert on the entity_types filter.
+     *
+     * @return object Holder whose ->options is set to the captured options.
+     */
+    private function primeEntityExtraction(): object
+    {
+        $this->fileMapper->method('getFile')->willReturn([
+            'mtime'    => 300,
+            'path'     => '/files/test.txt',
+            'name'     => 'test.txt',
+            'mimetype' => 'text/plain',
+            'size'     => 500,
+        ]);
+        $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(100);
+
+        $file = $this->createMock(File::class);
+        $file->method('getContent')->willReturn(str_repeat('The document text. ', 20));
+        $this->rootFolder->method('getById')->willReturn([$file]);
+
+        $this->db->method('beginTransaction');
+        $this->db->method('commit');
+        $this->chunkMapper->method('deleteBySource');
+        $this->chunkMapper->method('insert');
+
+        $this->settingsService->method('getFileSettingsOnly')->willReturn([
+            'entityRecognitionEnabled' => true,
+            'entityRecognitionMethod'  => 'regex',
+        ]);
+        $this->riskLevelService->method('updateRiskLevel')->willReturn('low');
+
+        $holder = new \stdClass();
+        $holder->options = null;
+        $this->entityHandler->method('processSourceChunks')
+            ->willReturnCallback(function ($sourceType, $sourceId, $options) use ($holder) {
+                $holder->options = $options;
+                return ['entities_found' => 0, 'relations_created' => 0];
+            });
+
+        return $holder;
+    }
+
+    public function testExtractFileForwardsEntityTypesWhitelist(): void
+    {
+        $holder = $this->primeEntityExtraction();
+
+        $this->service->extractFile(1, true, ['PERSON', 'EMAIL']);
+
+        $this->assertSame(['PERSON', 'EMAIL'], $holder->options['entity_types']);
+    }
+
+    public function testExtractFileNormalisesEmptyEntityTypesToNull(): void
+    {
+        $holder = $this->primeEntityExtraction();
+
+        // An empty whitelist must become null ("all types"), not "no types".
+        $this->service->extractFile(1, true, []);
+
+        $this->assertArrayHasKey('entity_types', $holder->options);
+        $this->assertNull($holder->options['entity_types']);
+    }
+
     public function testExtractFileEntityRecognitionFailureDoesNotThrow(): void
     {
         $this->fileMapper->method('getFile')->willReturn([

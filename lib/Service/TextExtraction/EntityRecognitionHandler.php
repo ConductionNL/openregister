@@ -806,9 +806,12 @@ class EntityRecognitionHandler
 
         $presidioTypes = [];
         foreach ($entityTypes as $type) {
-            if (isset($mapping[$type]) === true) {
-                $presidioTypes[] = $mapping[$type];
-            }
+            // Types with an explicit Presidio mapping are translated; types
+            // without one (e.g. BSN, STREET_ADDRESS, or the GLiNER tags emitted
+            // by OpenAnonymiser) are passed through unchanged so a whitelist can
+            // still carry them. Dropping unmapped types would silently disable
+            // detection of every such type whenever any filter is active.
+            $presidioTypes[] = ($mapping[$type] ?? $type);
         }
 
         return $presidioTypes;
