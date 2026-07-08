@@ -189,7 +189,7 @@ class DoriathCredentialStoreTest extends TestCase
     public function testDeleteRemovesDoriathRowAndResidualVaultRow(): void
     {
         $this->secretService->rows[] = new FakeSecretRow('row-0', self::UUID, 'fake-cipher:a');
-        $this->vaultStore->expects($this->once())->method('delete')->with(self::UUID);
+        $this->vaultStore->expects($this->once())->method('delete')->with(self::UUID, 'personal');
         $store = $this->makeStore(session: true);
 
         $store->delete(self::UUID);
@@ -205,7 +205,7 @@ class DoriathCredentialStoreTest extends TestCase
      */
     public function testDeleteAbsentSecretIsIdempotentNoOp(): void
     {
-        $this->vaultStore->expects($this->once())->method('delete')->with(self::UUID);
+        $this->vaultStore->expects($this->once())->method('delete')->with(self::UUID, 'personal');
         $store = $this->makeStore(session: true);
 
         $store->delete(self::UUID);
@@ -221,9 +221,9 @@ class DoriathCredentialStoreTest extends TestCase
     public function testLazyMigrationMovesVaultSecretExactlyOnce(): void
     {
         $this->vaultStore->expects($this->once())->method('get')
-            ->with(self::UUID)
+            ->with(self::UUID, 'personal')
             ->willReturn(self::SECRET);
-        $this->vaultStore->expects($this->once())->method('delete')->with(self::UUID);
+        $this->vaultStore->expects($this->once())->method('delete')->with(self::UUID, 'personal');
         $store = $this->makeStore(session: true);
 
         // First read: miss in Doriath → vault hit → migrate → return.

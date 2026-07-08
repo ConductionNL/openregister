@@ -81,4 +81,43 @@ class NextcloudVaultCredentialStoreTest extends TestCase
 
         $this->store->delete('uuid-1');
     }
+
+    public function testPersonalScopeStoresUnderOwningUser(): void
+    {
+        $this->vault->expects($this->once())
+            ->method('store')
+            ->with('alice', 'openregister/credential/uuid-1', 'sekret');
+
+        // Explicit 'personal' scope resolves to the current user — identical to the default.
+        $this->store->put('uuid-1', 'sekret', 'personal');
+    }
+
+    public function testOrganisationScopePutStoresUnderSystemIdentity(): void
+    {
+        // The reserved system identity is the empty-string user — never 'alice'.
+        $this->vault->expects($this->once())
+            ->method('store')
+            ->with('', 'openregister/credential/uuid-1', 'sekret');
+
+        $this->store->put('uuid-1', 'sekret', 'organisation');
+    }
+
+    public function testOrganisationScopeGetReadsSystemIdentity(): void
+    {
+        $this->vault->method('retrieve')
+            ->with('', 'openregister/credential/uuid-1')
+            ->willReturn('sekret');
+
+        $this->assertSame('sekret', $this->store->get('uuid-1', 'organisation'));
+    }
+
+    public function testOrganisationScopeDeleteRemovesSystemIdentityKey(): void
+    {
+        $this->vault->expects($this->once())
+            ->method('delete')
+            ->with('', 'openregister/credential/uuid-1')
+            ->willReturn(1);
+
+        $this->store->delete('uuid-1', 'organisation');
+    }
 }//end class
