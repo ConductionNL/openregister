@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -60,19 +61,36 @@ use Throwable;
 class CredentialController extends Controller
 {
     /**
+     * The personal (owner-scoped) credential scope — the default when absent.
+     *
+     * @var string
+     */
+    private const SCOPE_PERSONAL = 'personal';
+
+    /**
+     * The organisation (membership-scoped) credential scope.
+     *
+     * @var string
+     */
+    private const SCOPE_ORGANISATION = 'organisation';
+
+    /**
      * Constructor.
      *
-     * @param string                    $appName         App name (injected by NC).
-     * @param IRequest                  $request         Current request.
-     * @param IUserSession              $userSession     Current session (owner identity).
-     * @param IGroupManager             $groupManager    Group manager (admin check for app registration).
-     * @param ObjectService             $objectService   OR object CRUD for credential metadata.
-     * @param CredentialStore           $credentialStore Secret store leaf (vault).
-     * @param ProviderCatalogue         $catalogue       Read-only provider catalogue (validation).
-     * @param CredentialBrokerService   $broker          The guarded outbound broker.
-     * @param CredentialAppTokenService $tokenService    Per-app signing-secret registry + token verify.
+     * @param string                    $appName             App name (injected by NC).
+     * @param IRequest                  $request             Current request.
+     * @param IUserSession              $userSession         Current session (owner identity).
+     * @param IGroupManager             $groupManager        Group manager (admin check for app registration).
+     * @param ObjectService             $objectService       OR object CRUD for credential metadata.
+     * @param CredentialStore           $credentialStore     Secret store leaf (vault).
+     * @param ProviderCatalogue         $catalogue           Read-only provider catalogue (validation).
+     * @param CredentialBrokerService   $broker              The guarded outbound broker.
+     * @param CredentialAppTokenService $tokenService        Per-app signing-secret registry + token verify.
+     * @param OrganisationService       $organisationService Organisation membership + admin authority resolution.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Composes the credential-broker collaborators.
      */
     public function __construct(
         string $appName,
@@ -84,16 +102,21 @@ class CredentialController extends Controller
         private readonly ProviderCatalogue $catalogue,
         private readonly CredentialBrokerService $broker,
         private readonly CredentialAppTokenService $tokenService,
+        private readonly OrganisationService $organisationService,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
-     * GET /api/credentials — list the caller's own credential metadata.
+     * GET /api/credentials — list credential metadata (never a secret).
      *
-     * @return JSONResponse The caller's credentials (metadata only; never a secret).
+     * `?scope=organisation` lists the caller's active organisation's credentials
+     * (visible to any member — D4). No scope, or `?scope=personal`, lists the
+     * caller's OWN personal credentials, unchanged.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @return JSONResponse The credential metadata (metadata only; never a secret).
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
      */
     #[NoAdminRequired]
     public function index(): JSONResponse
@@ -101,6 +124,10 @@ class CredentialController extends Controller
         $uid = $this->currentUid();
         if ($uid === null) {
             return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        if ($this->requestedScope() === self::SCOPE_ORGANISATION) {
+            return $this->indexOrganisation();
         }
 
         try {
@@ -113,6 +140,11 @@ class CredentialController extends Controller
         $own = [];
         foreach ($objects as $object) {
             $data = $this->serialise(object: $object);
+            // Personal listing: the caller's own personal (scope-absent) credentials only.
+            if (($data['scope'] ?? self::SCOPE_PERSONAL) === self::SCOPE_ORGANISATION) {
+                continue;
+            }
+
             if (($data['@self']['owner'] ?? null) === $uid) {
                 $own[] = $data;
             }
@@ -120,6 +152,47 @@ class CredentialController extends Controller
 
         return new JSONResponse(['results' => $own]);
     }//end index()
+
+    /**
+     * List the caller's active organisation's credential metadata (members may read).
+     *
+     * Returns the organisation-scoped credentials whose `organisation` equals the
+     * caller's active organisation UUID. The caller is a member of their own active
+     * organisation by construction, so any member may read this metadata; no secret
+     * is ever included (design D4).
+     *
+     * @return JSONResponse The active organisation's credential metadata.
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     */
+    private function indexOrganisation(): JSONResponse
+    {
+        $activeOrg = $this->organisationService->getActiveOrganisation()?->getUuid();
+        if ($activeOrg === null || $activeOrg === '') {
+            return new JSONResponse(['results' => []]);
+        }
+
+        try {
+            $this->objectService->setRegister(CredentialBrokerService::REGISTER)->setSchema(CredentialBrokerService::SCHEMA);
+            $objects = $this->objectService->findAll();
+        } catch (Throwable $e) {
+            return new JSONResponse(['message' => 'Unable to list credentials'], Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        $results = [];
+        foreach ($objects as $object) {
+            $data = $this->serialise(object: $object);
+            if (($data['scope'] ?? self::SCOPE_PERSONAL) !== self::SCOPE_ORGANISATION) {
+                continue;
+            }
+
+            if ((string) ($data['organisation'] ?? '') === $activeOrg) {
+                $results[] = $data;
+            }
+        }
+
+        return new JSONResponse(['results' => $results]);
+    }//end indexOrganisation()
 
     /**
      * GET /api/credentials/providers — list the read-only provider catalogue (id + title only).
@@ -161,12 +234,18 @@ class CredentialController extends Controller
     /**
      * POST /api/credentials — create a credential and store its secret to the vault.
      *
-     * Body: `{name, provider, allowedApps?, secret?}`. The secret (if given) is written
-     * straight to the vault under the new object UUID — never persisted to the OR object.
+     * Body: `{name, provider, allowedApps?, secret?, scope?, organisation?}`. The
+     * secret (if given) is written straight to the vault under the new object UUID
+     * (its scope's vault owner) — never persisted to the OR object.
+     *
+     * Personal (scope absent / `personal`): unchanged — any authenticated user may
+     * create their own. Organisation (`scope = organisation`): the `organisation`
+     * defaults to the caller's active organisation when omitted, and the caller MUST
+     * be an administrator of that organisation (or a Nextcloud admin) — design D4.
      *
      * @return JSONResponse The created credential metadata, or a static error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
      */
     #[NoAdminRequired]
     public function create(): JSONResponse
@@ -180,6 +259,7 @@ class CredentialController extends Controller
         $provider = (string) $this->request->getParam('provider', '');
         $secret   = $this->request->getParam('secret');
         $allowed  = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
+        $scope    = $this->requestedScope();
 
         if ($name === '' || $this->catalogue->get($provider) === null) {
             return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
@@ -193,6 +273,14 @@ class CredentialController extends Controller
             'createdAt'   => (new DateTimeImmutable())->format(DATE_ATOM),
         ];
 
+        // Organisation scope: resolve + admin-gate the owning organisation (D4).
+        if ($scope === self::SCOPE_ORGANISATION) {
+            $data = $this->applyOrganisationScope(data: $data, uid: $uid);
+            if ($data instanceof JSONResponse) {
+                return $data;
+            }
+        }
+
         try {
             $saved = $this->objectService->saveObject(
                 object: $data,
@@ -205,7 +293,7 @@ class CredentialController extends Controller
 
         $uuid = (string) $saved->getUuid();
         if (is_string($secret) === true && $secret !== '') {
-            $this->credentialStore->put($uuid, $secret);
+            $this->credentialStore->put($uuid, $secret, $scope);
         }
 
         return new JSONResponse($this->serialise(object: $saved), Http::STATUS_CREATED);
@@ -224,14 +312,15 @@ class CredentialController extends Controller
     public function update(string $id): JSONResponse
     {
         $uid      = $this->currentUid();
-        $existing = $this->ensureOwned(id: $id, uid: $uid);
+        $existing = $this->ensureManageable(id: $id, uid: $uid);
         if ($existing instanceof JSONResponse) {
             return $existing;
         }
 
         // Raw property bag (no `@self` envelope / `id`) — the update carries only
         // metadata, never a secret (there is none in the object).
-        $data = $existing->getObject();
+        $data  = $existing->getObject();
+        $scope = $this->scopeOf(data: $data);
 
         $nameParam = $this->request->getParam('name');
         if (is_string($nameParam) === true && trim($nameParam) !== '') {
@@ -255,7 +344,7 @@ class CredentialController extends Controller
 
         $secret = $this->request->getParam('secret');
         if (is_string($secret) === true && $secret !== '') {
-            $this->credentialStore->put($id, $secret);
+            $this->credentialStore->put($id, $secret, $scope);
         }
 
         return new JSONResponse($this->serialise(object: $saved));
@@ -274,10 +363,12 @@ class CredentialController extends Controller
     public function destroy(string $id): JSONResponse
     {
         $uid      = $this->currentUid();
-        $existing = $this->ensureOwned(id: $id, uid: $uid);
+        $existing = $this->ensureManageable(id: $id, uid: $uid);
         if ($existing instanceof JSONResponse) {
             return $existing;
         }
+
+        $scope = $this->scopeOf(data: $existing->getObject());
 
         try {
             $this->objectService->deleteObject(
@@ -289,7 +380,7 @@ class CredentialController extends Controller
             return new JSONResponse(['message' => 'Unable to delete credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
         }
 
-        $this->credentialStore->delete($id);
+        $this->credentialStore->delete($id, $scope);
 
         return new JSONResponse(['message' => 'Deleted']);
     }//end destroy()
@@ -453,16 +544,21 @@ class CredentialController extends Controller
     }//end currentUid()
 
     /**
-     * Load a credential and enforce the per-object owner IDOR guard.
+     * Load a credential and enforce the scope-aware management guard (D4).
+     *
+     * Personal (scope absent / `personal`): the per-object owner IDOR guard,
+     * UNCHANGED — the caller must be the credential `owner`. Organisation
+     * (`scope = organisation`): the caller must be an administrator of the
+     * credential's `organisation` (or a Nextcloud admin).
      *
      * @param string      $id  The credential UUID.
      * @param string|null $uid The current user's UID (null when unauthenticated).
      *
-     * @return ObjectEntity|JSONResponse The owned entity, or a static error response.
+     * @return ObjectEntity|JSONResponse The manageable entity, or a static error response.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
      */
-    private function ensureOwned(string $id, ?string $uid): ObjectEntity | JSONResponse
+    private function ensureManageable(string $id, ?string $uid): ObjectEntity | JSONResponse
     {
         if ($uid === null) {
             return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
@@ -479,13 +575,115 @@ class CredentialController extends Controller
             $object = null;
         }
 
-        if ($object === null || $object->getOwner() !== $uid) {
+        if ($object === null) {
             // Uniform 403 — never distinguish "missing" from "not yours".
             return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
         }
 
+        if ($this->scopeOf(data: $object->getObject()) === self::SCOPE_ORGANISATION) {
+            $organisation = (string) ($object->getObject()['organisation'] ?? '');
+            if ($organisation === '' || $this->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
+                return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+            }
+
+            return $object;
+        }
+
+        // Personal — the per-object owner IDOR guard, unchanged.
+        if ($object->getOwner() !== $uid) {
+            return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+        }
+
         return $object;
-    }//end ensureOwned()
+    }//end ensureManageable()
+
+    /**
+     * Resolve the requested scope from the request (body `scope` / query `scope`).
+     *
+     * Anything other than `organisation` (including absent) resolves to `personal`
+     * so the personal path is the safe default (design D1/D5).
+     *
+     * @return string The requested scope (`personal`|`organisation`).
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     */
+    private function requestedScope(): string
+    {
+        $scope = strtolower(trim((string) $this->request->getParam('scope', self::SCOPE_PERSONAL)));
+        if ($scope === self::SCOPE_ORGANISATION) {
+            return self::SCOPE_ORGANISATION;
+        }
+
+        return self::SCOPE_PERSONAL;
+    }//end requestedScope()
+
+    /**
+     * Resolve a stored credential's scope from its property bag (absent ⇒ personal).
+     *
+     * @param array<string, mixed> $data The credential's property bag.
+     *
+     * @return string The scope (`personal`|`organisation`).
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     */
+    private function scopeOf(array $data): string
+    {
+        if ((string) ($data['scope'] ?? self::SCOPE_PERSONAL) === self::SCOPE_ORGANISATION) {
+            return self::SCOPE_ORGANISATION;
+        }
+
+        return self::SCOPE_PERSONAL;
+    }//end scopeOf()
+
+    /**
+     * Resolve the owning organisation for a create, defaulting to the active one.
+     *
+     * @param string $requested The `organisation` body param (may be empty).
+     *
+     * @return string The organisation UUID, or '' when none can be resolved.
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     */
+    private function resolveOrganisation(string $requested): string
+    {
+        $organisation = trim($requested);
+        if ($organisation !== '') {
+            return $organisation;
+        }
+
+        return (string) ($this->organisationService->getActiveOrganisation()?->getUuid() ?? '');
+    }//end resolveOrganisation()
+
+    /**
+     * Resolve + admin-gate the owning organisation, returning the enriched data or an error.
+     *
+     * The `organisation` defaults to the caller's active organisation when omitted;
+     * the caller MUST be an administrator of it (or a Nextcloud admin). On success
+     * the `scope` + `organisation` fields are set on the property bag (design D4).
+     *
+     * @param array<string, mixed> $data The credential property bag under construction.
+     * @param string               $uid  The current user's UID.
+     *
+     * @return array<string, mixed>|JSONResponse The enriched data, or a static error response.
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     */
+    private function applyOrganisationScope(array $data, string $uid): array | JSONResponse
+    {
+        $organisation = $this->resolveOrganisation(requested: (string) $this->request->getParam('organisation', ''));
+        if ($organisation === '') {
+            return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
+        }
+
+        if ($this->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
+            return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+        }
+
+        $data['scope']        = self::SCOPE_ORGANISATION;
+        $data['organisation'] = $organisation;
+
+        return $data;
+    }//end applyOrganisationScope()
 
     /**
      * Serialise a credential entity to a metadata-only array (never carries a secret).

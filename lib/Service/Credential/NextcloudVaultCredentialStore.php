@@ -4,11 +4,22 @@
  * NextcloudVaultCredentialStore — the first {@see CredentialStore} leaf.
  *
  * Backs the credential-broker secret store with Nextcloud's native encrypted
- * credential vault (`OCP\Security\ICredentialsManager`), which encrypts at rest
- * and is scoped per user. Secrets are stored under the current user's id with the
- * key `openregister/credential/<uuid>`, so only the owning user can ever read or
- * delete their own credential's secret (design.md D1/D3, ADR-005: no custom secret
- * storage). The raw secret is only ever in memory here; it is never logged.
+ * credential vault (`OCP\Security\ICredentialsManager`), which encrypts at rest.
+ * The vault OWNER the secret is stored under is derived from the credential's
+ * scope by the single shared {@see vaultOwner()} selector (used at BOTH write and
+ * read, so the two paths cannot drift — credential-broker-organisation-scope D2):
+ *
+ *   - `personal` (the default): the CURRENT user's id — so only the owning user
+ *     can ever read or delete their own credential's secret (design.md D1/D3,
+ *     ADR-005: no custom secret storage). Byte-for-byte the pre-existing path.
+ *   - `organisation`: the reserved SYSTEM identity (empty-string user — Nextcloud's
+ *     supported system-credential namespace) — so no user owns the shared secret,
+ *     membership changes never orphan it, and different organisations never collide
+ *     (the UUID key is unique). Access is gated by the broker guards BEFORE the
+ *     vault is read, so the key is never itself a capability.
+ *
+ * The key is always `openregister/credential/<uuid>`. The raw secret is only ever
+ * in memory here; it is never logged.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -43,6 +54,20 @@ class NextcloudVaultCredentialStore implements CredentialStore
     private const KEY_PREFIX = 'openregister/credential/';
 
     /**
+     * The credential scope that stores its secret under the reserved system identity.
+     *
+     * @var string
+     */
+    private const SCOPE_ORGANISATION = 'organisation';
+
+    /**
+     * The reserved Nextcloud system-credential identity (empty-string user).
+     *
+     * @var string
+     */
+    private const SYSTEM_IDENTITY = '';
+
+    /**
      * Constructor.
      *
      * @param ICredentialsManager $credentialsManager The NC encrypted per-user vault.
@@ -57,37 +82,39 @@ class NextcloudVaultCredentialStore implements CredentialStore
     }//end __construct()
 
     /**
-     * Store (or overwrite) the secret for a credential in the current user's vault.
+     * Store (or overwrite) the secret for a credential under its scope's vault owner.
      *
      * @param string $uuid   The owning `credential` object's UUID.
      * @param string $secret The raw secret to store.
+     * @param string $scope  The credential scope (`personal`|`organisation`).
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
      */
-    public function put(string $uuid, string $secret): void
+    public function put(string $uuid, string $secret, string $scope='personal'): void
     {
         $this->credentialsManager->store(
-            $this->currentUserId(),
+            $this->vaultOwner(scope: $scope),
             self::KEY_PREFIX.$uuid,
             $secret
         );
     }//end put()
 
     /**
-     * Retrieve the secret for a credential from the current user's vault.
+     * Retrieve the secret for a credential from its scope's vault owner.
      *
-     * @param string $uuid The owning `credential` object's UUID.
+     * @param string $uuid  The owning `credential` object's UUID.
+     * @param string $scope The credential scope (`personal`|`organisation`).
      *
      * @return string|null The raw secret, or null when absent / not a string.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
      */
-    public function get(string $uuid): ?string
+    public function get(string $uuid, string $scope='personal'): ?string
     {
         $value = $this->credentialsManager->retrieve(
-            $this->currentUserId(),
+            $this->vaultOwner(scope: $scope),
             self::KEY_PREFIX.$uuid
         );
 
@@ -99,21 +126,46 @@ class NextcloudVaultCredentialStore implements CredentialStore
     }//end get()
 
     /**
-     * Delete the secret for a credential from the current user's vault.
+     * Delete the secret for a credential from its scope's vault owner.
      *
-     * @param string $uuid The owning `credential` object's UUID.
+     * @param string $uuid  The owning `credential` object's UUID.
+     * @param string $scope The credential scope (`personal`|`organisation`).
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
      */
-    public function delete(string $uuid): void
+    public function delete(string $uuid, string $scope='personal'): void
     {
         $this->credentialsManager->delete(
-            $this->currentUserId(),
+            $this->vaultOwner(scope: $scope),
             self::KEY_PREFIX.$uuid
         );
     }//end delete()
+
+    /**
+     * The single shared scope→vault-owner selector (used at write AND read).
+     *
+     * An `organisation` credential stores under the reserved system identity
+     * (empty-string user) so no user owns the shared secret; every other scope
+     * (`personal`, or absent) stores under the current session user — byte-for-byte
+     * the pre-existing behaviour. Keeping this the ONLY place the mapping is made
+     * guarantees write and read cannot drift (design D2).
+     *
+     * @param string $scope The credential scope (`personal`|`organisation`).
+     *
+     * @return string The vault owner id (system identity or current user id).
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     */
+    private function vaultOwner(string $scope): string
+    {
+        if ($scope === self::SCOPE_ORGANISATION) {
+            return self::SYSTEM_IDENTITY;
+        }
+
+        return $this->currentUserId();
+    }//end vaultOwner()
 
     /**
      * Resolve the current user's id for per-user vault scoping.

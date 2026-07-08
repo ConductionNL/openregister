@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Http\Client\IClient;
@@ -137,7 +138,8 @@ class CredentialControllerTest extends TestCase
             $catalogue,
             $session,
             $clientService,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(OrganisationService::class)
         );
 
         $request = $this->createMock(IRequest::class);
@@ -156,7 +158,8 @@ class CredentialControllerTest extends TestCase
             $store,
             $catalogue,
             $broker,
-            $this->createMock(CredentialAppTokenService::class)
+            $this->createMock(CredentialAppTokenService::class),
+            $this->createMock(OrganisationService::class)
         );
     }//end makeController()
 
