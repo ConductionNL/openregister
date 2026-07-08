@@ -5,6 +5,11 @@ retrofit: true
 
 # Object Lifecycle
 
+**Status**: in-progress
+
+**OpenSpec changes**:
+- `fk-graph-lifecycle-transitions` — adds declarative FK-scoped graph transition mode (in-progress)
+
 ## Purpose
 
 @e2e exclude internal object pipeline backend — covered by PHPUnit
