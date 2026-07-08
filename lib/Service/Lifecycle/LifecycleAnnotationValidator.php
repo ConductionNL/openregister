@@ -48,6 +48,7 @@ final class LifecycleAnnotationValidator
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function validate(array $schema): array
     {
@@ -62,6 +63,17 @@ final class LifecycleAnnotationValidator
         // the rest of validation (and the runtime listener) sees a single key.
         if (isset($annotation['field']) === false && isset($annotation['property']) === true) {
             $annotation['field'] = $annotation['property'];
+        }
+
+        // Graph mode: when a non-empty `graph` block is declared, the lifecycle
+        // field is a `$ref` with no enum, so shape-check the graph block instead
+        // of the static `transitions`/enum contract. Static-only schemas fall
+        // straight through to the unchanged validation below (no regression).
+        if (isset($annotation['graph']) === true
+            && is_array($annotation['graph']) === true
+            && $annotation['graph'] !== []
+        ) {
+            return $this->validateGraphMode(annotation: $annotation, schema: $schema);
         }
 
         // Required top-level fields.
@@ -236,6 +248,126 @@ final class LifecycleAnnotationValidator
 
         return $errors;
     }//end validate()
+
+    /**
+     * Validate a graph-mode `x-openregister-lifecycle` annotation.
+     *
+     * Shape-checks the `graph` block (`schema`, `parentField`, `parentFrom`,
+     * `orderField`, `finalField` as non-empty strings; `allowedMoves` one of
+     * `forward`|`adjacent`|`any`), keeps `field` required but relaxes the
+     * `enum`/`type:string` constraint (a `$ref` field has no enum), and accepts
+     * either the literal-string or object-form `initial`. Sibling schemas and
+     * parent objects are NOT resolved — existence is a runtime concern.
+     *
+     * @param array<string, mixed> $annotation The normalised annotation block.
+     * @param array<string, mixed> $schema     Full schema definition.
+     *
+     * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each check maps to one distinct, irreducible graph-shape rule.
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function validateGraphMode(array $annotation, array $schema): array
+    {
+        $errors = [];
+
+        // `field` remains required and non-empty, but the enum/type:string
+        // constraint is relaxed for a `$ref` lifecycle field.
+        $field = ($annotation['field'] ?? null);
+        if (is_string($field) === false || $field === '') {
+            $errors[] = [
+                'code'    => 'lifecycle-missing-key',
+                'message' => 'x-openregister-lifecycle is missing required key "field".',
+            ];
+        } else {
+            $properties = ($schema['properties'] ?? []);
+            if (is_array($properties) === true && isset($properties[$field]) === false) {
+                $errors[] = [
+                    'code'    => 'lifecycle-field-missing',
+                    'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
+                ];
+            }
+        }
+
+        // `initial` (optional): accept the literal-string form or the object
+        // form `{ from, field }` with both keys non-empty strings.
+        if (isset($annotation['initial']) === true) {
+            $initialError = $this->validateInitialForm(initial: $annotation['initial']);
+            if ($initialError !== null) {
+                $errors[] = $initialError;
+            }
+        }
+
+        // Graph block: required non-empty string keys.
+        $graph = $annotation['graph'];
+        foreach (['schema', 'parentField', 'parentFrom', 'orderField', 'finalField'] as $key) {
+            $value = ($graph[$key] ?? null);
+            if (is_string($value) === false || $value === '') {
+                $errors[] = [
+                    'code'    => 'lifecycle-graph-missing-key',
+                    'message' => sprintf('x-openregister-lifecycle.graph is missing required string key "%s".', $key),
+                ];
+            }
+        }
+
+        // `allowedMoves`: required, one of forward|adjacent|any.
+        $allowed = ($graph['allowedMoves'] ?? null);
+        if (in_array($allowed, ['forward', 'adjacent', 'any'], true) === false) {
+            $shown = gettype($allowed);
+            if (is_scalar($allowed) === true) {
+                $shown = (string) $allowed;
+            }
+
+            $errors[] = [
+                'code'    => 'lifecycle-graph-allowedmoves-invalid',
+                'message' => sprintf(
+                    'x-openregister-lifecycle.graph.allowedMoves "%s" must be one of forward|adjacent|any.',
+                    $shown
+                ),
+            ];
+        }
+
+        return $errors;
+    }//end validateGraphMode()
+
+    /**
+     * Shape-check the `initial` value in its two accepted forms.
+     *
+     * Valid: a non-empty string (literal form) or an object with non-empty
+     * string `from` and `field` keys (object form). Returns a single structured
+     * error on violation, or null when valid.
+     *
+     * @param mixed $initial The raw `initial` value off the annotation.
+     *
+     * @return array{code: string, message: string}|null Error, or null when valid.
+     */
+    private function validateInitialForm(mixed $initial): ?array
+    {
+        if (is_string($initial) === true) {
+            return null;
+        }
+
+        if (is_array($initial) === true) {
+            $from  = ($initial['from'] ?? null);
+            $field = ($initial['field'] ?? null);
+            if (is_string($from) === false || $from === ''
+                || is_string($field) === false || $field === ''
+            ) {
+                return [
+                    'code'    => 'lifecycle-initial-malformed',
+                    'message' => 'x-openregister-lifecycle.initial object form must declare non-empty "from" and "field" strings.',
+                ];
+            }
+
+            return null;
+        }
+
+        return [
+            'code'    => 'lifecycle-initial-malformed',
+            'message' => 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".',
+        ];
+    }//end validateInitialForm()
 
     /**
      * Shape-check a transition's optional `authorization` list.
