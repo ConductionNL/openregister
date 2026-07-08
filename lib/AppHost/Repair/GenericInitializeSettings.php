@@ -28,6 +28,14 @@
  * {@see \OCA\OpenRegister\AppHost\Bootstrap::registerRepairSteps()}, so it IS
  * the manifest-registration point for credential consumers.
  *
+ * Per-app Doriath identity (per-app-doriath-application design D-5): alongside
+ * the OR app-key onboarding, the same hook also registers the consuming app as
+ * its OWN identity-only Doriath `Application` via
+ * {@see \OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar} —
+ * manifest-driven, idempotent, `pending`, no CSR. This adds identity only;
+ * brokered secret custody stays under OR's single self-registered application
+ * vault (credential-doriath-leaf D-C/D-F), untouched.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -49,6 +57,7 @@ namespace OCA\OpenRegister\AppHost\Repair;
 
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
+use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -70,11 +79,12 @@ class GenericInitializeSettings implements IRepairStep
     /**
      * Constructor.
      *
-     * @param string                         $appId           The leaf app id (display only).
-     * @param AppHostSettingsService         $settingsService App-scoped settings service.
-     * @param LoggerInterface                $logger          PSR logger.
-     * @param IAppManager|null               $appManager      Locates the leaf's bundled manifest (lazily resolved when null).
-     * @param CredentialAppTokenService|null $tokenService    Credential-broker app registry (lazily resolved when null).
+     * @param string                           $appId                The leaf app id (display only).
+     * @param AppHostSettingsService           $settingsService      App-scoped settings service.
+     * @param LoggerInterface                  $logger               PSR logger.
+     * @param IAppManager|null                 $appManager           Locates the leaf's bundled manifest (lazily resolved when null).
+     * @param CredentialAppTokenService|null   $tokenService         Credential-broker app registry (lazily resolved when null).
+     * @param DoriathApplicationRegistrar|null $applicationRegistrar Per-app Doriath application registrar (lazily resolved when null).
      */
     public function __construct(
         protected readonly string $appId,
@@ -82,6 +92,7 @@ class GenericInitializeSettings implements IRepairStep
         protected readonly LoggerInterface $logger,
         protected readonly ?IAppManager $appManager=null,
         protected readonly ?CredentialAppTokenService $tokenService=null,
+        protected readonly ?DoriathApplicationRegistrar $applicationRegistrar=null,
     ) {
     }//end __construct()
 
@@ -153,20 +164,50 @@ class GenericInitializeSettings implements IRepairStep
     }//end importConfiguration()
 
     /**
-     * D-G hook: register a `credentials[]`-declaring leaf with the credential broker, once.
+     * Onboarding hook for a `credentials[]`-declaring leaf.
      *
-     * Reads the leaf's bundled `src/manifest.json`; when it declares a
-     * non-empty `credentials` array AND the app holds no broker signing secret
-     * yet, the app is registered via
-     * {@see CredentialAppTokenService::registerApp()}. The `isRegistered()`
-     * guard is essential: `registerApp()` ROTATES the signing secret on every
-     * call, and an unguarded auto-run on each upgrade would invalidate the
-     * app's held copy — auto-onboarding only ever registers ABSENT apps
-     * (design D-G). The freshly generated secret is deliberately discarded
-     * here: in-process consumers call the broker without an HMAC token
+     * When the leaf's bundled `src/manifest.json` declares a non-empty
+     * `credentials` array it runs two INDEPENDENT, idempotent onboarding paths:
+     * the OR credential-broker app-key registration (design D-G,
+     * {@see registerBrokerAppKey()}) and the per-app Doriath IDENTITY
+     * registration (per-app-doriath-application D-5,
+     * {@see registerDoriathApplication()}). Both degrade (warn, never throw) on
+     * their own; the Doriath-identity path runs even when the app already holds
+     * a broker signing secret.
+     *
+     * @param IOutput $output Repair output channel.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     */
+    private function registerCredentialConsumer(IOutput $output): void
+    {
+        if ($this->manifestDeclaresCredentials() === false) {
+            return;
+        }
+
+        // OR app-key onboarding (credential-doriath-leaf D-G) and per-app Doriath
+        // IDENTITY registration (per-app-doriath-application D-5) are INDEPENDENT
+        // and both idempotent: the Doriath-identity path runs even when the app
+        // already holds a signing secret (its own live-row probe collapses re-runs
+        // to a no-op). Both degrade (warn, never throw) on their own.
+        $this->registerBrokerAppKey(output: $output);
+        $this->registerDoriathApplication();
+    }//end registerCredentialConsumer()
+
+    /**
+     * Register the leaf's OR credential-broker app-key once (never rotating).
+     *
+     * The `isRegistered()` guard is essential: `registerApp()` ROTATES the
+     * signing secret on every call, and an unguarded auto-run on each upgrade
+     * would invalidate the app's held copy — auto-onboarding only ever registers
+     * ABSENT apps (design D-G). The freshly generated secret is deliberately
+     * discarded here: in-process consumers call the broker without an HMAC token
      * (same-instance PHP is trusted), and cross-runtime consumers obtain a
-     * secret through the explicit admin registration endpoint instead.
-     * Never throws — any failure warns and leaves the instance healthy.
+     * secret through the explicit admin registration endpoint instead. Never
+     * throws — any failure warns and leaves the instance healthy.
      *
      * @param IOutput $output Repair output channel.
      *
@@ -174,13 +215,9 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
      */
-    private function registerCredentialConsumer(IOutput $output): void
+    private function registerBrokerAppKey(IOutput $output): void
     {
         try {
-            if ($this->manifestDeclaresCredentials() === false) {
-                return;
-            }
-
             $tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenService::class));
 
             if ($tokenService->isRegistered($this->appId) === true) {
@@ -201,7 +238,60 @@ class GenericInitializeSettings implements IRepairStep
                 ['exception' => $e->getMessage()]
             );
         }//end try
-    }//end registerCredentialConsumer()
+    }//end registerBrokerAppKey()
+
+    /**
+     * Register the consuming app as its own identity-only Doriath `Application`.
+     *
+     * Delegates to {@see DoriathApplicationRegistrar}: name = appId, description
+     * = the manifest description (fallback appId), type `internal`, no CSR,
+     * `pending`. Idempotent and never-throw are owned by the registrar; this
+     * method only supplies the description read from the leaf manifest. Custody
+     * (OR's single `openregister` vault, credential-doriath-leaf D-C/D-F) is NOT
+     * touched — this adds identity, not custody.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     */
+    private function registerDoriathApplication(): void
+    {
+        $registrar = ($this->applicationRegistrar ?? Server::get(DoriathApplicationRegistrar::class));
+        $registrar->registerApplication($this->appId, $this->manifestDescription());
+    }//end registerDoriathApplication()
+
+    /**
+     * The leaf's bundled `src/manifest.json` `description`, or null when absent.
+     *
+     * @return string|null The manifest description, or null.
+     *
+     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     */
+    protected function manifestDescription(): ?string
+    {
+        try {
+            $appManager   = ($this->appManager ?? Server::get(IAppManager::class));
+            $manifestPath = $appManager->getAppPath($this->appId).'/src/manifest.json';
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        if (is_readable($manifestPath) === false) {
+            return null;
+        }
+
+        $manifest = json_decode((string) file_get_contents($manifestPath), true);
+        if (is_array($manifest) === false) {
+            return null;
+        }
+
+        $description = ($manifest['description'] ?? null);
+        if (is_string($description) === true && $description !== '') {
+            return $description;
+        }
+
+        return null;
+    }//end manifestDescription()
 
     /**
      * Whether the leaf's bundled `src/manifest.json` declares `credentials[]`.
