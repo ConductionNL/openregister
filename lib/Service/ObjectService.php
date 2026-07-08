@@ -1237,6 +1237,19 @@ class ObjectService
         // and casts it to date-only (e.g. "2024-01-15") so Opis validation passes.
         $object = $this->normalizeDateValues(object: $object);
 
+        // Auto-seed a graph-lifecycle field from the parent on CREATE only,
+        // BEFORE validation, so a required `$ref` lifecycle field passes on a
+        // seeded create. $uuidWasNull is the create signal (updates always
+        // carry a UUID); the seed itself is empty-field-only and fail-soft, so
+        // it never overwrites a client-supplied value. See the object-lifecycle
+        // spec: fk-graph-lifecycle-transitions.
+        if ($uuidWasNull === true && is_array($object) === true) {
+            $object = $this->saveHandler->seedLifecycleFieldOnCreate(
+                schema: $this->currentSchema,
+                data: $object
+            );
+        }
+
         // Validate if hard validation is enabled.
         $this->validateObjectIfRequired(object: $object);
 
