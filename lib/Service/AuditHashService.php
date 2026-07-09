@@ -148,6 +148,58 @@ class AuditHashService
         return $row['hash'];
     }//end getLastHash()
 
+
+    /**
+     * Seal an already-inserted audit-trail row into the hash chain.
+     *
+     * Reads the row by id, derives `previousHash` from the immediately-prior
+     * row (or genesis), and computes `hash` over the row using the SAME
+     * `mapRowToEntity()` + `hydrate()` + `getCanonicalJson()` path that
+     * {@see verifyChain()} uses — guaranteeing the stored hash re-verifies
+     * exactly. The `hash` / `previous_hash` values are then written directly.
+     * Call this AFTER inserting the row so the id and all persisted (DB-typed)
+     * field values are final.
+     *
+     * @param int $id The audit-trail row id to seal.
+     *
+     * @return bool True when the row was found and sealed.
+     */
+    public function sealRow(int $id): bool
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            return false;
+        }
+
+        $previousHash = $this->getHashBefore(id: $id);
+        if ($previousHash === null) {
+            $previousHash = $this->getGenesisHash();
+        }
+
+        $entry = new AuditTrail();
+        $entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+        $hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+
+        $update = $this->db->getQueryBuilder();
+        $update->update('openregister_audit_trails')
+            ->set('hash', $update->createNamedParameter($hash))
+            ->set('previous_hash', $update->createNamedParameter($previousHash))
+            ->where($update->expr()->eq('id', $update->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+        $update->executeStatement();
+
+        return true;
+
+    }//end sealRow()
+
     /**
      * Seal an already-inserted audit-trail row into the hash chain.
      *
