@@ -42,7 +42,7 @@
 - [x] 6.1 Writable SQLite fixture config + integration tests: insert/update/delete round-trips, constraint-violation mapping (unique/FK/NOT NULL), unknown-property 400, composite-PK and no-PK behaviour
 - [x] 6.2 Dispatch unit tests: read-only default unchanged, live re-lock, RBAC-before-provider (provider never touched on denial), native providers unaffected
 - [x] 6.3 Run hydra gates + change-scoped test suites; fix all findings in touched files (repoint any legacy @spec anchors pulled into diff scope)
-- [ ] 6.4 Live verification on the isolated instance against real PostgreSQL: flip demo source writable, CRUD a permit via API and via the UI (create, edit status, delete), verify constraint 409/422 and read-only re-lock
+- [x] 6.4 Live verification on the isolated instance against real PostgreSQL: flip demo source writable, CRUD a permit via API and via the UI (create, edit status, delete), verify constraint 409/422 and read-only re-lock
 
 ## Quality reminders (not checkboxes)
 - SPDX + @spec tags (`openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md`) on every new/changed method
