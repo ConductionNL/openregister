@@ -123,6 +123,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
 		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
 	</background-jobs>
 
