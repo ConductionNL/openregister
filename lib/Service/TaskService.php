@@ -29,6 +29,7 @@ use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -72,22 +73,32 @@ class TaskService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param CalDavBackend   $calDavBackend CalDAV backend for VTODO operations
      * @param IUserSession    $userSession   User session for current user context
      * @param LoggerInterface $logger        Logger for error reporting
+     * @param IURLGenerator   $urlGenerator  URL generator for deep links
      *
      * @return void
      */
     public function __construct(
         CalDavBackend $calDavBackend,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->calDavBackend = $calDavBackend;
         $this->userSession   = $userSession;
         $this->logger        = $logger;
+        $this->urlGenerator  = $urlGenerator;
     }//end __construct()
 
     /**
@@ -306,6 +317,15 @@ class TaskService
 
                 // Only include tasks that match our object UUID.
                 if ($taskArray !== null && $taskArray['objectUuid'] === $objectUuid) {
+                    // Deep-link to the specific task in the Tasks app (hash route).
+                    $deepLink = $this->buildTaskDeepLink(
+                        calendarUri: ($calendar['uri'] ?? null),
+                        taskUri: ($taskArray['id'] ?? null)
+                    );
+                    if ($deepLink !== null) {
+                        $taskArray['url'] = $deepLink;
+                    }
+
                     $tasks[] = $taskArray;
                 }
             } catch (Exception $e) {
@@ -313,11 +333,40 @@ class TaskService
                     'Failed to parse calendar object: '.$e->getMessage(),
                     ['uri' => $calendarObject['uri']]
                 );
-            }
+            }//end try
         }//end foreach
 
         return $tasks;
     }//end getTasksForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific task in the Tasks app.
+     *
+     * The Tasks app uses hash routing:
+     * `/apps/tasks/#/calendars/{calendarUri}/tasks/{taskUri}`.
+     *
+     * Returns null (record gets no `url`) when either URI is missing, rather
+     * than emitting a broken link.
+     *
+     * @param string|null $calendarUri The CalDAV calendar URI owning the task.
+     * @param string|null $taskUri     The VTODO object URI (.ics).
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildTaskDeepLink(?string $calendarUri, ?string $taskUri): ?string
+    {
+        if ($calendarUri === null || $calendarUri === '' || $taskUri === null || $taskUri === '') {
+            return null;
+        }
+
+        try {
+            $base = $this->urlGenerator->linkToRoute('tasks.page.index');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return rtrim($base, '/').'/#/calendars/'.rawurlencode($calendarUri).'/tasks/'.rawurlencode($taskUri);
+    }//end buildTaskDeepLink()
 
     /**
      * Create a new CalDAV task linked to an OpenRegister object.

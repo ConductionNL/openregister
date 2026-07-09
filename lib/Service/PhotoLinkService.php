@@ -301,7 +301,7 @@ class PhotoLinkService
             }
 
             $row        = $link->jsonSerialize();
-            $row['url'] = $this->albumDeepLink(albumId: (int) ($row['albumId'] ?? 0));
+            $row['url'] = $this->albumDeepLink(albumName: (string) ($row['albumName'] ?? ''));
             $results[]  = $row;
         }
 
@@ -377,9 +377,9 @@ class PhotoLinkService
         return [
             'id'            => $albumId,
             'name'          => $name,
-            'coverPhotoUrl' => $this->albumDeepLink(albumId: $albumId),
+            'coverPhotoUrl' => $this->albumDeepLink(albumName: $name),
             'photoCount'    => null,
-            'url'           => $this->albumDeepLink(albumId: $albumId),
+            'url'           => $this->albumDeepLink(albumName: $name),
         ];
     }//end pickerRowFromAlbum()
 
@@ -472,7 +472,7 @@ class PhotoLinkService
 
         return [
             'name'          => (string) $album->getTitle(),
-            'coverPhotoUrl' => $this->albumDeepLink(albumId: $albumId),
+            'coverPhotoUrl' => $this->albumDeepLink(albumName: (string) $album->getTitle()),
             'photoCount'    => $photoCount,
             'lastEdited'    => $lastEdited,
         ];
@@ -501,12 +501,17 @@ class PhotoLinkService
     /**
      * Build the NC Photos deep link for an album.
      *
-     * @param int $albumId The album id.
+     * NC Photos routes albums by NAME (`/apps/photos/albums/{name}`), not by the
+     * numeric id — verified live: `/albums/6` opens an empty "Album 6", while
+     * `/albums/{name}` opens the real album. The name is URL-encoded so spaces
+     * survive as a single path segment.
+     *
+     * @param string $albumName The album name.
      *
      * @return string
      */
-    private function albumDeepLink(int $albumId): string
+    private function albumDeepLink(string $albumName): string
     {
-        return $this->urlGenerator->linkToRoute('photos.page.index').'albums/'.$albumId;
+        return $this->urlGenerator->linkToRoute('photos.page.index').'albums/'.rawurlencode($albumName);
     }//end albumDeepLink()
 }//end class

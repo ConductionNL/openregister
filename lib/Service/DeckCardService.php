@@ -27,6 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\App\IAppManager;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -77,12 +78,20 @@ class DeckCardService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param DeckLinkMapper  $deckLinkMapper Deck link mapper
      * @param IAppManager     $appManager     App manager
      * @param IUserSession    $userSession    User session
      * @param LoggerInterface $logger         Logger
+     * @param IURLGenerator   $urlGenerator   URL generator
      *
      * @return void
      */
@@ -90,11 +99,13 @@ class DeckCardService
         DeckLinkMapper $deckLinkMapper,
         IAppManager $appManager,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->deckLinkMapper = $deckLinkMapper;
         $this->appManager     = $appManager;
         $this->userSession    = $userSession;
+        $this->urlGenerator   = $urlGenerator;
         $this->logger         = $logger;
     }//end __construct()
 
@@ -151,13 +162,50 @@ class DeckCardService
             function (DeckLink $link) use ($cardService): array {
                 $row     = $link->jsonSerialize();
                 $widened = $this->extractCardFields(cardService: $cardService, cardId: $link->getCardId());
-                return $row + $widened;
+                $row    += $widened;
+
+                // Deep-link to the specific card in the Deck app: reusing the
+                // canonical {app}.page.index route keeps the webroot prefix
+                // correct (mirrors MapLinkService/PhotoLinkService).
+                $deepLink = $this->buildCardDeepLink(boardId: $link->getBoardId(), cardId: $link->getCardId());
+                if ($deepLink !== null) {
+                    $row['url'] = $deepLink;
+                }
+
+                return $row;
             },
             $links
         );
 
         return ['results' => $results, 'total' => count($results)];
     }//end getCardsForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific Deck card.
+     *
+     * Returns `/index.php/apps/deck/board/{boardId}/card/{cardId}` (with the
+     * correct webroot prefix). Returns null when either identifier is missing
+     * so the relation record is returned without a `url` rather than a broken one.
+     *
+     * @param int|null $boardId The Deck board id.
+     * @param int|null $cardId  The Deck card id.
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildCardDeepLink(?int $boardId, ?int $cardId): ?string
+    {
+        if ($boardId === null || $boardId === 0 || $cardId === null || $cardId === 0) {
+            return null;
+        }
+
+        try {
+            $base = $this->urlGenerator->linkToRoute('deck.page.index');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return rtrim($base, '/').'/board/'.$boardId.'/card/'.$cardId;
+    }//end buildCardDeepLink()
 
     /**
      * Resolve Deck's CardService from the server container.
