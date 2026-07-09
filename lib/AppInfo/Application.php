@@ -169,6 +169,7 @@ use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -1314,6 +1315,53 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // DBAL virtual-register services + provider (dbal-virtual-registers).
+        // The connection factory depends only on the CredentialStore interface,
+        // which is already bound to the active leaf via CredentialStoreResolver.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory(
+                    credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\SqlTypeMapper(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService(
+                    connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
+                    typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            DbalObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new DbalObjectSourceProvider(
+                    sourceMapper: $container->get(\OCA\OpenRegister\Db\SourceMapper::class),
+                    connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2907,6 +2955,8 @@ class Application extends App implements IBootstrap
             FilesObjectSourceProvider::class,
             DeckObjectSourceProvider::class,
             TalkObjectSourceProvider::class,
+            // dbal-virtual-registers: external SQL databases over Doctrine DBAL.
+            DbalObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {
             try {

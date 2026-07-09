@@ -2539,7 +2539,7 @@ class ObjectService
      *
      * @return array|null The paginated result, or null when not source-backed.
      *
-     * @spec openspec/changes/object-source-providers/tasks.md#task-3.1
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
     private function paginateObjectSource(array $query): ?array
     {
@@ -2554,8 +2554,10 @@ class ObjectService
         }
 
         $results  = [];
+        $config   = ($source['config'] ?? []);
         $provider = $this->objectSourceRegistry->get($source['provider']);
-        if ($provider === null || $provider->isEnabled() === false || $this->currentRegister === null) {
+        $active   = ($provider !== null && $provider->isEnabled() === true && $this->currentRegister !== null);
+        if ($active === false) {
             $this->logger->warning(
                 sprintf(
                     '[ObjectSource] schema "%s" declares provider "%s" but it is missing/disabled or has no register context — returning empty list',
@@ -2568,22 +2570,64 @@ class ObjectService
                 register: $this->currentRegister,
                 schema: $schema,
                 query: $query,
-                config: ($source['config'] ?? [])
+                config: $config
             );
         }
 
-        $total = count($results);
+        $resultCount = count($results);
+        $limit       = (int) ($query['limit'] ?? 0);
+        $offset      = max(0, (int) ($query['offset'] ?? 0));
+
+        // D4b: consult the provider's count() for the TRUE total and compute
+        // page metadata, passing limit/offset through (findAll already received
+        // them). A provider that cannot report a real total — count() throws or
+        // returns a value inconsistent with the returned window — falls back to
+        // the pre-existing in-memory behaviour so the native providers are
+        // unaffected.
+        $total       = $resultCount;
+        $page        = 1;
+        $pages       = 1;
+        $next        = null;
+        $prev        = null;
+        $realCount   = false;
+
+        if ($active === true) {
+            try {
+                $counted = $provider->count(
+                    register: $this->currentRegister,
+                    schema: $schema,
+                    query: $query,
+                    config: $config
+                );
+
+                if ($counted >= ($offset + $resultCount)) {
+                    $total     = $counted;
+                    $realCount = true;
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[ObjectSource] provider "'.$source['provider'].'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
+                );
+            }
+        }
+
+        if ($realCount === true && $limit > 0) {
+            $pages = max(1, (int) ceil($total / $limit));
+            $page  = ((int) floor($offset / $limit) + 1);
+            $next  = ($page < $pages) ? ($page + 1) : null;
+            $prev  = ($page > 1) ? ($page - 1) : null;
+        }
 
         return [
             'results' => $results,
             'total'   => $total,
             '@self'   => [
                 'total' => $total,
-                'page'  => 1,
-                'pages' => 1,
-                'limit' => ($query['limit'] ?? $total),
-                'next'  => null,
-                'prev'  => null,
+                'page'  => $page,
+                'pages' => $pages,
+                'limit' => ($limit > 0 ? $limit : $total),
+                'next'  => $next,
+                'prev'  => $prev,
             ],
         ];
     }//end paginateObjectSource()

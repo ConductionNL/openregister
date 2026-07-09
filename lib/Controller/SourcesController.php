@@ -21,6 +21,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Controller;
@@ -62,6 +65,8 @@ class SourcesController extends Controller
      * @param ICrypto                $crypto          Crypto service for databaseUrl encryption
      * @param SourceFetcherRegistry  $fetcherRegistry Resolves the transport for a source type
      * @param HarvestPipelineService $pipeline        Harvest pipeline orchestrator
+     * @param DbalConnectionFactory  $connectionFactory Opens read-only DBAL connections for database sources
+     * @param DatabaseIntrospectionService $introspectionService Introspects a database source into a virtual register
      *
      * @return void
      */
@@ -75,7 +80,9 @@ class SourcesController extends Controller
         private readonly IGroupManager $groupManager,
         private readonly ICrypto $crypto,
         private readonly SourceFetcherRegistry $fetcherRegistry,
-        private readonly HarvestPipelineService $pipeline
+        private readonly HarvestPipelineService $pipeline,
+        private readonly DbalConnectionFactory $connectionFactory,
+        private readonly DatabaseIntrospectionService $introspectionService
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -455,6 +462,127 @@ class SourcesController extends Controller
             ]
         );
     }//end syncStatus()
+
+    /**
+     * Test the connection to a `type: database` source.
+     *
+     * Resolves the password through the credential custody seam, opens a
+     * read-only DBAL connection and runs a trivial read. Never exposes the
+     * password. A connection failure maps to 503 (unreachable); an upstream
+     * query error maps to 502 — never a bare 500.
+     *
+     * @param int $id The source id to test.
+     *
+     * @return JSONResponse Success, or a 502/503 error with a non-sensitive message.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+     *   organisation-scoped: the source is loaded via SourceMapper::find(),
+     *   which applies the active-organisation filter and 404s on a foreign
+     *   tenant's id. The response never contains the credential value.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testConnection(int $id): JSONResponse
+    {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
+        try {
+            $source = $this->sourceMapper->find(id: $id);
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+        }
+
+        if ((string) $source->getType() !== 'database') {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Source is not a database source')],
+                statusCode: 422
+            );
+        }
+
+        try {
+            $connection = $this->connectionFactory->getConnection(source: $source);
+        } catch (DbalConnectionException $exception) {
+            // Fail closed: credential/driver/config problem — source unreachable.
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Could not connect to the database source')],
+                statusCode: 503
+            );
+        }
+
+        try {
+            $connection->executeQuery($connection->getDatabasePlatform()->getDummySelectSQL());
+        } catch (Throwable $exception) {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('The database source returned an error')],
+                statusCode: 502
+            );
+        }
+
+        return new JSONResponse(data: ['success' => true]);
+    }//end testConnection()
+
+    /**
+     * Introspect a `type: database` source into a virtual register + schemas.
+     *
+     * Idempotent: re-running updates the existing register/schemas in place.
+     * Never exposes the password.
+     *
+     * @param int $id The source id to introspect.
+     *
+     * @return JSONResponse The introspection summary, or a 502/503 error.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+     *   organisation-scoped: the source is loaded via SourceMapper::find(),
+     *   which applies the active-organisation filter and 404s on a foreign
+     *   tenant's id. The response never contains the credential value.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function introspect(int $id): JSONResponse
+    {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
+        try {
+            $source = $this->sourceMapper->find(id: $id);
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+        }
+
+        if ((string) $source->getType() !== 'database') {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Source is not a database source')],
+                statusCode: 422
+            );
+        }
+
+        try {
+            $summary = $this->introspectionService->introspect(source: $source);
+        } catch (DbalConnectionException $exception) {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Could not connect to the database source')],
+                statusCode: 503
+            );
+        } catch (Throwable $exception) {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Introspection failed'), 'message' => $exception->getMessage()],
+                statusCode: 502
+            );
+        }
+
+        return new JSONResponse(data: $summary);
+    }//end introspect()
 
     /**
      * Get integer parameter from params array or return null
