@@ -114,12 +114,24 @@ class DatabaseIntrospectionService
         $connection    = $this->connectionFactory->getConnection(source: $source);
         $schemaManager = $connection->createSchemaManager();
 
-        $tableNames = $schemaManager->listTableNames();
+        $tableNames = array_values(
+            array_filter(
+                $schemaManager->listTableNames(),
+                fn (string $name): bool => $this->isSystemObject(name: $name) === false
+            )
+        );
         sort($tableNames);
 
         $viewNames = [];
         foreach ($schemaManager->listViews() as $view) {
-            $viewNames[] = $this->shortName(name: $view->getName());
+            if ($this->isSystemObject(name: $view->getName()) === true) {
+                continue;
+            }
+
+            $short = $this->shortName(name: $view->getName());
+            if (in_array($short, $viewNames, true) === false) {
+                $viewNames[] = $short;
+            }
         }
 
         sort($viewNames);
@@ -667,6 +679,48 @@ class DatabaseIntrospectionService
 
         return substr($name, ($pos + 1));
     }//end shortName()
+
+    /**
+     * Whether a table/view name belongs to a database system catalog.
+     *
+     * DBAL's schema manager can surface engine-internal objects — on
+     * PostgreSQL `listViews()` returns `pg_catalog.*` and
+     * `information_schema.*` views (observed live: `pg_user_mappings`
+     * appears in BOTH namespaces, colliding on one slug); MySQL exposes
+     * `mysql`/`performance_schema`/`sys`, SQLite reserves the `sqlite_`
+     * prefix. None of these are user data — a virtual register must never
+     * contain them.
+     *
+     * @param string $name The (possibly namespace-qualified) object name.
+     *
+     * @return bool True when the object is engine-internal.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function isSystemObject(string $name): bool
+    {
+        $lower = strtolower($name);
+        $short = strtolower($this->shortName(name: $name));
+
+        $systemNamespaces = [
+            'pg_catalog.',
+            'information_schema.',
+            'pg_toast.',
+            'mysql.',
+            'performance_schema.',
+            'sys.',
+        ];
+        foreach ($systemNamespaces as $prefix) {
+            if (str_starts_with($lower, $prefix) === true) {
+                return true;
+            }
+        }
+
+        // Unqualified engine-internal names: SQLite reserved tables and
+        // PostgreSQL catalog objects surfaced without their namespace.
+        return str_starts_with($short, 'sqlite_') === true
+            || str_starts_with($short, 'pg_') === true;
+    }//end isSystemObject()
 
     /**
      * Build a lowercase hyphenated slug from an arbitrary identifier.

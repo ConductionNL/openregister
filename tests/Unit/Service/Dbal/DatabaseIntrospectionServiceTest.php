@@ -304,4 +304,42 @@ class DatabaseIntrospectionServiceTest extends TestCase
 
         unlink($path);
     }//end testCompositeAndMissingPrimaryKeys()
+
+
+    /**
+     * Engine-internal catalog objects are never introspected into schemas.
+     *
+     * Live-observed on PostgreSQL: listViews() surfaced `pg_user_mappings`
+     * from BOTH pg_catalog and information_schema, colliding on one slug and
+     * aborting introspection with a unique-constraint violation.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    public function testSystemCatalogObjectsAreFiltered(): void
+    {
+        $service    = $this->service();
+        $reflection = new \ReflectionMethod($service, 'isSystemObject');
+        $reflection->setAccessible(true);
+
+        $system = [
+            'pg_catalog.pg_user_mappings',
+            'information_schema.tables',
+            'pg_toast.pg_toast_2618',
+            'pg_user_mappings',
+            'mysql.user',
+            'performance_schema.threads',
+            'sys.schema_auto_increment_columns',
+            'sqlite_sequence',
+        ];
+        foreach ($system as $name) {
+            $this->assertTrue($reflection->invoke($service, $name), $name.' must be filtered as a system object');
+        }
+
+        $userData = ['permits', 'public.applicants', 'active_permits', 'pgadmin_notes'];
+        foreach ($userData as $name) {
+            $this->assertFalse($reflection->invoke($service, $name), $name.' must NOT be filtered');
+        }
+    }//end testSystemCatalogObjectsAreFiltered()
 }//end class
