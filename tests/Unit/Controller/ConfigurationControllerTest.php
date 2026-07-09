@@ -1054,4 +1054,53 @@ class ConfigurationControllerTest extends TestCase
         $this->assertTrue($result->getData()['success']);
     }
 
+    /**
+     * Build a controller wired with a non-admin user for guard tests.
+     *
+     * The shared setUp() wires an admin so the happy path runs; the
+     * external-repo-discovery endpoints (enrichDetails/discover/getGitHub*/
+     * getGitLab*) must reject non-admins because they reach external content
+     * via the instance-wide admin-configured credential.
+     */
+    private function makeNonAdminController(): ConfigurationController
+    {
+        $session  = $this->createMock(IUserSession::class);
+        $groupMgr = $this->createMock(IGroupManager::class);
+        $bob      = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $session->method('getUser')->willReturn($bob);
+        $groupMgr->method('isAdmin')->willReturn(false);
+
+        return new ConfigurationController(
+            'openregister',
+            $this->request,
+            $this->configurationMapper,
+            $this->configurationService,
+            $this->notificationService,
+            $this->githubHandler,
+            $this->gitlabHandler,
+            $this->appManager,
+            $this->logger,
+            $session,
+            $groupMgr
+        );
+    }
+
+    public function testDiscoveryEndpointsRejectNonAdmin(): void
+    {
+        $controller = $this->makeNonAdminController();
+
+        // The external repo/credential is never touched for a non-admin.
+        $this->githubHandler->expects($this->never())->method($this->anything());
+        $this->gitlabHandler->expects($this->never())->method($this->anything());
+
+        $this->assertEquals(403, $controller->enrichDetails()->getStatus());
+        $this->assertEquals(403, $controller->discover()->getStatus());
+        $this->assertEquals(403, $controller->getGitHubBranches()->getStatus());
+        $this->assertEquals(403, $controller->getGitHubRepositories()->getStatus());
+        $this->assertEquals(403, $controller->getGitHubConfigurations()->getStatus());
+        $this->assertEquals(403, $controller->getGitLabBranches()->getStatus());
+        $this->assertEquals(403, $controller->getGitLabConfigurations()->getStatus());
+    }
+
 }
