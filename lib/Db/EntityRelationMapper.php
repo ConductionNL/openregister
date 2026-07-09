@@ -152,7 +152,8 @@ class EntityRelationMapper extends QBMapper
             ->from($this->getTableName(), 'r')
             ->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
             ->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-            ->orderBy('r.position_start', 'ASC');
+            ->orderBy('r.chunk_id', 'ASC')
+            ->addOrderBy('r.position_start', 'ASC');
 
         $result   = $qb->executeQuery();
         $entities = $result->fetchAll();
@@ -209,7 +210,8 @@ class EntityRelationMapper extends QBMapper
                     $qb->expr()->eq('r.anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
                 )
             )
-            ->orderBy('r.position_start', 'ASC');
+            ->orderBy('r.chunk_id', 'ASC')
+            ->addOrderBy('r.position_start', 'ASC');
 
         $result = $qb->executeQuery();
         $rows   = $result->fetchAll();
@@ -450,7 +452,8 @@ class EntityRelationMapper extends QBMapper
             ->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
             ->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
-            ->orderBy('r.position_start', 'ASC');
+            ->orderBy('r.chunk_id', 'ASC')
+            ->addOrderBy('r.position_start', 'ASC');
 
         $result   = $qb->executeQuery();
         $entities = $result->fetchAll();

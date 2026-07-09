@@ -509,4 +509,44 @@ class EntityRelationMapperTest extends TestCase
     }//end testFindEntityIdsByValueForFilesMapsUnionRows()
 
 
+    /**
+     * findEntitiesForFile orders by chunk first, then position: position_start
+     * is chunk-relative, so document-occurrence order across chunk boundaries
+     * requires the chunk key to lead the sort.
+     *
+     * @return void
+     */
+    public function testFindEntitiesForFileOrdersByChunkThenPosition(): void
+    {
+        $result = $this->createMock(originalClassName: IResult::class);
+        $result->method('fetchAll')->willReturn(value: []);
+        $result->method('closeCursor');
+
+        $expr = $this->createMock(originalClassName: IExpressionBuilder::class);
+        $expr->method('eq')->willReturn(value: 'eq');
+
+        $qb = $this->createMock(originalClassName: IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('innerJoin')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('expr')->willReturn(value: $expr);
+        $qb->method('createNamedParameter')->willReturn(value: ':p');
+        $qb->method('executeQuery')->willReturn(value: $result);
+
+        $qb->expects($this->once())->method('orderBy')
+            ->with('r.chunk_id', 'ASC')->willReturnSelf();
+        $qb->expects($this->once())->method('addOrderBy')
+            ->with('r.position_start', 'ASC')->willReturnSelf();
+
+        $this->db->method('getQueryBuilder')->willReturn(value: $qb);
+
+        $this->assertSame(
+            expected: [],
+            actual: $this->makeMapper()->findEntitiesForFile(fileId: 107)
+        );
+
+    }//end testFindEntitiesForFileOrdersByChunkThenPosition()
+
+
 }//end class
