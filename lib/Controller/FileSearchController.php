@@ -69,6 +69,8 @@ class FileSearchController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No caller-supplied id: free-text semantic search over the file vector index;
+     *   takes a query string, not an object or file id.
      *
      * @return JSONResponse JSON response with search results or error
      *

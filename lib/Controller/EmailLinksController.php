@@ -214,6 +214,8 @@ class EmailLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: EmailLinkService::getAvailableAccounts filters oc_mail_accounts by user_id = current UID;
+     *   no caller-supplied object id.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */

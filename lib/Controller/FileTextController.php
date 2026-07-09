@@ -34,7 +34,9 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\IRootFolder;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -69,6 +71,8 @@ class FileTextController extends Controller
      * @param IAppConfig            $config               Application configuration
      * @param ManualEntityService   $manualEntityService  Orchestrator for the manual-entity write path
      * @param IUserSession          $userSession          Session user accessor (for the manual-entity endpoint)
+     * @param IRootFolder           $rootFolder           Root folder for per-user file access checks
+     * @param IGroupManager         $groupManager         Group manager for admin checks
      */
     public function __construct(
         string $appName,
@@ -79,10 +83,53 @@ class FileTextController extends Controller
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config,
         private readonly ManualEntityService $manualEntityService,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly IRootFolder $rootFolder,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Whether the current session user can access the given Nextcloud file.
+     *
+     * Resolves the file through the caller's own user folder so Nextcloud's
+     * share/permission ACLs apply. A file the user cannot access resolves to
+     * no node — preventing IDOR where a caller forces (re-)extraction of
+     * arbitrary file IDs they do not own.
+     *
+     * @param int $fileId Nextcloud file ID.
+     *
+     * @return bool True when the file is reachable in the caller's user folder.
+     */
+    private function hasFileAccess(int $fileId): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        $userFolder = $this->rootFolder->getUserFolder($user->getUID());
+        return empty($userFolder->getById($fileId)) === false;
+    }//end hasFileAccess()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * The bulk extraction endpoint processes pending files across the whole
+     * instance, so it is admin-only.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * Get extracted text for a file
@@ -94,6 +141,9 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with file text or error
+     *
+     * @no-admin-idor-exempt Deprecated no-op stub: returns HTTP 404 unconditionally
+     *   and performs no file/object read; there is no per-object resource to guard.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
@@ -147,6 +197,15 @@ class FileTextController extends Controller
      */
     public function extractFileText(int $fileId): JSONResponse
     {
+        // IDOR guard: only (re-)extract files the caller can access. 404 (not
+        // 403) so a non-owner cannot probe which file IDs exist.
+        if ($this->hasFileAccess(fileId: $fileId) === false) {
+            return new JSONResponse(
+                data: ['success' => false, 'message' => 'File not found or access denied'],
+                statusCode: 404
+            );
+        }
+
         $hasFileManagement    = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
         $fileManagementConfig = json_decode(
             $this->config->getValueString(app: 'openregister', key: 'fileManagement'),
@@ -206,6 +265,10 @@ class FileTextController extends Controller
      */
     public function bulkExtract(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['success' => false, 'message' => 'Admin privileges required'], 403);
+        }
+
         try {
             $limit = (int) $this->request->getParam('limit', 100);
             $limit = min($limit, 500);
@@ -248,6 +311,9 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with extraction stats
+     *
+     * @no-admin-idor-exempt No per-object resource: returns aggregate extraction
+     *   counters (TextExtractionService::getStats); takes no caller-supplied file id.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
@@ -297,6 +363,15 @@ class FileTextController extends Controller
      */
     public function deleteFileText(int $fileId): JSONResponse
     {
+        // IDOR guard: deletion targets a file by id — only permit it for files
+        // the caller can access (guards the stub before it is implemented).
+        if ($this->hasFileAccess(fileId: $fileId) === false) {
+            return new JSONResponse(
+                data: ['success' => false, 'message' => 'File not found or access denied'],
+                statusCode: 404
+            );
+        }
+
         try {
             // TextExtractionService works with chunks.
             // TODO: Implement chunk deletion for file.

@@ -250,6 +250,8 @@ class XwikiLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Capability/config probe: reports whether the admin-configured XWiki OpenConnector source is reachable;
+     *   no caller-supplied per-object resource.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
@@ -299,6 +301,8 @@ class XwikiLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: object-independent free-text knowledge-base search proxied to the
+     *   admin-configured XWiki source; takes no OpenRegister object id.
      *
      * @spec openspec/changes/integration-xwiki-query-search/specs/integration-xwiki/spec.md
      */

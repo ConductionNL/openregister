@@ -338,6 +338,8 @@ class MappingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: stateless evaluation of a caller-supplied transient mapping over caller-supplied input;
+     *   nothing is loaded by id.
      *
      * @return JSONResponse JSON response with test results
      *

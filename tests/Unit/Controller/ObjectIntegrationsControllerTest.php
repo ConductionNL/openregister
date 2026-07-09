@@ -130,16 +130,59 @@ class _ControllerStubProvider extends AbstractIntegrationProvider
 class ObjectIntegrationsControllerTest extends TestCase
 {
 
-    private function buildController(IntegrationRegistry $registry, ?IRequest $request = null): ObjectIntegrationsController
-    {
+    private function buildController(
+        IntegrationRegistry $registry,
+        ?IRequest $request = null,
+        ?\OCA\OpenRegister\Service\ObjectService $objectService = null
+    ): ObjectIntegrationsController {
         $request = $request ?? $this->createMock(IRequest::class);
         return new ObjectIntegrationsController(
             appName: 'openregister',
             request: $request,
             registry: $registry,
-            logger: new NullLogger()
+            logger: new NullLogger(),
+            objectService: $objectService ?? $this->accessibleObjectService()
         );
     }//end buildController()
+
+    /**
+     * An ObjectService mock whose getObject() resolves a non-null object, so
+     * the per-object access guard passes for the dispatch happy-path tests.
+     */
+    private function accessibleObjectService(): \OCA\OpenRegister\Service\ObjectService
+    {
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('getObject')
+            ->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+        return $objectService;
+    }//end accessibleObjectService()
+
+    /**
+     * An ObjectService mock whose getObject() resolves null — the caller cannot
+     * read the target object (RBAC/multitenancy filtered it out).
+     */
+    private function deniedObjectService(): \OCA\OpenRegister\Service\ObjectService
+    {
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('getObject')->willReturn(null);
+        return $objectService;
+    }//end deniedObjectService()
+
+    public function testIndexDeniesInaccessibleObject(): void
+    {
+        // IDOR: the caller cannot read the target OR object → 404, and the
+        // provider is never reached.
+        $stub     = new _ControllerStubProvider('stub');
+        $registry = new IntegrationRegistry(new NullLogger());
+        $registry->addProvider($stub);
+
+        $controller = $this->buildController($registry, null, $this->deniedObjectService());
+
+        $response = $controller->index('r', 's', 'o', 'stub');
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        $this->assertSame([], $stub->listCalled);
+    }//end testIndexDeniesInaccessibleObject()
 
     private function buildRequest(array $params = []): IRequest
     {

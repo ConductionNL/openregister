@@ -80,6 +80,7 @@ class HeartbeatController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: liveness probe returning status and timestamp only; no data access.
      *
      * @return JSONResponse Simple success response with status, timestamp, and message
      *

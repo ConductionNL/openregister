@@ -270,6 +270,8 @@ class AnalyticsLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Capability/availability probe: reports whether the companion Analytics integration is available
+     *   and lists report types; no caller-supplied per-object resource.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */

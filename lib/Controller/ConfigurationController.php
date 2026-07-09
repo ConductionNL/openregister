@@ -254,6 +254,13 @@ class ConfigurationController extends Controller
      */
     public function enrichDetails(): JSONResponse
     {
+        // SEC-CTRL: admin-only — reaches external repo content via the
+        // instance-wide admin-configured GitHub/GitLab credential (matches the
+        // guard on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data   = $this->request->getParams();
             $source = strtolower($data['source'] ?? 'github');
@@ -783,6 +790,13 @@ class ConfigurationController extends Controller
      */
     public function discover(): JSONResponse
     {
+        // SEC-CTRL: admin-only — reaches external repo content via the
+        // instance-wide admin-configured GitHub/GitLab credential (matches the
+        // guard on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data   = $this->request->getParams();
             $source = strtolower($data['source'] ?? 'github');
@@ -867,6 +881,13 @@ class ConfigurationController extends Controller
      */
     public function getGitHubBranches(): JSONResponse
     {
+        // SEC-CTRL: admin-only — reaches external repo content via the
+        // instance-wide admin-configured GitHub/GitLab credential (matches the
+        // guard on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data  = $this->request->getParams();
             $owner = $data['owner'] ?? '';
@@ -912,6 +933,13 @@ class ConfigurationController extends Controller
      */
     public function getGitHubRepositories(): JSONResponse
     {
+        // SEC-CTRL: admin-only — enumerates repositories reachable by the
+        // instance-wide admin-configured GitHub credential (matches the guard
+        // on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data    = $this->request->getParams();
             $page    = 1;
@@ -965,6 +993,13 @@ class ConfigurationController extends Controller
      */
     public function getGitHubConfigurations(): JSONResponse
     {
+        // SEC-CTRL: admin-only — reaches external repo content via the
+        // instance-wide admin-configured GitHub credential (matches the guard
+        // on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data   = $this->request->getParams();
             $owner  = $data['owner'] ?? '';
@@ -1014,6 +1049,13 @@ class ConfigurationController extends Controller
      */
     public function getGitLabBranches(): JSONResponse
     {
+        // SEC-CTRL: admin-only — reaches external repo content via the
+        // instance-wide admin-configured GitLab credential (matches the guard
+        // on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data      = $this->request->getParams();
             $namespace = $data['namespace'] ?? '';
@@ -1066,6 +1108,13 @@ class ConfigurationController extends Controller
      */
     public function getGitLabConfigurations(): JSONResponse
     {
+        // SEC-CTRL: admin-only — reaches external repo content via the
+        // instance-wide admin-configured GitLab credential (matches the guard
+        // on this controller's create/update/import/publish siblings).
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data      = $this->request->getParams();
             $namespace = $data['namespace'] ?? '';

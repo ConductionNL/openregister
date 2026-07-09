@@ -757,7 +757,10 @@ class SearchTrailController extends Controller
     /**
      * Export search trail logs in specified format
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired): search-trail
+     * rows carry per-search IP, user id, user-agent and query string across
+     * every register/schema (cross-tenant PII, wave-3 C7), like the sibling
+     * analytics/destructive endpoints. Body `requireAdmin()` is defence-in-depth.
      *
      * @NoCSRFRequired
      *
@@ -767,6 +770,11 @@ class SearchTrailController extends Controller
      */
     public function export(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract request parameters.
         $params = $this->extractRequestParameters();
 
