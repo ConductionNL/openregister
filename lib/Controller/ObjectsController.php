@@ -1442,12 +1442,20 @@ class ObjectsController extends Controller
         );
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
-        $result = $objectService->searchObjectsPaginated(
-            query: $query,
-            _rbac: $rbac,
-            _multitenancy: $multi,
-            deleted: $deleted
-        );
+        try {
+            $result = $objectService->searchObjectsPaginated(
+                query: $query,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                deleted: $deleted
+            );
+        } catch (NotAuthorizedException $exception) {
+            // RBAC denied the schema-level list read (raised by the
+            // object-source parity check before the provider is consulted).
+            // Mirror show(): 404, not 403/500, so denial reveals nothing
+            // about the schema's contents.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        }
 
         // Strip empty values from results unless _empty=true is set.
         $includeEmpty = filter_var(
@@ -1718,12 +1726,18 @@ class ObjectsController extends Controller
         $query['_limit'] = 1;
         unset($query['_offset'], $query['_page']);
 
-        $result = $objectService->searchObjectsPaginated(
-            query: $query,
-            _rbac: $rbac,
-            _multitenancy: $multi,
-            deleted: false
-        );
+        try {
+            $result = $objectService->searchObjectsPaginated(
+                query: $query,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                deleted: false
+            );
+        } catch (NotAuthorizedException $exception) {
+            // Schema-level read denied (object-source parity check):
+            // the count is simply unavailable to this caller.
+            return null;
+        }
 
         $total = ($result['total'] ?? null);
         if ($total === null) {
@@ -2311,7 +2325,13 @@ class ObjectsController extends Controller
         );
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
-        $result = $objectService->searchObjectsPaginated($query);
+        try {
+            $result = $objectService->searchObjectsPaginated($query);
+        } catch (NotAuthorizedException $exception) {
+            // Schema-level list read denied (object-source parity check).
+            // Mirror show(): 404 so denial reveals nothing.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        }
 
         // Strip empty values from results unless _empty=true is set.
         $includeEmpty = filter_var(
