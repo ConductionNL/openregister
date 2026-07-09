@@ -2529,7 +2529,15 @@ class RenderObject
 
             $value = ($objectData[$name] ?? null);
             if (is_array($value) === true) {
-                $objectData[$name] = array_map($resolve, $value);
+                // An associative array (or one carrying id/@self) is an object
+                // already embedded by an earlier extend pass — never treat its
+                // VALUES as ids to resolve.
+                $alreadyEmbedded = (array_is_list($value) === false
+                    || isset($value['id']) === true
+                    || isset($value['@self']) === true);
+                if ($alreadyEmbedded === false) {
+                    $objectData[$name] = array_map($resolve, $value);
+                }
             } else if ($value !== null) {
                 $objectData[$name] = $resolve($value);
             }

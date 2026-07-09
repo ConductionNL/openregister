@@ -86,7 +86,14 @@ class ObjectSourceErrorMiddleware extends Middleware
                 $methodName,
                 $exception->getMessage()
             ),
-            ['file' => __FILE__, 'line' => __LINE__]
+            [
+                'file'      => __FILE__,
+                'line'      => __LINE__,
+                // The underlying DBAL error (never sent to the client) — without
+                // it the server log carries only the sanitized message and the
+                // actual SQL failure is undiagnosable.
+                'exception' => $exception,
+            ]
         );
 
         return new JSONResponse(
