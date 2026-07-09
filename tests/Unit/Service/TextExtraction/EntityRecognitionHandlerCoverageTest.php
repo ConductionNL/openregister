@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -88,7 +89,8 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
             $this->entityRelationMapper,
             $this->db,
             $this->logger,
-            $this->settingsService
+            $this->settingsService,
+            $this->createMock(AnonymisationBackendService::class)
         );
     }
 
@@ -1026,17 +1028,19 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
      *
      * @return void
      */
-    public function testDetectEntitiesUnknownMethodThrows(): void
+    public function testDetectEntitiesUnknownMethodFallsBackToRegex(): void
     {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Unknown detection method: foobar');
-
-        $this->invokePrivate('detectEntities', [
+        // Since resolveMethod() was added, unknown methods fall back to regex
+        // (via AnonymisationBackendService fallback) instead of throwing.
+        // "Some text" has no PII patterns → empty result.
+        $result = $this->invokePrivate('detectEntities', [
             'Some text',
             'foobar',
             null,
             0.5,
         ]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
     }
 
     // ================================================================

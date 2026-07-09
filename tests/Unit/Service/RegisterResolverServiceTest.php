@@ -238,7 +238,7 @@ class RegisterResolverServiceTest extends TestCase
 
         $this->appConfig->method('getValueString')->willReturn('theme-2026');
         $this->registerMapper->method('find')
-            ->with('theme-2026', null, true, false)
+            ->with('theme-2026', true, false)
             ->willReturn($register);
 
         $this->expectException(RegisterNotFoundException::class);

@@ -182,6 +182,28 @@ class DeckCardServiceTest extends TestCase
         $this->service->unlinkCard(999);
     }
 
+    /**
+     * Build a service whose Deck board-permission check is stubbed, so the
+     * board-scoped tests do not depend on a running Deck app.
+     *
+     * @param bool $canAccess What userCanAccessBoard() should return.
+     */
+    private function serviceWithBoardAccess(bool $canAccess): DeckCardService
+    {
+        $service = $this->getMockBuilder(DeckCardService::class)
+            ->setConstructorArgs([
+                $this->deckLinkMapper,
+                $this->appManager,
+                $this->userSession,
+                $this->logger,
+            ])
+            ->onlyMethods(['userCanAccessBoard'])
+            ->getMock();
+        $service->method('userCanAccessBoard')->willReturn($canAccess);
+
+        return $service;
+    }
+
     public function testGetObjectsForBoardReturnsLinks(): void
     {
         $link = new DeckLink();
@@ -190,10 +212,22 @@ class DeckCardServiceTest extends TestCase
 
         $this->deckLinkMapper->method('findByBoardId')->with(1)->willReturn([$link]);
 
-        $results = $this->service->getObjectsForBoard(1);
+        $service = $this->serviceWithBoardAccess(true);
+        $results = $service->getObjectsForBoard(1);
 
         $this->assertCount(1, $results);
         $this->assertSame('abc-123', $results[0]['objectUuid']);
+    }
+
+    public function testGetObjectsForBoardDeniedReturnsEmpty(): void
+    {
+        // IDOR: the caller has no Deck access to the board — no links leak and
+        // the mapper is never queried.
+        $this->deckLinkMapper->expects($this->never())->method('findByBoardId');
+
+        $service = $this->serviceWithBoardAccess(false);
+
+        $this->assertSame([], $service->getObjectsForBoard(1));
     }
 
     public function testDeleteLinksForObject(): void

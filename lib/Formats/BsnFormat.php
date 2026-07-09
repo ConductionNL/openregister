@@ -39,6 +39,13 @@ class BsnFormat implements Format
      */
     public function validate(mixed $data): bool
     {
+        // Reject over-length input before padding: str_pad only left-pads and
+        // never truncates, so a >9-digit value would otherwise be checksummed
+        // on a miscalculated weighting (ADR-008 Rule 4).
+        if (strlen((string) $data) > 9) {
+            return false;
+        }
+
         $data = str_pad(
             string: $data,
             length:9,
@@ -47,6 +54,13 @@ class BsnFormat implements Format
         );
 
         if (ctype_digit($data) === false) {
+            return false;
+        }
+
+        // Reject the all-zero sentinel: it passes the modulo-11 checksum
+        // (0 % 11 === 0) but is not a real BSN, and empty/null input pads to it
+        // (ADR-008 Rule 4).
+        if ($data === '000000000') {
             return false;
         }
 

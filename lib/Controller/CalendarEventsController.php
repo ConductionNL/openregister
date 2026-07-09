@@ -337,6 +337,7 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: returns only the current user's VEVENT-capable calendars; no caller-supplied object id.
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
@@ -359,6 +360,9 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: CalendarLinkService resolves the caller-supplied calendarUri only against calendars
+     *   scoped to the session user's principal (getCalendarsForUser); a non-owned URI resolves to null and throws, never leaking
+     *   another user's calendar.
      *
      * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization;
 
+use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -12,14 +13,14 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Coverage tests for VectorSearchHandler — targets uncovered branches in
- * cosineSimilarity, extractEntityId, getCollectionsToSearch,
- * getSolrCollectionForEntityType, semanticSearch (php backend paths),
+ * cosineSimilarity, extractEntityId, semanticSearch (php fallback paths),
  * hybridSearch, and reciprocalRankFusion.
  */
 class VectorSearchHandlerCoverageTest extends TestCase
 {
     private VectorSearchHandler $handler;
     private IDBConnection&MockObject $db;
+    private PgVectorPlatform&MockObject $pgVector;
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
@@ -27,10 +28,15 @@ class VectorSearchHandlerCoverageTest extends TestCase
         parent::setUp();
 
         $this->db = $this->createMock(IDBConnection::class);
+        $this->pgVector = $this->createMock(PgVectorPlatform::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+
+        // pgvector fast path unavailable → PHP fallback (pre-change behaviour).
+        $this->pgVector->method('getVectorColumnDimension')->willReturn(null);
 
         $this->handler = new VectorSearchHandler(
             $this->db,
+            $this->pgVector,
             $this->logger
         );
     }

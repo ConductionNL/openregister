@@ -36,6 +36,21 @@ class DedupAnnotationValidatorTest extends TestCase
         $this->assertSame([], $this->validator->validate($shape));
     }
 
+    public function testNestedDotPathFieldIsValid(): void
+    {
+        $shape = [
+            'x-openregister-dedup' => [
+                'blockingKeys' => ['goldenRecord.postalCode'],
+                'matchRules'   => [
+                    ['field' => 'goldenRecord.email', 'method' => 'exact', 'weight' => 0.5],
+                    ['field' => 'goldenRecord.name', 'method' => 'normalized', 'weight' => 0.5],
+                ],
+                'threshold'    => 0.85,
+            ],
+        ];
+        $this->assertSame([], $this->validator->validate($shape));
+    }
+
     public function testEmptyMatchRules(): void
     {
         $errors = $this->validator->validate(['x-openregister-dedup' => ['matchRules' => []]]);

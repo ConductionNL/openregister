@@ -186,6 +186,18 @@ class MagicMapper extends AbstractObjectMapper
     public const MAX_TABLE_NAME_LENGTH = 64;
 
     /**
+     * Property-column budget for a cross-schema UNION projection.
+     *
+     * Postgres caps a SELECT target list at 1664 entries. Each UNION arm also
+     * projects ~30 metadata columns plus a couple of synthetic columns, so the
+     * property superset must stay well under 1664. When it exceeds this budget
+     * the cross-schema search falls back to a metadata-only projection so the
+     * query never trips SQLSTATE 54011 ("target lists can have at most 1664
+     * entries"), regardless of how many schemas are searched.
+     */
+    private const UNION_PROPERTY_COLUMN_BUDGET = 1500;
+
+    /**
      * Cache for table existence to avoid repeated database queries
      * Key format: 'registerId_schemaId' => timestamp
      *
@@ -1173,6 +1185,32 @@ class MagicMapper extends AbstractObjectMapper
         // Each SELECT must include the same columns; schemas that lack a column get NULL AS alias.
         $allPropertyColumns = $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
 
+        // Postgres caps a SELECT target list at 1664 entries. Each UNION arm
+        // projects ~30 metadata columns plus this property superset, so with
+        // many schemas the superset alone blows the cap (SQLSTATE 54011) and
+        // the entire cross-schema search fails — e.g. the unified-search
+        // provider returns nothing. When the superset is too large, fall back
+        // to a metadata-only projection: each arm projects only the constant
+        // `_`-prefixed metadata columns (uuid / name / description / summary /
+        // register / schema / …), which is enough to build a result row. The
+        // search term still matches each table's OWN property columns in the
+        // WHERE/score clauses (see buildUnionSelectPart); a caller needing full
+        // property values re-hydrates by id.
+        $metadataOnly = false;
+        if (count($allPropertyColumns) > self::UNION_PROPERTY_COLUMN_BUDGET) {
+            $metadataOnly       = true;
+            $allPropertyColumns = [];
+            $this->logger->warning(
+                message: '[MagicMapper] Cross-schema property superset exceeds the column budget; using metadata-only projection',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'budget'      => self::UNION_PROPERTY_COLUMN_BUDGET,
+                    'schemaCount' => count($registerSchemaPairs),
+                ]
+            );
+        }
+
         // Build a SELECT for each table.
         foreach ($registerSchemaPairs as $pair) {
             $register = $pair['register'] ?? null;
@@ -1215,7 +1253,8 @@ class MagicMapper extends AbstractObjectMapper
                 query: $query,
                 schema: $schema,
                 register: $register,
-                allPropertyColumns: $allPropertyColumns
+                allPropertyColumns: $allPropertyColumns,
+                metadataOnly: $metadataOnly
             );
 
             if ($selectPart !== null) {
@@ -1359,6 +1398,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param Schema   $schema             Schema entity.
      * @param Register $register           Register entity.
      * @param array    $allPropertyColumns Superset of all property columns across schemas.
+     * @param bool     $metadataOnly       Project only metadata columns (no property columns) to keep wide unions under the target-list limit.
      *
      * @return string|null SQL SELECT statement or null if table doesn't exist.
      *
@@ -1372,7 +1412,8 @@ class MagicMapper extends AbstractObjectMapper
         array $query,
         Schema $schema,
         Register $register,
-        array $allPropertyColumns=[]
+        array $allPropertyColumns=[],
+        bool $metadataOnly=false
     ): ?string {
         $qb = $this->db->getQueryBuilder();
 
@@ -1410,33 +1451,47 @@ class MagicMapper extends AbstractObjectMapper
          */
 
         $existingColumns = [];
-        foreach (array_keys($allPropertyColumns) as $columnName) {
-            $quotedCol = $this->quoteIdentifier(
-                name: $columnName,
-                isPostgres: $isPostgres
-            );
-            // Absent column: emit a typed NULL placeholder.
-            $colExpr = "NULL AS {$quotedCol}";
-            if ($isPostgres === true) {
-                $colExpr = "NULL::text AS {$quotedCol}";
+        if ($metadataOnly === true) {
+            // Metadata-only projection: do NOT project per-schema property
+            // columns (that superset is what trips Postgres's 1664-column cap).
+            // Still resolve THIS table's own searchable property columns so the
+            // term match + relevance score below run against real data — they
+            // are referenced in WHERE/score expressions, not in the projection.
+            foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
+                $ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+                if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
+                    $existingColumns[] = $ownColumn;
+                }
             }
-
-            $columnInTable = $this->columnExistsInTable(
-                tableName: $tableName,
-                columnName: $columnName
-            );
-            if ($columnInTable === true) {
-                // Present column: cast to text for cross-schema type compatibility.
-                $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+        } else {
+            foreach (array_keys($allPropertyColumns) as $columnName) {
+                $quotedCol = $this->quoteIdentifier(
+                    name: $columnName,
+                    isPostgres: $isPostgres
+                );
+                // Absent column: emit a typed NULL placeholder.
+                $colExpr = "NULL AS {$quotedCol}";
                 if ($isPostgres === true) {
-                    $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                    $colExpr = "NULL::text AS {$quotedCol}";
                 }
 
-                $existingColumns[] = $columnName;
-            }
+                $columnInTable = $this->columnExistsInTable(
+                    tableName: $tableName,
+                    columnName: $columnName
+                );
+                if ($columnInTable === true) {
+                    // Present column: cast to text for cross-schema type compatibility.
+                    $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+                    if ($isPostgres === true) {
+                        $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                    }
 
-            $selectColumns[] = $colExpr;
-        }//end foreach
+                    $existingColumns[] = $columnName;
+                }
+
+                $selectColumns[] = $colExpr;
+            }//end foreach
+        }//end if
 
         $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
@@ -1508,8 +1563,21 @@ class MagicMapper extends AbstractObjectMapper
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
         // Pass existing columns so property-based search only targets columns in this table.
+        //
+        // Scope the `@self.schema` filter to THIS arm's schema: the incoming
+        // query may carry a large allow-list (every searchable schema), but each
+        // UNION arm already targets a single schema's table, so re-applying the
+        // full list as an IN() is redundant and trips the database's
+        // 1000-element IN-list cap when many schemas are searchable.
+        $armQuery = $query;
+        if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
+            && array_key_exists('schema', $armQuery['@self']) === true
+        ) {
+            $armQuery['@self']['schema'] = $schema->getId();
+        }
+
         $whereClauses = $this->searchHandler->buildWhereConditionsSql(
-            query: $query,
+            query: $armQuery,
             schema: $schema,
             existingColumns: $existingColumns
         );
@@ -2991,12 +3059,65 @@ class MagicMapper extends AbstractObjectMapper
                 $this->db->executeStatement(
                     "CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
                 );
-            }
+
+                // Baseline pg_trgm GIN index on the `_name` metadata column.
+                // `_name` is unconditionally searched by
+                // MagicSearchHandler::buildSearchConditionSql() for every schema
+                // (both the always-on ILIKE path and the `_fuzzy=true` similarity()
+                // path), yet nothing indexed it — a rare-term search forced a
+                // sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
+                // 81,950-row table). This index is on an EXISTING varchar/text
+                // column (no new column type is introduced), so — unlike a
+                // vector/tsvector-TYPED column — it does NOT break Doctrine
+                // introspectSchema() over oc_-prefixed tables: a functional/column
+                // GIN index is invisible to Doctrine's type system, the same reason
+                // the hybrid-document-search chunk `to_tsvector` functional GIN
+                // index is safe. Gated by pg_trgm availability and wrapped so a
+                // missing extension or incompatible column never fails table
+                // creation (matching the neighbouring index try/catch pattern).
+                if ($this->hasPgTrgmExtension() === true) {
+                    $nameCol    = self::METADATA_PREFIX.'name';
+                    $nameTrgmIx = "{$tableName}_name_trgm_idx";
+                    try {
+                        $this->db->executeStatement(
+                            "CREATE INDEX IF NOT EXISTS {$nameTrgmIx} ON {$fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
+                        );
+                    } catch (Exception $e) {
+                        $this->logger->info(
+                            message: '[MagicMapper] Skipped baseline _name trgm index',
+                            context: [
+                                'file'      => __FILE__,
+                                'line'      => __LINE__,
+                                'tableName' => $tableName,
+                                'error'     => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }//end if
+            } else {
+                // MySQL/MariaDB do not support partial indexes, so the
+                // "WHERE _owner = ? AND _deleted IS NULL" access pattern is
+                // supported here with a composite (_deleted, _owner) index — the
+                // best available approximation. `CREATE INDEX IF NOT EXISTS` is
+                // not portable across older MySQL, so create it defensively and
+                // treat a duplicate-index error as a no-op (idempotent).
+                $deletedCol      = self::METADATA_PREFIX.'deleted';
+                $ownerColForIdx  = self::METADATA_PREFIX.'owner';
+                $deletedOwnerIdx = "{$tableName}_deleted_owner_idx";
+                try {
+                    $this->db->executeStatement(
+                        "CREATE INDEX {$deletedOwnerIdx} ON {$fullTableName} ({$deletedCol}, {$ownerColForIdx})"
+                    );
+                } catch (\Throwable $e) {
+                    // Index already exists (no IF NOT EXISTS on MySQL) — ignore.
+                }
+            }//end if
 
             // Create indexes for schema-specific properties.
-            $schemaProperties = $_schema->getProperties();
-            $relationIndexes  = [];
-            $facetIndexes     = [];
+            $schemaProperties  = $_schema->getProperties();
+            $relationIndexes   = [];
+            $facetIndexes      = [];
+            $searchableIndexes = [];
 
             if (is_array($schemaProperties) === true) {
                 foreach ($schemaProperties as $propertyName => $propertyConfig) {
@@ -3053,18 +3174,58 @@ class MagicMapper extends AbstractObjectMapper
                             // Index may already exist or column type incompatible.
                         }
                     }
+
+                    // Opt-in `searchable: true` flag: create a pg_trgm GIN index on
+                    // this property's column so fuzzy/substring (`_search` / ILIKE /
+                    // similarity()) matching against it is index-backed instead of a
+                    // sequential scan. Structurally identical to `facetable` above,
+                    // but PostgreSQL + pg_trgm gated (the `gin_trgm_ops` operator
+                    // class only exists on PostgreSQL with the extension). Like the
+                    // baseline `_name` index, this indexes an EXISTING text column —
+                    // no new column type — so it is Doctrine-introspection-safe. A
+                    // non-string column (gin_trgm_ops requires a text-castable type)
+                    // is tolerated by the try/catch below, exactly like facetable's
+                    // "column type incompatible" case, and logged rather than fatal.
+                    if (($propertyConfig['searchable'] ?? false) === true
+                        && $isPostgres === true
+                        && $this->hasPgTrgmExtension() === true
+                    ) {
+                        $idxName = "{$tableName}_{$columnName}_trgm_idx";
+                        try {
+                            $this->db->executeStatement(
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$quotedCol} gin_trgm_ops)"
+                            );
+                            $searchableIndexes[] = $columnName;
+                        } catch (Exception $e) {
+                            // Index may already exist, or the column type is
+                            // incompatible with gin_trgm_ops (e.g. a non-string
+                            // property incorrectly marked searchable): log a warning
+                            // and continue, do not abort table creation/sync.
+                            $this->logger->warning(
+                                message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
+                                context: [
+                                    'file'      => __FILE__,
+                                    'line'      => __LINE__,
+                                    'tableName' => $tableName,
+                                    'column'    => $columnName,
+                                    'error'     => $e->getMessage(),
+                                ]
+                            );
+                        }//end try
+                    }//end if
                 }//end foreach
             }//end if
 
             $this->logger->debug(
                 message: '[MagicMapper] Created table indexes',
                 context: [
-                    'file'            => __FILE__,
-                    'line'            => __LINE__,
-                    'tableName'       => $tableName,
-                    'baseIndexCount'  => 5 + count($idxMetaFields),
-                    'relationIndexes' => $relationIndexes,
-                    'facetIndexes'    => $facetIndexes,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
+                    'tableName'         => $tableName,
+                    'baseIndexCount'    => 5 + count($idxMetaFields),
+                    'relationIndexes'   => $relationIndexes,
+                    'facetIndexes'      => $facetIndexes,
+                    'searchableIndexes' => $searchableIndexes,
                 ]
             );
         } catch (Exception $e) {
@@ -7053,7 +7214,7 @@ class MagicMapper extends AbstractObjectMapper
     ): array {
         if ($register === null && $entity->getRegister() !== null) {
             try {
-                $register = $this->registerMapper->find((int) $entity->getRegister(), null, true, false);
+                $register = $this->registerMapper->find(id: (int) $entity->getRegister(), _rbac: false, _multitenancy: false);
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve register from entity',
@@ -7069,7 +7230,7 @@ class MagicMapper extends AbstractObjectMapper
 
         if ($schema === null && $entity->getSchema() !== null) {
             try {
-                $schema = $this->schemaMapper->find((int) $entity->getSchema(), [], null, true, false);
+                $schema = $this->schemaMapper->find(id: (int) $entity->getSchema(), _rbac: false, _multitenancy: false);
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve schema from entity',
@@ -8232,6 +8393,16 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getMaxAllowedPacketSize(): int
     {
+        // `SHOW VARIABLES` is a MySQL-ism. On PostgreSQL the statement is a
+        // syntax error — and although the exception is swallowed here, a
+        // failed statement inside an OPEN TRANSACTION aborts the whole
+        // transaction on postgres (SQLSTATE 25P02: "current transaction is
+        // aborted"), breaking any caller that wraps a save in a transaction
+        // (e.g. the ADR-051 handoff engine). Only probe on MySQL/MariaDB.
+        if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+            return 16777216;
+        }
+
         try {
             $result = $this->db->executeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
             $row    = $result->fetch();
@@ -8266,6 +8437,8 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
      */
     public function searchObjectsPaginated(
         array $searchQuery=[],
@@ -8293,17 +8466,23 @@ class MagicMapper extends AbstractObjectMapper
 
         $registerIds = $searchQuery['@self']['registers'] ?? $searchQuery['_registers'] ?? null;
 
-        // Multi-schema search.
+        // Multi-schema search. Fires whenever a non-empty set of schema ids is
+        // given — even with NO register filter. The unified-search provider
+        // passes a searchable-schema set and no register; previously that fell
+        // through to the (empty) central table and returned nothing. When no
+        // register filter is present, registerIds is left empty and
+        // searchObjectsPaginatedMultiSchema resolves each schema's real owning
+        // register from a schema->register map.
         $isMultiSchemaSearch = $schemaId === null
             && $schemaIds !== null
             && is_array($schemaIds) === true
-            && count($schemaIds) > 0
-            && ($registerId !== null
-                || ($registerIds !== null
-                    && is_array($registerIds) === true
-                    && count($registerIds) > 0));
+            && count($schemaIds) > 0;
         if ($isMultiSchemaSearch === true) {
-            $allRegisterIds = [(int) $registerId];
+            $allRegisterIds = [];
+            if ($registerId !== null) {
+                $allRegisterIds = [(int) $registerId];
+            }
+
             if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
                 $allRegisterIds = array_map('intval', $registerIds);
             }
@@ -8319,7 +8498,7 @@ class MagicMapper extends AbstractObjectMapper
                 ids: $ids,
                 uses: $uses
             );
-        }
+        }//end if
 
         // Single schema search.
         if ($registerId !== null && $schemaId !== null) {
@@ -8439,6 +8618,42 @@ class MagicMapper extends AbstractObjectMapper
     }//end searchObjectsPaginated()
 
     /**
+     * Extract integer schema ids from a register's `schemas` membership list.
+     *
+     * The list may hold ids by value or by key, as ints or numeric strings;
+     * this normalises all forms to a flat list of distinct integer ids.
+     *
+     * @param array $registerSchemas The register's getSchemas()/decoded schemas array.
+     *
+     * @return int[] Distinct integer schema ids.
+     */
+    private function extractSchemaIds(array $registerSchemas): array
+    {
+        // A plain list (`[4306, 4307]`) carries ids by VALUE; its integer keys
+        // are positional, not ids. An id-keyed map (`{4310: "Pet"}`) carries
+        // ids by KEY. Only consider keys for the map shape so a list of
+        // non-numeric values can never inject positional indices as schema ids.
+        $isList = array_is_list($registerSchemas);
+        $ids    = [];
+        foreach ($registerSchemas as $schemaKey => $schemaValue) {
+            $candidates = [$schemaKey, $schemaValue];
+            if ($isList === true) {
+                $candidates = [$schemaValue];
+            }
+
+            foreach ($candidates as $candidate) {
+                if (is_int($candidate) === true
+                    || (is_string($candidate) === true && ctype_digit($candidate) === true)
+                ) {
+                    $ids[(int) $candidate] = true;
+                }
+            }
+        }
+
+        return array_keys($ids);
+    }//end extractSchemaIds()
+
+    /**
      * Search objects across multiple schemas using UNION queries.
      *
      * @param array       $searchQuery   Search query parameters.
@@ -8459,6 +8674,8 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @psalm-suppress                                UnusedParam
      * Parameters reserved for future per-schema security filtering.
+     *
+     * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
      */
     private function searchObjectsPaginatedMultiSchema(
         array $searchQuery,
@@ -8474,21 +8691,73 @@ class MagicMapper extends AbstractObjectMapper
         $registersCache = [];
         $schemasCache   = [];
 
-        $registers = [];
-        foreach ($registerIds as $regId) {
-            try {
-                $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
-                $registers[$register->getId()]      = $register;
-                $registersCache[$register->getId()] = $register->jsonSerialize();
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    message: '[MagicMapper] Failed to find register for multi-schema search',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
-                );
-            }
-        }
+        // Build a schema_id -> owning register_id map so each schema is paired
+        // with its REAL register (correct magic table). A schema with no owning
+        // register is SKIPPED (logged) rather than forced onto an unrelated
+        // register, which produced the "Register+schema table does not exist"
+        // empties. Register ENTITIES are loaded lazily (find()) only for the
+        // registers actually matched. `$registers` caches them by id.
+        //
+        // IMPORTANT: when no register filter is given (unified search passes a
+        // searchable-schema set only) we read the register->schema membership
+        // with a DIRECT query, NOT registerMapper::findAll — findAll applies an
+        // organisation filter (even with _multitenancy:false the trait's active-
+        // org resolution can collapse the result to a single register), which
+        // would hide most schemas' owning registers and make cross-schema
+        // search return nothing.
+        $registers          = [];
+        $schemaToRegisterId = [];
 
-        if (empty($registers) === true) {
+        if (empty($registerIds) === false) {
+            foreach ($registerIds as $regId) {
+                try {
+                    $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
+                    $registers[$register->getId()]      = $register;
+                    $registersCache[$register->getId()] = $register->jsonSerialize();
+                    $registerSchemas = ($register->getSchemas() ?? []);
+                    if (is_array($registerSchemas) === true) {
+                        foreach ($this->extractSchemaIds(registerSchemas: $registerSchemas) as $sid) {
+                            if (isset($schemaToRegisterId[$sid]) === false) {
+                                $schemaToRegisterId[$sid] = $register->getId();
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[MagicMapper] Failed to find register for multi-schema search',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
+                    );
+                }
+            }
+        } else {
+            try {
+                $rqb = $this->db->getQueryBuilder();
+                $rqb->select('id', 'schemas')->from('openregister_registers');
+                $res = $rqb->executeQuery();
+                while (($row = $res->fetch()) !== false) {
+                    $regId   = (int) $row['id'];
+                    $schemas = json_decode((string) ($row['schemas'] ?? '[]'), true);
+                    if (is_array($schemas) === false) {
+                        continue;
+                    }
+
+                    foreach ($this->extractSchemaIds(registerSchemas: $schemas) as $sid) {
+                        if (isset($schemaToRegisterId[$sid]) === false) {
+                            $schemaToRegisterId[$sid] = $regId;
+                        }
+                    }
+                }
+
+                $res->closeCursor();
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to build schema->register map for multi-schema search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
+            }//end try
+        }//end if
+
+        if (empty($schemaToRegisterId) === true) {
             return [
                 'results'   => [],
                 'total'     => 0,
@@ -8501,36 +8770,56 @@ class MagicMapper extends AbstractObjectMapper
         $totalCount          = 0;
 
         foreach ($schemaIds as $sId) {
-            try {
-                $schema = $this->schemaMapper->find((int) $sId, _multitenancy: false, _rbac: false);
-                $schemasCache[$schema->getId()] = $schema->jsonSerialize();
-
-                $matchedRegister = null;
-                foreach ($registers as $register) {
-                    $registerSchemas = $register->getSchemas() ?? [];
-                    if (is_array($registerSchemas) === true) {
-                        $schemaIdStr = (string) $sId;
-                        $schemaIdInt = (int) $sId;
-                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
-                            || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
-                            || array_key_exists($schemaIdStr, $registerSchemas);
-                        if ($inValues === true || $inKeys === true) {
-                            $matchedRegister = $register;
-                            break;
-                        }
+            $schemaIdInt       = (int) $sId;
+            $matchedRegisterId = ($schemaToRegisterId[$schemaIdInt] ?? null);
+            $matchedRegister   = null;
+            if ($matchedRegisterId !== null) {
+                if (isset($registers[$matchedRegisterId]) === false) {
+                    // Load the owning register ENTITY lazily (only for registers
+                    // actually matched by a searched schema). find() honours
+                    // _multitenancy:false so it resolves regardless of the
+                    // active organisation; on failure the schema is skipped.
+                    try {
+                        $reg = $this->registerMapper->find($matchedRegisterId, _multitenancy: false, _rbac: false);
+                        $registers[$reg->getId()]      = $reg;
+                        $registersCache[$reg->getId()] = $reg->jsonSerialize();
+                    } catch (\Throwable $e) {
+                        $this->logger->warning(
+                            message: '[MagicMapper] Failed to load owning register for multi-schema search',
+                            context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $matchedRegisterId, 'error' => $e->getMessage()]
+                        );
                     }
                 }
 
-                if ($matchedRegister === null) {
-                    $matchedRegister = reset($registers);
-                }
+                $matchedRegister = ($registers[$matchedRegisterId] ?? null);
+            }//end if
+
+            if ($matchedRegister === null) {
+                // No owning register -> the magic table cannot be resolved; skip
+                // (logged) instead of guessing a wrong register.
+                $this->logger->debug(
+                    message: '[MagicMapper] Skipping schema with no resolvable owning register',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaIdInt]
+                );
+                continue;
+            }
+
+            try {
+                $schema = $this->schemaMapper->find($schemaIdInt, _multitenancy: false, _rbac: false);
+                $schemasCache[$schema->getId()] = $schema->jsonSerialize();
 
                 $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
 
                 $schemaCountQuery          = $countQuery;
                 $schemaCountQuery['_rbac'] = $_rbac;
                 $schemaCountQuery['_multitenancy'] = $_multitenancy;
+                // Scope the per-table count to THIS schema. The incoming query
+                // may carry a large `@self.schema` allow-list (every searchable
+                // schema); re-applying it as an IN() on each single-table count
+                // is redundant — the table IS this schema — and trips the
+                // database's 1000-element IN-list cap when many schemas are
+                // searchable. Pin it to this schema's own id.
+                $schemaCountQuery['@self']['schema'] = $schema->getId();
                 $schemaCount = $this->countObjectsInRegisterSchemaTable(
                     query: $schemaCountQuery,
                     register: $matchedRegister,

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -89,6 +90,7 @@ class SchemasControllerJsonLdMappingTest extends TestCase
             $this->createMock(SchemaService::class),
             $this->createMock(LoggerInterface::class),
             $container,
+            $this->createMock(SchemaVersioningService::class),
             new JsonLdContextService($urlGenerator)
         );
     }

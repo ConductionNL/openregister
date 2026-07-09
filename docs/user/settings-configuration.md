@@ -622,6 +622,7 @@ For best results, configure in this order:
    - Monitor usage and costs
 
 For more detailed information:
+- Search Configuration: See [SOLR Setup Guide](../technical/solr-setup-configuration.md)
 - File Processing: See [File Management Guide](../Features/files.md)
 - LLM Features: See [Semantic Search Guide](../user-guide/semantic-search.md)
 

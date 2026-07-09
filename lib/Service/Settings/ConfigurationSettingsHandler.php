@@ -620,59 +620,6 @@ class ConfigurationSettingsHandler
     }//end updateSettings()
 
     /**
-     * Update the publishing options configuration.
-     *
-     * @param array $options The publishing options data to update.
-     *
-     * @return bool[] The updated publishing options configuration.
-     *
-     * @throws \RuntimeException If publishing options update fails.
-     *
-     * @psalm-return array{
-     *     use_old_style_publishing_view?: bool,
-     *     auto_publish_objects?: bool,
-     *     auto_publish_attachments?: bool
-     * }
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-     */
-    public function updatePublishingOptions(array $options): array
-    {
-        try {
-            // Define valid publishing option keys for security.
-            $validOptions = [
-                'auto_publish_attachments',
-                'auto_publish_objects',
-                'use_old_style_publishing_view',
-            ];
-
-            $updatedOptions = [];
-
-            // Update each publishing option in the configuration.
-            foreach ($validOptions as $option) {
-                // Check if this option is provided in the input data.
-                if (isset($options[$option]) === true) {
-                    // Convert boolean or string to string format for storage.
-                    $value = 'false';
-                    if ($options[$option] === true || $options[$option] === 'true') {
-                        $value = 'true';
-                    }
-
-                    // Store the value in the configuration.
-                    $this->appConfig->setValueString($this->appName, $option, $value);
-                    // Retrieve and convert back to boolean for the response.
-                    $updatedOptions[$option] = $this->appConfig->getValueString($this->appName, $option, '') === 'true';
-                }
-            }
-
-            return $updatedOptions;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update publishing options: '.$e->getMessage());
-        }//end try
-    }//end updatePublishingOptions()
-
-    /**
      * Get focused RBAC settings only
      *
      * @return (mixed|string|true)[][]
@@ -1386,18 +1333,19 @@ class ConfigurationSettingsHandler
     public function getVersionInfoOnly(): array
     {
         try {
-            $appInfo = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppInfo($this->appName);
+            $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+            $appInfo    = $appManager->getAppInfo($this->appName);
 
             return [
-                'version'     => $appInfo['version'] ?? 'unknown',
-                'name'        => $appInfo['name'] ?? 'OpenRegister',
-                'description' => $appInfo['description'] ?? '',
-                'author'      => $appInfo['author'] ?? 'Conduction',
-                'licence'     => $appInfo['licence'] ?? 'AGPL',
+                'version'     => ($appInfo['version'] ?? null) ?? 'unknown',
+                'name'        => ($appInfo['name'] ?? null) ?? 'OpenRegister',
+                'description' => ($appInfo['description'] ?? null) ?? '',
+                'author'      => ($appInfo['author'] ?? null) ?? 'Conduction',
+                'licence'     => ($appInfo['licence'] ?? null) ?? 'AGPL',
                 'timestamp'   => time(),
                 'date'        => date('Y-m-d H:i:s'),
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'version' => 'unknown',
                 'error'   => 'Failed to retrieve version info: '.$e->getMessage(),

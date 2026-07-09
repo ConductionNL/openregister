@@ -34,6 +34,7 @@
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG address designation (house number + postal code combination)",
         "description": "A nummeraanduiding is the official BAG object that assigns a house number (with optional letter and addition) and postal code to an addressable object. It links a human-readable address to a verblijfsobject, standplaats, or ligplaats via the BAG identification system.",
+        "x-schema-org": "schema:PostalAddress",
         "required": [
           "identificatie",
           "huisnummer",
@@ -50,26 +51,30 @@
             "pattern": "^[0-9]{16}$",
             "minLength": 16,
             "maxLength": 16,
-            "facetable": true
+            "facetable": true,
+            "title": "Identification Number"
           },
           "huisnummer": {
             "type": "integer",
             "description": "House number (1-99999)",
             "minimum": 1,
             "maximum": 99999,
-            "facetable": true
+            "facetable": true,
+            "title": "House Number"
           },
           "huisletter": {
             "type": "string",
             "description": "Optional letter suffix (a-z, A-Z)",
             "maxLength": 1,
-            "facetable": false
+            "facetable": false,
+            "title": "House Letter"
           },
           "huisnummertoevoeging": {
             "type": "string",
             "description": "Optional house number addition (e.g. 'bis', 'I', 'M')",
             "maxLength": 4,
-            "facetable": false
+            "facetable": false,
+            "title": "House Number Addition"
           },
           "postcode": {
             "type": "string",
@@ -77,7 +82,8 @@
             "pattern": "^[0-9]{4}[A-Z]{2}$",
             "minLength": 6,
             "maxLength": 6,
-            "facetable": true
+            "facetable": true,
+            "title": "Postal Code"
           },
           "status": {
             "type": "string",
@@ -86,7 +92,8 @@
               "Naamgeving uitgegeven",
               "Naamgeving ingetrokken"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Status"
           },
           "typeAdresseerbaarObject": {
             "type": "string",
@@ -96,19 +103,22 @@
               "Standplaats",
               "Ligplaats"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Addressable Object Type"
           },
           "openbareRuimteNaam": {
             "type": "string",
             "description": "Street name (naam openbare ruimte)",
             "maxLength": 80,
-            "facetable": true
+            "facetable": true,
+            "title": "Street Name"
           },
           "woonplaatsNaam": {
             "type": "string",
             "description": "City or village name",
             "maxLength": 80,
-            "facetable": true
+            "facetable": true,
+            "title": "City Name"
           }
         },
         "hardValidation": false,
@@ -126,6 +136,7 @@
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG dwelling unit or usable space within a building",
         "description": "A verblijfsobject is the smallest usable unit within one or more panden (buildings) that is suitable for residential, office, retail, or other use. It has one or more gebruiksdoelen (usage purposes) and a floor area in square meters.",
+        "x-schema-org": "schema:Place",
         "required": [
           "identificatie",
           "gebruiksdoel",
@@ -141,7 +152,8 @@
             "pattern": "^[0-9]{16}$",
             "minLength": 16,
             "maxLength": 16,
-            "facetable": true
+            "facetable": true,
+            "title": "Identification Number"
           },
           "gebruiksdoel": {
             "type": "array",
@@ -162,13 +174,15 @@
                 "overige gebruiksfunctie"
               ]
             },
-            "facetable": true
+            "facetable": true,
+            "title": "Usage Purposes"
           },
           "oppervlakte": {
             "type": "integer",
             "description": "Floor area in square meters",
             "minimum": 1,
-            "facetable": true
+            "facetable": true,
+            "title": "Floor Area"
           },
           "status": {
             "type": "string",
@@ -180,19 +194,22 @@
               "Verblijfsobject ingetrokken",
               "Verblijfsobject buiten gebruik"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Status"
           },
           "pandIdentificatie": {
             "type": "string",
             "description": "Reference to the pand (building) this verblijfsobject is in (16 digits, TT=10)",
             "pattern": "^[0-9]{16}$",
-            "facetable": true
+            "facetable": true,
+            "title": "Building Identification"
           },
           "nummeraanduidingIdentificatie": {
             "type": "string",
             "description": "Reference to the nummeraanduiding (address) of this verblijfsobject (16 digits, TT=20)",
             "pattern": "^[0-9]{16}$",
-            "facetable": true
+            "facetable": true,
+            "title": "Address Identification"
           }
         },
         "hardValidation": false,
@@ -210,6 +227,7 @@
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG building (pand)",
         "description": "A pand is the smallest building unit that is architecturally self-contained, accessible from the outside, and functionally independent. Each pand has a construction year and a status indicating its lifecycle state.",
+        "x-schema-org": "schema:Place",
         "required": [
           "identificatie",
           "oorspronkelijkBouwjaar",
@@ -222,7 +240,8 @@
             "pattern": "^[0-9]{16}$",
             "minLength": 16,
             "maxLength": 16,
-            "facetable": true
+            "facetable": true,
+            "title": "Identification Number"
           },
           "oorspronkelijkBouwjaar": {
             "type": "string",
@@ -230,7 +249,8 @@
             "pattern": "^[0-9]{4}$",
             "minLength": 4,
             "maxLength": 4,
-            "facetable": true
+            "facetable": true,
+            "title": "Original Construction Year"
           },
           "status": {
             "type": "string",
@@ -245,7 +265,8 @@
               "Bouw gestart",
               "Sloopvergunning verleend"
             ],
-            "facetable": true
+            "facetable": true,
+            "title": "Status"
           }
         },
         "hardValidation": false,
@@ -716,7 +737,9 @@
           "slug": "0599010000208579"
         },
         "identificatie": "0599010000208579",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 85,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0599100000300001",
@@ -729,7 +752,9 @@
           "slug": "0363010000100100"
         },
         "identificatie": "0363010000100100",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 120,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000100001",
@@ -742,7 +767,9 @@
           "slug": "0518010000610966"
         },
         "identificatie": "0518010000610966",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 95,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0518100000600001",
@@ -755,7 +782,9 @@
           "slug": "0344010000050050"
         },
         "identificatie": "0344010000050050",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 78,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0344100000050001",
@@ -768,7 +797,9 @@
           "slug": "0014010000001001"
         },
         "identificatie": "0014010000001001",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 110,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0014100000001001",
@@ -781,7 +812,9 @@
           "slug": "0034010000001001"
         },
         "identificatie": "0034010000001001",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 92,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0034100000001001",
@@ -794,7 +827,9 @@
           "slug": "0153010000015015"
         },
         "identificatie": "0153010000015015",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 68,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0153100000015001",
@@ -807,7 +842,9 @@
           "slug": "0935010000046046"
         },
         "identificatie": "0935010000046046",
-        "gebruiksdoel": ["woonfunctie"],
+        "gebruiksdoel": [
+          "woonfunctie"
+        ],
         "oppervlakte": 105,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0935100000046001",
@@ -820,7 +857,9 @@
           "slug": "0363010000017017"
         },
         "identificatie": "0363010000017017",
-        "gebruiksdoel": ["kantoorfunctie"],
+        "gebruiksdoel": [
+          "kantoorfunctie"
+        ],
         "oppervlakte": 250,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000017001",
@@ -833,7 +872,10 @@
           "slug": "0363010000200200"
         },
         "identificatie": "0363010000200200",
-        "gebruiksdoel": ["kantoorfunctie", "winkelfunctie"],
+        "gebruiksdoel": [
+          "kantoorfunctie",
+          "winkelfunctie"
+        ],
         "oppervlakte": 180,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000200001",
@@ -846,7 +888,9 @@
           "slug": "0363010000500500"
         },
         "identificatie": "0363010000500500",
-        "gebruiksdoel": ["kantoorfunctie"],
+        "gebruiksdoel": [
+          "kantoorfunctie"
+        ],
         "oppervlakte": 320,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000500001",
@@ -859,7 +903,10 @@
           "slug": "0599010000300300"
         },
         "identificatie": "0599010000300300",
-        "gebruiksdoel": ["kantoorfunctie", "bijeenkomstfunctie"],
+        "gebruiksdoel": [
+          "kantoorfunctie",
+          "bijeenkomstfunctie"
+        ],
         "oppervlakte": 4500,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0599100000300002",
@@ -872,7 +919,10 @@
           "slug": "0599010000300301"
         },
         "identificatie": "0599010000300301",
-        "gebruiksdoel": ["winkelfunctie", "logiesfunctie"],
+        "gebruiksdoel": [
+          "winkelfunctie",
+          "logiesfunctie"
+        ],
         "oppervlakte": 65,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0599100000300003",
@@ -885,7 +935,10 @@
           "slug": "0363010000600600"
         },
         "identificatie": "0363010000600600",
-        "gebruiksdoel": ["winkelfunctie", "kantoorfunctie"],
+        "gebruiksdoel": [
+          "winkelfunctie",
+          "kantoorfunctie"
+        ],
         "oppervlakte": 2200,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000600001",
@@ -898,7 +951,9 @@
           "slug": "0363010000600601"
         },
         "identificatie": "0363010000600601",
-        "gebruiksdoel": ["bijeenkomstfunctie"],
+        "gebruiksdoel": [
+          "bijeenkomstfunctie"
+        ],
         "oppervlakte": 8000,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000600002",
@@ -911,7 +966,10 @@
           "slug": "0363010000600602"
         },
         "identificatie": "0363010000600602",
-        "gebruiksdoel": ["bijeenkomstfunctie", "woonfunctie"],
+        "gebruiksdoel": [
+          "bijeenkomstfunctie",
+          "woonfunctie"
+        ],
         "oppervlakte": 450,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000600003",
@@ -924,7 +982,9 @@
           "slug": "0518010000700700"
         },
         "identificatie": "0518010000700700",
-        "gebruiksdoel": ["kantoorfunctie"],
+        "gebruiksdoel": [
+          "kantoorfunctie"
+        ],
         "oppervlakte": 5500,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0518100000700001",
@@ -937,7 +997,9 @@
           "slug": "0344010000060060"
         },
         "identificatie": "0344010000060060",
-        "gebruiksdoel": ["bijeenkomstfunctie"],
+        "gebruiksdoel": [
+          "bijeenkomstfunctie"
+        ],
         "oppervlakte": 3200,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0344100000060001",
@@ -950,7 +1012,9 @@
           "slug": "0014010000002002"
         },
         "identificatie": "0014010000002002",
-        "gebruiksdoel": ["winkelfunctie"],
+        "gebruiksdoel": [
+          "winkelfunctie"
+        ],
         "oppervlakte": 140,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0014100000002001",
@@ -963,7 +1027,9 @@
           "slug": "0363010000600603"
         },
         "identificatie": "0363010000600603",
-        "gebruiksdoel": ["gezondheidszorgfunctie"],
+        "gebruiksdoel": [
+          "gezondheidszorgfunctie"
+        ],
         "oppervlakte": 1800,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0363100000600004",
@@ -976,7 +1042,10 @@
           "slug": "0935010000047047"
         },
         "identificatie": "0935010000047047",
-        "gebruiksdoel": ["winkelfunctie", "logiesfunctie"],
+        "gebruiksdoel": [
+          "winkelfunctie",
+          "logiesfunctie"
+        ],
         "oppervlakte": 200,
         "status": "Verblijfsobject in gebruik",
         "pandIdentificatie": "0935100000047001",
