@@ -20,12 +20,12 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  *
- * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 class ObjectsController extends Controller
 {
@@ -1102,7 +1102,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1551,7 +1551,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
      *
-     * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function counts(ObjectService $objectService): JSONResponse
     {
@@ -1662,7 +1662,7 @@ class ObjectsController extends Controller
      *
      * @return int|null The scoped count, or null when the pair is withheld.
      *
-     * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function countPairScoped(
         string $register,
@@ -1773,7 +1773,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1834,7 +1834,7 @@ class ObjectsController extends Controller
      *   listing (per-object RBAC via scopedGeoRows()); this method only
      *   reshapes the already-scoped rows and accesses no object by id.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     public function geoJson(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1888,7 +1888,7 @@ class ObjectsController extends Controller
      *   listing (per-object RBAC via scopedGeoRows()); this method only
      *   reshapes the already-scoped rows and accesses no object by id.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     public function wfs(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1940,7 +1940,7 @@ class ObjectsController extends Controller
      *   OpenRegister object and takes no object id, so there is no IDOR
      *   surface. Authenticated-user access is enforced by NoAdminRequired.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     public function geocode(): JSONResponse
     {
@@ -1989,7 +1989,7 @@ class ObjectsController extends Controller
      *
      * @return array The RBAC-scoped result rows.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     private function scopedGeoRows(string $register, string $schema, ObjectService $objectService): array
     {
@@ -2011,7 +2011,7 @@ class ObjectsController extends Controller
      *
      * @return string[]|null
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     private function parseFieldsParam(array $params): ?array
     {
@@ -2045,7 +2045,7 @@ class ObjectsController extends Controller
      *
      * @return array The result, possibly with `results` filtered down.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function applyGeoQueryFilters(array $params, array $result): array
     {
@@ -2110,7 +2110,7 @@ class ObjectsController extends Controller
      *
      * @return array The same params with `geo.*` keys hoisted from `geo`.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function flattenGeoParams(array $params): array
     {
@@ -2170,7 +2170,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -2383,7 +2383,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-2
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function show(
         string $id,
@@ -2579,7 +2579,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function create(
         string $register,
@@ -2726,7 +2726,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function update(
         string $register,
@@ -2907,7 +2907,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-3
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function patch(
         string $register,
@@ -3123,7 +3123,7 @@ class ObjectsController extends Controller
      *
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-13
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function postPatch(
         string $register,
@@ -3246,7 +3246,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -3328,7 +3328,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function canDelete(
         string $id,
@@ -3386,7 +3386,7 @@ class ObjectsController extends Controller
      *     offset: int<0, max>, next?: string, prev?: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -3464,7 +3464,7 @@ class ObjectsController extends Controller
      *     limit: 30|mixed, offset: 0|mixed},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -3513,7 +3513,7 @@ class ObjectsController extends Controller
      *     offset: 0|mixed, message?: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -3566,7 +3566,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-7
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -3671,7 +3671,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function lock(string $register, string $schema, string $id): JSONResponse
     {
@@ -3717,7 +3717,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
@@ -3777,8 +3777,8 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
@@ -3873,7 +3873,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with merge result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-5
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function merge(
         string $id,
@@ -3932,7 +3932,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with migration result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-12
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -4008,7 +4008,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-10
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function downloadFiles(
         string $id,
@@ -4106,7 +4106,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -4151,7 +4151,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -4195,7 +4195,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getObjectVectorizationCount(): JSONResponse
     {
@@ -4239,7 +4239,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function validate(): JSONResponse
     {
