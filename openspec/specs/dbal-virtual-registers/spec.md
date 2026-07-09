@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # dbal-virtual-registers Specification
@@ -8,7 +8,7 @@ status: done
 
 Expose external relational databases as read-only **virtual registers** over Doctrine DBAL: the database becomes a Register, its tables and views become Schemas, and objects are served live through the existing object-source-provider seam (`x-openregister-object-source`, ADR-049 mechanism) — no copy or sync. SQL structure is introspected into JSON Schema so virtual schemas follow the same validation rules and relations as the underlying tables (columns → properties, NOT NULL → required, foreign keys → `$ref` relations resolvable via `_extend`). Credentials are custodied per ADR-004; reads enforce RBAC parity and 502/503 failure semantics.
 
-**OpenSpec changes**: [dbal-virtual-registers](../../changes/archive/2026-07-09-dbal-virtual-registers/) _(archived 2026-07-09)_
+**OpenSpec changes**: [dbal-virtual-registers](../../changes/archive/2026-07-09-dbal-virtual-registers/) _(archived 2026-07-09)_, [dbal-virtual-registers-crud](../../changes/dbal-virtual-registers-crud/)
 
 ## Requirements
 
