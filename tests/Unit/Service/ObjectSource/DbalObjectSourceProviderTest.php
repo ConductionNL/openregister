@@ -253,6 +253,43 @@ class DbalObjectSourceProviderTest extends TestCase
         }
     }//end testFindAllAppliesFilterAndLimitInSql()
 
+
+    /**
+     * Free-text `_search` LIKEs across mixed-type columns via a text CAST.
+     *
+     * Live-observed on PostgreSQL: `integer LIKE text` raises "operator does
+     * not exist" when the search OR-chain touches non-text columns — every
+     * column is CAST to the platform's text type first. The search must both
+     * match string content and tolerate (and match) numeric columns.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    public function testSearchCastsMixedColumnTypes(): void
+    {
+        $byStatus = $this->provider()->findAll(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            query: ['_search' => 'active', 'limit' => 100, 'offset' => 0],
+            config: $this->peopleConfig()
+        );
+        $this->assertNotEmpty($byStatus);
+        foreach ($byStatus as $object) {
+            $this->assertStringContainsString('active', implode(' ', array_map('strval', $object->getObject())));
+        }
+
+        // A purely numeric term must hit the INTEGER id column via the cast.
+        $byId = $this->provider()->findAll(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            query: ['_search' => '7', 'limit' => 100, 'offset' => 0],
+            config: $this->peopleConfig()
+        );
+        $this->assertNotEmpty($byId);
+    }//end testSearchCastsMixedColumnTypes()
+
+
     /**
      * A filter value with SQL metacharacters is bound, not interpolated —
      * matched literally, returning no injected rows.
