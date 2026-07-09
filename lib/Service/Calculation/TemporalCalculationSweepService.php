@@ -201,10 +201,6 @@ class TemporalCalculationSweepService
         [$lifecycleField, $terminalStates] = $this->lifecycleTerminals(schema: $schema);
 
         foreach ($objects as $object) {
-            if (($object instanceof ObjectEntity) === false) {
-                continue;
-            }
-
             $data = ($object->getObject() ?? []);
 
             // Terminal cases are left alone (spec scenario) — their clock no

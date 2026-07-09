@@ -130,8 +130,10 @@ class CredentialAppTokenService
     /**
      * Issue a short-lived signed token binding an app id to a credential id.
      *
-     * @param string $appId        The consuming app's id (must be registered).
-     * @param string $credentialId The credential UUID the app intends to use.
+     * @param string      $appId        The consuming app's id (must be registered).
+     * @param string      $credentialId The credential UUID the app intends to use.
+     * @param string|null $method       Optional HTTP method to bind the token to a single request.
+     * @param string|null $path         Optional request path to bind the token to a single request.
      *
      * @return string A `payload.signature` token (base64url parts).
      *
@@ -184,7 +186,9 @@ class CredentialAppTokenService
      * enforced. Any structural, signature, or expiry failure throws (fail-closed);
      * the caller maps every failure to a single static 403.
      *
-     * @param string $token The `payload.signature` token to verify.
+     * @param string      $token  The `payload.signature` token to verify.
+     * @param string|null $method The actual request HTTP method, matched against a request-bound token.
+     * @param string|null $path   The actual request path, matched against a request-bound token.
      *
      * @return array{appId: string, credentialId: string} The authenticated claims.
      *
@@ -261,7 +265,7 @@ class CredentialAppTokenService
      *
      * @param string $payloadB64 The base64url-encoded payload segment.
      *
-     * @return array{appId: string, credentialId: string, exp: int} The validated claims.
+     * @return array{appId: string, credentialId: string, exp: int, req?: string} The validated claims.
      *
      * @throws CredentialAccessDeniedException When the payload is unreadable or malformed.
      *

@@ -6563,3 +6563,38 @@ parameters:
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Tool/SchemaTool.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:counts\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
+			count: 2
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:counts\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: non\\-empty\\-array\\<int, array\\{register\\: mixed, schema\\: mixed, count\\: int\\|null\\}\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:counts\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 2
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Calculation/TemporalCalculationSweepService.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Calculation/TemporalCalculationSweepService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Calculation/TemporalCalculationSweepService.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Calculation/TemporalCalculationSweepService.php

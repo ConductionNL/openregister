@@ -86,9 +86,6 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
-use React\Promise\Promise;
-use React\Promise\PromiseInterface;
-use React\Async;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\IGroupManager;
@@ -99,8 +96,6 @@ use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-
-use function React\Promise\all;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -842,16 +837,10 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
 
-        // Resolve register and schema entities for rendering.
-        [$registers, $schemas] = $this->resolveRegisterAndSchema(
-            config: $config,
-            objects: $objects
-        );
-
         // Render via renderEntities, which batch-preloads ALL related objects in
         // one query before the per-row render (optimize-object-render-hot-path).
-        // The previous renderObjectsAsync() looped renderEntity() per row, so each
-        // row resolved its relations individually — an N+1 on any `?_extend=` list.
+        // A previous code path pre-resolved registers/schemas and looped
+        // renderEntity() per row, causing an N+1 on any `?_extend=` list.
         // renderEntities() performs the identical per-row renderEntity() rendering,
         // only with the relation/file caches pre-warmed, so output is unchanged;
         // registers/schemas were a pre-resolution optimization renderEntity()
@@ -898,123 +887,6 @@ class ObjectService
 
         return $config;
     }//end prepareFindAllConfig()
-
-    /**
-     * Resolve register and schema entities for rendering.
-     *
-     * @param array $config  Configuration array
-     * @param array $objects Retrieved objects
-     *
-     * @return ((Register|Schema|mixed)[]|null)[] [registers, schemas]
-     *
-     * @psalm-return list{array<Register|mixed>|null, array<Schema|mixed>|null}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditions for register/schema resolution
-     */
-    private function resolveRegisterAndSchema(array $config, array $objects): array
-    {
-        // Determine if register and schema should be passed to renderEntity.
-        $registers = null;
-        if ($this->currentRegister !== null && ($config['filters']['register'] ?? null) !== null) {
-            $registers = [$this->currentRegister->getId() => $this->currentRegister];
-        }
-
-        $schemas = null;
-        if ($this->currentSchema !== null && isset($config['filters']['schema']) === true) {
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-        }
-
-        // Check if '@self.schema' or '@self.register' is in extend but not in filters.
-        // This handles cases where we need to load schemas/registers for rendering.
-        $hasExtend     = isset($config['extend']) === true;
-        $extendArray   = (array) ($config['extend'] ?? []);
-        $needsSchema   = $hasExtend
-            && in_array('@self.schema', $extendArray, true) === true
-            && $schemas === null;
-        $needsRegister = $hasExtend
-            && in_array('@self.register', $extendArray, true) === true
-            && $registers === null;
-
-        if ($needsSchema === true) {
-            $schemaIds = array_unique(
-                array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects))
-            );
-            $schemas   = $this->performanceHandler->getCachedEntities(
-                ids: $schemaIds,
-                fallbackFunc: [$this->schemaMapper, 'findMultiple']
-            );
-            $schemas   = array_combine(
-                array_map(fn(Schema $schema): int => $schema->getId(), $schemas),
-                $schemas
-            );
-        }
-
-        if ($needsRegister === true) {
-            $registerIds = array_unique(
-                array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects))
-            );
-            $registers   = $this->performanceHandler->getCachedEntities(
-                ids: $registerIds,
-                fallbackFunc: [$this->registerMapper, 'findMultiple']
-            );
-            $registers   = array_combine(
-                array_map(fn(Register $register): int => $register->getId(), $registers),
-                $registers
-            );
-        }
-
-        return [$registers, $schemas];
-    }//end resolveRegisterAndSchema()
-
-    /**
-     * Render objects asynchronously using promises.
-     *
-     * @param array      $objects       Objects to render
-     * @param array      $config        Configuration array
-     * @param array|null $registers     Register entities
-     * @param array|null $schemas       Schema entities
-     * @param bool       $_rbac         Apply RBAC
-     * @param bool       $_multitenancy Apply multitenancy
-     *
-     * @return array Rendered objects
-     */
-    private function renderObjectsAsync(
-        array $objects,
-        array $config,
-        ?array $registers,
-        ?array $schemas,
-        bool $_rbac,
-        bool $_multitenancy
-    ): array {
-        // Render each object through the render handler.
-        $promises = [];
-        foreach ($objects as $key => $object) {
-            // @psalm-suppress InvalidArgument Promise resolve accepts mixed.
-            $promises[$key] = new Promise(
-                function ($resolve, $reject) use ($object, $config, $registers, $schemas, $_rbac, $_multitenancy) {
-                    try {
-                        $renderedObject = $this->renderHandler->renderEntity(
-                            entity: $object,
-                            _extend: $config['extend'] ?? [],
-                            filter: $config['unset'] ?? null,
-                            fields: $config['fields'] ?? null,
-                            registers: $registers,
-                            schemas: $schemas,
-                            _rbac: $_rbac,
-                            _multitenancy: $_multitenancy
-                        );
-
-                        $resolve($renderedObject);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }//end try
-                }
-            );
-        }//end foreach
-
-        // @psalm-suppress UndefinedFunction React\Async\await is from external library.
-        return Async\await(all($promises));
-    }//end renderObjectsAsync()
 
     /**
      * Counts the number of objects matching the given criteria.
