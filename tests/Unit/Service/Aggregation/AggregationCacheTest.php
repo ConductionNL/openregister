@@ -85,9 +85,19 @@ class AggregationCacheTest extends TestCase
         $cache->set('reg', 'sch', 'totalOpen', [], ['value' => 5]);
     }
 
-    public function testEvictForSchemaCallsClear(): void
+    public function testEvictForSchemaBumpsVersionCounterNotGlobalClear(): void
     {
-        $this->cache->expects($this->once())->method('clear');
+        // scope-cache-invalidation: eviction now bumps the (register,schema)
+        // version counter instead of wiping the entire cache with clear().
+        $this->cache->expects($this->never())->method('clear');
+        $this->cache->method('get')->willReturn(3);
+        $this->cache->expects($this->once())
+            ->method('set')
+            ->with(
+                $this->stringContains('reg'),
+                4,
+                $this->anything()
+            );
         $cache = $this->makeCache();
         $cache->evictForSchema('reg', 'sch');
     }
@@ -333,12 +343,21 @@ class AggregationCacheTest extends TestCase
         );
     }
 
-    public function testEvictForSchemaCoversAdhocEntries(): void
+    public function testEvictForSchemaCoversAdhocEntriesViaVersionBump(): void
     {
-        // evictForSchema delegates to ICache::clear() which wipes the
-        // entire `openregister_aggregations` namespace — both named and
-        // ad-hoc entries live there, so a single clear() covers both.
-        $this->cache->expects($this->once())->method('clear');
+        // scope-cache-invalidation: both named and ad-hoc aggregation keys embed
+        // the (register,schema) version counter, so a single version bump makes
+        // BOTH unreachable — without the old global clear() that also wiped every
+        // other schema's/user's entries.
+        $this->cache->expects($this->never())->method('clear');
+        $this->cache->method('get')->willReturn(null);
+        $this->cache->expects($this->once())
+            ->method('set')
+            ->with(
+                $this->stringContains('reg'),
+                1,
+                $this->anything()
+            );
         $cache = $this->makeCache();
         $cache->evictForSchema('reg', 'sch');
     }

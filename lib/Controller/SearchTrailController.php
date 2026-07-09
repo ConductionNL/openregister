@@ -448,6 +448,11 @@ class SearchTrailController extends Controller
      */
     public function statistics(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract date filters.
         $params = $this->extractRequestParameters();
 
@@ -477,6 +482,11 @@ class SearchTrailController extends Controller
      */
     public function popularTerms(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params = $this->extractRequestParameters();
         // Prioritize underscore-prefixed limit parameter.
@@ -530,6 +540,11 @@ class SearchTrailController extends Controller
      */
     public function activity(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params   = $this->extractRequestParameters();
         $interval = $this->request->getParam(key: 'interval', default: 'day');
@@ -560,6 +575,11 @@ class SearchTrailController extends Controller
      */
     public function registerSchemaStats(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params = $this->extractRequestParameters();
 
@@ -613,6 +633,11 @@ class SearchTrailController extends Controller
      */
     public function userAgentStats(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params = $this->extractRequestParameters();
         // Prioritize underscore-prefixed limit parameter.
@@ -715,6 +740,11 @@ class SearchTrailController extends Controller
      */
     public function cleanup(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract date parameter.
         $before     = $this->request->getParam(key: 'before');
         $beforeDate = null;
@@ -853,6 +883,11 @@ class SearchTrailController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             // Validate that search trail exists (validation only).
             $this->searchTrailService->getSearchTrail($id);
@@ -895,6 +930,11 @@ class SearchTrailController extends Controller
      */
     public function destroyMultiple(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             // TODO: Implement multiple search trail deletion.
             // $ids = $this->request->getParam(key: 'ids', default: null);
@@ -965,6 +1005,11 @@ class SearchTrailController extends Controller
      */
     public function clearAll(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             /*
              * Get the search trail mapper from the container.

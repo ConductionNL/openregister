@@ -487,4 +487,76 @@ class ScheduledNotificationJobTest extends TestCase
         $schema->setConfiguration($cfg);
         return $schema;
     }
+
+    // ---- Rotating-window cursor (bound-background-job-scans) ----
+
+    /**
+     * Build $count matching objects for one schema and run the job with the
+     * given app-config. Assertions are set on the mocks by the caller.
+     */
+    private function runJobWithAppConfig(IAppConfig $appConfig, int $count): void
+    {
+        $schema  = $this->scheduledSchema('big', 60, []);
+        $objects = [];
+        for ($i = 0; $i < $count; $i++) {
+            $o = $this->object('big');
+            $o->setObject(['n' => $i]);
+            $objects[] = $o;
+        }
+
+        $this->schemaMapper->method('findAll')->willReturn([$schema]);
+        $this->objectMapper->method('findBySchema')->willReturn($objects);
+        $this->stateCache->method('get')->willReturn(null);
+
+        $job = new ScheduledNotificationJob(
+            $this->time,
+            $this->schemaMapper,
+            $this->objectMapper,
+            $this->dispatcher,
+            $this->logger,
+            $this->cacheFactory,
+            new ScheduledFilterEvaluator(logger: $this->logger),
+            $this->dedupeMapper,
+            $appConfig
+        );
+        $reflection = new \ReflectionClass($job);
+        $method     = $reflection->getMethod('run');
+        $method->setAccessible(true);
+        $method->invoke($job, null);
+    }
+
+    public function testLargeSchemaProcessesFirstWindowAndAdvancesCursor(): void
+    {
+        // Offset starts at 0 (default). The first 5000 objects fire and the
+        // cursor advances to 5000 so the next run continues from there.
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueString')->willReturnArgument(2);
+        $appConfig->expects($this->once())
+            ->method('setValueString')
+            ->with('openregister', 'sched_offset:1:scheduled-test', '5000');
+
+        $this->dispatcher->expects($this->exactly(5000))->method('dispatch');
+
+        $this->runJobWithAppConfig($appConfig, 5002);
+    }
+
+    public function testRotationCursorProcessesPreviouslyUnreachableTail(): void
+    {
+        // Cursor already at 5000: the tail [5000, 5002) — which the old
+        // array_slice(0, 5000) would NEVER have reached — now fires, and the
+        // cursor wraps back to 0.
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueString')->willReturnCallback(
+            static function (string $app, string $key, string $default) {
+                return str_contains($key, 'sched_offset') === true ? '5000' : $default;
+            }
+        );
+        $appConfig->expects($this->once())
+            ->method('setValueString')
+            ->with('openregister', 'sched_offset:1:scheduled-test', '0');
+
+        $this->dispatcher->expects($this->exactly(2))->method('dispatch');
+
+        $this->runJobWithAppConfig($appConfig, 5002);
+    }
 }

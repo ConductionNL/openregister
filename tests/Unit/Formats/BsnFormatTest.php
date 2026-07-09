@@ -24,7 +24,6 @@ class BsnFormatTest extends TestCase
             'standard 9-digit BSN' => ['111222333'],
             'BSN with leading zeros' => ['000000012'],
             'another valid BSN' => ['123456782'],
-            'empty string pads to all zeros (valid checksum)' => [''],
             'short input padded to valid' => ['12'],
         ];
     }
@@ -46,6 +45,9 @@ class BsnFormatTest extends TestCase
             'mixed alphanumeric' => ['12345678a'],
             'single wrong digit' => ['1'],
             'all ones (invalid checksum)' => ['111111111'],
+            'all zeros sentinel rejected' => ['000000000'],
+            'empty string (pads to all zeros) rejected' => [''],
+            'over-length numeric rejected' => ['1234567890'],
         ];
     }
 
@@ -67,16 +69,17 @@ class BsnFormatTest extends TestCase
         );
     }
 
-    public function testNullCoercedToEmptyString(): void
+    public function testNullRejectedAsAllZeroSentinel(): void
     {
-        // null coerced to "" by str_pad, padded to "000000000" — checksum 0
-        $this->assertTrue($this->bsnFormat->validate(null));
+        // null coerces to "" and pads to "000000000" — rejected as the all-zero
+        // sentinel (ADR-008 Rule 4), not a real BSN.
+        $this->assertFalse($this->bsnFormat->validate(null));
     }
 
-    public function testFalseCoercedToEmptyString(): void
+    public function testFalseRejectedAsAllZeroSentinel(): void
     {
-        // false coerced to "" by str_pad
-        $this->assertTrue($this->bsnFormat->validate(false));
+        // false coerces to "" and pads to "000000000" — rejected.
+        $this->assertFalse($this->bsnFormat->validate(false));
     }
 
     public function testArrayThrowsTypeError(): void
