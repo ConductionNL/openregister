@@ -138,6 +138,9 @@ class TextExtractionService
      *                                                       inputs and for the public `parseEmlStructured`
      *                                                       surface that DocuDesk's `eml-pdf-assembly`
      *                                                       consumes; see `text-extraction-eml`).
+     * @param SpreadsheetExtractor     $spreadsheetExtractor Extractor for spreadsheet documents
+     * @param PdfExtractor             $pdfExtractor         Extractor for PDF documents
+     * @param WordExtractor            $wordExtractor        Extractor for Word documents
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection for all document-type parsers and entity mappers.
      * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.

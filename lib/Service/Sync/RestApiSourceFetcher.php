@@ -146,9 +146,9 @@ class RestApiSourceFetcher implements SourceFetcherInterface
      */
     public function fetch(Source $source, string $externalId): array
     {
-        $baseUrl  = rtrim((string) $source->getDatabaseUrl(), '/');
-        $headers  = $this->buildHeaders(source: $source, since: null);
-        $url      = $baseUrl.'/'.rawurlencode($externalId);
+        $baseUrl = rtrim((string) $source->getDatabaseUrl(), '/');
+        $headers = $this->buildHeaders(source: $source, since: null);
+        $url     = $baseUrl.'/'.rawurlencode($externalId);
         // Bound the request (harden-harvest-http): a hung upstream must not stall
         // the harvest job.
         $response = $this->httpClient->request(
