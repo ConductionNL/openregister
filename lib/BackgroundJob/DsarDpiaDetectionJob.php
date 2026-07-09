@@ -208,7 +208,7 @@ class DsarDpiaDetectionJob extends TimedJob
         foreach ($partitions as $partitionCases) {
             $summary['partitions']++;
 
-            $pack = $this->packResolver->activePackForCase(case: $partitionCases[0], systemContext: true);
+            $pack   = $this->packResolver->activePackForCase(case: $partitionCases[0], systemContext: true);
             $config = null;
             if ($pack !== null) {
                 $config = ($pack['dpiaDetection'] ?? null);

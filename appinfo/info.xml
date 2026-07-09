@@ -47,13 +47,13 @@ Vrij en open source onder de EUPL-licentie.
     <category>organization</category>
     <category>tools</category>
     <category>search</category>
-    <website>https://github.com/ConductionNL/OpenRegister</website>
-    <discussion>https://github.com/ConductionNL/OpenRegister/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenRegister</repository>
+    <website>https://codeberg.org/Conduction/openregister</website>
+    <bugs>https://codeberg.org/Conduction/openregister/issues</bugs>
+    <repository>https://codeberg.org/Conduction/openregister</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/OpenRegister/main/img/app-store.svg</screenshot>
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-registers.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-objects.png</screenshot>
 
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
@@ -78,6 +78,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
+			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</post-migration>
 		<install>
@@ -87,6 +88,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
+			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</install>
 	</repair-steps>
@@ -96,6 +98,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
@@ -118,6 +121,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
+		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
 	</background-jobs>
 
     <navigations>

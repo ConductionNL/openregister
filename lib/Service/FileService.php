@@ -799,15 +799,33 @@ class FileService
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
-
-        $folder = $this->getObjectFolder(objectEntity: $entity);
         if ($entity instanceof Register) {
             $folder = $this->getRegisterFolderById(register: $entity);
-        }
 
-        if ($folder === null) {
-            throw new Exception("Cannot access folder for entity ".$entity->getId());
-        }
+            if ($folder === null) {
+                throw new Exception("Cannot access folder for entity ".$entity->getId());
+            }
+        } else {
+            // Read/list path for an object. Objects that have never had a files
+            // folder created (null/legacy/empty folder property), whose bound
+            // folder node no longer resolves, or whose folder is not accessible
+            // to the current caller simply have no files to list. Resolving the
+            // folder must not fail the whole request: degrade to an empty list
+            // (HTTP 200) instead of surfacing a 500. See ObjectFilesController::index.
+            try {
+                $folder = $this->getObjectFolder(objectEntity: $entity);
+            } catch (\Throwable $e) {
+                $this->logger->info(
+                    message: '[FileService] No accessible files folder for object '.$entity->getId().'; returning empty list: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return [];
+            }
+
+            if ($folder === null) {
+                return [];
+            }
+        }//end if
 
         $files = $folder->getDirectoryListing();
 

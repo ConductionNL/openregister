@@ -15,8 +15,11 @@ return [
     'routes' => [
         // Credential broker (credential-broker-service) — owner-scoped credential
         // metadata CRUD + per-app signing-secret registration + the guarded broker
-        // call. The broker call reads the app token from the X-Credential-Token
-        // header (never the body). All owner-scoped, static errors, no secret leak.
+        // call. The token broker call (`/request`) reads the app id from the verified
+        // X-Credential-Token header (never the body); the session broker call
+        // (`/session-request`) authenticates via the NC session + CSRF requesttoken
+        // and reads the app id from the body, with the owner guard still enforced
+        // against the session user. All owner-scoped, static errors, no secret leak.
         ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
@@ -24,6 +27,7 @@ return [
         ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
         ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#sessionBrokerRequest', 'url' => '/api/credentials/{id}/session-request', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         // Web Push channel (openregister-web-push-engine).
         // VAPID public key (browser subscribe key) + current-user subscription CRUD
@@ -58,6 +62,10 @@ return [
         // Data sync / harvesting — manual trigger + status (data-sync-harvesting spec).
         ['name' => 'sources#syncNow',    'url' => '/api/sources/{id}/sync',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#syncStatus', 'url' => '/api/sources/{id}/sync-status', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+
+        // Virtual registers over DBAL — connection test + introspection (dbal-virtual-registers spec).
+        ['name' => 'sources#testConnection', 'url' => '/api/sources/{id}/test-connection', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'sources#introspect',     'url' => '/api/sources/{id}/introspect',      'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -144,6 +152,9 @@ return [
 
         // Object validation endpoint.
         ['name' => 'objects#validate', 'url' => '/api/objects/validate', 'verb' => 'POST'],
+
+        // Batched object-count endpoint (one round-trip for many register/schema pairs).
+        ['name' => 'objects#counts', 'url' => '/api/objects/counts', 'verb' => 'POST'],
 
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller).
         // NOTE: Specific routes MUST come before parameterized routes like {id}

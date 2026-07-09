@@ -2679,4 +2679,100 @@ class ObjectServiceTest extends TestCase
 
 		$this->assertNull($result);
 	}
+
+	// ── ISSUE B: cross-schema UUID fallback in find() ──────────────────────
+
+	/**
+	 * A UUID lookup under a stale/foreign schema falls back across all magic
+	 * tables and re-anchors to the object's real schema.
+	 *
+	 * Reproduces the fleet detail-page audit case objects/larpingapp/25/<uuid>
+	 * where the object actually lives in schema 1470: a schema-scoped lookup
+	 * 404s, but the globally-unique UUID must still resolve.
+	 */
+	public function testFindFallsBackAcrossSchemasForUuidUnderWrongSchema(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$object = new ObjectEntity();
+		$object->setId(3);
+		$object->setUuid($uuid);
+		$object->setRegister('8');
+		$object->setSchema('1470');
+
+		// First call (schema-scoped, wrong schema) misses; second call
+		// (cross-table, register+schema null) resolves the object.
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount, $object): ObjectEntity {
+				$callCount++;
+				if ($callCount === 1) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+				}
+
+				return $object;
+			}
+		);
+
+		// Re-anchoring resolves the object's true register/schema by id.
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		// Rendering echoes the resolved object back.
+		$this->renderHandler->method('renderEntity')->willReturn($object);
+
+		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+
+		$this->assertSame($object, $result);
+		$this->assertSame(2, $callCount, 'find() should retry across all magic tables');
+	}
+
+	/**
+	 * A non-UUID identifier (e.g. an object slug) is NOT retried across
+	 * schemas — slugs are not globally unique, so the schema-scoped miss is
+	 * surfaced as a 404 (DoesNotExistException).
+	 */
+	public function testFindDoesNotFallBackForNonUuidIdentifier(): void
+	{
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount): ObjectEntity {
+				$callCount++;
+				throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+			}
+		);
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+
+		try {
+			$this->service->find(id: 'employee-jansen', register: $this->register, schema: $this->schema);
+		} finally {
+			$this->assertSame(1, $callCount, 'slug lookups must not trigger a cross-schema retry');
+		}
+	}
+
+	/**
+	 * When neither register nor schema is supplied the first lookup is already
+	 * cross-table, so a UUID miss is a genuine 404 with no second attempt.
+	 */
+	public function testFindDoesNotDoubleLookupWhenNoContextProvided(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount): ObjectEntity {
+				$callCount++;
+				throw new \OCP\AppFramework\Db\DoesNotExistException('not found in any magic table');
+			}
+		);
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+
+		try {
+			$this->service->find(id: $uuid);
+		} finally {
+			$this->assertSame(1, $callCount, 'no register/schema context means the first lookup is already cross-table');
+		}
+	}
 }

@@ -62,7 +62,6 @@ use Psr\Log\LoggerInterface;
  */
 class TemporalCalculationSweepService
 {
-
     /**
      * Constructor.
      *
@@ -162,7 +161,7 @@ class TemporalCalculationSweepService
                 continue;
             }
 
-            if ($this->expressionReferencesNow($spec['expression'] ?? null) === true) {
+            if ($this->expressionReferencesNow(expression: ($spec['expression'] ?? null)) === true) {
                 return true;
             }
         }
@@ -361,7 +360,7 @@ class TemporalCalculationSweepService
                 return true;
             }
 
-            if ($this->expressionReferencesNow($value) === true) {
+            if ($this->expressionReferencesNow(expression: $value) === true) {
                 return true;
             }
         }

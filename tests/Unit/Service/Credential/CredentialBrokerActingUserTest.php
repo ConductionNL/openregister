@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -223,7 +224,8 @@ class CredentialBrokerActingUserTest extends TestCase
             $this->createMock(CredentialStore::class),
             $this->createMock(ProviderCatalogue::class),
             $broker,
-            $tokenService
+            $tokenService,
+            $this->createMock(OrganisationService::class)
         );
 
         $response = $controller->brokerRequest(self::UUID);
@@ -284,7 +286,8 @@ class CredentialBrokerActingUserTest extends TestCase
             $catalogue,
             $userSession,
             $clientService,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(OrganisationService::class)
         );
     }
 }

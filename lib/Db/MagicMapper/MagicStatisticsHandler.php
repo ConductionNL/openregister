@@ -73,6 +73,19 @@ class MagicStatisticsHandler
 
 
     /**
+     * Per-request memo of the magic-table list from information_schema.
+     *
+     * `getStatistics()` is called once per register on a registers-list page and
+     * each call re-ran the information_schema catalog scan; caching it for the
+     * request collapses O(registers) scans to one (consolidate-request-scoped-cache).
+     * Null until first populated; only successful scans are cached.
+     *
+     * @var array<int, string>|null
+     */
+    private ?array $magicTablesCache = null;
+
+
+    /**
      * Metadata column prefix used in magic mapper tables
      *
      * @var string

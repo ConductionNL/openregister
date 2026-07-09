@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -49,12 +50,14 @@ class FileSearchController extends Controller
      * @param string               $appName       App name
      * @param IRequest             $request       Request object
      * @param VectorizationService $vectorService Vectorization service
+     * @param ChunkMapper          $chunkMapper   Chunk mapper (ranked keyword arm)
      * @param LoggerInterface      $logger        Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly VectorizationService $vectorService,
+        private readonly ChunkMapper $chunkMapper,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -75,7 +78,7 @@ class FileSearchController extends Controller
      *     search_type?: 'semantic'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+     * @spec openspec/changes/hybrid-document-search/tasks.md#4.1
      */
     public function semanticSearch(): JSONResponse
     {
@@ -93,11 +96,13 @@ class FileSearchController extends Controller
                 );
             }
 
-            // Use existing semanticSearch method from VectorizationService.
+            // File-only scope: `entity_type` (snake_case) is the key
+            // VectorSearchHandler::fetchVectors() actually reads — the former
+            // `entityType` key was silently ignored (or#277).
             $results = $this->vectorService->semanticSearch(
                 query: $query,
                 limit: $limit,
-                filters: ['entityType' => 'file']
+                filters: ['entity_type' => 'file']
             );
 
             return new JSONResponse(
@@ -130,7 +135,13 @@ class FileSearchController extends Controller
     }//end semanticSearch()
 
     /**
-     * Hybrid search - Combines keyword (SOLR) and semantic (vector) search
+     * Hybrid search - fuses ranked keyword (tsvector/ts_rank) and semantic (vector) results
+     *
+     * The keyword arm is real (ChunkMapper::searchByKeyword() over file chunks,
+     * empty on non-PostgreSQL platforms) and is fused with the vector arm via
+     * Reciprocal Rank Fusion. The response is flat `{results, total, ...}`:
+     * `results` is the fused result list and `total` its count — not the nested
+     * service response with a wrong outer-key count (or#277).
      *
      * @NoAdminRequired
      *
@@ -138,7 +149,7 @@ class FileSearchController extends Controller
      *
      * @return JSONResponse JSON response with hybrid search results or error
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+     * @spec openspec/changes/hybrid-document-search/tasks.md#4.2
      */
     public function hybridSearch(): JSONResponse
     {
@@ -158,25 +169,34 @@ class FileSearchController extends Controller
                 );
             }
 
-            // Use existing hybridSearch method from VectorizationService.
-            $results = $this->vectorService->hybridSearch(
+            // Real keyword arm: ranked ts_rank results over file chunks,
+            // fetched with the same candidate-pool size as the vector leg.
+            $keywordResults = $this->chunkMapper->searchByKeyword(
                 query: $query,
-                keywordResults: [],
+                limit: $limit * 2,
+                filters: ['source_type' => 'file']
+            );
+
+            $serviceResponse = $this->vectorService->hybridSearch(
+                query: $query,
+                keywordResults: $keywordResults,
                 limit: $limit,
                 weights: ['keyword' => $keywordWeight, 'vector' => $semanticWeight]
             );
 
             return new JSONResponse(
                 data: [
-                    'success'     => true,
-                    'query'       => $query,
-                    'total'       => count($results),
-                    'results'     => $results,
-                    'search_type' => 'hybrid',
-                    'weights'     => [
-                        'keyword'  => $keywordWeight,
-                        'semantic' => $semanticWeight,
+                    'success'          => true,
+                    'query'            => $query,
+                    'results'          => $serviceResponse['results'] ?? [],
+                    'total'            => $serviceResponse['total'] ?? count($serviceResponse['results'] ?? []),
+                    'search_time_ms'   => $serviceResponse['search_time_ms'] ?? null,
+                    'source_breakdown' => $serviceResponse['source_breakdown'] ?? [],
+                    'weights'          => $serviceResponse['weights'] ?? [
+                        'keyword' => $keywordWeight,
+                        'vector'  => $semanticWeight,
                     ],
+                    'search_type'      => 'hybrid',
                 ]
             );
         } catch (\Exception $e) {

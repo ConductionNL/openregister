@@ -45,6 +45,8 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/ConfigurationController.php" method="importFromSource"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/ConfigurationController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/ContextsController.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/CredentialController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/CredentialController.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/DeletedController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/EntityRelationsController.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/EntityRelationsController.php" method="__construct"/>

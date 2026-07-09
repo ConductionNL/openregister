@@ -84,6 +84,7 @@ Meeting Dutch government regulatory requirements.
 
 - [Content Versioning & Audit Trail](versioning-and-audit.md) — Immutable hash-chained audit log, semantic versioning, rollback
 - [Archiving & Records Management](archiving.md) — Retention schedules, destruction workflows, MDTO XML, e-Depot transfer (SIP)
+- [DSAR Deadline Escalation & DPIA Detection](dsar-escalation-and-dpia.md) — Temporal deadline-reminder/escalation/breach sweep + GDPR art-35 DPIA pattern detection, policy-pack-driven (ADR-047)
 
 ### Integration
 Connecting OpenRegister to external systems and workflows.

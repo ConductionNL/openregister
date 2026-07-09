@@ -144,6 +144,158 @@ class SipPackageBuilderTest extends TestCase
     }
 
     /**
+     * BagIt (RFC 8493) output: content under data/, complete manifest, tag
+     * files. archival-transfer-hardening OR-AD-1.
+     */
+    public function testBuildBagitLayoutAndManifest(): void
+    {
+        $tempFile = tempnam(sys_get_temp_dir(), 'bag') . '.zip';
+        $this->tempManager->method('getTemporaryFile')->willReturn($tempFile);
+
+        // A real payload file so the manifest can checksum it.
+        $payload = tempnam(sys_get_temp_dir(), 'payload');
+        file_put_contents($payload, 'hello archive');
+
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getUuid'])
+            ->getMock();
+        $object->method('getUuid')->willReturn('obj-uuid-1');
+        $object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
+
+        $objectsWithFiles = [
+            [
+                'object' => $object,
+                'files' => [
+                    [
+                        'name' => 'doc.txt',
+                        'size' => filesize($payload),
+                        'format' => 'text/plain',
+                        'checksum' => hash_file('sha256', $payload),
+                        'path' => $payload,
+                        'isRendition' => false,
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->builder->build('transfer-bag', $objectsWithFiles, 0, 'bagit');
+
+        $zip = new \ZipArchive();
+        $zip->open($result[0]);
+        $entries = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entries[] = $zip->getNameIndex($i);
+        }
+
+        // Tag files at bag root.
+        $this->assertContains('bagit.txt', $entries);
+        $this->assertContains('bag-info.txt', $entries);
+        $this->assertContains('manifest-sha256.txt', $entries);
+        $this->assertContains('tagmanifest-sha256.txt', $entries);
+        // Payload relocated under data/.
+        $this->assertContains('data/objects/obj-uuid-1/mdto.xml', $entries);
+        $this->assertContains('data/objects/obj-uuid-1/content/original/doc.txt', $entries);
+
+        // bagit.txt declares version 1.0.
+        $this->assertStringContainsString('BagIt-Version: 1.0', $zip->getFromName('bagit.txt'));
+        // bag-info carries the transfer uuid as External-Identifier.
+        $this->assertStringContainsString('External-Identifier: transfer-bag', $zip->getFromName('bag-info.txt'));
+
+        // The manifest lists every payload file with a checksum, and the
+        // payload file's line matches its real digest.
+        $manifest = $zip->getFromName('manifest-sha256.txt');
+        $this->assertStringContainsString('data/objects/obj-uuid-1/content/original/doc.txt', $manifest);
+        $this->assertStringContainsString(hash('sha256', 'hello archive'), $manifest);
+
+        $zip->close();
+        unlink($result[0]);
+        unlink($payload);
+    }
+
+    /**
+     * BagIt refuses to ship an incomplete manifest: an unchecksummable
+     * payload file fails the build.
+     */
+    public function testBuildBagitFailsOnUnchecksummableFile(): void
+    {
+        $tempFile = tempnam(sys_get_temp_dir(), 'bag') . '.zip';
+        $this->tempManager->method('getTemporaryFile')->willReturn($tempFile);
+
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getUuid'])
+            ->getMock();
+        $object->method('getUuid')->willReturn('obj-uuid-1');
+        $object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
+
+        // A file that passes the entry-collection file_exists() check but is
+        // deleted before bag write, so hash_file() fails.
+        $vanishing = tempnam(sys_get_temp_dir(), 'vanish');
+        file_put_contents($vanishing, 'x');
+
+        $builder = new SipPackageBuilder(
+            $this->mdtoGenerator,
+            $this->appConfig,
+            $this->tempManager,
+            $this->logger,
+        );
+
+        // Craft an objectsWithFiles whose file path exists at collection time.
+        $objectsWithFiles = [
+            [
+                'object' => $object,
+                'files' => [
+                    [
+                        'name' => 'gone.bin',
+                        'size' => 1,
+                        'format' => 'application/octet-stream',
+                        'checksum' => 'deadbeef',
+                        'path' => $vanishing,
+                        'isRendition' => false,
+                    ],
+                ],
+            ],
+        ];
+
+        // Make hash_file fail by pointing the entry at an unreadable path:
+        // remove the file after the builder collects it is not possible from
+        // here, so instead assert the unknown-format guard on build() and the
+        // manifest-completeness contract by using a directory as the path
+        // (hash_file on a directory returns false).
+        $dirPath = sys_get_temp_dir() . '/sip-bagit-dir-' . uniqid();
+        mkdir($dirPath);
+        $objectsWithFiles[0]['files'][0]['path'] = $dirPath;
+
+        $this->expectException(InvalidArgumentException::class);
+        try {
+            $builder->build('transfer-bag', $objectsWithFiles, 0, 'bagit');
+        } finally {
+            rmdir($dirPath);
+            unlink($vanishing);
+        }
+    }
+
+    /**
+     * An unknown output format is rejected.
+     */
+    public function testBuildRejectsUnknownFormat(): void
+    {
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getUuid'])
+            ->getMock();
+        $object->method('getUuid')->willReturn('obj-uuid-1');
+        $object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->builder->build('transfer-1', [['object' => $object, 'files' => []]], 0, 'tar');
+    }
+
+    /**
      * Test that package splitting produces multiple ZIPs.
      */
     public function testBuildSplitsLargePackages(): void
