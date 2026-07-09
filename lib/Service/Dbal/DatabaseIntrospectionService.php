@@ -695,7 +695,7 @@ class DatabaseIntrospectionService
      *
      * @return bool True when the object is engine-internal.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function isSystemObject(string $name): bool
     {
