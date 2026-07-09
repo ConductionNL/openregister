@@ -337,7 +337,7 @@ class RenderObject
      *
      * @return array The object data, possibly enriched with occurrence lists.
      *
-     * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md#REQ-EFT-003
+     * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
      */
     private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array
     {
@@ -393,7 +393,7 @@ class RenderObject
      *
      * @return int The requested occurrence count.
      *
-     * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md#REQ-EFT-003
+     * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
      */
     private function resolveOccurrenceCount(): int
     {
