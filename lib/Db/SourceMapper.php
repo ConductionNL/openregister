@@ -51,7 +51,6 @@ use Symfony\Component\Uid\Uuid;
  * @method Source delete(Entity $entity)
  * @method Source find(int|string $id)
  * @method Source findEntity(IQueryBuilder $query)
- * @method Source[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
@@ -71,18 +70,18 @@ class SourceMapper extends QBMapper
     // Private OrganisationService $organisationService.
 
     /**
-     * User session for current user
+     * User session for current user (read by MultiTenancyTrait via isset guards)
      *
      * @var IUserSession
      */
-    private IUserSession $userSession;
+    protected IUserSession $userSession;
 
     /**
-     * Group manager for RBAC
+     * Group manager for RBAC (read by MultiTenancyTrait via isset guards)
      *
      * @var IGroupManager
      */
-    private IGroupManager $groupManager;
+    protected IGroupManager $groupManager;
 
     /**
      * Event dispatcher for dispatching source events
@@ -171,7 +170,7 @@ class SourceMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Source>
+     * @psalm-return list<\OCA\OpenRegister\Db\Source>
      */
     public function findAll(
         ?int $limit=null,

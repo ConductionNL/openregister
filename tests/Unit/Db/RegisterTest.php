@@ -41,8 +41,6 @@ class RegisterTest extends TestCase
         $this->assertSame('json', $fieldTypes['authorization']);
         $this->assertSame('json', $fieldTypes['groups']);
         $this->assertSame('datetime', $fieldTypes['deleted']);
-        $this->assertSame('datetime', $fieldTypes['published']);
-        $this->assertSame('datetime', $fieldTypes['depublished']);
         $this->assertSame('json', $fieldTypes['configuration']);
     }
 
@@ -63,8 +61,6 @@ class RegisterTest extends TestCase
         $this->assertNull($this->register->getApplication());
         $this->assertNull($this->register->getOrganisation());
         $this->assertNull($this->register->getDeleted());
-        $this->assertNull($this->register->getPublished());
-        $this->assertNull($this->register->getDepublished());
         $this->assertSame([], $this->register->getConfiguration());
     }
 
@@ -355,8 +351,6 @@ class RegisterTest extends TestCase
         $this->assertArrayHasKey('authorization', $json);
         $this->assertArrayHasKey('groups', $json);
         $this->assertArrayHasKey('configuration', $json);
-        $this->assertArrayHasKey('published', $json);
-        $this->assertArrayHasKey('depublished', $json);
         $this->assertArrayHasKey('quota', $json);
         $this->assertArrayHasKey('usage', $json);
         $this->assertArrayHasKey('deleted', $json);
@@ -418,21 +412,6 @@ class RegisterTest extends TestCase
         $this->assertNull($json['created']);
         $this->assertNull($json['updated']);
         $this->assertNull($json['deleted']);
-        $this->assertNull($json['published']);
-        $this->assertNull($json['depublished']);
-    }
-
-    public function testJsonSerializePublishedDepublishedFormatted(): void
-    {
-        $published = new DateTime('2024-06-01 08:00:00');
-        $depublished = new DateTime('2024-12-31 23:59:59');
-        $this->register->setPublished($published);
-        $this->register->setDepublished($depublished);
-
-        $json = $this->register->jsonSerialize();
-
-        $this->assertSame($published->format('c'), $json['published']);
-        $this->assertSame($depublished->format('c'), $json['depublished']);
     }
 
     public function testJsonSerializeSchemasFiltersNonScalar(): void
@@ -627,70 +606,6 @@ class RegisterTest extends TestCase
         $config->setRegisters([1]);
 
         $this->assertNull($this->register->getManagedByConfiguration([$config]));
-    }
-
-    // =========================================================================
-    // getPublished / setPublished
-    // =========================================================================
-
-    public function testGetPublishedDefaultNull(): void
-    {
-        $this->assertNull($this->register->getPublished());
-    }
-
-    public function testSetPublishedWithDateTime(): void
-    {
-        $date = new DateTime('2024-06-01 08:00:00');
-        $this->register->setPublished($date);
-        $this->assertSame($date, $this->register->getPublished());
-    }
-
-    public function testSetPublishedWithString(): void
-    {
-        $this->register->setPublished('2024-06-01T08:00:00+00:00');
-        $published = $this->register->getPublished();
-
-        $this->assertInstanceOf(DateTime::class, $published);
-        $this->assertSame('2024-06-01', $published->format('Y-m-d'));
-    }
-
-    public function testSetPublishedWithNull(): void
-    {
-        $this->register->setPublished(new DateTime());
-        $this->register->setPublished(null);
-        $this->assertNull($this->register->getPublished());
-    }
-
-    // =========================================================================
-    // getDepublished / setDepublished
-    // =========================================================================
-
-    public function testGetDepublishedDefaultNull(): void
-    {
-        $this->assertNull($this->register->getDepublished());
-    }
-
-    public function testSetDepublishedWithDateTime(): void
-    {
-        $date = new DateTime('2024-12-31 23:59:59');
-        $this->register->setDepublished($date);
-        $this->assertSame($date, $this->register->getDepublished());
-    }
-
-    public function testSetDepublishedWithString(): void
-    {
-        $this->register->setDepublished('2024-12-31T23:59:59+00:00');
-        $depublished = $this->register->getDepublished();
-
-        $this->assertInstanceOf(DateTime::class, $depublished);
-        $this->assertSame('2024-12-31', $depublished->format('Y-m-d'));
-    }
-
-    public function testSetDepublishedWithNull(): void
-    {
-        $this->register->setDepublished(new DateTime());
-        $this->register->setDepublished(null);
-        $this->assertNull($this->register->getDepublished());
     }
 
     // =========================================================================

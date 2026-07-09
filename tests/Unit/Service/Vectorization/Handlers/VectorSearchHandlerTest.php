@@ -16,8 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -38,11 +37,8 @@ class VectorSearchHandlerTest extends TestCase
     /** @var IDBConnection&MockObject */
     private IDBConnection $db;
 
-    /** @var SettingsService&MockObject */
-    private SettingsService $settingsService;
-
-    /** @var IndexService&MockObject */
-    private IndexService $indexService;
+    /** @var PgVectorPlatform&MockObject */
+    private PgVectorPlatform $pgVector;
 
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
@@ -51,18 +47,39 @@ class VectorSearchHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->db              = $this->createMock(IDBConnection::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->indexService    = $this->createMock(IndexService::class);
-        $this->logger          = $this->createMock(LoggerInterface::class);
+        $this->db       = $this->createMock(IDBConnection::class);
+        $this->pgVector = $this->createMock(PgVectorPlatform::class);
+        $this->logger   = $this->createMock(LoggerInterface::class);
+
+        // Default: pgvector fast path unavailable → PHP fallback (pre-change behaviour).
+        $this->pgVector->method('getVectorColumnDimension')->willReturn(null);
 
         $this->handler = new VectorSearchHandler(
             $this->db,
-            $this->settingsService,
-            $this->indexService,
+            $this->pgVector,
             $this->logger
         );
     }//end setUp()
+
+    /**
+     * Build a handler whose pgvector fast path reports the given dimension.
+     *
+     * @param int    $dimension Column dimension.
+     * @param string $literal   Expected formatted query-vector literal.
+     *
+     * @return array{0: VectorSearchHandler, 1: IDBConnection&MockObject}
+     */
+    private function buildKnnHandler(int $dimension, string $literal='[1,0]'): array
+    {
+        $db       = $this->createMock(IDBConnection::class);
+        $pgVector = $this->createMock(PgVectorPlatform::class);
+        $pgVector->method('getVectorColumnDimension')->willReturn($dimension);
+        $pgVector->method('formatVector')->willReturn($literal);
+
+        $handler = new VectorSearchHandler($db, $pgVector, $this->logger);
+
+        return [$handler, $db];
+    }//end buildKnnHandler()
 
     // -- Helper: build a fake DB result set ----------------------------------
 
@@ -139,7 +156,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock([]);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $result = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $result = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertSame([], $result);
     }//end testSemanticSearchPhpBackendReturnsEmptyWhenNoVectors()
@@ -179,7 +196,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertCount(2, $results);
         $this->assertSame('uuid-2', $results[0]['entity_id']);
@@ -210,7 +227,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 3, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 3, []);
 
         $this->assertCount(3, $results);
     }//end testSemanticSearchPhpBackendRespectsLimit()
@@ -247,7 +264,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertCount(1, $results);
         $this->assertSame('good', $results[0]['entity_id']);
@@ -275,7 +292,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertSame($meta, $results[0]['metadata']);
         $this->assertSame('model-x', $results[0]['model']);
@@ -293,7 +310,7 @@ class VectorSearchHandlerTest extends TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Semantic search failed');
 
-        $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $this->handler->semanticSearch([1.0, 0.0], 10, []);
     }//end testSemanticSearchPhpBackendPropagatesDbException()
 
     public function testSemanticSearchPhpBackendWithEntityTypeStringFilter(): void
@@ -319,7 +336,7 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $this->handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => 'object'], 'php');
+        $this->handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => 'object']);
     }//end testSemanticSearchPhpBackendWithEntityTypeStringFilter()
 
     public function testSemanticSearchPhpBackendWithEntityTypeArrayFilter(): void
@@ -345,7 +362,7 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $this->handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => ['object', 'file']], 'php');
+        $this->handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => ['object', 'file']]);
     }//end testSemanticSearchPhpBackendWithEntityTypeArrayFilter()
 
     // -- hybridSearch / Reciprocal Rank Fusion -------------------------------
@@ -367,7 +384,7 @@ class VectorSearchHandlerTest extends TestCase
             ],
         ];
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 10, ['solr' => 0.5, 'vector' => 0.5], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 10, ['keyword' => 0.5, 'vector' => 0.5]);
 
         $this->assertArrayHasKey('results', $result);
         $this->assertArrayHasKey('total', $result);
@@ -375,7 +392,7 @@ class VectorSearchHandlerTest extends TestCase
         $this->assertArrayHasKey('source_breakdown', $result);
         $this->assertArrayHasKey('weights', $result);
         $this->assertSame(1, $result['total']);
-        $this->assertTrue($result['results'][0]['in_solr']);
+        $this->assertTrue($result['results'][0]['in_keyword']);
         $this->assertFalse($result['results'][0]['in_vector']);
     }//end testHybridSearchCombinesBothSources()
 
@@ -385,9 +402,9 @@ class VectorSearchHandlerTest extends TestCase
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
         // Weights sum to 2 -> normalised to 0.5 each.
-        $result = $this->handler->hybridSearch([1.0, 0.0], [], 10, ['solr' => 1.0, 'vector' => 1.0], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], [], 10, ['keyword' => 1.0, 'vector' => 1.0]);
 
-        $this->assertEqualsWithDelta(0.5, $result['weights']['solr'], 0.001);
+        $this->assertEqualsWithDelta(0.5, $result['weights']['keyword'], 0.001);
         $this->assertEqualsWithDelta(0.5, $result['weights']['vector'], 0.001);
     }//end testHybridSearchNormalisesWeights()
 
@@ -433,11 +450,11 @@ class VectorSearchHandlerTest extends TestCase
             ],
         ];
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 20, ['solr' => 0.5, 'vector' => 0.5], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 20, ['keyword' => 0.5, 'vector' => 0.5]);
 
         $breakdown = $result['source_breakdown'];
         $this->assertSame(1, $breakdown['both']);
-        $this->assertSame(1, $breakdown['solr_only']);
+        $this->assertSame(1, $breakdown['keyword_only']);
         $this->assertSame(0, $breakdown['vector_only']);
     }//end testHybridSearchSourceBreakdownCategorisesResults()
 
@@ -457,7 +474,7 @@ class VectorSearchHandlerTest extends TestCase
             ],
         ];
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 5, ['solr' => 1.0, 'vector' => 0.0], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 5, ['keyword' => 1.0, 'vector' => 0.0]);
 
         $this->assertSame(1, $result['total']);
     }//end testHybridSearchWithZeroVectorWeightSkipsSemanticSearch()
@@ -479,7 +496,7 @@ class VectorSearchHandlerTest extends TestCase
             range(0, 9)
         );
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 3, ['solr' => 0.5, 'vector' => 0.5], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 3, ['keyword' => 0.5, 'vector' => 0.5]);
 
         $this->assertSame(3, $result['total']);
         $this->assertCount(3, $result['results']);
@@ -507,10 +524,10 @@ class VectorSearchHandlerTest extends TestCase
             ],
         ];
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 5, ['solr' => 0.5, 'vector' => 0.5], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 5, ['keyword' => 0.5, 'vector' => 0.5]);
 
         $this->assertSame(1, $result['total']);
-        $this->assertTrue($result['results'][0]['in_solr']);
+        $this->assertTrue($result['results'][0]['in_keyword']);
     }//end testHybridSearchVectorSearchFailsGracefully()
 
     // -- RRF score ordering --------------------------------------------------
@@ -526,7 +543,7 @@ class VectorSearchHandlerTest extends TestCase
             ['entity_type' => 'object', 'entity_id' => 'second', 'score' => 0.5, 'chunk_index' => 0, 'chunk_text' => null, 'metadata' => []],
         ];
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 10, ['solr' => 1.0, 'vector' => 0.0], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], $solrResults, 10, ['keyword' => 1.0, 'vector' => 0.0]);
 
         $this->assertSame('first', $result['results'][0]['entity_id']);
         $this->assertSame('second', $result['results'][1]['entity_id']);
@@ -560,7 +577,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([0.6, 0.8], 10, [], 'php');
+        $results = $this->handler->semanticSearch([0.6, 0.8], 10, []);
 
         $this->assertEqualsWithDelta(1.0, $results[0]['similarity'], 0.0001);
     }//end testCosineSimilarityIdenticalVectorsReturnsOne()
@@ -587,48 +604,10 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertEqualsWithDelta(0.0, $results[0]['similarity'], 0.0001);
     }//end testCosineSimilarityOrthogonalVectorsReturnsZero()
-
-    // -- Solr backend --------------------------------------------------------
-
-    public function testSemanticSearchSolrBackendThrowsWhenSolrUnavailable(): void
-    {
-        $backend = $this->getMockBuilder(\OCA\OpenRegister\Service\Index\Backends\SolrBackend::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['isAvailable'])
-            ->getMock();
-        $backend->method('isAvailable')->willReturn(false);
-
-        $this->indexService->method('getBackend')->willReturn($backend);
-
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Semantic search failed');
-
-        $this->handler->semanticSearch([1.0, 0.0], 10, [], 'solr');
-    }//end testSemanticSearchSolrBackendThrowsWhenSolrUnavailable()
-
-    // -- getCollectionsToSearch (private -- covered via solr flow) ------------
-
-    public function testSemanticSearchSolrBackendThrowsWhenNoCollections(): void
-    {
-        $backend = $this->getMockBuilder(\OCA\OpenRegister\Service\Index\Backends\SolrBackend::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['isAvailable'])
-            ->getMock();
-        $backend->method('isAvailable')->willReturn(true);
-
-        $this->indexService->method('getBackend')->willReturn($backend);
-        // Return settings with no solr.objectCollection or fileCollection.
-        $this->settingsService->method('getSettings')->willReturn(['solr' => []]);
-
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Semantic search failed');
-
-        $this->handler->semanticSearch([1.0, 0.0], 10, [], 'solr');
-    }//end testSemanticSearchSolrBackendThrowsWhenNoCollections()
 
     // -- max_vectors filter --------------------------------------------------
 
@@ -653,7 +632,7 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $this->handler->semanticSearch([1.0, 0.0], 10, []);
     }//end testSemanticSearchPhpBackendUsesDefaultMaxVectors()
 
     public function testSemanticSearchPhpBackendUsesCustomMaxVectors(): void
@@ -676,7 +655,7 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $this->handler->semanticSearch([1.0, 0.0], 10, ['max_vectors' => 100], 'php');
+        $this->handler->semanticSearch([1.0, 0.0], 10, ['max_vectors' => 100]);
     }//end testSemanticSearchPhpBackendUsesCustomMaxVectors()
 
     // -- result structure ----------------------------------------------------
@@ -701,7 +680,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $expected = ['vector_id', 'entity_type', 'entity_id', 'similarity', 'chunk_index', 'total_chunks', 'chunk_text', 'metadata', 'model', 'dimensions'];
         foreach ($expected as $key) {
@@ -721,13 +700,13 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock([]);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $result = $this->handler->hybridSearch([], [], 5, ['solr' => 0.5, 'vector' => 0.5], 'php');
+        $result = $this->handler->hybridSearch([], [], 5, ['keyword' => 0.5, 'vector' => 0.5]);
 
         foreach (['results', 'total', 'search_time_ms', 'source_breakdown', 'weights'] as $key) {
             $this->assertArrayHasKey($key, $result, "Missing key: {$key}");
         }
 
-        foreach (['vector_only', 'solr_only', 'both'] as $key) {
+        foreach (['vector_only', 'keyword_only', 'both'] as $key) {
             $this->assertArrayHasKey($key, $result['source_breakdown'], "Missing breakdown key: {$key}");
         }
     }//end testHybridSearchResultHasAllExpectedTopLevelKeys()
@@ -752,7 +731,7 @@ class VectorSearchHandlerTest extends TestCase
         // The mismatch should be caught internally and the vector skipped (logged as warning).
         $this->logger->expects($this->atLeastOnce())->method('warning');
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         // The mismatched vector should be skipped.
         $this->assertCount(0, $results);
@@ -770,7 +749,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         // Zero magnitude returns 0.0 similarity.
         $this->assertCount(1, $results);
@@ -789,7 +768,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertCount(1, $results);
         $this->assertEqualsWithDelta(-1.0, $results[0]['similarity'], 0.0001);
@@ -809,337 +788,11 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0, 0.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0, 0.0, 0.0], 10, []);
 
         $this->assertCount(1, $results);
         $this->assertEqualsWithDelta(0.5, $results[0]['similarity'], 0.0001);
     }//end testCosineSimilarityHighDimensionalVectors()
-
-    // =========================================================================
-    // NEW: extractEntityId -- via Solr document processing
-    // =========================================================================
-
-    /**
-     * extractEntityId for file type uses file_id field.
-     *
-     * We test this via reflection since extractEntityId is private.
-     *
-     * @return void
-     */
-    public function testExtractEntityIdForFileType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('extractEntityId');
-        $method->setAccessible(true);
-
-        $doc    = ['file_id' => 42, 'id' => 'solr-id'];
-        $result = $method->invoke($this->handler, $doc, 'file');
-
-        $this->assertSame('42', $result);
-    }//end testExtractEntityIdForFileType()
-
-    /**
-     * extractEntityId for files type (plural) uses file_id_l field.
-     *
-     * @return void
-     */
-    public function testExtractEntityIdForFilesType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('extractEntityId');
-        $method->setAccessible(true);
-
-        $doc    = ['file_id_l' => 123, 'id' => 'solr-id'];
-        $result = $method->invoke($this->handler, $doc, 'files');
-
-        $this->assertSame('123', $result);
-    }//end testExtractEntityIdForFilesType()
-
-    /**
-     * extractEntityId for object type uses self_uuid field.
-     *
-     * @return void
-     */
-    public function testExtractEntityIdForObjectType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('extractEntityId');
-        $method->setAccessible(true);
-
-        $doc    = ['self_uuid' => 'my-uuid', 'id' => 'solr-id'];
-        $result = $method->invoke($this->handler, $doc, 'object');
-
-        $this->assertSame('my-uuid', $result);
-    }//end testExtractEntityIdForObjectType()
-
-    /**
-     * extractEntityId for object type falls back to self_object_id.
-     *
-     * @return void
-     */
-    public function testExtractEntityIdForObjectTypeFallbackToSelfObjectId(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('extractEntityId');
-        $method->setAccessible(true);
-
-        $doc    = ['self_object_id' => 'obj-id', 'id' => 'solr-id'];
-        $result = $method->invoke($this->handler, $doc, 'object');
-
-        $this->assertSame('obj-id', $result);
-    }//end testExtractEntityIdForObjectTypeFallbackToSelfObjectId()
-
-    /**
-     * extractEntityId for object type falls back to id field as last resort.
-     *
-     * @return void
-     */
-    public function testExtractEntityIdForObjectTypeFallbackToId(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('extractEntityId');
-        $method->setAccessible(true);
-
-        $doc    = ['id' => 'fallback-id'];
-        $result = $method->invoke($this->handler, $doc, 'object');
-
-        $this->assertSame('fallback-id', $result);
-    }//end testExtractEntityIdForObjectTypeFallbackToId()
-
-    /**
-     * extractEntityId for file type returns empty string when no file_id fields.
-     *
-     * @return void
-     */
-    public function testExtractEntityIdForFileTypeReturnsEmptyWhenNoFields(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('extractEntityId');
-        $method->setAccessible(true);
-
-        $doc    = ['id' => 'solr-id'];
-        $result = $method->invoke($this->handler, $doc, 'file');
-
-        $this->assertSame('', $result);
-    }//end testExtractEntityIdForFileTypeReturnsEmptyWhenNoFields()
-
-    // =========================================================================
-    // NEW: getSolrCollectionForEntityType -- via reflection
-    // =========================================================================
-
-    /**
-     * getSolrCollectionForEntityType returns fileCollection for 'file' type.
-     *
-     * @return void
-     */
-    public function testGetSolrCollectionForFileType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getSolrCollectionForEntityType');
-        $method->setAccessible(true);
-
-        $settings = ['solr' => ['fileCollection' => 'my_files', 'objectCollection' => 'my_objects']];
-        $result   = $method->invoke($this->handler, 'file', $settings);
-
-        $this->assertSame('my_files', $result);
-    }//end testGetSolrCollectionForFileType()
-
-    /**
-     * getSolrCollectionForEntityType returns fileCollection for 'files' (plural) type.
-     *
-     * @return void
-     */
-    public function testGetSolrCollectionForFilesType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getSolrCollectionForEntityType');
-        $method->setAccessible(true);
-
-        $settings = ['solr' => ['fileCollection' => 'my_files']];
-        $result   = $method->invoke($this->handler, 'Files', $settings);
-
-        $this->assertSame('my_files', $result);
-    }//end testGetSolrCollectionForFilesType()
-
-    /**
-     * getSolrCollectionForEntityType returns objectCollection for 'object' type.
-     *
-     * @return void
-     */
-    public function testGetSolrCollectionForObjectType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getSolrCollectionForEntityType');
-        $method->setAccessible(true);
-
-        $settings = ['solr' => ['objectCollection' => 'my_objects']];
-        $result   = $method->invoke($this->handler, 'object', $settings);
-
-        $this->assertSame('my_objects', $result);
-    }//end testGetSolrCollectionForObjectType()
-
-    /**
-     * getSolrCollectionForEntityType falls back to 'collection' key for object type.
-     *
-     * @return void
-     */
-    public function testGetSolrCollectionForObjectTypeFallbackToCollection(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getSolrCollectionForEntityType');
-        $method->setAccessible(true);
-
-        $settings = ['solr' => ['collection' => 'default_collection']];
-        $result   = $method->invoke($this->handler, 'object', $settings);
-
-        $this->assertSame('default_collection', $result);
-    }//end testGetSolrCollectionForObjectTypeFallbackToCollection()
-
-    /**
-     * getSolrCollectionForEntityType returns null when no collection configured.
-     *
-     * @return void
-     */
-    public function testGetSolrCollectionReturnsNullWhenNotConfigured(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getSolrCollectionForEntityType');
-        $method->setAccessible(true);
-
-        $result = $method->invoke($this->handler, 'file', ['solr' => []]);
-        $this->assertNull($result);
-    }//end testGetSolrCollectionReturnsNullWhenNotConfigured()
-
-    /**
-     * getSolrCollectionForEntityType is case-insensitive (lowercases input).
-     *
-     * @return void
-     */
-    public function testGetSolrCollectionIsCaseInsensitive(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getSolrCollectionForEntityType');
-        $method->setAccessible(true);
-
-        $settings = ['solr' => ['fileCollection' => 'files_coll']];
-        $result   = $method->invoke($this->handler, 'FILE', $settings);
-
-        $this->assertSame('files_coll', $result);
-    }//end testGetSolrCollectionIsCaseInsensitive()
-
-    // =========================================================================
-    // NEW: getCollectionsToSearch -- via reflection
-    // =========================================================================
-
-    /**
-     * getCollectionsToSearch with entity_type filter returns only matching collections.
-     *
-     * @return void
-     */
-    public function testGetCollectionsToSearchWithEntityTypeFilter(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getCollectionsToSearch');
-        $method->setAccessible(true);
-
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => ['objectCollection' => 'objects', 'fileCollection' => 'files'],
-        ]);
-
-        $result = $method->invoke($this->handler, ['entity_type' => 'file']);
-
-        $this->assertCount(1, $result);
-        $this->assertSame('file', $result[0]['type']);
-        $this->assertSame('files', $result[0]['collection']);
-    }//end testGetCollectionsToSearchWithEntityTypeFilter()
-
-    /**
-     * getCollectionsToSearch with array entity_type returns multiple collections.
-     *
-     * @return void
-     */
-    public function testGetCollectionsToSearchWithArrayEntityType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getCollectionsToSearch');
-        $method->setAccessible(true);
-
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => ['objectCollection' => 'objects', 'fileCollection' => 'files'],
-        ]);
-
-        $result = $method->invoke($this->handler, ['entity_type' => ['file', 'object']]);
-
-        $this->assertCount(2, $result);
-        $types = array_column($result, 'type');
-        $this->assertContains('file', $types);
-        $this->assertContains('object', $types);
-    }//end testGetCollectionsToSearchWithArrayEntityType()
-
-    /**
-     * getCollectionsToSearch without entity_type filter returns both object and file.
-     *
-     * @return void
-     */
-    public function testGetCollectionsToSearchWithoutEntityTypeReturnsAll(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getCollectionsToSearch');
-        $method->setAccessible(true);
-
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => ['objectCollection' => 'objects', 'fileCollection' => 'files'],
-        ]);
-
-        $result = $method->invoke($this->handler, []);
-
-        $this->assertCount(2, $result);
-        $types = array_column($result, 'type');
-        $this->assertContains('object', $types);
-        $this->assertContains('file', $types);
-    }//end testGetCollectionsToSearchWithoutEntityTypeReturnsAll()
-
-    /**
-     * getCollectionsToSearch without entity_type and no file collection returns only objects.
-     *
-     * @return void
-     */
-    public function testGetCollectionsToSearchWithoutEntityTypeOnlyObjectCollection(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getCollectionsToSearch');
-        $method->setAccessible(true);
-
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => ['objectCollection' => 'objects'],
-        ]);
-
-        $result = $method->invoke($this->handler, []);
-
-        $this->assertCount(1, $result);
-        $this->assertSame('object', $result[0]['type']);
-    }//end testGetCollectionsToSearchWithoutEntityTypeOnlyObjectCollection()
-
-    /**
-     * getCollectionsToSearch skips entity types with no configured collection.
-     *
-     * @return void
-     */
-    public function testGetCollectionsToSearchSkipsUnconfiguredEntityType(): void
-    {
-        $ref    = new \ReflectionClass($this->handler);
-        $method = $ref->getMethod('getCollectionsToSearch');
-        $method->setAccessible(true);
-
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => ['objectCollection' => 'objects'],
-        ]);
-
-        // 'file' is requested but no fileCollection is configured.
-        $result = $method->invoke($this->handler, ['entity_type' => 'file']);
-
-        $this->assertCount(0, $result);
-    }//end testGetCollectionsToSearchSkipsUnconfiguredEntityType()
 
     // =========================================================================
     // NEW: fetchVectors -- entity_id filters via reflection
@@ -1177,8 +830,7 @@ class VectorSearchHandlerTest extends TestCase
         $this->handler->semanticSearch(
             [1.0, 0.0],
             10,
-            ['entity_type' => 'object', 'entity_id' => 'specific-uuid'],
-            'php'
+            ['entity_type' => 'object', 'entity_id' => 'specific-uuid']
         );
     }//end testFetchVectorsWithEntityIdStringFilter()
 
@@ -1214,8 +866,7 @@ class VectorSearchHandlerTest extends TestCase
         $this->handler->semanticSearch(
             [1.0, 0.0],
             10,
-            ['entity_id' => ['uuid-1', 'uuid-2']],
-            'php'
+            ['entity_id' => ['uuid-1', 'uuid-2']]
         );
     }//end testFetchVectorsWithEntityIdArrayFilter()
 
@@ -1243,7 +894,7 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->assertCount(2, $result);
         $this->assertTrue($result[0]['in_vector']);
-        $this->assertFalse($result[0]['in_solr']);
+        $this->assertFalse($result[0]['in_keyword']);
         // First ranked should have higher combined score.
         $this->assertGreaterThan($result[1]['combined_score'], $result[0]['combined_score']);
     }//end testReciprocalRankFusionVectorOnly()
@@ -1267,7 +918,7 @@ class VectorSearchHandlerTest extends TestCase
         $result = $method->invoke($this->handler, [], $solrResults, 0.5, 0.5);
 
         $this->assertCount(2, $result);
-        $this->assertTrue($result[0]['in_solr']);
+        $this->assertTrue($result[0]['in_keyword']);
         $this->assertFalse($result[0]['in_vector']);
     }//end testReciprocalRankFusionSolrOnly()
 
@@ -1293,9 +944,9 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertTrue($result[0]['in_vector']);
-        $this->assertTrue($result[0]['in_solr']);
+        $this->assertTrue($result[0]['in_keyword']);
         $this->assertSame(1, $result[0]['vector_rank']);
-        $this->assertSame(1, $result[0]['solr_rank']);
+        $this->assertSame(1, $result[0]['keyword_rank']);
     }//end testReciprocalRankFusionMergesOverlappingEntities()
 
     /**
@@ -1315,11 +966,11 @@ class VectorSearchHandlerTest extends TestCase
     }//end testReciprocalRankFusionEmptyInputs()
 
     // =========================================================================
-    // NEW: semanticSearch with database backend
+    // NEW: semanticSearch additional cases
     // =========================================================================
 
     /**
-     * semanticSearch with 'database' backend uses PHP path (not solr).
+     * semanticSearch queries the database and returns results.
      *
      * @return void
      */
@@ -1330,8 +981,8 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        // 'database' backend should go through PHP path, not solr.
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'database');
+        // Verify DB is queried and results are returned.
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertCount(1, $results);
         $this->assertSame('uuid-db', $results[0]['entity_id']);
@@ -1349,7 +1000,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock($rows);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertSame([], $results[0]['metadata']);
     }//end testSemanticSearchNullMetadataReturnsEmptyArray()
@@ -1367,7 +1018,7 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock([$row]);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $results = $this->handler->semanticSearch([1.0, 0.0], 10, [], 'php');
+        $results = $this->handler->semanticSearch([1.0, 0.0], 10, []);
 
         $this->assertSame([], $results[0]['metadata']);
     }//end testSemanticSearchEmptyMetadataReturnsEmptyArray()
@@ -1392,13 +1043,12 @@ class VectorSearchHandlerTest extends TestCase
             [1.0, 0.0],
             [],
             10,
-            ['solr' => 0.0, 'vector' => 1.0],
-            'php'
+            ['keyword' => 0.0, 'vector' => 1.0]
         );
 
         $this->assertSame(1, $result['total']);
         $this->assertSame(1, $result['source_breakdown']['vector_only']);
-        $this->assertSame(0, $result['source_breakdown']['solr_only']);
+        $this->assertSame(0, $result['source_breakdown']['keyword_only']);
         $this->assertSame(0, $result['source_breakdown']['both']);
     }//end testHybridSearchZeroSolrWeightVectorOnly()
 
@@ -1415,8 +1065,7 @@ class VectorSearchHandlerTest extends TestCase
             [1.0, 0.0],
             [],
             10,
-            ['solr' => 0.0, 'vector' => 0.0],
-            'php'
+            ['keyword' => 0.0, 'vector' => 0.0]
         );
 
         $this->assertSame(0, $result['total']);
@@ -1432,9 +1081,9 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock([]);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], [], 10, [], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], [], 10, []);
 
-        $this->assertEqualsWithDelta(0.5, $result['weights']['solr'], 0.001);
+        $this->assertEqualsWithDelta(0.5, $result['weights']['keyword'], 0.001);
         $this->assertEqualsWithDelta(0.5, $result['weights']['vector'], 0.001);
     }//end testHybridSearchMissingWeightKeysDefaultsToHalf()
 
@@ -1448,9 +1097,232 @@ class VectorSearchHandlerTest extends TestCase
         $qb = $this->buildQueryBuilderMock([]);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $result = $this->handler->hybridSearch([1.0, 0.0], [], 5, ['solr' => 0.5, 'vector' => 0.5], 'php');
+        $result = $this->handler->hybridSearch([1.0, 0.0], [], 5, ['keyword' => 0.5, 'vector' => 0.5]);
 
         $this->assertGreaterThanOrEqual(0.0, $result['search_time_ms']);
     }//end testHybridSearchSearchTimeIsPositive()
+
+    // =========================================================================
+    // pgvector KNN path (hybrid-document-search tasks 3.1 / 7.1)
+    // =========================================================================
+
+    /**
+     * Build a raw KNN result row as returned by the pgvector SQL query.
+     *
+     * @param int    $id       Row id.
+     * @param string $entityId Entity id.
+     * @param float  $distance Cosine distance.
+     *
+     * @return array Row data.
+     */
+    private function makeKnnRow(int $id, string $entityId, float $distance): array
+    {
+        return [
+            'id'                   => $id,
+            'entity_type'          => 'file',
+            'entity_id'            => $entityId,
+            'chunk_index'          => 0,
+            'total_chunks'         => 1,
+            'chunk_text'           => "text-$entityId",
+            'metadata'             => null,
+            'embedding_model'      => 'test',
+            'embedding_dimensions' => 2,
+            'distance'             => $distance,
+        ];
+    }//end makeKnnRow()
+
+    /**
+     * KNN path: query construction — ORDER BY the cosine-distance operator with
+     * a LIMIT, filtered on entity_type, WHERE embedding_vector IS NOT NULL.
+     */
+    public function testSemanticSearchKnnPathBuildsIndexBackedQuery(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2, '[1,0]');
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([$this->makeKnnRow(1, 'a', 0.1)]);
+
+        $capturedSql    = null;
+        $capturedParams = null;
+        $db->expects($this->once())
+            ->method('executeQuery')
+            ->willReturnCallback(
+                function (string $sql, array $params=[], $types=[]) use (&$capturedSql, &$capturedParams, $stmt) {
+                    $capturedSql    = $sql;
+                    $capturedParams = $params;
+                    return $stmt;
+                }
+            );
+
+        // The PHP fallback's getQueryBuilder must NOT be touched on the KNN path.
+        $db->expects($this->never())->method('getQueryBuilder');
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, ['entity_type' => 'file']);
+
+        $this->assertCount(1, $results);
+        $this->assertStringContainsString('FROM openregister_vec_ann a', $capturedSql);
+        $this->assertStringContainsString('JOIN *PREFIX*openregister_vectors v ON v.id = a.vector_id', $capturedSql);
+        $this->assertStringContainsString('ORDER BY a.embedding <=> :qvec::vector ASC', $capturedSql);
+        $this->assertStringContainsString('LIMIT 10', $capturedSql);
+        $this->assertStringContainsString('v.entity_type = :entityType', $capturedSql);
+        $this->assertSame('[1,0]', $capturedParams['qvec']);
+        $this->assertSame('file', $capturedParams['entityType']);
+    }//end testSemanticSearchKnnPathBuildsIndexBackedQuery()
+
+    /**
+     * KNN path: result shape matches the PHP path's shape, with
+     * similarity = 1 - cosine distance, ranked most-similar first.
+     */
+    public function testSemanticSearchKnnPathResultShapeAndSimilarity(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn(
+            [
+                $this->makeKnnRow(1, 'best', 0.05),
+                $this->makeKnnRow(2, 'second', 0.30),
+            ]
+        );
+        $db->method('executeQuery')->willReturn($stmt);
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertCount(2, $results);
+
+        $expected = ['vector_id', 'entity_type', 'entity_id', 'similarity', 'chunk_index', 'total_chunks', 'chunk_text', 'metadata', 'model', 'dimensions'];
+        foreach ($expected as $key) {
+            $this->assertArrayHasKey($key, $results[0], "Missing key: {$key}");
+        }
+
+        $this->assertSame('best', $results[0]['entity_id']);
+        $this->assertEqualsWithDelta(0.95, $results[0]['similarity'], 0.0001);
+        $this->assertEqualsWithDelta(0.70, $results[1]['similarity'], 0.0001);
+        $this->assertSame([], $results[0]['metadata']);
+    }//end testSemanticSearchKnnPathResultShapeAndSimilarity()
+
+    /**
+     * KNN path: entity_type array filters become IN predicates.
+     */
+    public function testSemanticSearchKnnPathWithEntityTypeArrayFilter(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([$this->makeKnnRow(1, 'a', 0.2)]);
+
+        $capturedSql    = null;
+        $capturedParams = null;
+        $db->method('executeQuery')
+            ->willReturnCallback(
+                function (string $sql, array $params=[], $types=[]) use (&$capturedSql, &$capturedParams, $stmt) {
+                    $capturedSql    = $sql;
+                    $capturedParams = $params;
+                    return $stmt;
+                }
+            );
+
+        $handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => ['file', 'object'], 'entity_id' => 'x']);
+
+        $this->assertStringContainsString('v.entity_type IN (:entityTypes)', $capturedSql);
+        $this->assertStringContainsString('v.entity_id = :entityId', $capturedSql);
+        $this->assertSame(['file', 'object'], $capturedParams['entityTypes']);
+        $this->assertSame('x', $capturedParams['entityId']);
+    }//end testSemanticSearchKnnPathWithEntityTypeArrayFilter()
+
+    /**
+     * KNN path unavailable when the query embedding's dimension doesn't match
+     * the column dimension: falls back to the PHP path.
+     */
+    public function testSemanticSearchKnnPathSkippedOnDimensionMismatch(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(1536);
+
+        // PHP fallback path: query builder gets used instead of raw KNN SQL.
+        $qb = $this->buildQueryBuilderMock([]);
+        $db->expects($this->once())->method('getQueryBuilder')->willReturn($qb);
+        $db->expects($this->never())->method('executeQuery');
+
+        // Query embedding has 2 dims, column is 1536 → mismatch → fallback.
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertSame([], $results);
+    }//end testSemanticSearchKnnPathSkippedOnDimensionMismatch()
+
+    /**
+     * A KNN query failure is tolerated: logged and fallen back to the PHP path,
+     * not propagated.
+     */
+    public function testSemanticSearchKnnQueryFailureFallsBackToPhpPath(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $db->method('executeQuery')->willThrowException(new Exception('index gone'));
+
+        $rows = [$this->makeVectorRow(1, 'fallback-hit', [1.0, 0.0])];
+        $qb   = $this->buildQueryBuilderMock($rows);
+        $db->method('getQueryBuilder')->willReturn($qb);
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('fallback-hit', $results[0]['entity_id']);
+    }//end testSemanticSearchKnnQueryFailureFallsBackToPhpPath()
+
+    /**
+     * KNN returning zero rows (e.g. warm-up not started) falls back to the
+     * PHP-cosine path so BLOB-only rows still serve results.
+     */
+    public function testSemanticSearchKnnEmptyFallsBackToPhpPath(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([]);
+        $db->method('executeQuery')->willReturn($stmt);
+
+        $rows = [$this->makeVectorRow(7, 'blob-only', [1.0, 0.0])];
+        $qb   = $this->buildQueryBuilderMock($rows);
+        $db->method('getQueryBuilder')->willReturn($qb);
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('blob-only', $results[0]['entity_id']);
+    }//end testSemanticSearchKnnEmptyFallsBackToPhpPath()
+
+    // =========================================================================
+    // Fallback ordering (hybrid-document-search tasks 3.2 / 7.1)
+    // =========================================================================
+
+    /**
+     * The PHP fallback's candidate fetch orders by primary key ascending —
+     * NOT the former recency-biased created_at DESC (or#277-adjacent bug).
+     */
+    public function testFetchVectorsFallbackOrdersByIdAscNotRecency(): void
+    {
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([]);
+
+        $expr = $this->createMock(IExpressionBuilder::class);
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('createNamedParameter')->willReturnArgument(0);
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('executeQuery')->willReturn($stmt);
+
+        $qb->expects($this->once())
+            ->method('orderBy')
+            ->with('id', 'ASC')
+            ->willReturnSelf();
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $this->handler->semanticSearch([1.0, 0.0], 10, []);
+    }//end testFetchVectorsFallbackOrdersByIdAscNotRecency()
 
 }//end class

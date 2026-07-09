@@ -135,19 +135,39 @@ class MagicRbacHandlerTest extends TestCase
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
     }
 
-    public function testActionNotConfiguredGrantsOpenAccess(): void
+    public function testActionNotConfiguredOnNonEmptyBlockDeniesAccess(): void
     {
+        // Fail-closed (rbac-default-deny): once a schema opts into authorization
+        // (non-empty block), an action that is not listed is denied for a
+        // non-admin / non-owner — even though another action (read) is granted.
         $this->mockUser('jan', ['medewerkers']);
         $schema = $this->createSchema([
             'read' => ['behandelaars'],
-            // 'update' deliberately omitted.
+            // 'update' deliberately omitted → must now DENY.
         ]);
 
         $this->conditionMatcher
             ->expects($this->never())
             ->method('objectMatchesConditions');
 
-        $this->assertTrue($this->handler->hasPermission($schema, 'update'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'update'));
+    }
+
+    public function testActionNotConfiguredOnNonEmptyBlockDeniesAnonymous(): void
+    {
+        // The fail-closed default applies to the `public`/anonymous pseudo-group
+        // too: a non-empty block that omits the action denies anonymous callers.
+        $this->mockUser(null, []);
+        $schema = $this->createSchema([
+            'read' => ['public'],
+            // 'delete' deliberately omitted → anonymous must be denied.
+        ]);
+
+        $this->conditionMatcher
+            ->expects($this->never())
+            ->method('objectMatchesConditions');
+
+        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
     }
 
     public function testSimplePublicRuleGrantsAnonymousAccessWithoutDelegation(): void

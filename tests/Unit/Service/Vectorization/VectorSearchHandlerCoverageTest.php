@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization;
 
+use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
-use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -14,16 +13,14 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Coverage tests for VectorSearchHandler — targets uncovered branches in
- * cosineSimilarity, extractEntityId, getCollectionsToSearch,
- * getSolrCollectionForEntityType, semanticSearch (php backend paths),
+ * cosineSimilarity, extractEntityId, semanticSearch (php fallback paths),
  * hybridSearch, and reciprocalRankFusion.
  */
 class VectorSearchHandlerCoverageTest extends TestCase
 {
     private VectorSearchHandler $handler;
     private IDBConnection&MockObject $db;
-    private SettingsService&MockObject $settingsService;
-    private IndexService&MockObject $indexService;
+    private PgVectorPlatform&MockObject $pgVector;
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
@@ -31,14 +28,15 @@ class VectorSearchHandlerCoverageTest extends TestCase
         parent::setUp();
 
         $this->db = $this->createMock(IDBConnection::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->indexService = $this->createMock(IndexService::class);
+        $this->pgVector = $this->createMock(PgVectorPlatform::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+
+        // pgvector fast path unavailable → PHP fallback (pre-change behaviour).
+        $this->pgVector->method('getVectorColumnDimension')->willReturn(null);
 
         $this->handler = new VectorSearchHandler(
             $this->db,
-            $this->settingsService,
-            $this->indexService,
+            $this->pgVector,
             $this->logger
         );
     }
@@ -70,8 +68,7 @@ class VectorSearchHandlerCoverageTest extends TestCase
         $results = $this->handler->semanticSearch(
             queryEmbedding: [0.1, 0.2, 0.3],
             limit: 5,
-            filters: [],
-            backend: 'php'
+            filters: []
         );
 
         $this->assertSame([], $results);
@@ -115,8 +112,7 @@ class VectorSearchHandlerCoverageTest extends TestCase
         $results = $this->handler->semanticSearch(
             queryEmbedding: [0.1, 0.2, 0.3],
             limit: 5,
-            filters: [],
-            backend: 'php'
+            filters: []
         );
 
         $this->assertCount(1, $results);
@@ -162,8 +158,7 @@ class VectorSearchHandlerCoverageTest extends TestCase
         $results = $this->handler->semanticSearch(
             queryEmbedding: [0.1, 0.2, 0.3],
             limit: 5,
-            filters: [],
-            backend: 'php'
+            filters: []
         );
 
         // Non-array embedding is skipped
@@ -208,8 +203,7 @@ class VectorSearchHandlerCoverageTest extends TestCase
         $results = $this->handler->semanticSearch(
             queryEmbedding: [1.0, 0.0],
             limit: 5,
-            filters: ['entity_type' => 'file'],
-            backend: 'database'
+            filters: ['entity_type' => 'file']
         );
 
         $this->assertCount(1, $results);
@@ -241,8 +235,7 @@ class VectorSearchHandlerCoverageTest extends TestCase
             filters: [
                 'entity_type' => ['file', 'object'],
                 'entity_id' => ['1', '2'],
-            ],
-            backend: 'php'
+            ]
         );
 
         $this->assertSame([], $results);
@@ -270,8 +263,7 @@ class VectorSearchHandlerCoverageTest extends TestCase
         $results = $this->handler->semanticSearch(
             queryEmbedding: [1.0],
             limit: 5,
-            filters: ['entity_id' => '42'],
-            backend: 'php'
+            filters: ['entity_id' => '42']
         );
 
         $this->assertSame([], $results);
@@ -314,17 +306,16 @@ class VectorSearchHandlerCoverageTest extends TestCase
 
         $hybrid = $this->handler->hybridSearch(
             queryEmbedding: [0.1, 0.2],
-            solrResults: $solrResults,
+            keywordResults: $solrResults,
             limit: 10,
-            weights: ['solr' => 0.7, 'vector' => 0.3],
-            backend: 'php'
+            weights: ['keyword' => 0.7, 'vector' => 0.3]
         );
 
         $this->assertArrayHasKey('results', $hybrid);
         $this->assertArrayHasKey('source_breakdown', $hybrid);
         $this->assertArrayHasKey('weights', $hybrid);
         $this->assertGreaterThan(0, $hybrid['total']);
-        $this->assertTrue($hybrid['results'][0]['in_solr']);
+        $this->assertTrue($hybrid['results'][0]['in_keyword']);
     }
 
     public function testHybridSearchWithZeroVectorWeight(): void
@@ -339,14 +330,13 @@ class VectorSearchHandlerCoverageTest extends TestCase
 
         $hybrid = $this->handler->hybridSearch(
             queryEmbedding: [0.1],
-            solrResults: $solrResults,
+            keywordResults: $solrResults,
             limit: 5,
-            weights: ['solr' => 1.0, 'vector' => 0.0],
-            backend: 'php'
+            weights: ['keyword' => 1.0, 'vector' => 0.0]
         );
 
         $this->assertSame(1, $hybrid['total']);
-        $this->assertSame(1, $hybrid['source_breakdown']['solr_only']);
+        $this->assertSame(1, $hybrid['source_breakdown']['keyword_only']);
     }
 
     public function testHybridSearchWithBothVectorAndSolr(): void
@@ -400,10 +390,9 @@ class VectorSearchHandlerCoverageTest extends TestCase
 
         $hybrid = $this->handler->hybridSearch(
             queryEmbedding: [1.0, 0.0],
-            solrResults: $solrResults,
+            keywordResults: $solrResults,
             limit: 10,
-            weights: ['solr' => 0.5, 'vector' => 0.5],
-            backend: 'php'
+            weights: ['keyword' => 0.5, 'vector' => 0.5]
         );
 
         $this->assertGreaterThanOrEqual(2, $hybrid['total']);

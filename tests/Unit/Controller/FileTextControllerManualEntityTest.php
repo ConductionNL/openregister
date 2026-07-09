@@ -27,7 +27,6 @@ use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -103,7 +102,6 @@ class FileTextControllerManualEntityTest extends TestCase
             'openregister',
             $this->request,
             $this->createMock(originalClassName: TextExtractionService::class),
-            $this->createMock(originalClassName: IndexService::class),
             $this->createMock(originalClassName: FileService::class),
             $this->createMock(originalClassName: EntityRelationMapper::class),
             $this->logger,

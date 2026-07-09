@@ -97,33 +97,11 @@ class MetadataHydrationHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
-     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-6 (Deprecation Warnings — logs a warning for
-     *       objectPublishedField/objectDepublishedField/autoPublish schema config keys, recommending RBAC $now rules)
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
         $config     = $schema->getConfiguration() ?? [];
         $objectData = $entity->getObject();
-
-        // DEPRECATED: Log warnings for deprecated published metadata config keys.
-        // Object-level published/depublished metadata has been removed.
-        // Use RBAC authorization rules with $now for publication control instead.
-        $deprecatedKeys = ['objectPublishedField', 'objectDepublishedField', 'autoPublish'];
-        foreach ($deprecatedKeys as $key) {
-            if (isset($config[$key]) === true) {
-                $this->logger->warning(
-                    message: "[MetadataHydrationHandler] Schema config key '{$key}' is deprecated. Use RBAC \$now rules instead.",
-                    context: [
-                        'file'     => __FILE__,
-                        'line'     => __LINE__,
-                        'app'      => 'openregister',
-                        'schemaId' => $schema->getId(),
-                        'key'      => $key,
-                        'value'    => $config[$key],
-                    ]
-                );
-            }
-        }
 
         // CRITICAL FIX: Extract business data from correct location.
         // If object data has 'object' key that is an array (structured format), use that for property access.

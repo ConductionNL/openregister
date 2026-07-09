@@ -483,15 +483,16 @@ class VectorizationService
     }//end semanticSearch()
 
     /**
-     * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
+     * Perform hybrid search combining keyword and semantic (vector) results
      *
-     * Delegates to VectorEmbeddings.
+     * Delegates to VectorEmbeddings. Caller supplies keyword search results;
+     * vector search runs against the PostgreSQL database.
      *
-     * @param string      $query       Query text
-     * @param array       $solrFilters SOLR-specific filters
-     * @param int         $limit       Maximum results
-     * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
-     * @param string|null $provider    Embedding provider
+     * @param string      $query          Query text
+     * @param array       $keywordResults Pre-fetched keyword search results to fuse
+     * @param int         $limit          Maximum results
+     * @param array       $weights        Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider       Embedding provider
      *
      * @return array Hybrid search results with combined scores and source breakdown.
      *
@@ -501,14 +502,14 @@ class VectorizationService
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters=[],
+        array $keywordResults=[],
         int $limit=20,
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        array $weights=['keyword' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): array {
         return $this->vectorService->hybridSearch(
             query: $query,
-            solrFilters: $solrFilters,
+            keywordResults: $keywordResults,
             limit: $limit,
             weights: $weights,
             provider: $provider

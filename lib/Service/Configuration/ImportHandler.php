@@ -763,7 +763,6 @@ class ImportHandler
             try {
                 $existingRegister = $this->registerMapper->find(
                     id: strtolower($data['slug']),
-                    published: null,
                     _rbac: false,
                     _multitenancy: false
                 );
@@ -1988,8 +1987,8 @@ class ImportHandler
                 }
 
                 $seedObjects[] = $seedCandidate;
-            }
-        }
+            }//end foreach
+        }//end foreach
 
         if (count($seedObjects) > 0) {
             foreach ($seedObjects as $objectData) {
@@ -3788,11 +3787,25 @@ class ImportHandler
         $result['skipped']['seedObjects'] = ($result['skipped']['seedObjects'] ?? 0);
 
         // Determine target register for seedData objects.
-        // SeedData should go into the first register defined in the configuration.
+        // Prefer the registers imported IN THIS RUN ($this->registersMap): on a
+        // FIRST import the configuration entity's registers list is only
+        // persisted after importFromJson returns, so reading it here yielded
+        // "register 0" and every seed object failed with "Cannot insert object
+        // without register and schema context" (verified live with the DSAR
+        // policy-pack register). Fall back to the configuration's recorded
+        // registers for the version-equal "checking seedData" re-import path,
+        // where the map is empty but the configuration is populated.
         $targetRegister = null;
-        $registerIds    = $configuration->getRegisters();
-        if (empty($registerIds) === false) {
-            $targetRegister = $this->registerMapper->find($registerIds[0], _multitenancy: false, _rbac: false);
+        $freshRegisters = array_values($this->registersMap);
+        if ($freshRegisters !== []) {
+            $targetRegister = $freshRegisters[0];
+        }
+
+        if ($targetRegister === null) {
+            $registerIds = $configuration->getRegisters();
+            if (empty($registerIds) === false) {
+                $targetRegister = $this->registerMapper->find($registerIds[0], _multitenancy: false, _rbac: false);
+            }
         }
 
         $targetRegisterId = 0;
@@ -3849,7 +3862,6 @@ class ImportHandler
                     $schema = $this->schemaMapper->find(
                         id: $schemaSlug,
                         _extend: [],
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );

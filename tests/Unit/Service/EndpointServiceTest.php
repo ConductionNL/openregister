@@ -443,6 +443,10 @@ class EndpointServiceTest extends TestCase
 
     public function testExecuteAgentEndpointMessageInTopLevelRequest(): void
     {
+        // Agent endpoint execution is not implemented (deprecated pending
+        // hermiq migration); this test verifies message extraction from the
+        // top-level request still runs before the 501 is returned (i.e. it
+        // does not short-circuit into the 400 "Message is required" path).
         $agent = $this->createAgent('Agent', 'unsupported_provider', 'model-x');
         $agentMapper = $this->createMock(AgentMapper::class);
         $toolRegistry = $this->createMock(ToolRegistry::class);
@@ -465,14 +469,14 @@ class EndpointServiceTest extends TestCase
 
         $result = $this->service->publicExecuteEndpoint($endpoint, $request);
 
-        // unsupported_provider => 501 not implemented.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
-        $this->assertStringContainsString('unsupported_provider', $result['error']);
+        $this->assertSame('Agent endpoint type is not implemented', $result['error']);
     }
 
     public function testExecuteAgentEndpointUnsupportedProvider(): void
     {
+        // Agent endpoint execution is not implemented regardless of provider.
         $agent = $this->createAgent('Agent', 'openai', 'gpt-4');
         $agentMapper = $this->createMock(AgentMapper::class);
         $toolRegistry = $this->createMock(ToolRegistry::class);
@@ -490,8 +494,7 @@ class EndpointServiceTest extends TestCase
 
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
-        $this->assertStringContainsString('openai', $result['error']);
-        $this->assertStringContainsString('not yet implemented', $result['error']);
+        $this->assertSame('Agent endpoint type is not implemented', $result['error']);
     }
 
     public function testExecuteAgentEndpointNoToolsConfigured(): void
@@ -511,7 +514,7 @@ class EndpointServiceTest extends TestCase
 
         $result = $this->service->publicExecuteEndpoint($endpoint, $request);
 
-        // Empty tools => still reaches provider check => 501.
+        // Agent + message validation pass; execution is not implemented.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
     }
@@ -533,38 +536,7 @@ class EndpointServiceTest extends TestCase
 
         $result = $this->service->publicExecuteEndpoint($endpoint, $request);
 
-        // null tools coalesced to [] => empty => skips foreach => 501.
-        $this->assertFalse($result['success']);
-        $this->assertSame(501, $result['statusCode']);
-    }
-
-    public function testExecuteAgentEndpointWithToolsLoaded(): void
-    {
-        $agent = $this->createAgent('Agent', 'openai', 'gpt-4', null, ['register', 'objects']);
-        $agentMapper = $this->createMock(AgentMapper::class);
-        $toolRegistry = $this->createMock(ToolRegistry::class);
-        $settingsService = $this->createMock(SettingsService::class);
-
-        $agentMapper->method('findByUuid')->willReturn($agent);
-        $settingsService->method('getSettings')->willReturn(['llm' => []]);
-
-        // Create a mock tool that returns functions.
-        $tool = $this->createMock(ToolInterface::class);
-        $tool->method('getFunctions')->willReturn([
-            ['name' => 'search_register', 'description' => 'Search registers'],
-        ]);
-        $tool->expects($this->exactly(2))->method('setAgent');
-
-        $toolRegistry->method('getTool')->willReturn($tool);
-
-        $this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
-
-        $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
-        $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
-
-        $result = $this->service->publicExecuteEndpoint($endpoint, $request);
-
-        // Not ollama => 501.
+        // Null tools must not cause a crash; execution is not implemented.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
     }
@@ -589,42 +561,17 @@ class EndpointServiceTest extends TestCase
 
         $result = $this->service->publicExecuteEndpoint($endpoint, $request);
 
-        // Reaches provider check => 501.
+        // Agent lookup + message validation still run; execution itself is
+        // not implemented.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
     }
 
-    public function testExecuteAgentEndpointToolThrowsException(): void
+    public function testExecuteAgentEndpointOllamaProviderReturnsNotImplemented(): void
     {
-        $agent = $this->createAgent('Agent', 'openai', 'gpt-4', null, ['broken_tool']);
-        $agentMapper = $this->createMock(AgentMapper::class);
-        $toolRegistry = $this->createMock(ToolRegistry::class);
-        $settingsService = $this->createMock(SettingsService::class);
-
-        $agentMapper->method('findByUuid')->willReturn($agent);
-        $settingsService->method('getSettings')->willReturn(['llm' => []]);
-
-        // Tool throws exception during loading.
-        $toolRegistry->method('getTool')
-            ->willThrowException(new \Exception('Tool load failed'));
-
-        $this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
-
-        $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
-        $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
-
-        // The exception is caught inside the foreach, logged as warning, continues.
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
-        $result = $this->service->publicExecuteEndpoint($endpoint, $request);
-
-        // Still reaches provider check => 501.
-        $this->assertFalse($result['success']);
-        $this->assertSame(501, $result['statusCode']);
-    }
-
-    public function testExecuteAgentEndpointOllamaProviderThrowsError(): void
-    {
+        // Regression test: agent execution used to call the undefined
+        // callOllamaWithTools() method and fatal with an Error for the
+        // 'ollama' provider. It must now return a graceful 501 instead.
         $agent = $this->createAgent('Ollama Agent', 'ollama', 'llama3', 'You are helpful.', []);
         $agentMapper = $this->createMock(AgentMapper::class);
         $toolRegistry = $this->createMock(ToolRegistry::class);
@@ -642,13 +589,14 @@ class EndpointServiceTest extends TestCase
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
 
-        // callOllamaWithTools doesn't exist as a method, so this throws an Error
-        // (not Exception), which is NOT caught by the catch(\Exception) block.
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
+        $result = $this->service->publicExecuteEndpoint($endpoint, $request);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(501, $result['statusCode']);
+        $this->assertSame('Agent endpoint type is not implemented', $result['error']);
     }
 
-    public function testExecuteAgentEndpointOllamaWithPromptThrowsError(): void
+    public function testExecuteAgentEndpointOllamaWithPromptReturnsNotImplemented(): void
     {
         $agent = $this->createAgent('Agent', 'ollama', 'llama3', 'System prompt here', []);
         $agentMapper = $this->createMock(AgentMapper::class);
@@ -665,12 +613,13 @@ class EndpointServiceTest extends TestCase
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
 
-        // Exercises prompt-building path then hits undefined method.
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
+        $result = $this->service->publicExecuteEndpoint($endpoint, $request);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(501, $result['statusCode']);
     }
 
-    public function testExecuteAgentEndpointOllamaWithoutPromptThrowsError(): void
+    public function testExecuteAgentEndpointOllamaWithoutPromptReturnsNotImplemented(): void
     {
         $agent = $this->createAgent('Agent', 'ollama', 'llama3', null, []);
         $agentMapper = $this->createMock(AgentMapper::class);
@@ -687,34 +636,13 @@ class EndpointServiceTest extends TestCase
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
 
-        // Exercises no-prompt path then hits undefined method.
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
+        $result = $this->service->publicExecuteEndpoint($endpoint, $request);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(501, $result['statusCode']);
     }
 
-    public function testExecuteAgentEndpointOllamaEmptyPromptThrowsError(): void
-    {
-        $agent = $this->createAgent('Agent', 'ollama', 'llama3', '', []);
-        $agentMapper = $this->createMock(AgentMapper::class);
-        $toolRegistry = $this->createMock(ToolRegistry::class);
-        $settingsService = $this->createMock(SettingsService::class);
-
-        $agentMapper->method('findByUuid')->willReturn($agent);
-        $settingsService->method('getSettings')->willReturn([
-            'llm' => ['ollamaConfig' => ['url' => 'http://test:11434']],
-        ]);
-
-        $this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
-
-        $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
-        $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
-
-        // Empty prompt should NOT add system message, then hits undefined method.
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
-    }
-
-    public function testExecuteAgentEndpointOllamaDefaultUrlThrowsError(): void
+    public function testExecuteAgentEndpointOllamaDefaultUrlReturnsNotImplemented(): void
     {
         $agent = $this->createAgent('Agent', 'ollama', 'llama3', null, []);
         $agentMapper = $this->createMock(AgentMapper::class);
@@ -722,7 +650,8 @@ class EndpointServiceTest extends TestCase
         $settingsService = $this->createMock(SettingsService::class);
 
         $agentMapper->method('findByUuid')->willReturn($agent);
-        // No ollamaConfig — should use default URL.
+        // No ollamaConfig — should use default URL (irrelevant now, but
+        // must not cause a crash while resolving it).
         $settingsService->method('getSettings')->willReturn(['llm' => []]);
 
         $this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
@@ -730,11 +659,13 @@ class EndpointServiceTest extends TestCase
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
 
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
+        $result = $this->service->publicExecuteEndpoint($endpoint, $request);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(501, $result['statusCode']);
     }
 
-    public function testExecuteAgentEndpointOllamaNoLlmConfigThrowsError(): void
+    public function testExecuteAgentEndpointOllamaNoLlmConfigReturnsNotImplemented(): void
     {
         $agent = $this->createAgent('Agent', 'ollama', 'llama3', null, []);
         $agentMapper = $this->createMock(AgentMapper::class);
@@ -750,77 +681,8 @@ class EndpointServiceTest extends TestCase
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
 
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
-    }
-
-    public function testExecuteAgentEndpointOllamaWithToolsAndPromptThrowsError(): void
-    {
-        $agent = $this->createAgent('Agent', 'ollama', 'llama3', 'Be helpful', ['register']);
-        $agentMapper = $this->createMock(AgentMapper::class);
-        $toolRegistry = $this->createMock(ToolRegistry::class);
-        $settingsService = $this->createMock(SettingsService::class);
-
-        $agentMapper->method('findByUuid')->willReturn($agent);
-        $settingsService->method('getSettings')->willReturn([
-            'llm' => ['ollamaConfig' => ['url' => 'http://test:11434']],
-        ]);
-
-        $tool = $this->createMock(ToolInterface::class);
-        $tool->method('getFunctions')->willReturn([
-            ['name' => 'list_registers', 'description' => 'List all registers'],
-        ]);
-        $tool->expects($this->once())->method('setAgent');
-
-        $toolRegistry->method('getTool')->willReturn($tool);
-
-        $this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
-
-        $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
-        $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hi'], 'headers' => []];
-
-        // callOllamaWithTools undefined => Error.
-        $this->expectException(\Error::class);
-        $this->service->publicExecuteEndpoint($endpoint, $request);
-    }
-
-    public function testExecuteAgentEndpointMixedToolsSuccessAndFailure(): void
-    {
-        $agent = $this->createAgent('Agent', 'openai', 'gpt-4', null, ['good_tool', 'bad_tool', 'null_tool']);
-        $agentMapper = $this->createMock(AgentMapper::class);
-        $toolRegistry = $this->createMock(ToolRegistry::class);
-        $settingsService = $this->createMock(SettingsService::class);
-
-        $agentMapper->method('findByUuid')->willReturn($agent);
-        $settingsService->method('getSettings')->willReturn(['llm' => []]);
-
-        $goodTool = $this->createMock(ToolInterface::class);
-        $goodTool->method('getFunctions')->willReturn([
-            ['name' => 'func1', 'description' => 'test'],
-        ]);
-
-        // Map different tool names to different responses.
-        $toolRegistry->method('getTool')->willReturnCallback(function (string $name) use ($goodTool) {
-            if ($name === 'good_tool') {
-                return $goodTool;
-            }
-            if ($name === 'bad_tool') {
-                throw new \Exception('Tool broken');
-            }
-            // null_tool
-            return null;
-        });
-
-        $this->setUpOcServer($agentMapper, $toolRegistry, $settingsService);
-
-        $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
-        $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'Hello'], 'headers' => []];
-
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
         $result = $this->service->publicExecuteEndpoint($endpoint, $request);
 
-        // Reaches provider check => 501.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
     }
@@ -1085,7 +947,7 @@ class EndpointServiceTest extends TestCase
         // Pass message via testData which becomes request['data'].
         $result = $this->service->testEndpoint($endpoint, ['message' => 'Test message']);
 
-        // openai => 501.
+        // Agent execution is not implemented.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
     }
@@ -1507,7 +1369,7 @@ class EndpointServiceTest extends TestCase
     // Agent endpoint — via testEndpoint (full flow with logging)
     // ====================================================================
 
-    public function testTestEndpointAgentUnsupportedProviderLogsResult(): void
+    public function testTestEndpointAgentReturnsNotImplementedAndLogsResult(): void
     {
         $agent = $this->createAgent('Agent', 'azure', 'gpt-4', null, []);
         $agentMapper = $this->createMock(AgentMapper::class);
@@ -1528,7 +1390,7 @@ class EndpointServiceTest extends TestCase
 
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
-        $this->assertStringContainsString('azure', $result['error']);
+        $this->assertSame('Agent endpoint type is not implemented', $result['error']);
     }
 
     public function testTestEndpointAgentNotFoundLogsError(): void
@@ -1580,7 +1442,7 @@ class EndpointServiceTest extends TestCase
 
         $result = $this->service->testEndpoint($endpoint, ['message' => 'Search for buildings']);
 
-        // fireworks provider => 501.
+        // A configured agent with tools still gets a not-implemented response.
         $this->assertFalse($result['success']);
         $this->assertSame(501, $result['statusCode']);
     }

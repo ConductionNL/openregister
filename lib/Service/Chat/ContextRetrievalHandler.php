@@ -27,8 +27,8 @@ namespace OCA\OpenRegister\Service\Chat;
 
 use Exception;
 use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
-use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -57,11 +57,11 @@ class ContextRetrievalHandler
     private VectorEmbeddings $vectorService;
 
     /**
-     * Index service for SOLR search
+     * Object service for database search
      *
-     * @var IndexService
+     * @var ObjectService
      */
-    private IndexService $solrService;
+    private ObjectService $objectService;
 
     /**
      * Logger
@@ -74,7 +74,7 @@ class ContextRetrievalHandler
      * Constructor
      *
      * @param VectorEmbeddings $vectorService Vector embeddings service.
-     * @param IndexService     $solrService   SOLR index service.
+     * @param ObjectService    $objectService Object service for database search.
      * @param LoggerInterface  $logger        Logger.
      *
      * @return void
@@ -83,11 +83,11 @@ class ContextRetrievalHandler
      */
     public function __construct(
         VectorEmbeddings $vectorService,
-        IndexService $solrService,
+        ObjectService $objectService,
         LoggerInterface $logger
     ) {
         $this->vectorService = $vectorService;
-        $this->solrService   = $solrService;
+        $this->objectService = $objectService;
         $this->logger        = $logger;
     }//end __construct()
 
@@ -221,12 +221,11 @@ class ContextRetrievalHandler
                     // Pass filters array instead of 0.7.
                 );
             } else if ($searchMode === 'hybrid') {
+                // Fuse the already-fetched keyword results with vector search.
                 $hybridResponse = $this->vectorService->hybridSearch(
                     query: $query,
-                    solrFilters: ['vector_filters' => $vectorFilters],
-                    // Pass filters in SOLR filters array.
+                    keywordResults: $results,
                     limit: $fetchLimit
-                    // Limit parameter.
                 );
                 // Extract results array from hybrid search response.
                 $results = $hybridResponse['results'] ?? [];
@@ -396,12 +395,12 @@ class ContextRetrievalHandler
     }//end retrieveContext()
 
     /**
-     * Search using keyword only (SOLR)
+     * Search using keyword only (database)
      *
-     * Performs keyword-based search using SOLR without vector embeddings.
+     * Performs keyword-based search using the database without vector embeddings.
      *
      * @param string $query  Query text.
-     * @param int    $_limit Result limit (unused, for interface compatibility).
+     * @param int    $_limit Result limit.
      *
      * @return array Search results in standardized format
      *
@@ -413,19 +412,14 @@ class ContextRetrievalHandler
      */
     private function searchKeywordOnly(string $query, int $_limit): array
     {
-        $results = $this->solrService->searchObjectsPaginated(
-            query: ['_search' => $query],
-            limit: $_limit,
-            offset: 0,
-            facets: [],
-            collection: null,
-            includeTotal: true
+        $results = $this->objectService->searchObjectsPaginated(
+            query: ['_search' => $query, '_limit' => $_limit]
         );
 
         $transformed = [];
         foreach ($results['results'] ?? [] as $result) {
             $transformed[] = [
-                'entity_id'   => $result['id'] ?? null,
+                'entity_id'   => $result['id'] ?? $result['uuid'] ?? null,
                 'entity_type' => 'object',
                 'text'        => $result['_source']['data'] ?? json_encode($result),
                 'score'       => $result['_score'] ?? 1.0,

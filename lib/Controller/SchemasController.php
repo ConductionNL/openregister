@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -36,6 +37,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -113,6 +115,7 @@ class SchemasController extends Controller
      * @param SchemaVersioningService $schemaVersioningService Schema versioning service for version operations
      * @param JsonLdContextService    $jsonLdContextService    JSON-LD context service
      * @param SchemaImportService     $schemaImportService     Schema import service for importing schemas
+     * @param SemanticTypeResolver    $semanticTypeResolver    Semantic-type → schema resolver (cross-app references)
      *
      * @return void
      *
@@ -134,7 +137,8 @@ class SchemasController extends Controller
         private readonly ContainerInterface $container,
         private readonly SchemaVersioningService $schemaVersioningService,
         private readonly ?JsonLdContextService $jsonLdContextService=null,
-        private readonly ?SchemaImportService $schemaImportService=null
+        private readonly ?SchemaImportService $schemaImportService=null,
+        private readonly ?SemanticTypeResolver $semanticTypeResolver=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -228,17 +232,15 @@ class SchemasController extends Controller
 
         // Read-visibility guard: this endpoint is @PublicPage so it stays
         // reachable when OpenRegister is restricted to a user group. Anonymous
-        // callers may only see PUBLISHED schemas; authenticated users are
-        // unaffected. Visibility is derived from server-side published/
-        // depublished entity state, never from client-supplied parameters.
+        // callers may only see schemas whose RBAC authorization grants read
+        // access to the `public` group; authenticated users are unaffected.
+        // Visibility is derived from server-side authorization rules, never
+        // from client-supplied parameters.
         if ($this->isAnonymousRequest() === true) {
             $schemas = array_values(
                 array_filter(
                     $schemas,
-                    fn($schema) => $this->isPublishedEntity(
-                        published: $schema->getPublished(),
-                        depublished: $schema->getDepublished()
-                    )
+                    fn($schema) => $this->isPublicReadable(authorization: $schema->getAuthorization())
                 )
             );
         }
@@ -322,13 +324,11 @@ class SchemasController extends Controller
             $schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
 
             // Read-visibility guard (@PublicPage): an anonymous caller may only
-            // view a PUBLISHED schema. Derived from server-side published/
-            // depublished entity state, never from client-supplied parameters.
+            // view a schema whose RBAC authorization grants read access to the
+            // `public` group. Derived from server-side authorization rules,
+            // never from client-supplied parameters.
             if ($this->isAnonymousRequest() === true
-                && $this->isPublishedEntity(
-                    published: $schema->getPublished(),
-                    depublished: $schema->getDepublished()
-                ) === false
+                && $this->isPublicReadable(authorization: $schema->getAuthorization()) === false
             ) {
                 return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
             }
@@ -547,6 +547,7 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
+                || str_contains($e->getMessage(), 'handoff') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -759,6 +760,7 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
+                || str_contains($e->getMessage(), 'handoff') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -1080,6 +1082,7 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
+                || str_contains($e->getMessage(), 'handoff') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -1248,7 +1251,14 @@ class SchemasController extends Controller
             }
 
             // Get detailed object statistics for this schema using the existing method.
+            // Default every key: mapper variants (and mocked test doubles) may
+            // return partial maps, which otherwise emits "Undefined array key"
+            // PHP warnings for empty schemas.
             $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
+            $objectStats = array_merge(
+                ['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
+                $objectStats
+            );
 
             // Calculate comprehensive statistics for this schema.
             $stats = [
@@ -1420,6 +1430,105 @@ class SchemasController extends Controller
     }//end updateFromExploration()
 
     /**
+     * Resolve a canonical semantic-type URI to the installed provider schema.
+     *
+     * Discovery endpoint for cross-app semantic references (ADR-048). Given a
+     * `uri` query parameter (an absolute semantic-type IRI such as
+     * `https://schema.org/Organization`), returns the register + schema slugs of
+     * the installed schema that implements it, so the frontend can build an
+     * object picker over the provider schema. When no installed schema provides
+     * the type, returns `{ resolved: false }` with HTTP 200 — never 500 — so a
+     * consuming form degrades gracefully to a disabled field.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @PublicPage
+     *
+     * @return JSONResponse `{ resolved: bool, register, registerSlug, schema, schemaSlug, appId? }`
+     *                      or `{ resolved: false }`.
+     *
+     * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+     *   (Requirement: Resolution is null-safe across installed schemas)
+     */
+    public function resolveByImplements(): JSONResponse
+    {
+        $uri = (string) ($this->request->getParam('uri', ''));
+        if ($uri === '' || $this->semanticTypeResolver === null) {
+            return new JSONResponse(['resolved' => false]);
+        }
+
+        // Optional consuming-register hint biases the tie-break; never required.
+        $consumingRegisterId = null;
+        $rawRegister         = $this->request->getParam('register');
+        if ($rawRegister !== null && is_numeric($rawRegister) === true) {
+            $consumingRegisterId = (int) $rawRegister;
+        }
+
+        try {
+            $schema = $this->semanticTypeResolver->resolveSchemaByImplements(
+                uri: $uri,
+                consumingRegisterId: $consumingRegisterId
+            );
+        } catch (\Throwable $e) {
+            // Resolution is contractually null-safe; log and degrade, never 500.
+            $this->logger->warning(
+                message: '[SchemasController] resolveByImplements failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uri' => $uri]
+            );
+            return new JSONResponse(['resolved' => false]);
+        }
+
+        if ($schema === null) {
+            return new JSONResponse(['resolved' => false]);
+        }
+
+        $register = $this->semanticTypeResolver->findRegisterForSchema(schema: $schema);
+
+        $payload = [
+            'resolved'   => true,
+            'schema'     => $schema->getId(),
+            'schemaSlug' => $schema->getSlug(),
+        ];
+
+        return new JSONResponse(array_merge($payload, $this->registerPayload(register: $register)));
+
+    }//end resolveByImplements()
+
+    /**
+     * Build the register portion of a {@see self::resolveByImplements()} payload.
+     *
+     * Extracted so the discovery endpoint stays within complexity limits;
+     * behaviour is identical. When the schema has no owning register the
+     * register/slug keys are explicitly null; otherwise the register id + slug
+     * are returned, plus `appId` when the register names an owning app.
+     *
+     * @param Register|null $register The owning register, or null when none.
+     *
+     * @return array<string, mixed> The register keys to merge into the payload.
+     */
+    private function registerPayload(?Register $register): array
+    {
+        if ($register === null) {
+            return ['register' => null, 'registerSlug' => null];
+        }
+
+        $payload = [
+            'register'     => $register->getId(),
+            'registerSlug' => $register->getSlug(),
+        ];
+
+        $appId = $register->getApplication();
+        if (is_string($appId) === true && $appId !== '') {
+            $payload['appId'] = $appId;
+        }
+
+        return $payload;
+
+    }//end registerPayload()
+
+    /**
      * Whether the current request has no resolved Nextcloud user (anonymous).
      *
      * Read endpoints are @PublicPage so they survive an app-group restriction;
@@ -1441,21 +1550,27 @@ class SchemasController extends Controller
     }//end isAnonymousRequest()
 
     /**
-     * Whether an entity is currently published.
+     * Whether an entity is anonymously readable via RBAC authorization.
      *
-     * A resource is published when its `published` timestamp is set and it has
-     * not since been depublished. Both values come from persisted entity state.
+     * A resource is visible to anonymous callers when its authorization block
+     * grants `read` access to the `public` group. This replaces the former
+     * published/depublished column gate: anonymous publication is an RBAC
+     * concern, expressed as a `public`-group read rule on the entity.
      *
-     * @param \DateTime|null $published   The published timestamp, or null.
-     * @param \DateTime|null $depublished The depublished timestamp, or null.
+     * @param array|null $authorization The entity's authorization block, or null.
      *
-     * @return bool True if the entity is published and not depublished.
+     * @return bool True if the `public` group has read access.
      */
-    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
+    private function isPublicReadable(?array $authorization): bool
     {
-        return $published !== null && $depublished === null;
+        if (is_array($authorization) === false) {
+            return false;
+        }
 
-    }//end isPublishedEntity()
+        $readGroups = ($authorization['read'] ?? []);
+        return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+
+    }//end isPublicReadable()
 
     /**
      * Resolve the dialect of an uploaded schema document and map it.

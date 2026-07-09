@@ -269,7 +269,8 @@ class McpProviderBridge implements ToolInterface
      * @param string           $functionName The function LLPhant resolved.
      * @param array<int,mixed> $args         Positional or single-array argument list.
      *
-     * @return mixed Whatever executeFunction() returned.
+     * @return string executeFunction()'s result JSON-encoded (LLPhant requires a string
+     *                tool result — see OR#269).
      *
      * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
      */
@@ -284,7 +285,20 @@ class McpProviderBridge implements ToolInterface
             $parameters = $args;
         }
 
-        return $this->executeFunction(functionName: $functionName, parameters: $parameters);
+        $result = $this->executeFunction(functionName: $functionName, parameters: $parameters);
+
+        // LLPhant's tool-call handling requires the tool RESULT as a ?string, not an array
+        // (OllamaChat::callFunction → new CalledFunction(..., $return) type-hints ?string,
+        // and OpenAI tool messages are strings too). MCP tools return a structured array, so
+        // encode it to a JSON string here — the LLM reads the tool output as text. This is
+        // the fix for OR#269 (array given to CalledFunction $return → agent tool-calls 500).
+        // executeFunction() still returns the array for direct callers (the MCP server).
+        $encoded = json_encode($result);
+        if ($encoded === false) {
+            return '{"isError":true,"error":"encode_failed","message":"Tool result could not be encoded."}';
+        }
+
+        return $encoded;
     }//end __call()
 
     /**

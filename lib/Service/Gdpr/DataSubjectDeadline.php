@@ -71,10 +71,12 @@ class DataSubjectDeadline
      * @param DateTimeInterface $receivedAt When the request was received.
      *
      * @return DateTimeImmutable The base legal deadline.
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function computeDueAt(DateTimeInterface $receivedAt): DateTimeImmutable
     {
-        return $this->toImmutable($receivedAt)->add(new DateInterval(self::BASE_TERM));
+        return $this->toImmutable(value: $receivedAt)->add(new DateInterval(self::BASE_TERM));
 
     }//end computeDueAt()
 
@@ -91,10 +93,12 @@ class DataSubjectDeadline
      * @param DateTimeInterface $dueAt The current base due date.
      *
      * @return DateTimeImmutable The extended deadline (base + 2 months).
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function extend(DateTimeInterface $dueAt): DateTimeImmutable
     {
-        return $this->toImmutable($dueAt)->add(new DateInterval(self::EXTENSION_TERM));
+        return $this->toImmutable(value: $dueAt)->add(new DateInterval(self::EXTENSION_TERM));
 
     }//end extend()
 
@@ -105,11 +109,13 @@ class DataSubjectDeadline
      * @param DateTimeInterface|null $now      Reference time (defaults to now).
      *
      * @return bool True when the reference time is at or after the deadline.
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function isOverdue(DateTimeInterface $deadline, ?DateTimeInterface $now=null): bool
     {
         $reference = ($now ?? new DateTimeImmutable());
-        return $this->toImmutable($reference) >= $this->toImmutable($deadline);
+        return $this->toImmutable(value: $reference) >= $this->toImmutable(value: $deadline);
 
     }//end isOverdue()
 
@@ -120,11 +126,13 @@ class DataSubjectDeadline
      * @param DateTimeInterface|null $now      Reference time (defaults to now).
      *
      * @return int Whole days left; negative when the deadline is in the past.
+     *
+     * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-eu-art-12-legal-deadline-computation
      */
     public function daysRemaining(DateTimeInterface $deadline, ?DateTimeInterface $now=null): int
     {
-        $reference = $this->toImmutable($now ?? new DateTimeImmutable());
-        $target    = $this->toImmutable($deadline);
+        $reference = $this->toImmutable(value: ($now ?? new DateTimeImmutable()));
+        $target    = $this->toImmutable(value: $deadline);
 
         $diff = $reference->diff($target);
         $days = (int) $diff->days;

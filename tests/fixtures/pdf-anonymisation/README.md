@@ -29,7 +29,7 @@ The sidecar carries the substitution map + the must-be-absent assertion list:
 ```json
 {
   "substitutions": {
-    "Jan Jansen": "[PERSON: 7]"
+    "Jan Jansen": "[PERSON: 1]"
   },
   "must_be_absent": [
     "Jan Jansen",

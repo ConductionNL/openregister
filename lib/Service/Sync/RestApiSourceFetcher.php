@@ -103,7 +103,13 @@ class RestApiSourceFetcher implements SourceFetcherInterface
 
         while ($url !== null && $page < self::MAX_PAGES) {
             $page++;
-            $response = $this->httpClient->request('GET', $url, ['headers' => $headers]);
+            // Bound each request so a hung upstream cannot stall the harvest job
+            // indefinitely (harden-harvest-http). Guzzle defaults to no timeout.
+            $response = $this->httpClient->request(
+                'GET',
+                $url,
+                ['headers' => $headers, 'timeout' => 30, 'connect_timeout' => 5]
+            );
 
             // 304 Not Modified: nothing changed since the checkpoint.
             if ($response->getStatusCode() === 304) {
@@ -140,10 +146,16 @@ class RestApiSourceFetcher implements SourceFetcherInterface
      */
     public function fetch(Source $source, string $externalId): array
     {
-        $baseUrl  = rtrim((string) $source->getDatabaseUrl(), '/');
-        $headers  = $this->buildHeaders(source: $source, since: null);
-        $url      = $baseUrl.'/'.rawurlencode($externalId);
-        $response = $this->httpClient->request('GET', $url, ['headers' => $headers]);
+        $baseUrl = rtrim((string) $source->getDatabaseUrl(), '/');
+        $headers = $this->buildHeaders(source: $source, since: null);
+        $url     = $baseUrl.'/'.rawurlencode($externalId);
+        // Bound the request (harden-harvest-http): a hung upstream must not stall
+        // the harvest job.
+        $response = $this->httpClient->request(
+            'GET',
+            $url,
+            ['headers' => $headers, 'timeout' => 30, 'connect_timeout' => 5]
+        );
         $body     = json_decode((string) $response->getBody(), true);
 
         if (is_array($body) === false) {

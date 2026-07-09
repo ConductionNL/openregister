@@ -1652,21 +1652,6 @@ class ControllersIntegrationTest extends TestCase
     }
 
     /**
-     * Test SettingsController::updatePublishingOptions
-     *
-     * @return void
-     */
-    public function testSettingsUpdatePublishingOptions(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-
-        $response = $this->settingsController->updatePublishingOptions();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertTrue(in_array($response->getStatus(), [200, 500]));
-    }
-
-    /**
      * Test SettingsController::rebase
      *
      * Note: May fail with TypeError in CacheSettingsHandler due to config type issues.

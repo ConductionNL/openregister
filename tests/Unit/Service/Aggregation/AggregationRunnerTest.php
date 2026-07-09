@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -110,7 +112,9 @@ class AggregationRunnerTest extends TestCase
             cache: $this->cache,
             permissionHandler: $this->permissionHandler,
             userSession: $this->userSession,
-            organisationService: $this->organisationService
+            organisationService: $this->organisationService,
+            translationHandler: $this->createMock(TranslationHandler::class),
+            languageService: $this->createMock(LanguageService::class)
         );
 
     }//end makeRunner()
@@ -150,7 +154,6 @@ class AggregationRunnerTest extends TestCase
                 $this->equalTo('meldingen'),
                 $this->anything(),
                 $this->anything(),
-                $this->anything(),
                 $this->isFalse()
             )
             ->willReturn($schema);
@@ -178,7 +181,6 @@ class AggregationRunnerTest extends TestCase
             ->method('find')
             ->with(
                 $this->equalTo('zaken'),
-                $this->anything(),
                 $this->anything(),
                 $this->isFalse()
             )

@@ -196,6 +196,7 @@ class NotificationPreferenceServiceTest extends TestCase
         $schema->setId(1);
         $schema->setSlug('meldingen');
         $schema->setTitle('Meldingen');
+        $schema->setApplication('pipelinq');
         $schema->setConfiguration([
             'x-openregister-notifications' => [
                 'object_created' => ['enabled' => true, 'channels' => ['nc-notification']],
@@ -223,5 +224,7 @@ class NotificationPreferenceServiceTest extends TestCase
         $this->assertSame('user-override', $byKey['object_created']['source']);
         $this->assertFalse($byKey['object_updated']['enabled']);
         $this->assertSame('schema-default', $byKey['object_updated']['source']);
+        $this->assertSame('pipelinq', $byKey['object_created']['application']);
+        $this->assertSame('pipelinq', $byKey['object_updated']['application']);
     }
 }

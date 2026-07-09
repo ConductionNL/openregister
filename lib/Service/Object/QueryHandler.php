@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -60,6 +59,13 @@ use Psr\Log\LoggerInterface;
  */
 class QueryHandler
 {
+    /**
+     * Hard maximum page size for list/search requests. A client-supplied
+     * `_limit` above this is clamped down, so an oversized request (e.g.
+     * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
+     */
+    public const MAX_PAGE_SIZE = 1000;
+
     /**
      * Constructor for QueryHandler.
      *
@@ -289,34 +295,7 @@ class QueryHandler
         // Strip deprecated _source parameter (silently ignore for backward compatibility).
         unset($query['_source']);
 
-        // Use SOLR if enabled in config, unless relation-based search params are provided.
-        $hasIds        = isset($query['_ids']) === true;
-        $hasUses       = isset($query['_uses']) === true;
-        $hasIdsParam   = $ids !== null;
-        $hasUsesParam  = $uses !== null;
-        $isSolrEnabled = $this->searchQueryHandler->isSolrAvailable();
-
-        if ($isSolrEnabled === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false
-        ) {
-            // Forward to Index service - let it handle availability checks and error handling.
-            $indexService = $this->container->get(IndexService::class);
-            $result       = $indexService->searchObjects(
-                query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                deleted: $deleted
-            );
-            $result['@self']['source']  = 'index';
-            $result['@self']['query']   = $query;
-            $result['@self']['rbac']    = $_rbac;
-            $result['@self']['multi']   = $_multitenancy;
-            $result['@self']['deleted'] = $deleted;
-            return $result;
-        }
-
-        // Use database search.
+        // Use database search (the only search backend; the external Solr/index tier was removed).
         $result = $this->searchObjectsPaginatedDatabase(
             query: $query,
             _rbac: $_rbac,
@@ -369,7 +348,8 @@ class QueryHandler
         $metrics   = [];
 
         // Extract pagination parameters (limit=0 is valid for count/facets-only requests).
-        $limit  = max(0, (int) ($query['_limit'] ?? 20));
+        // Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
+        $limit  = min(max(0, (int) ($query['_limit'] ?? 20)), self::MAX_PAGE_SIZE);
         $offset = $query['_offset'] ?? null;
         $page   = $query['_page'] ?? null;
 
@@ -494,6 +474,16 @@ class QueryHandler
             $filesStart = microtime(true);
             $this->renderHandler->attachLightweightFilesToRows(rows: $results);
             $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+
+            // Cheap path also skips renderEntity, which is where translatable
+            // properties get projected to the negotiated language. Without this,
+            // list rows return raw language-keyed maps (e.g. {"nl":...}) while the
+            // single-object read returns a projected string. Resolve them here so
+            // both paths agree. No-op for `?_translations=all` and for schemas with
+            // no translatable properties (both early-return in the handler).
+            $translateStart = microtime(true);
+            $this->renderHandler->resolveTranslationsForRows(rows: $results);
+            $metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
         }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).

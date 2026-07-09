@@ -499,7 +499,11 @@ class DeleteObject
     ): bool {
         // Read-only projection guard: a schema served from an external source
         // (x-openregister-object-source) is read-only — deletes are not allowed.
-        $objectSource = ($schema instanceof Schema) ? $schema->getObjectSource() : null;
+        $objectSource = null;
+        if ($schema instanceof Schema) {
+            $objectSource = $schema->getObjectSource();
+        }
+
         if ($objectSource !== null) {
             throw new \RuntimeException(
                 sprintf(

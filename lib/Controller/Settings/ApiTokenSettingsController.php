@@ -203,7 +203,7 @@ class ApiTokenSettingsController extends Controller
                     'scopes'   => $response->getHeader('X-OAuth-Scopes') ?? [],
                 ]
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 data: [
                     'success' => false,
@@ -270,7 +270,7 @@ class ApiTokenSettingsController extends Controller
                     'instance' => $apiUrl,
                 ]
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 data: [
                     'success' => false,

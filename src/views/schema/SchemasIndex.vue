@@ -406,6 +406,6 @@ export default {
 /* Local configuration badge - orange */
 .managedBadge--local {
 	background: var(--color-warning);
-	color: var(--color-main-background);
+	color: var(--color-main-text);
 }
 </style>

@@ -344,6 +344,8 @@ class ChatService
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
+                // Per-run LLM token/latency usage for run-cost recording (run-analytics).
+                'usage'     => $this->responseHandler->lastUsage,
             ];
         } catch (Exception $e) {
             $this->logger->error(

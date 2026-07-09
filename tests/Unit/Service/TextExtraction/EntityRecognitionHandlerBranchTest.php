@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
@@ -48,7 +49,8 @@ class EntityRecognitionHandlerBranchTest extends TestCase
             $this->entityRelationMapper,
             $this->db,
             $this->logger,
-            $this->settingsService
+            $this->settingsService,
+            $this->createMock(AnonymisationBackendService::class)
         );
     }
 
@@ -129,12 +131,15 @@ class EntityRecognitionHandlerBranchTest extends TestCase
         $this->assertSame(0, $result['entities_found']);
     }
 
-    public function testExtractFromChunkUnknownMethodThrows(): void
+    public function testExtractFromChunkUnknownMethodFallsBackToRegex(): void
     {
+        // Since resolveMethod() was added, unknown methods fall back to regex
+        // (via AnonymisationBackendService::getState()->effectiveMethod or regex
+        // as last resort) instead of throwing. "Some text" contains no PII patterns
+        // so the result has 0 entities.
         $chunk = $this->createChunkMock(1, 'file', 1, 'Some text');
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Unknown detection method');
-        $this->handler->extractFromChunk($chunk, ['method' => 'unknown_method']);
+        $result = $this->handler->extractFromChunk($chunk, ['method' => 'unknown_method']);
+        $this->assertSame(0, $result['entities_found']);
     }
 
     public function testProcessSourceChunksWithNoChunks(): void

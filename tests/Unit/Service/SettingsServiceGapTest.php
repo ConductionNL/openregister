@@ -32,7 +32,6 @@ use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
-use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\ICacheFactory;
@@ -73,9 +72,6 @@ class SettingsServiceGapTest extends TestCase
     /** @var MockObject|CacheSettingsHandler */
     private $cacheSettingsHandler;
 
-    /** @var MockObject|SolrSettingsHandler */
-    private $solrSettingsHandler;
-
     /** @var MockObject|ConfigurationSettingsHandler */
     private $configurationSettingsHandler;
 
@@ -104,7 +100,6 @@ class SettingsServiceGapTest extends TestCase
         $this->fileSettingsHandler         = $this->createMock(FileSettingsHandler::class);
         $this->objectRetentionHandler      = $this->createMock(ObjectRetentionHandler::class);
         $this->cacheSettingsHandler        = $this->createMock(CacheSettingsHandler::class);
-        $this->solrSettingsHandler         = $this->createMock(SolrSettingsHandler::class);
         $this->configurationSettingsHandler = $this->createMock(ConfigurationSettingsHandler::class);
 
         $this->service = new SettingsService(
@@ -129,7 +124,6 @@ class SettingsServiceGapTest extends TestCase
             $this->fileSettingsHandler,
             $this->objectRetentionHandler,
             $this->cacheSettingsHandler,
-            $this->solrSettingsHandler,
             $this->configurationSettingsHandler
         );
     }
@@ -307,130 +301,6 @@ class SettingsServiceGapTest extends TestCase
     }
 
     // =============================================
-    // compareFields tests (public, line 1626)
-    // =============================================
-
-    /**
-     * Test compareFields finds missing fields
-     *
-     * @return void
-     */
-    public function testCompareFieldsFindsMissing(): void
-    {
-        $actual   = [];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-            'body'  => ['type' => 'text_general'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(2, $result['missing']);
-        $this->assertEquals(2, $result['summary']['missing_count']);
-    }
-
-    /**
-     * Test compareFields finds extra fields
-     *
-     * @return void
-     */
-    public function testCompareFieldsFindsExtra(): void
-    {
-        $actual = [
-            'title'       => ['type' => 'text_general'],
-            'extra_field' => ['type' => 'string'],
-        ];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['extra']);
-        $this->assertEquals('extra_field', $result['extra'][0]['field']);
-    }
-
-    /**
-     * Test compareFields finds mismatched types
-     *
-     * @return void
-     */
-    public function testCompareFieldsFindsMismatched(): void
-    {
-        $actual = [
-            'title' => ['type' => 'string'],
-        ];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['mismatched']);
-        $this->assertContains('type', $result['mismatched'][0]['differences']);
-    }
-
-    /**
-     * Test compareFields with matching fields
-     *
-     * @return void
-     */
-    public function testCompareFieldsAllMatch(): void
-    {
-        $fields = [
-            'title' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->service->compareFields($fields, $fields);
-
-        $this->assertEmpty($result['missing']);
-        $this->assertEmpty($result['extra']);
-        $this->assertEmpty($result['mismatched']);
-        $this->assertEquals(0, $result['summary']['total_differences']);
-    }
-
-    /**
-     * Test compareFields skips system fields starting with _
-     *
-     * @return void
-     */
-    public function testCompareFieldsSkipsSystemFields(): void
-    {
-        $actual = [
-            '_version_' => ['type' => 'plong'],
-            'title'     => ['type' => 'text_general'],
-        ];
-        $expected = [
-            'title' => ['type' => 'text_general'],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        // _version_ should be skipped.
-        $this->assertEmpty($result['extra']);
-    }
-
-    /**
-     * Test compareFields detects multiValued mismatch
-     *
-     * @return void
-     */
-    public function testCompareFieldsDetectsMultiValuedMismatch(): void
-    {
-        $actual = [
-            'tags' => ['type' => 'string', 'multiValued' => true, 'docValues' => false],
-        ];
-        $expected = [
-            'tags' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
-        ];
-
-        $result = $this->service->compareFields($actual, $expected);
-
-        $this->assertCount(1, $result['mismatched']);
-        $this->assertContains('multiValued', $result['mismatched'][0]['differences']);
-    }
-
-    // =============================================
     // getDatabaseInfo tests (public, line 858)
     // =============================================
 
@@ -595,51 +465,16 @@ class SettingsServiceGapTest extends TestCase
     // =============================================
 
     /**
-     * Test getSearchBackendConfig returns defaults when empty
+     * Test getSearchBackendConfig always returns database as active backend
      *
      * @return void
      */
-    public function testGetSearchBackendConfigReturnsDefaultsWhenEmpty(): void
+    public function testGetSearchBackendConfigReturnsDatabase(): void
     {
-        $this->config
-            ->method('getAppValue')
-            ->willReturn('');
-
         $result = $this->service->getSearchBackendConfig();
-        $this->assertEquals('solr', $result['active']);
-        $this->assertContains('solr', $result['available']);
-        $this->assertContains('elasticsearch', $result['available']);
-    }
-
-    /**
-     * Test getSearchBackendConfig returns stored config
-     *
-     * @return void
-     */
-    public function testGetSearchBackendConfigReturnsStoredConfig(): void
-    {
-        $stored = ['active' => 'elasticsearch', 'available' => ['solr', 'elasticsearch']];
-        $this->config
-            ->method('getAppValue')
-            ->willReturn(json_encode($stored));
-
-        $result = $this->service->getSearchBackendConfig();
-        $this->assertEquals('elasticsearch', $result['active']);
-    }
-
-    /**
-     * Test getSearchBackendConfig handles exception
-     *
-     * @return void
-     */
-    public function testGetSearchBackendConfigHandlesException(): void
-    {
-        $this->config
-            ->method('getAppValue')
-            ->willThrowException(new \Exception('DB error'));
-
-        $result = $this->service->getSearchBackendConfig();
-        $this->assertEquals('solr', $result['active']);
+        $this->assertEquals('database', $result['active']);
+        $this->assertContains('database', $result['available']);
+        $this->assertCount(1, $result['available']);
     }
 
     // =============================================

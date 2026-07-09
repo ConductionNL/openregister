@@ -24,9 +24,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use Exception;
-use ReflectionClass;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use Psr\Log\LoggerInterface;
@@ -292,396 +290,11 @@ class FileSettingsController extends Controller
     }//end testOpenAnonymiserConnection()
 
     /**
-     * Get file collection field status
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with file collection fields
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function getFileCollectionFields(): JSONResponse
-    {
-        try {
-            $solrSchemaService = $this->container->get(IndexService::class);
-            $status            = $solrSchemaService->getFileCollectionFieldStatus();
-
-            return new JSONResponse(
-                data: [
-                    'success'    => true,
-                    'collection' => 'files',
-                    'status'     => $status,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to get file collection field status: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }
-    }//end getFileCollectionFields()
-
-    /**
-     * Create missing fields in file collection
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with creation result
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function createMissingFileFields(): JSONResponse
-    {
-        try {
-            $solrSchemaService = $this->container->get(IndexService::class);
-            $guzzleSolrService = $this->container->get(IndexService::class);
-
-            // Switch to file collection.
-            $fileCollection = $this->settingsService->getSolrSettingsOnly()['fileCollection'] ?? null;
-            if ($fileCollection === null || $fileCollection === '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'File collection not configured',
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            // Set active collection to file collection temporarily.
-            $originalCollection = $guzzleSolrService->getActiveCollectionName();
-            $guzzleSolrService->setActiveCollection($fileCollection);
-
-            // Create missing file metadata fields using reflection to call private method.
-            $reflection = new ReflectionClass($solrSchemaService);
-            $method     = $reflection->getMethod('ensureFileMetadataFields');
-            $result     = $method->invoke($solrSchemaService, true);
-
-            // Restore original collection.
-            $guzzleSolrService->setActiveCollection($originalCollection);
-
-            // Determine message based on result.
-            $message = 'Failed to ensure file metadata fields';
-            if ($result === true) {
-                $message = 'File metadata fields ensured successfully';
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'    => $result,
-                    'collection' => 'files',
-                    'message'    => $message,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to create missing file fields: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end createMissingFileFields()
-
-    /**
-     * Warmup files - Extract text and index in SOLR file collection
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with warmup result
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function warmupFiles(): JSONResponse
-    {
-        try {
-            // Get request parameters.
-            $maxFiles  = (int) $this->request->getParam('max_files', 100);
-            $batchSize = (int) $this->request->getParam('batch_size', 50);
-            // Note: file_types parameter not currently used.
-            $skipIndexed = $this->request->getParam('skip_indexed', true);
-            $mode        = $this->request->getParam('mode', 'parallel');
-
-            // Validate parameters.
-            $maxFiles = min($maxFiles, 5000);
-            // Max 5000 files.
-            $batchSize = min($batchSize, 500);
-            // Max 500 per batch.
-            $this->logger->info(
-                message: '[SettingsController] Starting file warmup',
-                context: [
-                    'file'         => __FILE__,
-                    'line'         => __LINE__,
-                    'max_files'    => $maxFiles,
-                    'batch_size'   => $batchSize,
-                    'skip_indexed' => $skipIndexed,
-                ]
-            );
-
-            // Get IndexService and TextExtractionService.
-            $guzzleSolrService = $this->container->get(IndexService::class);
-            $textExtractSvc    = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-
-            // Get files that need processing.
-            $filesToProcess = [];
-            if ($skipIndexed === true) {
-                $notIndexed = $textExtractSvc->findNotIndexedInSolr('file', $maxFiles);
-                foreach ($notIndexed as $fileId) {
-                    $filesToProcess[] = $fileId;
-                }
-            }
-
-            if ($skipIndexed === false) {
-                $completed = $textExtractSvc->findByStatus('file', 'completed', $maxFiles, 0);
-                foreach ($completed as $fileId) {
-                    $filesToProcess[] = $fileId;
-                }
-            }
-
-            // If no files to process, return early.
-            if (empty($filesToProcess) === true) {
-                return new JSONResponse(
-                    data: [
-                        'success'         => true,
-                        'message'         => 'No files to process',
-                        'files_processed' => 0,
-                        'indexed'         => 0,
-                        'failed'          => 0,
-                    ]
-                );
-            }
-
-            // Process files in batches.
-            $totalIndexed = 0;
-            $totalFailed  = 0;
-            $allErrors    = [];
-
-            $batches = array_chunk($filesToProcess, $batchSize);
-            foreach ($batches as $batch) {
-                $result        = $guzzleSolrService->indexFiles($batch);
-                $totalIndexed += $result['indexed'];
-                $totalFailed  += $result['failed'];
-                $allErrors     = array_merge($allErrors, $result['errors']);
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'         => true,
-                    'message'         => 'File warmup completed',
-                    'files_processed' => count($filesToProcess),
-                    'indexed'         => $totalIndexed,
-                    'failed'          => $totalFailed,
-                    'errors'          => array_slice($allErrors, 0, 20),
-                // First 20 errors.
-                    'mode'            => $mode,
-                ]
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[SettingsController] File warmup failed',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'File warmup failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end warmupFiles()
-
-    /**
-     * Index a specific file in SOLR
-     *
-     * @param int $fileId File ID to index
-     *
-     * @return JSONResponse Indexing result
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int},
-     *     array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function indexFile(int $fileId): JSONResponse
-    {
-        try {
-            $guzzleSolrService = $this->container->get(IndexService::class);
-
-            $result = $guzzleSolrService->indexFiles([$fileId]);
-
-            if ($result['indexed'] > 0) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'File indexed successfully',
-                        'file_id' => $fileId,
-                    ]
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => $result['errors'][0] ?? 'Failed to index file',
-                    'file_id' => $fileId,
-                ],
-                statusCode: 422
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[SettingsController] Failed to index file',
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'file_id' => $fileId,
-                    'error'   => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to index file: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end indexFile()
-
-    /**
-     * Reindex all files
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with reindex result
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function reindexFiles(): JSONResponse
-    {
-        try {
-            // Get all completed file texts.
-            $textExtractSvc    = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-            $guzzleSolrService = $this->container->get(IndexService::class);
-
-            $maxFiles  = (int) $this->request->getParam('max_files', 1000);
-            $batchSize = (int) $this->request->getParam('batch_size', 100);
-
-            // Get all completed extractions.
-            $fileIds = $textExtractSvc->findByStatus('file', 'completed', $maxFiles, 0);
-
-            if (empty($fileIds) === true) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'No files to reindex',
-                        'indexed' => 0,
-                    ]
-                );
-            }
-
-            // Process in batches.
-            $totalIndexed = 0;
-            $totalFailed  = 0;
-            $allErrors    = [];
-
-            $batches = array_chunk($fileIds, $batchSize);
-            foreach ($batches as $batch) {
-                $result        = $guzzleSolrService->indexFiles($batch);
-                $totalIndexed += $result['indexed'];
-                $totalFailed  += $result['failed'];
-                $allErrors     = array_merge($allErrors, $result['errors']);
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'         => true,
-                    'message'         => 'Reindex completed',
-                    'files_processed' => count($fileIds),
-                    'indexed'         => $totalIndexed,
-                    'failed'          => $totalFailed,
-                    'errors'          => array_slice($allErrors, 0, 20),
-                ]
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[SettingsController] Reindex files failed',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Reindex failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end reindexFiles()
-
-    /**
-     * Get file index statistics
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse File index statistics
-     *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>,
-     *     array<never, never>>|JSONResponse<500,
-     *     array{success: false, message: string}, array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     */
-    public function getFileIndexStats(): JSONResponse
-    {
-        try {
-            $guzzleSolrService = $this->container->get(IndexService::class);
-            $stats = $guzzleSolrService->getFileIndexStats();
-
-            return new JSONResponse(data: $stats);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[SettingsController] Failed to get file index stats',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to get statistics: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end getFileIndexStats()
-
-    /**
      * Get file extraction statistics
      *
      * Combines multiple data sources for comprehensive file statistics:
      * - FileMapper: Total files in Nextcloud (from oc_filecache, bypasses rights logic)
      * - FileTextMapper: Extraction status (from oc_openregister_file_texts)
-     * - IndexService: Chunk statistics (from SOLR index)
      *
      * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
      *
@@ -694,14 +307,12 @@ class FileSettingsController extends Controller
      *     - pendingFiles: Files discovered and waiting for extraction
      *       (status='pending')
      *     - untrackedFiles: Files in Nextcloud not yet discovered
-     *     - totalChunks: Number of text chunks in SOLR
-     *       (one file = multiple chunks)
      *     - completed, failed, indexed, processing, vectorized:
      *       Detailed processing status counts
      *
      * @psalm-return JSONResponse<200,
      *     array{success: true, totalFiles: 0|mixed, processedFiles: 0|mixed,
-     *     pendingFiles: 0|mixed, untrackedFiles: 0|mixed, totalChunks: 0|mixed,
+     *     pendingFiles: 0|mixed, untrackedFiles: 0|mixed,
      *     extractedTextStorageMB: string, totalFilesStorageMB: string,
      *     completed: 0|mixed, failed: 0|mixed, indexed: 0|mixed,
      *     processing: 0|mixed, vectorized: 0|mixed, error?: string},
@@ -721,10 +332,6 @@ class FileSettingsController extends Controller
             $textExtractSvc = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
             $dbStats        = $textExtractSvc->getExtractionStats('file');
 
-            // Get SOLR statistics.
-            $guzzleSolrService = $this->container->get(IndexService::class);
-            $solrStats         = $guzzleSolrService->getFileIndexStats();
-
             // Calculate storage in MB.
             $extractedTextMB     = round($dbStats['total_text_size'] / 1024 / 1024, 2);
             $totalFilesStorageMB = round($totalFilesSize / 1024 / 1024, 2);
@@ -742,7 +349,6 @@ class FileSettingsController extends Controller
                 // Files discovered and waiting for extraction.
                     'untrackedFiles'         => max(0, $untrackedFiles),
                 // Files not yet discovered.
-                    'totalChunks'            => $solrStats['total_chunks'] ?? 0,
                     'extractedTextStorageMB' => number_format($extractedTextMB, 2),
                     'totalFilesStorageMB'    => number_format($totalFilesStorageMB, 2),
                     'completed'              => $dbStats['completed'],
@@ -761,7 +367,6 @@ class FileSettingsController extends Controller
                     'processedFiles'         => 0,
                     'pendingFiles'           => 0,
                     'untrackedFiles'         => 0,
-                    'totalChunks'            => 0,
                     'extractedTextStorageMB' => '0.00',
                     'totalFilesStorageMB'    => '0.00',
                     'completed'              => 0,

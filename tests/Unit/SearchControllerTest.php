@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Tests\Unit;
 
 use OCA\OpenRegister\Controller\SearchController;
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -40,8 +40,8 @@ class SearchControllerTest extends TestCase
     public function testSearchWithSingleTerm(): void
     {
         // Create mock objects.
-        $request = $this->createMock(IRequest::class);
-        $indexService = $this->createMock(IndexService::class);
+        $request       = $this->createMock(IRequest::class);
+        $objectService = $this->createMock(ObjectService::class);
 
         // Set up request mock to return parameters.
         $request->method('getParam')
@@ -49,19 +49,19 @@ class SearchControllerTest extends TestCase
                 ['query', '', 'test'],
                 ['offset', 0, 0],
                 ['limit', 25, 25],
+                ['_search', [], []],
             ]);
 
-        // Set up index service mock to return empty results.
-        $indexService->expects($this->once())
-            ->method('searchObjects')
+        // Set up object service mock to return empty results.
+        $objectService->expects($this->once())
+            ->method('searchObjectsPaginated')
             ->willReturn([
-                'objects' => [],
-                'facets' => [],
-                'total' => 0
+                'results' => [],
+                'total'   => 0,
             ]);
 
         // Create controller instance.
-        $controller = new SearchController('openregister', $request, $indexService);
+        $controller = new SearchController('openregister', $request, $objectService);
 
         // Execute search.
         $response = $controller->search();
@@ -80,8 +80,8 @@ class SearchControllerTest extends TestCase
     public function testSearchWithEmptyTerms(): void
     {
         // Create mock objects.
-        $request = $this->createMock(IRequest::class);
-        $indexService = $this->createMock(IndexService::class);
+        $request       = $this->createMock(IRequest::class);
+        $objectService = $this->createMock(ObjectService::class);
 
         // Set up request mock to return empty search terms.
         $request->method('getParam')
@@ -89,19 +89,19 @@ class SearchControllerTest extends TestCase
                 ['query', '', ''],
                 ['offset', 0, 0],
                 ['limit', 25, 25],
+                ['_search', [], []],
             ]);
 
-        // Set up index service mock to return empty results.
-        $indexService->expects($this->once())
-            ->method('searchObjects')
+        // Set up object service mock to return empty results.
+        $objectService->expects($this->once())
+            ->method('searchObjectsPaginated')
             ->willReturn([
-                'objects' => [],
-                'facets' => [],
-                'total' => 0
+                'results' => [],
+                'total'   => 0,
             ]);
 
         // Create controller instance.
-        $controller = new SearchController('openregister', $request, $indexService);
+        $controller = new SearchController('openregister', $request, $objectService);
 
         // Execute search.
         $response = $controller->search();
@@ -120,8 +120,8 @@ class SearchControllerTest extends TestCase
     public function testSearchWithResults(): void
     {
         // Create mock objects.
-        $request = $this->createMock(IRequest::class);
-        $indexService = $this->createMock(IndexService::class);
+        $request       = $this->createMock(IRequest::class);
+        $objectService = $this->createMock(ObjectService::class);
 
         // Set up request mock to return a search term.
         $request->method('getParam')
@@ -129,25 +129,25 @@ class SearchControllerTest extends TestCase
                 ['query', '', 'customer'],
                 ['offset', 0, 0],
                 ['limit', 25, 25],
+                ['_search', [], []],
             ]);
 
         // Create mock search results.
         $mockResults = [
-            'objects' => [
+            'results' => [
                 ['id' => '1', 'name' => 'Customer Service'],
                 ['id' => '2', 'name' => 'Customer Support'],
             ],
-            'facets' => [],
-            'total' => 2
+            'total' => 2,
         ];
 
-        // Set up index service mock to return results.
-        $indexService->expects($this->once())
-            ->method('searchObjects')
+        // Set up object service mock to return results.
+        $objectService->expects($this->once())
+            ->method('searchObjectsPaginated')
             ->willReturn($mockResults);
 
         // Create controller instance.
-        $controller = new SearchController('openregister', $request, $indexService);
+        $controller = new SearchController('openregister', $request, $objectService);
 
         // Execute search.
         $response = $controller->search();
