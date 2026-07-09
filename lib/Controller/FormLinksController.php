@@ -386,6 +386,7 @@ class FormLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: returns the current user's own Nextcloud Forms; no caller-supplied object id.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */

@@ -35,6 +35,10 @@ require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
 // the nextcloud/ocp stubs reference but the OCP package does not ship.
 require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
 
+// Load the Doriath contract stubs + test fixtures for the credential-broker
+// Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
+require_once __DIR__ . '/stubs/DoriathStubs.php';
+
 /**
  * Resolve the Nextcloud installation root.
  *

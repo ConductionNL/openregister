@@ -154,6 +154,8 @@ use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\HandoffLifecycleListener;
+use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\NoteService;
@@ -167,6 +169,13 @@ use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
+use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
+use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
+use OCA\OpenRegister\Listener\TablesTableDeletedListener;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -322,7 +331,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     public function __construct()
     {
@@ -336,11 +345,26 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
      */
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
+
+        // Credential broker (credential-broker-service + credential-doriath-leaf):
+        // bind the CredentialStore abstraction through the CredentialStoreResolver
+        // (design D-A) — the Doriath application-vault leaf when the doriath app is
+        // eligible (enabled + service classes + application-scoped seam methods +
+        // OR self-registration), else the NC encrypted per-user vault leaf. The
+        // broker and controller keep depending only on the CredentialStore
+        // interface; this factory is the ONLY place the selection happens.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+            static function ($c) {
+                return $c->get(\OCA\OpenRegister\Service\Credential\CredentialStoreResolver::class)->resolve();
+            }
+        );
 
         // Register request-scoped LanguageService as a singleton (shared per request).
         $context->registerService(
@@ -377,6 +401,21 @@ class Application extends App implements IBootstrap
         // identity+trusted-IP) and pre-emptively blocks locked-out callers.
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
+
+        // Register the ChatCompatMiddleware (or-chat-proxy-deprecation): adds
+        // Deprecation/Sunset/Link response headers to every chat/agents/
+        // conversations controller response, and — only when an operator
+        // opts in via the `openregister.chat.proxyTo` appconfig value —
+        // forwards those requests server-side to hermiq. Off by default;
+        // any failure falls back to serving the request locally unchanged.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
+
+        // Register the ObjectSourceErrorMiddleware (dbal-virtual-registers D8):
+        // maps DbalObjectSourceException thrown during reads against an
+        // external-database-backed schema onto its declared 502/503 status —
+        // an unreachable or failing external database must never surface as a
+        // bare 500. All other exceptions are rethrown untouched.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware::class);
 
         // Bind the dormant Path B PDF anonymisation fallback bridge to its
         // null implementation. Tenants enabling Path B replace this binding
@@ -552,7 +591,7 @@ class Application extends App implements IBootstrap
      *   the length is structural to the NC DI pattern and cannot be shortened without
      *   obscuring the circular-dependency resolution order.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
@@ -689,7 +728,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerCacheAndFileHandlers(IRegistrationContext $context): void
     {
@@ -734,7 +773,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerConfigurationServices(IRegistrationContext $context): void
     {
@@ -911,7 +950,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerSettingsServices(IRegistrationContext $context): void
     {
@@ -977,7 +1016,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerVectorizationService(IRegistrationContext $context): void
     {
@@ -1008,7 +1047,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerObjectInteractionServices(IRegistrationContext $context): void
     {
@@ -1018,7 +1057,8 @@ class Application extends App implements IBootstrap
                 return new TaskService(
                     calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
                     userSession: $container->get('OCP\IUserSession'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    urlGenerator: $container->get('OCP\IURLGenerator')
                 );
             }
         );
@@ -1059,7 +1099,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-5
+     * @spec openspec/specs/integration-registry/spec.md
      */
     private function registerIntegrationRegistry(IRegistrationContext $context): void
     {
@@ -1152,7 +1192,8 @@ class Application extends App implements IBootstrap
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
                     registry: $container->get(IntegrationRegistry::class),
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class)
                 );
             }
         );
@@ -1190,7 +1231,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/object-source-providers/tasks.md#task-1.3
+     * @spec openspec/changes/object-source-providers/tasks.md#1-provider-interface-registry
      */
     private function registerObjectSourceProviders(IRegistrationContext $context): void
     {
@@ -1294,6 +1335,109 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // DBAL virtual-register services + provider (dbal-virtual-registers).
+        // The connection factory depends only on the CredentialStore interface,
+        // which is already bound to the active leaf via CredentialStoreResolver.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory(
+                    credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\SqlTypeMapper(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService(
+                    connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
+                    typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            DbalObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new DbalObjectSourceProvider(
+                    sourceMapper: $container->get(\OCA\OpenRegister\Db\SourceMapper::class),
+                    connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // Tables provider stack — a guarded reader (the sole Tables-boundary),
+        // pure mappers, a schema-sync reconciler, and the provider itself.
+        $context->registerService(
+            TablesUuidDeriver::class,
+            function () {
+                return new TablesUuidDeriver();
+            }
+        );
+
+        $context->registerService(
+            TablesTableReader::class,
+            function (ContainerInterface $container) {
+                return new TablesTableReader(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesColumnMapper::class,
+            function (ContainerInterface $container) {
+                return new TablesColumnMapper(
+                    uuidDeriver: $container->get(TablesUuidDeriver::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesSchemaSyncService::class,
+            function (ContainerInterface $container) {
+                return new TablesSchemaSyncService(
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    columnMapper: $container->get(TablesColumnMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new TablesObjectSourceProvider(
+                    reader: $container->get(TablesTableReader::class),
+                    columnMapper: $container->get(TablesColumnMapper::class),
+                    uuidDeriver: $container->get(TablesUuidDeriver::class),
+                    syncService: $container->get(TablesSchemaSyncService::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
     }//end registerObjectSourceProviders()
 
     /**
@@ -1309,7 +1453,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
+     * @spec openspec/specs/integration-registry/spec.md
      */
     private function registerBuiltinIntegrationProviders(IRegistrationContext $context): void
     {
@@ -1372,7 +1516,7 @@ class Application extends App implements IBootstrap
         // in-repo as the worked external-storage example; routed
         // through ExternalIntegrationRouter, credentials on the
         // OpenConnector `xwiki` source.
-        // @spec openspec/changes/integration-xwiki/tasks.md.
+        // @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
         $context->registerService(
             XwikiProvider::class,
             function (ContainerInterface $container) {
@@ -1390,7 +1534,7 @@ class Application extends App implements IBootstrap
         // + router are resolved lazily so the service loads even when
         // OpenConnector is absent, mirroring the unconfigured-source
         // 503-with-cause pattern.
-        // @spec openspec/changes/integration-xwiki/tasks.md.
+        // @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\XwikiLinkService::class,
             function (ContainerInterface $container) {
@@ -1409,7 +1553,7 @@ class Application extends App implements IBootstrap
         // ExternalIntegrationRouter, credentials (the `apikey` header) on the
         // OpenConnector `kvk` source. Centralises pipelinq's KvkApiClient
         // onto the canonical OR/OpenConnector path (ADR-022).
-        // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+        // @spec openspec/specs/integration-registry/spec.md (canonical spec).
         $context->registerService(
             KvkProvider::class,
             function (ContainerInterface $container) {
@@ -1428,7 +1572,7 @@ class Application extends App implements IBootstrap
         // `api_token` query param) on the OpenConnector `opencorporates`
         // source. Centralises pipelinq's OpenCorporatesApiClient onto the
         // canonical OR/OpenConnector path (ADR-022).
-        // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+        // @spec openspec/specs/integration-registry/spec.md (canonical spec).
         $context->registerService(
             OpenCorporatesProvider::class,
             function (ContainerInterface $container) {
@@ -1452,7 +1596,7 @@ class Application extends App implements IBootstrap
         // the canonical OR/OpenConnector path (ADR-022); all orchestration
         // (provider selection, STOP opt-out, template-approval, 24h session,
         // dedupe, delivery-status) stays in pipelinq.
-        // @spec openspec/changes/messaging-dispatch-leaf/tasks.md.
+        // @spec openspec/specs/integration-registry/spec.md (canonical spec).
         $context->registerService(
             MessageDispatchProvider::class,
             function (ContainerInterface $container) {
@@ -1470,7 +1614,7 @@ class Application extends App implements IBootstrap
         // on the OpenConnector `openproject` source. Tier-2: the
         // OpenProjectLinkMapper backs the linked list so it renders from
         // the cached link rows even when the source is temporarily down.
-        // @spec openspec/changes/integration-openproject/tasks.md.
+        // @spec openspec/specs/integration-openproject/spec.md (canonical spec).
         $context->registerService(
             OpenProjectProvider::class,
             function (ContainerInterface $container) {
@@ -1490,7 +1634,7 @@ class Application extends App implements IBootstrap
         // create / refresh flows go through the OpenConnector
         // `openproject` source, degrading to a 503-with-cause when the
         // source is missing or the upstream is unreachable (wave-5.2).
-        // @spec openspec/changes/integration-openproject/tasks.md.
+        // @spec openspec/specs/integration-openproject/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\OpenProjectLinkService::class,
             function (ContainerInterface $container) {
@@ -1510,7 +1654,7 @@ class Application extends App implements IBootstrap
         // through the registry contract so they surface in the sidebar /
         // widgets / admin UI / OCS caps without per-app glue. Each
         // provider gates on its required NC app via IAppManager.
-        // @spec openspec/changes/integration-calendar/tasks.md.
+        // @spec openspec/specs/integration-calendar/spec.md (canonical spec).
         $context->registerService(
             CalendarProvider::class,
             function (ContainerInterface $container) {
@@ -1524,7 +1668,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // @spec openspec/changes/integration-contacts/tasks.md.
+        // @spec openspec/specs/integration-contacts/spec.md (canonical spec).
         $context->registerService(
             ContactsProvider::class,
             function (ContainerInterface $container) {
@@ -1536,7 +1680,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // @spec openspec/changes/integration-deck/tasks.md.
+        // @spec openspec/specs/integration-deck/spec.md (canonical spec).
         $context->registerService(
             DeckProvider::class,
             function (ContainerInterface $container) {
@@ -1548,7 +1692,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // @spec openspec/changes/integration-email/tasks.md.
+        // @spec openspec/specs/integration-email/spec.md (canonical spec).
         $context->registerService(
             EmailProvider::class,
             function (ContainerInterface $container) {
@@ -1568,7 +1712,7 @@ class Application extends App implements IBootstrap
         // returns an empty array so the slot renders an empty state
         // rather than a 500.
         $greenfieldProviders = [
-            // @spec openspec/changes/integration-activity/tasks.md.
+            // @spec openspec/specs/integration-activity/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
             // NB: AnalyticsProvider + CollectivesProvider + CospendProvider
             // were Tier-1 greenfield until Tier-2; each now takes its own
@@ -1608,7 +1752,7 @@ class Application extends App implements IBootstrap
         // FormLinkMapper injected. The provider still gracefully degrades
         // to the legacy marker scan when the link table is empty (e.g.
         // forms that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-forms/tasks.md.
+        // @spec openspec/specs/integration-forms/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
             function (ContainerInterface $container) {
@@ -1623,7 +1767,7 @@ class Application extends App implements IBootstrap
 
         // SharesProvider — NC core (no app gate); wraps OCP\Share\IManager
         // (query-time, no link table — IShare is first-class NC state).
-        // @spec openspec/changes/integration-shares/tasks.md.
+        // @spec openspec/specs/integration-shares/spec.md (canonical spec).
         $context->registerService(
             SharesProvider::class,
             function (ContainerInterface $container) {
@@ -1639,7 +1783,7 @@ class Application extends App implements IBootstrap
         // backing the ShareLinksController. NO link table / NO cache:
         // OCP\Share\IManager is the single source of truth, resolved
         // lazily through the container (same pattern as SharesProvider).
-        // @spec openspec/changes/integration-shares/tasks.md.
+        // @spec openspec/specs/integration-shares/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\ShareLinkService::class,
             function (ContainerInterface $container) {
@@ -1655,7 +1799,7 @@ class Application extends App implements IBootstrap
         // surface). ObjectService is resolved lazily through the container
         // (same pattern as ShareLinkService) so the resolve path runs the
         // canonical RBAC-respecting read; the token never bypasses RBAC.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\CaseTokenService::class,
             function (ContainerInterface $container) {
@@ -1684,7 +1828,7 @@ class Application extends App implements IBootstrap
         // AnalyticsSeriesService — register/fetch page-level pre-computed
         // chart series (the leaf-foundation SLA-dashboard render surface).
         // RBAC-scoped; (re)declares its page widget on the registry.
-        // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
             function (ContainerInterface $container) {
@@ -1716,7 +1860,7 @@ class Application extends App implements IBootstrap
         // the late-bound NC Bookmarks reads/writes. Needs the container
         // (NC Bookmarks classes are only on the classpath when that app is
         // installed) plus IUserSession to scope the query to the user.
-        // @spec openspec/changes/integration-bookmarks/tasks.md.
+        // @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
         $context->registerService(
             BookmarksProvider::class,
             function (ContainerInterface $container) {
@@ -1733,7 +1877,7 @@ class Application extends App implements IBootstrap
         // IUserSession to scope `getRoomsForUser`. Tier-2: the
         // TalkLinkMapper is injected so the provider can short-circuit
         // the legacy marker scan when the link table is populated.
-        // @spec openspec/changes/integration-talk/tasks.md.
+        // @spec openspec/specs/integration-talk/spec.md (canonical spec).
         $context->registerService(
             TalkProvider::class,
             function (ContainerInterface $container) {
@@ -1750,7 +1894,7 @@ class Application extends App implements IBootstrap
         // TalkLinkService — Tier-2 link/create/unlink service backing
         // the TalkLinksController. Same late-bound Talk pattern as
         // the provider (container for OCA\Talk\* lookups).
-        // @spec openspec/changes/integration-talk/tasks.md.
+        // @spec openspec/specs/integration-talk/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\TalkLinkService::class,
             function (ContainerInterface $container) {
@@ -1769,7 +1913,7 @@ class Application extends App implements IBootstrap
         // direct queries against `oc_polls_*` tables. Replaces the
         // original title-marker convention with a proper persistence
         // layer.
-        // @spec openspec/changes/integration-polls/tasks.md.
+        // @spec openspec/specs/integration-polls/spec.md (canonical spec).
         $context->registerService(
             PollsProvider::class,
             function (ContainerInterface $container) {
@@ -1787,7 +1931,7 @@ class Application extends App implements IBootstrap
         // queries against `oc_flow_operations`. Replaces the Tier-1
         // `[or:{uuid}]` name-marker convention with a proper
         // persistence layer.
-        // @spec openspec/changes/integration-flow/tasks.md.
+        // @spec openspec/specs/integration-flow/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
             function (ContainerInterface $container) {
@@ -1805,7 +1949,7 @@ class Application extends App implements IBootstrap
         // entries are core-generated; this only wraps the wave-5.3
         // MarkerLookupTrait carve-out query with type/actor/date
         // filters + cursor pagination.
-        // @spec openspec/changes/integration-activity/tasks.md.
+        // @spec openspec/specs/integration-activity/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\ActivityFilterService::class,
             function (ContainerInterface $container) {
@@ -1820,7 +1964,7 @@ class Application extends App implements IBootstrap
         // service backing the FlowLinksController. NC Flow operations
         // are configured by admins only; the service enforces that
         // gate via IGroupManager.
-        // @spec openspec/changes/integration-flow/tasks.md.
+        // @spec openspec/specs/integration-flow/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\FlowLinkService::class,
             function (ContainerInterface $container) {
@@ -1840,7 +1984,7 @@ class Application extends App implements IBootstrap
         // provider still gracefully degrades to the legacy `[or:{uuid}]`
         // favorite-name marker scan when the link table is empty (POIs
         // that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-maps/tasks.md.
+        // @spec openspec/specs/integration-maps/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             function (ContainerInterface $container) {
@@ -1857,7 +2001,7 @@ class Application extends App implements IBootstrap
         // backing the MapLinksController. NC Maps favorites are
         // user-scoped; the FavoritesService is resolved lazily via the
         // container so the service loads even when Maps is absent.
-        // @spec openspec/changes/integration-maps/tasks.md.
+        // @spec openspec/specs/integration-maps/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\MapLinkService::class,
             function (ContainerInterface $container) {
@@ -1876,7 +2020,7 @@ class Application extends App implements IBootstrap
         // provider still gracefully degrades to the legacy `[or:{uuid}]`
         // album-name marker scan when the link table is empty (albums
         // that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-photos/tasks.md.
+        // @spec openspec/specs/integration-photos/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
             function (ContainerInterface $container) {
@@ -1893,7 +2037,7 @@ class Application extends App implements IBootstrap
         // backing the PhotoLinksController. NC Photos albums are
         // user-scoped; the AlbumMapper is resolved lazily via the
         // container so the service loads even when Photos is absent.
-        // @spec openspec/changes/integration-photos/tasks.md.
+        // @spec openspec/specs/integration-photos/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\PhotoLinkService::class,
             function (ContainerInterface $container) {
@@ -1912,7 +2056,7 @@ class Application extends App implements IBootstrap
         // The provider still gracefully degrades to the legacy
         // `[or:{uuid}]` slug-marker scan when the link table is empty
         // (pages that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-collectives/tasks.md.
+        // @spec openspec/specs/integration-collectives/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             function (ContainerInterface $container) {
@@ -1930,7 +2074,7 @@ class Application extends App implements IBootstrap
         // `[or:{uuid}]` report-name marker scan when the link table is
         // empty (reports that pre-date the Tier-2 link table; wave-2.2
         // marker-on-name convention).
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/integration-analytics/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
             function (ContainerInterface $container) {
@@ -1948,7 +2092,7 @@ class Application extends App implements IBootstrap
         // name-marker scan (projects + bills) when the link table is empty
         // (entities that pre-date the Tier-2 link table; wave-2.3
         // marker-on-name convention).
-        // @spec openspec/changes/integration-cospend/tasks.md.
+        // @spec openspec/specs/integration-cospend/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             function (ContainerInterface $container) {
@@ -1967,7 +2111,7 @@ class Application extends App implements IBootstrap
         // container (behind a class_exists guard) and bills/projects are
         // read directly from the cospend_* tables, so the service loads
         // even when Cospend is absent.
-        // @spec openspec/changes/integration-cospend/tasks.md.
+        // @spec openspec/specs/integration-cospend/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\CospendLinkService::class,
             function (ContainerInterface $container) {
@@ -1987,7 +2131,7 @@ class Application extends App implements IBootstrap
         // user-scoped; CollectiveService + PageService are resolved lazily
         // via the container so the service loads even when Collectives is
         // absent.
-        // @spec openspec/changes/integration-collectives/tasks.md.
+        // @spec openspec/specs/integration-collectives/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\CollectiveLinkService::class,
             function (ContainerInterface $container) {
@@ -2007,7 +2151,7 @@ class Application extends App implements IBootstrap
         // user-scoped; the ReportService is resolved lazily via
         // `\OCP\Server::get()` behind a class_exists guard so the service
         // loads even when Analytics is absent.
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/integration-analytics/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\AnalyticsLinkService::class,
             function (ContainerInterface $container) {
@@ -2026,7 +2170,7 @@ class Application extends App implements IBootstrap
         // `timemanager_task` when the link table is empty (entries that
         // pre-date the Tier-2 link table; wave-2.4 marker convention). The
         // leaf slug is `time-tracker`; the NC app id is `timemanager`.
-        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        // @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
             function (ContainerInterface $container) {
@@ -2044,7 +2188,7 @@ class Application extends App implements IBootstrap
         // backing the TimeTrackerLinksController. NC TimeManager entries are
         // user-scoped; ClientMapper + TaskMapper are resolved lazily via the
         // container so the service loads even when TimeManager is absent.
-        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        // @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
             function (ContainerInterface $container) {
@@ -2120,7 +2264,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
@@ -2134,6 +2278,13 @@ class Application extends App implements IBootstrap
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+        // Tables schema-lifecycle listener — retire the managed virtual schema of
+        // a deleted Tables table. Guarded by class_exists so boot never fatals on
+        // an instance without the (soft-dependency) Tables app installed.
+        if (class_exists('OCA\\Tables\\Event\\TableDeletedEvent') === true) {
+            $context->registerEventListener('OCA\\Tables\\Event\\TableDeletedEvent', TablesTableDeletedListener::class);
+        }
 
         // Lifecycle annotation listeners — see x-openregister-lifecycle.
         // Order matters: initial state runs on creating; validation runs on updating.
@@ -2213,6 +2364,15 @@ class Application extends App implements IBootstrap
         // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+
+        // Semantic-object handoff engine (ADR-051):
+        // - lifecycle-triggered handoffs run off ObjectTransitionedEvent (real actors only);
+        // - queue-mode drain triggers: schema save + app enable (a provider may
+        // have appeared); the fallback HandoffQueueDrainJob catches the rest.
+        $context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+        $context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 
         // Scheduled-notification per-object dedup pruning (Phase 3.4):
         // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
@@ -2335,7 +2495,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/apphost-observability-engine/tasks.md
+     * @spec openspec/specs/apphost-observability/spec.md
      */
     private function registerAppHostObservability(IRegistrationContext $context): void
     {
@@ -2440,7 +2600,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#mcptoolsservice-provider-discovery-refactor
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
     private function registerMcpToolProviders(IRegistrationContext $context): void
     {
@@ -2631,7 +2791,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     public function boot(IBootContext $context): void
     {
@@ -2682,7 +2842,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/add-features-roadmap-menu/specs/features-roadmap-component/spec.md#requirement-roadmap-item-avatar
+     * @spec openspec/specs/features-roadmap-menu/spec.md
      */
     private function relaxCspForGithubAvatars($server): void
     {
@@ -2737,7 +2897,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-17
+     * @spec openspec/specs/integration-registry/spec.md
      */
     private function bootBuiltinIntegrationProviders($server): void
     {
@@ -2758,49 +2918,49 @@ class Application extends App implements IBootstrap
             TagsProvider::class,
             AuditTrailProvider::class,
             // Leaves: external (OpenConnector-backed).
-            // @spec openspec/changes/integration-xwiki/tasks.md.
+            // @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
             XwikiProvider::class,
-            // @spec openspec/changes/integration-openproject/tasks.md.
+            // @spec openspec/specs/integration-openproject/spec.md (canonical spec).
             OpenProjectProvider::class,
-            // @spec openspec/changes/integration-kvk-opencorporates/tasks.md.
+            // @spec openspec/specs/integration-registry/spec.md (canonical spec).
             KvkProvider::class,
             OpenCorporatesProvider::class,
             // Leaves: NC-native, backend-shipped (wrap existing OR services).
-            // @spec openspec/changes/integration-calendar/tasks.md.
+            // @spec openspec/specs/integration-calendar/spec.md (canonical spec).
             CalendarProvider::class,
-            // @spec openspec/changes/integration-contacts/tasks.md.
+            // @spec openspec/specs/integration-contacts/spec.md (canonical spec).
             ContactsProvider::class,
-            // @spec openspec/changes/integration-deck/tasks.md.
+            // @spec openspec/specs/integration-deck/spec.md (canonical spec).
             DeckProvider::class,
-            // @spec openspec/changes/integration-email/tasks.md.
+            // @spec openspec/specs/integration-email/spec.md (canonical spec).
             EmailProvider::class,
             // Leaves: NC-app-backed greenfield (registry surface only;
             // service + link table land in per-leaf follow-ups).
-            // @spec openspec/changes/integration-activity/tasks.md.
+            // @spec openspec/specs/integration-activity/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // @spec openspec/changes/integration-analytics/tasks.md.
+            // @spec openspec/specs/integration-analytics/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-            // @spec openspec/changes/integration-bookmarks/tasks.md.
+            // @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
             BookmarksProvider::class,
-            // @spec openspec/changes/integration-collectives/tasks.md.
+            // @spec openspec/specs/integration-collectives/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
-            // @spec openspec/changes/integration-cospend/tasks.md.
+            // @spec openspec/specs/integration-cospend/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
-            // @spec openspec/changes/integration-flow/tasks.md.
+            // @spec openspec/specs/integration-flow/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-            // @spec openspec/changes/integration-forms/tasks.md.
+            // @spec openspec/specs/integration-forms/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
-            // @spec openspec/changes/integration-maps/tasks.md.
+            // @spec openspec/specs/integration-maps/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
-            // @spec openspec/changes/integration-photos/tasks.md.
+            // @spec openspec/specs/integration-photos/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
-            // @spec openspec/changes/integration-polls/tasks.md.
+            // @spec openspec/specs/integration-polls/spec.md (canonical spec).
             PollsProvider::class,
-            // @spec openspec/changes/integration-shares/tasks.md.
+            // @spec openspec/specs/integration-shares/spec.md (canonical spec).
             SharesProvider::class,
-            // @spec openspec/changes/integration-talk/tasks.md.
+            // @spec openspec/specs/integration-talk/spec.md (canonical spec).
             TalkProvider::class,
-            // @spec openspec/changes/integration-time-tracker/tasks.md.
+            // @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
 
@@ -2851,7 +3011,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/object-source-providers/tasks.md#task-5.2
+     * @spec openspec/changes/object-source-providers/tasks.md#5-caldav-vtodo-provider
      */
     private function bootObjectSourceProviders($server): void
     {
@@ -2873,6 +3033,9 @@ class Application extends App implements IBootstrap
             FilesObjectSourceProvider::class,
             DeckObjectSourceProvider::class,
             TalkObjectSourceProvider::class,
+            TablesObjectSourceProvider::class,
+            // Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
+            DbalObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {
             try {

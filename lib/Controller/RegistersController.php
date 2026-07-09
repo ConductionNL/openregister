@@ -1575,6 +1575,9 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: RegisterService::find loads the register via RegisterMapper::find(_multitenancy: true);
+     *   register metadata reads are open by design (only create/update/delete are admin-gated) and the response carries no
+     *   cross-object PII.
      *
      * @return JSONResponse The JSON response containing register statistics
      *

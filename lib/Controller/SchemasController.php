@@ -547,6 +547,7 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
+                || str_contains($e->getMessage(), 'handoff') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -759,6 +760,7 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
+                || str_contains($e->getMessage(), 'handoff') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -1080,6 +1082,7 @@ class SchemasController extends Controller
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
+                || str_contains($e->getMessage(), 'handoff') === true
             ) {
                 // Return 400 Bad Request for validation errors with actual error message.
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -1248,7 +1251,14 @@ class SchemasController extends Controller
             }
 
             // Get detailed object statistics for this schema using the existing method.
+            // Default every key: mapper variants (and mocked test doubles) may
+            // return partial maps, which otherwise emits "Undefined array key"
+            // PHP warnings for empty schemas.
             $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
+            $objectStats = array_merge(
+                ['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
+                $objectStats
+            );
 
             // Calculate comprehensive statistics for this schema.
             $stats = [

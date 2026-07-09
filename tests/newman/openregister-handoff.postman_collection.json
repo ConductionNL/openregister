@@ -1,0 +1,571 @@
+{
+  "info": {
+    "_postman_id": "or-semantic-handoff-2026-07-06",
+    "name": "OpenRegister Semantic Object Handoff",
+    "description": "ADR-051 semantic-object-handoff engine surface: availability (available / unavailable / queued states) and execution (executed / parked / not-declared / provider-unavailable / unauthenticated). Self-contained: bootstraps its own source schema (x-openregister-handoff dialect: one ns#Case handoff plus hide- and queue-mode handoffs to a kind nobody implements), a ns#Case provider schema with a complete handoffContract binding, a register, and a source object — and tears everything down afterwards. Spec: openspec/specs/semantic-object-handoff/spec.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{username}}", "type": "string" },
+      { "key": "password", "value": "{{password}}", "type": "string" }
+    ]
+  },
+  "protocolProfileBehavior": {
+    "disableCookies": true
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost", "type": "string" },
+    { "key": "username", "value": "admin", "type": "string" },
+    { "key": "password", "value": "admin", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "00 - Bootstrap fixtures",
+      "item": [
+        {
+          "name": "POST /api/schemas → source schema with x-openregister-handoff",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Handoff Newman Source\",\n  \"slug\": \"handoff-newman-source\",\n  \"properties\": {\n    \"subject\": {\"type\": \"string\"},\n    \"details\": {\"type\": \"string\"},\n    \"channel\": {\"type\": \"string\"},\n    \"status\": {\"type\": \"string\", \"enum\": [\"new\", \"handed-off\"]}\n  },\n  \"configuration\": {\n    \"x-openregister-handoff\": [\n      {\n        \"id\": \"to-case\",\n        \"targetSemanticType\": \"https://openregister.app/ns#Case\",\n        \"trigger\": \"manual\",\n        \"whenUnavailable\": \"hide\",\n        \"mapping\": {\n          \"title\": {\"from\": \"subject\"},\n          \"summary\": {\"template\": \"{{subject}} — {{details}}\"},\n          \"channel\": {\"from\": \"channel\"},\n          \"source\": {\"provenance\": true}\n        },\n        \"onSuccess\": {\"set\": {\"status\": \"handed-off\"}}\n      },\n      {\n        \"id\": \"to-nothing-queue\",\n        \"targetSemanticType\": \"https://openregister.app/ns#NewmanNothing\",\n        \"trigger\": \"manual\",\n        \"whenUnavailable\": \"queue\",\n        \"mapping\": {\"title\": {\"from\": \"subject\"}}\n      },\n      {\n        \"id\": \"to-nothing-hide\",\n        \"targetSemanticType\": \"https://openregister.app/ns#NewmanNothing\",\n        \"trigger\": \"manual\",\n        \"whenUnavailable\": \"hide\",\n        \"mapping\": {\"title\": {\"from\": \"subject\"}}\n      }\n    ]\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// The body's {{subject}}/{{details}} template placeholders are OR dialect",
+                  "// syntax, not Postman variables — make Postman resolve them to themselves.",
+                  "pm.variables.set('subject', '{{subject}}');",
+                  "pm.variables.set('details', '{{details}}');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('source schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.id, 'schema id').to.be.a('number');",
+                  "pm.collectionVariables.set('sourceSchemaId', String(body.id));",
+                  "pm.test('handoff dialect round-tripped', () => {",
+                  "  const handoffs = (body.configuration || {})['x-openregister-handoff'] || [];",
+                  "  pm.expect(handoffs.map(h => h.id)).to.include.members(['to-case', 'to-nothing-queue', 'to-nothing-hide']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/schemas → ns#Case provider with complete handoffContract",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Handoff Newman Case Provider\",\n  \"slug\": \"handoff-newman-case\",\n  \"properties\": {\n    \"onderwerp\": {\"type\": \"string\"},\n    \"omschrijving\": {\"type\": \"string\"},\n    \"kanaal\": {\"type\": \"string\"},\n    \"herkomst\": {\"type\": \"object\"}\n  },\n  \"configuration\": {\n    \"implements\": [\"https://openregister.app/ns#Case\"],\n    \"handoffContract\": {\n      \"https://openregister.app/ns#Case\": {\n        \"title\": \"onderwerp\",\n        \"summary\": \"omschrijving\",\n        \"channel\": \"kanaal\",\n        \"source\": \"herkomst\"\n      }\n    }\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('provider schema created (complete binding accepted)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('providerSchemaId', String(pm.response.json().id));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/schemas with incomplete binding → rejected",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Handoff Newman Incomplete Provider\",\n  \"slug\": \"handoff-newman-incomplete\",\n  \"properties\": {\n    \"onderwerp\": {\"type\": \"string\"}\n  },\n  \"configuration\": {\n    \"implements\": [\"https://openregister.app/ns#Case\"],\n    \"handoffContract\": {\n      \"https://openregister.app/ns#Case\": {\n        \"title\": \"onderwerp\"\n      }\n    }\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('incomplete binding is rejected (handoff-contract-incomplete)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "  pm.expect(pm.response.text()).to.include('handoff-contract-incomplete');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/registers → register with both schemas",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "registers"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Handoff Newman Register\",\n  \"slug\": \"handoff-newman-register\",\n  \"schemas\": [{{sourceSchemaId}}, {{providerSchemaId}}]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST object → source request object",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Kapotte lantaarnpaal\",\n  \"details\": \"Voor de deur\",\n  \"channel\": \"telefoon\",\n  \"status\": \"new\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('source object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "const uuid = (body['@self'] || {}).id || body.id;",
+                  "pm.expect(uuid, 'object uuid').to.be.a('string');",
+                  "pm.collectionVariables.set('sourceObjectId', uuid);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Availability — available / unavailable states",
+      "item": [
+        {
+          "name": "GET handoffs → to-case available, to-nothing-* unavailable",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('availability returns 200', () => pm.response.to.have.status(200));",
+                  "const handoffs = pm.response.json().handoffs;",
+                  "const byId = Object.fromEntries(handoffs.map(h => [h.id, h]));",
+                  "pm.test('to-case is available and names the resolved provider', () => {",
+                  "  pm.expect(byId['to-case'].state).to.eql('available');",
+                  "  pm.expect(byId['to-case'].provider.schema).to.eql('handoff-newman-case');",
+                  "});",
+                  "pm.test('unimplemented kind is unavailable with machine-readable reason', () => {",
+                  "  pm.expect(byId['to-nothing-hide'].state).to.eql('unavailable');",
+                  "  pm.expect(byId['to-nothing-hide'].reason).to.eql('handoff-provider-unavailable');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET handoffs unauthenticated → 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('unauthenticated caller is rejected', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Execute — typed error cases",
+      "item": [
+        {
+          "name": "POST unknown handoff id → 404 handoff-not-declared",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs/ghost",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs", "ghost"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('undeclared handoff → 404', () => pm.response.to.have.status(404));",
+                  "pm.test('typed error code', () => pm.expect(pm.response.json().error).to.eql('handoff-not-declared'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST hide-mode handoff without provider → 409, never 5xx",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs/to-nothing-hide",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs", "to-nothing-hide"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('provider-unavailable → 409 (machine-readable, not a 5xx)', () => pm.response.to.have.status(409));",
+                  "pm.test('typed error code', () => pm.expect(pm.response.json().error).to.eql('handoff-provider-unavailable'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST queue-mode handoff without provider → 202 parked",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs/to-nothing-queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs", "to-nothing-queue"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('queue mode parks with 202', () => pm.response.to.have.status(202));",
+                  "const body = pm.response.json();",
+                  "pm.test('parked result shape', () => {",
+                  "  pm.expect(body.status).to.eql('parked');",
+                  "  pm.expect(body.queueEntry.status).to.eql('parked');",
+                  "  pm.expect(body.correlationId).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET handoffs → parked entry reports queued",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const byId = Object.fromEntries(pm.response.json().handoffs.map(h => [h.id, h]));",
+                  "pm.test('queued state surfaces on availability', () => {",
+                  "  pm.expect(byId['to-nothing-queue'].state).to.eql('queued');",
+                  "  pm.expect(byId['to-nothing-queue'].queueEntry.status).to.eql('parked');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Execute — successful handoff",
+      "item": [
+        {
+          "name": "POST to-case → 200 executed with target ref",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}/handoffs/to-case",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}", "handoffs", "to-case"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('handoff executed', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('executed result shape', () => {",
+                  "  pm.expect(body.status).to.eql('executed');",
+                  "  pm.expect(body.correlationId).to.be.a('string');",
+                  "  pm.expect(body.target.uuid).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('targetObjectId', body.target.uuid);",
+                  "pm.collectionVariables.set('targetSchemaIdResolved', String(body.target.schema));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET target → binding-translated fields + originated-from relation",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{providerSchemaId}}/{{targetObjectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{providerSchemaId}}", "{{targetObjectId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('target readable', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('contract fields translated through the binding', () => {",
+                  "  pm.expect(body.onderwerp).to.eql('Kapotte lantaarnpaal');",
+                  "  pm.expect(body.kanaal).to.eql('telefoon');",
+                  "  pm.expect(body.herkomst.uuid).to.eql(pm.collectionVariables.get('sourceObjectId'));",
+                  "});",
+                  "pm.test('originated-from provenance relation present', () => {",
+                  "  const relations = (body['@self'] || {}).relations || {};",
+                  "  pm.expect(relations['handoff:to-case:originated-from']).to.eql(pm.collectionVariables.get('sourceObjectId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET source → handed-off-to relation + onSuccess status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('onSuccess.set applied through the write path', () => pm.expect(body.status).to.eql('handed-off'));",
+                  "pm.test('handed-off-to provenance relation present', () => {",
+                  "  const relations = (body['@self'] || {}).relations || {};",
+                  "  pm.expect(relations['handoff:to-case:handed-off-to']).to.eql(pm.collectionVariables.get('targetObjectId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99 - Teardown",
+      "item": [
+        {
+          "name": "DELETE target object",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{providerSchemaId}}/{{targetObjectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{providerSchemaId}}", "{{targetObjectId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('target removed (best effort)', () => pm.expect(pm.response.code).to.be.below(500));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE source object",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{sourceSchemaId}}/{{sourceObjectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "objects", "{{registerId}}", "{{sourceSchemaId}}", "{{sourceObjectId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('source removed (best effort)', () => pm.expect(pm.response.code).to.be.below(500));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE register",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "registers", "{{registerId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('register removed (best effort)', () => pm.expect(pm.response.code).to.be.below(500));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE source schema",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{sourceSchemaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas", "{{sourceSchemaId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('source schema removed (best effort)', () => pm.expect(pm.response.code).to.be.below(500));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE provider schema",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{providerSchemaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas", "{{providerSchemaId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('provider schema removed (best effort)', () => pm.expect(pm.response.code).to.be.below(500));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

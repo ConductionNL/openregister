@@ -140,6 +140,20 @@ final class NcEntitySemanticMap
             'requiredApp' => 'tasks',
             'application' => 'tasks',
         ],
+        // Nextcloud Tables hosts MANY tables (unlike the one-entity-kind rows
+        // above), so this row records only the provider + app gate; the concrete
+        // per-table schemas are auto-seeded under the `tables` register by
+        // SeedTablesVirtualSchemas / `occ openregister:tables:sync` (design D7).
+        // The `schema` slug here is a nominal placeholder — no single schema is
+        // seeded from this row.
+        'tables'  => [
+            'register'    => 'tables',
+            'schema'      => 'nc-table',
+            'schemaOrg'   => 'schema:Dataset',
+            'provider'    => 'tables',
+            'requiredApp' => 'tables',
+            'application' => 'tables',
+        ],
     ];
 
     /**

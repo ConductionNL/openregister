@@ -626,6 +626,8 @@ class AgentsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Capability discovery: returns the static tool-registry metadata (ToolRegistry::getAllTools);
+     *   no caller-supplied object id.
      *
      * @return JSONResponse List of available tools with metadata
      *

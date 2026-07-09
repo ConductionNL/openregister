@@ -81,6 +81,8 @@ final class CalculationAnnotationValidator
         'diffDays',
         'formatDate',
         'dateDiff',
+        'dateAdd',
+        'sequence',
         'max',
         'min',
         'coalesce',

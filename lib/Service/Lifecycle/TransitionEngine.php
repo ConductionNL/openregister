@@ -84,6 +84,7 @@ class TransitionEngine
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear resolve→guard→mutate→save flow; splitting would obscure the transition contract.
      *
      * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function transition(string $objectId, string $action): ObjectEntity
     {
@@ -133,6 +134,21 @@ class TransitionEngine
 
         $field       = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
         $transitions = (array) ($annotation['transitions'] ?? []);
+
+        // Static transitions take precedence. Graph mode applies only when no
+        // non-empty static `transitions` map is declared (design: mode
+        // selection & precedence — zero regression for static schemas).
+        if ($transitions === []) {
+            $graph = (array) ($annotation['graph'] ?? []);
+            if ($graph !== []) {
+                return $this->applyGraphTransition(
+                    object: $object,
+                    graph: $graph,
+                    field: $field,
+                    action: $action
+                );
+            }
+        }
 
         if (isset($transitions[$action]) === false || is_array($transitions[$action]) === false) {
             throw new RuntimeException(
@@ -208,6 +224,7 @@ class TransitionEngine
      * without losing safety or fidelity.
      *
      * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function availableActions(string $objectId): array
     {
@@ -247,8 +264,19 @@ class TransitionEngine
             return [];
         }
 
-        $field        = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
-        $transitions  = (array) ($annotation['transitions'] ?? []);
+        $field       = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
+        $transitions = (array) ($annotation['transitions'] ?? []);
+
+        // Static transitions take precedence. When no non-empty static map is
+        // declared but a `graph` block is, derive actions from FK-scoped
+        // siblings at runtime (design: mode selection & precedence).
+        if ($transitions === []) {
+            $graph = (array) ($annotation['graph'] ?? []);
+            if ($graph !== []) {
+                return $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
+            }
+        }
+
         $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
 
@@ -283,6 +311,269 @@ class TransitionEngine
 
         return $available;
     }//end availableActions()
+
+    /**
+     * Derive the candidate transitions for a graph-mode object.
+     *
+     * Reads the parent reference off the object, fetches the ordered sibling
+     * set of the related schema scoped to that parent (through the standard
+     * ObjectService read path, so RBAC + multitenancy apply), locates the
+     * object's current state, and returns the candidate targets permitted by
+     * `allowedMoves`. Terminal states (`finalField` true) are sinks unless
+     * `allowedMoves` is `any`. An orphaned current value (not among the
+     * siblings) recovers to the first sibling. The SAME method backs both
+     * `availableActions()` and the validation inside `transition()`, so a
+     * client can only apply a `move-to-<uuid>` the graph currently offers.
+     *
+     * @param ObjectEntity         $object The transitioning object.
+     * @param array<string, mixed> $graph  The `graph` block off the annotation.
+     * @param string               $field  The lifecycle field name on the object.
+     *
+     * @return array<int, array{action: string, to: string, label: string, requires: ?string, description: ?string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) FK read + sibling fetch + current-state
+     * location + per-move-policy branching are each irreducible steps of the derivation.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      FK read + sibling fetch + current-state
+     * location + per-move-policy branching are each irreducible steps of the derivation.
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function deriveGraphActions(ObjectEntity $object, array $graph, string $field): array
+    {
+        $parentFromKey = (string) ($graph['parentFrom'] ?? '');
+        $data          = $object->getObject() ?? [];
+        $parentValue   = (string) ($data[$parentFromKey] ?? '');
+
+        // No parent reference → nothing to scope the graph to.
+        if ($parentValue === '') {
+            return [];
+        }
+
+        $siblings = $this->fetchOrderedSiblings(graph: $graph, parentValue: $parentValue);
+        if ($siblings === []) {
+            return [];
+        }
+
+        $finalField = (string) ($graph['finalField'] ?? '');
+        $allowed    = (string) ($graph['allowedMoves'] ?? '');
+
+        $currentUuid  = (string) ($data[$field] ?? '');
+        $currentIndex = null;
+        foreach ($siblings as $i => $sibling) {
+            if ((string) $sibling->getUuid() === $currentUuid && $currentUuid !== '') {
+                $currentIndex = $i;
+                break;
+            }
+        }
+
+        // Orphaned / unset current value → recover-to-start: offer the first
+        // sibling only (design decision, Ruben 2026-07-08).
+        if ($currentIndex === null) {
+            return [$this->buildGraphAction(sibling: $siblings[0])];
+        }
+
+        // Terminal lockout: a final state is a sink for forward/adjacent.
+        $currentData  = $siblings[$currentIndex]->getObject() ?? [];
+        $currentFinal = (bool) ($currentData[$finalField] ?? false);
+        if ($currentFinal === true && $allowed !== 'any') {
+            return [];
+        }
+
+        $targets = [];
+        switch ($allowed) {
+            case 'forward':
+                if (isset($siblings[($currentIndex + 1)]) === true) {
+                    $targets[] = $siblings[($currentIndex + 1)];
+                }
+                break;
+            case 'adjacent':
+                if ($currentIndex > 0 && isset($siblings[($currentIndex - 1)]) === true) {
+                    $targets[] = $siblings[($currentIndex - 1)];
+                }
+
+                if (isset($siblings[($currentIndex + 1)]) === true) {
+                    $targets[] = $siblings[($currentIndex + 1)];
+                }
+                break;
+            case 'any':
+                foreach ($siblings as $i => $sibling) {
+                    if ($i !== $currentIndex) {
+                        $targets[] = $sibling;
+                    }
+                }
+                break;
+            default:
+                return [];
+        }//end switch
+
+        $actions = [];
+        foreach ($targets as $target) {
+            $actions[] = $this->buildGraphAction(sibling: $target);
+        }
+
+        return $actions;
+    }//end deriveGraphActions()
+
+    /**
+     * Fetch the ordered sibling set for a graph derivation.
+     *
+     * Uses `ObjectService::findAll` (the standard read path) filtered by the
+     * sibling schema and the parent FK, then sorts ascending by `orderField`
+     * with a deterministic UUID tiebreak so derivation never depends on
+     * database row order.
+     *
+     * @param array<string, mixed> $graph       The `graph` block off the annotation.
+     * @param string               $parentValue The resolved parent reference.
+     *
+     * @return array<int, ObjectEntity> The ordered sibling entities (0-indexed, re-keyed).
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function fetchOrderedSiblings(array $graph, string $parentValue): array
+    {
+        $schemaSlug  = (string) ($graph['schema'] ?? '');
+        $parentField = (string) ($graph['parentField'] ?? '');
+        $orderField  = (string) ($graph['orderField'] ?? '');
+        if ($schemaSlug === '' || $parentField === '') {
+            return [];
+        }
+
+        $siblings = $this->objectService->findAll(
+            config: [
+                'filters' => [
+                    'schema'     => $schemaSlug,
+                    $parentField => $parentValue,
+                ],
+                'sort'    => [$orderField => 'ASC'],
+            ]
+        );
+
+        // Keep only ObjectEntity results and re-index.
+        $entities = [];
+        foreach ($siblings as $sibling) {
+            if ($sibling instanceof ObjectEntity) {
+                $entities[] = $sibling;
+            }
+        }
+
+        // Deterministic sort (ascending order, UUID tiebreak) — do not rely on
+        // the storage layer's ordering.
+        usort(
+            $entities,
+            function (ObjectEntity $a, ObjectEntity $b) use ($orderField): int {
+                $aOrder = (float) (($a->getObject() ?? [])[$orderField] ?? 0);
+                $bOrder = (float) (($b->getObject() ?? [])[$orderField] ?? 0);
+                if ($aOrder === $bOrder) {
+                    return strcmp((string) $a->getUuid(), (string) $b->getUuid());
+                }
+
+                return ($aOrder <=> $bOrder);
+            }
+        );
+
+        return $entities;
+    }//end fetchOrderedSiblings()
+
+    /**
+     * Build a derived graph action envelope for a target sibling.
+     *
+     * @param ObjectEntity $sibling The target sibling to move to.
+     *
+     * @return array{action: string, to: string, label: string, requires: ?string, description: ?string}
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function buildGraphAction(ObjectEntity $sibling): array
+    {
+        $uuid = (string) $sibling->getUuid();
+        $data = $sibling->getObject() ?? [];
+        $name = $sibling->getName();
+        if ($name === null || trim((string) $name) === '') {
+            $name = (string) ($data['name'] ?? ($data['title'] ?? $uuid));
+        }
+
+        return [
+            'action'      => 'move-to-'.$uuid,
+            'to'          => $uuid,
+            'label'       => (string) $name,
+            'requires'    => null,
+            'description' => null,
+        ];
+    }//end buildGraphAction()
+
+    /**
+     * Apply a graph-mode transition.
+     *
+     * Re-runs the SAME derivation as `availableActions()`, accepts the posted
+     * action only when it is a current candidate, mutates the lifecycle field
+     * to the target UUID, saves through the unchanged ObjectService path, and
+     * dispatches `ObjectTransitionedEvent`. Rejection never mutates the object.
+     *
+     * @param ObjectEntity         $object The transitioning object.
+     * @param array<string, mixed> $graph  The `graph` block off the annotation.
+     * @param string               $field  The lifecycle field name on the object.
+     * @param string               $action The requested `move-to-<uuid>` action.
+     *
+     * @return ObjectEntity The saved object after the transition.
+     *
+     * @throws RuntimeException When the action is not a current candidate.
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function applyGraphTransition(
+        ObjectEntity $object,
+        array $graph,
+        string $field,
+        string $action
+    ): ObjectEntity {
+        $candidates = $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
+
+        $match = null;
+        foreach ($candidates as $candidate) {
+            if ($candidate['action'] === $action) {
+                $match = $candidate;
+                break;
+            }
+        }
+
+        if ($match === null) {
+            throw new RuntimeException(
+                sprintf('Transition "%s" is not allowed from the current state.', $action)
+            );
+        }
+
+        $targetState = (string) $match['to'];
+        $data        = $object->getObject() ?? [];
+        $from        = (string) ($data[$field] ?? '');
+
+        $data[$field] = $targetState;
+
+        // Snapshot the session user at the transition boundary and forward it
+        // explicitly to the save path, mirroring the static-mode contract.
+        $actingUser = $this->userSession->getUser();
+
+        $saved = $this->objectService->saveObject(
+            object: $data,
+            register: $object->getRegister(),
+            schema: $object->getSchema(),
+            uuid: $object->getUuid(),
+            currentUser: $actingUser
+        );
+
+        $this->eventDispatcher->dispatchTyped(
+            new ObjectTransitionedEvent(
+                object: $saved,
+                action: $action,
+                from: $from,
+                to: $targetState,
+                userId: $actingUser?->getUID(),
+                register: (string) $object->getRegister(),
+                schema: (string) $object->getSchema()
+            )
+        );
+
+        return $saved;
+    }//end applyGraphTransition()
 
     /**
      * Load the schema referenced by an object, returning null on failure.

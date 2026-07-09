@@ -3059,12 +3059,65 @@ class MagicMapper extends AbstractObjectMapper
                 $this->db->executeStatement(
                     "CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
                 );
-            }
+
+                // Baseline pg_trgm GIN index on the `_name` metadata column.
+                // `_name` is unconditionally searched by
+                // MagicSearchHandler::buildSearchConditionSql() for every schema
+                // (both the always-on ILIKE path and the `_fuzzy=true` similarity()
+                // path), yet nothing indexed it — a rare-term search forced a
+                // sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
+                // 81,950-row table). This index is on an EXISTING varchar/text
+                // column (no new column type is introduced), so — unlike a
+                // vector/tsvector-TYPED column — it does NOT break Doctrine
+                // introspectSchema() over oc_-prefixed tables: a functional/column
+                // GIN index is invisible to Doctrine's type system, the same reason
+                // the hybrid-document-search chunk `to_tsvector` functional GIN
+                // index is safe. Gated by pg_trgm availability and wrapped so a
+                // missing extension or incompatible column never fails table
+                // creation (matching the neighbouring index try/catch pattern).
+                if ($this->hasPgTrgmExtension() === true) {
+                    $nameCol    = self::METADATA_PREFIX.'name';
+                    $nameTrgmIx = "{$tableName}_name_trgm_idx";
+                    try {
+                        $this->db->executeStatement(
+                            "CREATE INDEX IF NOT EXISTS {$nameTrgmIx} ON {$fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
+                        );
+                    } catch (Exception $e) {
+                        $this->logger->info(
+                            message: '[MagicMapper] Skipped baseline _name trgm index',
+                            context: [
+                                'file'      => __FILE__,
+                                'line'      => __LINE__,
+                                'tableName' => $tableName,
+                                'error'     => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }//end if
+            } else {
+                // MySQL/MariaDB do not support partial indexes, so the
+                // "WHERE _owner = ? AND _deleted IS NULL" access pattern is
+                // supported here with a composite (_deleted, _owner) index — the
+                // best available approximation. `CREATE INDEX IF NOT EXISTS` is
+                // not portable across older MySQL, so create it defensively and
+                // treat a duplicate-index error as a no-op (idempotent).
+                $deletedCol      = self::METADATA_PREFIX.'deleted';
+                $ownerColForIdx  = self::METADATA_PREFIX.'owner';
+                $deletedOwnerIdx = "{$tableName}_deleted_owner_idx";
+                try {
+                    $this->db->executeStatement(
+                        "CREATE INDEX {$deletedOwnerIdx} ON {$fullTableName} ({$deletedCol}, {$ownerColForIdx})"
+                    );
+                } catch (\Throwable $e) {
+                    // Index already exists (no IF NOT EXISTS on MySQL) — ignore.
+                }
+            }//end if
 
             // Create indexes for schema-specific properties.
-            $schemaProperties = $_schema->getProperties();
-            $relationIndexes  = [];
-            $facetIndexes     = [];
+            $schemaProperties  = $_schema->getProperties();
+            $relationIndexes   = [];
+            $facetIndexes      = [];
+            $searchableIndexes = [];
 
             if (is_array($schemaProperties) === true) {
                 foreach ($schemaProperties as $propertyName => $propertyConfig) {
@@ -3121,18 +3174,58 @@ class MagicMapper extends AbstractObjectMapper
                             // Index may already exist or column type incompatible.
                         }
                     }
+
+                    // Opt-in `searchable: true` flag: create a pg_trgm GIN index on
+                    // this property's column so fuzzy/substring (`_search` / ILIKE /
+                    // similarity()) matching against it is index-backed instead of a
+                    // sequential scan. Structurally identical to `facetable` above,
+                    // but PostgreSQL + pg_trgm gated (the `gin_trgm_ops` operator
+                    // class only exists on PostgreSQL with the extension). Like the
+                    // baseline `_name` index, this indexes an EXISTING text column —
+                    // no new column type — so it is Doctrine-introspection-safe. A
+                    // non-string column (gin_trgm_ops requires a text-castable type)
+                    // is tolerated by the try/catch below, exactly like facetable's
+                    // "column type incompatible" case, and logged rather than fatal.
+                    if (($propertyConfig['searchable'] ?? false) === true
+                        && $isPostgres === true
+                        && $this->hasPgTrgmExtension() === true
+                    ) {
+                        $idxName = "{$tableName}_{$columnName}_trgm_idx";
+                        try {
+                            $this->db->executeStatement(
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$quotedCol} gin_trgm_ops)"
+                            );
+                            $searchableIndexes[] = $columnName;
+                        } catch (Exception $e) {
+                            // Index may already exist, or the column type is
+                            // incompatible with gin_trgm_ops (e.g. a non-string
+                            // property incorrectly marked searchable): log a warning
+                            // and continue, do not abort table creation/sync.
+                            $this->logger->warning(
+                                message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
+                                context: [
+                                    'file'      => __FILE__,
+                                    'line'      => __LINE__,
+                                    'tableName' => $tableName,
+                                    'column'    => $columnName,
+                                    'error'     => $e->getMessage(),
+                                ]
+                            );
+                        }//end try
+                    }//end if
                 }//end foreach
             }//end if
 
             $this->logger->debug(
                 message: '[MagicMapper] Created table indexes',
                 context: [
-                    'file'            => __FILE__,
-                    'line'            => __LINE__,
-                    'tableName'       => $tableName,
-                    'baseIndexCount'  => 5 + count($idxMetaFields),
-                    'relationIndexes' => $relationIndexes,
-                    'facetIndexes'    => $facetIndexes,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
+                    'tableName'         => $tableName,
+                    'baseIndexCount'    => 5 + count($idxMetaFields),
+                    'relationIndexes'   => $relationIndexes,
+                    'facetIndexes'      => $facetIndexes,
+                    'searchableIndexes' => $searchableIndexes,
                 ]
             );
         } catch (Exception $e) {
@@ -8300,6 +8393,16 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getMaxAllowedPacketSize(): int
     {
+        // `SHOW VARIABLES` is a MySQL-ism. On PostgreSQL the statement is a
+        // syntax error — and although the exception is swallowed here, a
+        // failed statement inside an OPEN TRANSACTION aborts the whole
+        // transaction on postgres (SQLSTATE 25P02: "current transaction is
+        // aborted"), breaking any caller that wraps a save in a transaction
+        // (e.g. the ADR-051 handoff engine). Only probe on MySQL/MariaDB.
+        if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+            return 16777216;
+        }
+
         try {
             $result = $this->db->executeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
             $row    = $result->fetch();

@@ -211,4 +211,12 @@ webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'nod
 // them and the toggle reports "browser does not support web push".
 webpackConfig.output.clean = { keep: (asset) => asset.includes('openregister-push-') }
 
+// Code-splitting (frontend-code-splitting-and-fetch-efficiency): dynamically
+// imported view chunks are fetched at runtime relative to output.publicPath.
+// The default resolves to `/apps/{app}/js/`, which 404s when the app is served
+// from `/custom_apps/{app}/js/` (dev/custom installs). `'auto'` derives the base
+// from the currently-executing script's URL (document.currentScript), so chunks
+// load correctly whether the app lives under apps/ or custom_apps/.
+webpackConfig.output.publicPath = 'auto'
+
 module.exports = webpackConfig

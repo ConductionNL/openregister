@@ -3,7 +3,7 @@
 /**
  * Vector Statistics Handler
  *
- * Handles gathering statistics about stored vectors from database and Solr.
+ * Handles gathering statistics about stored vectors from the database.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

@@ -11,7 +11,10 @@
  *
  *   GET /api/notification-preferences
  *       → every notification the current user's accessible schemas declare,
- *         merged with that user's overrides, tagged by source.
+ *         merged with that user's overrides, tagged by source. Each entry
+ *         also carries `application` (the owning app id, e.g. "pipelinq",
+ *         or null when the schema has no known owning app) so a consuming
+ *         settings UI can scope the list to the currently open app.
  *
  *   PUT /api/notification-preferences
  *       body: { schema, notification, enabled?, channels?, reset? }

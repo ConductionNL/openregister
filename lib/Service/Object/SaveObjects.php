@@ -102,6 +102,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class SaveObjects
 {
+    use RelationDetectionTrait;
 
     /**
      * Static schema cache to avoid repeated database lookups
@@ -2329,8 +2330,8 @@ class SaveObjects
                 continue;
             }
 
-            // For non-object arrays, check if the string looks like a reference.
-            if (trim($item) !== '' && $this->isReference(value: $item) === true) {
+            // For non-object arrays, record only genuine references.
+            if ($this->isRecordableReference(value: $item) === true) {
                 $relations[$currentPath.'.'.$index] = $item;
             }
         }//end foreach
@@ -2359,87 +2360,15 @@ class SaveObjects
         string $currentPath,
         ?array $schemaProperties
     ): array {
-        $isRelation = false;
-
-        // Check schema property configuration first.
+        $propertyConfig = null;
         if ($schemaProperties !== null && isset($schemaProperties[$key]) === true) {
             $propertyConfig = $schemaProperties[$key];
-            $propertyType   = $propertyConfig['type'] ?? '';
-            $propertyFormat = $propertyConfig['format'] ?? '';
-
-            // Check for explicit relation types.
-            if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true) {
-                $isRelation = true;
-            } else if ($propertyType === 'object') {
-                // Object properties with string values are always relations.
-                $isRelation = true;
-            }
         }
 
-        // If not determined by schema, check for reference patterns.
-        if ($isRelation === false) {
-            $isRelation = $this->isReference(value: $value);
-        }
-
-        if ($isRelation === true) {
+        if ($this->isRecordableReference(value: $value, propertyConfig: $propertyConfig) === true) {
             return [$currentPath => $value];
         }
 
         return [];
     }//end scanStringForRelation()
-
-    /**
-     * Determines if a string value should be treated as a reference to another object
-     *
-     * This method checks for various reference patterns including:
-     * - Standard UUIDs (e.g., "dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4")
-     * - Prefixed IDs (e.g., "id-819c2fe5-db4e-4b6f-8071-6a63fd400e34")
-     * - URLs
-     * - Other identifier patterns
-     *
-     * @param string $value The string value to check
-     *
-     * @return bool True if the value should be treated as a reference
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     */
-    private function isReference(string $value): bool
-    {
-        $value = trim($value);
-
-        // Empty strings are not references.
-        if (empty($value) === true) {
-            return false;
-        }
-
-        // Check for standard UUID pattern (8-4-4-4-12 format).
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-            return true;
-        }
-
-        // Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.).
-        if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-            return true;
-        }
-
-        // Check for URLs.
-        if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-            return true;
-        }
-
-        // Check for other common ID patterns, but be more selective to avoid false positives.
-        // Only consider strings that look like identifiers, not regular text.
-        if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === 1) {
-            // Must contain at least one hyphen or underscore (indicating it's likely an ID).
-            // AND must not contain spaces or common text words.
-            if ((strpos($value, '-') !== false || strpos($value, '_') !== false)
-                && preg_match('/\s/', $value) === 0
-                && in_array(strtolower($value), ['applicatie', 'systeemsoftware', 'open-source', 'closed-source']) === false
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }//end isReference()
 }//end class

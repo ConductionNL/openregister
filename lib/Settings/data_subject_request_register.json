@@ -30,7 +30,7 @@
       "dataSubjectRequest": {
         "slug": "dataSubjectRequest",
         "title": "Data-Subject Request",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "published": "2026-01-01T00:00:00+00:00",
         "summary": "A single GDPR / AVG data-subject-rights request tracked as a stateful case.",
         "description": "Jurisdiction-neutral model for a data-subject-rights request tracked as a stateful case: who the subject is, which right is exercised, the request's status in its lifecycle, the EU art-12(3) legal deadline (one month from receipt, extendable once by two months), the assigned handler, case timestamps, retention window, denial workflow, and evidence/redaction sub-collections.",
@@ -270,6 +270,42 @@
                 }
               ]
             }
+          },
+          "breachedAt": {
+            "type": "string",
+            "materialise": true,
+            "title": "Breached At",
+            "description": "Write-once breach stamp (dsar-escalation-and-dpia): the instant the case's escalationTier first crossed into 'breached'. Declared as a calculation (ADR-031: the temporal sweep job carries no DSAR-specific branch) evaluated AFTER escalationTier in declaration order: while the tier is 'breached' the value coalesces to its existing stamp (write-once) or the evaluation clock on the first crossing; otherwise the existing value (null until a breach) is kept unchanged.",
+            "expression": {
+              "if": [
+                {
+                  "eq": [
+                    {
+                      "prop": "escalationTier"
+                    },
+                    "breached"
+                  ]
+                },
+                {
+                  "coalesce": [
+                    {
+                      "prop": "breachedAt"
+                    },
+                    {
+                      "formatDate": [
+                        {
+                          "now": []
+                        },
+                        "c"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "prop": "breachedAt"
+                }
+              ]
+            }
           }
         },
         "x-openregister-aggregations": {
@@ -391,6 +427,10 @@
               {
                 "kind": "field",
                 "field": "handler"
+              },
+              {
+                "kind": "expression",
+                "resolver": "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver"
               }
             ],
             "subject": {
@@ -400,6 +440,37 @@
             "message": {
               "nl": "De wettelijke termijn voor dit verzoek is verstreken.",
               "en": "The legal deadline for this request has passed."
+            }
+          },
+          "dpiaFlagged": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "dpiaRequired",
+              "condition": {
+                "eq": true
+              },
+              "previously": {
+                "ne": true
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "expression",
+                "resolver": "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "DPIA vereist: patroon gedetecteerd rond {{subjectId}}",
+              "en": "DPIA required: pattern detected around {{subjectId}}"
+            },
+            "message": {
+              "nl": "Voor dit verzoek is een Data Protection Impact Assessment (DPIA) gemarkeerd — automatisch patroon (art. 35 AVG) of handmatige markering.",
+              "en": "This request was flagged as requiring a Data Protection Impact Assessment (DPIA) — automatic pattern detection (GDPR art. 35) or a manual flag."
             }
           }
         },
@@ -580,10 +651,40 @@
           },
           "dpiaRequired": {
             "type": "boolean",
-            "description": "Complexity flag: whether this case requires a Data Protection Impact Assessment (DPIA) before it can be fulfilled.",
+            "description": "Complexity flag: whether this case requires a Data Protection Impact Assessment (DPIA) before it can be fulfilled. Set manually by a handler or automatically by the daily DPIA pattern-detection job (dsar-escalation-and-dpia) when the active policy pack's dpiaDetection threshold is reached; the job never clears a flag (one-way ratchet).",
             "default": false,
             "facetable": true,
             "title": "DPIA Required"
+          },
+          "breachedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Write-once stamp of the instant the case's escalationTier first crossed into 'breached'. Populated declaratively by the breachedAt calculation on the tier write that crosses the boundary; empty while the deadline has never been breached. Read by the regulator dossier and breach reporting.",
+            "title": "Breached At"
+          },
+          "daysRemaining": {
+            "type": "number",
+            "description": "Engine-materialised value of the daysRemaining calculation (whole days until the effective deadline; negative once passed). Declared as a property so the materialised value persists to a magic-table column — calculation outputs without a backing property are dropped at persist time. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "facetable": true,
+            "title": "Days Remaining"
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "description": "Engine-materialised value of the isOverdue calculation (true when the effective deadline has passed). Declared as a property so the materialised value persists to a magic-table column and the overdueCaseCount aggregation can filter on it. Do not edit by hand.",
+            "facetable": true,
+            "title": "Is Overdue"
+          },
+          "escalationTier": {
+            "type": "string",
+            "description": "Engine-materialised value of the escalationTier calculation (on-track, reminder, escalation, breached — boundaries from the active dsarPolicyPack). Declared as a property so the materialised value persists to a magic-table column, the breachedCaseCount aggregation can filter on it, and the calculatedChange notification rules see old/new values. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "enum": [
+              "on-track",
+              "reminder",
+              "escalation",
+              "breached"
+            ],
+            "facetable": true,
+            "title": "Escalation Tier"
           },
           "retentionWindow": {
             "type": "string",

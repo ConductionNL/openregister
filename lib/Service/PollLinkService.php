@@ -226,7 +226,10 @@ class PollLinkService
                 }
             }
 
-            $row['url'] = '/index.php/apps/polls/vote/'.($row['pollId'] ?? '');
+            // NC Polls routes votes at /apps/polls/vote/{id}; the legacy
+            // /index.php prefix breaks under the SPA's <base href> (the path
+            // doubled to /apps/polls/index.php/apps/polls/vote/… on navigation).
+            $row['url'] = '/apps/polls/vote/'.($row['pollId'] ?? '');
             $results[]  = $row;
         }//end foreach
 

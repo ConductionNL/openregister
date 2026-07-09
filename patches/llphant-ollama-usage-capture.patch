@@ -3,7 +3,7 @@
 @@ -43,6 +43,14 @@
      /** @var CalledFunction[] */
      public array $functionsCalled = [];
-
+ 
 +    /**
 +     * Token/latency usage from the last generateChat round-trip, accumulated across
 +     * tool-call recursions. Read by OpenRegister to record per-run cost (run-analytics).
@@ -18,7 +18,7 @@
 @@ -174,6 +182,13 @@
          $contents = $response->getBody()->getContents();
          $json = Utility::decodeJson($contents);
-
+ 
 +        // Accumulate token/latency usage across the tool-call recursion so OpenRegister can
 +        // record per-run cost (run-analytics). Ollama returns prompt_eval_count/eval_count
 +        // (tokens) and total_duration (ns). Fields absent on some models are treated as 0.
@@ -27,5 +27,5 @@
 +        $this->lastUsage['totalDurationMs'] += (int) (((int) ($json['total_duration'] ?? 0)) / 1000000);
 +
          $message = $json['message'];
-
+ 
          /** @var Message[] $toolsOutput */
