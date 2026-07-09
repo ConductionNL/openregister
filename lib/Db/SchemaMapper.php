@@ -595,8 +595,8 @@ class SchemaMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
-        $this->verifyRbacPermission('create', 'schema');
+        // Verify RBAC permission to create.
+        $this->verifyRbacPermission(action: 'create', entityType: 'schema');
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate(entity: $entity);
 
@@ -1027,7 +1027,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     private function validateArchivalAnnotation(Schema $schema): void
     {
@@ -1063,7 +1063,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+     * @spec openspec/specs/semantic-object-handoff/spec.md
      *   (Requirement: `x-openregister-handoff` declarative dialect)
      */
     private function validateHandoffAnnotation(Schema $schema): void
@@ -1104,7 +1104,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+     * @spec openspec/specs/semantic-object-handoff/spec.md
      *   (Scenario: Implementer omits a mandatory contract field)
      */
     private function validateHandoffContractBinding(Schema $schema): void
@@ -1505,8 +1505,8 @@ class SchemaMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
-        $this->verifyRbacPermission('update', 'schema');
+        // Verify RBAC permission to update.
+        $this->verifyRbacPermission(action: 'update', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
@@ -1585,8 +1585,8 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $entity): Schema
     {
-        // Verify RBAC permission to delete
-        $this->verifyRbacPermission('delete', 'schema');
+        // Verify RBAC permission to delete.
+        $this->verifyRbacPermission(action: 'delete', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
@@ -3486,7 +3486,7 @@ class SchemaMapper extends QBMapper
      * @psalm-return   list<int>
      * @phpstan-return array<int, int>
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     public function findNonSearchableIds(): array
     {
@@ -3520,7 +3520,7 @@ class SchemaMapper extends QBMapper
      * @psalm-return   list<int>
      * @phpstan-return array<int, int>
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     public function findSearchableIds(): array
     {

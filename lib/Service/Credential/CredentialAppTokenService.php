@@ -98,8 +98,8 @@ class CredentialAppTokenService
      *
      * @return string The newly generated signing secret (shown once).
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#requirement-app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#requirement-manifest-driven-credential-app-onboarding
      */
     public function registerApp(string $appId): string
     {
@@ -120,7 +120,7 @@ class CredentialAppTokenService
      *
      * @return bool True when a signing secret is registered for the app.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#requirement-app-manifest-declares-provider-usage
      */
     public function isRegistered(string $appId): bool
     {
@@ -130,14 +130,16 @@ class CredentialAppTokenService
     /**
      * Issue a short-lived signed token binding an app id to a credential id.
      *
-     * @param string $appId        The consuming app's id (must be registered).
-     * @param string $credentialId The credential UUID the app intends to use.
+     * @param string      $appId        The consuming app's id (must be registered).
+     * @param string      $credentialId The credential UUID the app intends to use.
+     * @param string|null $method       Optional HTTP method the token is bound to.
+     * @param string|null $path         Optional request path the token is bound to.
      *
      * @return string A `payload.signature` token (base64url parts).
      *
      * @throws CredentialAccessDeniedException When the app has no registered signing secret.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#requirement-app-manifest-declares-provider-usage
      */
     public function issueToken(string $appId, string $credentialId, ?string $method=null, ?string $path=null): string
     {
@@ -184,13 +186,15 @@ class CredentialAppTokenService
      * enforced. Any structural, signature, or expiry failure throws (fail-closed);
      * the caller maps every failure to a single static 403.
      *
-     * @param string $token The `payload.signature` token to verify.
+     * @param string      $token  The `payload.signature` token to verify.
+     * @param string|null $method Optional HTTP method the token must be bound to.
+     * @param string|null $path   Optional request path the token must be bound to.
      *
      * @return array{appId: string, credentialId: string} The authenticated claims.
      *
      * @throws CredentialAccessDeniedException On any malformed / forged / expired token.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#requirement-app-manifest-declares-provider-usage
      */
     public function verify(string $token, ?string $method=null, ?string $path=null): array
     {
@@ -265,7 +269,7 @@ class CredentialAppTokenService
      *
      * @throws CredentialAccessDeniedException When the payload is unreadable or malformed.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#requirement-app-manifest-declares-provider-usage
      */
     private function decodeClaims(string $payloadB64): array
     {
@@ -293,7 +297,7 @@ class CredentialAppTokenService
      *
      * @return string|null The signing secret, or null.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#requirement-app-manifest-declares-provider-usage
      */
     private function lookupSecret(string $appId): ?string
     {

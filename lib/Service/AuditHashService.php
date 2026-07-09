@@ -18,13 +18,13 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-7
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-14
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-13
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -66,8 +66,8 @@ class AuditHashService
      *
      * @return string The SHA-256 hex digest of the genesis seed
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-10
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getGenesisHash(): string
     {
@@ -84,8 +84,8 @@ class AuditHashService
      *
      * @return string The canonical JSON string
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getCanonicalJson(AuditTrail $entry): string
     {
@@ -108,8 +108,8 @@ class AuditHashService
      *
      * @return string The SHA-256 hex digest
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-11
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function computeHash(AuditTrail $entry, string $previousHash): string
     {
@@ -125,8 +125,8 @@ class AuditHashService
      *
      * @return string The hash of the last entry or the genesis hash
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-13
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getLastHash(): string
     {
@@ -147,7 +147,6 @@ class AuditHashService
 
         return $row['hash'];
     }//end getLastHash()
-
 
     /**
      * Seal an already-inserted audit-trail row into the hash chain.
@@ -220,8 +219,8 @@ class AuditHashService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function verifyChain(?int $from=null, ?int $to=null): array
     {
@@ -323,7 +322,7 @@ class AuditHashService
      *
      * @return string|null The hash of the previous entry, or null if none
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function getHashBefore(int $id): ?string
     {
@@ -355,7 +354,7 @@ class AuditHashService
      *
      * @return array The mapped array with camelCase keys
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-7
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function mapRowToEntity(array $row): array
     {
