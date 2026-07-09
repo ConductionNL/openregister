@@ -106,7 +106,7 @@ class DatabaseIntrospectionService
      *
      * @throws DbalConnectionException When the source cannot be connected.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function buildBlueprint(Source $source): array
     {
@@ -114,12 +114,24 @@ class DatabaseIntrospectionService
         $connection    = $this->connectionFactory->getConnection(source: $source);
         $schemaManager = $connection->createSchemaManager();
 
-        $tableNames = $schemaManager->listTableNames();
+        $tableNames = array_values(
+            array_filter(
+                $schemaManager->listTableNames(),
+                fn (string $name): bool => $this->isSystemObject(name: $name) === false
+            )
+        );
         sort($tableNames);
 
         $viewNames = [];
         foreach ($schemaManager->listViews() as $view) {
-            $viewNames[] = $this->shortName(name: $view->getName());
+            if ($this->isSystemObject(name: $view->getName()) === true) {
+                continue;
+            }
+
+            $short = $this->shortName(name: $view->getName());
+            if (in_array($short, $viewNames, true) === false) {
+                $viewNames[] = $short;
+            }
         }
 
         sort($viewNames);
@@ -197,7 +209,7 @@ class DatabaseIntrospectionService
      *
      * @throws DbalConnectionException When the source cannot be connected.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function introspect(Source $source): array
     {
@@ -262,7 +274,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, mixed> The working table record.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function introspectTable(AbstractSchemaManager $schemaManager, string $sourceId, string $tableName, bool $isView): array
     {
@@ -317,7 +329,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, array<string, mixed>> Property name → JSON-Schema fragment.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function viewColumnsFromSample(Connection $connection, string $viewName): array
     {
@@ -360,7 +372,7 @@ class DatabaseIntrospectionService
      *
      * @return array<int, string> The PK column names in order (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function primaryKeyColumns(AbstractSchemaManager $schemaManager, string $tableName, bool $isView): array
     {
@@ -384,7 +396,7 @@ class DatabaseIntrospectionService
      *
      * @return array<int, string> The PK column names in order (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function tablePrimaryKey(Table $table): array
     {
@@ -404,7 +416,7 @@ class DatabaseIntrospectionService
      *
      * @return array{0: string|null, 1: array<int, string>|null} [idColumn, idColumns].
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function resolveIdentity(array $primaryKey, string $tableName): array
     {
@@ -437,7 +449,7 @@ class DatabaseIntrospectionService
      *
      * @return bool True when the column is required.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function isRequired(Column $column, array $primaryKey): bool
     {
@@ -461,7 +473,7 @@ class DatabaseIntrospectionService
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables, array $slugByTable): void
     {
@@ -528,7 +540,7 @@ class DatabaseIntrospectionService
      *
      * @return array<int, ForeignKeyConstraint> The foreign-key constraints (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function foreignKeysFor(AbstractSchemaManager $schemaManager, string $tableName): array
     {
@@ -546,7 +558,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, mixed> The schema definition for the mapper.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function toSchemaDefinition(array $record): array
     {
@@ -590,7 +602,7 @@ class DatabaseIntrospectionService
      *
      * @return Register The persisted register.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function upsertRegister(array $definition, string $sourceId): Register
     {
@@ -609,7 +621,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, Schema> Table name → schema.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function existingSchemasByTable(Register $register): array
     {
@@ -637,7 +649,7 @@ class DatabaseIntrospectionService
      *
      * @return string The stable source identifier.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function sourceId(Source $source): string
     {
@@ -667,6 +679,48 @@ class DatabaseIntrospectionService
 
         return substr($name, ($pos + 1));
     }//end shortName()
+
+    /**
+     * Whether a table/view name belongs to a database system catalog.
+     *
+     * DBAL's schema manager can surface engine-internal objects — on
+     * PostgreSQL `listViews()` returns `pg_catalog.*` and
+     * `information_schema.*` views (observed live: `pg_user_mappings`
+     * appears in BOTH namespaces, colliding on one slug); MySQL exposes
+     * `mysql`/`performance_schema`/`sys`, SQLite reserves the `sqlite_`
+     * prefix. None of these are user data — a virtual register must never
+     * contain them.
+     *
+     * @param string $name The (possibly namespace-qualified) object name.
+     *
+     * @return bool True when the object is engine-internal.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function isSystemObject(string $name): bool
+    {
+        $lower = strtolower($name);
+        $short = strtolower($this->shortName(name: $name));
+
+        $systemNamespaces = [
+            'pg_catalog.',
+            'information_schema.',
+            'pg_toast.',
+            'mysql.',
+            'performance_schema.',
+            'sys.',
+        ];
+        foreach ($systemNamespaces as $prefix) {
+            if (str_starts_with($lower, $prefix) === true) {
+                return true;
+            }
+        }
+
+        // Unqualified engine-internal names: SQLite reserved tables and
+        // PostgreSQL catalog objects surfaced without their namespace.
+        return str_starts_with($short, 'sqlite_') === true
+            || str_starts_with($short, 'pg_') === true;
+    }//end isSystemObject()
 
     /**
      * Build a lowercase hyphenated slug from an arbitrary identifier.

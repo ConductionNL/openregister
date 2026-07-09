@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -156,7 +156,7 @@ class DbalConnectionFactoryTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testConnectsToSqliteFixture(): void
     {
@@ -172,7 +172,7 @@ class DbalConnectionFactoryTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testConnectionIsCachedPerSource(): void
     {
@@ -191,7 +191,7 @@ class DbalConnectionFactoryTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUnresolvableCredentialFailsClosed(): void
     {
@@ -239,7 +239,7 @@ class DbalConnectionFactoryTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUnsupportedDriverIsRejected(): void
     {
@@ -254,7 +254,7 @@ class DbalConnectionFactoryTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testMissingHostIsRejected(): void
     {
@@ -274,7 +274,7 @@ class DbalConnectionFactoryTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testIsDriverAvailable(): void
     {

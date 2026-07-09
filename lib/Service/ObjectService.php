@@ -2414,7 +2414,7 @@ class ObjectService
      *
      * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the acting user lacks read access to the schema.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function paginateObjectSource(array $query, bool $_rbac=true): ?array
     {
@@ -2516,7 +2516,7 @@ class ObjectService
      *
      * @return int|null The true total, or null when the provider has no real count.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function objectSourceTrueTotal(
         $provider,
@@ -2557,7 +2557,7 @@ class ObjectService
      *
      * @return array The `@self` pagination metadata.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function objectSourcePageMetadata(int $total, int $limit, int $offset, bool $realCount): array
     {

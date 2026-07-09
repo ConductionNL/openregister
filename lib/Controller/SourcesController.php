@@ -497,7 +497,7 @@ class SourcesController extends Controller
      *
      * @return array<string, mixed> The sanitised source data.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function sanitizeDatabaseSourceData(array $data): array
     {
@@ -509,7 +509,10 @@ class SourcesController extends Controller
             unset($data['authConfig']['password'], $data['authConfig']['secret']);
         }
 
-        unset($data['databaseUrl']);
+        // Clear rather than unset: the sources table declares database_url
+        // NOT NULL, so an absent value fails the INSERT with a 23502. An empty
+        // string satisfies the constraint and carries no secret.
+        $data['databaseUrl'] = '';
 
         return $data;
     }//end sanitizeDatabaseSourceData()
@@ -535,7 +538,7 @@ class SourcesController extends Controller
      *   which applies the active-organisation filter and 404s on a foreign
      *   tenant's id. The response never contains the credential value.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testConnection(int $id): JSONResponse
     {
@@ -597,7 +600,7 @@ class SourcesController extends Controller
      *   which applies the active-organisation filter and 404s on a foreign
      *   tenant's id. The response never contains the credential value.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function introspect(int $id): JSONResponse
     {

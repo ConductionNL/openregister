@@ -175,10 +175,10 @@ class TemporalCalculationSweepService
      * for every object in a non-terminal lifecycle state and rewrite only
      * objects whose recomputed values changed.
      *
-     * @param Register             $register The owning register.
-     * @param Schema               $schema   The temporal schema.
-     * @param array<string, mixed> $calcs    Materialised calculations.
-     * @param array<string, int>   $summary  Running summary (by reference).
+     * @param Register                                                                                              $register The owning register.
+     * @param Schema                                                                                                $schema   The temporal schema.
+     * @param array<string, mixed>                                                                                  $calcs    Materialised calculations.
+     * @param array{schemasScanned: int, temporalSchemas: int, objectsEvaluated: int, objectsRewritten: int, errors: int} $summary  Running summary (by reference).
      *
      * @return void
      *

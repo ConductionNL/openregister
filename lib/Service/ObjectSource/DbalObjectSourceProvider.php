@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -92,7 +93,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return string The provider id.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function getId(): string
     {
@@ -108,7 +109,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return bool True when the provider can serve at least one driver.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function isEnabled(): bool
     {
@@ -138,7 +139,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity|null The virtual object, or null when absent/denied/list-only.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity
     {
@@ -194,7 +195,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity[] The matching virtual objects (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array
     {
@@ -255,7 +256,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register kept for interface parity.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int
     {
@@ -298,7 +299,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return array{0: Source, 1: array<int, string>}|null [source, columns] or null when unresolvable.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function resolveContext(array $config, Schema $schema): ?array
     {
@@ -318,7 +319,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return Source|null The source, or null when not found / not a database source.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function resolveSource(array $config): ?Source
     {
@@ -358,7 +359,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @throws DbalConnectionException On any connection/credential error (fail closed).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function connect(Source $source): Connection
     {
@@ -372,7 +373,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return bool True when the driver extension is missing.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function driverMissing(Source $source): bool
     {
@@ -390,7 +391,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return QueryBuilder The query builder.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function baseSelect(Connection $connection, string $table, array $columns): QueryBuilder
     {
@@ -421,7 +422,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applyFilters(QueryBuilder $qb, Connection $connection, array $query, array $columns, array $config): void
     {
@@ -457,7 +458,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applySearch(QueryBuilder $qb, Connection $connection, array $query, array $filterable): void
     {
@@ -466,11 +467,21 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
             return;
         }
 
+        // LIKE only exists for text operands: on PostgreSQL `integer LIKE
+        // text` raises "operator does not exist" (observed live), so every
+        // column is CAST to the platform's text type first. MySQL spells the
+        // cast target CHAR; PostgreSQL and SQLite use TEXT.
+        $castType = 'TEXT';
+        if ($connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
+            $castType = 'CHAR';
+        }
+
         $like  = '%'.$search.'%';
         $ors   = [];
         $param = $qb->createNamedParameter($like);
         foreach ($filterable as $column) {
-            $ors[] = $this->quote(connection: $connection, identifier: $column).' LIKE '.$param;
+            $quoted = $this->quote(connection: $connection, identifier: $column);
+            $ors[]  = 'CAST('.$quoted.' AS '.$castType.') LIKE '.$param;
         }
 
         $qb->andWhere('('.implode(' OR ', $ors).')');
@@ -486,7 +497,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applySort(QueryBuilder $qb, Connection $connection, array $query, array $columns): void
     {
@@ -519,7 +530,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applyIdPredicate(QueryBuilder $qb, Connection $connection, array $idColumns, string $id): void
     {
@@ -549,7 +560,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity The virtual object (never saved).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function toObjectEntity(Register $register, Schema $schema, array $row, array $config): ObjectEntity
     {
@@ -580,7 +591,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return string|null The id (single value or separator-joined composite), or null when list-only.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function rowId(array $row, array $config): ?string
     {
@@ -604,7 +615,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return array<int, string> The id columns (empty for a list-only schema).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function idColumns(array $config): array
     {
@@ -628,7 +639,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return string The table name.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function table(array $config): string
     {
@@ -645,7 +656,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return array<int, string> The scalar column names.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function scalarColumns(Schema $schema): array
     {
@@ -675,7 +686,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return array<int, string> The filterable columns.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function filterableColumns(array $columns, array $config): array
     {
@@ -694,7 +705,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return int The clamped limit.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function limit(array $query): int
     {
@@ -714,7 +725,7 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
      *
      * @return string The quoted identifier.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function quote(Connection $connection, string $identifier): string
     {

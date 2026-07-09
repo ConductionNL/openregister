@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ class DbalIntrospectionJobTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testRunIntrospectsEveryDatabaseSource(): void
     {
@@ -106,7 +106,7 @@ class DbalIntrospectionJobTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testOneFailingSourceDoesNotBlockTheRest(): void
     {
@@ -151,7 +151,7 @@ class DbalIntrospectionJobTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testDriftIsLogged(): void
     {
@@ -195,7 +195,7 @@ class DbalIntrospectionJobTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testMapperFailureDegradesToNoop(): void
     {
