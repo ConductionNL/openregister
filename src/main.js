@@ -47,6 +47,9 @@ import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
+import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
+import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
 
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
@@ -114,6 +117,9 @@ registerIcons({
 	ChartBoxOutline,
 	Api,
 	ViewDashboardOutline,
+	ContentDuplicate,
+	AccountMultipleOutline,
+	Merge,
 })
 
 Vue.mixin({ methods: { t, n } })

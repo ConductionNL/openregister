@@ -58,8 +58,12 @@ class AnonymisationBackendController extends Controller
     /**
      * Get the resolved anonymisation backend state.
      *
+     * Admin-only: the absence of `@NoAdminRequired` makes Nextcloud's
+     * SecurityMiddleware reject non-admins before the method runs; the
+     * `requireAdmin()` body check remains as defense-in-depth (returns a
+     * JSON 403 rather than the framework's default response).
+     *
      * @NoCSRFRequired
-     * @NoAdminRequired
      *
      * @return JSONResponse The serialised BackendState, or 403 for non-admins.
      *
@@ -78,8 +82,12 @@ class AnonymisationBackendController extends Controller
     /**
      * Probe a single backend, bypassing the cache.
      *
+     * Admin-only: the absence of `@NoAdminRequired` makes Nextcloud's
+     * SecurityMiddleware reject non-admins before the method runs; the
+     * `requireAdmin()` body check remains as defense-in-depth (returns a
+     * JSON 403 rather than the framework's default response).
+     *
      * @NoCSRFRequired
-     * @NoAdminRequired
      *
      * @return JSONResponse The serialised ProbeResult, 400 for an invalid method, or 403 for non-admins.
      *

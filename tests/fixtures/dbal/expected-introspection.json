@@ -1,0 +1,200 @@
+{
+    "register": {
+        "title": "Permits demo",
+        "slug": "db-00000000-0000-0000-0000-000000000000",
+        "source": "00000000-0000-0000-0000-000000000000",
+        "description": "Virtual register introspected from database source 00000000-0000-0000-0000-000000000000."
+    },
+    "schemas": [
+        {
+            "title": "applicants",
+            "slug": "applicants",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "External primary key (presented as a string)."
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "kvk_number": {
+                    "type": "string",
+                    "maxLength": 16
+                },
+                "permits_via_applicant_id": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "permits",
+                        "inversedBy": "applicant_id"
+                    },
+                    "objectConfiguration": {
+                        "handling": "related-object"
+                    }
+                }
+            },
+            "required": [
+                "full_name",
+                "email"
+            ],
+            "configuration": {
+                "x-openregister-object-source": {
+                    "provider": "dbal-source",
+                    "readOnly": true,
+                    "config": {
+                        "sourceId": "00000000-0000-0000-0000-000000000000",
+                        "table": "applicants",
+                        "idColumn": "id"
+                    }
+                }
+            }
+        },
+        {
+            "title": "permit_types",
+            "slug": "permit-types",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "External primary key (presented as a string)."
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 128
+                },
+                "max_duration_days": {
+                    "type": "integer"
+                },
+                "permits_via_permit_type_id": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "permits",
+                        "inversedBy": "permit_type_id"
+                    },
+                    "objectConfiguration": {
+                        "handling": "related-object"
+                    }
+                }
+            },
+            "required": [
+                "code",
+                "name"
+            ],
+            "configuration": {
+                "x-openregister-object-source": {
+                    "provider": "dbal-source",
+                    "readOnly": true,
+                    "config": {
+                        "sourceId": "00000000-0000-0000-0000-000000000000",
+                        "table": "permit_types",
+                        "idColumn": "id"
+                    }
+                }
+            }
+        },
+        {
+            "title": "permits",
+            "slug": "permits",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "External primary key (presented as a string)."
+                },
+                "applicant_id": {
+                    "type": "string",
+                    "$ref": "applicants",
+                    "objectConfiguration": {
+                        "handling": "related-object"
+                    }
+                },
+                "permit_type_id": {
+                    "type": "string",
+                    "$ref": "permit-types",
+                    "objectConfiguration": {
+                        "handling": "related-object"
+                    }
+                },
+                "reference": {
+                    "type": "string",
+                    "maxLength": 64
+                },
+                "status": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "submitted_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "decided_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "required": [
+                "applicant_id",
+                "permit_type_id",
+                "reference",
+                "status",
+                "submitted_at"
+            ],
+            "configuration": {
+                "x-openregister-object-source": {
+                    "provider": "dbal-source",
+                    "readOnly": true,
+                    "config": {
+                        "sourceId": "00000000-0000-0000-0000-000000000000",
+                        "table": "permits",
+                        "idColumn": "id"
+                    }
+                }
+            }
+        },
+        {
+            "title": "active_permits",
+            "slug": "active-permits",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "permit_type_id": {
+                    "type": "integer"
+                },
+                "reference": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "decided_at": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "configuration": {
+                "x-openregister-object-source": {
+                    "provider": "dbal-source",
+                    "readOnly": true,
+                    "config": {
+                        "sourceId": "00000000-0000-0000-0000-000000000000",
+                        "table": "active_permits",
+                        "idColumn": null,
+                        "isView": true
+                    }
+                }
+            }
+        }
+    ]
+}

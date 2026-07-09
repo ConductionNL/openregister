@@ -104,6 +104,43 @@ class AuditTrailMapper extends QBMapper
     }//end __construct()
 
     /**
+     * Insert an audit-trail entry sealed into the SHA-256 hash chain.
+     *
+     * Captures the current chain head as `previousHash`, inserts to obtain the
+     * row id, then computes `hash` over the id-populated entity — matching
+     * exactly how {@see AuditHashService::verifyChain()} re-derives it — and
+     * persists it. Fail-soft: the audit row is always inserted; a hashing/DB
+     * hiccup logs and leaves that row unhashed rather than losing the audit
+     * record. Without this the chain was never populated, so `verifyChain()`
+     * reported `valid:true` with `entriesVerified:0` — tamper-evidence in name
+     * only (fix-audit-hash-chain-write-path / ADR-003).
+     *
+     * @param AuditTrail $auditTrail The entry to persist.
+     *
+     * @return AuditTrail The persisted (and, on success, hash-chained) entry.
+     */
+    private function insertHashChained(AuditTrail $auditTrail): AuditTrail
+    {
+        $auditTrail = $this->insert(entity: $auditTrail);
+
+        // Seal the persisted row into the hash chain. AuditHashService computes
+        // the hash over the row using the SAME row->entity->canonical path as
+        // verifyChain(), so the stored hash re-verifies exactly. Fail-soft: a
+        // hashing/DB hiccup logs and leaves the row unhashed rather than losing
+        // the audit record.
+        try {
+            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
+            $hashService->sealRow(id: (int) $auditTrail->getId());
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[AuditTrailMapper] hash-chain seal failed for id '.$auditTrail->getId().': '.$e->getMessage()
+            );
+        }
+
+        return $auditTrail;
+    }//end insertHashChained()
+
+    /**
      * Set the request-scoped import-job UUID stamped on all
      * `createAuditTrail()` rows for the duration of an import. Pass
      * `null` to clear (typically in the import's `finally` block).
@@ -453,8 +490,8 @@ class AuditTrailMapper extends QBMapper
         // Set default expiration date (30 days from now).
         $auditTrail->setExpires(new DateTime('+30 days'));
 
-        // Insert the new AuditTrail into the database and return it.
-        return $this->insert(entity: $auditTrail);
+        // Insert the new AuditTrail, sealed into the hash chain, and return it.
+        return $this->insertHashChained(auditTrail: $auditTrail);
     }//end createAuditTrail()
 
     /**
@@ -1487,6 +1524,7 @@ class AuditTrailMapper extends QBMapper
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+        $auditTrail->setObject($object->getId());
         $auditTrail->setObjectUuid($object->getUuid());
         $auditTrail->setRegister($object->getRegister());
         $auditTrail->setSchema($object->getSchema());
@@ -1509,7 +1547,7 @@ class AuditTrailMapper extends QBMapper
 
         $auditTrail->setCreated(new DateTime());
 
-        return $this->insert(entity: $auditTrail);
+        return $this->insertHashChained(auditTrail: $auditTrail);
     }//end createAuditTrailEntry()
 
     /**

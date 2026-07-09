@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\RelationDetectionTrait;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
 use Psr\Log\LoggerInterface;
 
@@ -43,6 +44,8 @@ use Psr\Log\LoggerInterface;
  */
 class BulkRelationHandler
 {
+    use RelationDetectionTrait;
+
     /**
      * Constructor for BulkRelationHandler.
      *
@@ -444,33 +447,8 @@ class BulkRelationHandler
 
             // Handle string values (potential UUIDs/URLs).
             if (is_string($value) === true) {
-                // Check if it's a UUID or URL based on schema definition.
-                $isRelation = false;
-
-                if ($propertyConfig !== null) {
-                    $type   = $propertyConfig['type'] ?? '';
-                    $format = $propertyConfig['format'] ?? '';
-
-                    // Check for explicit relation types.
-                    if ($type === 'text' && in_array($format, ['uuid', 'uri', 'url'], true) === true) {
-                        $isRelation = true;
-                    } else if ($type === 'object') {
-                        // Type 'object' with a string value is always a relation.
-                        $isRelation = true;
-                    }
-                }
-
-                if ($propertyConfig === null) {
-                    // No schema info - use heuristics.
-                    // If it looks like a UUID or URL, treat it as a relation.
-                    if (\Symfony\Component\Uid\Uuid::isValid($value) === true) {
-                        $isRelation = true;
-                    } else if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-                        $isRelation = true;
-                    }
-                }
-
-                if ($isRelation === true) {
+                // Record only genuine references — shared rule (RelationDetectionTrait).
+                if ($this->isRecordableReference(value: $value, propertyConfig: $propertyConfig) === true) {
                     $relations[$currentPath] = $value;
                 }
             } else if (is_array($value) === true) {

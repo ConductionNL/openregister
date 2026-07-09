@@ -176,6 +176,28 @@ class PermissionHandlerRbacTest extends TestCase
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
     }
 
+    public function testActionNotConfiguredOnNonEmptyBlockFailsClosed(): void
+    {
+        // rbac-default-deny: once a schema opts into authorization (non-empty
+        // block), an action it does NOT list is denied for a non-admin /
+        // non-owner — while an explicitly-granted action still works. This is
+        // the behaviour change from the old "omitted action => open" default.
+        $this->mockUser('user1', ['medewerkers']);
+
+        $schema = $this->createSchema(1, [
+            'read' => ['medewerkers'],
+            // 'create' / 'update' / 'delete' deliberately omitted.
+        ]);
+
+        // Explicitly-granted action still works.
+        $this->assertTrue($this->handler->hasPermission($schema, 'read'));
+
+        // Omitted actions are now denied (were allowed under the old default).
+        $this->assertFalse($this->handler->hasPermission($schema, 'create'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'update'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+    }
+
     // === Role Expansion Tests ===
 
     public function testRoleExpansionViewerRole(): void
@@ -224,11 +246,12 @@ class PermissionHandlerRbacTest extends TestCase
         $this->setupRegisterForSchema(1, $register);
 
         // Behandelaars has editor role => read, create, update.
-        // Actions not listed in authorization default to allowed (permissive model).
+        // rbac-default-deny: an action NOT covered by the role (delete) is now
+        // denied on this non-empty authorization block.
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
         $this->assertTrue($this->handler->hasPermission($schema, 'update'));
-        $this->assertTrue($this->handler->hasPermission($schema, 'delete'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
     }
 
     public function testMixedRoleAndDirectAuth(): void

@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -55,6 +57,8 @@ class AggregationRunnerAdhocCacheTest extends TestCase
     private PermissionHandler&MockObject $permissionHandler;
     private IUserSession&MockObject $userSession;
     private OrganisationService&MockObject $organisationService;
+    private TranslationHandler&MockObject $translationHandler;
+    private LanguageService&MockObject $languageService;
     private AggregationRunner $runner;
 
 
@@ -70,11 +74,18 @@ class AggregationRunnerAdhocCacheTest extends TestCase
         $this->permissionHandler   = $this->createMock(PermissionHandler::class);
         $this->userSession         = $this->createMock(IUserSession::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
+        $this->translationHandler  = $this->createMock(TranslationHandler::class);
+        $this->languageService     = $this->createMock(LanguageService::class);
         $this->placeholderResolver = new PlaceholderResolver($this->userSession);
 
         $this->userSession->method('getUser')->willReturn(null);
         $this->organisationService->method('getActiveOrganisation')->willReturn(null);
         $this->permissionHandler->method('hasPermission')->willReturn(true);
+
+        // Default: no translatable properties (projection is a no-op) and
+        // do not request all translations. Individual tests override these.
+        $this->translationHandler->method('getTranslatableProperties')->willReturn([]);
+        $this->languageService->method('shouldReturnAllTranslations')->willReturn(false);
 
         // Wire a Postgres platform mock so detectDatabasePlatform() can
         // resolve cleanly when the runner annotates the cache-write
@@ -103,6 +114,8 @@ class AggregationRunnerAdhocCacheTest extends TestCase
             permissionHandler: $this->permissionHandler,
             userSession: $this->userSession,
             organisationService: $this->organisationService,
+            translationHandler: $this->translationHandler,
+            languageService: $this->languageService,
         );
 
     }//end setUp()
@@ -202,6 +215,114 @@ class AggregationRunnerAdhocCacheTest extends TestCase
         );
 
     }//end testCachePassesResolvedQueryToBothGetAndSet()
+
+
+    /**
+     * Task 2: a grouped aggregation on a `translatable: true` field MUST
+     * project each group `key` to the negotiated display language instead
+     * of returning the raw language-keyed map. Exercised through a cache
+     * hit (the projection runs after the cache boundary) with a REAL
+     * TranslationHandler + LanguageService so the language chain / fallback
+     * logic is genuinely driven, not mocked.
+     *
+     * Covers both wire shapes: the native SQL path returns a JSON string,
+     * the PHP-fallback path returns an associative array.
+     *
+     * @return void
+     */
+    public function testGroupedTranslatableKeysProjectToNegotiatedLanguage(): void
+    {
+        $languageService    = new LanguageService();
+        $translationHandler = new TranslationHandler(
+            $languageService,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
+        );
+
+        $runner = new AggregationRunner(
+            magicMapper: $this->magicMapper,
+            registerMapper: $this->registerMapper,
+            schemaMapper: $this->schemaMapper,
+            placeholders: $this->placeholderResolver,
+            db: $this->db,
+            cache: $this->cache,
+            permissionHandler: $this->permissionHandler,
+            userSession: $this->userSession,
+            organisationService: $this->organisationService,
+            translationHandler: $translationHandler,
+            languageService: $languageService,
+        );
+
+        // Group keys come back raw from the DB: native SQL as a JSON string,
+        // PHP-fallback as a real associative array. Both must project.
+        $stored = [
+            'groups'  => [
+                ['key' => '{"nl":"Open","en":"Open case"}', 'value' => 5],
+                ['key' => ['nl' => 'Gesloten', 'en' => 'Closed'], 'value' => 2],
+            ],
+            'backend' => 'postgres',
+            'cached'  => false,
+        ];
+        $this->cache->method('getAdhoc')->willReturn($stored);
+
+        $query = AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['field' => 'stage']
+        );
+
+        $result = $runner->runAdhoc(
+            register: $this->makeTranslatableRegister(),
+            schema: $this->makeTranslatableSchema(),
+            query: $query
+        );
+
+        $keys = array_column($result['groups'], 'key');
+        $this->assertSame(
+            ['Open', 'Gesloten'],
+            $keys,
+            'translatable group keys MUST project to the negotiated (default nl) language'
+        );
+
+    }//end testGroupedTranslatableKeysProjectToNegotiatedLanguage()
+
+
+    /**
+     * A schema whose `stage` property is translatable.
+     *
+     * @return Schema
+     */
+    private function makeTranslatableSchema(): Schema
+    {
+        $schema = new Schema();
+        $schema->setSlug('cases');
+        $schema->setId(2);
+        $schema->setProperties(
+            [
+                'stage' => [
+                    'type'         => 'string',
+                    'translatable' => true,
+                ],
+            ]
+        );
+        return $schema;
+
+    }//end makeTranslatableSchema()
+
+
+    /**
+     * A register whose default/only language is Dutch.
+     *
+     * @return Register
+     */
+    private function makeTranslatableRegister(): Register
+    {
+        $register = new Register();
+        $register->setSlug('caseregister');
+        $register->setSchemas([2]);
+        // Default language is derived from the first entry in languages.
+        $register->setLanguages(['nl', 'en']);
+        return $register;
+
+    }//end makeTranslatableRegister()
 
 
     private function makeSchema(): Schema

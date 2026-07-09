@@ -215,6 +215,7 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: OrganisationService::getUserOrganisationStats returns only the current user's own organisations.
      *
      * @return JSONResponse JSON response with organisations or error
      *
@@ -256,6 +257,8 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: OrganisationService::setActiveOrganisation enforces membership
+     *   (hasUser(userId) === false throws); a user cannot activate an organisation they do not belong to.
      *
      * @psalm-return JSONResponse<200|400,
      *     array{error?: string, message?: 'Active organisation set successfully',
@@ -324,6 +327,7 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped: returns only the current user's active organisation.
      *
      * @return JSONResponse Active organisation data
      *
@@ -387,6 +391,8 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Self-service, no object read: creates a new organisation with the current user added as owner;
+     *   no caller-supplied object id is read.
      *
      * @psalm-return JSONResponse<201|400,
      *     array{error?: string, message?: 'Organisation created successfully',
@@ -859,6 +865,8 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped: OrganisationService::clearCache clears only the current user's own caches keyed by UID;
+     *   not an instance-wide admin operation despite the name.
      *
      * @return JSONResponse Success response
      *

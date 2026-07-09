@@ -50,11 +50,15 @@ use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -591,8 +595,8 @@ class SchemaMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
-        // $this->verifyRbacPermission('create', 'schema');
+        // Verify RBAC permission to create.
+        $this->verifyRbacPermission(action: 'create', entityType: 'schema');
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate(entity: $entity);
 
@@ -628,9 +632,13 @@ class SchemaMapper extends QBMapper
         $this->validateCalculationsAnnotation(schema: $schema);
         $this->validateQualityAnnotation(schema: $schema);
         $this->validateDedupAnnotation(schema: $schema);
+        $this->validateSurvivorshipAnnotation(schema: $schema);
+        $this->validateMergeAnnotation(schema: $schema);
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
         $this->validateArchivalAnnotation(schema: $schema);
+        $this->validateHandoffAnnotation(schema: $schema);
+        $this->validateHandoffContractBinding(schema: $schema);
         $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
 
@@ -859,6 +867,78 @@ class SchemaMapper extends QBMapper
     }//end validateDedupAnnotation()
 
     /**
+     * Validate the optional `x-openregister-survivorship` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateSurvivorshipAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-survivorship'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-survivorship' => $annotation,
+        ];
+
+        $errors = (new SurvivorshipAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Survivorship is ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed survivorship block must not abort the whole
+        // schema import — the schema still stores objects, the golden record
+        // simply won't be materialised. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-survivorship annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (golden record not materialised): '.implode(' ', $messages)
+        );
+    }//end validateSurvivorshipAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-merge` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateMergeAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-merge'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'           => ($schema->getProperties() ?? []),
+            'x-openregister-merge' => $annotation,
+        ];
+
+        $errors = (new MergeAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Merge config is ADVISORY steward-action metadata, not a storage
+        // requirement. A malformed merge block must not abort the whole schema
+        // import — the schema still stores objects, merges simply fall back to
+        // the documented defaults. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-merge annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (merge falls back to defaults): '.implode(' ', $messages)
+        );
+    }//end validateMergeAnnotation()
+
+    /**
      * Validate the optional `x-openregister-notifications` annotation.
      *
      * @param Schema $schema Schema to validate.
@@ -947,7 +1027,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     private function validateArchivalAnnotation(Schema $schema): void
     {
@@ -967,6 +1047,89 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-archival: '.implode(' ', $messages));
     }//end validateArchivalAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-handoff` annotation (ADR-051).
+     *
+     * The annotation is stored under `configuration['x-openregister-handoff']`.
+     * A malformed handoff declaration REJECTS the schema (contract: schema-save
+     * validation SHALL reject with the typed handoff-* error codes) — unlike
+     * advisory annotations, a broken handoff would otherwise surface as a
+     * runtime conversion failure on user action.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/semantic-object-handoff/spec.md
+     *   (Requirement: `x-openregister-handoff` declarative dialect)
+     */
+    private function validateHandoffAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-handoff'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'               => ($schema->getProperties() ?? []),
+            'x-openregister-handoff'   => $annotation,
+            'x-openregister-lifecycle' => ($configuration['x-openregister-lifecycle'] ?? null),
+        ];
+
+        $errors = (new HandoffAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('x-openregister-handoff: '.implode(' ', $messages));
+    }//end validateHandoffAnnotation()
+
+    /**
+     * Validate the optional `handoffContract` binding block (ADR-051,
+     * provider side). Stored at `configuration['handoffContract']`; when
+     * present, every mandatory contract field of each bound kind must map to
+     * an existing own property — otherwise the schema is rejected with
+     * `handoff-contract-incomplete` listing the missing fields. A schema that
+     * implements a kind with NO binding block passes untouched (it is simply
+     * not a handoff provider).
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the binding block is incomplete or malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/semantic-object-handoff/spec.md
+     *   (Scenario: Implementer omits a mandatory contract field)
+     */
+    private function validateHandoffContractBinding(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        if (array_key_exists('handoffContract', $configuration) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'      => ($schema->getProperties() ?? []),
+            'handoffContract' => $configuration['handoffContract'],
+            'implements'      => ($configuration['implements'] ?? null),
+            'jsonld'          => ($configuration['jsonld'] ?? null),
+            'x-schema-org'    => ($configuration['x-schema-org'] ?? null),
+        ];
+
+        $errors = (new HandoffContractBindingValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('handoffContract: '.implode(' ', $messages));
+    }//end validateHandoffContractBinding()
 
     /**
      * Clean $ref properties to ensure they are strings
@@ -1342,8 +1505,8 @@ class SchemaMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
-        // $this->verifyRbacPermission('update', 'schema');
+        // Verify RBAC permission to update.
+        $this->verifyRbacPermission(action: 'update', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
@@ -1422,8 +1585,8 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $entity): Schema
     {
-        // Verify RBAC permission to delete
-        // $this->verifyRbacPermission('delete', 'schema');
+        // Verify RBAC permission to delete.
+        $this->verifyRbacPermission(action: 'delete', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
@@ -3323,7 +3486,7 @@ class SchemaMapper extends QBMapper
      * @psalm-return   list<int>
      * @phpstan-return array<int, int>
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     public function findNonSearchableIds(): array
     {
@@ -3357,7 +3520,7 @@ class SchemaMapper extends QBMapper
      * @psalm-return   list<int>
      * @phpstan-return array<int, int>
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     public function findSearchableIds(): array
     {

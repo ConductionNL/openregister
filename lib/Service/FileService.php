@@ -799,15 +799,33 @@ class FileService
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
-
-        $folder = $this->getObjectFolder(objectEntity: $entity);
         if ($entity instanceof Register) {
             $folder = $this->getRegisterFolderById(register: $entity);
-        }
 
-        if ($folder === null) {
-            throw new Exception("Cannot access folder for entity ".$entity->getId());
-        }
+            if ($folder === null) {
+                throw new Exception("Cannot access folder for entity ".$entity->getId());
+            }
+        } else {
+            // Read/list path for an object. Objects that have never had a files
+            // folder created (null/legacy/empty folder property), whose bound
+            // folder node no longer resolves, or whose folder is not accessible
+            // to the current caller simply have no files to list. Resolving the
+            // folder must not fail the whole request: degrade to an empty list
+            // (HTTP 200) instead of surfacing a 500. See ObjectFilesController::index.
+            try {
+                $folder = $this->getObjectFolder(objectEntity: $entity);
+            } catch (\Throwable $e) {
+                $this->logger->info(
+                    message: '[FileService] No accessible files folder for object '.$entity->getId().'; returning empty list: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return [];
+            }
+
+            if ($folder === null) {
+                return [];
+            }
+        }//end if
 
         $files = $folder->getDirectoryListing();
 
@@ -1953,8 +1971,11 @@ class FileService
      * This is a convenience method that creates replacement mappings
      * from entity detection results and applies them to a document.
      *
-     * @param Node  $node     The file node to anonymize.
-     * @param array $entities Array of detected entities with 'text' and 'key' fields.
+     * @param Node        $node       The file node to anonymize.
+     * @param array       $entities   Array of detected entities with 'text' and 'key' fields.
+     * @param string      $scope      Placeholder-numbering scope: 'document' (default) or 'dossier'.
+     * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
+     *                                back to the file's parent folder.
      *
      * @throws Exception If anonymization fails.
      *
@@ -1962,11 +1983,17 @@ class FileService
      *
      * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
      */
-    public function anonymizeDocument(Node $node, array $entities): Node
-    {
+    public function anonymizeDocument(
+        Node $node,
+        array $entities,
+        string $scope='document',
+        ?string $dossierKey=null
+    ): Node {
         return $this->documentProcessingHandler->anonymizeDocument(
             node: $node,
-            entities: $entities
+            entities: $entities,
+            scope: $scope,
+            dossierKey: $dossierKey
         );
     }//end anonymizeDocument()
 
@@ -1986,6 +2013,23 @@ class FileService
     {
         return $this->documentProcessingHandler->getLastResidualEntities();
     }//end getLastResidualEntities()
+
+    /**
+     * Per-entity placeholder map from the most recent anonymizeDocument() call.
+     *
+     * Maps the internal global entity id (stringified) to the exact placeholder
+     * string emitted into the document (e.g. `"7" => "[PERSOON: 1]"`), so the
+     * caller (DocuDesk's grondslagen-summary) can render the same placeholder
+     * the document carries rather than re-deriving it from the global id.
+     *
+     * @return array<string, string> Map of global entity id → emitted placeholder.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastPlaceholderMap.
+     */
+    public function getLastPlaceholderMap(): array
+    {
+        return $this->documentProcessingHandler->getLastPlaceholderMap();
+    }//end getLastPlaceholderMap()
 
     /**
      * Get the file versioning handler.

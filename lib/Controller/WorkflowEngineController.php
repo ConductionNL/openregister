@@ -93,6 +93,13 @@ class WorkflowEngineController extends Controller
      */
     public function index(): JSONResponse
     {
+        // SEC-CTRL: admin-only — workflow engines are instance-wide integration
+        // config; the serialized metadata exposes internal baseUrl/healthStatus.
+        // Reads are gated like the create/update/delete siblings.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         $engines = $this->registry->getEngines();
 
         return new JSONResponse(
@@ -113,6 +120,12 @@ class WorkflowEngineController extends Controller
      */
     public function show(int $id): JSONResponse
     {
+        // SEC-CTRL: admin-only — see index(); engine metadata exposes internal
+        // baseUrl/healthStatus of an instance-wide integration.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $engine = $this->registry->getEngine($id);
 

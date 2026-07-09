@@ -110,6 +110,8 @@ class McpController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Closed enum, no object: McpDiscoveryService::getCapabilityDetail maps the capability
+     *   name against a fixed hardcoded allowlist and returns 404 otherwise; no OpenRegister object lookup.
      *
      * @CORS
      *

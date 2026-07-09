@@ -438,8 +438,6 @@ class SearchTrailController extends Controller
     /**
      * Get search statistics for a given period
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search statistics
@@ -448,6 +446,11 @@ class SearchTrailController extends Controller
      */
     public function statistics(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract date filters.
         $params = $this->extractRequestParameters();
 
@@ -467,8 +470,6 @@ class SearchTrailController extends Controller
     /**
      * Get popular search terms
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with popular search terms
@@ -477,6 +478,11 @@ class SearchTrailController extends Controller
      */
     public function popularTerms(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params = $this->extractRequestParameters();
         // Prioritize underscore-prefixed limit parameter.
@@ -520,8 +526,6 @@ class SearchTrailController extends Controller
     /**
      * Get search activity by time period
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search activity data
@@ -530,6 +534,11 @@ class SearchTrailController extends Controller
      */
     public function activity(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params   = $this->extractRequestParameters();
         $interval = $this->request->getParam(key: 'interval', default: 'day');
@@ -550,8 +559,6 @@ class SearchTrailController extends Controller
     /**
      * Get search statistics by register and schema
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with register schema statistics
@@ -560,6 +567,11 @@ class SearchTrailController extends Controller
      */
     public function registerSchemaStats(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params = $this->extractRequestParameters();
 
@@ -603,8 +615,6 @@ class SearchTrailController extends Controller
     /**
      * Get user agent statistics
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with user agent statistics
@@ -613,6 +623,11 @@ class SearchTrailController extends Controller
      */
     public function userAgentStats(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract parameters.
         $params = $this->extractRequestParameters();
         // Prioritize underscore-prefixed limit parameter.
@@ -692,8 +707,6 @@ class SearchTrailController extends Controller
     /**
      * Clean up old search trail logs
      *
-     * @NoAdminRequired
-     *
      * @return JSONResponse JSON response containing cleanup operation results
      *
      * @NoCSRFRequired
@@ -715,6 +728,11 @@ class SearchTrailController extends Controller
      */
     public function cleanup(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract date parameter.
         $before     = $this->request->getParam(key: 'before');
         $beforeDate = null;
@@ -739,7 +757,10 @@ class SearchTrailController extends Controller
     /**
      * Export search trail logs in specified format
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired): search-trail
+     * rows carry per-search IP, user id, user-agent and query string across
+     * every register/schema (cross-tenant PII, wave-3 C7), like the sibling
+     * analytics/destructive endpoints. Body `requireAdmin()` is defence-in-depth.
      *
      * @NoCSRFRequired
      *
@@ -749,6 +770,11 @@ class SearchTrailController extends Controller
      */
     public function export(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract request parameters.
         $params = $this->extractRequestParameters();
 
@@ -843,8 +869,6 @@ class SearchTrailController extends Controller
      *
      * @param int $id The search trail ID to delete
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
@@ -853,6 +877,11 @@ class SearchTrailController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             // Validate that search trail exists (validation only).
             $this->searchTrailService->getSearchTrail($id);
@@ -885,8 +914,6 @@ class SearchTrailController extends Controller
     /**
      * Delete multiple search trail logs based on filters or specific IDs
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with multiple deletion result
@@ -895,6 +922,11 @@ class SearchTrailController extends Controller
      */
     public function destroyMultiple(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             // TODO: Implement multiple search trail deletion.
             // $ids = $this->request->getParam(key: 'ids', default: null);
@@ -958,13 +990,17 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse A JSON response indicating success or failure
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function clearAll(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             /*
              * Get the search trail mapper from the container.

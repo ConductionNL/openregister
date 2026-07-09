@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -416,6 +418,8 @@ class AggregationRunnerNativeBucketTest extends TestCase
             permissionHandler: $this->permissionHandler,
             userSession: $this->userSession,
             organisationService: $this->organisationService,
+            translationHandler: $this->createMock(TranslationHandler::class),
+            languageService: $this->createMock(LanguageService::class),
         );
 
     }//end makeRunner()

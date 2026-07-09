@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\IRequest;
@@ -97,6 +98,13 @@ class WebhookService
     private ?CloudEventFormatter $cloudEventFormatter;
 
     /**
+     * Job list used to enqueue asynchronous webhook delivery.
+     *
+     * @var IJobList
+     */
+    private IJobList $jobList;
+
+    /**
      * Mapping service for payload transformation
      *
      * @var MappingService
@@ -118,6 +126,7 @@ class WebhookService
      * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
      * @param MappingService           $mappingService      Mapping service
      * @param MappingMapper            $mappingMapper       Mapping mapper
+     * @param IJobList                 $jobList             Background job list for async delivery
      * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
      *
      * @return void
@@ -128,6 +137,7 @@ class WebhookService
         WebhookLogMapper $webhookLogMapper,
         MappingService $mappingService,
         MappingMapper $mappingMapper,
+        IJobList $jobList,
         ?CloudEventFormatter $cloudEventFormatter=null
     ) {
         $this->webhookMapper    = $webhookMapper;
@@ -135,6 +145,7 @@ class WebhookService
         $this->webhookLogMapper = $webhookLogMapper;
         $this->mappingService   = $mappingService;
         $this->mappingMapper    = $mappingMapper;
+        $this->jobList          = $jobList;
         $this->cloudEventFormatter = $cloudEventFormatter;
         $this->initializeHttpClient();
     }//end __construct()
@@ -639,8 +650,21 @@ class WebhookService
             ]
         );
 
+        // Enqueue delivery (including the FIRST attempt) as a background job so
+        // the object-write response never blocks on an external endpoint — with
+        // N webhooks each up to a 30s timeout, synchronous delivery made write
+        // latency a function of third-party uptime (async-webhook-delivery /
+        // ADR-009 Rule 5). WebhookDeliveryJob performs the same delivery + logging.
         foreach ($webhooks as $webhook) {
-            $this->deliverWebhook(webhook: $webhook, eventName: $eventName, payload: $payload);
+            $this->jobList->add(
+                WebhookDeliveryJob::class,
+                [
+                    'webhook_id' => $webhook->getId(),
+                    'event_name' => $eventName,
+                    'payload'    => $payload,
+                    'attempt'    => 1,
+                ]
+            );
         }
     }//end dispatchEvent()
 

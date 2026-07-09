@@ -1,5 +1,8 @@
 <?php
+
 /**
+ * OpenRegister FlowActionListener
+ *
  * Listener that runs declarative schema flows on object-lifecycle events.
  *
  * Bridges the OpenRegister object-lifecycle events to the FlowActionService,
@@ -9,6 +12,15 @@
  *
  * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -24,11 +36,12 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
+ * Listener that fires declarative schema flows on object-lifecycle events.
+ *
  * @template-implements IEventListener<Event>
  */
 class FlowActionListener implements IEventListener
 {
-
     /**
      * Constructor.
      *
@@ -45,6 +58,8 @@ class FlowActionListener implements IEventListener
      * @param Event $event The dispatched lifecycle event.
      *
      * @return void
+     *
+     * @spec exclude declarative-flow engine ships without a formal openspec change; spec to be added in a follow-up ADR
      */
     public function handle(Event $event): void
     {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister declarative flow engine.
  *
@@ -13,8 +14,24 @@
  * remaining actions/flows still run, so business logic can never corrupt a
  * write.
  *
+ * The `agent` action is the ADR-041 cross-app command exception: it dispatches
+ * an `AgentRunRequestedEvent` via `IEventDispatcher` instead of invoking an agent
+ * runtime inline — OpenRegister never calls Hermiq (or any agent-runtime app)
+ * directly. See lib/Event/AgentRunRequestedEvent.php.
+ *
  * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Flow
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/flow-agent-action/specs/flow-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -24,16 +41,28 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\AgentRunRequestedEvent;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
 use OCP\Mail\IMailer;
 use Psr\Log\LoggerInterface;
 
 /**
  * Executes declarative flows attached to a schema via `x-openregister-flows`.
+ *
+ * @spec openspec/changes/flow-agent-action/tasks.md#task-2-2
  */
 class FlowActionService
 {
+    /**
+     * Dispatch modes the `agent` action supports in v1. Sync inline execution is
+     * explicitly out of scope (SPECTR-NEXTCLOUD-PLAN.md §5.2 point 5) — a config
+     * requesting any other mode is malformed and the action is skipped.
+     *
+     * @var array<int, string>
+     */
+    private const SUPPORTED_AGENT_MODES = ['async'];
 
     /**
      * Constructor.
@@ -43,13 +72,15 @@ class FlowActionService
      * @param IMailer              $mailer               Sends email notifications.
      * @param IConfig              $config               Reads the instance mail-from address.
      * @param LoggerInterface      $logger               Logs flow execution + failures.
+     * @param IEventDispatcher     $eventDispatcher      Dispatches AgentRunRequestedEvent (ADR-041).
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly CalendarEventService $calendarEventService,
         private readonly IMailer $mailer,
         private readonly IConfig $config,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
     }//end __construct()
 
@@ -60,6 +91,8 @@ class FlowActionService
      * @param string       $trigger One of 'created' | 'updated' | 'deleted'.
      *
      * @return void
+     *
+     * @spec exclude declarative-flow engine ships without a formal openspec change; spec to be added in a follow-up ADR
      */
     public function run(ObjectEntity $object, string $trigger): void
     {
@@ -221,6 +254,9 @@ class FlowActionService
                 case 'mail':
                     $this->runEmail(action: $action, data: $data);
                     break;
+                case 'agent':
+                    $this->runAgent(action: $action, object: $object, data: $data, flowName: $flowName);
+                    break;
                 default:
                     $this->logger->warning(
                         message: '[FlowActionService] Unknown flow action type',
@@ -305,10 +341,88 @@ class FlowActionService
         $message->setSubject($subject);
         $message->setPlainBody($body);
 
-        $from = $this->config->getSystemValue('mail_from_address', 'no-reply');
+        $from   = $this->config->getSystemValue('mail_from_address', 'no-reply');
         $domain = $this->config->getSystemValue('mail_domain', 'localhost');
         $message->setFrom([$from.'@'.$domain => 'OpenRegister']);
 
         $this->mailer->send($message);
     }//end runEmail()
+
+    /**
+     * Dispatch an `AgentRunRequestedEvent` requesting a governed agent run.
+     *
+     * OpenRegister never invokes an agent runtime inline and never calls the
+     * consuming app (e.g. Hermiq) directly — this is the ADR-041 cross-app
+     * command recipe. A consumer app registers an `IEventListener` for
+     * `AgentRunRequestedEvent` and performs the governed run (kill-switch,
+     * human-approval gate, redacted audit, the agent turn, and the result
+     * write-back) through its own services. If no listener is installed the
+     * dispatch is a silent no-op — objects keep flowing (SPECTR-NEXTCLOUD-PLAN.md
+     * §5.2 point 4).
+     *
+     * Config keys: agent (required, UUID), skill (optional slug), prompt
+     * (required, templated), resultField (required), requiresApproval
+     * (optional, default false), mode (optional, default "async" — the only
+     * supported value in v1).
+     *
+     * @param array<string, mixed> $action   The action config.
+     * @param ObjectEntity         $object   The triggering object.
+     * @param array<string, mixed> $data     The template context.
+     * @param string               $flowName The owning flow name (for logging).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/flow-agent-action/tasks.md#task-2-2
+     */
+    private function runAgent(array $action, ObjectEntity $object, array $data, string $flowName): void
+    {
+        $agent = trim((string) ($action['agent'] ?? ''));
+        if ($agent === '') {
+            $this->logger->warning(
+                message: '[FlowActionService] Malformed agent flow action: missing "agent" reference',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowName, 'object' => $object->getUuid()]
+            );
+            return;
+        }
+
+        $resultField = trim((string) ($action['resultField'] ?? ''));
+        if ($resultField === '') {
+            $this->logger->warning(
+                message: '[FlowActionService] Malformed agent flow action: missing "resultField"',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowName, 'object' => $object->getUuid()]
+            );
+            return;
+        }
+
+        $mode = (string) ($action['mode'] ?? 'async');
+        if (in_array($mode, self::SUPPORTED_AGENT_MODES, true) === false) {
+            $this->logger->warning(
+                message: '[FlowActionService] Malformed agent flow action: unsupported mode (only "async" is supported in v1)',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowName, 'mode' => $mode, 'object' => $object->getUuid()]
+            );
+            return;
+        }
+
+        $skill = null;
+        if (isset($action['skill']) === true && trim((string) $action['skill']) !== '') {
+            $skill = trim((string) $action['skill']);
+        }
+
+        $prompt = $this->render(template: ($action['prompt'] ?? ''), data: $data);
+
+        $event = new AgentRunRequestedEvent(
+            subjectUuid: (string) $object->getUuid(),
+            subjectRegister: (string) $object->getRegister(),
+            subjectSchema: (string) $object->getSchema(),
+            agent: $agent,
+            skill: $skill,
+            prompt: $prompt,
+            resultField: $resultField,
+            requiresApproval: (bool) ($action['requiresApproval'] ?? false),
+            mode: $mode,
+            flowName: $flowName
+        );
+
+        $this->eventDispatcher->dispatchTyped($event);
+    }//end runAgent()
 }//end class
