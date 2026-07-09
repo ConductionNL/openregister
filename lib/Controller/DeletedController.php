@@ -364,6 +364,12 @@ class DeletedController extends Controller
      */
     public function topDeleters(): JSONResponse
     {
+        // SEC-CTRL: admin-only — cross-user deletion analytics (usernames are
+        // PII); a tenant-wide management surface, not per-user data.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // TODO: Implement aggregation query to get top deleters from deleted objects.
             // For now, return mock data structure.

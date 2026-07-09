@@ -552,14 +552,26 @@ class ChatStreamController extends Controller
     }//end clearOutputBuffers()
 
     /**
-     * Emit the three SSE response headers. Extracted so tests can skip
-     * (header() emits a "headers already sent" warning under PHPUnit
-     * because the test runner has already written output).
+     * Emit the three SSE response headers, plus the or-chat-proxy-deprecation
+     * compat-window headers. Extracted so tests can skip (header() emits a
+     * "headers already sent" warning under PHPUnit because the test runner
+     * has already written output).
+     *
+     * The three deprecation headers are added here — rather than relying on
+     * ChatCompatMiddleware::afterController() the way every other
+     * chat-family controller does — because this method always terminates
+     * via `exit;` (see stream()'s docblock) and bypasses the AppFramework
+     * Response/middleware pipeline entirely on the local-serving path.
+     * ChatCompatMiddleware still covers the *proxied* path (its
+     * beforeController() redirect short-circuits before stream() ever runs,
+     * so afterController() applies there as normal); this is only the
+     * local-serving fallback.
      *
      * @return void
      *
-     * @spec exclude SSE-framing helper: emits the three text/event-stream response headers;
-     *              the streaming endpoint contract is owned by
+     * @spec exclude SSE-framing helper: emits the three text/event-stream response headers
+     *              plus the or-chat-proxy-deprecation compat headers; the streaming endpoint
+     *              contract is owned by
      *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitSseHeaders(): void
@@ -567,6 +579,10 @@ class ChatStreamController extends Controller
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache');
         header('X-Accel-Buffering: no');
+        // Or-chat-proxy-deprecation compat window — see ChatCompatMiddleware.
+        header('Deprecation: Mon, 06 Jul 2026 00:00:00 GMT');
+        header('Sunset: Wed, 06 Jan 2027 00:00:00 GMT');
+        header('Link: </apps/hermiq/api/chat>; rel="successor-version"');
     }//end emitSseHeaders()
 
     /**

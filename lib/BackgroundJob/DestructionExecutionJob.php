@@ -121,6 +121,16 @@ class DestructionExecutionJob extends QueuedJob
                 return;
             }
 
+            // Re-entrancy guard (harden-retention-destruction): claim the list by
+            // transitioning approved -> executing and persisting it BEFORE the
+            // batch loop. A concurrent or retried run then loads status
+            // 'executing', fails the approved-check above, and exits — preventing
+            // the same objects being deleted twice and duplicate audit rows.
+            $listData['status']      = 'executing';
+            $listData['executingAt'] = (new DateTime())->format('c');
+            $listObject->setObject($listData);
+            $objectMapper->update($listObject);
+
             $objects        = $listData['objects'] ?? [];
             $destroyedCount = 0;
             $skippedHolds   = 0;

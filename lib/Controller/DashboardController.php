@@ -28,7 +28,9 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -87,6 +89,8 @@ class DashboardController extends Controller
      * @param IRequest         $request          The HTTP request object
      * @param DashboardService $dashboardService The dashboard service instance
      * @param LoggerInterface  $logger           Logger instance for error tracking
+     * @param IUserSession     $userSession      Active user session for caller identity
+     * @param IGroupManager    $groupManager     Group manager for admin checks
      *
      * @return void
      */
@@ -94,7 +98,9 @@ class DashboardController extends Controller
         string $appName,
         IRequest $request,
         DashboardService $dashboardService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -103,6 +109,27 @@ class DashboardController extends Controller
         $this->dashboardService = $dashboardService;
         $this->logger           = $logger;
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * The dashboard analytics aggregate object counts, storage sizes and audit
+     * activity across ALL registers/schemas (tenant-wide, no per-register
+     * scoping). Returning them to a non-admin leaks cross-tenant data, so these
+     * endpoints are admin-only — consistent with the SearchTrail/AuditTrail
+     * analytics posture.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * Returns the template of the dashboard page
@@ -271,6 +298,10 @@ class DashboardController extends Controller
     #[NoCSRFRequired]
     public function index(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             // Get all request parameters.
             $params = $this->request->getParams();
@@ -323,6 +354,10 @@ class DashboardController extends Controller
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             // Calculate sizes and statistics using dashboard service.
             // Service handles aggregation of object and log sizes.
@@ -370,6 +405,10 @@ class DashboardController extends Controller
         ?int $registerId=null,
         ?int $schemaId=null
     ): JSONResponse {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $fromDate = null;
             if ($from !== null) {
@@ -413,6 +452,10 @@ class DashboardController extends Controller
      */
     public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getObjectsByRegisterChartData(registerId: $registerId, schemaId: $schemaId);
             return new JSONResponse(data: $data);
@@ -441,6 +484,10 @@ class DashboardController extends Controller
      */
     public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getObjectsBySchemaChartData(registerId: $registerId, schemaId: $schemaId);
             return new JSONResponse(data: $data);
@@ -471,6 +518,10 @@ class DashboardController extends Controller
      */
     public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getObjectsBySizeChartData(registerId: $registerId, schemaId: $schemaId);
             return new JSONResponse(data: $data);
@@ -501,6 +552,10 @@ class DashboardController extends Controller
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getAuditTrailStatistics(
                 registerId: $registerId,
@@ -534,6 +589,10 @@ class DashboardController extends Controller
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getAuditTrailActionDistribution(
                 registerId: $registerId,
@@ -572,6 +631,10 @@ class DashboardController extends Controller
         ?int $limit=10,
         ?int $hours=24
     ): JSONResponse {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getMostActiveObjects(
                 registerId: $registerId,

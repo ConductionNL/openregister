@@ -44,7 +44,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
@@ -89,6 +91,8 @@ class AggregationRunner
      * @param PermissionHandler    $permissionHandler   RBAC verdict on the schema's `list` action.
      * @param IUserSession         $userSession         Active session, for the RBAC + cache-key user scope.
      * @param OrganisationService  $organisationService Active-organisation lookup for the cache key.
+     * @param TranslationHandler   $translationHandler  Resolves translatable group keys to the negotiated language.
+     * @param LanguageService      $languageService     Request-scoped language negotiation (Accept-Language / _lang).
      * @param LoggerInterface|null $logger              Optional logger for diagnostics.
      *
      * @return void
@@ -107,6 +111,8 @@ class AggregationRunner
         private readonly PermissionHandler $permissionHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
+        private readonly TranslationHandler $translationHandler,
+        private readonly LanguageService $languageService,
         private readonly ?LoggerInterface $logger=null
     ) {
     }//end __construct()
@@ -240,6 +246,13 @@ class AggregationRunner
         $filter  = (array) ($spec['filter'] ?? $spec['where'] ?? []);
         $groupBy = ($spec['groupBy'] ?? null);
 
+        // Normalized groupBy spec (array or null) — used both for the native
+        // path argument and for translatable group-key projection.
+        $groupByArg = null;
+        if (is_array($groupBy) === true) {
+            $groupByArg = $groupBy;
+        }
+
         $resolvedFilter = $this->placeholders->resolveArray($filter);
 
         // Cache lookup: the resolved filter (with placeholders concrete)
@@ -264,7 +277,13 @@ class AggregationRunner
         );
         if ($cached !== null) {
             $cached['cached'] = true;
-            return $cached;
+            // Cache stores raw group keys (language-agnostic key), project on read.
+            return $this->projectTranslatableGroupKeys(
+                envelope: $cached,
+                schema: $schema,
+                register: $register,
+                groupBy: $groupByArg
+            );
         }
 
         // Try the Postgres-native fast path. Falls back to PHP when the
@@ -275,10 +294,7 @@ class AggregationRunner
             $nativeFieldArg = $field;
         }
 
-        $nativeGroupByArg = null;
-        if (is_array($groupBy) === true) {
-            $nativeGroupByArg = $groupBy;
-        }
+        $nativeGroupByArg = $groupByArg;
 
         $native = $this->tryNativeAggregation(
             register: $register,
@@ -312,7 +328,12 @@ class AggregationRunner
                 filter: $cacheKey,
                 result: $result
             );
-            return $result;
+            return $this->projectTranslatableGroupKeys(
+                envelope: $result,
+                schema: $schema,
+                register: $register,
+                groupBy: $nativeGroupByArg
+            );
         }//end if
 
         // Fall back: pull objects and filter in PHP.
@@ -378,7 +399,12 @@ class AggregationRunner
             filter: $cacheKey,
             result: $result
         );
-        return $result;
+        return $this->projectTranslatableGroupKeys(
+            envelope: $result,
+            schema: $schema,
+            register: $register,
+            groupBy: $groupByArg
+        );
     }//end run()
 
     /**
@@ -480,7 +506,15 @@ class AggregationRunner
         );
         if ($cached !== null) {
             $cached['cached'] = true;
-            return $cached;
+            // The cache stores RAW group keys (the cache key is language-
+            // agnostic), so translatable keys must be projected on every
+            // read, including cache hits.
+            return $this->projectTranslatableGroupKeys(
+                envelope: $cached,
+                schema: $schema,
+                register: $register,
+                groupBy: $query->groupBy
+            );
         }
 
         // Try the Postgres / MySQL / SQLite native fast path. The runner
@@ -503,14 +537,22 @@ class AggregationRunner
                 'backend' => $this->detectDatabasePlatform(),
                 'cached'  => false,
             ] + $native;
+            // Cache the RAW (un-projected) group keys — the cache key does
+            // not encode the negotiated language, so language projection
+            // must happen after the cache boundary on every read.
             $this->cache->setAdhoc(
                 registerSlug: (string) $register->getSlug(),
                 schemaSlug: (string) $schema->getSlug(),
                 query: $resolvedQuery,
                 result: $envelope
             );
-            return $envelope;
-        }
+            return $this->projectTranslatableGroupKeys(
+                envelope: $envelope,
+                schema: $schema,
+                register: $register,
+                groupBy: $query->groupBy
+            );
+        }//end if
 
         // PHP fallback path. Pull the RBAC-filtered row set + bucket in
         // PHP. Correctness path; the native paths above are the
@@ -530,9 +572,147 @@ class AggregationRunner
             query: $resolvedQuery,
             result: $envelope
         );
-        return $envelope;
+        return $this->projectTranslatableGroupKeys(
+            envelope: $envelope,
+            schema: $schema,
+            register: $register,
+            groupBy: $query->groupBy
+        );
 
     }//end runAdhoc()
+
+    /**
+     * Project translatable group keys in a grouped-aggregation envelope to
+     * the negotiated display language.
+     *
+     * `GET /api/objects/aggregations/{register}/{schema}/grouped` groups on
+     * a single field via SQL `GROUP BY` (native path) or PHP bucketing
+     * (fallback). When that field is `translatable: true`, the stored value
+     * is a language-keyed map (e.g. `{"nl":"Foo","en":"Bar"}`), so each
+     * group `key` comes back as the raw map (native: a JSON string; PHP: an
+     * associative array) instead of the single projected string a normal
+     * read returns.
+     *
+     * This projects each such key to the caller's negotiated language,
+     * reusing {@see TranslationHandler::resolveTranslationsForRender()} for
+     * the language chain / fallback logic rather than reimplementing it.
+     *
+     * No-op when:
+     * - the envelope carries no `groups`;
+     * - there is no single scalar `groupBy.field`;
+     * - the groupBy field is NOT translatable on the schema;
+     * - `?_translations=all` is requested (keys are returned verbatim).
+     *
+     * @param array<string, mixed>      $envelope The aggregation result envelope.
+     * @param Schema                    $schema   The schema being aggregated.
+     * @param Register                  $register The owning register (language config).
+     * @param array<string, mixed>|null $groupBy  The groupBy spec ({field: ...}).
+     *
+     * @return array<string, mixed> The envelope with translatable group keys projected.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *   The method is a chain of cheap short-circuit guards (no groups /
+     *   no groupBy field / not translatable / _translations=all) before
+     *   the projection loop; each guard adds a branch but keeps the hot
+     *   path a single early return.
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function projectTranslatableGroupKeys(
+        array $envelope,
+        Schema $schema,
+        Register $register,
+        ?array $groupBy
+    ): array {
+        if (isset($envelope['groups']) === false || is_array($envelope['groups']) === false) {
+            return $envelope;
+        }
+
+        if ($groupBy === null || isset($groupBy['field']) === false) {
+            return $envelope;
+        }
+
+        $groupField = (string) $groupBy['field'];
+
+        // Only project when the grouped field is actually translatable.
+        // getTranslatableProperties() is cheap and this keeps NON-translatable
+        // grouped fields byte-for-byte unchanged.
+        $translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
+        if (in_array($groupField, $translatableProps, true) === false) {
+            return $envelope;
+        }
+
+        // `?_translations=all` returns keys verbatim.
+        if ($this->languageService->shouldReturnAllTranslations() === true) {
+            return $envelope;
+        }
+
+        foreach ($envelope['groups'] as $index => $group) {
+            if (is_array($group) === false || array_key_exists('key', $group) === false) {
+                continue;
+            }
+
+            $envelope['groups'][$index]['key'] = $this->projectSingleTranslatableKey(
+                rawKey: $group['key'],
+                groupField: $groupField,
+                schema: $schema,
+                register: $register
+            );
+        }
+
+        return $envelope;
+
+    }//end projectTranslatableGroupKeys()
+
+    /**
+     * Project a single grouped key value to the negotiated language.
+     *
+     * Normalizes the raw key to a language-keyed map (native path yields a
+     * JSON string, PHP path an array), then delegates to
+     * {@see TranslationHandler::resolveTranslationsForRender()} by wrapping
+     * the map under the grouped field name and reading the resolved value
+     * back. Non-map keys (already scalar, e.g. legacy untranslated rows) are
+     * returned unchanged.
+     *
+     * @param mixed    $rawKey     The raw group key (JSON string or array).
+     * @param string   $groupField The grouped field name.
+     * @param Schema   $schema     The schema being aggregated.
+     * @param Register $register   The owning register (language config).
+     *
+     * @return mixed The projected scalar value, or the original key when not a map.
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     */
+    private function projectSingleTranslatableKey(
+        mixed $rawKey,
+        string $groupField,
+        Schema $schema,
+        Register $register
+    ): mixed {
+        $map = $rawKey;
+
+        // Native SQL returns the JSON column value as a string; decode it.
+        if (is_string($rawKey) === true) {
+            $decoded = json_decode($rawKey, true);
+            if (is_array($decoded) === true) {
+                $map = $decoded;
+            }
+        }
+
+        // Not a language-keyed map (scalar / legacy untranslated) — leave it.
+        if (is_array($map) === false) {
+            return $rawKey;
+        }
+
+        $resolved = $this->translationHandler->resolveTranslationsForRender(
+            objectData: [$groupField => $map],
+            schema: $schema,
+            register: $register
+        );
+
+        return $resolved[$groupField] ?? $rawKey;
+
+    }//end projectSingleTranslatableKey()
 
     /**
      * Convenience: run an ad-hoc aggregation by register/schema ref.

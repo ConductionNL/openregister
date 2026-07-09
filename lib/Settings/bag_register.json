@@ -34,6 +34,7 @@
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG address designation (house number + postal code combination)",
         "description": "A nummeraanduiding is the official BAG object that assigns a house number (with optional letter and addition) and postal code to an addressable object. It links a human-readable address to a verblijfsobject, standplaats, or ligplaats via the BAG identification system.",
+        "x-schema-org": "schema:PostalAddress",
         "required": [
           "identificatie",
           "huisnummer",
@@ -135,6 +136,7 @@
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG dwelling unit or usable space within a building",
         "description": "A verblijfsobject is the smallest usable unit within one or more panden (buildings) that is suitable for residential, office, retail, or other use. It has one or more gebruiksdoelen (usage purposes) and a floor area in square meters.",
+        "x-schema-org": "schema:Place",
         "required": [
           "identificatie",
           "gebruiksdoel",
@@ -225,6 +227,7 @@
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG building (pand)",
         "description": "A pand is the smallest building unit that is architecturally self-contained, accessible from the outside, and functionally independent. Each pand has a construction year and a status indicating its lifecycle state.",
+        "x-schema-org": "schema:Place",
         "required": [
           "identificatie",
           "oorspronkelijkBouwjaar",

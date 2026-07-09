@@ -10,8 +10,14 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\VectorizationService;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\Files\Node;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -36,6 +42,19 @@ class FileExtractionControllerDeepTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->riskLevelService = $this->createMock(RiskLevelService::class);
 
+        // Authenticated admin with a user folder that resolves every file ID so
+        // the per-file (hasFileAccess) and admin (isCurrentUserAdmin) guards pass.
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($admin);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+        $rootFolder = $this->createMock(IRootFolder::class);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+
         $this->controller = new FileExtractionController(
             'openregister',
             $this->request,
@@ -43,7 +62,10 @@ class FileExtractionControllerDeepTest extends TestCase
             $this->vectorizationService,
             $this->chunkMapper,
             $this->entityRelationMapper,
-            $this->riskLevelService
+            $this->riskLevelService,
+            $rootFolder,
+            $userSession,
+            $groupManager
         );
     }
 

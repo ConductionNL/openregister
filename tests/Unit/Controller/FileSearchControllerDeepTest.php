@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileSearchController;
+use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -16,6 +17,7 @@ class FileSearchControllerDeepTest extends TestCase
     private FileSearchController $controller;
     private IRequest|MockObject $request;
     private VectorizationService|MockObject $vectorService;
+    private ChunkMapper|MockObject $chunkMapper;
     private LoggerInterface|MockObject $logger;
 
     protected function setUp(): void
@@ -24,12 +26,14 @@ class FileSearchControllerDeepTest extends TestCase
 
         $this->request      = $this->createMock(IRequest::class);
         $this->vectorService = $this->createMock(VectorizationService::class);
+        $this->chunkMapper  = $this->createMock(ChunkMapper::class);
         $this->logger       = $this->createMock(LoggerInterface::class);
 
         $this->controller = new FileSearchController(
             'openregister',
             $this->request,
             $this->vectorService,
+            $this->chunkMapper,
             $this->logger
         );
     }

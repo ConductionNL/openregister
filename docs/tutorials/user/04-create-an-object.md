@@ -10,7 +10,7 @@ An *object* is one row of data — one car, one contract, one publication. It li
 
 ## Goal
 
-By the end you will have one object stored in your register, visible in the **Search / views** list for that register and schema.
+By the end you will have one object stored in your register, visible in both the global **Objects** list and in the register's own **Objects** tab.
 
 ## Prerequisites
 
@@ -19,13 +19,11 @@ By the end you will have one object stored in your register, visible in the **Se
 
 ## Steps
 
-1. Open **Search / views** from the app navigation — this is where you browse and create objects. Pick a **Register** and a **Schema** in the sidebar; the object list for that register + schema loads (or *No objects found* on an empty one).
+1. Open the register from the **Registers** list and switch to the **Objects** tab. The tab shows the objects of every schema attached to the register (or *No objects* on an empty one). Click **Add Object**. A schema picker opens if the register has more than one schema attached — pick the schema you want.
 
-   > **Shortcut:** from a register's detail page (**Registers → your register**) open a schema's **⋯ → View objects**. That lands you here with the register and schema already selected.
+   ![Register Objects tab with Add Object dialog](/screenshots/tutorials/user/04-create-an-object-01.png)
 
-   ![Search / views with a register and schema selected](/screenshots/tutorials/user/04-create-an-object-01.png)
-
-2. Click **Add Object**. The create dialog renders a form generated straight from the schema. Each property becomes one field, typed correctly — strings get a text input, dates get a date picker, enums get a dropdown, booleans get a checkbox. Required fields are marked.
+2. The create dialog renders a form generated straight from the schema. Each property becomes one field, typed correctly — strings get a text input, dates get a date picker, enums get a dropdown, booleans get a checkbox. Required fields are marked.
 
    ![Schema-driven object create form](/screenshots/tutorials/user/04-create-an-object-02.png)
 
@@ -37,19 +35,19 @@ By the end you will have one object stored in your register, visible in the **Se
 
    ![Object detail page](/screenshots/tutorials/user/04-create-an-object-04.png)
 
-5. Go back to **Search / views** (with the same register + schema selected). Your new object appears as one row, with the schema title rendered as a chip, the *status* enum value, and a timestamp.
+5. Go back to the register's **Objects** tab. Your new object appears as one row, with the schema title rendered as a chip, the *status* enum value, and a timestamp. The global **Objects** view in the left nav also shows it.
 
-   ![Search / views with the new object row](/screenshots/tutorials/user/04-create-an-object-05.png)
+   ![Register Objects tab with new row](/screenshots/tutorials/user/04-create-an-object-05.png)
 
 ## Verification
 
-The object appears in the **Search / views** list for that register + schema, the **Properties** tab shows the values you typed, the **Audit Trails** tab has a `create` entry timestamped now, and the register's object counter in the statistics sidebar goes up by one.
+The object appears in the register's **Objects** tab and the global **Objects** view, the **Properties** tab shows the values you typed, the **Audit Trails** tab has a `create` entry timestamped now, and the register's object counter in the statistics sidebar goes up by one.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| **Add Object** is disabled | No register **and** schema is selected in the **Search / views** sidebar — pick both. (If the register has no schema attached at all, see [Create and attach a schema](03-create-a-schema.md).) |
+| **Add Object** is disabled | The register has no schema attached — see [Create and attach a schema](03-create-a-schema.md). |
 | Form opens but every field shows "unknown type" | The attached schema's *Source* tab has invalid JSON Schema — fix it before adding objects. |
 | Save fails with "validation failed: property X" | The value you typed doesn't match the schema rule for that property (required-but-empty, wrong enum value, regex mismatch). The error message names the offending property. |
 | Object disappears after a refresh | You did not have write rights on the register — the dialog let you fill the form but the save was rejected. Check the [RBAC setup](../admin/01-permissions-rbac.md). |

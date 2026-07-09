@@ -304,16 +304,26 @@ class EmailService
             return [];
         }
 
+        // IDOR guard: scope the scan to the caller's own Mail accounts. Without
+        // this any authenticated user could pass an arbitrary sender and learn
+        // which OpenRegister objects link to mail received by OTHER users'
+        // accounts (cross-account leak). oc_mail_accounts.user_id owns the account.
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return [];
+        }
+
         try {
             // The mail_recipients.type=0 is "from"; mail_recipients.email is the address.
             $sql  = "SELECT mb.account_id, m.id AS message_id
                      FROM oc_mail_messages m
                      JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
                      JOIN oc_mail_mailboxes mb ON mb.id = m.mailbox_id
-                     WHERE LOWER(r.email) = LOWER(?)
+                     JOIN oc_mail_accounts ma ON ma.id = mb.account_id
+                     WHERE LOWER(r.email) = LOWER(?) AND ma.user_id = ?
                      LIMIT 200";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$sender]);
+            $stmt->execute([$sender, $user->getUID()]);
             $ids = [];
             while (($row = $stmt->fetch()) !== false) {
                 $ids[] = ((int) $row['account_id']).'/'.((int) $row['message_id']);
@@ -323,7 +333,7 @@ class EmailService
         } catch (Exception $e) {
             $this->logger->warning('[EmailService] findMessageIdsBySender failed: '.$e->getMessage());
             return [];
-        }
+        }//end try
     }//end findMessageIdsBySender()
 
     /**

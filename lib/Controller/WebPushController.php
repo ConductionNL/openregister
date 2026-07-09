@@ -82,6 +82,8 @@ class WebPushController extends Controller
      *
      * @return JSONResponse `{ publicKey: <string>, configured: <bool> }`.
      *
+     * @no-admin-idor-exempt No per-object resource: returns the public VAPID key and configured flag only; the private key is never exposed.
+     *
      * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
      */
     #[NoAdminRequired]

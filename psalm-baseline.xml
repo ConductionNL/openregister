@@ -136,10 +136,6 @@
     </UndefinedClass>
   </file>
   <file src="lib/Db/MagicMapper.php">
-    <TooManyArguments>
-      <code><![CDATA[find]]></code>
-      <code><![CDATA[find]]></code>
-    </TooManyArguments>
     <UndefinedClass>
       <code><![CDATA[PostgreSQLPlatform]]></code>
       <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
@@ -242,11 +238,6 @@
     <UndefinedClass>
       <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
     </UndefinedClass>
-  </file>
-  <file src="lib/Listener/CalculationOnSaveListener.php">
-    <UnusedParam>
-      <code><![CDATA[$isUpdate]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Migration/Version1Date20251106000000.php">
     <UndefinedClass>

@@ -220,6 +220,110 @@ class ToolManagementHandler
     }//end convertToolsToFunctions()
 
     /**
+     * Convert a single JSON-schema property into an LLPhant Parameter.
+     *
+     * LLPhant's formatters require `itemsOrProperties` to be either a STRING
+     * (the element type of an array of scalars) or an array of Parameter
+     * OBJECTS (an object's properties / an array of objects). Passing the raw
+     * JSON-schema `items`/`properties` (associative arrays of schema fragments)
+     * makes FunctionFormatter read `->name` on a string and throw. This builds
+     * the correct shape, recursing one level for nested objects.
+     *
+     * @param string              $name The property name.
+     * @param array<string,mixed> $def  The JSON-schema fragment for the property.
+     *
+     * @return Parameter
+     */
+    private function schemaToParameter(string $name, array $def): Parameter
+    {
+        $type        = $def['type'] ?? 'string';
+        $description = $def['description'] ?? '';
+        $enum        = $def['enum'] ?? [];
+        $format      = $def['format'] ?? null;
+        $itemsOrProperties = null;
+
+        if ($type === 'object') {
+            $properties = $this->propertiesToParameters(properties: ($def['properties'] ?? []));
+            if (count($properties) === 0) {
+                // Free-form object with no declared sub-properties (e.g. a
+                // schema's `properties` map). LLPhant serialises an empty
+                // object schema as "properties": [] (a JSON array), which
+                // Ollama rejects with "Value looks like object, but can't find
+                // closing '}'". Represent it as a JSON string the model fills.
+                $type        = 'string';
+                $description = $this->freeFormObjectDescription(description: $description);
+            } else {
+                $itemsOrProperties = $properties;
+            }
+        } else if ($type === 'array') {
+            $items    = $def['items'] ?? [];
+            $itemType = 'string';
+            if (is_array($items) === true && isset($items['type']) === true) {
+                $itemType = (string) $items['type'];
+            }
+
+            if ($itemType === 'object') {
+                $properties = $this->propertiesToParameters(properties: ($items['properties'] ?? []));
+                // Same empty-object guard for arrays of free-form objects.
+                if (count($properties) === 0) {
+                    $itemsOrProperties = 'string';
+                } else {
+                    $itemsOrProperties = $properties;
+                }
+            } else {
+                // A scalar element type is passed as a plain string.
+                $itemsOrProperties = $itemType;
+            }
+        }//end if
+
+        return new Parameter($name, $type, $description, $enum, $format, $itemsOrProperties);
+
+    }//end schemaToParameter()
+
+    /**
+     * Build the description used when a free-form object (no declared
+     * sub-properties) is represented as a JSON string instead.
+     *
+     * @param string $description Original property description (may be empty).
+     *
+     * @return string Description guiding the model to pass a JSON object.
+     */
+    private function freeFormObjectDescription(string $description): string
+    {
+        if ($description === '') {
+            return 'A JSON object.';
+        }
+
+        return ($description.' (pass as a JSON object).');
+    }//end freeFormObjectDescription()
+
+    /**
+     * Convert a JSON-schema `properties` map into an array of Parameter objects.
+     *
+     * @param array<string,mixed> $properties The properties map (name => schema).
+     *
+     * @return Parameter[]
+     */
+    private function propertiesToParameters(array $properties): array
+    {
+        $out = [];
+        foreach ($properties as $propName => $propDef) {
+            $propDefArray = [];
+            if (is_array($propDef) === true) {
+                $propDefArray = $propDef;
+            }
+
+            $out[] = $this->schemaToParameter(
+                name: (string) $propName,
+                def: $propDefArray
+            );
+        }
+
+        return $out;
+
+    }//end propertiesToParameters()
+
+    /**
      * Convert array-based function definitions to FunctionInfo objects
      *
      * Converts the array format returned by Tool classes into
@@ -249,39 +353,30 @@ class ToolManagementHandler
 
             if (($func['parameters']['properties'] ?? null) !== null) {
                 foreach ($func['parameters']['properties'] as $paramName => $paramDef) {
-                    // Determine parameter type from definition.
-                    $type        = $paramDef['type'] ?? 'string';
-                    $description = $paramDef['description'] ?? '';
-                    $enum        = $paramDef['enum'] ?? [];
-                    $format      = $paramDef['format'] ?? null;
-                    $itemsOrProperties = null;
-
-                    // Handle nested object/array types.
-                    if ($type === 'object') {
-                        // For object types, pass the properties definition (empty array if not specified).
-                        $itemsOrProperties = $paramDef['properties'] ?? [];
-                    } else if ($type === 'array') {
-                        // For array types, pass the items definition (empty array if not specified).
-                        $itemsOrProperties = $paramDef['items'] ?? [];
+                    $paramDefArray = [];
+                    if (is_array($paramDef) === true) {
+                        $paramDefArray = $paramDef;
                     }
 
-                    // Create parameter using constructor.
-                    // Constructor: __construct(string $name, string $type,
-                    // string $description, array $enum=[], ?string $format=null,
-                    // array|string|null $itemsOrProperties=null).
-                    $parameters[] = new Parameter(
-                        $paramName,
-                        $type,
-                        $description,
-                        $enum,
-                        $format,
-                        $itemsOrProperties
+                    $parameters[] = $this->schemaToParameter(
+                        name: (string) $paramName,
+                        def: $paramDefArray
                     );
                 }//end foreach
             }//end if
 
             if (($func['parameters']['required'] ?? null) !== null) {
                 $required = $func['parameters']['required'];
+            }
+
+            // LLPhant's FunctionInfo expects requiredParameters as Parameter
+            // OBJECTS, not name strings (ToolFormatter reads $param->name). Map
+            // the required names back to the Parameter objects built above.
+            $requiredParameters = [];
+            foreach ($parameters as $parameterObject) {
+                if (in_array($parameterObject->name, $required, true) === true) {
+                    $requiredParameters[] = $parameterObject;
+                }
             }
 
             // Find the tool instance that has this function.
@@ -304,7 +399,7 @@ class ToolManagementHandler
                 // Pass the tool instance.
                 $func['description'] ?? '',
                 $parameters,
-                $required
+                $requiredParameters
             );
 
             $functionInfoObjects[] = $functionInfo;
