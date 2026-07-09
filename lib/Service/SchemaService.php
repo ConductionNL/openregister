@@ -116,7 +116,7 @@ class SchemaService
      *
      * @throws \Exception If schema not found or analysis fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-1
+     * @spec openspec/specs/schema-property-exploration/spec.md
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
@@ -1755,7 +1755,7 @@ class SchemaService
      *
      * @return Schema Updated schema entity
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-2
+     * @spec openspec/specs/schema-property-exploration/spec.md
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {

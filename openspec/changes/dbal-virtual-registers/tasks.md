@@ -54,5 +54,5 @@
   - Acceptance: tests pass; each ADDED spec scenario is traceable to a test or carries an `@e2e exclude`.
 - [x] 7.2 Integration test: introspect the SQLite fixture and assert against `expected-introspection.json`; read objects and resolve a relation via `_extend`.
   - Acceptance: golden-file assertion passes.
-- [ ] 7.3 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates; fix all findings including any pre-existing issues touched.
+- [x] 7.3 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates; fix all findings including any pre-existing issues touched.
   - Acceptance: `composer check:strict` and the gates pass green.

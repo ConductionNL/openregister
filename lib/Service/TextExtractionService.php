@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -184,7 +184,7 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
@@ -327,7 +327,7 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
@@ -1033,7 +1033,7 @@ class TextExtractionService
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
@@ -1118,7 +1118,7 @@ class TextExtractionService
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractPendingFiles(int $limit=100): array
     {
@@ -1199,7 +1199,7 @@ class TextExtractionService
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function retryFailedExtractions(int $limit=50): array
     {
@@ -1251,7 +1251,7 @@ class TextExtractionService
      *     totalEntities: int
      * }
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getStats(): array
     {
@@ -1422,7 +1422,7 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.StaticAccess) EmlParser::sanitisePiiForLogging is a stateless utility;
      * making it non-static would not improve testability or DI.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function extractEml(\OCP\Files\File $file): ?string
     {
@@ -1461,7 +1461,7 @@ class TextExtractionService
      *
      * @throws \OCA\OpenRegister\Exception\EmlParseException
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Service\TextExtraction\EmlStructure
     {
@@ -1481,7 +1481,7 @@ class TextExtractionService
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function chunkDocument(string $text, array $options=[]): array
     {
