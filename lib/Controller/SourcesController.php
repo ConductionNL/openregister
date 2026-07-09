@@ -509,7 +509,10 @@ class SourcesController extends Controller
             unset($data['authConfig']['password'], $data['authConfig']['secret']);
         }
 
-        unset($data['databaseUrl']);
+        // Clear rather than unset: the sources table declares database_url
+        // NOT NULL, so an absent value fails the INSERT with a 23502. An empty
+        // string satisfies the constraint and carries no secret.
+        $data['databaseUrl'] = '';
 
         return $data;
     }//end sanitizeDatabaseSourceData()

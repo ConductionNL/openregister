@@ -422,7 +422,7 @@ class SourcesControllerTest extends TestCase
             ->with($this->callback(function ($data) {
                 return isset($data['authConfig']['password']) === false
                     && isset($data['authConfig']['secret']) === false
-                    && isset($data['databaseUrl']) === false
+                    && ($data['databaseUrl'] ?? null) === ''
                     && $data['authConfig']['host'] === 'db.example.org'
                     && $data['authConfig']['credential'] === '00000000-0000-0000-0000-000000000000';
             }))

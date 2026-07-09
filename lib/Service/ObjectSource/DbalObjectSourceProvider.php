@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -466,11 +467,21 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
             return;
         }
 
+        // LIKE only exists for text operands: on PostgreSQL `integer LIKE
+        // text` raises "operator does not exist" (observed live), so every
+        // column is CAST to the platform's text type first. MySQL spells the
+        // cast target CHAR; PostgreSQL and SQLite use TEXT.
+        $castType = 'TEXT';
+        if ($connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
+            $castType = 'CHAR';
+        }
+
         $like  = '%'.$search.'%';
         $ors   = [];
         $param = $qb->createNamedParameter($like);
         foreach ($filterable as $column) {
-            $ors[] = $this->quote(connection: $connection, identifier: $column).' LIKE '.$param;
+            $quoted = $this->quote(connection: $connection, identifier: $column);
+            $ors[]  = 'CAST('.$quoted.' AS '.$castType.') LIKE '.$param;
         }
 
         $qb->andWhere('('.implode(' OR ', $ors).')');
