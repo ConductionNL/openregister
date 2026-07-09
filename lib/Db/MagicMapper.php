@@ -8473,6 +8473,7 @@ class MagicMapper extends AbstractObjectMapper
         // register filter is present, registerIds is left empty and
         // searchObjectsPaginatedMultiSchema resolves each schema's real owning
         // register from a schema->register map.
+        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
         $isMultiSchemaSearch = $schemaId === null
             && $schemaIds !== null
             && is_array($schemaIds) === true
@@ -8705,6 +8706,7 @@ class MagicMapper extends AbstractObjectMapper
         // org resolution can collapse the result to a single register), which
         // would hide most schemas' owning registers and make cross-schema
         // search return nothing.
+        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
         $registers          = [];
         $schemaToRegisterId = [];
 
@@ -8766,11 +8768,17 @@ class MagicMapper extends AbstractObjectMapper
             ];
         }
 
+        // Each searched schema is paired with its REAL owning register (resolved
+        // via the schema_id -> register_id map above) so the correct magic table
+        // is targeted; a schema with no owning register is SKIPPED (logged)
+        // rather than forced onto an unrelated register, which is what produced
+        // the "Register+schema table does not exist" empties. Register ENTITIES
+        // are loaded lazily below — only for the registers actually matched.
+        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
         $registerSchemaPairs = [];
         $totalCount          = 0;
 
         foreach ($schemaIds as $sId) {
-            $schemaIdInt       = (int) $sId;
             $matchedRegisterId = ($schemaToRegisterId[$schemaIdInt] ?? null);
             $matchedRegister   = null;
             if ($matchedRegisterId !== null) {
