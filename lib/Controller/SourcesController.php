@@ -126,6 +126,17 @@ class SourcesController extends Controller
             unset($data['databaseUrl']);
         }
 
+        // Database sources: admins get the NON-SECRET connection parts back so
+        // the edit UI can rehydrate (jsonSerialize only exposes the
+        // `authConfigured` boolean — a custody-era default that made every UI
+        // save silently wipe the connection settings). The password/secret are
+        // never persisted for this type; strip defensively anyway.
+        if ($this->isCurrentUserAdmin() === true && (string) $source->getType() === 'database') {
+            $authConfig = ($source->getAuthConfig() ?? []);
+            unset($authConfig['password'], $authConfig['secret']);
+            $data['authConfig'] = $authConfig;
+        }
+
         return $data;
     }//end serializeSource()
 
