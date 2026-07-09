@@ -943,9 +943,14 @@ class Schema extends Entity implements JsonSerializable
             return true;
         }
 
-        // If action is not specified in authorization, everyone has permission.
-        if (isset($this->authorization[$action]) === false) {
-            return true;
+        // Fail-closed (rbac-default-deny): once a schema opts into authorization
+        // (non-empty block), an action that is not explicitly listed is denied —
+        // including the `public` pseudo-group. The empty-block open-default above
+        // and the admin/owner bypasses still apply. Kept consistent with the
+        // active enforcement paths (PermissionHandler / MagicRbacHandler) even
+        // though this entity-level helper currently has no lib/ enforcement callers.
+        if (empty($this->authorization[$action]) === true) {
+            return false;
         }
 
         // Check each authorization entry for this action.
@@ -1188,6 +1193,28 @@ class Schema extends Entity implements JsonSerializable
                 $annotationsFolded    = true;
                 unset($object[$key]);
             }
+        }
+
+        // Fold a schema-LEVEL top-level `x-schema-org` marker into
+        // `configuration['x-schema-org']` the same way (ADR-048). Fleet
+        // schemas declare the canonical schema.org CURIE (e.g.
+        // `"x-schema-org": "schema:Organization"`) as a sibling of
+        // `properties`, NOT inside `configuration`; without this fold the
+        // marker falls through to a non-existent `setXSchemaOrg()` setter,
+        // is swallowed by the silent-catch below, and the live schema loses
+        // its semantic type — so SemanticTypeResolver can never discover the
+        // provider. Folding it into the configuration column (which is in the
+        // passThrough allowlist and read by
+        // JsonLdContextService::getImplementedTypes) makes the marker survive
+        // save/import. An explicit `configuration['x-schema-org']` already
+        // supplied by the caller wins over the top-level convenience form.
+        if (array_key_exists('x-schema-org', $object) === true) {
+            if (array_key_exists('x-schema-org', $existingConfig) === false) {
+                $existingConfig['x-schema-org'] = $object['x-schema-org'];
+                $annotationsFolded = true;
+            }
+
+            unset($object['x-schema-org']);
         }
 
         if ($annotationsFolded === true) {
@@ -1681,7 +1708,14 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld'];
+        // `implements` + `x-schema-org` carry the cross-app semantic-type
+        // markers (ADR-048); they must round-trip through the configuration
+        // column so SemanticTypeResolver can discover the schema. Their IRI
+        // shape is validated on read by JsonLdContextService::getImplementedTypes.
+        // `handoffContract` is the ADR-051 provider-side binding block
+        // (contract field → own property, per kind URI); its shape is
+        // validated at save time by HandoffContractBindingValidator.
+        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
@@ -1907,6 +1941,10 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-object-source',
         'x-openregister-quality',
         'x-openregister-dedup',
+        'x-openregister-flows',
+        'x-openregister-survivorship',
+        'x-openregister-merge',
+        'x-openregister-handoff',
     ];
 
     /**

@@ -73,7 +73,7 @@ services:
   nextcloud-mariadb-test:
     user: root
     container_name: nextcloud-mariadb-test
-    image: nextcloud:34.0.0-apache
+    image: nextcloud
     restart: always
     ports:
       - 8090:80

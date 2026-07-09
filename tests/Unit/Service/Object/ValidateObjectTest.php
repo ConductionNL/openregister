@@ -290,6 +290,135 @@ class ValidateObjectTest extends TestCase
         $this->assertFalse($result->isValid());
     }
 
+    public function testValidateObjectWithInlineObjectArrayAndValidSubProperties(): void
+    {
+        // Regression test for or#290: an inline value-object array (no $ref, no
+        // objectConfiguration) with additionalProperties:false must still validate its own
+        // declared sub-properties, mirroring openbuild's Application.dataRegisters property.
+        $schema = $this->createSchema([
+            'type' => 'object',
+            'properties' => [
+                'dataRegisters' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'                 => 'object',
+                        'required'             => ['register'],
+                        'additionalProperties' => false,
+                        'properties'           => [
+                            'register' => ['type' => 'string'],
+                            'label'    => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $itemSchema = new stdClass();
+        $itemSchema->type = 'object';
+        $itemSchema->required = ['register'];
+        $itemSchema->additionalProperties = false;
+        $itemSchema->properties = new stdClass();
+        $itemSchema->properties->register = new stdClass();
+        $itemSchema->properties->register->type = 'string';
+        $itemSchema->properties->label = new stdClass();
+        $itemSchema->properties->label->type = 'string';
+
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->dataRegisters = new stdClass();
+        $schemaObject->properties->dataRegisters->type = 'array';
+        $schemaObject->properties->dataRegisters->items = $itemSchema;
+
+        $object = ['dataRegisters' => [['register' => 'spectr', 'label' => 'Spectr data']]];
+
+        $result = $this->handler->validateObject($object, $schema, $schemaObject);
+
+        $this->assertTrue($result->isValid());
+    }
+
+    public function testValidateObjectWithInlineObjectArrayRejectsUnknownSubProperty(): void
+    {
+        // The additionalProperties:false constraint must still be enforced for genuinely
+        // unknown sub-properties - only the schema's own declared properties are allowed.
+        $schema = $this->createSchema([
+            'type' => 'object',
+            'properties' => [
+                'dataRegisters' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'                 => 'object',
+                        'required'             => ['register'],
+                        'additionalProperties' => false,
+                        'properties'           => [
+                            'register' => ['type' => 'string'],
+                            'label'    => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $itemSchema = new stdClass();
+        $itemSchema->type = 'object';
+        $itemSchema->required = ['register'];
+        $itemSchema->additionalProperties = false;
+        $itemSchema->properties = new stdClass();
+        $itemSchema->properties->register = new stdClass();
+        $itemSchema->properties->register->type = 'string';
+        $itemSchema->properties->label = new stdClass();
+        $itemSchema->properties->label->type = 'string';
+
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->dataRegisters = new stdClass();
+        $schemaObject->properties->dataRegisters->type = 'array';
+        $schemaObject->properties->dataRegisters->items = $itemSchema;
+
+        $object = ['dataRegisters' => [['register' => 'spectr', 'bogus' => 'should not be allowed']]];
+
+        $result = $this->handler->validateObject($object, $schema, $schemaObject);
+
+        $this->assertFalse($result->isValid());
+    }
+
+    public function testValidateObjectWithRelatedObjectArrayStillAcceptsUuidReference(): void
+    {
+        // Regression guard: real relation arrays (objectConfiguration handling declared
+        // directly on the array items, or a $ref with no config) must keep accepting a bare
+        // UUID string - the fix for or#290 only changes inline value-object arrays.
+        $schema = $this->createSchema([
+            'type' => 'object',
+            'properties' => [
+                'reviewers' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        '$ref' => '#/components/schemas/Person',
+                    ],
+                ],
+            ],
+        ]);
+
+        $itemSchema = new stdClass();
+        $itemSchema->type = 'object';
+        $itemSchema->{'$ref'} = '#/components/schemas/Person';
+
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->reviewers = new stdClass();
+        $schemaObject->properties->reviewers->type = 'array';
+        $schemaObject->properties->reviewers->items = $itemSchema;
+
+        $object = ['reviewers' => ['550e8400-e29b-41d4-a716-446655440000']];
+
+        $result = $this->handler->validateObject($object, $schema, $schemaObject);
+
+        $this->assertTrue($result->isValid());
+    }
+
     public function testValidateObjectRemovesExtendAndFiltersFromObject(): void
     {
         $schema = $this->createSchema([

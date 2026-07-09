@@ -806,15 +806,57 @@ class ContactService
      */
     public function getObjectsForContact(string $contactUid): array
     {
+        // IDOR guard: only surface object links for contacts that live in the
+        // caller's own addressbooks. Without this any authenticated user could
+        // pass an arbitrary (enumerable CardDAV) contact UID and learn which
+        // OpenRegister objects reference contacts belonging to other users.
+        $allowedAddressbookIds = $this->currentUserAddressbookIds();
+        if ($allowedAddressbookIds === []) {
+            return [];
+        }
+
         $links = $this->contactLinkMapper->findByContactUid($contactUid);
 
-        return array_map(
-            static function (ContactLink $link): array {
-                return $link->jsonSerialize();
-            },
-            $links
+        return array_values(
+            array_map(
+                static function (ContactLink $link): array {
+                    return $link->jsonSerialize();
+                },
+                array_filter(
+                    $links,
+                    static function (ContactLink $link) use ($allowedAddressbookIds): bool {
+                        return in_array((int) $link->getAddressbookId(), $allowedAddressbookIds, true);
+                    }
+                )
+            )
         );
     }//end getObjectsForContact()
+
+    /**
+     * Collect the addressbook IDs owned by the current session user.
+     *
+     * Used to scope contact-link reads to the caller's own addressbooks so a
+     * user cannot resolve links for contacts they do not own.
+     *
+     * @return array<int, int> Addressbook IDs, or [] when anonymous / none.
+     */
+    private function currentUserAddressbookIds(): array
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return [];
+        }
+
+        $principal    = 'principals/users/'.$user->getUID();
+        $addressbooks = $this->cardDavBackend->getAddressBooksForUser($principal);
+
+        return array_map(
+            static function (array $addressbook): int {
+                return (int) $addressbook['id'];
+            },
+            $addressbooks
+        );
+    }//end currentUserAddressbookIds()
 
     /**
      * Delete all contact links for an object (cleanup).

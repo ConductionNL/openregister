@@ -50,9 +50,9 @@ class GenericAdminSettings implements IDelegatedSettings
     /**
      * Constructor.
      *
-     * @param string        $appId        The leaf app id (template + version).
-     * @param string        $sectionId    The settings section id this form sits in.
-     * @param int           $priority     Ordering priority within the section.
+     * @param string          $appId        The leaf app id (template + version).
+     * @param string          $sectionId    The settings section id this form sits in.
+     * @param int             $priority     Ordering priority within the section.
      * @param IAppManager     $appManager   App manager (version lookup).
      * @param IInitialState   $initialState Initial-state service.
      * @param IAppConfig|null $appConfig    App config — when provided, enables a

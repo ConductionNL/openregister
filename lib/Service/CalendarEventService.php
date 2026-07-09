@@ -239,6 +239,92 @@ class CalendarEventService
     }//end buildEventDeepLink()
 
     /**
+     * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
+     *
+     * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+     * for events: it enumerates every calendar the user owns (not just the pinned
+     * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
+     * start date (soonest first, undated last). Backs the `calendar-event-source`
+     * ObjectSourceProvider.
+     *
+     * @param int $limit  Maximum number of events to return.
+     * @param int $offset Number of events to skip.
+     *
+     * @return array{results: array<int, array<string, mixed>>, total: int} Events with total count.
+     *
+     * @throws Exception If no user is logged in.
+     *
+     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
+     */
+    public function getAllUserEvents(int $limit=200, int $offset=0): array
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new Exception('No user logged in');
+        }
+
+        $principal = 'principals/users/'.$user->getUID();
+        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
+
+        $allEvents = [];
+        foreach ($calendars as $calendar) {
+            if ($this->calendarSupportsVevent(calendar: $calendar) === false) {
+                continue;
+            }
+
+            $calendarId      = $calendar['id'];
+            $calendarObjects = $this->calDavBackend->getCalendarObjects($calendarId);
+
+            foreach ($calendarObjects as $calendarObject) {
+                $fullObject = $this->calDavBackend->getCalendarObject($calendarId, $calendarObject['uri']);
+                if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+                    continue;
+                }
+
+                $calendarData = $fullObject['calendardata'];
+
+                if (strpos($calendarData, 'VEVENT') === false) {
+                    continue;
+                }
+
+                try {
+                    $eventArray = $this->veventToArray(
+                        calendarData: $calendarData,
+                        calendarId: (string) $calendarId,
+                        uri: $calendarObject['uri']
+                    );
+                    if ($eventArray !== null) {
+                        $allEvents[] = $eventArray;
+                    }
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        'Failed to parse calendar event: '.$e->getMessage(),
+                        ['uri' => $calendarObject['uri']]
+                    );
+                }
+            }//end foreach
+        }//end foreach
+
+        // Sort by start date (soonest first, undated last).
+        usort(
+            array: $allEvents,
+            callback: function ($a, $b) {
+                $startA = ($a['dtstart'] ?? '9999-12-31');
+                $startB = ($b['dtstart'] ?? '9999-12-31');
+                return strcmp($startA, $startB);
+            }
+        );
+
+        $total   = count($allEvents);
+        $results = array_slice($allEvents, $offset, $limit);
+
+        return [
+            'results' => $results,
+            'total'   => $total,
+        ];
+    }//end getAllUserEvents()
+
+    /**
      * Create a new CalDAV event linked to an OpenRegister object.
      *
      * @param int    $registerId  The register ID

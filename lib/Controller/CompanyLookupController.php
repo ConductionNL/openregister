@@ -82,6 +82,8 @@ class CompanyLookupController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt External-gateway proxy: forwards a KVK number to the admin-configured external KVK
+     *   provider; takes no OpenRegister object id.
      *
      * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
      */
@@ -108,6 +110,8 @@ class CompanyLookupController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt External-gateway proxy: free-text company search against the admin-configured KVK
+     *   provider; takes no OpenRegister object id.
      *
      * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
      */
@@ -141,6 +145,8 @@ class CompanyLookupController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt External-gateway proxy: free-text company search against the admin-configured
+     *   OpenCorporates provider; takes no OpenRegister object id.
      *
      * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
      */

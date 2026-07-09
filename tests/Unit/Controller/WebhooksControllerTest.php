@@ -1686,4 +1686,56 @@ class WebhooksControllerTest extends TestCase
 
         $this->assertEquals(403, $result->getStatus());
     }
+
+    // === Read-endpoint authorization (gate-read-endpoint-authorization) ===
+
+    public function testIndexRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('findAll');
+
+        $result = $controller->index();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testShowRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+
+        $result = $controller->show(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testLogsRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+
+        $result = $controller->logs(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testLogStatsRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+
+        $result = $controller->logStats(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testAllLogsRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminLogMapper->expects($this->never())->method('findAll');
+
+        $result = $controller->allLogs();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
 }

@@ -117,6 +117,9 @@ class GitHubIssuesController extends Controller
      *
      * @return JSONResponse
      *
+     * @no-admin-idor-exempt Guarded downstream: GitHubGuards::enforceRepoAllowlist restricts the caller-supplied repo to the
+     *   admin-configured allowlist (plus feature-flag and rate-limit); takes no OpenRegister object id.
+     *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-7

@@ -15,7 +15,7 @@ Alle magic mapper tables hebben deze metadata columns met automatische indexes:
 | `_id` | BIGINT | PRIMARY KEY | Row identifier |
 | `_uuid` | VARCHAR(36) | UNIQUE INDEX | Object UUID lookups |
 | `_slug` | VARCHAR(255) | INDEX | URL routing en lookups |
-| `_name` | VARCHAR(255) | **INDEX** | **_search queries!** |
+| `_name` | VARCHAR(255) | **INDEX + pg_trgm GIN** | **_search / _fuzzy queries!** |
 | `_description` | TEXT | **GEEN INDEX** | _search queries (full scan) |
 | `_summary` | TEXT | **GEEN INDEX** | _search queries (full scan) |
 | `_register` | VARCHAR(255) | INDEX | Filter op register |
@@ -47,6 +47,33 @@ Properties die `facetable: true` hebben krijgen automatisch een SQL INDEX:
   }
 }
 ```
+
+### 3. Schema Properties met `searchable: true`
+
+Properties die `searchable: true` hebben krijgen automatisch een **`pg_trgm` GIN index** op hun kolom, zodat fuzzy/substring zoeken (`_search`, `_fuzzy=true`, `ILIKE`, `similarity()`) op dat veld *index-backed* is in plaats van een sequential scan. De vlag is structureel identiek aan `facetable` (een boolean op de property), maar mikt op tekstzoeken in plaats van facet-tellingen.
+
+```json
+{
+  "properties": {
+    "title": {
+      "type": "string",
+      "searchable": true    // ✅ pg_trgm GIN index voor snelle fuzzy/substring search
+    },
+    "amount": {
+      "type": "number"       // ❌ searchable heeft geen zin op niet-tekst velden
+    }
+  }
+}
+```
+
+**Richtlijnen:**
+
+- **Alleen zinvol op `string`-getypeerde properties** — `gin_trgm_ops` vereist een tekst-castbare kolom. Een niet-string property die per ongeluk `searchable: true` krijgt, wordt getolereerd: de index-poging staat in een try/catch, faalt zachtjes met een waarschuwing in de log, en breekt het aanmaken/synchroniseren van de tabel niet af.
+- **PostgreSQL-only, portable no-op elders** — de index wordt alleen aangemaakt op PostgreSQL met de `pg_trgm` extensie beschikbaar. Op MariaDB/MySQL/SQLite (of PostgreSQL zonder `pg_trgm`) wordt de vlag stil geaccepteerd: geen index, geen fout. Schema-definities blijven dus portable over database-platforms; `_search` blijft daar correct werken via het bestaande ongeïndexeerde `ILIKE`/`CAST` pad.
+- **Baseline `_name` is al gedekt** — je hoeft `searchable` niet op je titelveld te zetten om `_name` snel te maken: elke magic table krijgt automatisch een `pg_trgm` GIN index op `_name` (zie de metadata-tabel hierboven). Gebruik `searchable: true` voor *extra* tekstvelden voorbij `_name` (bijv. de volledige `description`/`body` van een document).
+- **Retrofit bij schema-wijziging** — wordt `searchable: true` later aan een bestaande tabel toegevoegd, dan maakt de sync-route (`updateTableIndexes()` → `createTableIndexes()`) de ontbrekende index alsnog aan (`CREATE INDEX IF NOT EXISTS` is idempotent), net zoals een nieuw `facetable`-veld zijn btree-index retrofit krijgt.
+
+> **Let op — Doctrine-veiligheid:** zowel de baseline `_name`-index als de per-property `searchable`-index zijn GIN-indexen op een **bestaande** `varchar`/`text`-kolom. Er wordt géén nieuw kolomtype toegevoegd. Anders dan `vector`- of `tsvector`-*getypeerde* kolommen (die Doctrine's `introspectSchema()` over `oc_`-getablesprefixte tabellen laten crashen met "Unknown database type"), zijn functionele/kolom-GIN-indexen onzichtbaar voor Doctrine's type-systeem en dus veilig — dezelfde reden waarom de `hybrid-document-search` functionele `to_tsvector` GIN-index veilig is.
 
 ## _search Parameter Werking
 
@@ -90,9 +117,9 @@ ALTER TABLE oc_openregister_table_X_Y
 ADD FULLTEXT INDEX idx_search_fields (_name, _description, _summary);
 ```
 
-**Optie 3: Separate Search Service (Huidige Aanpak)**
+**Optie 3: Property-level `searchable: true` (Huidige Aanpak)**
 
-Gebruik SOLR/Elasticsearch voor full-text search via `searchable: true` op schema niveau:
+> SOLR/Elasticsearch is verwijderd (zie de `remove-solr-and-publishing` change). Zoeken is nu volledig database-native. Zet `searchable: true` op een **string-property** om een `pg_trgm` GIN index op die kolom te krijgen (zie [Schema Properties met `searchable: true`](#3-schema-properties-met-searchable-true)):
 
 ```json
 {
@@ -100,8 +127,12 @@ Gebruik SOLR/Elasticsearch voor full-text search via `searchable: true` op schem
     "schemas": {
       "publication": {
         "slug": "publication",
-        "searchable": true,    // ✅ Geïndexeerd in SOLR
-        "properties": { ... }
+        "properties": {
+          "title": {
+            "type": "string",
+            "searchable": true    // ✅ pg_trgm GIN index (PostgreSQL)
+          }
+        }
       }
     }
   }
@@ -191,24 +222,11 @@ Deze velden zijn **TEXT** type zonder index omdat:
 
 ## Aanbeveling voor _search Performance
 
-### Korte Termijn (Huidige Code):
+Zoeken is database-native (SOLR is verwijderd). Voor snelle `_search`/`_fuzzy` queries:
 
-Blijf SOLR/Elasticsearch gebruiken voor `_search` queries:
-
-```json
-{
-  "slug": "publication",
-  "searchable": true    // ✅ Index in SOLR voor snelle full-text search
-}
-```
-
-### Lange Termijn (Optimalisatie):
-
-Implementeer database-native full-text search als fallback wanneer SOLR niet beschikbaar is:
-
-1. **PostgreSQL**: GIN index met `to_tsvector()`
-2. **MySQL**: FULLTEXT index op `_name`, `_description`, `_summary`
-3. **Automatische detectie**: Gebruik SOLR als beschikbaar, anders database FTS
+1. **`_name` is automatisch snel** — elke magic table krijgt een `pg_trgm` GIN index op `_name` op PostgreSQL met de `pg_trgm` extensie. Dit maakt zowel het altijd-aan `ILIKE` pad als het `_fuzzy=true` `similarity()` pad index-backed (gemeten: 268ms → ~1.5ms op een tabel van ~82k rijen).
+2. **Extra tekstvelden** — zet `searchable: true` op een string-property om diezelfde `pg_trgm` GIN index op die kolom te krijgen (bijv. een volledige `title`/`description` body).
+3. **Portable** — op MariaDB/MySQL/SQLite (of PostgreSQL zonder `pg_trgm`) vallen queries terug op het correcte, ongeïndexeerde `ILIKE`/`CAST` pad; er verandert alleen de performance, niet de correctheid.
 
 ## Index Overhead
 

@@ -1033,6 +1033,21 @@ class EntityRecognitionHandlerCoverageTest extends TestCase
      *
      * @return void
      */
+    public function testDetectEntitiesUnknownMethodFallsBackToRegex(): void
+    {
+        // Since resolveMethod() was added, unknown methods fall back to regex
+        // (via AnonymisationBackendService fallback) instead of throwing.
+        // "Some text" has no PII patterns → empty result.
+        $result = $this->invokePrivate('detectEntities', [
+            'Some text',
+            'foobar',
+            null,
+            0.5,
+        ]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
     public function testDetectEntitiesUnknownMethodThrows(): void
     {
         // resolveMethod delegates unknown methods to AnonymisationBackendService.

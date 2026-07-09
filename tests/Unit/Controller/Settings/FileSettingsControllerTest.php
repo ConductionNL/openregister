@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -544,16 +546,28 @@ class FileSettingsControllerTest extends TestCase
 
     public function testTestOpenAnonymiserConnectionEmptyEndpoint(): void
     {
-        // Use the testable subclass whose testOpenAnonymiserConnection override
-        // still guards against empty endpoint (returns 400) — the production
-        // implementation delegates to AnonymisationBackendService via the
-        // container and no longer validates the endpoint string itself.
-        $result = $this->testableController->testOpenAnonymiserConnection('');
+        // testOpenAnonymiserConnection() was refactored: it no longer uses $apiEndpoint
+        // for URL checks. Instead it probes via AnonymisationBackendService (ExApp detection).
+        // When the ExApp is not available the service returns reachable=false → 200 + success=false.
+        $probe = new ProbeResult(
+            reachable: false,
+            latencyMs: null,
+            error: ProbeResult::ERROR_EXAPP_NOT_INSTALLED,
+            probedAt: (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
+        );
 
-        $this->assertEquals(400, $result->getStatus());
+        $mockService = $this->createMock(AnonymisationBackendService::class);
+        $mockService->method('testConnection')->willReturn($probe);
+
+        $this->container->method('get')
+            ->with(AnonymisationBackendService::class)
+            ->willReturn($mockService);
+
+        $result = $this->controller->testOpenAnonymiserConnection('');
+
+        $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertFalse($data['success']);
-        $this->assertEquals('API endpoint is required', $data['error']);
     }
 
     public function testTestOpenAnonymiserConnectionSuccess(): void
@@ -601,20 +615,27 @@ class FileSettingsControllerTest extends TestCase
 
     public function testTestOpenAnonymiserConnectionWithRealCurlFail(): void
     {
-        // The production testOpenAnonymiserConnection now delegates to
-        // AnonymisationBackendService via the container (no direct curl).
-        // Simulate a connection failure by making the container throw an
-        // exception whose message contains 'Connection failed'.
+        // testOpenAnonymiserConnection() was refactored to use AnonymisationBackendService
+        // (AppAPI ExApp detection) instead of HTTP health-check. Simulate ExApp unavailable.
+        $probe = new ProbeResult(
+            reachable: false,
+            latencyMs: null,
+            error: ProbeResult::ERROR_EXAPP_NOT_INSTALLED,
+            probedAt: (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
+        );
+
+        $mockService = $this->createMock(AnonymisationBackendService::class);
+        $mockService->method('testConnection')->willReturn($probe);
+
         $this->container->method('get')
-            ->willThrowException(new \Exception('Connection failed: could not connect to AnonymisationBackendService'));
+            ->with(AnonymisationBackendService::class)
+            ->willReturn($mockService);
 
         $result = $this->controller->testOpenAnonymiserConnection('http://invalid-host-that-does-not-exist:9999');
 
         $data = $result->getData();
         $this->assertArrayHasKey('success', $data);
         $this->assertFalse($data['success']);
-        $this->assertArrayHasKey('error', $data);
-        $this->assertStringContainsString('Connection failed', $data['error']);
     }
 
     // ── getFileExtractionStats ──────────────────────────────────────────

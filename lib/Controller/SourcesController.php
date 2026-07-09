@@ -21,6 +21,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Controller;
@@ -32,6 +35,7 @@ use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use OCP\IUserSession;
 use OCP\Security\ICrypto;
 use Symfony\Component\Uid\Uuid;
@@ -45,23 +49,33 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Resource controller: CRUD plus the
+ *   sync (syncNow/syncStatus) and virtual-register (testConnection/introspect)
+ *   actions all belong to the /api/sources resource surface.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Each action carries its own
+ *   admin guard + error mapping; splitting the resource across controllers would
+ *   duplicate the guards without reducing real complexity.
+ *
+ * @spec openspec/specs/data-sync-harvesting/spec.md
  */
 class SourcesController extends Controller
 {
     /**
      * Constructor for the SourcesController
      *
-     * @param string                 $appName         The name of the app
-     * @param IRequest               $request         The request object
-     * @param IAppConfig             $config          The app configuration object
-     * @param SourceMapper           $sourceMapper    The source mapper
-     * @param IL10N                  $l10n            The localization service
-     * @param IUserSession           $userSession     User session for admin checks
-     * @param IGroupManager          $groupManager    Group manager for admin checks
-     * @param ICrypto                $crypto          Crypto service for databaseUrl encryption
-     * @param SourceFetcherRegistry  $fetcherRegistry Resolves the transport for a source type
-     * @param HarvestPipelineService $pipeline        Harvest pipeline orchestrator
+     * @param string                       $appName              The name of the app
+     * @param IRequest                     $request              The request object
+     * @param IAppConfig                   $config               The app configuration object
+     * @param SourceMapper                 $sourceMapper         The source mapper
+     * @param IL10N                        $l10n                 The localization service
+     * @param IUserSession                 $userSession          User session for admin checks
+     * @param IGroupManager                $groupManager         Group manager for admin checks
+     * @param ICrypto                      $crypto               Crypto service for databaseUrl encryption
+     * @param SourceFetcherRegistry        $fetcherRegistry      Resolves the transport for a source type
+     * @param HarvestPipelineService       $pipeline             Harvest pipeline orchestrator
+     * @param DbalConnectionFactory        $connectionFactory    Opens read-only DBAL connections for database sources
+     * @param DatabaseIntrospectionService $introspectionService Introspects a database source into a virtual register
+     * @param LoggerInterface              $logger               The app logger
      *
      * @return void
      */
@@ -75,7 +89,10 @@ class SourcesController extends Controller
         private readonly IGroupManager $groupManager,
         private readonly ICrypto $crypto,
         private readonly SourceFetcherRegistry $fetcherRegistry,
-        private readonly HarvestPipelineService $pipeline
+        private readonly HarvestPipelineService $pipeline,
+        private readonly DbalConnectionFactory $connectionFactory,
+        private readonly DatabaseIntrospectionService $introspectionService,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -109,6 +126,17 @@ class SourcesController extends Controller
             unset($data['databaseUrl']);
         }
 
+        // Database sources: admins get the NON-SECRET connection parts back so
+        // the edit UI can rehydrate (jsonSerialize only exposes the
+        // `authConfigured` boolean — a custody-era default that made every UI
+        // save silently wipe the connection settings). The password/secret are
+        // never persisted for this type; strip defensively anyway.
+        if ($this->isCurrentUserAdmin() === true && (string) $source->getType() === 'database') {
+            $authConfig = ($source->getAuthConfig() ?? []);
+            unset($authConfig['password'], $authConfig['secret']);
+            $data['authConfig'] = $authConfig;
+        }
+
         return $data;
     }//end serializeSource()
 
@@ -123,9 +151,9 @@ class SourcesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{results: array<int, array<string, mixed>>}, array{}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/data-sync-harvesting/spec.md
      */
     public function index(): JSONResponse
     {
@@ -172,7 +200,7 @@ class SourcesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/data-sync-harvesting/spec.md
      */
     public function show(string $id): JSONResponse
     {
@@ -199,7 +227,7 @@ class SourcesController extends Controller
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/data-sync-harvesting/spec.md
      */
     public function create(): JSONResponse
     {
@@ -222,7 +250,15 @@ class SourcesController extends Controller
             unset($data['id']);
         }
 
-        // Encrypt databaseUrl at rest before persisting.
+        // Credential custody split (dbal-virtual-registers D1): LEGACY harvest
+        // sources keep encrypting their full databaseUrl at rest with ICrypto;
+        // `type: database` (virtual register) sources store only NON-SECRET
+        // connection parts in authConfig and custody the password behind the
+        // CredentialStore seam, referenced by a `credential` UUID — a plaintext
+        // password is never persisted on the row.
+        $data = $this->sanitizeDatabaseSourceData(data: $data);
+
+        // Encrypt databaseUrl at rest before persisting (legacy harvest path).
         if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
             $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
         }
@@ -247,7 +283,7 @@ class SourcesController extends Controller
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/data-sync-harvesting/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -271,7 +307,10 @@ class SourcesController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
-        // Encrypt databaseUrl at rest before persisting.
+        // Custody split for database sources — see create() (dbal-virtual-registers D1).
+        $data = $this->sanitizeDatabaseSourceData(data: $data);
+
+        // Encrypt databaseUrl at rest before persisting (legacy harvest path).
         if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
             $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
         }
@@ -294,7 +333,7 @@ class SourcesController extends Controller
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/data-sync-harvesting/spec.md
      */
     public function patch(int $id): JSONResponse
     {
@@ -318,7 +357,7 @@ class SourcesController extends Controller
      *
      * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/data-sync-harvesting/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
@@ -455,6 +494,166 @@ class SourcesController extends Controller
             ]
         );
     }//end syncStatus()
+
+    /**
+     * Enforce the credential custody split for `type: database` sources.
+     *
+     * A virtual-register database source must never persist a plaintext secret:
+     * any `password`/`secret` key submitted inside `authConfig` is stripped, and
+     * `databaseUrl` (the legacy ICrypto-encrypted harvest field) is cleared so
+     * the two paths cannot mix. The password belongs behind the CredentialStore
+     * seam, referenced by the `authConfig.credential` UUID (design D1).
+     *
+     * @param array<string, mixed> $data The submitted source data.
+     *
+     * @return array<string, mixed> The sanitised source data.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function sanitizeDatabaseSourceData(array $data): array
+    {
+        if ((string) ($data['type'] ?? '') !== 'database') {
+            return $data;
+        }
+
+        if (isset($data['authConfig']) === true && is_array($data['authConfig']) === true) {
+            unset($data['authConfig']['password'], $data['authConfig']['secret']);
+        }
+
+        // Clear rather than unset: the sources table declares database_url
+        // NOT NULL, so an absent value fails the INSERT with a 23502. An empty
+        // string satisfies the constraint and carries no secret.
+        $data['databaseUrl'] = '';
+
+        return $data;
+    }//end sanitizeDatabaseSourceData()
+
+    /**
+     * Test the connection to a `type: database` source.
+     *
+     * Resolves the password through the credential custody seam, opens a
+     * read-only DBAL connection and runs a trivial read. Never exposes the
+     * password. A connection failure maps to 503 (unreachable); an upstream
+     * query error maps to 502 — never a bare 500.
+     *
+     * @param int $id The source id to test.
+     *
+     * @return JSONResponse Success, or a 502/503 error with a non-sensitive message.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+     *   organisation-scoped: the source is loaded via SourceMapper::find(),
+     *   which applies the active-organisation filter and 404s on a foreign
+     *   tenant's id. The response never contains the credential value.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    public function testConnection(int $id): JSONResponse
+    {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
+        try {
+            $source = $this->sourceMapper->find(id: $id);
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+        }
+
+        if ((string) $source->getType() !== 'database') {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Source is not a database source')],
+                statusCode: 422
+            );
+        }
+
+        try {
+            $connection = $this->connectionFactory->getConnection(source: $source);
+        } catch (DbalConnectionException $exception) {
+            // Fail closed: credential/driver/config problem — source unreachable.
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Could not connect to the database source')],
+                statusCode: 503
+            );
+        }
+
+        try {
+            $connection->executeQuery($connection->getDatabasePlatform()->getDummySelectSQL());
+        } catch (Throwable $exception) {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('The database source returned an error')],
+                statusCode: 502
+            );
+        }
+
+        return new JSONResponse(data: ['success' => true]);
+    }//end testConnection()
+
+    /**
+     * Introspect a `type: database` source into a virtual register + schemas.
+     *
+     * Idempotent: re-running updates the existing register/schemas in place.
+     * Never exposes the password.
+     *
+     * @param int $id The source id to introspect.
+     *
+     * @return JSONResponse The introspection summary, or a 502/503 error.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+     *   organisation-scoped: the source is loaded via SourceMapper::find(),
+     *   which applies the active-organisation filter and 404s on a foreign
+     *   tenant's id. The response never contains the credential value.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    public function introspect(int $id): JSONResponse
+    {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
+        try {
+            $source = $this->sourceMapper->find(id: $id);
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+        }
+
+        if ((string) $source->getType() !== 'database') {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Source is not a database source')],
+                statusCode: 422
+            );
+        }
+
+        try {
+            $summary = $this->introspectionService->introspect(source: $source);
+        } catch (DbalConnectionException $exception) {
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Could not connect to the database source')],
+                statusCode: 503
+            );
+        } catch (Throwable $exception) {
+            // Never echo raw exception text to the client (it may carry DSN
+            // fragments or SQL); log it server-side and return a fixed message.
+            $this->logger->error(
+                '[SourcesController] introspection failed: '.$exception->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+            );
+            return new JSONResponse(
+                data: ['error' => $this->l10n->t('Introspection failed')],
+                statusCode: 502
+            );
+        }
+
+        return new JSONResponse(data: $summary);
+    }//end introspect()
 
     /**
      * Get integer parameter from params array or return null

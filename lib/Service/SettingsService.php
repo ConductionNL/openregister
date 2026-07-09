@@ -630,23 +630,6 @@ class SettingsService
     }//end updateSettings()
 
     /**
-     * Update publishing options
-     *
-     * @param array $data Publishing options data
-     *
-     * @return bool[] Updated settings
-     *
-     * @psalm-return array{use_old_style_publishing_view?: bool,
-     *               auto_publish_objects?: bool, auto_publish_attachments?: bool}
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
-     */
-    public function updatePublishingOptions(array $data): array
-    {
-        return $this->configurationSettingsHandler->updatePublishingOptions($data);
-    }//end updatePublishingOptions()
-
-    /**
      * Check if multi-tenancy is enabled
      *
      * @return bool True if enabled

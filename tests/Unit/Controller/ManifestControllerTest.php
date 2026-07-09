@@ -29,18 +29,40 @@ use Psr\Log\LoggerInterface;
  */
 class ManifestControllerTest extends TestCase
 {
-    /** @var ManifestService&MockObject */
+
+    /**
+     * Manifest enrichment service mock.
+     *
+     * @var ManifestService&MockObject
+     */
     private ManifestService $manifestService;
 
-    /** @var IAppManager&MockObject */
+    /**
+     * App manager mock (app path resolution).
+     *
+     * @var IAppManager&MockObject
+     */
     private IAppManager $appManager;
 
-    /** @var IRequest&MockObject */
+    /**
+     * HTTP request mock.
+     *
+     * @var IRequest&MockObject
+     */
     private IRequest $request;
 
-    /** @var LoggerInterface&MockObject */
+    /**
+     * PSR logger mock.
+     *
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface $logger;
 
+    /**
+     * Controller under test.
+     *
+     * @var ManifestController
+     */
     private ManifestController $controller;
 
     /**
@@ -52,10 +74,10 @@ class ManifestControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manifestService = $this->createMock(ManifestService::class);
-        $this->appManager      = $this->createMock(IAppManager::class);
-        $this->request         = $this->createMock(IRequest::class);
-        $this->logger          = $this->createMock(LoggerInterface::class);
+        $this->manifestService = $this->createMock(originalClassName: ManifestService::class);
+        $this->appManager      = $this->createMock(originalClassName: IAppManager::class);
+        $this->request         = $this->createMock(originalClassName: IRequest::class);
+        $this->logger          = $this->createMock(originalClassName: LoggerInterface::class);
 
         $this->controller = new ManifestController(
             'openregister',
@@ -75,7 +97,7 @@ class ManifestControllerTest extends TestCase
     {
         $result = $this->controller->index('../evil');
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $result->getStatus());
+        $this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $result->getStatus());
     }//end testInvalidAppIdReturnsBadRequest()
 
     /**
@@ -91,7 +113,7 @@ class ManifestControllerTest extends TestCase
 
         $result = $this->controller->index('nonexistent-app');
 
-        $this->assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+        $this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $result->getStatus());
     }//end testUnknownAppReturnsNotFound()
 
     /**
@@ -128,9 +150,17 @@ class ManifestControllerTest extends TestCase
 
         $result = $this->controller->index('myapp');
 
-        $this->assertSame(Http::STATUS_OK, $result->getStatus());
+        $this->assertSame(expected: Http::STATUS_OK, actual: $result->getStatus());
         $data = $result->getData();
-        $this->assertSame('alice', $data['runtime']['user']['id']);
+        $this->assertSame(expected: 'alice', actual: $data['runtime']['user']['id']);
+
+        // Conditional-request contract: the ETag is the md5 of the payload
+        // (NotModifiedMiddleware serves 304 on If-None-Match), and the default
+        // `no-store` is replaced with `private, no-cache` so the browser may
+        // store-and-revalidate.
+        $this->assertSame(expected: md5(json_encode($enriched)), actual: $result->getETag());
+        $headers = $result->getHeaders();
+        $this->assertSame(expected: 'private, no-cache', actual: $headers['Cache-Control']);
 
         // Clean up.
         unlink($tmpDir.'/src/manifest.json');
@@ -162,7 +192,7 @@ class ManifestControllerTest extends TestCase
 
         $result = $this->controller->index('myapp');
 
-        $this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
+        $this->assertSame(expected: Http::STATUS_INTERNAL_SERVER_ERROR, actual: $result->getStatus());
 
         // Clean up.
         unlink($tmpDir.'/src/manifest.json');

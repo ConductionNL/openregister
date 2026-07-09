@@ -177,6 +177,11 @@ class DeckController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Guarded downstream: DeckCardService::getObjectsForBoard gates on
+     *   Deck's own BoardService::find (board ACL, throws for non-members) and returns [] when
+     *   the caller cannot access the board, so link metadata never leaks for boards the caller
+     *   has no Deck access to.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function objects(string $boardId): JSONResponse

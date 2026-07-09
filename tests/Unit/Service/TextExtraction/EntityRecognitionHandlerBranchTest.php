@@ -134,6 +134,17 @@ class EntityRecognitionHandlerBranchTest extends TestCase
         $this->assertSame(0, $result['entities_found']);
     }
 
+    public function testExtractFromChunkUnknownMethodFallsBackToRegex(): void
+    {
+        // Since resolveMethod() was added, unknown methods fall back to regex
+        // (via AnonymisationBackendService::getState()->effectiveMethod or regex
+        // as last resort) instead of throwing. "Some text" contains no PII patterns
+        // so the result has 0 entities.
+        $chunk = $this->createChunkMock(1, 'file', 1, 'Some text');
+        $result = $this->handler->extractFromChunk($chunk, ['method' => 'unknown_method']);
+        $this->assertSame(0, $result['entities_found']);
+    }
+
     public function testExtractFromChunkUnknownMethodThrows(): void
     {
         $chunk = $this->createChunkMock(1, 'file', 1, 'Some text');

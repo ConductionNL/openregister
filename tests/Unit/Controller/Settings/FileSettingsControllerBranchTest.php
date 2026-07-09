@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -177,11 +179,29 @@ class FileSettingsControllerBranchTest extends TestCase
 
     public function testTestOpenAnonymiserConnectionEmptyEndpoint(): void
     {
+        // testOpenAnonymiserConnection() no longer uses $apiEndpoint — it detects
+        // OpenAnonymiser via AnonymisationBackendService (AppAPI ExApp detection).
+        // When the ExApp is not installed the service returns reachable=false,
+        // which the controller maps to a 200 with success=false.
+        $probe = new ProbeResult(
+            reachable: false,
+            latencyMs: null,
+            error: ProbeResult::ERROR_EXAPP_NOT_INSTALLED,
+            probedAt: (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
+        );
+
+        $mockService = $this->createMock(AnonymisationBackendService::class);
+        $mockService->method('testConnection')->willReturn($probe);
+
+        $this->container->method('get')
+            ->with(AnonymisationBackendService::class)
+            ->willReturn($mockService);
+
         $response = $this->controller->testOpenAnonymiserConnection('');
         $data     = $response->getData();
 
         $this->assertFalse($data['success']);
-        $this->assertSame(400, $response->getStatus());
+        $this->assertSame(200, $response->getStatus());
     }
 
     // =========================================================================

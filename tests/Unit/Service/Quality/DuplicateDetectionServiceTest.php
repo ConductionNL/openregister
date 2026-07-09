@@ -153,4 +153,100 @@ class DuplicateDetectionServiceTest extends TestCase
 
         $this->assertSame([], $this->service->findDuplicates(1, 1, null));
     }
+
+    public function testNestedDotPathMatchRuleFindsDuplicate(): void
+    {
+        // Nested under `goldenRecord`; top-level `email` differs (or is absent)
+        // so a pass would only find the match by resolving the nested path.
+        $a = $this->makeObject('a', ['goldenRecord' => ['email' => 'same@x.test', 'name' => 'Acme BV']]);
+        $b = $this->makeObject(
+            'b',
+            [
+                'email'        => 'different@x.test',
+                'goldenRecord' => ['email' => 'same@x.test', 'name' => 'ACME  bv'],
+            ]
+        );
+
+        $this->objectService->method('findAll')->willReturn([$a, $b]);
+
+        $rules = [
+            ['field' => 'goldenRecord.email', 'method' => 'exact', 'weight' => 0.5],
+            ['field' => 'goldenRecord.name', 'method' => 'normalized', 'weight' => 0.5],
+        ];
+
+        $pairs = $this->service->findDuplicates(1, 1, $rules, 0.85);
+
+        $this->assertCount(1, $pairs);
+        $this->assertSame(1.0, $pairs[0]['score']);
+        $this->assertContains('goldenRecord.email', $pairs[0]['matchedOn']);
+        $this->assertContains('goldenRecord.name', $pairs[0]['matchedOn']);
+    }
+
+    public function testNestedDotPathBlockingKeyPartitionsCandidates(): void
+    {
+        // Same nested name, but different nested blocking key => never compared.
+        $a = $this->makeObject('a', ['goldenRecord' => ['name' => 'Acme', 'postalCode' => '1011']]);
+        $b = $this->makeObject('b', ['goldenRecord' => ['name' => 'Acme', 'postalCode' => '9999']]);
+
+        $this->objectService->method('findAll')->willReturn([$a, $b]);
+
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getConfiguration')->willReturn([
+            'x-openregister-dedup' => [
+                'blockingKeys' => ['goldenRecord.postalCode'],
+                'matchRules'   => [['field' => 'goldenRecord.name', 'method' => 'exact', 'weight' => 1]],
+                'threshold'    => 0.85,
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->assertSame([], $this->service->findDuplicates(1, 1, null));
+    }
+
+    public function testMissingNestedSegmentResolvesToNullWithoutThrowing(): void
+    {
+        // `a` has no `goldenRecord` key at all; `b` has one but with a
+        // non-array value under it. Neither should throw; the field
+        // resolves to null and contributes 0.0 similarity.
+        $a = $this->makeObject('a', ['name' => 'Acme']);
+        $b = $this->makeObject('b', ['name' => 'Acme', 'goldenRecord' => 'not-an-array']);
+
+        $this->objectService->method('findAll')->willReturn([$a, $b]);
+
+        $rules = [
+            ['field' => 'goldenRecord.email', 'method' => 'exact', 'weight' => 1],
+        ];
+
+        $pairs = $this->service->findDuplicates(1, 1, $rules, 0.85);
+
+        $this->assertSame([], $pairs);
+    }
+
+    public function testPlainTopLevelFieldBackwardCompatUnaffected(): void
+    {
+        // Re-run the original near-duplicate scenario to lock in that a
+        // plain, dot-free field/key still behaves exactly as before.
+        $a = $this->makeObject('a', ['name' => 'Acme BV', 'email' => 'info@acme.test']);
+        $b = $this->makeObject('b', ['name' => 'ACME  bv', 'email' => 'info@acme.test']);
+
+        $this->objectService->method('findAll')->willReturn([$a, $b]);
+
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getConfiguration')->willReturn([
+            'x-openregister-dedup' => [
+                'blockingKeys' => ['email'],
+                'matchRules'   => [
+                    ['field' => 'email', 'method' => 'exact', 'weight' => 0.5],
+                    ['field' => 'name', 'method' => 'normalized', 'weight' => 0.5],
+                ],
+                'threshold'    => 0.85,
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $pairs = $this->service->findDuplicates(1, 1, null);
+
+        $this->assertCount(1, $pairs);
+        $this->assertSame(1.0, $pairs[0]['score']);
+    }
 }

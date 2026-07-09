@@ -468,9 +468,16 @@ class ContactServiceTest extends TestCase
 
     public function testGetObjectsForContactReturnsLinks(): void
     {
+        $this->setupUser('alice');
+        // The caller owns addressbook 7; the link lives there → visible.
+        $this->cardDavBackend->method('getAddressBooksForUser')
+            ->with('principals/users/alice')
+            ->willReturn([['id' => 7]]);
+
         $link = new ContactLink();
         $link->setObjectUuid('abc-123');
         $link->setRole('applicant');
+        $link->setAddressbookId(7);
 
         $this->contactLinkMapper->method('findByContactUid')->with('jan-uid')->willReturn([$link]);
 
@@ -478,6 +485,34 @@ class ContactServiceTest extends TestCase
 
         $this->assertCount(1, $results);
         $this->assertSame('abc-123', $results[0]['objectUuid']);
+    }
+
+    public function testGetObjectsForContactHidesLinksInOtherUsersAddressbooks(): void
+    {
+        // IDOR: the link lives in addressbook 99, which the caller does not own.
+        $this->setupUser('bob');
+        $this->cardDavBackend->method('getAddressBooksForUser')
+            ->with('principals/users/bob')
+            ->willReturn([['id' => 7]]);
+
+        $link = new ContactLink();
+        $link->setObjectUuid('secret-obj');
+        $link->setAddressbookId(99);
+
+        $this->contactLinkMapper->method('findByContactUid')->willReturn([$link]);
+
+        $results = $this->service->getObjectsForContact('someone-elses-uid');
+
+        $this->assertSame([], $results);
+    }
+
+    public function testGetObjectsForContactRejectsAnonymous(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        // No addressbook lookup, no links returned for an anonymous session.
+        $this->contactLinkMapper->expects($this->never())->method('findByContactUid');
+
+        $this->assertSame([], $this->service->getObjectsForContact('jan-uid'));
     }
 
     public function testDeleteLinksForObjectCleansUp(): void

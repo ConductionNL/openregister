@@ -1,0 +1,151 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MDM Trust Configuration",
+    "description": "Generic, entity-type-agnostic trust-tier configuration register consumed by the x-openregister-survivorship golden-record engine. Rows declare a trust tier for an (entityType, attribute, sourceSystem) tuple, with optional freshness decay and effectiveFrom versioning. RBAC-scoped and auditable via OpenRegister's object infrastructure (ADR-022) rather than frozen inline in a schema annotation.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational MDM trust-configuration register shipped by OpenRegister for the survivorship engine (x-openregister-survivorship)."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "trust-configuration": {
+        "slug": "trust-configuration",
+        "title": "Trust Configuration",
+        "version": "1.0.0",
+        "description": "Generic (entityType, attribute, sourceSystem) trust-tier rows used by the survivorship golden-record engine.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "trustConfiguration"
+        ],
+        "folder": "Open Registers/MDM Trust Configuration"
+      }
+    },
+    "schemas": {
+      "trustConfiguration": {
+        "slug": "trustConfiguration",
+        "title": "Trust Configuration",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A trust-tier rule for one (entityType, attribute, sourceSystem) tuple.",
+        "description": "One row declares which trust tier a source system's value earns for a given entity type + attribute, optionally with a freshness-decay window and an effectiveFrom date for versioning. TrustTierResolver looks up the most recent row whose effectiveFrom is on/before the as-of date; when no row matches, the caller falls back to the annotation's defaultTier.",
+        "required": [
+          "entityType",
+          "attribute",
+          "sourceSystem",
+          "trustTier"
+        ],
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "description": "The master-record entity type this rule applies to (e.g. 'organisation'). Never hardcoded by the engine.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Entity Type"
+          },
+          "attribute": {
+            "type": "string",
+            "description": "The attribute name this rule applies to (e.g. 'legalName', 'email').",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Attribute"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "description": "Slug of the source system this rule applies to (e.g. 'municipal-registry').",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Source System"
+          },
+          "trustTier": {
+            "type": "string",
+            "description": "The trust tier this source earns for this attribute.",
+            "enum": [
+              "gold",
+              "silver",
+              "bronze",
+              "discard"
+            ],
+            "facetable": true,
+            "title": "Trust Tier"
+          },
+          "freshnessDecayDays": {
+            "type": "integer",
+            "description": "Days after which a source's value for this attribute steps one tier down (freshness decay). Omit/null for no decay.",
+            "minimum": 1,
+            "title": "Freshness Decay (days)"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date",
+            "description": "Date this rule takes effect. Among matching rows, the most recent effectiveFrom on/before the as-of date wins (time-versioned).",
+            "title": "Effective From"
+          }
+        },
+        "x-openregister-seed": {
+          "objects": [
+            {
+              "id": "00000000-0000-0000-0000-000000000001",
+              "entityType": "organisation",
+              "attribute": "legalName",
+              "sourceSystem": "municipal-registry",
+              "trustTier": "gold",
+              "freshnessDecayDays": 365,
+              "effectiveFrom": "2026-01-01"
+            },
+            {
+              "id": "00000000-0000-0000-0000-000000000002",
+              "entityType": "organisation",
+              "attribute": "legalName",
+              "sourceSystem": "consultancy-crm",
+              "trustTier": "silver",
+              "freshnessDecayDays": 180,
+              "effectiveFrom": "2026-01-01"
+            },
+            {
+              "id": "00000000-0000-0000-0000-000000000003",
+              "entityType": "organisation",
+              "attribute": "legalName",
+              "sourceSystem": "travel-agency-booking",
+              "trustTier": "bronze",
+              "freshnessDecayDays": 90,
+              "effectiveFrom": "2026-01-01"
+            },
+            {
+              "id": "00000000-0000-0000-0000-000000000004",
+              "entityType": "organisation",
+              "attribute": "email",
+              "sourceSystem": "consultancy-crm",
+              "trustTier": "gold",
+              "freshnessDecayDays": 120,
+              "effectiveFrom": "2026-01-01"
+            },
+            {
+              "id": "00000000-0000-0000-0000-000000000005",
+              "entityType": "organisation",
+              "attribute": "email",
+              "sourceSystem": "municipal-registry",
+              "trustTier": "silver",
+              "freshnessDecayDays": 365,
+              "effectiveFrom": "2026-01-01"
+            },
+            {
+              "id": "00000000-0000-0000-0000-000000000006",
+              "entityType": "organisation",
+              "attribute": "phone",
+              "sourceSystem": "travel-agency-booking",
+              "trustTier": "silver",
+              "freshnessDecayDays": 60,
+              "effectiveFrom": "2026-01-01"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

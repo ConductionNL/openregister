@@ -787,44 +787,6 @@ class SettingsHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test updatePublishingOptions persists boolean values
-     *
-     * @return void
-     */
-    public function testUpdatePublishingOptionsPersistsBooleans(): void
-    {
-        $this->trackConfigKey('auto_publish_objects');
-        $this->trackConfigKey('auto_publish_attachments');
-        $this->trackConfigKey('use_old_style_publishing_view');
-
-        $result = $this->configHandler->updatePublishingOptions([
-            'auto_publish_objects'           => true,
-            'auto_publish_attachments'       => false,
-            'use_old_style_publishing_view'  => true,
-        ]);
-
-        $this->assertIsArray($result);
-        $this->assertTrue($result['auto_publish_objects']);
-        $this->assertFalse($result['auto_publish_attachments']);
-        $this->assertTrue($result['use_old_style_publishing_view']);
-    }
-
-    /**
-     * Test updatePublishingOptions ignores invalid keys
-     *
-     * @return void
-     */
-    public function testUpdatePublishingOptionsIgnoresInvalidKeys(): void
-    {
-        $result = $this->configHandler->updatePublishingOptions([
-            'invalid_option' => true,
-        ]);
-
-        $this->assertIsArray($result);
-        $this->assertArrayNotHasKey('invalid_option', $result);
-    }
-
-    /**
      * Test getN8nSettingsOnly returns expected structure
      *
      * @return void

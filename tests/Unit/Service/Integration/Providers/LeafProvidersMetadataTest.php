@@ -647,17 +647,21 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testSharesProviderCreateThrowsNotImplemented(): void
     {
-        // Pass a container mock that returns null for every service lookup so
-        // SharesProvider::create() cannot resolve CaseTokenService and falls
-        // through to parent::create() which throws NotImplementedException.
-        $container = $this->createMock(ContainerInterface::class);
-        $container->method('get')->willReturn(null);
+        // Inject a mock container that returns null for every service lookup
+        // so that SharesProvider::lookup() cannot resolve CaseTokenService
+        // from the real NC container. Without the container override,
+        // \OCP\Server::get(CaseTokenService) succeeds in the docker environment
+        // but then throws InvalidArgumentException (no logged-in user) rather
+        // than falling through to parent::create() → NotImplementedException.
+        $mockContainer = $this->createMock(ContainerInterface::class);
+        $mockContainer->method('get')->willThrowException(new \RuntimeException('not found'));
+        $mockContainer->method('has')->willReturn(false);
 
         $provider = new SharesProvider(
             db: $this->createMock(IDBConnection::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
-            container: $container,
+            container: $mockContainer,
         );
 
         $this->expectException(NotImplementedException::class);
