@@ -279,6 +279,9 @@ class TablesTableReader
      *
      * @return array<string, mixed>|null The row descriptor, or null when absent/denied.
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId is kept for reader-contract parity
+     * with the View/table paths; RowService::find() resolves the acting user from the session.
+     *
      * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
      */
     public function findRow(int $rowId, string $userId): ?array
@@ -328,7 +331,7 @@ class TablesTableReader
 
         try {
             if ($isView === true) {
-                // getViewRowsCount() needs the View entity, not the view id.
+                // The getViewRowsCount() call needs the View entity, not the view id.
                 $viewService = $this->resolveService(class: self::VIEW_SERVICE);
                 if ($viewService === null) {
                     return 0;
@@ -338,7 +341,7 @@ class TablesTableReader
                 return (int) $service->getViewRowsCount($view, $userId);
             }
 
-            // getRowsCount() takes only the table id; Tables checks read
+            // The getRowsCount() call takes only the table id; Tables checks read
             // access against the session user internally.
             return (int) $service->getRowsCount($id);
         } catch (Throwable $e) {

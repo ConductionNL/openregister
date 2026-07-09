@@ -354,7 +354,6 @@ class TransitionEngine
             return [];
         }
 
-        $orderField = (string) ($graph['orderField'] ?? '');
         $finalField = (string) ($graph['finalField'] ?? '');
         $allowed    = (string) ($graph['allowedMoves'] ?? '');
 
@@ -462,13 +461,13 @@ class TransitionEngine
         usort(
             $entities,
             function (ObjectEntity $a, ObjectEntity $b) use ($orderField): int {
-                $ao = (float) (($a->getObject() ?? [])[$orderField] ?? 0);
-                $bo = (float) (($b->getObject() ?? [])[$orderField] ?? 0);
-                if ($ao === $bo) {
+                $aOrder = (float) (($a->getObject() ?? [])[$orderField] ?? 0);
+                $bOrder = (float) (($b->getObject() ?? [])[$orderField] ?? 0);
+                if ($aOrder === $bOrder) {
                     return strcmp((string) $a->getUuid(), (string) $b->getUuid());
                 }
 
-                return ($ao <=> $bo);
+                return ($aOrder <=> $bOrder);
             }
         );
 
