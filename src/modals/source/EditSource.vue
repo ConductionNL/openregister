@@ -110,6 +110,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcDialog,
@@ -338,7 +339,7 @@ export default {
 
 			try {
 				const response = await fetch(
-					`/index.php/apps/openregister/api/sources/${this.sourceItem.id}/${action}`,
+					generateUrl(`/apps/openregister/api/sources/${this.sourceItem.id}/${action}`),
 					{
 						method: 'POST',
 						headers: { requesttoken: window.OC?.requestToken || '' },

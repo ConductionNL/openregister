@@ -404,6 +404,13 @@ class Application extends App implements IBootstrap
         // any failure falls back to serving the request locally unchanged.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
 
+        // Register the ObjectSourceErrorMiddleware (dbal-virtual-registers D8):
+        // maps DbalObjectSourceException thrown during reads against an
+        // external-database-backed schema onto its declared 502/503 status —
+        // an unreachable or failing external database must never surface as a
+        // bare 500. All other exceptions are rethrown untouched.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware::class);
+
         // Bind the dormant Path B PDF anonymisation fallback bridge to its
         // null implementation. Tenants enabling Path B replace this binding
         // with a concrete NcOfficeConverterInterface implementation that

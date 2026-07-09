@@ -2284,7 +2284,7 @@ class ObjectService
         // Object-source delegation: a schema served from an external source
         // (x-openregister-object-source) lists live from its provider, never the
         // search index or magic table. Returns the standard paginated shape.
-        $sourcePaginated = $this->paginateObjectSource(query: $query);
+        $sourcePaginated = $this->paginateObjectSource(query: $query, _rbac: $_rbac);
         if ($sourcePaginated !== null) {
             return $sourcePaginated;
         }
@@ -2408,12 +2408,15 @@ class ObjectService
      * missing/disabled, returns an empty paginated result (never the DB).
      *
      * @param array $query The search query (filters/limit/offset).
+     * @param bool  $_rbac Whether to enforce RBAC checks.
      *
      * @return array|null The paginated result, or null when not source-backed.
      *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the acting user lacks read access to the schema.
+     *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function paginateObjectSource(array $query): ?array
+    private function paginateObjectSource(array $query, bool $_rbac=true): ?array
     {
         $schema = $this->currentSchema;
         if ($schema === null) {
@@ -2424,6 +2427,19 @@ class ObjectService
         if ($source === null) {
             return null;
         }
+
+        // Read-access parity (no enumeration oracle): enforce the schema-level
+        // read authorization BEFORE the provider — and therefore the external
+        // database — is consulted. A denied user receives the same
+        // NotAuthorizedException a native schema raises, whether or not any
+        // matching external rows exist.
+        $this->checkPermission(
+            schema: $schema,
+            action: 'read',
+            userId: null,
+            objectOwner: null,
+            _rbac: $_rbac
+        );
 
         $results  = [];
         $config   = ($source['config'] ?? []);

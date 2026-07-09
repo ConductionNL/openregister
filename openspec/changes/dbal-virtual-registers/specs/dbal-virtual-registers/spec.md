@@ -45,7 +45,7 @@ The system SHALL run a background job on a configurable interval that re-introsp
 - **@e2e** exclude requires fault injection across multiple sources; covered by a unit test on the job
 
 ### Requirement: Map foreign keys to canonical relations
-The system SHALL map each single-column foreign key to a relation property on the owning schema using the canonical relation dialect: `type: string`, a `format`, a `$ref` to the related virtual schema, and `objectConfiguration.handling: 'related-object'`. The inverse side SHALL be added on the target schema with `inversedBy`. Multi-column foreign keys SHALL NOT be mapped to `$ref` in v1.
+The system SHALL map each single-column foreign key to a relation property on the owning schema using the canonical relation dialect: `type: string`, a `$ref` to the related virtual schema, and `objectConfiguration.handling: 'related-object'`. A `format` SHALL be emitted only when the underlying column's type mapping yields one (external primary keys are commonly plain integers/strings with no JSON-Schema format; relation resolution keys on `$ref` + `handling`, not `format`). The inverse side SHALL be added on the target schema with `inversedBy`. Multi-column foreign keys SHALL NOT be mapped to `$ref` in v1.
 
 #### Scenario: A foreign key becomes a resolvable relation
 - **WHEN** introspection encounters `permits.applicant_id` referencing `applicants.id`

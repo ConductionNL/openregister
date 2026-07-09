@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -172,8 +174,12 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return array<string, mixed>|null The dispatch result.
      */
-    private function paginate(?ObjectSourceProvider $provider, ?Schema $schema, array $query): ?array
-    {
+    private function paginate(
+        ?ObjectSourceProvider $provider,
+        ?Schema $schema,
+        array $query,
+        ?PermissionHandler $permissionHandler=null
+    ): ?array {
         $registry = new ObjectSourceRegistry(logger: new NullLogger());
         if ($provider !== null) {
             $registry->addProvider($provider);
@@ -181,6 +187,12 @@ class PaginateObjectSourceTest extends TestCase
 
         $register = new Register();
         $register->setId(1);
+
+        // A permissive handler by default: checkPermission() is a void method,
+        // so the bare mock allows every action unless a test overrides it.
+        if ($permissionHandler === null) {
+            $permissionHandler = $this->createMock(PermissionHandler::class);
+        }
 
         $reflection = new ReflectionClass(ObjectService::class);
         $service    = $reflection->newInstanceWithoutConstructor();
@@ -190,6 +202,7 @@ class PaginateObjectSourceTest extends TestCase
             'logger'               => new NullLogger(),
             'currentRegister'      => $register,
             'currentSchema'        => $schema,
+            'permissionHandler'    => $permissionHandler,
         ] as $property => $value
         ) {
             $prop = $reflection->getProperty($property);
@@ -352,4 +365,120 @@ class PaginateObjectSourceTest extends TestCase
         $this->assertSame(0, $result['total']);
         $this->assertSame(1, $result['@self']['pages']);
     }//end testMissingProviderDegradesToEmptyList()
+
+    /**
+     * Read access parity: a denied user is rejected BEFORE the provider — and
+     * therefore the external database — is consulted, so the response reveals
+     * nothing about whether matching external rows exist (no enumeration
+     * oracle). The same NotAuthorizedException a native schema raises is used.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testDeniedReadRejectsBeforeProviderIsConsulted(): void
+    {
+        $provider = new class implements ObjectSourceProvider {
+
+            /**
+             * Whether any read method was invoked.
+             *
+             * @var boolean
+             */
+            public bool $touched = false;
+
+            /**
+             * The provider id.
+             *
+             * @return string The id.
+             */
+            public function getId(): string
+            {
+                return 'stub-source';
+            }//end getId()
+
+            /**
+             * Always enabled.
+             *
+             * @return bool True.
+             */
+            public function isEnabled(): bool
+            {
+                return true;
+            }//end isEnabled()
+
+            /**
+             * Record the (forbidden) touch and return null.
+             *
+             * @param Register    $register The register.
+             * @param Schema      $schema   The schema.
+             * @param string      $id       The object id.
+             * @param array       $config   The source config.
+             *
+             * @return ObjectEntity|null Always null.
+             */
+            public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity
+            {
+                $this->touched = true;
+
+                return null;
+            }//end find()
+
+            /**
+             * Record the (forbidden) touch and return no rows.
+             *
+             * @param Register $register The register.
+             * @param Schema   $schema   The schema.
+             * @param array    $query    The query.
+             * @param array    $config   The source config.
+             *
+             * @return array Always empty.
+             */
+            public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array
+            {
+                $this->touched = true;
+
+                return [];
+            }//end findAll()
+
+            /**
+             * Record the (forbidden) touch and return zero.
+             *
+             * @param Register $register The register.
+             * @param Schema   $schema   The schema.
+             * @param array    $query    The query.
+             * @param array    $config   The source config.
+             *
+             * @return int Always zero.
+             */
+            public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int
+            {
+                $this->touched = true;
+
+                return 0;
+            }//end count()
+        };
+
+        $denyingHandler = $this->createMock(PermissionHandler::class);
+        $denyingHandler->expects($this->once())
+            ->method('checkPermission')
+            ->willThrowException(new NotAuthorizedException('denied'));
+
+        try {
+            $this->paginate(
+                provider: $provider,
+                schema: $this->sourcedSchema(),
+                query: ['limit' => 10],
+                permissionHandler: $denyingHandler
+            );
+            $this->fail('Expected NotAuthorizedException was not thrown.');
+        } catch (NotAuthorizedException $e) {
+            // Expected: denial surfaces exactly like a native schema's.
+        }
+
+        $this->assertFalse(
+            $provider->touched,
+            'The provider (external database) must not be consulted for a denied read.'
+        );
+    }//end testDeniedReadRejectsBeforeProviderIsConsulted()
 }//end class

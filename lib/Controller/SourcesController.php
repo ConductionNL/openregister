@@ -35,6 +35,7 @@ use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use OCP\IUserSession;
 use OCP\Security\ICrypto;
 use Symfony\Component\Uid\Uuid;
@@ -74,6 +75,7 @@ class SourcesController extends Controller
      * @param HarvestPipelineService       $pipeline             Harvest pipeline orchestrator
      * @param DbalConnectionFactory        $connectionFactory    Opens read-only DBAL connections for database sources
      * @param DatabaseIntrospectionService $introspectionService Introspects a database source into a virtual register
+     * @param LoggerInterface              $logger               The app logger
      *
      * @return void
      */
@@ -89,7 +91,8 @@ class SourcesController extends Controller
         private readonly SourceFetcherRegistry $fetcherRegistry,
         private readonly HarvestPipelineService $pipeline,
         private readonly DbalConnectionFactory $connectionFactory,
-        private readonly DatabaseIntrospectionService $introspectionService
+        private readonly DatabaseIntrospectionService $introspectionService,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -623,8 +626,14 @@ class SourcesController extends Controller
                 statusCode: 503
             );
         } catch (Throwable $exception) {
+            // Never echo raw exception text to the client (it may carry DSN
+            // fragments or SQL); log it server-side and return a fixed message.
+            $this->logger->error(
+                '[SourcesController] introspection failed: '.$exception->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+            );
             return new JSONResponse(
-                data: ['error' => $this->l10n->t('Introspection failed'), 'message' => $exception->getMessage()],
+                data: ['error' => $this->l10n->t('Introspection failed')],
                 statusCode: 502
             );
         }

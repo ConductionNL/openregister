@@ -82,7 +82,8 @@ class SourcesControllerTest extends TestCase
             $this->createMock(SourceFetcherRegistry::class),
             $this->createMock(HarvestPipelineService::class),
             new DbalConnectionFactory(credentialStore: $credentialStore, logger: new NullLogger()),
-            $this->introspectionService
+            $this->introspectionService,
+            new NullLogger()
         );
     }
 
@@ -391,6 +392,75 @@ class SourcesControllerTest extends TestCase
             ->willReturn($source);
 
         $this->controller->create();
+    }
+
+    /**
+     * Custody: a plaintext password/secret submitted for a `type: database`
+     * source must be stripped BEFORE persistence (D1) — the mapper never sees
+     * it, and databaseUrl is cleared on the database path.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testCreateStripsSubmittedDatabasePassword(): void
+    {
+        $source = new Source();
+        $this->request->method('getParams')->willReturn([
+            'name'        => 'ext-db',
+            'type'        => 'database',
+            'databaseUrl' => 'postgres://user:PASS@host:5432/db',
+            'authConfig'  => [
+                'host'       => 'db.example.org',
+                'password'   => 'YOUR_PASSWORD_HERE',
+                'secret'     => 'YOUR_SECRET_HERE',
+                'credential' => '00000000-0000-0000-0000-000000000000',
+            ],
+        ]);
+        $this->sourceMapper->expects($this->once())
+            ->method('createFromArray')
+            ->with($this->callback(function ($data) {
+                return isset($data['authConfig']['password']) === false
+                    && isset($data['authConfig']['secret']) === false
+                    && isset($data['databaseUrl']) === false
+                    && $data['authConfig']['host'] === 'db.example.org'
+                    && $data['authConfig']['credential'] === '00000000-0000-0000-0000-000000000000';
+            }))
+            ->willReturn($source);
+
+        $this->controller->create();
+    }
+
+    /**
+     * Custody: update() strips a submitted plaintext password/secret the same
+     * way create() does (D1).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testUpdateStripsSubmittedDatabasePassword(): void
+    {
+        $source = new Source();
+        $this->request->method('getParams')->willReturn([
+            'type'       => 'database',
+            'authConfig' => [
+                'host'     => 'db.example.org',
+                'password' => 'YOUR_PASSWORD_HERE',
+            ],
+        ]);
+        $this->sourceMapper->expects($this->once())
+            ->method('updateFromArray')
+            ->with(
+                $this->equalTo(7),
+                $this->callback(function ($data) {
+                    return isset($data['authConfig']['password']) === false
+                        && $data['authConfig']['host'] === 'db.example.org';
+                })
+            )
+            ->willReturn($source);
+
+        $this->controller->update(7);
     }
 
     public function testCreateWithEmptyParams(): void

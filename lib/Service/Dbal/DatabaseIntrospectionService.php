@@ -489,11 +489,22 @@ class DatabaseIntrospectionService
                 $targetSlug = $slugByTable[$foreignTable];
 
                 // Owning side: keep the raw key but type it as a relation.
-                $tables[$tableName]['properties'][$localColumn] = [
+                // A `format` is carried over only when the column's own type
+                // mapping produced one (e.g. GUID → uuid) — external primary
+                // keys are commonly plain integers/strings with no JSON-Schema
+                // format, and relation resolution keys on $ref + handling.
+                $relationProperty = [
                     'type'                => 'string',
                     '$ref'                => $targetSlug,
                     'objectConfiguration' => ['handling' => 'related-object'],
                 ];
+
+                $existingFormat = ($tables[$tableName]['properties'][$localColumn]['format'] ?? null);
+                if (is_string($existingFormat) === true && $existingFormat !== '') {
+                    $relationProperty['format'] = $existingFormat;
+                }
+
+                $tables[$tableName]['properties'][$localColumn] = $relationProperty;
 
                 // Inverse side on the referenced schema.
                 $inverseName = $tableName.'_via_'.$localColumn;
