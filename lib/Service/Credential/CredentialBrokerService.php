@@ -60,6 +60,7 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -67,6 +68,12 @@ use Throwable;
 
 /**
  * Constrained, host-locked, secret-injecting outbound broker.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The fail-closed guard chain
+ *   (scope dispatch + owner/membership + allowedApps + provider rules + host-lock)
+ *   is deliberately decomposed into small single-purpose guard methods so each
+ *   security decision is independently auditable; the aggregate weighted method
+ *   count is a by-product of that decomposition, not of tangled logic.
  */
 class CredentialBrokerService
 {
@@ -85,14 +92,29 @@ class CredentialBrokerService
     public const SCHEMA = 'brokeredcredential';
 
     /**
+     * The personal (owner-scoped) credential scope — the default when absent.
+     *
+     * @var string
+     */
+    private const SCOPE_PERSONAL = 'personal';
+
+    /**
+     * The organisation (membership-scoped) credential scope.
+     *
+     * @var string
+     */
+    private const SCOPE_ORGANISATION = 'organisation';
+
+    /**
      * Constructor.
      *
-     * @param ObjectService     $objectService   OR object CRUD (loads credential metadata).
-     * @param CredentialStore   $credentialStore Secret store leaf (reads the injected secret).
-     * @param ProviderCatalogue $catalogue       Read-only provider catalogue (host-lock + rules).
-     * @param IUserSession      $userSession     Current session (owner guard identity).
-     * @param IClientService    $clientService   NC HTTP client factory (the outbound call).
-     * @param LoggerInterface   $logger          Logger for secret-free server-side diagnostics.
+     * @param ObjectService       $objectService       OR object CRUD (loads credential metadata).
+     * @param CredentialStore     $credentialStore     Secret store leaf (reads the injected secret).
+     * @param ProviderCatalogue   $catalogue           Read-only provider catalogue (host-lock + rules).
+     * @param IUserSession        $userSession         Current session (owner guard identity).
+     * @param IClientService      $clientService       NC HTTP client factory (the outbound call).
+     * @param LoggerInterface     $logger              Logger for secret-free server-side diagnostics.
+     * @param OrganisationService $organisationService Resolves organisation membership (organisation guard branch).
      *
      * @return void
      */
@@ -103,6 +125,7 @@ class CredentialBrokerService
         private readonly IUserSession $userSession,
         private readonly IClientService $clientService,
         private readonly LoggerInterface $logger,
+        private readonly OrganisationService $organisationService,
     ) {
     }//end __construct()
 
@@ -148,9 +171,10 @@ class CredentialBrokerService
         $method    = strtoupper($method);
         $matchPath = $this->normalisePath(path: $path);
 
-        // Guard 1 — owner (per-object IDOR).
-        $credential = $this->loadOwnedCredential(credentialId: $credentialId, actingUserId: $actingUserId);
+        // Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
+        $credential = $this->loadAdmittedCredential(credentialId: $credentialId, actingUserId: $actingUserId);
         $data       = $credential->jsonSerialize();
+        $scope      = $this->scopeOf(data: $data);
 
         // Guard 2 — allowed app.
         $this->assertAppAllowed(data: $data, appId: $appId, credentialId: $credentialId);
@@ -160,8 +184,8 @@ class CredentialBrokerService
         $this->assertRuleAllowed(provider: $provider, method: $method, matchPath: $matchPath, credentialId: $credentialId);
         $resolvedUrl = $this->resolveAndLockUrl(provider: $provider, path: $path, credentialId: $credentialId);
 
-        // All guards passed — read the secret and perform the call.
-        $secret = $this->credentialStore->get($credentialId);
+        // All guards passed — read the secret (from the scope's vault owner) and perform the call.
+        $secret = $this->credentialStore->get($credentialId, $scope);
         if ($secret === null) {
             $this->deny(reason: 'no secret stored for credential', credentialId: $credentialId);
         }
@@ -178,30 +202,35 @@ class CredentialBrokerService
     }//end request()
 
     /**
-     * Guard 1 — load the credential and assert the acting identity owns it.
+     * Guard 1 — load the credential and admit the caller per the credential's SCOPE.
      *
-     * The identity is the SESSION user whenever one exists (unconditionally —
-     * a session caller cannot impersonate another user via `actingUserId`);
-     * only a sessionless in-process caller may assert `actingUserId` (design
-     * D-K). No identity at all denies as before.
+     * The owner guard is scope-dispatched (design D3), and the change is strictly
+     * ADDITIVE — the personal branch is byte-for-byte the pre-existing owner check:
+     *
+     *   - `personal` (or absent): admit only when the acting identity equals the
+     *     credential `owner`. The acting identity is the SESSION user whenever one
+     *     exists (unconditionally — a session caller cannot impersonate via
+     *     `actingUserId`); only a sessionless in-process caller may assert
+     *     `actingUserId` (design D-K); no identity at all denies as before.
+     *   - `organisation`: admit only when a REAL session user is a member of the
+     *     credential's `organisation` (no `actingUserId` fallback — there is no
+     *     owner to fall back to, so an unauthenticated organisation call denies).
+     *
+     * The `allowedApps`, provider allow-rule, and host-lock guards then run for
+     * BOTH scopes, unchanged, in {@see request()}.
      *
      * @param string      $credentialId The `credential` object UUID.
-     * @param string|null $actingUserId Asserted user for sessionless in-process callers only.
+     * @param string|null $actingUserId Asserted user for sessionless in-process callers (personal branch only).
      *
-     * @return ObjectEntity The owned credential entity.
+     * @return ObjectEntity The admitted credential entity.
      *
-     * @throws CredentialAccessDeniedException When missing, unauthenticated, or not owned.
+     * @throws CredentialAccessDeniedException When missing, unauthenticated, or not admitted.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
      * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
      */
-    private function loadOwnedCredential(string $credentialId, ?string $actingUserId=null): ObjectEntity
+    private function loadAdmittedCredential(string $credentialId, ?string $actingUserId=null): ObjectEntity
     {
-        $ownerUid = $this->resolveActingIdentity(actingUserId: $actingUserId);
-        if ($ownerUid === null) {
-            $this->deny(reason: 'unauthenticated', credentialId: $credentialId);
-        }
-
         try {
             $credential = $this->objectService->find(
                 id: $credentialId,
@@ -217,12 +246,91 @@ class CredentialBrokerService
             $this->deny(reason: 'credential not found', credentialId: $credentialId);
         }
 
+        $data = $credential->jsonSerialize();
+        if ($this->scopeOf(data: $data) === self::SCOPE_ORGANISATION) {
+            $this->assertOrganisationMember(data: $data, credentialId: $credentialId);
+            return $credential;
+        }
+
+        $this->assertPersonalOwner(credential: $credential, credentialId: $credentialId, actingUserId: $actingUserId);
+
+        return $credential;
+    }//end loadAdmittedCredential()
+
+    /**
+     * Personal owner guard — UNCHANGED: admit only when the acting identity owns it.
+     *
+     * @param ObjectEntity $credential   The loaded credential entity.
+     * @param string       $credentialId The `credential` object UUID (for logging).
+     * @param string|null  $actingUserId Asserted user for sessionless in-process callers only.
+     *
+     * @return void
+     *
+     * @throws CredentialAccessDeniedException When unauthenticated or not owned.
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     */
+    private function assertPersonalOwner(ObjectEntity $credential, string $credentialId, ?string $actingUserId): void
+    {
+        $ownerUid = $this->resolveActingIdentity(actingUserId: $actingUserId);
+        if ($ownerUid === null) {
+            $this->deny(reason: 'unauthenticated', credentialId: $credentialId);
+        }
+
         if ($credential->getOwner() !== $ownerUid) {
             $this->deny(reason: 'caller is not the credential owner', credentialId: $credentialId);
         }
+    }//end assertPersonalOwner()
 
-        return $credential;
-    }//end loadOwnedCredential()
+    /**
+     * Organisation membership guard — a REAL session user must be a member of the org.
+     *
+     * There is no owner to fall back to, so an organisation call REQUIRES a real
+     * user session: the sessionless `actingUserId` fallback is deliberately not
+     * consulted here, and no session denies (design D3). Membership is resolved
+     * through {@see OrganisationService::hasAccessToOrganisation()} (the current
+     * session user is a member of — or a Nextcloud admin over — the organisation).
+     *
+     * @param array<string, mixed> $data         The credential's serialised data.
+     * @param string               $credentialId The `credential` object UUID (for logging).
+     *
+     * @return void
+     *
+     * @throws CredentialAccessDeniedException When sessionless or not a member.
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
+     */
+    private function assertOrganisationMember(array $data, string $credentialId): void
+    {
+        if ($this->userSession->getUser() === null) {
+            $this->deny(reason: 'organisation credential requires a user session', credentialId: $credentialId);
+        }
+
+        $organisation = (string) ($data['organisation'] ?? '');
+        if ($organisation === '' || $this->organisationService->hasAccessToOrganisation($organisation) === false) {
+            $this->deny(reason: 'caller is not a member of the credential organisation', credentialId: $credentialId);
+        }
+    }//end assertOrganisationMember()
+
+    /**
+     * Resolve a credential's scope from its serialised data (absent ⇒ personal).
+     *
+     * @param array<string, mixed> $data The credential's serialised data.
+     *
+     * @return string The scope (`personal`|`organisation`).
+     *
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     */
+    private function scopeOf(array $data): string
+    {
+        $scope = (string) ($data['scope'] ?? self::SCOPE_PERSONAL);
+        if ($scope === self::SCOPE_ORGANISATION) {
+            return self::SCOPE_ORGANISATION;
+        }
+
+        return self::SCOPE_PERSONAL;
+    }//end scopeOf()
 
     /**
      * Resolve the identity the owner guard evaluates against (design D-K).

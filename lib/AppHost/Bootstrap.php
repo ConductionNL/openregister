@@ -306,7 +306,8 @@ class Bootstrap
                     settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE),
                     logger: $c->get('Psr\\Log\\LoggerInterface'),
                     appManager: $c->get('OCP\\App\\IAppManager'),
-                    tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService')
+                    tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
+                    applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
                 );
             }
         );

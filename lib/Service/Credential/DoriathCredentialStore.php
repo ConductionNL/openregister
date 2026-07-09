@@ -150,8 +150,14 @@ class DoriathCredentialStore implements CredentialStore
      * ROW id (keeping the row, bumping Doriath's rotation metadata). A write
      * failure throws — a dropped secret must be loud.
      *
+     * The Doriath row is application-owned and keyed by the credential UUID, so it
+     * is inherently system-scoped — `$scope` does not change where the ciphertext
+     * lands here; it is threaded through only to the composed per-user vault leaf
+     * used for lazy migration (design D2 / D-A).
+     *
      * @param string $uuid   The owning `credential` object's UUID (the secret name).
      * @param string $secret The raw secret to store. Never logged.
+     * @param string $scope  The credential scope (`personal`|`organisation`); threaded to the migration vault leaf.
      *
      * @return void
      *
@@ -159,7 +165,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
      */
-    public function put(string $uuid, string $secret): void
+    public function put(string $uuid, string $secret, string $scope='personal'): void
     {
         $applicationId = $this->requireApplicationId();
 
@@ -197,13 +203,14 @@ class DoriathCredentialStore implements CredentialStore
      * the vault cannot be consulted, so a sessionless read of an un-migrated
      * secret fails closed.
      *
-     * @param string $uuid The owning `credential` object's UUID.
+     * @param string $uuid  The owning `credential` object's UUID.
+     * @param string $scope The credential scope (`personal`|`organisation`); threaded to the migration vault leaf.
      *
      * @return string|null The raw secret, or null when absent/undecryptable. Never logged.
      *
      * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#lazy-migration-of-vault-secrets-to-doriath
      */
-    public function get(string $uuid): ?string
+    public function get(string $uuid, string $scope='personal'): ?string
     {
         $applicationId = $this->applicationId();
         if ($applicationId === '') {
@@ -226,7 +233,7 @@ class DoriathCredentialStore implements CredentialStore
             return $this->decryptRow(row: $row, uuid: $uuid);
         }
 
-        return $this->migrateFromVault(uuid: $uuid);
+        return $this->migrateFromVault(uuid: $uuid, scope: $scope);
     }//end get()
 
     /**
@@ -241,7 +248,8 @@ class DoriathCredentialStore implements CredentialStore
      * composed vault leaf is always cleared, so a later fallback can never
      * resurrect a deleted secret.
      *
-     * @param string $uuid The owning `credential` object's UUID.
+     * @param string $uuid  The owning `credential` object's UUID.
+     * @param string $scope The credential scope (`personal`|`organisation`); threaded to the residual vault leaf.
      *
      * @return void
      *
@@ -249,10 +257,10 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
      */
-    public function delete(string $uuid): void
+    public function delete(string $uuid, string $scope='personal'): void
     {
         // Residual-vault cleanup (design D-A): harmless no-op when absent.
-        $this->vaultStore->delete($uuid);
+        $this->vaultStore->delete($uuid, $scope);
 
         $applicationId = $this->applicationId();
         if ($applicationId === '') {
@@ -310,25 +318,26 @@ class DoriathCredentialStore implements CredentialStore
      * closed). The vault row is deleted ONLY after a successful re-put, so a
      * failed migration leaves the secret retrievable on the next attempt.
      *
-     * @param string $uuid The owning `credential` object's UUID.
+     * @param string $uuid  The owning `credential` object's UUID.
+     * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
      *
      * @return string|null The migrated secret, or null when there is nothing to migrate.
      *
      * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#lazy-migration-of-vault-secrets-to-doriath
      */
-    private function migrateFromVault(string $uuid): ?string
+    private function migrateFromVault(string $uuid, string $scope='personal'): ?string
     {
         if ($this->userSession->getUser() === null) {
             return null;
         }
 
-        $legacy = $this->vaultStore->get($uuid);
+        $legacy = $this->vaultStore->get($uuid, $scope);
         if ($legacy === null) {
             return null;
         }
 
         try {
-            $this->put(uuid: $uuid, secret: $legacy);
+            $this->put(uuid: $uuid, secret: $legacy, scope: $scope);
         } catch (Throwable $e) {
             // Migration failed — keep the vault row so the next session read
             // can retry; the caller still gets the secret it owns.
@@ -339,7 +348,7 @@ class DoriathCredentialStore implements CredentialStore
             return $legacy;
         }
 
-        $this->vaultStore->delete($uuid);
+        $this->vaultStore->delete($uuid, $scope);
 
         return $legacy;
     }//end migrateFromVault()
