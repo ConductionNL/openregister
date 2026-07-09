@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 retrofit: true
 ---
 
@@ -8,6 +8,7 @@ retrofit: true
 **Status**: in-progress
 
 **OpenSpec changes**:
+- `tighten-relation-detection-heuristic` (active) — relation detection records a string in `@self.relations` only when it is a UUID/prefixed-UUID/URL or a schema-declared reference property; removes the loose "8+ chars with hyphen/underscore" heuristic that polluted the map with dates, enum values, and business identifiers. Correctness fix to a derived field; no schema/lifecycle/aggregation/notification change.
 - `fk-graph-lifecycle-transitions` — adds declarative FK-scoped graph transition mode (in-progress)
 
 ## Purpose
