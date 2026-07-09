@@ -81,7 +81,7 @@ class DbalIntrospectionJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) TimedJob contract passes an argument.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     protected function run($argument): void
     {
@@ -104,7 +104,7 @@ class DbalIntrospectionJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function introspectSource(Source $source): void
     {
@@ -136,7 +136,7 @@ class DbalIntrospectionJob extends TimedJob
      *
      * @return array<int, Source> The database sources (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function loadDatabaseSources(): array
     {

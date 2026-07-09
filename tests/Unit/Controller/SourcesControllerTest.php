@@ -401,7 +401,7 @@ class SourcesControllerTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testCreateStripsSubmittedDatabasePassword(): void
     {
@@ -437,7 +437,7 @@ class SourcesControllerTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUpdateStripsSubmittedDatabasePassword(): void
     {
@@ -705,7 +705,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testTestConnectionRequiresAdmin(): void
     {
@@ -717,7 +717,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testTestConnectionReturns404WhenSourceMissing(): void
     {
@@ -729,7 +729,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testTestConnectionRejectsNonDatabaseSource(): void
     {
@@ -743,7 +743,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testTestConnectionSucceedsAgainstSqliteFixtureWithoutLeakingSecrets(): void
     {
@@ -758,7 +758,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testTestConnectionUnreachableSourceReturns503NotBare500(): void
     {
@@ -778,7 +778,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testIntrospectRequiresAdmin(): void
     {
@@ -790,7 +790,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testIntrospectReturns404WhenSourceMissing(): void
     {
@@ -802,7 +802,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testIntrospectRejectsNonDatabaseSource(): void
     {
@@ -816,7 +816,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testIntrospectReturnsSummaryShape(): void
     {
@@ -845,7 +845,7 @@ class SourcesControllerTest extends TestCase
     }
 
     /**
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testIntrospectUnreachableSourceReturns503(): void
     {

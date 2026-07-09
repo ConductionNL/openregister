@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class ObjectSourceErrorMiddleware extends Middleware
      *
      * @throws Exception Rethrows every exception that is not a DbalObjectSourceException.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function afterException(Controller $controller, string $methodName, Exception $exception): Response
     {

@@ -61,7 +61,7 @@ class DbalObjectSourceException extends RuntimeException
      *
      * @return int The status code (502 or 503).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function getStatusCode(): int
     {

@@ -102,7 +102,7 @@ class SqlTypeMapper
      *                               `format`/`maxLength`/`description`, and an
      *                               internal `x-filterable` flag).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function mapColumn(Column $column): array
     {
@@ -166,7 +166,7 @@ class SqlTypeMapper
      * @SuppressWarnings(PHPMD.StaticAccess) Type::lookupName is DBAL's only
      *   reverse lookup from a Type instance to its registered name.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function typeName(Column $column): string
     {

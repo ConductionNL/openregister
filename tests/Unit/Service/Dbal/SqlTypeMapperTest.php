@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -98,7 +98,7 @@ class SqlTypeMapperTest extends TestCase
      *
      * @dataProvider mappingTable
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testMappingTableRow(string $dbalType, string $jsonType, ?string $format): void
     {
@@ -118,7 +118,7 @@ class SqlTypeMapperTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testMaxLengthFromColumnLength(): void
     {
@@ -136,7 +136,7 @@ class SqlTypeMapperTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testDecimalPrecisionScaleInDescription(): void
     {
@@ -154,7 +154,7 @@ class SqlTypeMapperTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testBigintPrecisionNote(): void
     {
@@ -170,7 +170,7 @@ class SqlTypeMapperTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testNonFilterableFlag(): void
     {
@@ -190,7 +190,7 @@ class SqlTypeMapperTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUnknownTypeFallsBackToStringWithWarning(): void
     {
