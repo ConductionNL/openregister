@@ -976,7 +976,7 @@ class DeleteObject
      * @throws \RuntimeException                          When the schema is not writable (v1 rejection).
      * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function delegateObjectSourceDelete(
         Register | int | string | null $register,

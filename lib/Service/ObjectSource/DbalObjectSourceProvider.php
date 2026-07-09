@@ -750,7 +750,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @return ObjectEntity The created virtual object.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function insert(Register $register, Schema $schema, array $data, array $config=[]): ObjectEntity
     {
@@ -800,7 +800,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function update(Register $register, Schema $schema, string $id, array $data, array $config=[]): ObjectEntity
     {
@@ -855,7 +855,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @return bool True when a row was deleted; false when no row matched.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function remove(Register $register, Schema $schema, string $id, array $config=[]): bool
     {
@@ -891,7 +891,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      * @throws \RuntimeException          When the source is not writable (read-only rejection).
      * @throws DbalObjectSourceException  When the external database is unreachable.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function writeContext(Schema $schema, array $config, bool $needsId): array
     {
@@ -944,7 +944,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @throws DbalWriteException When the payload names a non-column property (400).
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function writeValues(array $data, array $columns, array $config): array
     {
@@ -985,7 +985,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @throws DbalException On any driver error (translated by the caller).
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function executeInsert(Connection $connection, string $table, array $values, array $idColumns): ?string
     {
@@ -1076,7 +1076,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @throws DbalWriteException When a composite id has the wrong number of parts (400).
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applyWritePredicate(QueryBuilder $qb, Connection $connection, array $idColumns, string $id): void
     {
@@ -1106,7 +1106,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      *
      * @return DbalWriteException The sanitized exception (never contains SQL or secrets).
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function translateWriteError(DbalException $exception): DbalWriteException
     {

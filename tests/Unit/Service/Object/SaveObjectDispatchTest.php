@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -234,7 +234,7 @@ class SaveObjectDispatchTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testReadOnlyDefaultKeepsV1Rejection(): void
     {
@@ -255,7 +255,7 @@ class SaveObjectDispatchTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testNonWritableProviderKeepsRejection(): void
     {
@@ -343,7 +343,7 @@ class SaveObjectDispatchTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testWritableOptInDelegates(): void
     {

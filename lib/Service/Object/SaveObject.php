@@ -5446,7 +5446,7 @@ class SaveObject
      *
      * @throws \RuntimeException When the schema is not writable (v1 rejection).
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function delegateObjectSourceWrite(
         ?Register $register,
@@ -5502,7 +5502,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void
     {
