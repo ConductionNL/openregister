@@ -1429,7 +1429,8 @@ class ImportHandler
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingSchema->getVersion() ?? '0.0.0';
-                if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
+                $incomingVersion = $data['version'] ?? '0.0.0';
+                if ($force === false && version_compare($incomingVersion, $existingVersion, '<=') === true) {
                     $this->logger->info(
                         message: '[ImportHandler] Skipping schema import as existing version is newer or equal.',
                         context: ['file' => __FILE__, 'line' => __LINE__]

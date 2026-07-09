@@ -973,9 +973,21 @@ class SearchTrailController extends Controller
         // Add headers.
         fputcsv($output, array_keys($data[0]));
 
-        // Add data rows.
+        // Add data rows. Flatten any array/object cell to a JSON string so
+        // fputcsv doesn't emit an "Array to string conversion" warning (and
+        // write the literal "Array") for nested values.
         foreach ($data as $row) {
-            fputcsv($output, $row);
+            $flatRow = array_map(
+                static function ($cell) {
+                    if (is_array($cell) === true || is_object($cell) === true) {
+                        return json_encode($cell);
+                    }
+
+                    return $cell;
+                },
+                $row
+            );
+            fputcsv($output, $flatRow);
         }
 
         rewind($output);

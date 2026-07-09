@@ -450,7 +450,9 @@ OC.L10N.register(
     "Delete permanently" : "Kalıcı olarak sil",
     "Delete this conversation?" : "Bu konuşma silinsin mi?",
     "Delete view" : "Görünümü sil",
-    "Delete {count} object" : "{count} nesneyi sil",
+    "Delete {count} object" : [
+    "{count} nesneyi sil",
+    "{count} nesneyi sil"],
     "Delete {count} objects" : "{count} nesneyi sil",
     "Deleted" : "Silindi",
     "Deleted By" : "Silen",
@@ -1307,7 +1309,9 @@ OC.L10N.register(
     "Object restored successfully" : "Nesne başarıyla geri yüklendi",
     "Object settings updated successfully" : "Nesne ayarları başarıyla güncellendi",
     "Object sources" : "Nesne kaynakları",
-    "Object successfully deleted" : "Nesne başarıyla silindi",
+    "Object successfully deleted" : [
+    "Nesne başarıyla silindi",
+    "Nesneler başarıyla silindi"],
     "Object successfully modified" : "Nesne başarıyla değiştirildi",
     "Object unlocked successfully" : "Nesnenin kilidi başarıyla açıldı",
     "Object vectorization configuration saved successfully" : "Nesne vektörleştirme yapılandırması başarıyla kaydedildi",
@@ -1482,7 +1486,9 @@ OC.L10N.register(
     "Publishing..." : "Yayımlanıyor...",
     "Purge" : "Temizle",
     "Purge Date" : "Temizleme Tarihi",
-    "Purge {count} object from database" : "Veritabanından {count} nesneyi temizle",
+    "Purge {count} object from database" : [
+    "Veritabanından {count} nesneyi temizle",
+    "Veritabanından {count} nesneyi temizle"],
     "Purge {count} objects from database" : "Veritabanından {count} nesneyi temizle",
     "Purpose limitation *" : "Amaç sınırlaması *",
     "Push Notifications" : "Anlık Bildirimler",
@@ -1593,7 +1599,9 @@ OC.L10N.register(
     "Restore" : "Geri Yükle",
     "Restore conversation" : "Konuşmayı geri yükle",
     "Restore or permanently delete items" : "Öğeleri geri yükleyin veya kalıcı olarak silin",
-    "Restore {count} object" : "{count} nesneyi geri yükle",
+    "Restore {count} object" : [
+    "{count} nesneyi geri yükle",
+    "{count} nesneyi geri yükle"],
     "Restore {count} objects" : "{count} nesneyi geri yükle",
     "Result Count Range" : "Sonuç Sayısı Aralığı",
     "Results" : "Sonuçlar",
@@ -1874,7 +1882,9 @@ OC.L10N.register(
     "Successfully joined organisation" : "Kuruluşa başarıyla katıldı",
     "Successfully permanently deleted {count} objects" : "{count} nesne başarıyla kalıcı olarak silindi",
     "Successfully processed {count} files!" : "{count} dosya başarıyla işlendi!",
-    "Successfully restored {count} object" : "{count} nesne başarıyla geri yüklendi",
+    "Successfully restored {count} object" : [
+    "{count} nesne başarıyla geri yüklendi",
+    "{count} nesne başarıyla geri yüklendi"],
     "Successfully restored {count} objects" : "{count} nesne başarıyla geri yüklendi",
     "Successfully saved configuration for {count} facets!" : "{count} faset için yapılandırma başarıyla kaydedildi!",
     "Supported File Types" : "Desteklenen Dosya Türleri",
@@ -2242,7 +2252,9 @@ OC.L10N.register(
     "{count} compliance issue(s) detected" : "{count} uyumluluk sorunu tespit edildi",
     "{count} deletions" : "{count} silme",
     "{count} documents found" : "{count} belge bulundu",
-    "{count} email" : "{count} e-posta",
+    "{count} email" : [
+    "{count} e-posta",
+    "{count} e-posta"],
     "{count} emails" : "{count} e-posta",
     "{count} entries" : "{count} giriş",
     "{count} issues" : "{count} sorun",
@@ -2367,24 +2379,32 @@ OC.L10N.register(
     "⚠️ DANGER: All {total} objects will be PERMANENTLY DELETED from the database. This action is UNRECOVERABLE and cannot be undone!" : "⚠️ TEHLİKE: Tüm {total} nesne veritabanından KALICI OLARAK SİLİNECEK. Bu işlem GERİ DÖNDÜRÜLEMEZ ve geri alınamaz!",
     "⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?" : "⚠️ KALICI SİLME UYARISI ⚠️\n\n\"{schema}\" şeması için TÜM nesneleri KALICI OLARAK silmek üzeresiniz:\n\n• Etkin nesneler: {active}\n• Geçici silinmiş nesneler: {deleted}\n• Toplam: {total}\n\nBu nesneler veritabanından tamamen kaldırılacak ve KURTARILAMAZ.\n\nKesinlikle emin misiniz?",
     "⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?" : "⚠️ KALICI SİLME UYARISI ⚠️\n\n\"{schema}\" şeması için {count} geçici silinmiş nesneyi KALICI OLARAK silmek üzeresiniz.\n\nBu nesneler veritabanından tamamen kaldırılacak ve KURTARILAMAZ.\n\nKesinlikle emin misiniz?",
-    "{count} email" : [
-    "{count} e-posta",
-    "{count} e-posta"],
-    "Purge {count} object from database" : [
-    "Veritabanından {count} nesneyi temizle",
-    "Veritabanından {count} nesneyi temizle"],
-    "Restore {count} object" : [
-    "{count} nesneyi geri yükle",
-    "{count} nesneyi geri yükle"],
-    "Successfully restored {count} object" : [
-    "{count} nesne başarıyla geri yüklendi",
-    "{count} nesne başarıyla geri yüklendi"],
-    "Delete {count} object" : [
-    "{count} nesneyi sil",
-    "{count} nesneyi sil"],
-    "Object successfully deleted" : [
-    "Nesne başarıyla silindi",
-    "Nesneler başarıyla silindi"]
+    "File content is required" : "File content is required",
+    "File name is required" : "File name is required",
+    "File name is required (use \"name\" or \"filename\")" : "File name is required (use \"name\" or \"filename\")",
+    "File not available for anonymous access" : "File not available for anonymous access",
+    "Files folder not found" : "Files folder not found",
+    "Forbidden" : "Forbidden",
+    "Preview not available for unpublished files" : "Preview not available for unpublished files",
+    "Source object not found" : "Source object not found",
+    "Target object ID is required" : "Target object ID is required",
+    "Target object not found" : "Target object not found",
+    "You do not have access to this object" : "You do not have access to this object",
+    "Browser Web Push (VAPID)" : "Browser Web Push (VAPID)",
+    "Browser web push is configured" : "Browser web push is configured",
+    "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+    "VAPID public key" : "VAPID public key",
+    "Browser web push is not configured" : "Browser web push is not configured",
+    "No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:" : "No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:",
+    "Checking browser web push configuration …" : "Checking browser web push configuration …",
+    "Browser notifications" : "Browser notifications",
+    "Receive OpenRegister notifications as native browser notifications, even when the tab is closed." : "Receive OpenRegister notifications as native browser notifications, even when the tab is closed.",
+    "This browser does not support web push notifications." : "This browser does not support web push notifications.",
+    "Enable browser notifications" : "Enable browser notifications",
+    "Notification permission: granted" : "Notification permission: granted",
+    "Notification permission: denied. Re-enable notifications for this site in your browser settings." : "Notification permission: denied. Re-enable notifications for this site in your browser settings.",
+    "Notification permission: not yet requested. Enabling the toggle will ask for permission." : "Notification permission: not yet requested. Enabling the toggle will ask for permission.",
+    "Could not change browser notification settings." : "Could not change browser notification settings."
 },
 "nplurals=2; plural=(n != 1);"
 );

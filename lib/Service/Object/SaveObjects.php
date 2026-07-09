@@ -2114,7 +2114,9 @@ class SaveObjects
         $savedObjects = [];
 
         // Build a lookup set of saved IDs for filtering — only reconstruct objects that were actually saved.
-        $savedIdSet = array_flip($savedObjectIds);
+        // Restrict to scalar ids first: array_flip warns and skips any non-scalar
+        // (e.g. a null id from a failed save), so filtering yields the same set cleanly.
+        $savedIdSet = array_flip(array_filter($savedObjectIds, 'is_scalar'));
 
         // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
         // Instead, create ObjectEntity and hydrate without inserting.
