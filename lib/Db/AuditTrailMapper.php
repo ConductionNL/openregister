@@ -103,44 +103,6 @@ class AuditTrailMapper extends QBMapper
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
     }//end __construct()
 
-
-    /**
-     * Insert an audit-trail entry sealed into the SHA-256 hash chain.
-     *
-     * Captures the current chain head as `previousHash`, inserts to obtain the
-     * row id, then computes `hash` over the id-populated entity — matching
-     * exactly how {@see AuditHashService::verifyChain()} re-derives it — and
-     * persists it. Fail-soft: the audit row is always inserted; a hashing/DB
-     * hiccup logs and leaves that row unhashed rather than losing the audit
-     * record. Without this the chain was never populated, so `verifyChain()`
-     * reported `valid:true` with `entriesVerified:0` — tamper-evidence in name
-     * only (fix-audit-hash-chain-write-path / ADR-003).
-     *
-     * @param AuditTrail $auditTrail The entry to persist.
-     *
-     * @return AuditTrail The persisted (and, on success, hash-chained) entry.
-     */
-    private function insertHashChained(AuditTrail $auditTrail): AuditTrail
-    {
-        $auditTrail = $this->insert(entity: $auditTrail);
-
-        // Seal the persisted row into the hash chain. AuditHashService computes
-        // the hash over the row using the SAME row->entity->canonical path as
-        // verifyChain(), so the stored hash re-verifies exactly. Fail-soft: a
-        // hashing/DB hiccup logs and leaves the row unhashed rather than losing
-        // the audit record.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRow(id: (int) $auditTrail->getId());
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] hash-chain seal failed for id '.$auditTrail->getId().': '.$e->getMessage()
-            );
-        }
-
-        return $auditTrail;
-    }//end insertHashChained()
-
     /**
      * Insert an audit-trail entry sealed into the SHA-256 hash chain.
      *
