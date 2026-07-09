@@ -497,7 +497,7 @@ class SourcesController extends Controller
      *
      * @return array<string, mixed> The sanitised source data.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function sanitizeDatabaseSourceData(array $data): array
     {
@@ -535,7 +535,7 @@ class SourcesController extends Controller
      *   which applies the active-organisation filter and 404s on a foreign
      *   tenant's id. The response never contains the credential value.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testConnection(int $id): JSONResponse
     {
@@ -597,7 +597,7 @@ class SourcesController extends Controller
      *   which applies the active-organisation filter and 404s on a foreign
      *   tenant's id. The response never contains the credential value.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function introspect(int $id): JSONResponse
     {

@@ -191,7 +191,7 @@ export default {
 		/**
 		 * Whether the selected source type is a DBAL virtual-register database.
 		 *
-		 * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
 		 * @return {boolean} True when the database type is selected.
 		 */
 		isDatabaseType() {
@@ -310,7 +310,7 @@ export default {
 		/**
 		 * Test the saved database source's connection (never exposes the password).
 		 *
-		 * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
 		 * @return {Promise<void>} Resolves when the test finished.
 		 */
 		async testConnection() {
@@ -319,7 +319,7 @@ export default {
 		/**
 		 * Introspect the database source into a virtual register + schemas.
 		 *
-		 * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
 		 * @return {Promise<void>} Resolves when introspection finished.
 		 */
 		async introspect() {
@@ -328,7 +328,7 @@ export default {
 		/**
 		 * POST a source action endpoint and surface the outcome in the modal.
 		 *
-		 * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
 		 * @param {string} action The action path segment (test-connection|introspect).
 		 * @param {string|null} successMessage Message on success, or null to derive from the response.
 		 * @return {Promise<void>} Resolves when the action finished.

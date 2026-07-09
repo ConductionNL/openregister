@@ -28,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -238,7 +238,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testTruePaginationMetadataFromProviderCount(): void
     {
@@ -265,7 +265,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testCountThrowingFallsBackToInMemoryBehaviour(): void
     {
@@ -290,7 +290,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testInconsistentCountFallsBack(): void
     {
@@ -311,7 +311,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUnpaginatedQueryKeepsSinglePageShape(): void
     {
@@ -336,7 +336,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testNativeSchemaIsUntouched(): void
     {
@@ -354,7 +354,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testMissingProviderDegradesToEmptyList(): void
     {
@@ -374,7 +374,7 @@ class PaginateObjectSourceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testDeniedReadRejectsBeforeProviderIsConsulted(): void
     {

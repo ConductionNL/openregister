@@ -46,6 +46,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Feature | Doc | Category | Status | Key Standards |
 |---------|-----|----------|--------|---------------|
 | Registers & Schemas | [registers-and-schemas.md](registers-and-schemas.md) | Core | Implemented | JSON Schema, Schema.org, GGM |
+| External Databases as Virtual Registers | [dbal-virtual-registers.md](dbal-virtual-registers.md) | Core | Implemented | Doctrine DBAL, JSON Schema, Common Ground (data at the source) |
 | Object Storage & Lifecycle | [object-storage.md](object-storage.md) | Core | Implemented | UUID, soft delete, versioning |
 | Search, Filtering & Faceting | [search-and-faceting.md](search-and-faceting.md) | Core | Implemented | NL API Design Rules, PostgreSQL, Solr, Elasticsearch |
 | Access Control (RBAC) | [access-control.md](access-control.md) | Security | Implemented | OAuth2 scopes, ZGW Autorisaties, BIO |

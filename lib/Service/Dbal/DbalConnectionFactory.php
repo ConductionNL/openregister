@@ -94,7 +94,7 @@ class DbalConnectionFactory
      * @SuppressWarnings(PHPMD.StaticAccess) DriverManager::getConnection is DBAL's
      *   only public connection entry point.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function getConnection(Source $source): Connection
     {
@@ -136,7 +136,7 @@ class DbalConnectionFactory
      * @SuppressWarnings(PHPMD.StaticAccess) PDO::getAvailableDrivers is the only
      *   way to probe installed PDO drivers.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function isDriverAvailable(string $driver): bool
     {
@@ -164,7 +164,7 @@ class DbalConnectionFactory
      *
      * @throws DbalConnectionException On invalid config or an unresolvable credential.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function buildParams(Source $source): array
     {
@@ -205,7 +205,7 @@ class DbalConnectionFactory
      *
      * @throws DbalConnectionException When required connection parts are missing.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function driverSpecificParams(string $driver, array $config): array
     {
@@ -250,7 +250,7 @@ class DbalConnectionFactory
      *
      * @throws DbalConnectionException When a configured credential cannot be resolved.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function resolvePassword(Source $source, array $config): string
     {

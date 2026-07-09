@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -224,7 +224,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testGetId(): void
     {
@@ -236,7 +236,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testFindAllAppliesFilterAndLimitInSql(): void
     {
@@ -259,7 +259,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testInjectionAttemptIsMatchedLiterally(): void
     {
@@ -287,7 +287,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testCountReflectsFullPredicateWithPagedFindAll(): void
     {
@@ -317,7 +317,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testOnlyAllowlistedColumnsAreFilterable(): void
     {
@@ -347,7 +347,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testFindByIdAndAbsentReturnsNull(): void
     {
@@ -378,7 +378,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testCompositeIdRoundTrip(): void
     {
@@ -424,7 +424,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testListOnlySchemaFindReturnsNull(): void
     {
@@ -457,7 +457,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testSortAppliedForAllowlistedColumn(): void
     {
@@ -477,7 +477,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUnreachableDatabaseSurfaces503(): void
     {
@@ -503,7 +503,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testMissingDriverDegradesToEmptyList(): void
     {

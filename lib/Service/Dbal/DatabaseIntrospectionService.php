@@ -106,7 +106,7 @@ class DatabaseIntrospectionService
      *
      * @throws DbalConnectionException When the source cannot be connected.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function buildBlueprint(Source $source): array
     {
@@ -197,7 +197,7 @@ class DatabaseIntrospectionService
      *
      * @throws DbalConnectionException When the source cannot be connected.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function introspect(Source $source): array
     {
@@ -262,7 +262,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, mixed> The working table record.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function introspectTable(AbstractSchemaManager $schemaManager, string $sourceId, string $tableName, bool $isView): array
     {
@@ -317,7 +317,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, array<string, mixed>> Property name → JSON-Schema fragment.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function viewColumnsFromSample(Connection $connection, string $viewName): array
     {
@@ -360,7 +360,7 @@ class DatabaseIntrospectionService
      *
      * @return array<int, string> The PK column names in order (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function primaryKeyColumns(AbstractSchemaManager $schemaManager, string $tableName, bool $isView): array
     {
@@ -384,7 +384,7 @@ class DatabaseIntrospectionService
      *
      * @return array<int, string> The PK column names in order (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function tablePrimaryKey(Table $table): array
     {
@@ -404,7 +404,7 @@ class DatabaseIntrospectionService
      *
      * @return array{0: string|null, 1: array<int, string>|null} [idColumn, idColumns].
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function resolveIdentity(array $primaryKey, string $tableName): array
     {
@@ -437,7 +437,7 @@ class DatabaseIntrospectionService
      *
      * @return bool True when the column is required.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function isRequired(Column $column, array $primaryKey): bool
     {
@@ -461,7 +461,7 @@ class DatabaseIntrospectionService
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables, array $slugByTable): void
     {
@@ -528,7 +528,7 @@ class DatabaseIntrospectionService
      *
      * @return array<int, ForeignKeyConstraint> The foreign-key constraints (possibly empty).
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function foreignKeysFor(AbstractSchemaManager $schemaManager, string $tableName): array
     {
@@ -546,7 +546,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, mixed> The schema definition for the mapper.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function toSchemaDefinition(array $record): array
     {
@@ -590,7 +590,7 @@ class DatabaseIntrospectionService
      *
      * @return Register The persisted register.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function upsertRegister(array $definition, string $sourceId): Register
     {
@@ -609,7 +609,7 @@ class DatabaseIntrospectionService
      *
      * @return array<string, Schema> Table name → schema.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function existingSchemasByTable(Register $register): array
     {
@@ -637,7 +637,7 @@ class DatabaseIntrospectionService
      *
      * @return string The stable source identifier.
      *
-     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     private function sourceId(Source $source): string
     {
