@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1749927f9613eb24a780263146765e6a",
+    "content-hash": "b985f3b9e722143e568ee2c253962898",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -310,12 +310,12 @@
             "source": {
                 "type": "git",
                 "url": "https://codeberg.org/Conduction/sapp.git",
-                "reference": "98ffdf0cc59774b9f6e3d6b631d2098338a8622f"
+                "reference": "610eaf69967b1c53fac49d00355115dd7e052f6b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/98ffdf0cc59774b9f6e3d6b631d2098338a8622f.zip",
-                "reference": "98ffdf0cc59774b9f6e3d6b631d2098338a8622f",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/610eaf69967b1c53fac49d00355115dd7e052f6b.zip",
+                "reference": "610eaf69967b1c53fac49d00355115dd7e052f6b",
                 "shasum": ""
             },
             "require": {
