@@ -22,9 +22,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -86,9 +86,6 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
-use React\Promise\Promise;
-use React\Promise\PromiseInterface;
-use React\Async;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\IGroupManager;
@@ -99,8 +96,6 @@ use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-
-use function React\Promise\all;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -354,7 +349,7 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -412,7 +407,7 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -486,7 +481,7 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function setObject(ObjectEntity | string | int $object): static
     {
@@ -842,12 +837,6 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
 
-        // Resolve register and schema entities for rendering.
-        [$registers, $schemas] = $this->resolveRegisterAndSchema(
-            config: $config,
-            objects: $objects
-        );
-
         // Render via renderEntities, which batch-preloads ALL related objects in
         // one query before the per-row render (optimize-object-render-hot-path).
         // The previous renderObjectsAsync() looped renderEntity() per row, so each
@@ -898,123 +887,6 @@ class ObjectService
 
         return $config;
     }//end prepareFindAllConfig()
-
-    /**
-     * Resolve register and schema entities for rendering.
-     *
-     * @param array $config  Configuration array
-     * @param array $objects Retrieved objects
-     *
-     * @return ((Register|Schema|mixed)[]|null)[] [registers, schemas]
-     *
-     * @psalm-return list{array<Register|mixed>|null, array<Schema|mixed>|null}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditions for register/schema resolution
-     */
-    private function resolveRegisterAndSchema(array $config, array $objects): array
-    {
-        // Determine if register and schema should be passed to renderEntity.
-        $registers = null;
-        if ($this->currentRegister !== null && ($config['filters']['register'] ?? null) !== null) {
-            $registers = [$this->currentRegister->getId() => $this->currentRegister];
-        }
-
-        $schemas = null;
-        if ($this->currentSchema !== null && isset($config['filters']['schema']) === true) {
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-        }
-
-        // Check if '@self.schema' or '@self.register' is in extend but not in filters.
-        // This handles cases where we need to load schemas/registers for rendering.
-        $hasExtend     = isset($config['extend']) === true;
-        $extendArray   = (array) ($config['extend'] ?? []);
-        $needsSchema   = $hasExtend
-            && in_array('@self.schema', $extendArray, true) === true
-            && $schemas === null;
-        $needsRegister = $hasExtend
-            && in_array('@self.register', $extendArray, true) === true
-            && $registers === null;
-
-        if ($needsSchema === true) {
-            $schemaIds = array_unique(
-                array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects))
-            );
-            $schemas   = $this->performanceHandler->getCachedEntities(
-                ids: $schemaIds,
-                fallbackFunc: [$this->schemaMapper, 'findMultiple']
-            );
-            $schemas   = array_combine(
-                array_map(fn(Schema $schema): int => $schema->getId(), $schemas),
-                $schemas
-            );
-        }
-
-        if ($needsRegister === true) {
-            $registerIds = array_unique(
-                array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects))
-            );
-            $registers   = $this->performanceHandler->getCachedEntities(
-                ids: $registerIds,
-                fallbackFunc: [$this->registerMapper, 'findMultiple']
-            );
-            $registers   = array_combine(
-                array_map(fn(Register $register): int => $register->getId(), $registers),
-                $registers
-            );
-        }
-
-        return [$registers, $schemas];
-    }//end resolveRegisterAndSchema()
-
-    /**
-     * Render objects asynchronously using promises.
-     *
-     * @param array      $objects       Objects to render
-     * @param array      $config        Configuration array
-     * @param array|null $registers     Register entities
-     * @param array|null $schemas       Schema entities
-     * @param bool       $_rbac         Apply RBAC
-     * @param bool       $_multitenancy Apply multitenancy
-     *
-     * @return array Rendered objects
-     */
-    private function renderObjectsAsync(
-        array $objects,
-        array $config,
-        ?array $registers,
-        ?array $schemas,
-        bool $_rbac,
-        bool $_multitenancy
-    ): array {
-        // Render each object through the render handler.
-        $promises = [];
-        foreach ($objects as $key => $object) {
-            // @psalm-suppress InvalidArgument Promise resolve accepts mixed.
-            $promises[$key] = new Promise(
-                function ($resolve, $reject) use ($object, $config, $registers, $schemas, $_rbac, $_multitenancy) {
-                    try {
-                        $renderedObject = $this->renderHandler->renderEntity(
-                            entity: $object,
-                            _extend: $config['extend'] ?? [],
-                            filter: $config['unset'] ?? null,
-                            fields: $config['fields'] ?? null,
-                            registers: $registers,
-                            schemas: $schemas,
-                            _rbac: $_rbac,
-                            _multitenancy: $_multitenancy
-                        );
-
-                        $resolve($renderedObject);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }//end try
-                }
-            );
-        }//end foreach
-
-        // @psalm-suppress UndefinedFunction React\Async\await is from external library.
-        return Async\await(all($promises));
-    }//end renderObjectsAsync()
 
     /**
      * Counts the number of objects matching the given criteria.
@@ -1164,7 +1036,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1392,7 +1264,7 @@ class ObjectService
      *
      * @return array{0: array, 1: string|null} [normalized object array, extracted UUID]
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function extractUuidAndNormalizeObject(array | ObjectEntity $object, ?string $uuid): array
     {
@@ -1734,7 +1606,7 @@ class ObjectService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     public function deleteObject(
         string $uuid,
@@ -1861,7 +1733,7 @@ class ObjectService
      *
      * @return bool True when the schema carries a valid archival annotation.
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     private function schemaHasArchivalAnnotation(Schema $schema): bool
     {
@@ -1881,7 +1753,7 @@ class ObjectService
      *
      * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-4
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function rejectIfTransferred(string $uuid): void
     {
@@ -2412,7 +2284,7 @@ class ObjectService
         // Object-source delegation: a schema served from an external source
         // (x-openregister-object-source) lists live from its provider, never the
         // search index or magic table. Returns the standard paginated shape.
-        $sourcePaginated = $this->paginateObjectSource(query: $query);
+        $sourcePaginated = $this->paginateObjectSource(query: $query, _rbac: $_rbac);
         if ($sourcePaginated !== null) {
             return $sourcePaginated;
         }
@@ -2536,12 +2408,15 @@ class ObjectService
      * missing/disabled, returns an empty paginated result (never the DB).
      *
      * @param array $query The search query (filters/limit/offset).
+     * @param bool  $_rbac Whether to enforce RBAC checks.
      *
      * @return array|null The paginated result, or null when not source-backed.
      *
-     * @spec openspec/changes/object-source-providers/tasks.md#task-3.1
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the acting user lacks read access to the schema.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function paginateObjectSource(array $query): ?array
+    private function paginateObjectSource(array $query, bool $_rbac=true): ?array
     {
         $schema = $this->currentSchema;
         if ($schema === null) {
@@ -2553,9 +2428,24 @@ class ObjectService
             return null;
         }
 
+        // Read-access parity (no enumeration oracle): enforce the schema-level
+        // read authorization BEFORE the provider — and therefore the external
+        // database — is consulted. A denied user receives the same
+        // NotAuthorizedException a native schema raises, whether or not any
+        // matching external rows exist.
+        $this->checkPermission(
+            schema: $schema,
+            action: 'read',
+            userId: null,
+            objectOwner: null,
+            _rbac: $_rbac
+        );
+
         $results  = [];
+        $config   = ($source['config'] ?? []);
         $provider = $this->objectSourceRegistry->get($source['provider']);
-        if ($provider === null || $provider->isEnabled() === false || $this->currentRegister === null) {
+        $active   = ($provider !== null && $provider->isEnabled() === true && $this->currentRegister !== null);
+        if ($active === false) {
             $this->logger->warning(
                 sprintf(
                     '[ObjectSource] schema "%s" declares provider "%s" but it is missing/disabled or has no register context — returning empty list',
@@ -2568,25 +2458,140 @@ class ObjectService
                 register: $this->currentRegister,
                 schema: $schema,
                 query: $query,
-                config: ($source['config'] ?? [])
+                config: $config
             );
         }
 
-        $total = count($results);
+        $resultCount = count($results);
+        $limit       = (int) ($query['limit'] ?? 0);
+        $offset      = max(0, (int) ($query['offset'] ?? 0));
+
+        // D4b: consult the provider's count() for the TRUE total and compute
+        // page metadata, passing limit/offset through (findAll already received
+        // them). A provider that cannot report a real total — count() throws or
+        // returns a value inconsistent with the returned window — falls back to
+        // the pre-existing in-memory behaviour so the native providers are
+        // unaffected.
+        $trueTotal = null;
+        if ($active === true) {
+            $trueTotal = $this->objectSourceTrueTotal(
+                provider: $provider,
+                schema: $schema,
+                query: $query,
+                config: $config,
+                offset: $offset,
+                resultCount: $resultCount
+            );
+        }
+
+        $total = ($trueTotal ?? $resultCount);
+        $self  = $this->objectSourcePageMetadata(
+            total: $total,
+            limit: $limit,
+            offset: $offset,
+            realCount: ($trueTotal !== null)
+        );
 
         return [
             'results' => $results,
             'total'   => $total,
-            '@self'   => [
-                'total' => $total,
-                'page'  => 1,
-                'pages' => 1,
-                'limit' => ($query['limit'] ?? $total),
-                'next'  => null,
-                'prev'  => null,
-            ],
+            '@self'   => $self,
         ];
     }//end paginateObjectSource()
+
+    /**
+     * Consult an object-source provider's count() for the true total (D4b).
+     *
+     * Returns null — signalling the in-memory fallback — when count() throws or
+     * reports a value inconsistent with the returned window (smaller than
+     * offset + returned results), so providers without real count support keep
+     * their pre-existing single-page behaviour.
+     *
+     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider $provider    The resolved provider.
+     * @param Schema                                                      $schema      The sourced schema.
+     * @param array                                                       $query       The search query.
+     * @param array                                                       $config      The object-source config block.
+     * @param int                                                         $offset      The requested offset.
+     * @param int                                                         $resultCount The returned window size.
+     *
+     * @return int|null The true total, or null when the provider has no real count.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function objectSourceTrueTotal(
+        $provider,
+        Schema $schema,
+        array $query,
+        array $config,
+        int $offset,
+        int $resultCount
+    ): ?int {
+        try {
+            $counted = $provider->count(
+                register: $this->currentRegister,
+                schema: $schema,
+                query: $query,
+                config: $config
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[ObjectSource] provider "'.$provider->getId().'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
+            );
+            return null;
+        }
+
+        if ($counted >= ($offset + $resultCount)) {
+            return $counted;
+        }
+
+        return null;
+    }//end objectSourceTrueTotal()
+
+    /**
+     * Compute the `@self` pagination block for an object-source result (D4b).
+     *
+     * @param int  $total     The (true or fallback) total.
+     * @param int  $limit     The requested limit (0 = none).
+     * @param int  $offset    The requested offset.
+     * @param bool $realCount Whether the total came from a real provider count.
+     *
+     * @return array The `@self` pagination metadata.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function objectSourcePageMetadata(int $total, int $limit, int $offset, bool $realCount): array
+    {
+        $page  = 1;
+        $pages = 1;
+        $next  = null;
+        $prev  = null;
+
+        if ($realCount === true && $limit > 0) {
+            $pages = max(1, (int) ceil($total / $limit));
+            $page  = ((int) floor($offset / $limit) + 1);
+            if ($page < $pages) {
+                $next = ($page + 1);
+            }
+
+            if ($page > 1) {
+                $prev = ($page - 1);
+            }
+        }
+
+        $effectiveLimit = $total;
+        if ($limit > 0) {
+            $effectiveLimit = $limit;
+        }
+
+        return [
+            'total' => $total,
+            'page'  => $page,
+            'pages' => $pages,
+            'limit' => $effectiveLimit,
+            'next'  => $next,
+            'prev'  => $prev,
+        ];
+    }//end objectSourcePageMetadata()
 
     /**
      * Record a search-trail entry for a paginated search, honouring the
@@ -2605,7 +2610,7 @@ class ObjectService
      *
      * @return void
      *
-     * @spec openspec/changes/search-trail-recording/tasks.md
+     * @spec openspec/specs/search-trail-recording/spec.md
      */
     private function recordSearchTrail(array $query, array $result, float $startTime): void
     {
@@ -2828,7 +2833,7 @@ class ObjectService
      *
      * @return array<string, string> Map of UUID to name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-2
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function collectNamesForResults(array $results): array
     {
@@ -3151,7 +3156,7 @@ class ObjectService
      *
      * @phpstan-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
         array $objects,
@@ -3812,7 +3817,7 @@ class ObjectService
      *
      * @return array Validation result with valid and invalid objects
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function validateObjectsBySchema(int $schemaId): array
     {
