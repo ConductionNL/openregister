@@ -11,7 +11,8 @@
             "slug": "applicants",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "string",
+                    "description": "External primary key (presented as a string)."
                 },
                 "full_name": {
                     "type": "string"
@@ -42,6 +43,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "applicants",
@@ -55,7 +57,8 @@
             "slug": "permit-types",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "string",
+                    "description": "External primary key (presented as a string)."
                 },
                 "code": {
                     "type": "string",
@@ -86,6 +89,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "permit_types",
@@ -99,7 +103,8 @@
             "slug": "permits",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "string",
+                    "description": "External primary key (presented as a string)."
                 },
                 "applicant_id": {
                     "type": "string",
@@ -142,6 +147,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "permits",
@@ -180,6 +186,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "active_permits",

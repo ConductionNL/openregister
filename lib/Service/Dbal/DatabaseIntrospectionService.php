@@ -180,9 +180,12 @@ class DatabaseIntrospectionService
         // and add the inverse side on the referenced schema.
         $this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables, slugByTable: $slugByTable);
 
+        $authConfig = ($source->getAuthConfig() ?? []);
+        $writable   = (($authConfig['writable'] ?? false) === true);
+
         $schemas = [];
         foreach ($tables as $record) {
-            $schemas[] = $this->toSchemaDefinition(record: $record);
+            $schemas[] = $this->toSchemaDefinition(record: $record, writable: $writable);
         }
 
         return [
@@ -302,6 +305,26 @@ class DatabaseIntrospectionService
         }
 
         [$idColumn, $idColumns] = $this->resolveIdentity(primaryKey: $primaryKey, tableName: $tableName);
+
+        // Primary-key columns are declared `type: string`: the virtual object
+        // id IS a string (reads present it as one, URLs deliver it as one),
+        // so an integer declaration would fail write validation for the very
+        // value the read path returns. The database still stores/coerces the
+        // native column type.
+        $pkColumns = ($idColumns ?? []);
+        if ($idColumn !== null) {
+            $pkColumns = [$idColumn];
+        }
+
+        foreach ($pkColumns as $pkColumn) {
+            if (isset($properties[$pkColumn]) === true) {
+                $properties[$pkColumn] = array_merge(
+                    $properties[$pkColumn],
+                    ['type' => 'string', 'description' => 'External primary key (presented as a string).']
+                );
+                unset($properties[$pkColumn]['format']);
+            }
+        }
 
         return [
             'table'         => $tableName,
@@ -554,13 +577,14 @@ class DatabaseIntrospectionService
     /**
      * Serialise a working record into a Schema definition array.
      *
-     * @param array<string, mixed> $record The working table record.
+     * @param array<string, mixed> $record   The working table record.
+     * @param bool                 $writable Whether the backing source currently allows writes.
      *
      * @return array<string, mixed> The schema definition for the mapper.
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
-    private function toSchemaDefinition(array $record): array
+    private function toSchemaDefinition(array $record, bool $writable=false): array
     {
         $config = [
             'sourceId' => $record['sourceId'],
@@ -580,6 +604,15 @@ class DatabaseIntrospectionService
             $config['isView'] = true;
         }
 
+        // Opt-in writes (design D2): tables of a writable source get
+        // `readOnly: false`; views are read-only ALWAYS. The write dispatch
+        // additionally re-verifies the Source's writable flag live, so a stale
+        // annotation can never authorize a write on its own.
+        $readOnly = true;
+        if ($writable === true && $record['isView'] !== true) {
+            $readOnly = false;
+        }
+
         return [
             'title'         => $record['title'],
             'slug'          => $record['slug'],
@@ -588,6 +621,7 @@ class DatabaseIntrospectionService
             'configuration' => [
                 'x-openregister-object-source' => [
                     'provider' => self::PROVIDER_ID,
+                    'readOnly' => $readOnly,
                     'config'   => $config,
                 ],
             ],

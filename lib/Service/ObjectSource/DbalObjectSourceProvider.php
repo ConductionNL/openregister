@@ -34,7 +34,9 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -56,7 +58,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Bridges the DBAL query stack
  *   and the OR entity/mapper seams the design names explicitly.
  */
-class DbalObjectSourceProvider implements ObjectSourceProvider
+class DbalObjectSourceProvider implements WritableObjectSourceProvider
 {
     /**
      * Hard cap on rows returned by a single findAll(), regardless of the query.
@@ -731,4 +733,407 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
     {
         return $connection->getDatabasePlatform()->quoteIdentifier($identifier);
     }//end quote()
+
+    /**
+     * {@inheritDoc}
+     *
+     * Executes a parameterized INSERT restricted to introspected scalar columns.
+     * The generated single-column primary key is retrieved via `RETURNING` on
+     * PostgreSQL and `lastInsertId()` elsewhere; the created row is re-read so
+     * the response reflects database-applied defaults. No-PK tables accept
+     * inserts (append-only) and return the payload as the entity body.
+     *
+     * @param Register             $register The register the schema belongs to.
+     * @param Schema               $schema   The sourced schema.
+     * @param array<string, mixed> $data     The validated object data.
+     * @param array<string, mixed> $config   The object-source `config` block.
+     *
+     * @return ObjectEntity The created virtual object.
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function insert(Register $register, Schema $schema, array $data, array $config=[]): ObjectEntity
+    {
+        [$source, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: false);
+
+        $values    = $this->writeValues(data: $data, columns: $columns, config: $config);
+        $idColumns = $this->idColumns(config: $config);
+        $table     = $this->table(config: $config);
+
+        try {
+            $newId = $this->executeInsert(
+                connection: $connection,
+                table: $table,
+                values: $values,
+                idColumns: $idColumns
+            );
+        } catch (DbalException $e) {
+            throw $this->translateWriteError(exception: $e);
+        }
+
+        if ($newId !== null) {
+            $created = $this->find(register: $register, schema: $schema, id: $newId, config: $config);
+            if ($created !== null) {
+                return $created;
+            }
+        }
+
+        // No-PK (append-only) tables — or a re-read miss — echo the written values.
+        return $this->toObjectEntity(register: $register, schema: $schema, row: $values, config: $config);
+    }//end insert()
+
+    /**
+     * {@inheritDoc}
+     *
+     * Executes a parameterized UPDATE whose predicate is the (possibly
+     * composite) primary key reconstructed from the object id. Primary-key
+     * columns cannot be changed (400). Zero affected rows surfaces as the same
+     * 404 an absent native object produces.
+     *
+     * @param Register             $register The register the schema belongs to.
+     * @param Schema               $schema   The sourced schema.
+     * @param string               $id       The object id (external key).
+     * @param array<string, mixed> $data     The validated object data.
+     * @param array<string, mixed> $config   The object-source `config` block.
+     *
+     * @return ObjectEntity The updated virtual object as re-read.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function update(Register $register, Schema $schema, string $id, array $data, array $config=[]): ObjectEntity
+    {
+        [$source, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: true);
+
+        $idColumns = $this->idColumns(config: $config);
+        $values    = $this->writeValues(data: $data, columns: $columns, config: $config);
+
+        // Primary-key columns are the row's identity — never updatable.
+        foreach ($idColumns as $idColumn) {
+            unset($values[$idColumn]);
+        }
+
+        if ($values === []) {
+            throw new DbalWriteException('The update contains no writable columns.', 400);
+        }
+
+        try {
+            $qb = $connection->createQueryBuilder()->update($this->quote(connection: $connection, identifier: $this->table(config: $config)));
+            foreach ($values as $column => $value) {
+                $qb->set($this->quote(connection: $connection, identifier: $column), $qb->createNamedParameter($value));
+            }
+
+            $this->applyWritePredicate(qb: $qb, connection: $connection, idColumns: $idColumns, id: $id);
+            $affected = (int) $qb->executeStatement();
+        } catch (DbalException $e) {
+            throw $this->translateWriteError(exception: $e);
+        }
+
+        if ($affected === 0) {
+            throw new \OCP\AppFramework\Db\DoesNotExistException('No external row matches id '.$id);
+        }
+
+        $updated = $this->find(register: $register, schema: $schema, id: $id, config: $config);
+        if ($updated !== null) {
+            return $updated;
+        }
+
+        return $this->toObjectEntity(register: $register, schema: $schema, row: array_merge($values, ['id' => $id]), config: $config);
+    }//end update()
+
+    /**
+     * {@inheritDoc}
+     *
+     * Executes a parameterized DELETE (hard delete — the external system has no
+     * OpenRegister soft-delete) with the primary-key predicate.
+     *
+     * @param Register             $register The register the schema belongs to.
+     * @param Schema               $schema   The sourced schema.
+     * @param string               $id       The object id (external key).
+     * @param array<string, mixed> $config   The object-source `config` block.
+     *
+     * @return bool True when a row was deleted; false when no row matched.
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function remove(Register $register, Schema $schema, string $id, array $config=[]): bool
+    {
+        [$source, $connection] = $this->writeContext(schema: $schema, config: $config, needsId: true);
+
+        $idColumns = $this->idColumns(config: $config);
+
+        try {
+            $qb = $connection->createQueryBuilder()->delete($this->quote(connection: $connection, identifier: $this->table(config: $config)));
+            $this->applyWritePredicate(qb: $qb, connection: $connection, idColumns: $idColumns, id: $id);
+            $affected = (int) $qb->executeStatement();
+        } catch (DbalException $e) {
+            throw $this->translateWriteError(exception: $e);
+        }
+
+        return ($affected > 0);
+    }//end remove()
+
+    /**
+     * Resolve and verify the write context for a schema (design D2, fail closed).
+     *
+     * Re-verifies AT WRITE TIME that the backing source exists, is a database
+     * source, and currently has `authConfig.writable === true` — a stale
+     * schema annotation alone can never authorize a write. Views never accept
+     * writes; tables without a primary key reject id-addressed writes.
+     *
+     * @param Schema               $schema  The sourced schema.
+     * @param array<string, mixed> $config  The object-source `config` block.
+     * @param bool                 $needsId Whether the operation needs an id predicate (update/delete).
+     *
+     * @return array{0: Source, 1: Connection, 2: array<int, string>} [source, connection, scalar columns].
+     *
+     * @throws \RuntimeException          When the source is not writable (read-only rejection).
+     * @throws DbalObjectSourceException  When the external database is unreachable.
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function writeContext(Schema $schema, array $config, bool $needsId): array
+    {
+        $readOnlyError = sprintf(
+            'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+            (string) $schema->getSlug(),
+            $this->getId()
+        );
+
+        if (($config['isView'] ?? false) === true) {
+            throw new \RuntimeException($readOnlyError);
+        }
+
+        if ($needsId === true && $this->idColumns(config: $config) === []) {
+            throw new DbalWriteException('This external table has no primary key; rows cannot be updated or deleted.', 400);
+        }
+
+        $source = $this->resolveSource(config: $config);
+        if ($source === null) {
+            // Fail closed: an unresolvable source can never authorize a write.
+            throw new \RuntimeException($readOnlyError);
+        }
+
+        $authConfig = ($source->getAuthConfig() ?? []);
+        if (($authConfig['writable'] ?? false) !== true) {
+            throw new \RuntimeException($readOnlyError);
+        }
+
+        try {
+            $connection = $this->connect(source: $source);
+        } catch (DbalConnectionException $e) {
+            throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
+        }
+
+        return [$source, $connection, $this->scalarColumns(schema: $schema)];
+    }//end writeContext()
+
+    /**
+     * Restrict a write payload to introspected scalar columns.
+     *
+     * The synthetic `id` key and `@self` metadata are stripped; any remaining
+     * property that is not an introspected column is rejected — never silently
+     * dropped (consistent with validation strictness).
+     *
+     * @param array<string, mixed> $data    The validated object data.
+     * @param array<int, string>   $columns The scalar column allowlist.
+     * @param array<string, mixed> $config  The object-source `config` block.
+     *
+     * @return array<string, mixed> The column => value map to write.
+     *
+     * @throws DbalWriteException When the payload names a non-column property (400).
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function writeValues(array $data, array $columns, array $config): array
+    {
+        unset($data['id'], $data['@self']);
+
+        $values = [];
+        foreach ($data as $property => $value) {
+            $property = (string) $property;
+            if (in_array($property, $columns, true) === false) {
+                throw new DbalWriteException(
+                    sprintf('Property "%s" is not a column of the external table.', $property),
+                    400
+                );
+            }
+
+            if ($value !== null && is_scalar($value) === false) {
+                throw new DbalWriteException(
+                    sprintf('Property "%s" must be a scalar value.', $property),
+                    400
+                );
+            }
+
+            $values[$property] = $value;
+        }
+
+        return $values;
+    }//end writeValues()
+
+    /**
+     * Execute the INSERT and return the new object id (or null for no-PK tables).
+     *
+     * @param Connection           $connection The DBAL connection.
+     * @param string               $table      The unquoted table name.
+     * @param array<string, mixed> $values     The column => value map.
+     * @param array<int, string>   $idColumns  The id columns (empty for no-PK).
+     *
+     * @return string|null The new object id, or null when the table has no primary key.
+     *
+     * @throws DbalException On any driver error (translated by the caller).
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function executeInsert(Connection $connection, string $table, array $values, array $idColumns): ?string
+    {
+        // Composite key: every part must be supplied; the id is derived from the payload.
+        if (count($idColumns) > 1) {
+            $parts = [];
+            foreach ($idColumns as $idColumn) {
+                if (isset($values[$idColumn]) === false) {
+                    throw new DbalWriteException(
+                        sprintf('Composite-key inserts must supply every key column; "%s" is missing.', $idColumn),
+                        400
+                    );
+                }
+
+                $parts[] = (string) $values[$idColumn];
+            }
+
+            $connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
+            return implode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $parts);
+        }
+
+        $idColumn = ($idColumns[0] ?? null);
+
+        // Caller-supplied primary key wins (no generation round-trip needed).
+        if ($idColumn !== null && isset($values[$idColumn]) === true) {
+            $connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
+            return (string) $values[$idColumn];
+        }
+
+        // PostgreSQL: RETURNING is the only reliable generated-key retrieval.
+        if ($idColumn !== null && $connection->getDatabasePlatform() instanceof PostgreSQLPlatform === true) {
+            $columnsSql = [];
+            $params     = [];
+            foreach ($values as $column => $value) {
+                $columnsSql[] = $this->quote(connection: $connection, identifier: $column);
+                $params[]     = $value;
+            }
+
+            $sql = sprintf(
+                'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
+                $this->quote(connection: $connection, identifier: $table),
+                implode(', ', $columnsSql),
+                implode(', ', array_fill(0, count($params), '?')),
+                $this->quote(connection: $connection, identifier: $idColumn)
+            );
+
+            $newId = $connection->fetchOne($sql, $params);
+            return (string) $newId;
+        }
+
+        $connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
+        if ($idColumn === null) {
+            return null;
+        }
+
+        return (string) $connection->lastInsertId();
+    }//end executeInsert()
+
+    /**
+     * Quote the column keys of a value map for Connection::insert().
+     *
+     * @param Connection           $connection The DBAL connection.
+     * @param array<string, mixed> $values     The column => value map.
+     *
+     * @return array<string, mixed> The map with platform-quoted column keys.
+     *
+     * @spec exclude Private quoting helper; behaviour covered by the insert/update tests.
+     */
+    private function quoteColumns(Connection $connection, array $values): array
+    {
+        $quoted = [];
+        foreach ($values as $column => $value) {
+            $quoted[$this->quote(connection: $connection, identifier: (string) $column)] = $value;
+        }
+
+        return $quoted;
+    }//end quoteColumns()
+
+    /**
+     * Apply the primary-key predicate to a write query builder.
+     *
+     * @param QueryBuilder       $qb         The query builder (mutated).
+     * @param Connection         $connection The DBAL connection.
+     * @param array<int, string> $idColumns  The id columns.
+     * @param string             $id         The object id (possibly composite-joined).
+     *
+     * @return void
+     *
+     * @throws DbalWriteException When a composite id has the wrong number of parts (400).
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function applyWritePredicate(QueryBuilder $qb, Connection $connection, array $idColumns, string $id): void
+    {
+        if (count($idColumns) === 1) {
+            $qb->andWhere(
+                $this->quote(connection: $connection, identifier: $idColumns[0]).' = '.$qb->createNamedParameter($id)
+            );
+            return;
+        }
+
+        $parts = explode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $id);
+        if (count($parts) !== count($idColumns)) {
+            throw new DbalWriteException('The object id does not match the table\'s composite key shape.', 400);
+        }
+
+        foreach ($idColumns as $index => $column) {
+            $qb->andWhere(
+                $this->quote(connection: $connection, identifier: $column).' = '.$qb->createNamedParameter($parts[$index])
+            );
+        }
+    }//end applyWritePredicate()
+
+    /**
+     * Translate a DBAL write error into a sanitized, status-carrying exception.
+     *
+     * @param DbalException $exception The driver exception.
+     *
+     * @return DbalWriteException The sanitized exception (never contains SQL or secrets).
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function translateWriteError(DbalException $exception): DbalWriteException
+    {
+        // Doctrine's typed constraint exceptions are platform-independent
+        // (SQLite reports the generic SQLSTATE 23000 for every constraint
+        // class); prefer them over raw SQLSTATE inspection.
+        if ($exception instanceof \Doctrine\DBAL\Exception\UniqueConstraintViolationException === true) {
+            return new DbalWriteException('A unique constraint on the external table was violated.', 409, $exception);
+        }
+
+        if ($exception instanceof \Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException === true) {
+            return new DbalWriteException('A foreign-key constraint on the external table was violated.', 409, $exception);
+        }
+
+        if ($exception instanceof \Doctrine\DBAL\Exception\NotNullConstraintViolationException === true) {
+            return new DbalWriteException('A required (not-null) column on the external table was not provided.', 422, $exception);
+        }
+
+        if ($exception instanceof \Doctrine\DBAL\Exception\ConstraintViolationException === true) {
+            return new DbalWriteException('A constraint on the external table was violated.', 422, $exception);
+        }
+
+        $sqlState = '';
+        if ($exception instanceof DriverException === true) {
+            $sqlState = (string) ($exception->getSQLState() ?? '');
+        }
+
+        return DbalWriteException::fromSqlState(sqlState: $sqlState, previous: $exception);
+    }//end translateWriteError()
 }//end class

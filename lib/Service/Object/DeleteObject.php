@@ -26,8 +26,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-29
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -130,7 +130,7 @@ class DeleteObject
      * @param IDBConnection               $db                 Database connection for transactions
      * @param FileService|null            $fileService        File service for cleaning up object folders on delete
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -141,7 +141,9 @@ class DeleteObject
         LoggerInterface $logger,
         ReferentialIntegrityService $integrityService,
         IDBConnection $db,
-        private readonly ?FileService $fileService=null
+        private readonly ?FileService $fileService=null,
+        private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry=null,
+        private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper=null,
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
         $this->settingsService  = $settingsService;
@@ -172,8 +174,8 @@ class DeleteObject
      *
      * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function delete(array | JsonSerializable $object, ?array $cascadeContext=null, bool $permanent=false): bool
     {
@@ -395,7 +397,7 @@ class DeleteObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function deleteObjectFolder(ObjectEntity $objectEntity): void
     {
@@ -446,8 +448,8 @@ class DeleteObject
      *
      * @return DeletionAnalysis The analysis result.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-29
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
@@ -485,8 +487,8 @@ class DeleteObject
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function deleteObject(
         Register | int | string | null $register,
@@ -505,12 +507,17 @@ class DeleteObject
         }
 
         if ($objectSource !== null) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
-                    (string) $schema->getSlug(),
-                    $objectSource['provider']
-                )
+            // Opt-in write-through (dbal-virtual-registers-crud): delegate to a
+            // WritableObjectSourceProvider when the annotation carries
+            // `readOnly: false`; the provider re-verifies the backing source's
+            // writable flag live (fail closed). Everything else keeps the v1
+            // read-only rejection. Delete RBAC already ran upstream in
+            // ObjectService::delete before this dispatch.
+            return $this->delegateObjectSourceDelete(
+                register: $register,
+                schema: $schema,
+                objectSource: $objectSource,
+                uuid: $uuid
             );
         }
 
@@ -588,7 +595,7 @@ class DeleteObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
-     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function resolveDeletionContext(
         Register | int | string | null $register,
@@ -648,7 +655,7 @@ class DeleteObject
      * @throws ReferentialIntegrityException If blocked by RESTRICT
      * @throws Exception If cascade transaction fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleIntegrityDeletion(
         ObjectEntity $object,
@@ -690,7 +697,7 @@ class DeleteObject
      *
      * @throws ReferentialIntegrityException Always thrown
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function logAndThrowRestrict(string $uuid, ?string $schemaId, DeletionAnalysis $analysis): void
     {
@@ -719,7 +726,7 @@ class DeleteObject
      *
      * @throws Exception If the transaction fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function executeIntegrityTransaction(
         ObjectEntity $object,
@@ -786,7 +793,7 @@ class DeleteObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function runLegacyCascade(array $context, ObjectEntity $object, string $uuid): void
     {
@@ -813,7 +820,7 @@ class DeleteObject
      *
      * @return array|null The cascade context, or null if no cascades occurred
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function buildCascadeContext(string $uuid, ?string $triggerSlug, DeletionAnalysis $analysis): ?array
     {
@@ -841,7 +848,7 @@ class DeleteObject
      *
      * @return array{0: string, 1: mixed} [userId, activeOrganisation]
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveUserContext(): array
     {
@@ -873,7 +880,7 @@ class DeleteObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeDeleteObjects(
         Register $register,
@@ -919,7 +926,7 @@ class DeleteObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isAuditTrailsEnabled(): bool
     {
@@ -944,10 +951,89 @@ class DeleteObject
      *
      * @return int The number of cascade-deleted objects.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function getLastCascadeCount(): int
     {
         return $this->lastCascadeCount;
     }//end getLastCascadeCount()
+
+    /**
+     * Delegate a delete on an object-source schema to its writable provider.
+     *
+     * Preserves the v1 read-only rejection unless the annotation carries
+     * `readOnly: false` AND a writable provider is registered AND the register
+     * resolves. External deletes are hard deletes; zero affected rows surfaces
+     * as the same DoesNotExistException (404) an absent native object produces.
+     *
+     * @param Register|int|string|null $register     The register (entity or identifier).
+     * @param Schema                   $schema       The sourced schema.
+     * @param array<string, mixed>     $objectSource The `x-openregister-object-source` annotation.
+     * @param string                   $uuid         The object id (external key).
+     *
+     * @return bool True when the external row was deleted.
+     *
+     * @throws \RuntimeException                          When the schema is not writable (v1 rejection).
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function delegateObjectSourceDelete(
+        Register | int | string | null $register,
+        Schema $schema,
+        array $objectSource,
+        string $uuid
+    ): bool {
+        $provider = null;
+        if ($this->objectSourceRegistry !== null) {
+            $provider = $this->objectSourceRegistry->get((string) $objectSource['provider']);
+        }
+
+        $registerEntity = null;
+        if ($register instanceof Register) {
+            $registerEntity = $register;
+        } else if ($register !== null && $this->registerMapper !== null) {
+            try {
+                $registerEntity = $this->registerMapper->find($register);
+            } catch (\Throwable $e) {
+                $registerEntity = null;
+            }
+        }
+
+        $writableOptIn = (($objectSource['readOnly'] ?? true) === false);
+        $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
+
+        if ($writableOptIn === false || $writable === false || $registerEntity === null) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
+        $config = ($objectSource['config'] ?? []);
+
+        // Pre-read for the audit record (best effort).
+        $old = $provider->find(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
+
+        $deleted = $provider->remove(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
+        if ($deleted === false) {
+            throw new \OCP\AppFramework\Db\DoesNotExistException('No external row matches id '.$uuid);
+        }
+
+        if ($old !== null) {
+            try {
+                $this->auditTrailMapper->createAuditTrail(old: $old, new: null, action: 'delete');
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[DeleteObject] audit trail for external delete on uuid '.$uuid.' could not be recorded: '.$e->getMessage(),
+                    ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+        }
+
+        return true;
+    }//end delegateObjectSourceDelete()
 }//end class
