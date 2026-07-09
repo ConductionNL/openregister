@@ -169,6 +169,12 @@ use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
+use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
+use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
+use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -1319,6 +1325,62 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Tables provider stack — a guarded reader (the sole Tables-boundary),
+        // pure mappers, a schema-sync reconciler, and the provider itself.
+        $context->registerService(
+            TablesUuidDeriver::class,
+            function (ContainerInterface $container) {
+                return new TablesUuidDeriver();
+            }
+        );
+
+        $context->registerService(
+            TablesTableReader::class,
+            function (ContainerInterface $container) {
+                return new TablesTableReader(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesColumnMapper::class,
+            function (ContainerInterface $container) {
+                return new TablesColumnMapper(
+                    uuidDeriver: $container->get(TablesUuidDeriver::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesSchemaSyncService::class,
+            function (ContainerInterface $container) {
+                return new TablesSchemaSyncService(
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    columnMapper: $container->get(TablesColumnMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new TablesObjectSourceProvider(
+                    reader: $container->get(TablesTableReader::class),
+                    columnMapper: $container->get(TablesColumnMapper::class),
+                    uuidDeriver: $container->get(TablesUuidDeriver::class),
+                    syncService: $container->get(TablesSchemaSyncService::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
     }//end registerObjectSourceProviders()
 
     /**
@@ -2160,6 +2222,13 @@ class Application extends App implements IBootstrap
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
+        // Tables schema-lifecycle listener — retire the managed virtual schema of
+        // a deleted Tables table. Guarded by class_exists so boot never fatals on
+        // an instance without the (soft-dependency) Tables app installed.
+        if (class_exists('OCA\\Tables\\Event\\TableDeletedEvent') === true) {
+            $context->registerEventListener('OCA\\Tables\\Event\\TableDeletedEvent', TablesTableDeletedListener::class);
+        }
+
         // Lifecycle annotation listeners — see x-openregister-lifecycle.
         // Order matters: initial state runs on creating; validation runs on updating.
         $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
@@ -2907,6 +2976,7 @@ class Application extends App implements IBootstrap
             FilesObjectSourceProvider::class,
             DeckObjectSourceProvider::class,
             TalkObjectSourceProvider::class,
+            TablesObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {
             try {

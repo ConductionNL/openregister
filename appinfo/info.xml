@@ -76,6 +76,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
@@ -86,6 +87,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
@@ -153,6 +155,8 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
+		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
+		<command>OCA\OpenRegister\Command\TablesSyncCommand</command>
 	</commands>
 
 	<notification>
