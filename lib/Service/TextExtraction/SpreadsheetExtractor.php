@@ -128,7 +128,7 @@ class SpreadsheetExtractor
             // Clean up.
             fclose($tempFile);
 
-            if (trim($text) === '' || trim($text) === null) {
+            if (trim($text) === '') {
                 $this->logger->warning(
                     message: '[SpreadsheetExtractor] Spreadsheet extraction returned empty text',
                     context: [

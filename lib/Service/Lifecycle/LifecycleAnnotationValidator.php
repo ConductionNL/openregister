@@ -274,13 +274,16 @@ final class LifecycleAnnotationValidator
 
         // `field` remains required and non-empty, but the enum/type:string
         // constraint is relaxed for a `$ref` lifecycle field.
-        $field = ($annotation['field'] ?? null);
-        if (is_string($field) === false || $field === '') {
+        $field      = ($annotation['field'] ?? null);
+        $fieldValid = (is_string($field) === true && $field !== '');
+        if ($fieldValid === false) {
             $errors[] = [
                 'code'    => 'lifecycle-missing-key',
                 'message' => 'x-openregister-lifecycle is missing required key "field".',
             ];
-        } else {
+        }
+
+        if ($fieldValid === true) {
             $properties = ($schema['properties'] ?? []);
             if (is_array($properties) === true && isset($properties[$field]) === false) {
                 $errors[] = [

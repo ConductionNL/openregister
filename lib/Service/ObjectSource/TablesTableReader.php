@@ -78,6 +78,13 @@ class TablesTableReader
     private const ROW_SERVICE = 'OCA\\Tables\\Service\\RowService';
 
     /**
+     * Tables' view service (resolved dynamically — Tables' namespace).
+     *
+     * @var string
+     */
+    private const VIEW_SERVICE = 'OCA\\Tables\\Service\\ViewService';
+
+    /**
      * Constructor.
      *
      * @param IAppManager        $appManager App availability checks.
@@ -129,7 +136,10 @@ class TablesTableReader
         }
 
         try {
-            $tables = $service->findAll($userId);
+            // Fourth argument (createTutorial) MUST stay false: the default of
+            // TableService::findAll() creates a tutorial table for first-time
+            // users, which a read-only reconcile pass must never do.
+            $tables = $service->findAll($userId, false, false, false);
         } catch (Throwable $e) {
             $this->logger->warning('[ObjectSource:tables] could not list tables: '.$e->getMessage());
             return [];
@@ -209,7 +219,7 @@ class TablesTableReader
         }
 
         try {
-            $columns = $service->findAllByTable($tableId, null, $userId);
+            $columns = $service->findAllByTable($tableId, $userId);
         } catch (Throwable $e) {
             $this->logger->warning('[ObjectSource:tables] could not list columns for table '.$tableId.': '.$e->getMessage());
             return [];
@@ -269,6 +279,9 @@ class TablesTableReader
      *
      * @return array<string, mixed>|null The row descriptor, or null when absent/denied.
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId is kept for reader-contract parity
+     * with the View/table paths; RowService::find() resolves the acting user from the session.
+     *
      * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
      */
     public function findRow(int $rowId, string $userId): ?array
@@ -279,7 +292,11 @@ class TablesTableReader
         }
 
         try {
-            $row = $service->find($rowId, $userId);
+            // RowService::find() takes only the row id; Tables resolves the
+            // acting user from the session internally (session-scoped RBAC).
+            // The $userId parameter is kept in this reader's contract for the
+            // View/table paths, which do take an explicit user id.
+            $row = $service->find($rowId);
         } catch (Throwable $e) {
             $this->logger->warning('[ObjectSource:tables] could not read row '.$rowId.': '.$e->getMessage());
             return null;
@@ -314,10 +331,19 @@ class TablesTableReader
 
         try {
             if ($isView === true) {
-                return (int) $service->getViewRowsCount($id, $userId);
+                // The getViewRowsCount() call needs the View entity, not the view id.
+                $viewService = $this->resolveService(class: self::VIEW_SERVICE);
+                if ($viewService === null) {
+                    return 0;
+                }
+
+                $view = $viewService->find($id, true, $userId);
+                return (int) $service->getViewRowsCount($view, $userId);
             }
 
-            return (int) $service->getRowsCount($id, $userId);
+            // The getRowsCount() call takes only the table id; Tables checks read
+            // access against the session user internally.
+            return (int) $service->getRowsCount($id);
         } catch (Throwable $e) {
             $this->logger->warning('[ObjectSource:tables] could not count rows for '.$id.': '.$e->getMessage());
             return 0;

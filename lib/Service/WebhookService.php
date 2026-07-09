@@ -17,11 +17,11 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-86
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -126,7 +126,7 @@ class WebhookService
      * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
      * @param MappingService           $mappingService      Mapping service
      * @param MappingMapper            $mappingMapper       Mapping mapper
-     * @param IJobList                 $jobList             Background job list for retry scheduling
+     * @param IJobList                 $jobList             Background job list for async delivery
      * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
      *
      * @return void
@@ -184,7 +184,7 @@ class WebhookService
      *
      * @return void
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-22
      */
     private function initializeHttpClient(): void
     {
@@ -606,8 +606,8 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-86
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
@@ -683,7 +683,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
      * Fallback for connection errors without response
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
@@ -947,7 +947,7 @@ class WebhookService
      *
      * @return mixed
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-23
      */
     private function getNestedValue(array $array, string $key)
     {
@@ -981,7 +981,7 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Three payload format strategies
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
@@ -1054,7 +1054,7 @@ class WebhookService
      *
      * @return array|null Transformed payload, or null on failure
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
      */
     private function applyMappingTransformation(
         int $mappingId,
@@ -1123,7 +1123,7 @@ class WebhookService
      *
      * @return string Short class name (e.g., "ObjectCreatedEvent")
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-24
      */
     private function getShortEventName(string $eventName): string
     {
@@ -1248,7 +1248,7 @@ class WebhookService
      *
      * @return void
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
      */
     private function scheduleRetry(Webhook $webhook, string $eventName, array $_payload, int $attempt): void
     {
@@ -1297,7 +1297,7 @@ class WebhookService
      *
      * @return int Delay in seconds
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
      */
     private function calculateRetryDelay(Webhook $webhook, int $attempt): int
     {
@@ -1338,7 +1338,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
      * Fallback when formatter is unavailable
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
      *   (finds before-event webhooks for the event type, formats the request as a CloudEvent, delivers to each,
      *   and continues past per-webhook failures, returning the request data)
      */
@@ -1440,7 +1440,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook filtering conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter matching paths
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
      */
     private function findWebhooksForInterception(string $eventType): array
     {
@@ -1502,7 +1502,7 @@ class WebhookService
      *
      * @return string Event class name (e.g., 'OCA\OpenRegister\Event\ObjectCreatingEvent')
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-25
      */
     private function eventTypeToEventClass(string $eventType): string
     {

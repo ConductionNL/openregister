@@ -268,11 +268,10 @@ class SipPackageBuilder
             $suffix = "-part{$sequenceNumber}";
         }
 
-        if ($format === 'bagit') {
-            $archivePath = $this->writeBagitArchive(transferId: $transferId, entries: $entries, suffix: $suffix);
-        } else {
-            $archivePath = $this->writeZipArchive(entries: $entries, suffix: $suffix);
-        }
+        $archivePath = match ($format) {
+            'bagit' => $this->writeBagitArchive(transferId: $transferId, entries: $entries, suffix: $suffix),
+            default => $this->writeZipArchive(entries: $entries, suffix: $suffix),
+        };
 
         $this->logger->info(
             message: '[SipPackageBuilder] Built SIP package',

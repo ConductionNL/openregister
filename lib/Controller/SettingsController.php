@@ -491,7 +491,7 @@ class SettingsController extends Controller
                 try {
                     $stmt   = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
                     $result = $stmt->execute();
-                    while (($row = $result->fetch()) !== false) {
+                    while (is_array($row = $result->fetch()) === true) {
                         $extensions[] = [
                             'name'    => $row['extname'],
                             'version' => $row['extversion'],
@@ -661,7 +661,7 @@ class SettingsController extends Controller
                     'SELECT indexname FROM pg_indexes WHERE indexname IN '
                     ."('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
                 );
-                while (($row = $result->fetch()) !== false) {
+                while (is_array($row = $result->fetch()) === true) {
                     if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
                         $diagnostics['hnswIndex'] = true;
                     }

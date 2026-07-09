@@ -839,8 +839,8 @@ class ObjectService
 
         // Render via renderEntities, which batch-preloads ALL related objects in
         // one query before the per-row render (optimize-object-render-hot-path).
-        // The previous renderObjectsAsync() looped renderEntity() per row, so each
-        // row resolved its relations individually — an N+1 on any `?_extend=` list.
+        // A previous code path pre-resolved registers/schemas and looped
+        // renderEntity() per row, causing an N+1 on any `?_extend=` list.
         // renderEntities() performs the identical per-row renderEntity() rendering,
         // only with the relation/file caches pre-warmed, so output is unchanged;
         // registers/schemas were a pre-resolution optimization renderEntity()

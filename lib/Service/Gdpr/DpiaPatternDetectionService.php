@@ -81,11 +81,11 @@ class DpiaPatternDetectionService
      * reflects real volume) but are listed separately so the caller never
      * re-writes them (idempotency).
      *
-     * @param array<int, array<string, mixed>> $cases  Case payloads; each needs `receivedAt` + the
-     *                                                 group-by fields + optionally `dpiaRequired`
-     *                                                 and a caller-supplied `@uuid`.
-     * @param array<string, mixed>             $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
-     * @param DateTimeImmutable                $now    The evaluation clock.
+     * @param array<int, mixed>    $cases  Case payloads (each element is validated as an array at
+     *                                     runtime); each needs `receivedAt` + the group-by fields +
+     *                                     optionally `dpiaRequired` and a caller-supplied `@uuid`.
+     * @param array<string, mixed> $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
+     * @param DateTimeImmutable    $now    The evaluation clock.
      *
      * @return array<int, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}> Triggering groups.
      *
