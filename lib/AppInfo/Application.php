@@ -1329,7 +1329,7 @@ class Application extends App implements IBootstrap
         // pure mappers, a schema-sync reconciler, and the provider itself.
         $context->registerService(
             TablesUuidDeriver::class,
-            function (ContainerInterface $container) {
+            function () {
                 return new TablesUuidDeriver();
             }
         );
