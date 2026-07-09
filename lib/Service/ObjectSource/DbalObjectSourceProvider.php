@@ -48,6 +48,12 @@ use Throwable;
 
 /**
  * Read-only object-source provider backed by an external SQL database.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The provider owns the whole
+ *   OR-query → parameterised-SQL translation (filters, search, sort, paging, id
+ *   shapes, allowlisting, error semantics) as one cohesive design-D4 unit.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Bridges the DBAL query stack
+ *   and the OR entity/mapper seams the design names explicitly.
  */
 class DbalObjectSourceProvider implements ObjectSourceProvider
 {
@@ -322,9 +328,12 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
         }
 
         try {
+            $source = null;
             if (ctype_digit($sourceId) === true) {
                 $source = $this->sourceMapper->find(id: (int) $sourceId);
-            } else {
+            }
+
+            if ($source === null) {
                 $matches = $this->sourceMapper->findAll(filters: ['uuid' => $sourceId]);
                 $source  = ($matches[0] ?? null);
             }
@@ -435,18 +444,37 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
             }
         }
 
-        $search = (string) ($query['_search'] ?? $query['search'] ?? '');
-        if ($search !== '' && $filterable !== []) {
-            $like  = '%'.$search.'%';
-            $ors   = [];
-            $param = $qb->createNamedParameter($like);
-            foreach ($filterable as $column) {
-                $ors[] = $this->quote(connection: $connection, identifier: $column).' LIKE '.$param;
-            }
-
-            $qb->andWhere('('.implode(' OR ', $ors).')');
-        }
+        $this->applySearch(qb: $qb, connection: $connection, query: $query, filterable: $filterable);
     }//end applyFilters()
+
+    /**
+     * Apply a `_search` term as a bound LIKE across the filterable columns.
+     *
+     * @param QueryBuilder         $qb         The query builder (mutated).
+     * @param Connection           $connection The DBAL connection.
+     * @param array<string, mixed> $query      The OR query.
+     * @param array<int, string>   $filterable The filterable columns.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function applySearch(QueryBuilder $qb, Connection $connection, array $query, array $filterable): void
+    {
+        $search = (string) ($query['_search'] ?? $query['search'] ?? '');
+        if ($search === '' || $filterable === []) {
+            return;
+        }
+
+        $like  = '%'.$search.'%';
+        $ors   = [];
+        $param = $qb->createNamedParameter($like);
+        foreach ($filterable as $column) {
+            $ors[] = $this->quote(connection: $connection, identifier: $column).' LIKE '.$param;
+        }
+
+        $qb->andWhere('('.implode(' OR ', $ors).')');
+    }//end applySearch()
 
     /**
      * Apply a validated sort column/direction.
@@ -472,7 +500,11 @@ class DbalObjectSourceProvider implements ObjectSourceProvider
                 continue;
             }
 
-            $dir = (strtolower((string) $direction) === 'desc') ? 'DESC' : 'ASC';
+            $dir = 'ASC';
+            if (strtolower((string) $direction) === 'desc') {
+                $dir = 'DESC';
+            }
+
             $qb->addOrderBy($this->quote(connection: $connection, identifier: $column), $dir);
         }
     }//end applySort()

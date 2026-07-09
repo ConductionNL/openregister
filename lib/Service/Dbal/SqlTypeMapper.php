@@ -43,29 +43,29 @@ class SqlTypeMapper
      * @var array<string, array{0: string, 1: string|null}>
      */
     private const TYPE_MAP = [
-        Types::STRING              => ['string', null],
-        Types::ASCII_STRING       => ['string', null],
-        Types::TEXT               => ['string', null],
-        Types::GUID               => ['string', 'uuid'],
-        Types::INTEGER            => ['integer', null],
-        Types::SMALLINT           => ['integer', null],
-        Types::BIGINT             => ['integer', null],
-        Types::DECIMAL            => ['number', null],
-        Types::FLOAT              => ['number', null],
-        Types::BOOLEAN            => ['boolean', null],
-        Types::DATE_MUTABLE       => ['string', 'date'],
-        Types::DATE_IMMUTABLE     => ['string', 'date'],
-        Types::TIME_MUTABLE       => ['string', 'time'],
-        Types::TIME_IMMUTABLE     => ['string', 'time'],
-        Types::DATETIME_MUTABLE   => ['string', 'date-time'],
-        Types::DATETIME_IMMUTABLE => ['string', 'date-time'],
-        Types::DATETIMETZ_MUTABLE => ['string', 'date-time'],
+        Types::STRING               => ['string', null],
+        Types::ASCII_STRING         => ['string', null],
+        Types::TEXT                 => ['string', null],
+        Types::GUID                 => ['string', 'uuid'],
+        Types::INTEGER              => ['integer', null],
+        Types::SMALLINT             => ['integer', null],
+        Types::BIGINT               => ['integer', null],
+        Types::DECIMAL              => ['number', null],
+        Types::FLOAT                => ['number', null],
+        Types::BOOLEAN              => ['boolean', null],
+        Types::DATE_MUTABLE         => ['string', 'date'],
+        Types::DATE_IMMUTABLE       => ['string', 'date'],
+        Types::TIME_MUTABLE         => ['string', 'time'],
+        Types::TIME_IMMUTABLE       => ['string', 'time'],
+        Types::DATETIME_MUTABLE     => ['string', 'date-time'],
+        Types::DATETIME_IMMUTABLE   => ['string', 'date-time'],
+        Types::DATETIMETZ_MUTABLE   => ['string', 'date-time'],
         Types::DATETIMETZ_IMMUTABLE => ['string', 'date-time'],
-        Types::JSON               => ['object', null],
-        Types::BINARY             => ['string', 'binary'],
-        Types::BLOB               => ['string', 'binary'],
-        Types::SIMPLE_ARRAY       => ['array', null],
-        Types::ARRAY              => ['array', null],
+        Types::JSON                 => ['object', null],
+        Types::BINARY               => ['string', 'binary'],
+        Types::BLOB                 => ['string', 'binary'],
+        Types::SIMPLE_ARRAY         => ['array', null],
+        Types::ARRAY                => ['array', null],
     ];
 
     /**
@@ -118,8 +118,8 @@ class SqlTypeMapper
             );
 
             return [
-                'type'          => 'string',
-                'x-filterable'  => false,
+                'type'         => 'string',
+                'x-filterable' => false,
             ];
         }
 
@@ -130,8 +130,8 @@ class SqlTypeMapper
             $property['format'] = $format;
         }
 
-        // maxLength from the column length — only for length-carrying string
-        // types (VARCHAR-family); TEXT is unbounded per design D5.
+        // Map the column length onto maxLength — only for length-carrying
+        // string types (VARCHAR-family); TEXT is unbounded per design D5.
         $length = $column->getLength();
         if (in_array($typeName, [Types::STRING, Types::ASCII_STRING], true) === true && $length !== null && $length > 0) {
             $property['maxLength'] = (int) $length;
@@ -162,6 +162,9 @@ class SqlTypeMapper
      * @param Column $column The introspected column.
      *
      * @return string The registered DBAL type name (e.g. `string`, `integer`).
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Type::lookupName is DBAL's only
+     *   reverse lookup from a Type instance to its registered name.
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */

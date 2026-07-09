@@ -91,6 +91,9 @@ class DbalConnectionFactory
      * @throws DbalConnectionException When the source is misconfigured, the
      *                                 credential cannot be resolved, or DBAL fails.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) DriverManager::getConnection is DBAL's
+     *   only public connection entry point.
+     *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
     public function getConnection(Source $source): Connection
@@ -129,6 +132,9 @@ class DbalConnectionFactory
      * @param string $driver The DBAL driver id (e.g. `pdo_pgsql`).
      *
      * @return bool True when the driver is supported and its PDO extension loaded.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) PDO::getAvailableDrivers is the only
+     *   way to probe installed PDO drivers.
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
@@ -180,32 +186,58 @@ class DbalConnectionFactory
             throw new DbalConnectionException('The database driver extension is not available on this instance.');
         }
 
-        $params = ['driver' => $driver];
+        $params = array_merge(
+            ['driver' => $driver],
+            $this->driverSpecificParams(driver: $driver, config: $config)
+        );
 
+        $params['password'] = $this->resolvePassword(source: $source, config: $config);
+
+        return $params;
+    }//end buildParams()
+
+    /**
+     * The non-secret, driver-specific connection parameters.
+     *
+     * SQLite sources connect to a file path; network drivers (mysql/pgsql)
+     * require host + dbname and optionally port/user.
+     *
+     * @param string               $driver The validated DBAL driver id.
+     * @param array<string, mixed> $config The source `authConfig` block.
+     *
+     * @return array<string, mixed> The driver-specific params (never a secret).
+     *
+     * @throws DbalConnectionException When required connection parts are missing.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function driverSpecificParams(string $driver, array $config): array
+    {
         if ($driver === 'pdo_sqlite') {
             $path = (string) ($config['path'] ?? '');
             if ($path === '') {
                 throw new DbalConnectionException('SQLite database source requires a file path.');
             }
 
-            $params['path'] = $path;
-        } else {
-            $params['host']   = (string) ($config['host'] ?? '');
-            $params['dbname'] = (string) ($config['dbname'] ?? '');
-            $params['user']   = (string) ($config['user'] ?? '');
-            if (isset($config['port']) === true && $config['port'] !== null && $config['port'] !== '') {
-                $params['port'] = (int) $config['port'];
-            }
+            return ['path' => $path];
+        }
 
-            if ($params['host'] === '' || $params['dbname'] === '') {
-                throw new DbalConnectionException('Database source requires host and dbname.');
-            }
-        }//end if
+        $params = [
+            'host'   => (string) ($config['host'] ?? ''),
+            'dbname' => (string) ($config['dbname'] ?? ''),
+            'user'   => (string) ($config['user'] ?? ''),
+        ];
 
-        $params['password'] = $this->resolvePassword(source: $source, config: $config);
+        if (isset($config['port']) === true && $config['port'] !== null && $config['port'] !== '') {
+            $params['port'] = (int) $config['port'];
+        }
+
+        if ($params['host'] === '' || $params['dbname'] === '') {
+            throw new DbalConnectionException('Database source requires host and dbname.');
+        }
 
         return $params;
-    }//end buildParams()
+    }//end driverSpecificParams()
 
     /**
      * Resolve the source's DB password from the credential custody seam.

@@ -48,6 +48,13 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Resource controller: CRUD plus the
+ *   sync (syncNow/syncStatus) and virtual-register (testConnection/introspect)
+ *   actions all belong to the /api/sources resource surface.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Each action carries its own
+ *   admin guard + error mapping; splitting the resource across controllers would
+ *   duplicate the guards without reducing real complexity.
+ *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class SourcesController extends Controller
@@ -55,17 +62,17 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string                 $appName         The name of the app
-     * @param IRequest               $request         The request object
-     * @param IAppConfig             $config          The app configuration object
-     * @param SourceMapper           $sourceMapper    The source mapper
-     * @param IL10N                  $l10n            The localization service
-     * @param IUserSession           $userSession     User session for admin checks
-     * @param IGroupManager          $groupManager    Group manager for admin checks
-     * @param ICrypto                $crypto          Crypto service for databaseUrl encryption
-     * @param SourceFetcherRegistry  $fetcherRegistry Resolves the transport for a source type
-     * @param HarvestPipelineService $pipeline        Harvest pipeline orchestrator
-     * @param DbalConnectionFactory  $connectionFactory Opens read-only DBAL connections for database sources
+     * @param string                       $appName              The name of the app
+     * @param IRequest                     $request              The request object
+     * @param IAppConfig                   $config               The app configuration object
+     * @param SourceMapper                 $sourceMapper         The source mapper
+     * @param IL10N                        $l10n                 The localization service
+     * @param IUserSession                 $userSession          User session for admin checks
+     * @param IGroupManager                $groupManager         Group manager for admin checks
+     * @param ICrypto                      $crypto               Crypto service for databaseUrl encryption
+     * @param SourceFetcherRegistry        $fetcherRegistry      Resolves the transport for a source type
+     * @param HarvestPipelineService       $pipeline             Harvest pipeline orchestrator
+     * @param DbalConnectionFactory        $connectionFactory    Opens read-only DBAL connections for database sources
      * @param DatabaseIntrospectionService $introspectionService Introspects a database source into a virtual register
      *
      * @return void

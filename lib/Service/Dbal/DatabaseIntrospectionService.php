@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dbal;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
@@ -46,6 +48,12 @@ use Throwable;
 
 /**
  * Introspects an external SQL database into an OpenRegister register + schemas.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Introspection inherently walks
+ *   tables, views, columns, keys and relations in one cohesive pass; splitting it
+ *   would scatter the D3-D7 design decisions across artificial helper classes.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Depends on the DBAL schema value
+ *   objects plus the OR mapper/diff seams the design names explicitly.
  */
 class DatabaseIntrospectionService
 {
@@ -102,9 +110,9 @@ class DatabaseIntrospectionService
      */
     public function buildBlueprint(Source $source): array
     {
-        $sourceId       = $this->sourceId(source: $source);
-        $connection     = $this->connectionFactory->getConnection(source: $source);
-        $schemaManager  = $connection->createSchemaManager();
+        $sourceId      = $this->sourceId(source: $source);
+        $connection    = $this->connectionFactory->getConnection(source: $source);
+        $schemaManager = $connection->createSchemaManager();
 
         $tableNames = $schemaManager->listTableNames();
         sort($tableNames);
@@ -196,7 +204,7 @@ class DatabaseIntrospectionService
         $blueprint = $this->buildBlueprint(source: $source);
         $sourceId  = $this->sourceId(source: $source);
 
-        $register       = $this->upsertRegister(definition: $blueprint['register'], sourceId: $sourceId);
+        $register        = $this->upsertRegister(definition: $blueprint['register'], sourceId: $sourceId);
         $existingSchemas = $this->existingSchemasByTable(register: $register);
 
         $created   = [];
@@ -224,11 +232,12 @@ class DatabaseIntrospectionService
                 $saved       = $this->schemaMapper->updateFromArray(id: (int) $existing->getId(), object: $definition);
                 $updated[]   = $table;
                 $schemaIds[] = (int) $saved->getId();
-            } else {
-                $saved       = $this->schemaMapper->createFromArray(object: $definition);
-                $created[]   = $table;
-                $schemaIds[] = (int) $saved->getId();
+                continue;
             }//end if
+
+            $saved       = $this->schemaMapper->createFromArray(object: $definition);
+            $created[]   = $table;
+            $schemaIds[] = (int) $saved->getId();
         }//end foreach
 
         // Keep the register's schema-id list in sync with what we just wrote.
@@ -246,19 +255,19 @@ class DatabaseIntrospectionService
     /**
      * Introspect one table/view into a working record.
      *
-     * @param \Doctrine\DBAL\Schema\AbstractSchemaManager<\Doctrine\DBAL\Platforms\AbstractPlatform> $schemaManager The schema manager.
-     * @param string                                                                                 $sourceId      The owning source id.
-     * @param string                                                                                 $tableName     The table/view name.
-     * @param bool                                                                                   $isView        Whether this is a view.
+     * @param AbstractSchemaManager $schemaManager The schema manager.
+     * @param string                $sourceId      The owning source id.
+     * @param string                $tableName     The table/view name.
+     * @param bool                  $isView        Whether this is a view.
      *
      * @return array<string, mixed> The working table record.
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function introspectTable($schemaManager, string $sourceId, string $tableName, bool $isView): array
+    private function introspectTable(AbstractSchemaManager $schemaManager, string $sourceId, string $tableName, bool $isView): array
     {
-        $columns      = $schemaManager->listTableColumns($tableName);
-        $primaryKey   = $this->primaryKeyColumns(schemaManager: $schemaManager, tableName: $tableName, isView: $isView);
+        $columns    = $schemaManager->listTableColumns($tableName);
+        $primaryKey = $this->primaryKeyColumns(schemaManager: $schemaManager, tableName: $tableName, isView: $isView);
 
         $properties    = [];
         $required      = [];
@@ -283,16 +292,16 @@ class DatabaseIntrospectionService
         [$idColumn, $idColumns] = $this->resolveIdentity(primaryKey: $primaryKey, tableName: $tableName);
 
         return [
-            'table'          => $tableName,
-            'slug'           => $this->slugify(value: $tableName),
-            'title'          => $tableName,
-            'isView'         => $isView,
-            'idColumn'       => $idColumn,
-            'idColumns'      => $idColumns,
-            'properties'     => $properties,
-            'required'       => $required,
-            'nonFilterable'  => $nonFilterable,
-            'sourceId'       => $sourceId,
+            'table'         => $tableName,
+            'slug'          => $this->slugify(value: $tableName),
+            'title'         => $tableName,
+            'isView'        => $isView,
+            'idColumn'      => $idColumn,
+            'idColumns'     => $idColumns,
+            'properties'    => $properties,
+            'required'      => $required,
+            'nonFilterable' => $nonFilterable,
+            'sourceId'      => $sourceId,
         ];
     }//end introspectTable()
 
@@ -303,14 +312,14 @@ class DatabaseIntrospectionService
      * view's shape is read from `SELECT * … LIMIT 1` and typed from the PHP
      * value types. An empty view yields no properties (list-only via SELECT *).
      *
-     * @param \Doctrine\DBAL\Connection $connection The open connection.
-     * @param string                    $viewName   The view name.
+     * @param Connection $connection The open connection.
+     * @param string     $viewName   The view name.
      *
      * @return array<string, array<string, mixed>> Property name → JSON-Schema fragment.
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function viewColumnsFromSample($connection, string $viewName): array
+    private function viewColumnsFromSample(Connection $connection, string $viewName): array
     {
         try {
             $qb = $connection->createQueryBuilder();
@@ -345,15 +354,15 @@ class DatabaseIntrospectionService
     /**
      * Resolve the ordered primary-key column names for a table.
      *
-     * @param \Doctrine\DBAL\Schema\AbstractSchemaManager<\Doctrine\DBAL\Platforms\AbstractPlatform> $schemaManager The schema manager.
-     * @param string                                                                                 $tableName     The table name.
-     * @param bool                                                                                   $isView        Whether this is a view (never has a PK).
+     * @param AbstractSchemaManager $schemaManager The schema manager.
+     * @param string                $tableName     The table name.
+     * @param bool                  $isView        Whether this is a view (never has a PK).
      *
      * @return array<int, string> The PK column names in order (possibly empty).
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function primaryKeyColumns($schemaManager, string $tableName, bool $isView): array
+    private function primaryKeyColumns(AbstractSchemaManager $schemaManager, string $tableName, bool $isView): array
     {
         if ($isView === true) {
             return [];
@@ -446,15 +455,15 @@ class DatabaseIntrospectionService
     /**
      * Map single-column foreign keys onto the relation dialect and add inverses.
      *
-     * @param \Doctrine\DBAL\Schema\AbstractSchemaManager<\Doctrine\DBAL\Platforms\AbstractPlatform> $schemaManager The schema manager.
-     * @param array<string, array<string, mixed>>                                                    $tables        The working records, keyed by table name (mutated).
-     * @param array<string, string>                                                                  $slugByTable   Table name → schema slug.
+     * @param AbstractSchemaManager               $schemaManager The schema manager.
+     * @param array<string, array<string, mixed>> $tables        The working records, keyed by table name (mutated).
+     * @param array<string, string>               $slugByTable   Table name → schema slug.
      *
      * @return void
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function applyForeignKeys($schemaManager, array &$tables, array $slugByTable): void
+    private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables, array $slugByTable): void
     {
         foreach ($tables as $tableName => $record) {
             if ($record['isView'] === true) {
@@ -471,7 +480,7 @@ class DatabaseIntrospectionService
                     continue;
                 }
 
-                $localColumn = $localColumns[0];
+                $localColumn  = $localColumns[0];
                 $foreignTable = $this->shortName(name: $fk->getForeignTableName());
                 if (isset($slugByTable[$foreignTable]) === false) {
                     continue;
@@ -503,14 +512,14 @@ class DatabaseIntrospectionService
     /**
      * List the foreign keys for a table, tolerating platforms/views that error.
      *
-     * @param \Doctrine\DBAL\Schema\AbstractSchemaManager<\Doctrine\DBAL\Platforms\AbstractPlatform> $schemaManager The schema manager.
-     * @param string                                                                                 $tableName     The table name.
+     * @param AbstractSchemaManager $schemaManager The schema manager.
+     * @param string                $tableName     The table name.
      *
      * @return array<int, ForeignKeyConstraint> The foreign-key constraints (possibly empty).
      *
      * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
      */
-    private function foreignKeysFor($schemaManager, string $tableName): array
+    private function foreignKeysFor(AbstractSchemaManager $schemaManager, string $tableName): array
     {
         try {
             return array_values($schemaManager->listTableForeignKeys($tableName));

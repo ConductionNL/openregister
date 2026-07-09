@@ -106,28 +106,34 @@ function seed_permits_rows(\Doctrine\DBAL\Connection $connection): void
     $connection->insert('applicants', ['full_name' => 'Alice Example', 'email' => 'alice@example.com', 'kvk_number' => '12345678']);
     $connection->insert('applicants', ['full_name' => 'Bob Sample', 'email' => 'bob@example.com', 'kvk_number' => null]);
 
-    $connection->insert('permits', [
-        'applicant_id'   => 1,
-        'permit_type_id' => 1,
-        'reference'      => 'P-2026-0001',
-        'status'         => 'active',
-        'submitted_at'   => '2026-01-05 09:00:00',
-        'decided_at'     => null,
-    ]);
-    $connection->insert('permits', [
-        'applicant_id'   => 2,
-        'permit_type_id' => 2,
-        'reference'      => 'P-2026-0002',
-        'status'         => 'closed',
-        'submitted_at'   => '2026-02-10 11:30:00',
-        'decided_at'     => '2026-03-01 14:00:00',
-    ]);
+    $connection->insert(
+            'permits',
+            [
+                'applicant_id'   => 1,
+                'permit_type_id' => 1,
+                'reference'      => 'P-2026-0001',
+                'status'         => 'active',
+                'submitted_at'   => '2026-01-05 09:00:00',
+                'decided_at'     => null,
+            ]
+            );
+    $connection->insert(
+            'permits',
+            [
+                'applicant_id'   => 2,
+                'permit_type_id' => 2,
+                'reference'      => 'P-2026-0002',
+                'status'         => 'closed',
+                'submitted_at'   => '2026-02-10 11:30:00',
+                'decided_at'     => '2026-03-01 14:00:00',
+            ]
+            );
 }//end seed_permits_rows()
 
 // Allow running the builder directly from the CLI.
 if (PHP_SAPI === 'cli' && isset($argv) === true && realpath($argv[0]) === realpath(__FILE__)) {
     $target = ($argv[1] ?? (__DIR__.'/permits.sqlite'));
-    require_once __DIR__.'/../../../vendor/autoload.php';
+    include_once __DIR__.'/../../../vendor/autoload.php';
     build_permits_sqlite(path: $target);
     fwrite(STDOUT, 'Built permits fixture at '.$target.PHP_EOL);
 }

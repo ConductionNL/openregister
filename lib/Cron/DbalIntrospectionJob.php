@@ -53,10 +53,10 @@ class DbalIntrospectionJob extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory                 $time                  Time factory for scheduling.
-     * @param SourceMapper                 $sourceMapper          Loads database sources.
-     * @param DatabaseIntrospectionService $introspectionService  Re-introspects a source and applies diffs.
-     * @param LoggerInterface              $logger                Secret-free diagnostics.
+     * @param ITimeFactory                 $time                 Time factory for scheduling.
+     * @param SourceMapper                 $sourceMapper         Loads database sources.
+     * @param DatabaseIntrospectionService $introspectionService Re-introspects a source and applies diffs.
+     * @param LoggerInterface              $logger               Secret-free diagnostics.
      *
      * @return void
      */

@@ -72,7 +72,7 @@ class PaginateObjectSourceTest extends TestCase
                 private readonly bool $countThrows,
                 private readonly int $countReturns,
             ) {
-            }
+            }//end __construct()
 
             /**
              * {@inheritDoc}
@@ -82,7 +82,7 @@ class PaginateObjectSourceTest extends TestCase
             public function getId(): string
             {
                 return 'stub-source';
-            }
+            }//end getId()
 
             /**
              * {@inheritDoc}
@@ -92,7 +92,7 @@ class PaginateObjectSourceTest extends TestCase
             public function isEnabled(): bool
             {
                 return true;
-            }
+            }//end isEnabled()
 
             /**
              * {@inheritDoc}
@@ -107,7 +107,7 @@ class PaginateObjectSourceTest extends TestCase
             public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity
             {
                 return null;
-            }
+            }//end find()
 
             /**
              * {@inheritDoc}
@@ -136,7 +136,7 @@ class PaginateObjectSourceTest extends TestCase
                 }
 
                 return $objects;
-            }
+            }//end findAll()
 
             /**
              * {@inheritDoc}
@@ -159,7 +159,7 @@ class PaginateObjectSourceTest extends TestCase
                 }
 
                 return $this->totalRows;
-            }
+            }//end count()
         };
     }//end stubProvider()
 
@@ -185,13 +185,12 @@ class PaginateObjectSourceTest extends TestCase
         $reflection = new ReflectionClass(ObjectService::class);
         $service    = $reflection->newInstanceWithoutConstructor();
 
-        foreach (
-            [
-                'objectSourceRegistry' => $registry,
-                'logger'               => new NullLogger(),
-                'currentRegister'      => $register,
-                'currentSchema'        => $schema,
-            ] as $property => $value
+        foreach ([
+            'objectSourceRegistry' => $registry,
+            'logger'               => new NullLogger(),
+            'currentRegister'      => $register,
+            'currentSchema'        => $schema,
+        ] as $property => $value
         ) {
             $prop = $reflection->getProperty($property);
             $prop->setAccessible(true);

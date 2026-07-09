@@ -2955,7 +2955,7 @@ class Application extends App implements IBootstrap
             FilesObjectSourceProvider::class,
             DeckObjectSourceProvider::class,
             TalkObjectSourceProvider::class,
-            // dbal-virtual-registers: external SQL databases over Doctrine DBAL.
+            // Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
             DbalObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {

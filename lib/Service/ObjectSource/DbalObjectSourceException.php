@@ -33,10 +33,11 @@ use Throwable;
  */
 class DbalObjectSourceException extends RuntimeException
 {
+
     /**
      * The HTTP status this failure should surface as (502 or 503).
      *
-     * @var int
+     * @var integer
      */
     private int $statusCode;
 
@@ -51,7 +52,7 @@ class DbalObjectSourceException extends RuntimeException
      */
     public function __construct(string $message, int $statusCode=503, ?Throwable $previous=null)
     {
-        parent::__construct($message, 0, $previous);
+        parent::__construct(message: $message, code: 0, previous: $previous);
         $this->statusCode = $statusCode;
     }//end __construct()
 

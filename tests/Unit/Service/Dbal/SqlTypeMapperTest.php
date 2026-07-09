@@ -195,6 +195,7 @@ class SqlTypeMapperTest extends TestCase
     public function testUnknownTypeFallsBackToStringWithWarning(): void
     {
         $logger = new class extends AbstractLogger {
+
             /**
              * Captured warning messages.
              *
@@ -216,7 +217,7 @@ class SqlTypeMapperTest extends TestCase
                 if ($level === 'warning') {
                     $this->warnings[] = (string) $message;
                 }
-            }
+            }//end log()
         };
 
         // DATEINTERVAL is registered in DBAL but absent from the D5 table.

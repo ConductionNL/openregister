@@ -86,9 +86,6 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
-use React\Promise\Promise;
-use React\Promise\PromiseInterface;
-use React\Async;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\IGroupManager;
@@ -99,8 +96,6 @@ use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-
-use function React\Promise\all;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -842,12 +837,6 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
 
-        // Resolve register and schema entities for rendering.
-        [$registers, $schemas] = $this->resolveRegisterAndSchema(
-            config: $config,
-            objects: $objects
-        );
-
         // Render via renderEntities, which batch-preloads ALL related objects in
         // one query before the per-row render (optimize-object-render-hot-path).
         // The previous renderObjectsAsync() looped renderEntity() per row, so each
@@ -898,123 +887,6 @@ class ObjectService
 
         return $config;
     }//end prepareFindAllConfig()
-
-    /**
-     * Resolve register and schema entities for rendering.
-     *
-     * @param array $config  Configuration array
-     * @param array $objects Retrieved objects
-     *
-     * @return ((Register|Schema|mixed)[]|null)[] [registers, schemas]
-     *
-     * @psalm-return list{array<Register|mixed>|null, array<Schema|mixed>|null}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditions for register/schema resolution
-     */
-    private function resolveRegisterAndSchema(array $config, array $objects): array
-    {
-        // Determine if register and schema should be passed to renderEntity.
-        $registers = null;
-        if ($this->currentRegister !== null && ($config['filters']['register'] ?? null) !== null) {
-            $registers = [$this->currentRegister->getId() => $this->currentRegister];
-        }
-
-        $schemas = null;
-        if ($this->currentSchema !== null && isset($config['filters']['schema']) === true) {
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-        }
-
-        // Check if '@self.schema' or '@self.register' is in extend but not in filters.
-        // This handles cases where we need to load schemas/registers for rendering.
-        $hasExtend     = isset($config['extend']) === true;
-        $extendArray   = (array) ($config['extend'] ?? []);
-        $needsSchema   = $hasExtend
-            && in_array('@self.schema', $extendArray, true) === true
-            && $schemas === null;
-        $needsRegister = $hasExtend
-            && in_array('@self.register', $extendArray, true) === true
-            && $registers === null;
-
-        if ($needsSchema === true) {
-            $schemaIds = array_unique(
-                array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects))
-            );
-            $schemas   = $this->performanceHandler->getCachedEntities(
-                ids: $schemaIds,
-                fallbackFunc: [$this->schemaMapper, 'findMultiple']
-            );
-            $schemas   = array_combine(
-                array_map(fn(Schema $schema): int => $schema->getId(), $schemas),
-                $schemas
-            );
-        }
-
-        if ($needsRegister === true) {
-            $registerIds = array_unique(
-                array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects))
-            );
-            $registers   = $this->performanceHandler->getCachedEntities(
-                ids: $registerIds,
-                fallbackFunc: [$this->registerMapper, 'findMultiple']
-            );
-            $registers   = array_combine(
-                array_map(fn(Register $register): int => $register->getId(), $registers),
-                $registers
-            );
-        }
-
-        return [$registers, $schemas];
-    }//end resolveRegisterAndSchema()
-
-    /**
-     * Render objects asynchronously using promises.
-     *
-     * @param array      $objects       Objects to render
-     * @param array      $config        Configuration array
-     * @param array|null $registers     Register entities
-     * @param array|null $schemas       Schema entities
-     * @param bool       $_rbac         Apply RBAC
-     * @param bool       $_multitenancy Apply multitenancy
-     *
-     * @return array Rendered objects
-     */
-    private function renderObjectsAsync(
-        array $objects,
-        array $config,
-        ?array $registers,
-        ?array $schemas,
-        bool $_rbac,
-        bool $_multitenancy
-    ): array {
-        // Render each object through the render handler.
-        $promises = [];
-        foreach ($objects as $key => $object) {
-            // @psalm-suppress InvalidArgument Promise resolve accepts mixed.
-            $promises[$key] = new Promise(
-                function ($resolve, $reject) use ($object, $config, $registers, $schemas, $_rbac, $_multitenancy) {
-                    try {
-                        $renderedObject = $this->renderHandler->renderEntity(
-                            entity: $object,
-                            _extend: $config['extend'] ?? [],
-                            filter: $config['unset'] ?? null,
-                            fields: $config['fields'] ?? null,
-                            registers: $registers,
-                            schemas: $schemas,
-                            _rbac: $_rbac,
-                            _multitenancy: $_multitenancy
-                        );
-
-                        $resolve($renderedObject);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }//end try
-                }
-            );
-        }//end foreach
-
-        // @psalm-suppress UndefinedFunction React\Async\await is from external library.
-        return Async\await(all($promises));
-    }//end renderObjectsAsync()
 
     /**
      * Counts the number of objects matching the given criteria.
@@ -2584,53 +2456,126 @@ class ObjectService
         // returns a value inconsistent with the returned window — falls back to
         // the pre-existing in-memory behaviour so the native providers are
         // unaffected.
-        $total       = $resultCount;
-        $page        = 1;
-        $pages       = 1;
-        $next        = null;
-        $prev        = null;
-        $realCount   = false;
-
+        $trueTotal = null;
         if ($active === true) {
-            try {
-                $counted = $provider->count(
-                    register: $this->currentRegister,
-                    schema: $schema,
-                    query: $query,
-                    config: $config
-                );
-
-                if ($counted >= ($offset + $resultCount)) {
-                    $total     = $counted;
-                    $realCount = true;
-                }
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    '[ObjectSource] provider "'.$source['provider'].'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
-                );
-            }
+            $trueTotal = $this->objectSourceTrueTotal(
+                provider: $provider,
+                schema: $schema,
+                query: $query,
+                config: $config,
+                offset: $offset,
+                resultCount: $resultCount
+            );
         }
 
-        if ($realCount === true && $limit > 0) {
-            $pages = max(1, (int) ceil($total / $limit));
-            $page  = ((int) floor($offset / $limit) + 1);
-            $next  = ($page < $pages) ? ($page + 1) : null;
-            $prev  = ($page > 1) ? ($page - 1) : null;
-        }
+        $total = ($trueTotal ?? $resultCount);
+        $self  = $this->objectSourcePageMetadata(
+            total: $total,
+            limit: $limit,
+            offset: $offset,
+            realCount: ($trueTotal !== null)
+        );
 
         return [
             'results' => $results,
             'total'   => $total,
-            '@self'   => [
-                'total' => $total,
-                'page'  => $page,
-                'pages' => $pages,
-                'limit' => ($limit > 0 ? $limit : $total),
-                'next'  => $next,
-                'prev'  => $prev,
-            ],
+            '@self'   => $self,
         ];
     }//end paginateObjectSource()
+
+    /**
+     * Consult an object-source provider's count() for the true total (D4b).
+     *
+     * Returns null — signalling the in-memory fallback — when count() throws or
+     * reports a value inconsistent with the returned window (smaller than
+     * offset + returned results), so providers without real count support keep
+     * their pre-existing single-page behaviour.
+     *
+     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider $provider    The resolved provider.
+     * @param Schema                                                      $schema      The sourced schema.
+     * @param array                                                       $query       The search query.
+     * @param array                                                       $config      The object-source config block.
+     * @param int                                                         $offset      The requested offset.
+     * @param int                                                         $resultCount The returned window size.
+     *
+     * @return int|null The true total, or null when the provider has no real count.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function objectSourceTrueTotal(
+        $provider,
+        Schema $schema,
+        array $query,
+        array $config,
+        int $offset,
+        int $resultCount
+    ): ?int {
+        try {
+            $counted = $provider->count(
+                register: $this->currentRegister,
+                schema: $schema,
+                query: $query,
+                config: $config
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[ObjectSource] provider "'.$provider->getId().'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
+            );
+            return null;
+        }
+
+        if ($counted >= ($offset + $resultCount)) {
+            return $counted;
+        }
+
+        return null;
+    }//end objectSourceTrueTotal()
+
+    /**
+     * Compute the `@self` pagination block for an object-source result (D4b).
+     *
+     * @param int  $total     The (true or fallback) total.
+     * @param int  $limit     The requested limit (0 = none).
+     * @param int  $offset    The requested offset.
+     * @param bool $realCount Whether the total came from a real provider count.
+     *
+     * @return array The `@self` pagination metadata.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function objectSourcePageMetadata(int $total, int $limit, int $offset, bool $realCount): array
+    {
+        $page  = 1;
+        $pages = 1;
+        $next  = null;
+        $prev  = null;
+
+        if ($realCount === true && $limit > 0) {
+            $pages = max(1, (int) ceil($total / $limit));
+            $page  = ((int) floor($offset / $limit) + 1);
+            if ($page < $pages) {
+                $next = ($page + 1);
+            }
+
+            if ($page > 1) {
+                $prev = ($page - 1);
+            }
+        }
+
+        $effectiveLimit = $total;
+        if ($limit > 0) {
+            $effectiveLimit = $limit;
+        }
+
+        return [
+            'total' => $total,
+            'page'  => $page,
+            'pages' => $pages,
+            'limit' => $effectiveLimit,
+            'next'  => $next,
+            'prev'  => $prev,
+        ];
+    }//end objectSourcePageMetadata()
 
     /**
      * Record a search-trail entry for a paginated search, honouring the

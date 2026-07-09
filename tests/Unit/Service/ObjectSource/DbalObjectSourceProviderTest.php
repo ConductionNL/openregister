@@ -50,6 +50,7 @@ use Psr\Log\NullLogger;
  */
 class DbalObjectSourceProviderTest extends TestCase
 {
+
     /**
      * Path to the test SQLite database.
      *
@@ -130,7 +131,7 @@ class DbalObjectSourceProviderTest extends TestCase
              */
             public function put(string $uuid, string $secret, string $scope='personal'): void
             {
-            }
+            }//end put()
 
             /**
              * {@inheritDoc}
@@ -143,7 +144,7 @@ class DbalObjectSourceProviderTest extends TestCase
             public function get(string $uuid, string $scope='personal'): ?string
             {
                 return null;
-            }
+            }//end get()
 
             /**
              * {@inheritDoc}
@@ -155,7 +156,7 @@ class DbalObjectSourceProviderTest extends TestCase
              */
             public function delete(string $uuid, string $scope='personal'): void
             {
-            }
+            }//end delete()
         };
 
         return new DbalObjectSourceProvider(

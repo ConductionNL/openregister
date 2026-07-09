@@ -51,6 +51,7 @@ use ReflectionClass;
  */
 class DatabaseIntrospectionServiceTest extends TestCase
 {
+
     /**
      * Path to the generated SQLite permits fixture.
      *
@@ -65,7 +66,7 @@ class DatabaseIntrospectionServiceTest extends TestCase
      */
     public static function setUpBeforeClass(): void
     {
-        require_once __DIR__.'/../../../fixtures/dbal/build-permits-sqlite.php';
+        include_once __DIR__.'/../../../fixtures/dbal/build-permits-sqlite.php';
         self::$fixturePath = sys_get_temp_dir().'/or-dbal-introspection-test-permits.sqlite';
         build_permits_sqlite(path: self::$fixturePath);
     }//end setUpBeforeClass()
@@ -102,7 +103,7 @@ class DatabaseIntrospectionServiceTest extends TestCase
              */
             public function put(string $uuid, string $secret, string $scope='personal'): void
             {
-            }
+            }//end put()
 
             /**
              * {@inheritDoc}
@@ -115,7 +116,7 @@ class DatabaseIntrospectionServiceTest extends TestCase
             public function get(string $uuid, string $scope='personal'): ?string
             {
                 return null;
-            }
+            }//end get()
 
             /**
              * {@inheritDoc}
@@ -127,7 +128,7 @@ class DatabaseIntrospectionServiceTest extends TestCase
              */
             public function delete(string $uuid, string $scope='personal'): void
             {
-            }
+            }//end delete()
         };
 
         return new DatabaseIntrospectionService(

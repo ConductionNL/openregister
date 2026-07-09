@@ -44,6 +44,7 @@ use Psr\Log\NullLogger;
  */
 class DbalConnectionFactoryTest extends TestCase
 {
+
     /**
      * Path to the generated SQLite permits fixture.
      *
@@ -58,7 +59,7 @@ class DbalConnectionFactoryTest extends TestCase
      */
     public static function setUpBeforeClass(): void
     {
-        require_once __DIR__.'/../../../fixtures/dbal/build-permits-sqlite.php';
+        include_once __DIR__.'/../../../fixtures/dbal/build-permits-sqlite.php';
         self::$fixturePath = sys_get_temp_dir().'/or-dbal-factory-test-permits.sqlite';
         build_permits_sqlite(path: self::$fixturePath);
     }//end setUpBeforeClass()
@@ -90,7 +91,7 @@ class DbalConnectionFactoryTest extends TestCase
              */
             public function __construct(private readonly ?string $secret)
             {
-            }
+            }//end __construct()
 
             /**
              * {@inheritDoc}
@@ -103,7 +104,7 @@ class DbalConnectionFactoryTest extends TestCase
              */
             public function put(string $uuid, string $secret, string $scope='personal'): void
             {
-            }
+            }//end put()
 
             /**
              * {@inheritDoc}
@@ -116,7 +117,7 @@ class DbalConnectionFactoryTest extends TestCase
             public function get(string $uuid, string $scope='personal'): ?string
             {
                 return $this->secret;
-            }
+            }//end get()
 
             /**
              * {@inheritDoc}
@@ -128,7 +129,7 @@ class DbalConnectionFactoryTest extends TestCase
              */
             public function delete(string $uuid, string $scope='personal'): void
             {
-            }
+            }//end delete()
         };
     }//end store()
 
@@ -195,6 +196,7 @@ class DbalConnectionFactoryTest extends TestCase
     public function testUnresolvableCredentialFailsClosed(): void
     {
         $logger = new class extends AbstractLogger {
+
             /**
              * Captured log messages.
              *
@@ -214,7 +216,7 @@ class DbalConnectionFactoryTest extends TestCase
             public function log($level, string|\Stringable $message, array $context=[]): void
             {
                 $this->messages[] = (string) $message;
-            }
+            }//end log()
         };
 
         $factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: $logger);
