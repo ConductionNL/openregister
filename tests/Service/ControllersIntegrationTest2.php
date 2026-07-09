@@ -67,8 +67,12 @@ use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -2046,7 +2050,9 @@ class ControllersIntegrationTest2 extends TestCase
             $this->logger,
             $this->appConfig,
             \OC::$server->get(ManualEntityService::class),
-            \OC::$server->get(IUserSession::class)
+            $this->buildAccessibleUserSession(),
+            $this->buildAccessibleRootFolder(),
+            $this->buildAdminGroupManager()
         );
     }//end buildFileTextController()
 
@@ -2064,9 +2070,61 @@ class ControllersIntegrationTest2 extends TestCase
             \OC::$server->get(VectorizationService::class),
             \OC::$server->get(ChunkMapper::class),
             \OC::$server->get(EntityRelationMapper::class),
-            \OC::$server->get(RiskLevelService::class)
+            \OC::$server->get(RiskLevelService::class),
+            $this->buildAccessibleRootFolder(),
+            $this->buildAccessibleUserSession(),
+            $this->buildAdminGroupManager()
         );
     }//end buildFileExtractionController()
+
+    /**
+     * Build a mocked IUserSession that resolves to an authenticated admin
+     * user, so the new per-file access guards on FileTextController /
+     * FileExtractionController pass by default.
+     *
+     * @return IUserSession&MockObject
+     */
+    private function buildAccessibleUserSession(): IUserSession
+    {
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($admin);
+
+        return $userSession;
+    }//end buildAccessibleUserSession()
+
+    /**
+     * Build a mocked IRootFolder whose user folder resolves any file id,
+     * so the new per-file access guards pass by default.
+     *
+     * @return IRootFolder&MockObject
+     */
+    private function buildAccessibleRootFolder(): IRootFolder
+    {
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+
+        $rootFolder = $this->createMock(IRootFolder::class);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+        return $rootFolder;
+    }//end buildAccessibleRootFolder()
+
+    /**
+     * Build a mocked IGroupManager that reports the caller as admin, so
+     * the new bulkExtract() admin-only guard passes by default.
+     *
+     * @return IGroupManager&MockObject
+     */
+    private function buildAdminGroupManager(): IGroupManager
+    {
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
+        return $groupManager;
+    }//end buildAdminGroupManager()
 
     /**
      * Build BulkController with real services

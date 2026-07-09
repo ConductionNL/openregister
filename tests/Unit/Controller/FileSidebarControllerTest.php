@@ -24,7 +24,12 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\FileSidebarController;
 use OCA\OpenRegister\Service\FileSidebarService;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -40,6 +45,8 @@ class FileSidebarControllerTest extends TestCase
     private FileSidebarService&MockObject $fileSidebarService;
     private IRequest&MockObject $request;
     private LoggerInterface&MockObject $logger;
+    private IRootFolder&MockObject $rootFolder;
+    private IUserSession&MockObject $userSession;
 
     /**
      * Set up test fixtures.
@@ -51,14 +58,60 @@ class FileSidebarControllerTest extends TestCase
         $this->request             = $this->createMock(IRequest::class);
         $this->fileSidebarService  = $this->createMock(FileSidebarService::class);
         $this->logger              = $this->createMock(LoggerInterface::class);
+        $this->rootFolder          = $this->createMock(IRootFolder::class);
+        $this->userSession         = $this->createMock(IUserSession::class);
+
+        // Default: an authenticated user whose folder resolves any file ID so
+        // the per-file access guard passes for the happy-path tests.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+        $this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 
         $this->controller = new FileSidebarController(
             'openregister',
             $this->request,
             $this->fileSidebarService,
-            $this->logger
+            $this->logger,
+            $this->rootFolder,
+            $this->userSession
         );
     }//end setUp()
+
+    /**
+     * A non-owner (user folder resolves no node) must be rejected with 404
+     * before the sidebar service is queried — the IDOR fix.
+     *
+     * @return void
+     */
+    public function testFileEndpointsRejectInaccessibleFile(): void
+    {
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([]);
+        $rootFolder = $this->createMock(IRootFolder::class);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn($user);
+
+        $controller = new FileSidebarController(
+            'openregister',
+            $this->request,
+            $this->fileSidebarService,
+            $this->logger,
+            $rootFolder,
+            $session
+        );
+
+        $this->fileSidebarService->expects($this->never())->method('getObjectsForFile');
+        $this->fileSidebarService->expects($this->never())->method('getExtractionStatus');
+
+        $this->assertSame(404, $controller->getObjectsForFile(999)->getStatus());
+        $this->assertSame(404, $controller->getExtractionStatus(999)->getStatus());
+    }//end testFileEndpointsRejectInaccessibleFile()
 
     /**
      * Test getObjectsForFile returns success response with objects.

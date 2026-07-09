@@ -1058,9 +1058,9 @@ class ConfigurationControllerTest extends TestCase
      * Build a controller wired with a non-admin user for guard tests.
      *
      * The shared setUp() wires an admin so the happy path runs; the
-     * external-repo-discovery endpoints (enrichDetails/discover/getGitHub*/
-     * getGitLab*) must reject non-admins because they reach external content
-     * via the instance-wide admin-configured credential.
+     * external-repo-discovery endpoints (enrichDetails, discover, and the
+     * getGitHub / getGitLab families) must reject non-admins because they
+     * reach external content via the instance-wide admin-configured credential.
      */
     private function makeNonAdminController(): ConfigurationController
     {

@@ -373,15 +373,15 @@ class AuditTrailController extends Controller
     /**
      * Get logs for an object
      *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     * @param string $id       The object ID
-     *
      * Admin-only at the framework level (no @NoAdminRequired): a per-object
      * audit trail records actor UID, IP address and per-field diffs. Returning
      * it for an arbitrary object id leaks cross-tenant PII (wave-3 C7), so it
      * stays admin-only like index()/show()/export(). Body `requireAdmin()` is
      * defence-in-depth.
+     *
+     * @param string $register The register identifier
+     * @param string $schema   The schema identifier
+     * @param string $id       The object ID
      *
      * @return JSONResponse JSON response containing audit trails for specific object
      *

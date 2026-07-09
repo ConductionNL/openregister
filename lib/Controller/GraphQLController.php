@@ -145,6 +145,7 @@ class GraphQLController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: returns the static GraphiQL explorer HTML page; no data access.
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
      *

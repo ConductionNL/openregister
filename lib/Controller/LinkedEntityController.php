@@ -28,7 +28,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -53,15 +55,38 @@ class LinkedEntityController extends Controller
      * @param IRequest            $request             The request object
      * @param LinkedEntityService $linkedEntityService The linked entity service
      * @param LoggerInterface     $logger              Logger
+     * @param IUserSession        $userSession         Active user session for caller identity
+     * @param IGroupManager       $groupManager        Group manager for admin checks
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly LinkedEntityService $linkedEntityService,
         private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * Register/schema link mutations change register/schema configuration, and
+     * reverseLookup scans across all tenants (RBAC/multitenancy intentionally
+     * disabled — see LinkedEntityService, TODO #1273); both are admin-only.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     // SEC-CTRL-8: CSRF protection retained — this is an SPA-called authenticated write
     // (axios sends the CSRF token); #[NoCSRFRequired] removed.
@@ -164,6 +189,11 @@ class LinkedEntityController extends Controller
     #[NoAdminRequired]
     public function addRegisterLink(string $uuid, string $type): JSONResponse
     {
+        // SEC-CTRL: admin-only — mutates register configuration.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $body     = $this->request->getParams();
             $entityId = $body['id'] ?? null;
@@ -199,6 +229,11 @@ class LinkedEntityController extends Controller
     #[NoAdminRequired]
     public function addSchemaLink(string $uuid, string $type): JSONResponse
     {
+        // SEC-CTRL: admin-only — mutates schema configuration.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $body     = $this->request->getParams();
             $entityId = $body['id'] ?? null;
@@ -235,6 +270,14 @@ class LinkedEntityController extends Controller
     #[NoCSRFRequired]
     public function reverseLookup(string $type, string $entityId): JSONResponse
     {
+        // SEC-CTRL: admin-only — LinkedEntityService::reverseLookup scans magic
+        // tables with RBAC + multitenancy intentionally disabled (cross-tenant;
+        // TODO #1273). Until per-tenant scoping lands, restrict to admins so an
+        // arbitrary user cannot enumerate cross-tenant object links by entity id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $results = $this->linkedEntityService->reverseLookup($type, $entityId);
 

@@ -517,6 +517,14 @@ class DeckCardService
      */
     public function getObjectsForBoard(int $boardId): array
     {
+        // IDOR guard: only return links for a board the caller can access in
+        // Deck. Without this any authenticated user could enumerate board IDs
+        // and read OpenRegister object links for boards they have no Deck
+        // access to (the deckLinkMapper table bypasses Deck's own ACL).
+        if ($this->userCanAccessBoard(boardId: $boardId) === false) {
+            return [];
+        }
+
         $links = $this->deckLinkMapper->findByBoardId($boardId);
 
         return array_map(
@@ -526,6 +534,35 @@ class DeckCardService
             $links
         );
     }//end getObjectsForBoard()
+
+    /**
+     * Whether the current session user may read the given Deck board.
+     *
+     * Delegates to Deck's own BoardService::find(), which enforces the board
+     * ACL and throws when the session user lacks read access. Fail-closed:
+     * returns false when Deck is unavailable or access is denied, so no link
+     * metadata leaks for a board the caller cannot see.
+     *
+     * @param int $boardId The Deck board ID.
+     *
+     * @return bool True when the caller may read the board.
+     */
+    protected function userCanAccessBoard(int $boardId): bool
+    {
+        if (class_exists('OCA\\Deck\\Service\\BoardService') === false) {
+            return false;
+        }
+
+        try {
+            $boardService = \OC::$server->get('OCA\\Deck\\Service\\BoardService');
+            // Find() throws (NoPermissionException) when the session user
+            // lacks read access to the board.
+            $boardService->find($boardId);
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end userCanAccessBoard()
 
     /**
      * Delete all deck links for an object (cleanup).

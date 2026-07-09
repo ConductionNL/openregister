@@ -270,6 +270,7 @@ class CollectiveLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped capability probe: reports Collectives availability for the current user; no caller-supplied object id.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
@@ -298,6 +299,7 @@ class CollectiveLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: returns the current user's own Collectives; no caller-supplied object id.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */

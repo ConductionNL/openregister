@@ -726,6 +726,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: returns the static catalogue of available webhook event-type definitions
+     *   (identical for every install); no tenant data.
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
