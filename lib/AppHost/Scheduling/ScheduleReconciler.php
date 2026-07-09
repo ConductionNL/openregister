@@ -52,6 +52,7 @@ use Throwable;
  * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ScheduleReconciler
 {
@@ -66,6 +67,13 @@ class ScheduleReconciler
     private const OC_JOB_SCHEMA_SLUG = 'job';
 
     /**
+     * Page size for the reconciler's sweep reads. ObjectService::findAll
+     * defaults to ~25 rows; a system sweep must see every application and
+     * every managed job, so an explicit high ceiling is passed on each read.
+     */
+    private const SWEEP_LIMIT = 1000;
+
+    /**
      * OpenBuild register slug that owns virtual-app `application` objects.
      */
     private const OB_REGISTER_SLUG = 'openbuild';
@@ -74,6 +82,12 @@ class ScheduleReconciler
      * OpenBuild `application` schema slug.
      */
     private const OB_APPLICATION_SCHEMA_SLUG = 'application';
+
+    /**
+     * OpenBuild `applicationVersion` schema slug — a virtual app's manifest
+     * lives on its production ApplicationVersion, not on the application object.
+     */
+    private const OB_APPLICATION_VERSION_SCHEMA_SLUG = 'applicationVersion';
 
     /**
      * Reference prefix marking a `job` object as AppHost-schedule-managed.
@@ -468,9 +482,9 @@ class ScheduleReconciler
                         'register' => self::OC_REGISTER_SLUG,
                         'schema'   => self::OC_JOB_SCHEMA_SLUG,
                     ],
+                    'limit'   => self::SWEEP_LIMIT,
                 ],
-                _rbac: false,
-                _multitenancy: false
+                _rbac: false
             );
         } catch (Throwable $e) {
             $this->logger->info(
@@ -481,11 +495,7 @@ class ScheduleReconciler
         }
 
         $managed = [];
-        foreach ($rows as $row) {
-            if (is_array($row) === false) {
-                continue;
-            }
-
+        foreach ($this->normaliseRows(rows: $rows) as $row) {
             $reference = ($row['reference'] ?? null);
             if (is_string($reference) === false || str_starts_with($reference, self::REFERENCE_PREFIX.':') === false) {
                 continue;
@@ -507,15 +517,21 @@ class ScheduleReconciler
     protected function loadVirtualApplications(): array
     {
         try {
+            // NOTE: pass ONLY `_rbac: false` (a system sweep must see apps
+            // regardless of owner). Do NOT also pass `_multitenancy: false`:
+            // ObjectService::findAll returns ZERO rows when BOTH flags are
+            // false, whereas either flag alone (or the defaults) returns the
+            // full set. `_rbac: false` alone is the correct, working bypass
+            // for this background sweep. Applied to every read/write below.
             $rows = $this->objectService->findAll(
                 config: [
                     'filters' => [
                         'register' => self::OB_REGISTER_SLUG,
                         'schema'   => self::OB_APPLICATION_SCHEMA_SLUG,
                     ],
+                    'limit'   => self::SWEEP_LIMIT,
                 ],
-                _rbac: false,
-                _multitenancy: false
+                _rbac: false
             );
         } catch (Throwable $e) {
             $this->logger->info(
@@ -523,10 +539,41 @@ class ScheduleReconciler
                 context: ['reason' => $e->getMessage()]
             );
             return [];
+        }//end try
+
+        return $this->normaliseRows(rows: $rows);
+    }//end loadVirtualApplications()
+
+    /**
+     * Normalise a findAll result set to plain arrays.
+     *
+     * ObjectService::findAll returns rendered rows that may be `ObjectEntity`
+     * (JsonSerializable) objects rather than plain arrays; serialize those so
+     * downstream array access works uniformly. Non-serialisable rows are dropped.
+     *
+     * @param array<int, mixed> $rows The raw findAll result.
+     *
+     * @return array<int, array<string, mixed>> The rows as plain arrays.
+     */
+    private function normaliseRows(array $rows): array
+    {
+        $normalised = [];
+        foreach ($rows as $row) {
+            if (is_array($row) === true) {
+                $normalised[] = $row;
+                continue;
+            }
+
+            if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
+                $serialized = $row->jsonSerialize();
+                if (is_array($serialized) === true) {
+                    $normalised[] = $serialized;
+                }
+            }
         }
 
-        return array_values(array_filter($rows, 'is_array'));
-    }//end loadVirtualApplications()
+        return $normalised;
+    }//end normaliseRows()
 
     /**
      * Resolve an on-disk app's owner from a matching openbuild `application` object.
@@ -567,8 +614,7 @@ class ScheduleReconciler
                 register: self::OC_REGISTER_SLUG,
                 schema: self::OC_JOB_SCHEMA_SLUG,
                 uuid: $uuid,
-                _rbac: false,
-                _multitenancy: false
+                _rbac: false
             );
         } catch (Throwable $e) {
             $this->logger->error(
@@ -596,29 +642,106 @@ class ScheduleReconciler
     }//end extractApplicationId()
 
     /**
-     * Extract the manifest payload carried on an application object.
+     * Extract the effective manifest for a virtual application.
+     *
+     * Prefers an inline `manifest` on the application object (legacy / on-disk
+     * shape); when absent — the normal OpenBuild case, where the manifest is
+     * stored on the production ApplicationVersion rather than the application
+     * object — resolves the production version and reads its manifest.
      *
      * @param array<string, mixed> $application The rendered application object.
      *
      * @return array<string, mixed> The decoded manifest (empty when absent/invalid).
+     *
+     * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
      */
     private function extractManifest(array $application): array
     {
-        $manifest = ($application['manifest'] ?? null);
-        if (is_string($manifest) === true) {
-            $decoded  = json_decode($manifest, associative: true);
-            $manifest = null;
+        $inline = $this->decodeManifest(value: ($application['manifest'] ?? null));
+        if ($inline !== []) {
+            return $inline;
+        }
+
+        return $this->resolveProductionManifest(application: $application);
+    }//end extractManifest()
+
+    /**
+     * Resolve a virtual app's manifest from its production ApplicationVersion.
+     *
+     * @param array<string, mixed> $application The rendered application object.
+     *
+     * @return array<string, mixed> The decoded production manifest, or empty.
+     *
+     * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+     */
+    protected function resolveProductionManifest(array $application): array
+    {
+        $versionId = ($application['productionVersion'] ?? ($application['@self']['relations']['productionVersion'] ?? null));
+        if (is_string($versionId) === false || $versionId === '') {
+            return [];
+        }
+
+        try {
+            $version = $this->objectService->find(
+                id: $versionId,
+                register: self::OB_REGISTER_SLUG,
+                schema: self::OB_APPLICATION_VERSION_SCHEMA_SLUG,
+                _rbac: false
+            );
+        } catch (Throwable $e) {
+            $this->logger->info(
+                message: '[AppHost\\Scheduling] Could not resolve production version manifest',
+                context: ['versionId' => $versionId, 'reason' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        if ($version === null) {
+            return [];
+        }
+
+        // JsonSerialize() renders the version's data props (incl. `manifest`)
+        // at the top level; read the dynamic offset via a generic-typed helper.
+        $serialized = $version->jsonSerialize();
+        return $this->decodeManifest(value: $this->readOffset(data: $serialized, key: 'manifest'));
+    }//end resolveProductionManifest()
+
+    /**
+     * Read a dynamic offset from an entity's serialized data map.
+     *
+     * @param array<string, mixed> $data The serialized object data.
+     * @param string               $key  The offset to read.
+     *
+     * @return mixed The value at the offset, or null when absent.
+     */
+    private function readOffset(array $data, string $key): mixed
+    {
+        return ($data[$key] ?? null);
+    }//end readOffset()
+
+    /**
+     * Decode a manifest value that may be a JSON string or an already-decoded array.
+     *
+     * @param mixed $value The raw manifest value.
+     *
+     * @return array<string, mixed> The decoded manifest (empty when absent/invalid).
+     */
+    private function decodeManifest(mixed $value): array
+    {
+        if (is_string($value) === true) {
+            $decoded = json_decode($value, associative: true);
+            $value   = null;
             if (is_array($decoded) === true) {
-                $manifest = $decoded;
+                $value = $decoded;
             }
         }
 
-        if (is_array($manifest) === true) {
-            return $manifest;
+        if (is_array($value) === true) {
+            return $value;
         }
 
         return [];
-    }//end extractManifest()
+    }//end decodeManifest()
 
     /**
      * Parse a stored `nextRun` value into a comparable DateTime.
