@@ -54,7 +54,7 @@ use Throwable;
  *   types (arithmetic, logical, date, string, comparison, etc.); each operator requires
  *   its own parse/validate/execute path. Splitting into sub-evaluators would require
  *   a plugin registry and is outside the scope of this service's single-responsibility.
- * @SuppressWarnings(PHPMD.TooManyMethods) Each operator (prop/concat/if/arith/compare/date/
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Each operator (prop/concat/if/arith/compare/date/
  *   string/sha256/…) is a dedicated private handler dispatched from the single `evaluate()`
  *   match; the count rises one-per-operator by design. Collapsing handlers would lose the
  *   per-operator validation and error messages, and a plugin registry is out of scope.

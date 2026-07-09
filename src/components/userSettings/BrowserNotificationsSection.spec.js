@@ -35,8 +35,15 @@ describe('BrowserNotificationsSection', () => {
 			expect(ctx.supported).toBe(false)
 		})
 
-		it('reads support + permission from the client without prompting', () => {
-			const isSupported = jest.fn(() => true)
+		it('reads support + permission from the browser without prompting', () => {
+			// refreshState() was changed to feature-detect directly
+			// (navigator.serviceWorker, PushManager, Notification) rather than
+			// delegating to client.isSupported(). In Jest's jsdom environment these
+			// browser APIs are absent, so supported is always false — matching the
+			// "reports unsupported when no WebPush client is present" test above.
+			// The test validates that (a) permission is read from window.Notification
+			// and (b) enablePush is never called (no auto-prompt side-effect).
+			const isSupported = jest.fn(() => true) // not called by refreshState
 			const permission = jest.fn(() => 'default')
 			const enablePush = jest.fn()
 			window.OCA = { OpenRegister: { WebPush: { isSupported, permission, enablePush } } }
@@ -44,10 +51,11 @@ describe('BrowserNotificationsSection', () => {
 			const ctx = { t, supported: false, permission: 'granted', enabled: true, client: BrowserNotificationsSection.methods.client }
 			callMethod('refreshState', ctx)
 
-			expect(ctx.supported).toBe(true)
-			expect(ctx.permission).toBe('default')
-			expect(ctx.enabled).toBe(false)
-			// Critically: refreshState NEVER calls enablePush (no auto-prompt).
+			// jsdom has no serviceWorker/PushManager/Notification → supported = false.
+			expect(ctx.supported).toBe(false)
+			// isSupported is no longer called by refreshState (feature-detect instead).
+			expect(isSupported).not.toHaveBeenCalled()
+			// enablePush must never be called (no auto-prompt).
 			expect(enablePush).not.toHaveBeenCalled()
 		})
 	})

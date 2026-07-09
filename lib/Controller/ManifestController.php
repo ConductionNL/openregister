@@ -49,6 +49,8 @@ use Throwable;
  * can still load a manifest and receive `runtime.user = null`; public pages
  * are filtered by nc-vue using that null signal.
  *
+ * @spec openspec/changes/manifest-user-context/tasks.md
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ManifestController extends Controller
@@ -110,14 +112,25 @@ class ManifestController extends Controller
 
         try {
             $enriched = $this->manifestService->getEnrichedManifest(manifest: $manifest);
-            return new JSONResponse($enriched);
+
+            // ETag over the final per-user payload: NotModifiedMiddleware turns a
+            // matching If-None-Match into a 304, so warm reloads skip the transfer
+            // (fleet manifests reach ~270KB) while staying fully fresh — enrichment
+            // still runs, and any change in manifest OR runtime.user changes the tag.
+            // `private, no-cache` replaces the default `no-store`: the browser MAY
+            // store the response but MUST revalidate, which is what makes the 304
+            // path usable at all.
+            $response = new JSONResponse($enriched);
+            $response->setETag(md5(json_encode($enriched)));
+            $response->addHeader('Cache-Control', 'private, no-cache');
+            return $response;
         } catch (Throwable $e) {
             $this->logger->error(
                 message: sprintf('[ManifestController] Enrichment failed for app "%s": %s', $appId, $e->getMessage()),
                 context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
             );
             return new JSONResponse(['error' => 'Internal server error.'], Http::STATUS_INTERNAL_SERVER_ERROR);
-        }
+        }//end try
     }//end index()
 
     /**

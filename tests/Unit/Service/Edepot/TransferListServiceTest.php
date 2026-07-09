@@ -32,6 +32,7 @@ class TransferListServiceTest extends TestCase
 {
     private MagicMapper&MockObject $objectMapper;
     private AuditTrailMapper&MockObject $auditTrailMapper;
+    private \OCA\OpenRegister\Service\Edepot\TransferRecordService&MockObject $transferRecordService;
     private IAppConfig&MockObject $appConfig;
     private INotificationManager&MockObject $notificationManager;
     private LoggerInterface&MockObject $logger;
@@ -43,13 +44,23 @@ class TransferListServiceTest extends TestCase
 
         $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+        $this->transferRecordService = $this->createMock(\OCA\OpenRegister\Service\Edepot\TransferRecordService::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
         $this->notificationManager = $this->createMock(INotificationManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // The durable persistence returns whatever it was handed (the array
+        // shape the assertions below check) so the status-machine behaviour is
+        // asserted independently of the object store.
+        $this->transferRecordService->method('saveTransferList')
+            ->willReturnArgument(0);
+        $this->appConfig->method('getValueString')
+            ->willReturnCallback(static fn($app, $key, $default = '') => $default);
+
         $this->service = new TransferListService(
             $this->objectMapper,
             $this->auditTrailMapper,
+            $this->transferRecordService,
             $this->appConfig,
             $this->notificationManager,
             $this->logger,

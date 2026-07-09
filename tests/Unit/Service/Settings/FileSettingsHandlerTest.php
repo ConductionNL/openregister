@@ -81,7 +81,7 @@ class FileSettingsHandlerTest extends TestCase
         $this->assertSame('', $result['presidioApiEndpoint']);
         $this->assertSame('', $result['openAnonymiserApiEndpoint']);
         $this->assertFalse($result['entityRecognitionEnabled']);
-        $this->assertSame('hybrid', $result['entityRecognitionMethod']);
+        $this->assertSame('auto', $result['entityRecognitionMethod']);
     }
 
     /**
@@ -219,7 +219,7 @@ class FileSettingsHandlerTest extends TestCase
         $this->assertSame('', $result['presidioApiEndpoint']);
         $this->assertSame('', $result['openAnonymiserApiEndpoint']);
         $this->assertFalse($result['entityRecognitionEnabled']);
-        $this->assertSame('hybrid', $result['entityRecognitionMethod']);
+        $this->assertSame('auto', $result['entityRecognitionMethod']);
     }
 
     /**

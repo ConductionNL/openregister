@@ -230,7 +230,6 @@ trait MultiTenancyTrait
      *
      * This method provides comprehensive organisation filtering including:
      * - Hierarchical organisation support (active org + all parents)
-     * - Published entity bypass for multi-tenancy (Register/Schema entities only)
      * - Admin override capabilities
      * - System default organisation special handling
      * - NULL organisation legacy data access for admins
@@ -238,10 +237,13 @@ trait MultiTenancyTrait
      *
      * Features:
      * 1. Hierarchical Access: Users see entities from their active org AND parent orgs
-     * 2. Published Entities: Register/Schema entities can bypass multi-tenancy via published/depublished columns
-     * 3. Admin Override: Admins can see all entities if enabled in config
-     * 4. Default Org: Special behavior for system-wide default organisation
-     * 5. Legacy Data: Admins can access NULL organisation entities
+     * 2. Admin Override: Admins can see all entities if enabled in config
+     * 3. Default Org: Special behavior for system-wide default organisation
+     * 4. Legacy Data: Admins can access NULL organisation entities
+     *
+     * Note: The published/depublished column bypass for Register/Schema multi-tenancy
+     * has been removed. Anonymous access is now controlled exclusively via RBAC
+     * (authorization.read containing 'public' in the register/schema entity).
      *
      * Example hierarchy:
      * - Organisation A (root)
@@ -256,7 +258,7 @@ trait MultiTenancyTrait
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
      * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-5 (MultiTenancyTrait Documentation —
-     *       published-bypass docs scoped to Register/Schema entities only; object-level published bypass removed)
+     *       published/depublished column bypass removed; Register/Schema visibility now governed by RBAC only)
      *
      * @return void
      *

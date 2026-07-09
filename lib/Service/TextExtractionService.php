@@ -40,6 +40,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -50,9 +53,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 // Document parsing libraries.
-use Smalot\PdfParser\Parser as PdfParser;
-use PhpOffice\PhpWord\IOFactory as WordIOFactory;
-use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 
 /**
  * TextExtractionService
@@ -119,16 +119,6 @@ class TextExtractionService
     private const FIXED_SIZE = 'FIXED_SIZE';
 
     /**
-     * Maximum recursion depth for the Word element walker
-     *
-     * Guards against pathologically (or maliciously) nested documents — far
-     * above any realistic table-in-cell-in-table nesting.
-     *
-     * @var int
-     */
-    private const MAX_WORD_DEPTH = 50;
-
-    /**
      * Constructor
      *
      * @param FileMapper               $fileMapper           Mapper for Nextcloud files
@@ -148,6 +138,9 @@ class TextExtractionService
      *                                                       inputs and for the public `parseEmlStructured`
      *                                                       surface that DocuDesk's `eml-pdf-assembly`
      *                                                       consumes; see `text-extraction-eml`).
+     * @param SpreadsheetExtractor     $spreadsheetExtractor Extractor for spreadsheet documents
+     * @param PdfExtractor             $pdfExtractor         Extractor for PDF documents
+     * @param WordExtractor            $wordExtractor        Extractor for Word documents
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection for all document-type parsers and entity mappers.
      * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
@@ -166,7 +159,10 @@ class TextExtractionService
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly SettingsService $settingsService,
         private readonly RiskLevelService $riskLevelService,
-        private readonly EmlParser $emlParser
+        private readonly EmlParser $emlParser,
+        private readonly SpreadsheetExtractor $spreadsheetExtractor,
+        private readonly PdfExtractor $pdfExtractor,
+        private readonly WordExtractor $wordExtractor
     ) {
     }//end __construct()
 
@@ -1360,85 +1356,9 @@ class TextExtractionService
      */
     private function extractPdf(\OCP\Files\File $file): string|null
     {
-        // Check if PdfParser library is available.
-        if (class_exists('Smalot\PdfParser\Parser') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PDF parser library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PDF parser library (smalot/pdfparser) is not installed. ";
-            $msg .= "Run: composer require smalot/pdfparser";
-            throw new Exception($msg);
-        }
-
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting PDF',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
-
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PdfParser (it requires a file path).
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Parse PDF.
-            $parser = new PdfParser();
-            $pdf    = $parser->parseFile($tempPath);
-
-            // Extract text.
-            $text = $pdf->getText();
-
-            // Clean up.
-            fclose($tempFile);
-
-            if ($text === '') {
-                $this->logger->warning(
-                    message: '[TextExtractionService] PDF extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] PDF extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[TextExtractionService] PDF extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("PDF extraction failed: ".$e->getMessage());
-        }//end try
+        // Delegated to the dedicated PdfExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->pdfExtractor->extract(file: $file);
     }//end extractPdf()
 
     /**
@@ -1463,265 +1383,10 @@ class TextExtractionService
      */
     private function extractWord(\OCP\Files\File $file): ?string
     {
-        // Check if PhpWord library is available (deployment error — still throws).
-        if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PhpWord library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PhpWord library (phpoffice/phpword) is not installed. ";
-            $msg .= "Run: composer require phpoffice/phpword";
-            throw new Exception($msg);
-        }
-
-        $readerName = $this->resolveWordReader(mimeType: (string) $file->getMimeType(), fileName: (string) $file->getName());
-
-        $tempFile = null;
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting Word document',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                    'reader' => $readerName,
-                ]
-            );
-
-            // Write the content to a temp file for PhpWord to read.
-            $content  = $file->getContent();
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Load with the reader chosen from the MIME/extension.
-            $phpWord = WordIOFactory::load($tempPath, $readerName);
-
-            // Walk every section: headers, body, footers.
-            $text = '';
-            foreach ($phpWord->getSections() as $section) {
-                foreach ($section->getHeaders() as $header) {
-                    $text .= $this->walkWordElements(elements: $header->getElements());
-                }
-
-                $text .= $this->walkWordElements(elements: $section->getElements());
-
-                foreach ($section->getFooters() as $footer) {
-                    $text .= $this->walkWordElements(elements: $footer->getElements());
-                }
-            }
-
-            // Always capture document-level footnotes/endnotes in addition to
-            // any inline notes the body walk already picked up.
-            $text .= $this->extractWordNotes(phpWord: $phpWord);
-
-            fclose($tempFile);
-            $tempFile = null;
-
-            if (trim($text) === '') {
-                $this->logger->warning(
-                    message: '[TextExtractionService] Word extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                        'reader' => $readerName,
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] Word document extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (\Throwable $e) {
-            if (is_resource($tempFile) === true) {
-                fclose($tempFile);
-            }
-
-            // Per-document failure (e.g. limited MsDoc binary parsing): log
-            // structure only (no document content, per ADR-005) and degrade
-            // to null so the surrounding pipeline treats it as "no text".
-            $this->logger->error(
-                message: '[TextExtractionService] Word extraction failed; returning null',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'fileId'    => $file->getId(),
-                    'mimeType'  => (string) $file->getMimeType(),
-                    'reader'    => $readerName,
-                    'exception' => get_class($e),
-                ]
-            );
-            return null;
-        }//end try
+        // Delegated to the dedicated WordExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->wordExtractor->extract(file: $file);
     }//end extractWord()
-
-    /**
-     * Recursively walk PhpWord elements, accumulating their text
-     *
-     * Duck-typed (method_exists) so it tolerates PhpWord version differences
-     * and any element type that exposes the same accessors. Dispatch order:
-     * Table (getRows) → composite container (getElements) → leaf text
-     * (getText). Composite containers are descended rather than flattened to
-     * a single getText() so styled sub-runs and in-cell content are captured.
-     *
-     * @param iterable $elements PhpWord elements to walk
-     * @param int      $depth    Current recursion depth (guarded by MAX_WORD_DEPTH)
-     *
-     * @return string Accumulated text
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Element-tree dispatch over several PhpWord shapes
-     */
-    private function walkWordElements(iterable $elements, int $depth=0): string
-    {
-        if ($depth > self::MAX_WORD_DEPTH) {
-            $this->logger->debug(
-                message: '[TextExtractionService] Word element walk hit MAX_WORD_DEPTH; stopping descent',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'maxDepth' => self::MAX_WORD_DEPTH,
-                ]
-            );
-            return '';
-        }
-
-        $text = '';
-        foreach ($elements as $element) {
-            // Table: rows → cells → recurse cell elements (nested tables re-enter here).
-            if (method_exists($element, 'getRows') === true) {
-                foreach ($element->getRows() as $row) {
-                    if (method_exists($row, 'getCells') === false) {
-                        continue;
-                    }
-
-                    foreach ($row->getCells() as $cell) {
-                        if (method_exists($cell, 'getElements') === true) {
-                            $text .= $this->walkWordElements(elements: $cell->getElements(), depth: ($depth + 1));
-                        }
-                    }
-
-                    $text .= "\n";
-                }
-
-                continue;
-            }
-
-            // Composite container (TextRun, ListItemRun, Footnote, ...): descend into children.
-            if (method_exists($element, 'getElements') === true) {
-                $children = $element->getElements();
-                if (empty($children) === false) {
-                    $text .= $this->walkWordElements(elements: $children, depth: ($depth + 1));
-                    $text .= "\n";
-                    continue;
-                }
-            }
-
-            // Leaf text-bearing element (Text, Title, Link, ListItem, PreserveText).
-            if (method_exists($element, 'getText') === true) {
-                $value = $element->getText();
-                if (is_string($value) === true) {
-                    if ($value !== '') {
-                        $text .= $value."\n";
-                    }
-                } else if (is_object($value) === true) {
-                    // Some elements (e.g. Title) return a TextRun from getText() — walk it.
-                    $text .= $this->walkWordElements(elements: [$value], depth: ($depth + 1));
-                }
-            }
-        }//end foreach
-
-        return $text;
-    }//end walkWordElements()
-
-    /**
-     * Extract document-level footnote and endnote text
-     *
-     * Iterated unconditionally (in addition to inline note capture during the
-     * body walk) so note text is collected regardless of how the vendored
-     * PhpWord version surfaces it. De-duplication is intentionally not done —
-     * a repeated note string is acceptable for the flat-text use case.
-     *
-     * @param \PhpOffice\PhpWord\PhpWord $phpWord Loaded PhpWord document
-     *
-     * @return string Accumulated footnote/endnote text
-     */
-    private function extractWordNotes(\PhpOffice\PhpWord\PhpWord $phpWord): string
-    {
-        $text = '';
-
-        $collections = [];
-        try {
-            $collections[] = $phpWord->getFootnotes();
-            $collections[] = $phpWord->getEndnotes();
-        } catch (\Throwable $e) {
-            // Older/newer PhpWord without these accessors — inline capture still applies.
-            return $text;
-        }
-
-        foreach ($collections as $collection) {
-            if (method_exists($collection, 'getItems') === false) {
-                continue;
-            }
-
-            foreach ($collection->getItems() as $note) {
-                if (method_exists($note, 'getElements') === true) {
-                    $text .= $this->walkWordElements(elements: $note->getElements());
-                }
-            }
-        }
-
-        return $text;
-    }//end extractWordNotes()
-
-    /**
-     * Map a Word-family MIME type (or filename extension) to a PhpWord reader name
-     *
-     * @param string $mimeType The file MIME type
-     * @param string $fileName The file name (extension used as fallback)
-     *
-     * @return string PhpWord reader name (Word2007 | MsDoc | ODText)
-     */
-    private function resolveWordReader(string $mimeType, string $fileName): string
-    {
-        $byMime = [
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'Word2007',
-            'application/msword'                                                      => 'MsDoc',
-            'application/vnd.oasis.opendocument.text'                                 => 'ODText',
-        ];
-
-        if (isset($byMime[$mimeType]) === true) {
-            return $byMime[$mimeType];
-        }
-
-        // Fall back to the filename extension when the MIME is generic/ambiguous.
-        $byExt = [
-            'docx' => 'Word2007',
-            'doc'  => 'MsDoc',
-            'odt'  => 'ODText',
-        ];
-
-        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        if (isset($byExt[$ext]) === true) {
-            return $byExt[$ext];
-        }
-
-        return 'Word2007';
-    }//end resolveWordReader()
 
     /**
      * Extract text from spreadsheet (XLSX/XLS) using PhpSpreadsheet
@@ -1738,114 +1403,9 @@ class TextExtractionService
      */
     private function extractSpreadsheet(\OCP\Files\File $file): ?string
     {
-        // PhpSpreadsheet should already be installed (in composer.json).
-        if (class_exists('PhpOffice\PhpSpreadsheet\IOFactory') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PhpSpreadsheet library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. ";
-            $msg .= "Run: composer require phpoffice/phpspreadsheet";
-            throw new Exception($msg);
-        }
-
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting spreadsheet',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
-
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PhpSpreadsheet.
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Load spreadsheet.
-            $spreadsheet = SpreadsheetIOFactory::load($tempPath);
-
-            // Extract text from all sheets.
-            $text = '';
-            foreach ($spreadsheet->getAllSheets() as $sheet) {
-                $text .= "Sheet: ".$sheet->getTitle()."\n";
-
-                $highestRow    = $sheet->getHighestRow();
-                $highestColumn = $sheet->getHighestColumn();
-
-                // Iterate through rows and columns.
-                for ($row = 1; $row <= $highestRow; $row++) {
-                    $rowData = [];
-                    // @psalm-suppress StringIncrement - Excel column increment is intentional
-                    for ($col = 'A'; $col !== $highestColumn; $col++) {
-                        $value = $sheet->getCell($col.$row)->getValue();
-                        if ($value !== null && $value !== '') {
-                            $rowData[] = $value;
-                        }
-                    }
-
-                    // Add last column.
-                    $value = $sheet->getCell($highestColumn.$row)->getValue();
-                    if ($value !== null && $value !== '') {
-                        $rowData[] = $value;
-                    }
-
-                    if (empty($rowData) === false) {
-                        $text .= implode("\t", $rowData)."\n";
-                    }
-                }
-
-                $text .= "\n";
-            }//end foreach
-
-            // Clean up.
-            fclose($tempFile);
-
-            if (trim($text) === '' || trim($text) === null) {
-                $this->logger->warning(
-                    message: '[TextExtractionService] Spreadsheet extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] Spreadsheet extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[TextExtractionService] Spreadsheet extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("Spreadsheet extraction failed: ".$e->getMessage());
-        }//end try
+        // Delegated to the dedicated SpreadsheetExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->spreadsheetExtractor->extract(file: $file);
     }//end extractSpreadsheet()
 
     /**

@@ -33,7 +33,6 @@ use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Controller\Settings\N8nSettingsController;
-use OCA\OpenRegister\Controller\Settings\SolrSettingsController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -49,7 +48,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
@@ -1132,21 +1131,6 @@ class ControllersIntegrationTest2 extends TestCase
         $this->assertArrayHasKey('stats', $data);
     }//end testFileTextControllerGetStats()
 
-    /**
-     * Test FileTextController::getChunkingStats
-     *
-     * @return void
-     */
-    public function testFileTextControllerGetChunkingStats(): void
-    {
-        $controller = $this->buildFileTextController();
-        $response   = $controller->getChunkingStats();
-        $data       = $response->getData();
-
-        $this->assertSame(200, $response->getStatus());
-        $this->assertTrue($data['success']);
-    }//end testFileTextControllerGetChunkingStats()
-
     // ─── FileExtractionController ────────────────────────────────────────
 
     /**
@@ -1944,48 +1928,6 @@ class ControllersIntegrationTest2 extends TestCase
         $this->assertFalse($data['success']);
     }//end testApiTokenSettingsControllerTestGitLabTokenEmpty()
 
-    /**
-     * Test SolrSettingsController::getSolrSettings
-     *
-     * @return void
-     */
-    public function testSolrSettingsControllerGetSettings(): void
-    {
-        $controller = $this->buildSolrSettingsController();
-        $response   = $controller->getSolrSettings();
-
-        $this->assertSame(200, $response->getStatus());
-    }//end testSolrSettingsControllerGetSettings()
-
-    /**
-     * Test SolrSettingsController::getSolrFacetConfiguration
-     *
-     * @return void
-     */
-    public function testSolrSettingsControllerGetFacetConfig(): void
-    {
-        $controller = $this->buildSolrSettingsController();
-        $response   = $controller->getSolrFacetConfiguration();
-
-        $this->assertSame(200, $response->getStatus());
-    }//end testSolrSettingsControllerGetFacetConfig()
-
-    /**
-     * Test SolrSettingsController::getSolrInfo
-     *
-     * @return void
-     */
-    public function testSolrSettingsControllerGetSolrInfo(): void
-    {
-        $controller = $this->buildSolrSettingsController();
-        $response   = $controller->getSolrInfo();
-        $data       = $response->getData();
-
-        $this->assertSame(200, $response->getStatus());
-        $this->assertTrue($data['success']);
-        $this->assertArrayHasKey('solr', $data);
-    }//end testSolrSettingsControllerGetSolrInfo()
-
     // ─── Builder methods ─────────────────────────────────────────────────
 
     /**
@@ -2099,11 +2041,12 @@ class ControllersIntegrationTest2 extends TestCase
             'openregister',
             $this->request,
             \OC::$server->get(TextExtractionService::class),
-            \OC::$server->get(IndexService::class),
             \OC::$server->get(FileService::class),
             \OC::$server->get(EntityRelationMapper::class),
             $this->logger,
-            $this->appConfig
+            $this->appConfig,
+            \OC::$server->get(ManualEntityService::class),
+            \OC::$server->get(IUserSession::class)
         );
     }//end buildFileTextController()
 
@@ -2205,7 +2148,6 @@ class ControllersIntegrationTest2 extends TestCase
             'openregister',
             $this->request,
             \OC::$server->get(SettingsService::class),
-            \OC::$server->get(IndexService::class),
             $this->logger,
             \OC::$server->get(Factory::class),
             $this->appConfig
@@ -2228,20 +2170,4 @@ class ControllersIntegrationTest2 extends TestCase
         );
     }//end buildApiTokenSettingsController()
 
-    /**
-     * Build SolrSettingsController with real services
-     *
-     * @return SolrSettingsController
-     */
-    private function buildSolrSettingsController(): SolrSettingsController
-    {
-        return new SolrSettingsController(
-            'openregister',
-            $this->request,
-            \OC::$server->get(SettingsService::class),
-            \OC::$server->get(IndexService::class),
-            \OC::$server->get(ContainerInterface::class),
-            $this->logger
-        );
-    }//end buildSolrSettingsController()
 }//end class

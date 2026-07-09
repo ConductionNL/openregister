@@ -300,15 +300,17 @@ class DuplicateDetectionService
      * Build a composite blocking token across the declared keys.
      *
      * @param array<string, mixed> $data Object payload.
-     * @param array<int, string>   $keys Blocking field names.
+     * @param array<int, string>   $keys Blocking field names (plain or dotted paths).
      *
      * @return string Composite token, or empty when any key is absent.
+     *
+     * @spec openspec/changes/mdm-dedup-nested-paths/tasks.md#task-2
      */
     private function blockingTokenFor(array $data, array $keys): string
     {
         $parts = [];
         foreach ($keys as $key) {
-            $token = $this->similarity->blockingToken('normalized', ($data[$key] ?? null));
+            $token = $this->similarity->blockingToken('normalized', $this->resolvePath(data: $data, path: $key));
             if ($token === '') {
                 return '';
             }
@@ -318,6 +320,41 @@ class DuplicateDetectionService
 
         return implode('|', $parts);
     }//end blockingTokenFor()
+
+    /**
+     * Resolve a dotted-path field value from an object payload.
+     *
+     * A plain, dot-free field resolves exactly as a direct top-level array
+     * read. A dotted path (e.g. `goldenRecord.email`) traverses each
+     * segment in order and yields `null` — never throws — as soon as any
+     * segment is missing or its container is not an array. Mirrors the
+     * dot-path idiom used by {@see QualityScorer::fieldValue()}.
+     *
+     * @param array<string, mixed> $data Object payload.
+     * @param string               $path Field name or dotted path.
+     *
+     * @return mixed The resolved value, or null when the path is missing.
+     *
+     * @spec openspec/changes/mdm-dedup-nested-paths/tasks.md#task-1
+     */
+    private function resolvePath(array $data, string $path)
+    {
+        if ($path === '') {
+            return null;
+        }
+
+        $segments = explode('.', $path);
+        $cursor   = $data;
+        foreach ($segments as $segment) {
+            if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
+                return null;
+            }
+
+            $cursor = $cursor[$segment];
+        }
+
+        return $cursor;
+    }//end resolvePath()
 
     /**
      * Score every pair within a bucket and collect those above the cut-off.
@@ -352,6 +389,8 @@ class DuplicateDetectionService
      * @param array<int, array<string, mixed>> $rules Match rules.
      *
      * @return array{objectA: string, objectB: string, score: float, matchedOn: array<int, string>}
+     *
+     * @spec openspec/changes/mdm-dedup-nested-paths/tasks.md#task-2
      */
     private function scorePair(ObjectEntity $a, ObjectEntity $b, array $rules): array
     {
@@ -374,7 +413,11 @@ class DuplicateDetectionService
                 continue;
             }
 
-            $sim = $this->similarity->similarity($method, ($dataA[$field] ?? null), ($dataB[$field] ?? null));
+            $sim = $this->similarity->similarity(
+                $method,
+                $this->resolvePath(data: $dataA, path: $field),
+                $this->resolvePath(data: $dataB, path: $field)
+            );
 
             $weightedSum += ($sim * $weight);
             $totalWeight += $weight;

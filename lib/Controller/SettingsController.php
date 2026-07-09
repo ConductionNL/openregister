@@ -34,8 +34,6 @@ use RuntimeException;
 use ReflectionClass;
 use DateTime;
 use stdClass;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\VectorizationService;
@@ -53,7 +51,6 @@ use Psr\Log\LoggerInterface;
  * - Validate HTTP request parameters
  * - Delegate settings CRUD operations to SettingsService
  * - Delegate LLM testing to VectorizationService and ChatService
- * - Delegate SOLR testing to IndexService
  * - Return appropriate JSONResponse with correct HTTP status codes
  * - Handle HTTP-level concerns (authentication, CSRF, etc.)
  *
@@ -86,12 +83,6 @@ use Psr\Log\LoggerInterface;
  * - PUT  /api/settings/retention    - Update retention settings
  * - PATCH /api/settings/retention   - Patch retention settings
  *
- * SOLR SETTINGS:
- * - GET  /api/settings/solr         - Get SOLR settings
- * - PUT  /api/settings/solr         - Update SOLR settings
- * - PATCH /api/settings/solr        - Patch SOLR settings
- * - POST /api/settings/solr/test    - Test SOLR connection (delegates to IndexService)
- * - POST /api/settings/solr/warmup  - Warmup SOLR index
  *
  * LLM SETTINGS:
  * - GET  /api/settings/llm          - Get LLM settings
@@ -119,7 +110,6 @@ use Psr\Log\LoggerInterface;
  * - Settings storage/retrieval → SettingsService
  * - LLM embedding testing → VectorizationService
  * - LLM chat testing → ChatService
- * - SOLR testing → IndexService
  * - Cache operations → Cache services
  *
  * @category Controller
@@ -282,26 +272,6 @@ class SettingsController extends Controller
     }//end load()
 
     /**
-     * Update the publishing options.
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with updated publishing options
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
-     */
-    public function updatePublishingOptions(): JSONResponse
-    {
-        try {
-            $data   = $this->request->getParams();
-            $result = $this->settingsService->updatePublishingOptions($data);
-            return new JSONResponse(data: $result);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end updatePublishingOptions()
-
-    /**
      * Rebase all objects and logs with current retention settings.
      *
      * This method recalculates deletion times for all objects and logs based on current retention settings.
@@ -361,153 +331,6 @@ class SettingsController extends Controller
     {
         return $this->stats();
     }//end getStatistics()
-
-    /**
-     * Test SOLR setup directly (bypassing SolrService)
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse The SOLR setup test results
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
-     */
-    public function testSetupHandler(): JSONResponse
-    {
-        try {
-            // Get SOLR settings directly.
-            $solrSettings = $this->settingsService->getSolrSettings();
-
-            if (($solrSettings['enabled'] === false)) {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => $this->l10n->t('SOLR is disabled'),
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            // Create SolrSetup using IndexService for authenticated HTTP client.
-            $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $guzzleSolrService = $this->container->get(IndexService::class);
-            $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
-
-            // Run setup.
-            $result = $setup->setupSolr();
-
-            if ($result === true) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => $this->l10n->t('SOLR setup completed successfully'),
-                        'config'  => [
-                            'host'   => $solrSettings['host'],
-                            'port'   => $solrSettings['port'],
-                            'scheme' => $solrSettings['scheme'],
-                        ],
-                    ]
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => $this->l10n->t('SOLR setup failed - check logs'),
-                ],
-                statusCode: 422
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => $this->l10n->t('SOLR setup error: %s', [$e->getMessage()]),
-                ],
-                statusCode: 422
-            );
-        }//end try
-    }//end testSetupHandler()
-
-    /**
-     * Reindex a specific SOLR collection by name
-     *
-     * @param string $name The name of the collection to reindex
-     *
-     * @return JSONResponse The reindex result
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|422,
-     *     array{success: bool, message: mixed|string, collection: string,
-     *     stats?: array<never, never>|mixed}, array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
-     */
-    public function reindexSpecificCollection(string $name): JSONResponse
-    {
-        try {
-            $guzzleSolrService = $this->container->get(IndexService::class);
-
-            // Get optional parameters from request body.
-            $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
-            $batchSize  = (int) ($this->request->getParam('batchSize', 1000));
-
-            // Validate parameters.
-            if ($batchSize < 1 || $batchSize > 5000) {
-                return new JSONResponse(
-                    data: [
-                        'success'    => false,
-                        'message'    => $this->l10n->t('Invalid batch size. Must be between 1 and 5000'),
-                        'collection' => $name,
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            if ($maxObjects < 0) {
-                return new JSONResponse(
-                    data: [
-                        'success'    => false,
-                        'message'    => $this->l10n->t('Invalid maxObjects. Must be 0 (all) or positive number'),
-                        'collection' => $name,
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            // Reindex the specified collection.
-            $result = $guzzleSolrService->reindexAll(maxObjects: $maxObjects, batchSize: $batchSize, collectionName: $name);
-
-            if ($result['success'] === true) {
-                return new JSONResponse(
-                    data: [
-                        'success'    => true,
-                        'message'    => $this->l10n->t('Reindex completed successfully'),
-                        'stats'      => $result['stats'] ?? [],
-                        'collection' => $name,
-                    ],
-                    statusCode: 200
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'    => false,
-                    'message'    => $result['message'] ?? $this->l10n->t('Failed to reindex collection'),
-                    'collection' => $name,
-                ],
-                statusCode: 422
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success'    => false,
-                    'message'    => $this->l10n->t('Reindex failed: %s', [$e->getMessage()]),
-                    'collection' => $name,
-                ],
-                statusCode: 422
-            );
-        }//end try
-    }//end reindexSpecificCollection()
 
     /**
      * Get search backend configuration.
@@ -668,7 +491,7 @@ class SettingsController extends Controller
                 try {
                     $stmt   = $this->db->prepare('SELECT extname, extversion FROM pg_extension ORDER BY extname');
                     $result = $stmt->execute();
-                    while (($row = $result->fetch()) !== false) {
+                    while (is_array($row = $result->fetch()) === true) {
                         $extensions[] = [
                             'name'    => $row['extname'],
                             'version' => $row['extversion'],
@@ -714,6 +537,7 @@ class SettingsController extends Controller
                 'recommendedPlugin' => $recommendedPlugin,
                 'performanceNote'   => $performanceNote,
                 'extensions'        => $extensions,
+                'hybridSearch'      => $this->getHybridSearchDiagnostics(isPostgres: $dbType === 'PostgreSQL'),
                 'lastUpdated'       => (new DateTime())->format('c'),
             ];
 
@@ -775,6 +599,132 @@ class SettingsController extends Controller
     }//end refreshDatabaseInfo()
 
     /**
+     * Hybrid-document-search readiness diagnostics.
+     *
+     * Reports whether the hybrid-search schema surface exists — the
+     * `openregister_vec_ann` pgvector ANN sidecar table + HNSW index (the
+     * sidecar replaces the originally-designed in-table column, which broke
+     * Doctrine schema introspection) and the functional tsvector GIN index on
+     * openregister_chunks — plus vectorization/backfill progress so an
+     * operator can watch the job-only warm-up converge (DECIDED 2026-07-06).
+     *
+     * All lookups are tolerant: a failed catalog query reports `false`/zero
+     * rather than failing the database-info panel.
+     *
+     * @param bool $isPostgres Whether the active platform is PostgreSQL
+     *
+     * @return array<string, mixed> Diagnostics payload
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Independent tolerant lookups
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#6.1
+     */
+    private function getHybridSearchDiagnostics(bool $isPostgres): array
+    {
+        $diagnostics = [
+            'annSidecarTable'          => false,
+            'embeddingVectorDimension' => null,
+            'hnswIndex'                => false,
+            'textSearchGinIndex'       => false,
+            'chunks'                   => [
+                'total'      => 0,
+                'vectorized' => 0,
+            ],
+            'vectors'                  => [
+                'total'             => 0,
+                'pgvectorPopulated' => 0,
+            ],
+        ];
+
+        $sidecar = \OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
+
+        if ($isPostgres === true) {
+            try {
+                $result = $this->db->executeQuery(
+                    'SELECT a.atttypmod FROM pg_attribute a '
+                    ."WHERE a.attrelid = '".$sidecar."'::regclass "
+                    ."AND a.attname = 'embedding' AND NOT a.attisdropped"
+                );
+                $typmod = $result->fetchOne();
+                $result->closeCursor();
+
+                if ($typmod !== false && (int) $typmod > 0) {
+                    $diagnostics['annSidecarTable']          = true;
+                    $diagnostics['embeddingVectorDimension'] = (int) $typmod;
+                }
+            } catch (\Throwable $e) {
+                // Sidecar unavailable — reported as false.
+            }
+
+            try {
+                $result = $this->db->executeQuery(
+                    'SELECT indexname FROM pg_indexes WHERE indexname IN '
+                    ."('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+                );
+                while (is_array($row = $result->fetch()) === true) {
+                    if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
+                        $diagnostics['hnswIndex'] = true;
+                    }
+
+                    if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
+                        $diagnostics['textSearchGinIndex'] = true;
+                    }
+                }
+
+                $result->closeCursor();
+            } catch (\Throwable $e) {
+                // Reported as false.
+            }
+
+            try {
+                $result = $this->db->executeQuery(
+                    'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
+                    .'FROM *PREFIX*openregister_vectors v '
+                    ."LEFT JOIN $sidecar a ON a.vector_id = v.id"
+                );
+                $row    = $result->fetch();
+                $result->closeCursor();
+
+                if ($row !== false) {
+                    $diagnostics['vectors']['total'] = (int) $row['total'];
+                    $diagnostics['vectors']['pgvectorPopulated'] = (int) $row['populated'];
+                }
+            } catch (\Throwable $e) {
+                // The ANN sidecar may not exist yet — plain row count only.
+                try {
+                    $result = $this->db->executeQuery(
+                        'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
+                    );
+                    $total  = $result->fetchOne();
+                    $result->closeCursor();
+
+                    if ($total !== false) {
+                        $diagnostics['vectors']['total'] = (int) $total;
+                    }
+                } catch (\Throwable $inner) {
+                    // Reported as zero.
+                }
+            }//end try
+        }//end if
+
+        // Chunk vectorization progress (platform-agnostic).
+        try {
+            $chunkMapper = $this->container->get(\OCA\OpenRegister\Db\ChunkMapper::class);
+            if ($chunkMapper instanceof \OCA\OpenRegister\Db\ChunkMapper) {
+                $diagnostics['chunks']['total']      = $chunkMapper->countAll();
+                $diagnostics['chunks']['vectorized'] = $chunkMapper->countVectorized();
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[SettingsController] Failed to fetch chunk vectorization progress',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+
+        return $diagnostics;
+    }//end getHybridSearchDiagnostics()
+
+    /**
      * Get version information only
      *
      * @NoCSRFRequired
@@ -792,45 +742,6 @@ class SettingsController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end getVersionInfo()
-
-    /**
-     * Test schema-aware SOLR mapping by indexing sample objects
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Test results
-     *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>,
-     *     array<never, never>>|JSONResponse<422,
-     *     array{success: false, error: string}, array<never, never>>
-     *
-     * @spec exclude Debug/test scaffolding endpoint: indexes sample objects to exercise schema-aware SOLR mapping;
-     *              not a product contract (see proposal Notes — routed debug surface).
-     */
-    public function testSchemaMapping(): JSONResponse
-    {
-        try {
-            // Get IndexService from container.
-            $solrService = $this->container->get(IndexService::class);
-
-            // Get required dependencies from container.
-            $objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
-            $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-
-            // Run the test.
-            $results = $solrService->testSchemaAwareMapping(objectMapper: $objectMapper, schemaMapper: $schemaMapper);
-
-            return new JSONResponse(data: $results);
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => $e->getMessage(),
-                ],
-                statusCode: 422
-            );
-        }//end try
-    }//end testSchemaMapping()
 
     /**
      * Debug endpoint for type filtering issue
@@ -1073,13 +984,13 @@ class SettingsController extends Controller
     }//end semanticSearch()
 
     /**
-     * Perform hybrid search combining SOLR keyword and vector semantic search
+     * Perform hybrid search combining keyword and vector semantic search
      *
-     * @param string      $query       Search query text
-     * @param int         $limit       Maximum number of results (default: 20)
-     * @param array       $solrFilters SOLR-specific filters
-     * @param array       $weights     Search type weights ['solr' => 0.5, 'vector' => 0.5]
-     * @param string|null $provider    Embedding provider override
+     * @param string      $query          Search query text
+     * @param int         $limit          Maximum number of results (default: 20)
+     * @param array       $keywordResults Pre-fetched keyword search results to fuse
+     * @param array       $weights        Search type weights ['keyword' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider       Embedding provider override
      *
      * @NoCSRFRequired
      *
@@ -1090,8 +1001,8 @@ class SettingsController extends Controller
     public function hybridSearch(
         string $query,
         int $limit=20,
-        array $solrFilters=[],
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        array $keywordResults=[],
+        array $weights=['keyword' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): JSONResponse {
         try {
@@ -1107,7 +1018,7 @@ class SettingsController extends Controller
 
             $result = $this->vectorizationService->hybridSearch(
                 query: $query,
-                solrFilters: $solrFilters,
+                keywordResults: $keywordResults,
                 limit: $limit,
                 weights: $weights,
                 provider: $provider

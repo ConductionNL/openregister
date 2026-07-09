@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileSearchController;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -20,62 +19,26 @@ class FileSearchControllerCoverageTest extends TestCase
 {
     private FileSearchController $controller;
     private IRequest&MockObject $request;
-    private IndexService&MockObject $indexService;
     private VectorizationService&MockObject $vectorService;
-    private SettingsService&MockObject $settingsService;
+    private ChunkMapper&MockObject $chunkMapper;
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->indexService = $this->createMock(IndexService::class);
+        $this->request      = $this->createMock(IRequest::class);
         $this->vectorService = $this->createMock(VectorizationService::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->chunkMapper  = $this->createMock(ChunkMapper::class);
+        $this->logger       = $this->createMock(LoggerInterface::class);
 
         $this->controller = new FileSearchController(
             'openregister',
             $this->request,
-            $this->indexService,
             $this->vectorService,
-            $this->settingsService,
+            $this->chunkMapper,
             $this->logger
         );
-    }
-
-    // =========================================================================
-    // keywordSearch — with auth credentials
-    // =========================================================================
-
-    public function testKeywordSearchWithAuthCredentials(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['query', '', 'test query'],
-                ['limit', 10, 10],
-                ['offset', 0, 0],
-                ['file_types', [], []],
-            ]);
-
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => [
-                'fileCollection' => 'files',
-                'username' => 'admin',
-                'password' => 'secret',
-                'timeout' => 30,
-            ],
-        ]);
-
-        $this->indexService->method('getEndpointUrl')
-            ->willReturn('http://localhost:8983/solr');
-
-        // HTTP call will fail — exercises the 500 path with auth configured
-        $result = $this->controller->keywordSearch();
-
-        // Connection refused or error
-        $this->assertContains($result->getStatus(), [500]);
     }
 
     // =========================================================================
@@ -91,7 +54,7 @@ class FileSearchControllerCoverageTest extends TestCase
             ]);
 
         $this->vectorService->method('semanticSearch')
-            ->with('financial report', 25, ['entityType' => 'file'])
+            ->with('financial report', 25, ['entity_type' => 'file'])
             ->willReturn([['id' => 1], ['id' => 2]]);
 
         $result = $this->controller->semanticSearch();
@@ -116,8 +79,18 @@ class FileSearchControllerCoverageTest extends TestCase
                 ['semantic_weight', 0.5, 0.2],
             ]);
 
+        $this->chunkMapper->method('searchByKeyword')->willReturn([]);
+
         $this->vectorService->method('hybridSearch')
-            ->willReturn([['id' => 1, 'score' => 0.95]]);
+            ->willReturn(
+                [
+                    'results'          => [['entity_id' => '1', 'combined_score' => 0.95]],
+                    'total'            => 1,
+                    'search_time_ms'   => 3.2,
+                    'source_breakdown' => ['vector_only' => 1, 'keyword_only' => 0, 'both' => 0],
+                    'weights'          => ['keyword' => 0.8, 'vector' => 0.2],
+                ]
+            );
 
         $result = $this->controller->hybridSearch();
 
@@ -125,37 +98,52 @@ class FileSearchControllerCoverageTest extends TestCase
         $data = $result->getData();
         $this->assertEquals('hybrid', $data['search_type']);
         $this->assertEquals(0.8, $data['weights']['keyword']);
-        $this->assertEquals(0.2, $data['weights']['semantic']);
+        $this->assertEquals(0.2, $data['weights']['vector']);
     }
 
     // =========================================================================
-    // keywordSearch — grouping by file_id
+    // semanticSearch — exception path
     // =========================================================================
 
-    public function testKeywordSearchGroupsResultsByFileId(): void
+    public function testSemanticSearchException(): void
     {
-        // This would require a real HTTP client or deeper mocking.
-        // The grouping logic is only hit when SOLR returns docs.
-        // We test the path where getEndpointUrl throws to exercise error handling.
         $this->request->method('getParam')
             ->willReturnMap([
-                ['query', '', 'grouped test'],
+                ['query', '', 'test'],
                 ['limit', 10, 10],
-                ['offset', 0, 0],
-                ['file_types', [], ['application/pdf']],
             ]);
 
-        $this->settingsService->method('getSettings')->willReturn([
-            'solr' => [
-                'fileCollection' => 'files',
-                'timeout' => 30,
-            ],
-        ]);
+        $this->vectorService->method('semanticSearch')
+            ->willThrowException(new \Exception('Vector service error'));
 
-        $this->indexService->method('getEndpointUrl')
+        $result = $this->controller->semanticSearch();
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertFalse($data['success']);
+        $this->assertStringContainsString('Vector service error', $data['message']);
+    }
+
+    // =========================================================================
+    // hybridSearch — exception path
+    // =========================================================================
+
+    public function testHybridSearchException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'test'],
+                ['limit', 10, 10],
+                ['keyword_weight', 0.5, 0.5],
+                ['semantic_weight', 0.5, 0.5],
+            ]);
+
+        $this->chunkMapper->method('searchByKeyword')->willReturn([]);
+
+        $this->vectorService->method('hybridSearch')
             ->willThrowException(new \Exception('No endpoint'));
 
-        $result = $this->controller->keywordSearch();
+        $result = $this->controller->hybridSearch();
 
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();

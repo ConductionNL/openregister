@@ -518,7 +518,7 @@ class SaveObject
         // Try direct slug match as last resort.
         try {
             // SchemaMapper->find() supports id, uuid, and slug via orX().
-            $schema = $this->schemaMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            $schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
             if ($schema !== null) {
                 $schemaId = (string) $schema->getId();
                 $this->schemaCache[$schemaId]           = $schema;
@@ -610,7 +610,7 @@ class SaveObject
         // Try direct slug match as last resort.
         try {
             // RegisterMapper->find() supports id, uuid, and slug via orX().
-            $register = $this->registerMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            $register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
             if ($register !== null) {
                 return (string) $register->getId();
             }
@@ -939,7 +939,6 @@ class SaveObject
                 try {
                     $targetSchema = $this->schemaMapper->find(
                         id: $targetSchemaSlug,
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );
@@ -1416,6 +1415,113 @@ class SaveObject
 
         return $data;
     }//end applyAlwaysDefaults()
+
+    /**
+     * Auto-seed the lifecycle field from the parent on the CREATE path.
+     *
+     * When the schema declares an object-form `x-openregister-lifecycle.initial`
+     * (`{ from, field }`) and the lifecycle field is absent/null/empty, this
+     * resolves the parent reference from `data[initial.from]`, loads the parent
+     * through the standard read path (RBAC + multitenancy apply), and sets the
+     * lifecycle field to the parent's `initial.field` value. It runs BEFORE
+     * schema validation so a `required` lifecycle `$ref` field passes on a
+     * seeded create. Called from ObjectService only on the create path — never
+     * on update.
+     *
+     * Rules (design: `initial` object-form + auto-seed on create):
+     * - Empty-field-only: an explicitly provided value is NEVER overwritten.
+     * - Fail-soft no-op (debug log) when the parent ref is empty, the parent
+     *   cannot be loaded, or the parent's `initial.field` value is empty.
+     * - The legacy literal-string `initial` form is NOT auto-seeded (no static
+     *   behaviour change).
+     * - Dispatches no `ObjectTransitionedEvent` — this is initialisation.
+     *
+     * @param Schema $schema The schema whose annotation drives the seed.
+     * @param array  $data   The incoming object data (create payload).
+     *
+     * @return array The data, with the lifecycle field seeded when applicable.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each guard is a distinct fail-soft no-op branch required by the spec.
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    public function seedLifecycleFieldOnCreate(Schema $schema, array $data): array
+    {
+        $config     = ($schema->getConfiguration() ?? []);
+        $annotation = ($config['x-openregister-lifecycle'] ?? null);
+        if (is_array($annotation) === false) {
+            return $data;
+        }
+
+        // Auto-seed is driven exclusively by the object-form `initial`.
+        $initial = ($annotation['initial'] ?? null);
+        if (is_array($initial) === false) {
+            return $data;
+        }
+
+        $fromKey    = (string) ($initial['from'] ?? '');
+        $parentPath = (string) ($initial['field'] ?? '');
+        $field      = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
+        if ($fromKey === '' || $parentPath === '' || $field === '') {
+            return $data;
+        }
+
+        // Empty-field-only: never overwrite a client-supplied value.
+        $currentValue = ($data[$field] ?? null);
+        if ($currentValue !== null && $currentValue !== '') {
+            return $data;
+        }
+
+        // Resolve the parent reference off the create payload.
+        $parentRef = (string) ($data[$fromKey] ?? '');
+        if ($parentRef === '') {
+            $this->logger->debug(
+                message: '[SaveObject] Lifecycle seed no-op: parent reference is empty',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'field' => $field,
+                    'from'  => $fromKey,
+                ]
+            );
+            return $data;
+        }
+
+        // Load the parent through the standard read path (RBAC + multitenancy).
+        try {
+            $parent = $this->unifiedObjectMapper->find(identifier: $parentRef);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[SaveObject] Lifecycle seed no-op: parent could not be loaded: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'field'     => $field,
+                    'parentRef' => $parentRef,
+                ]
+            );
+            return $data;
+        }
+
+        $parentData = ($parent->getObject() ?? []);
+        $seedValue  = ($parentData[$parentPath] ?? null);
+        if ($seedValue === null || $seedValue === '') {
+            $this->logger->debug(
+                message: '[SaveObject] Lifecycle seed no-op: parent initial value is empty',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'field'      => $field,
+                    'parentPath' => $parentPath,
+                ]
+            );
+            return $data;
+        }
+
+        $data[$field] = $seedValue;
+
+        return $data;
+    }//end seedLifecycleFieldOnCreate()
 
     /**
      * Apply property default values to a data array (for use in bulk save paths).

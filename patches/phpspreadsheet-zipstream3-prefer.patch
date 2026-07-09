@@ -1,6 +1,6 @@
 --- a/src/PhpSpreadsheet/Writer/ZipStream0.php
 +++ b/src/PhpSpreadsheet/Writer/ZipStream0.php
-@@ -10,6 +10,17 @@ class ZipStream0
+@@ -10,8 +10,19 @@ class ZipStream0
      /**
       * @param resource $fileHandle
       */

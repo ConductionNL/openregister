@@ -22,6 +22,23 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Load minimal Doctrine DBAL stubs so nextcloud/ocp interface constants
+// (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated in
+// the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
+// The stubs are class_exists-guarded, so they are skipped when the real
+// doctrine/dbal is present (e.g. inside a bootstrapped Nextcloud container).
+// Mirrors tests/bootstrap-unit.php; without this, mocking IQueryBuilder in a
+// pure-unit run fatals with "Class Doctrine\DBAL\ParameterType not found".
+require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
+
+// Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
+// the nextcloud/ocp stubs reference but the OCP package does not ship.
+require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+
+// Load the Doriath contract stubs + test fixtures for the credential-broker
+// Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
+require_once __DIR__ . '/stubs/DoriathStubs.php';
+
 /**
  * Resolve the Nextcloud installation root.
  *

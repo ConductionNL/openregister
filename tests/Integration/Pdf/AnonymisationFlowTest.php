@@ -60,7 +60,7 @@ use Psr\Log\LoggerInterface;
  *
  * ```json
  * {
- *   "substitutions": {"Jan Jansen": "[PERSON: 7]"},
+ *   "substitutions": {"Jan Jansen": "[PERSON: 1]"},
  *   "must_be_absent": ["Jan Jansen", "Janssen"]
  * }
  * ```

@@ -495,14 +495,28 @@ class FilePropertyHandler
             throw new Exception("Property '$propertyName' is not configured as a file property");
         }
 
-        // Merge schema-level autoPublish setting if not set at property level.
-        // Schema configuration.autoPublish serves as a default for all file properties.
-        if (isset($fileConfig['autoPublish']) === false) {
+        // Merge schema-level autoShare setting if not set at property level.
+        // Schema configuration.autoShare serves as a default for all file properties:
+        // when true, an NC share is automatically created for each uploaded file.
+        if (isset($fileConfig['autoShare']) === false) {
             $schemaConfig = $schema->getConfiguration() ?? [];
-            if (isset($schemaConfig['autoPublish']) === true) {
-                $fileConfig['autoPublish'] = $schemaConfig['autoPublish'];
+            if (isset($schemaConfig['autoShare']) === true) {
+                $fileConfig['autoShare'] = $schemaConfig['autoShare'];
+            } else if (isset($schemaConfig['autoPublish']) === true) {
+                // DEPRECATED: autoPublish was renamed to autoShare in 2026.
+                // Log a one-time deprecation warning and do NOT act on the legacy value.
+                $this->logger->warning(
+                    message: "[FilePropertyHandler] Schema config key 'autoPublish' is deprecated and ignored; "
+                        ."rename it to 'autoShare' to keep auto-sharing uploaded files.",
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'app'      => 'openregister',
+                        'schemaId' => $schema->getId(),
+                    ]
+                );
             }
-        }
+        }//end if
 
         // Handle file deletion: null for single files, empty array for array properties.
         if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
@@ -792,14 +806,14 @@ class FilePropertyHandler
             index: $index
         );
 
-        $autoPublish = $fileConfig['autoPublish'] ?? false;
+        $autoShare = $fileConfig['autoShare'] ?? false;
 
         // Create the file using FileService.
         $file = $this->fileService->addFile(
             objectEntity: $objectEntity,
             fileName: $filename,
             content: $fileData['content'],
-            share: $autoPublish,
+            share: $autoShare,
             tags: $autoTags
         );
 

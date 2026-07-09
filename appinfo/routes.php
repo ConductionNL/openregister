@@ -13,6 +13,22 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Credential broker (credential-broker-service) — owner-scoped credential
+        // metadata CRUD + per-app signing-secret registration + the guarded broker
+        // call. The token broker call (`/request`) reads the app id from the verified
+        // X-Credential-Token header (never the body); the session broker call
+        // (`/session-request`) authenticates via the NC session + CSRF requesttoken
+        // and reads the app id from the body, with the owner guard still enforced
+        // against the session user. All owner-scoped, static errors, no secret leak.
+        ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
+        ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
+        ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
+        ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
+        ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#sessionBrokerRequest', 'url' => '/api/credentials/{id}/session-request', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
         // Web Push channel (openregister-web-push-engine).
         // VAPID public key (browser subscribe key) + current-user subscription CRUD
         // (owner-scoped, no IDOR) + per-originApp cobalt-hex notification icon/badge.
@@ -40,9 +56,16 @@ return [
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#patch', 'url' => '/api/sources/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 
+        // Curated MDI glyph as an SVG image (used to render a schema's icon in unified search).
+        ['name' => 'icon#mdi', 'url' => '/api/icon/mdi/{name}', 'verb' => 'GET', 'requirements' => ['name' => '[A-Za-z0-9-]+']],
+
         // Data sync / harvesting — manual trigger + status (data-sync-harvesting spec).
         ['name' => 'sources#syncNow',    'url' => '/api/sources/{id}/sync',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#syncStatus', 'url' => '/api/sources/{id}/sync-status', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+
+        // Virtual registers over DBAL — connection test + introspection (dbal-virtual-registers spec).
+        ['name' => 'sources#testConnection', 'url' => '/api/sources/{id}/test-connection', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'sources#introspect',     'url' => '/api/sources/{id}/introspect',      'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -77,61 +100,6 @@ return [
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
-        ['name' => 'Settings\SolrSettings#getSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PATCH'],
-        ['name' => 'Settings\SolrSettings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],
-        ['name' => 'Settings\SolrOperations#testSolrConnection', 'url' => '/api/settings/solr/test', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#warmupSolrIndex', 'url' => '/api/settings/solr/warmup', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#getSolrMemoryPrediction', 'url' => '/api/settings/solr/memory-prediction', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#testSchemaMapping', 'url' => '/api/settings/solr/test-schema-mapping', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrSettings#getSolrFacetConfiguration', 'url' => '/api/settings/solr-facet-config', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#updateSolrFacetConfiguration', 'url' => '/api/settings/solr-facet-config', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrSettings#discoverSolrFacets', 'url' => '/api/solr/discover-facets', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#getSolrFacetConfigWithDiscovery', 'url' => '/api/solr/facet-config', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrSettings#updateSolrFacetConfigWithDiscovery', 'url' => '/api/solr/facet-config', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
-	    ['name' => 'Settings\SolrManagement#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
-
-		// Collection-specific field management.
-		['name' => 'Settings\ConfigurationSettings#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
-		['name' => 'Settings\FileSettings#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
-		['name' => 'Settings\ConfigurationSettings#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
-
-        // SOLR Dashboard Management endpoints.
-        ['name' => 'Settings\SolrSettings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
-        ['name' => 'Settings\SolrOperations#inspectSolrIndex', 'url' => '/api/settings/solr/inspect', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrOperations#testSetupHandler', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
-
-        // Collection-specific operations (with collection name parameter).
-        ['name' => 'Settings\SolrManagement#deleteSpecificSolrCollection', 'url' => '/api/solr/collections/{name}', 'verb' => 'DELETE', 'requirements' => ['name' => '[^/]+']],
-        ['name' => 'Settings\SolrManagement#clearSpecificCollection', 'url' => '/api/solr/collections/{name}/clear', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
-        ['name' => 'Settings\SolrManagement#reindexSpecificCollection', 'url' => '/api/solr/collections/{name}/reindex', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
-
-        // SOLR Collection and ConfigSet Management endpoints (SolrController).
-        ['name' => 'solr#listCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
-        ['name' => 'solr#createCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
-        ['name' => 'solr#listConfigSets', 'url' => '/api/solr/configsets', 'verb' => 'GET'],
-        ['name' => 'solr#createConfigSet', 'url' => '/api/solr/configsets', 'verb' => 'POST'],
-        ['name' => 'solr#deleteConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
-        ['name' => 'solr#copyCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrManagement#updateSolrCollectionAssignments', 'url' => '/api/solr/collections/assignments', 'verb' => 'PUT'],
-
-        // Vector Search endpoints (Semantic and Hybrid Search) - SolrController.
-        ['name' => 'solr#semanticSearch', 'url' => '/api/search/semantic', 'verb' => 'POST'],
-        ['name' => 'solr#hybridSearch', 'url' => '/api/search/hybrid', 'verb' => 'POST'],
-        ['name' => 'solr#getVectorStats', 'url' => '/api/vectors/stats', 'verb' => 'GET'],
-        ['name' => 'solr#testVectorEmbedding', 'url' => '/api/vectors/test', 'verb' => 'POST'],
-
-        // Object Vectorization endpoints - SolrController.
-        ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
-        ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
-        ['name' => 'solr#getVectorizationStats', 'url' => '/api/solr/vectorize/stats', 'verb' => 'GET'],
-
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -151,7 +119,6 @@ return [
         ['name' => 'Settings\LlmSettings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
         ['name' => 'settings#refreshDatabaseInfo', 'url' => '/api/settings/database/refresh', 'verb' => 'POST'],
-        ['name' => 'Settings\SolrSettings#getSolrInfo', 'url' => '/api/settings/solr-info', 'verb' => 'GET'],
         ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'POST'],
         ['name' => 'Settings\LlmSettings#patchLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PATCH'],
         ['name' => 'Settings\LlmSettings#updateLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'PUT'],
@@ -186,6 +153,9 @@ return [
         // Object validation endpoint.
         ['name' => 'objects#validate', 'url' => '/api/objects/validate', 'verb' => 'POST'],
 
+        // Batched object-count endpoint (one round-trip for many register/schema pairs).
+        ['name' => 'objects#counts', 'url' => '/api/objects/counts', 'verb' => 'POST'],
+
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller).
         // NOTE: Specific routes MUST come before parameterized routes like {id}
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
@@ -203,10 +173,6 @@ return [
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
-        ['name' => 'settings#updatePublishingOptions',  'url' => '/api/settings/publishing-options',              'verb' => 'PUT'],
-        ['name' => 'settings#testSetupHandler',         'url' => '/api/settings/test-setup',                      'verb' => 'POST'],
-        ['name' => 'settings#reindexSpecificCollection','url' => '/api/settings/reindex/{name}',                  'verb' => 'POST',   'requirements' => ['name' => '[^/]+']],
-        ['name' => 'settings#testSchemaMapping',        'url' => '/api/settings/test-schema-mapping',             'verb' => 'POST'],
         ['name' => 'settings#semanticSearch',           'url' => '/api/settings/search/semantic',                 'verb' => 'GET'],
         ['name' => 'settings#hybridSearch',             'url' => '/api/settings/search/hybrid',                   'verb' => 'GET'],
         // Debug endpoints for type filtering issue.
@@ -290,6 +256,29 @@ return [
         ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
         ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
         ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
+        // Generic, RBAC + tenant scoped GDPR data-subject-rights endpoints
+        // (consumable by leaf apps; NOT admin-only, distinct from dsar#*).
+        ['name' => 'dataSubjectRequest#subjectData',  'url' => '/api/gdpr/subject-data',  'verb' => 'GET'],
+        ['name' => 'dataSubjectRequest#accessExport', 'url' => '/api/gdpr/access-export', 'verb' => 'GET'],
+        ['name' => 'dataSubjectRequest#rectify',      'url' => '/api/gdpr/rectify',       'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#erase',        'url' => '/api/gdpr/erase',         'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#restrict',     'url' => '/api/gdpr/restrict',      'verb' => 'POST'],
+        ['name' => 'dataSubjectRequest#objection',    'url' => '/api/gdpr/object',        'verb' => 'POST'],
+        // DSAR case-management engine (dsar-case-engine): stateful case workflow.
+        // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
+        // one-time download (browser navigation). Case-level access control
+        // (handler-scopes-own + officer-override, fail-closed) enforced in-body.
+        ['name' => 'dsarCase#create',         'url' => '/api/gdpr/cases',                        'verb' => 'POST'],
+        ['name' => 'dsarCase#transition',     'url' => '/api/gdpr/cases/{id}/transition',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#evidence',       'url' => '/api/gdpr/cases/{id}/evidence',          'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#redact',         'url' => '/api/gdpr/cases/{id}/redactions',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#generateBundle', 'url' => '/api/gdpr/cases/{id}/bundle',            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#downloadBundle', 'url' => '/api/gdpr/cases/{id}/bundle/download',   'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#dossier',        'url' => '/api/gdpr/cases/{id}/dossier',           'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        // DSAR integration seams (dsar-integration-seams): pack-selector-driven,
+        // fail-closed identity-verify + regulator-escalate call-outs.
+        ['name' => 'dsarCase#identityVerify', 'url' => '/api/gdpr/cases/{id}/verify-identity',   'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'dsarCase#escalate',       'url' => '/api/gdpr/cases/{id}/escalate',          'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
@@ -350,6 +339,26 @@ return [
         ['name' => 'aggregation#grouped', 'url' => '/api/objects/aggregations/{register}/{schema}/grouped', 'verb' => 'GET'],
         // Aggregations sugar endpoint — named annotation surface.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
+
+        // MDM read-only surface — quality statistics + lowest-quality listing
+        // (must be ordered BEFORE the bare {register}/{schema} listing so the
+        // literal /stats segment matches first).
+        ['name' => 'quality#stats', 'url' => '/api/objects/quality/{register}/{schema}/stats', 'verb' => 'GET'],
+        ['name' => 'quality#index', 'url' => '/api/objects/quality/{register}/{schema}', 'verb' => 'GET'],
+        // MDM read-only surface — duplicate-candidate listing.
+        ['name' => 'duplicate#index', 'url' => '/api/objects/duplicates/{register}/{schema}', 'verb' => 'GET'],
+        // MDM reversible merge surface (ADR-045 follow-on #B) — preview / execute / reverse.
+        ['name' => 'merge#preview', 'url' => '/api/objects/merge/preview', 'verb' => 'POST'],
+        ['name' => 'merge#execute', 'url' => '/api/objects/merge/execute', 'verb' => 'POST'],
+        ['name' => 'merge#reverse', 'url' => '/api/objects/merge/{id}/reverse', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+        // MDM per-object attribute-override primitive (ADR-045 follow-on #E) —
+        // sets/clears one attribute override on a master object and recomputes
+        // its golden record.
+        ['name' => 'survivorship#override', 'url' => '/api/objects/survivorship/{id}/override', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Resolve a master's competing source records (embedded or reverse-FK)
+        // for the conflict-resolution UI.
+        ['name' => 'survivorship#sources', 'url' => '/api/objects/survivorship/{id}/sources', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
@@ -808,7 +817,17 @@ return [
         ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
+        // Semantic-object handoff engine (ADR-051): availability + execute.
+        // Both #[NoAdminRequired] with a per-object RBAC guard in the method
+        // body (ADR-005/016/029); CSRF stays enabled on the POST.
+        ['name' => 'handoff#availability', 'url' => '/api/objects/{register}/{schema}/{id}/handoffs', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'handoff#execute', 'url' => '/api/objects/{register}/{schema}/{id}/handoffs/{handoffId}', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'handoffId' => '[^/]+']],
+
         // Schemas.
+        // Cross-app semantic reference discovery (ADR-048): resolve a canonical
+        // semantic-type URI to the installed provider schema. Static path,
+        // registered before the `{id}` schema routes so it is not shadowed.
+        ['name' => 'schemas#resolveByImplements', 'url' => '/api/schemas/resolve-by-implements', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -957,9 +976,6 @@ return [
 		['name' => 'fileText#deleteFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'DELETE', 'requirements' => ['fileId' => '\\d+']],
 
 		// File Chunking & Indexing - Process extracted files and index chunks in SOLR.
-		['name' => 'fileText#processAndIndexExtracted', 'url' => '/api/files/chunks/process', 'verb' => 'POST'],
-		['name' => 'fileText#processAndIndexFile', 'url' => '/api/files/{fileId}/chunks/process', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'fileText#getChunkingStats', 'url' => '/api/files/chunks/stats', 'verb' => 'GET'],
 
 		// File Anonymization - Replace detected entities with placeholders.
 		['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
@@ -978,14 +994,7 @@ return [
 		['name' => 'gdprEntities#getCategories', 'url' => '/api/entities/categories', 'verb' => 'GET'],
 		['name' => 'gdprEntities#getStats', 'url' => '/api/entities/stats', 'verb' => 'GET'],
 
-		// File Warmup & Indexing - Bulk process and index files in SOLR.
-		['name' => 'Settings\FileSettings#warmupFiles', 'url' => '/api/solr/warmup/files', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#indexFile', 'url' => '/api/solr/files/{fileId}/index', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'Settings\FileSettings#reindexFiles', 'url' => '/api/solr/files/reindex', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#getFileIndexStats', 'url' => '/api/solr/files/stats', 'verb' => 'GET'],
-
-		// File Search - Keyword, semantic, and hybrid search over file contents.
-		['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
+		// File Search - Semantic and hybrid search over file contents.
 		['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
 		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
 
