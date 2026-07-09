@@ -130,9 +130,10 @@ class SqlTypeMapper
             $property['format'] = $format;
         }
 
-        // maxLength from the column length for string-family types.
+        // maxLength from the column length — only for length-carrying string
+        // types (VARCHAR-family); TEXT is unbounded per design D5.
         $length = $column->getLength();
-        if ($jsonType === 'string' && $format === null && $length !== null && $length > 0) {
+        if (in_array($typeName, [Types::STRING, Types::ASCII_STRING], true) === true && $length !== null && $length > 0) {
             $property['maxLength'] = (int) $length;
         }
 

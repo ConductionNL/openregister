@@ -229,7 +229,15 @@ class SourcesController extends Controller
             unset($data['id']);
         }
 
-        // Encrypt databaseUrl at rest before persisting.
+        // Credential custody split (dbal-virtual-registers D1): LEGACY harvest
+        // sources keep encrypting their full databaseUrl at rest with ICrypto;
+        // `type: database` (virtual register) sources store only NON-SECRET
+        // connection parts in authConfig and custody the password behind the
+        // CredentialStore seam, referenced by a `credential` UUID — a plaintext
+        // password is never persisted on the row.
+        $data = $this->sanitizeDatabaseSourceData(data: $data);
+
+        // Encrypt databaseUrl at rest before persisting (legacy harvest path).
         if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
             $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
         }
@@ -278,7 +286,10 @@ class SourcesController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
-        // Encrypt databaseUrl at rest before persisting.
+        // Custody split for database sources — see create() (dbal-virtual-registers D1).
+        $data = $this->sanitizeDatabaseSourceData(data: $data);
+
+        // Encrypt databaseUrl at rest before persisting (legacy harvest path).
         if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
             $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
         }
@@ -462,6 +473,36 @@ class SourcesController extends Controller
             ]
         );
     }//end syncStatus()
+
+    /**
+     * Enforce the credential custody split for `type: database` sources.
+     *
+     * A virtual-register database source must never persist a plaintext secret:
+     * any `password`/`secret` key submitted inside `authConfig` is stripped, and
+     * `databaseUrl` (the legacy ICrypto-encrypted harvest field) is cleared so
+     * the two paths cannot mix. The password belongs behind the CredentialStore
+     * seam, referenced by the `authConfig.credential` UUID (design D1).
+     *
+     * @param array<string, mixed> $data The submitted source data.
+     *
+     * @return array<string, mixed> The sanitised source data.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    private function sanitizeDatabaseSourceData(array $data): array
+    {
+        if ((string) ($data['type'] ?? '') !== 'database') {
+            return $data;
+        }
+
+        if (isset($data['authConfig']) === true && is_array($data['authConfig']) === true) {
+            unset($data['authConfig']['password'], $data['authConfig']['secret']);
+        }
+
+        unset($data['databaseUrl']);
+
+        return $data;
+    }//end sanitizeDatabaseSourceData()
 
     /**
      * Test the connection to a `type: database` source.
