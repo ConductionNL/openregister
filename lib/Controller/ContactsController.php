@@ -433,6 +433,11 @@ class ContactsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Guarded downstream: ContactService::getObjectsForContact scopes
+     *   the result to the caller's own addressbooks (cardDavBackend->getAddressBooksForUser
+     *   for the session principal) and returns [] for an anonymous session, so a caller only
+     *   ever sees links for contacts in addressbooks they own.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
      */
     public function objects(string $contactUid): JSONResponse
@@ -474,6 +479,10 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt No per-object resource: free-text matching over caller-supplied
+     *   email/name/organization strings against schemas that opt into linkedTypes:["contact"];
+     *   takes no caller-supplied object id.
      *
      * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */

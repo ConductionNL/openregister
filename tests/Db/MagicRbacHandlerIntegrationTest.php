@@ -232,15 +232,21 @@ class MagicRbacHandlerIntegrationTest extends TestCase
         $this->assertTrue($hasPermission);
     }
 
-    public function testHasPermissionPublicRuleForUnconfiguredAction(): void
+    public function testHasPermissionUnconfiguredActionFailsClosed(): void
     {
-        // Only 'read' is configured - 'update' should be open (not configured = open)
+        // rbac-default-deny: only 'read' is configured; an unconfigured action
+        // ('update') on a non-empty block is now denied for a non-admin. Admin
+        // CLI runners still bypass RBAC, so the expectation is guarded.
         $schema = $this->createTestSchema([
             'read' => ['public'],
         ]);
 
         $hasPermission = $this->rbacHandler->hasPermission($schema, 'update');
-        $this->assertTrue($hasPermission);
+        if ($this->rbacHandler->isAdmin() === true) {
+            $this->assertTrue($hasPermission, 'Admin bypasses RBAC');
+        } else {
+            $this->assertFalse($hasPermission, 'Unconfigured action on a non-empty block must fail closed');
+        }
     }
 
     // =========================================================================
@@ -357,10 +363,16 @@ class MagicRbacHandlerIntegrationTest extends TestCase
             'read' => ['public'],
         ]);
 
-        // 'delete' is not configured - should bypass
+        // rbac-default-deny: 'delete' is unconfigured on a non-empty block, so it
+        // no longer bypasses filtering. Admin still bypasses; otherwise the result
+        // is a non-bypass filter (owner-only conditions, or empty = deny-all).
         $result = $this->rbacHandler->buildRbacConditionsSql($schema, 'delete');
         $this->assertIsArray($result);
-        $this->assertTrue($result['bypass']);
+        if ($this->rbacHandler->isAdmin() === true) {
+            $this->assertTrue($result['bypass']);
+        } else {
+            $this->assertFalse($result['bypass']);
+        }
     }
 
     public function testBuildRbacConditionsSqlGroupRule(): void

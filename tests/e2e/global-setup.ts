@@ -22,6 +22,7 @@ import { chromium, request, type FullConfig } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
+import { seedMdm } from './mdm-seed'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -139,4 +140,33 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
+
+	// Self-seed the deep MDM fixture (duplicate pair + multi-source conflict +
+	// scored entities) so the mdm-frontend / mdm-merge-ui /
+	// mdm-survivorship-override suites RUN their full chains instead of
+	// skipping. Guarded: on a non-pipelinq instance seedMdm() no-ops and
+	// returns null, and any error is logged without failing the whole run
+	// (the specs keep their existing skip fallback).
+	try {
+		const apiContext = await request.newContext({
+			baseURL,
+			extraHTTPHeaders: {
+				Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`,
+			},
+		})
+		try {
+			const seed = await seedMdm(apiContext)
+			// eslint-disable-next-line no-console
+			console.log(
+				seed
+					? `[playwright globalSetup] MDM fixture seeded (register ${seed.register}, schema ${seed.masterEntitySchema}, dup pair ${seed.dupPair.join(' + ')}).`
+					: '[playwright globalSetup] pipelinq/masterEntity not found — MDM fixture skipped; MDM specs will self-skip.',
+			)
+		} finally {
+			await apiContext.dispose()
+		}
+	} catch (err) {
+		// eslint-disable-next-line no-console
+		console.warn(`[playwright globalSetup] MDM seeding failed (continuing): ${(err as Error).message}`)
+	}
 }

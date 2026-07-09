@@ -1,8 +1,15 @@
 ---
-status: done
+status: in-progress
 ---
 
 # unified-search-provider Specification
+
+## OpenSpec changes
+
+- `unified-search-index` (in-progress) — fixes cross-schema unified search
+  over the magic tables (correct per-schema register resolution + bounded
+  batched UNION fan-out with PHP merge/sort/paginate); no secondary index,
+  no Solr.
 
 ## Purpose
 

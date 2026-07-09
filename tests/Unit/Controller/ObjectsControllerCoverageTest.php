@@ -1337,6 +1337,85 @@ class ObjectsControllerCoverageTest extends TestCase
     }
 
     // =========================================================================
+    // objects() — or#286: query-param register/schema must resolve to the
+    // same numeric IDs the path-style index() route uses, not the raw slug.
+    // =========================================================================
+
+    /**
+     * Regression test for or#286: GET /api/objects?register=<slug>&schema=<slug>
+     * used to silently return zero results because buildSearchQuery() was
+     * called with only the raw request params — the register/schema slugs
+     * were never resolved to numeric IDs before being used as the '@self'
+     * metadata filter. This asserts the resolved numeric IDs (from
+     * resolveRegisterSchemaIds()) are passed through to buildSearchQuery(),
+     * matching the path-style index() route's behavior.
+     */
+    public function testObjectsWithRegisterSchemaQueryParamsResolvesSlugToNumericId(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => 'my-register',
+            'schema'   => 'my-schema',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(5);
+        $this->objectService->method('getSchema')->willReturn(7);
+
+        // The core assertion: buildSearchQuery() must receive the resolved
+        // numeric IDs (5, 7), not the raw slug strings 'my-register'/'my-schema'.
+        $this->objectService->expects($this->once())
+            ->method('buildSearchQuery')
+            ->with($this->anything(), 5, 7)
+            ->willReturn(['_limit' => 20, '@self' => ['register' => 5, 'schema' => 7]]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [['uuid' => 'obj-1', 'title' => 'Found']],
+            'total'   => 1,
+        ]);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(1, $data['total']);
+        $this->assertSame('obj-1', $data['results'][0]['uuid']);
+    }
+
+    /**
+     * Regression guard: the path-style index() route (/api/objects/{register}/{schema})
+     * must keep resolving slugs to numeric IDs the same way after the objects()
+     * fix — both routes should reach buildSearchQuery() with numeric IDs.
+     */
+    public function testIndexPathFormStillResolvesRegisterSchemaToNumericId(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/my-register/my-schema');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(5);
+        $this->objectService->method('getSchema')->willReturn(7);
+
+        $this->objectService->expects($this->once())
+            ->method('buildSearchQuery')
+            ->with($this->anything(), 5, 7)
+            ->willReturn(['_limit' => 20]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [['uuid' => 'obj-2', 'title' => 'Found2']],
+            'total'   => 1,
+        ]);
+
+        $result = $this->controller->index('my-register', 'my-schema', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(1, $data['total']);
+        $this->assertSame('obj-2', $data['results'][0]['uuid']);
+    }
+
+    // =========================================================================
     // create() — webhook error handling (lines 1643-1657)
     // =========================================================================
 

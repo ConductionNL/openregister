@@ -8,6 +8,7 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -20,6 +21,7 @@ class ContactServiceTest extends TestCase
     private CardDavBackend&MockObject $cardDavBackend;
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
+    private IURLGenerator&MockObject $urlGenerator;
     private ContactService $service;
 
     protected function setUp(): void
@@ -32,12 +34,17 @@ class ContactServiceTest extends TestCase
         $this->cardDavBackend = $this->createMock(CardDavBackend::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
+        $this->urlGenerator->method('linkToRoute')
+            ->with('contacts.page.index')
+            ->willReturn('/index.php/apps/contacts/');
 
         $this->service = new ContactService(
             $this->contactLinkMapper,
             $this->cardDavBackend,
             $this->userSession,
-            $this->logger
+            $this->logger,
+            $this->urlGenerator
         );
     }
 
@@ -73,6 +80,56 @@ class ContactServiceTest extends TestCase
 
         $this->assertSame(0, $result['total']);
         $this->assertSame([], $result['results']);
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: a contact link resolves its addressbook
+     * URI via CardDAV and gets a Contacts app deep-link `url` of the form
+     * `/apps/contacts/All contacts/<base64url(uid~addressbookUri)>`.
+     */
+    public function testGetContactsForObjectStampsDeepLinkUrl(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setAddressbookId(2);
+        $link->setContactUid('jan-uid');
+        // Cached values present so no vCard re-enrichment is attempted.
+        $link->setPhone('123');
+        $link->setLinkedAt(new DateTime());
+
+        $this->contactLinkMapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
+        $this->cardDavBackend->method('getAddressBookById')->with(2)->willReturn(['id' => 2, 'uri' => 'contacts']);
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $token = rawurlencode(base64_encode('jan-uid~contacts'));
+        $this->assertSame(
+            '/index.php/apps/contacts/All%20contacts/'.$token,
+            $result['results'][0]['url']
+        );
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: when the addressbook can't be resolved the
+     * record is returned without a (broken) `url`.
+     */
+    public function testGetContactsForObjectOmitsUrlWhenAddressbookUnresolvable(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setAddressbookId(99);
+        $link->setContactUid('ghost-uid');
+        $link->setPhone('123');
+        $link->setLinkedAt(new DateTime());
+
+        $this->contactLinkMapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
+        $this->cardDavBackend->method('getAddressBookById')->with(99)->willReturn(null);
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $this->assertArrayNotHasKey('url', $result['results'][0]);
     }
 
     /**
@@ -411,9 +468,16 @@ class ContactServiceTest extends TestCase
 
     public function testGetObjectsForContactReturnsLinks(): void
     {
+        $this->setupUser('alice');
+        // The caller owns addressbook 7; the link lives there → visible.
+        $this->cardDavBackend->method('getAddressBooksForUser')
+            ->with('principals/users/alice')
+            ->willReturn([['id' => 7]]);
+
         $link = new ContactLink();
         $link->setObjectUuid('abc-123');
         $link->setRole('applicant');
+        $link->setAddressbookId(7);
 
         $this->contactLinkMapper->method('findByContactUid')->with('jan-uid')->willReturn([$link]);
 
@@ -421,6 +485,34 @@ class ContactServiceTest extends TestCase
 
         $this->assertCount(1, $results);
         $this->assertSame('abc-123', $results[0]['objectUuid']);
+    }
+
+    public function testGetObjectsForContactHidesLinksInOtherUsersAddressbooks(): void
+    {
+        // IDOR: the link lives in addressbook 99, which the caller does not own.
+        $this->setupUser('bob');
+        $this->cardDavBackend->method('getAddressBooksForUser')
+            ->with('principals/users/bob')
+            ->willReturn([['id' => 7]]);
+
+        $link = new ContactLink();
+        $link->setObjectUuid('secret-obj');
+        $link->setAddressbookId(99);
+
+        $this->contactLinkMapper->method('findByContactUid')->willReturn([$link]);
+
+        $results = $this->service->getObjectsForContact('someone-elses-uid');
+
+        $this->assertSame([], $results);
+    }
+
+    public function testGetObjectsForContactRejectsAnonymous(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        // No addressbook lookup, no links returned for an anonymous session.
+        $this->contactLinkMapper->expects($this->never())->method('findByContactUid');
+
+        $this->assertSame([], $this->service->getObjectsForContact('jan-uid'));
     }
 
     public function testDeleteLinksForObjectCleansUp(): void

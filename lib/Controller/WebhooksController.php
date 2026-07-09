@@ -212,6 +212,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function index(): JSONResponse
     {
+        // Webhook config listing is admin-only (matches the write endpoints).
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             // Get request parameters for filtering and searching.
             $params = $this->request->getParams();
@@ -322,6 +327,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function show(int $id): JSONResponse
     {
+        // Reading a webhook's config (target URL, org, filters) is admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             $webhook = $this->webhookMapper->find($id);
 
@@ -716,6 +726,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: returns the static catalogue of available webhook event-type definitions
+     *   (identical for every install); no tenant data.
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
@@ -1071,6 +1083,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function logs(int $id): JSONResponse
     {
+        // Delivery logs carry unmasked request/response bodies — admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             // Validate webhook exists by attempting to find it.
             $this->webhookMapper->find($id);
@@ -1136,6 +1153,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function logStats(int $id): JSONResponse
     {
+        // Delivery-log statistics are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             // Validate webhook exists by attempting to find it.
             $this->webhookMapper->find($id);
@@ -1192,6 +1214,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function allLogs(): JSONResponse
     {
+        // Instance-wide delivery logs are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             $webhookId = $this->request->getParam('webhook_id');
             $limit     = (int) ($this->request->getParam('limit') ?? 50);

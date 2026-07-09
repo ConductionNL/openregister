@@ -288,8 +288,12 @@ class SchemaTest extends TestCase
 
     public function testHasPermissionMissingAction(): void
     {
+        // Fail-closed (rbac-default-deny): once a schema declares a non-empty
+        // authorization block, an action that isn't explicitly listed (here
+        // 'delete', only 'read' is declared) must be denied, not implicitly
+        // allowed. See Schema::hasPermission()'s fail-closed comment.
         $this->schema->setAuthorization(['read' => ['editors']]);
-        $this->assertTrue($this->schema->hasPermission('viewers', 'delete'));
+        $this->assertFalse($this->schema->hasPermission('viewers', 'delete'));
     }
 
     public function testHasPermissionComplexEntryWithGroup(): void

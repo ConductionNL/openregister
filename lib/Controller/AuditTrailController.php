@@ -354,6 +354,9 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
+     *   performs no object read or write, so there is no per-object resource to guard.
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
      *   route contract; the method intentionally ignores it to enforce immutability.
      *
@@ -370,11 +373,15 @@ class AuditTrailController extends Controller
     /**
      * Get logs for an object
      *
+     * Admin-only at the framework level (no @NoAdminRequired): a per-object
+     * audit trail records actor UID, IP address and per-field diffs. Returning
+     * it for an arbitrary object id leaks cross-tenant PII (wave-3 C7), so it
+     * stays admin-only like index()/show()/export(). Body `requireAdmin()` is
+     * defence-in-depth.
+     *
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      * @param string $id       The object ID
-     *
-     * @NoAdminRequired
      *
      * @return JSONResponse JSON response containing audit trails for specific object
      *
@@ -390,6 +397,11 @@ class AuditTrailController extends Controller
      */
     public function objects(string $register, string $schema, string $id): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract common parameters.
         $params = $this->extractRequestParameters();
 
@@ -508,6 +520,9 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
+     *   performs no object read or write, so there is no per-object resource to guard.
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
      *   route contract; the method intentionally ignores it to enforce immutability.
      *
@@ -528,6 +543,9 @@ class AuditTrailController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
+     *   performs no object read or write, so there is no per-object resource to guard.
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
@@ -596,7 +614,11 @@ class AuditTrailController extends Controller
     /**
      * Verify the integrity of the audit trail hash chain.
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired): validates the
+     * tenant-wide audit hash chain across all registers/schemas — a GDPR
+     * chain-of-trust management surface, like export()/clearAll(). Body
+     * `requireAdmin()` is defence-in-depth.
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Verification result with valid/invalid status
@@ -606,6 +628,11 @@ class AuditTrailController extends Controller
      */
     public function verify(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         $from = $this->request->getParam('from');
         $to   = $this->request->getParam('to');
 

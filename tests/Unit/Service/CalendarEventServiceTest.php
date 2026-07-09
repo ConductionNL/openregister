@@ -6,6 +6,7 @@ use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCP\IConfig;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -18,6 +19,7 @@ class CalendarEventServiceTest extends TestCase
     private IUserSession&MockObject $userSession;
     private IConfig&MockObject $config;
     private LoggerInterface&MockObject $logger;
+    private IURLGenerator&MockObject $urlGenerator;
     private CalendarEventService $service;
 
     /**
@@ -34,6 +36,10 @@ class CalendarEventServiceTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->config = $this->createMock(IConfig::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
+        // Calendar app index base; deep-link appends `edit/{token}` itself.
+        $this->urlGenerator->method('linkToRoute')->willReturn('/index.php/apps/calendar/');
+        $this->urlGenerator->method('getWebroot')->willReturn('');
 
         $this->configStore = [];
         $this->config->method('getUserValue')->willReturnCallback(
@@ -53,7 +59,8 @@ class CalendarEventServiceTest extends TestCase
             $this->calDavBackend,
             $this->userSession,
             $this->config,
-            $this->logger
+            $this->logger,
+            $this->urlGenerator
         );
     }
 

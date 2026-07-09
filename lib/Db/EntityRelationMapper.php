@@ -294,6 +294,60 @@ class EntityRelationMapper extends QBMapper
     }//end findEntityIdsByValueForFile()
 
     /**
+     * Load the entity-relation rows for several files in one query — the
+     * multi-file sibling of `findEntityIdsByValueForFile`.
+     *
+     * Used by the per-dossier placeholder numbering (Decision 3): the dossier
+     * number is recomputed as a pure function of the dossier's stored rows, so
+     * this returns the raw `(entity_id, file_id, position_start)` tuples for
+     * every relation on the given files. The caller (`PlaceholderIdTranslator`)
+     * imposes the total stable order `(file_id, position_start, entity_id)` and
+     * ranks distinct `entity_id`s by first appearance. No join to
+     * `openregister_entities` is needed — the relation row already carries the
+     * `entity_id` that is the numbering key.
+     *
+     * @param array<int, int> $fileIds The Nextcloud file IDs of the dossier's files.
+     *
+     * @return array<int, array{entity_id: int, file_id: int, position_start: int}>
+     *         One record per relation row across all given files (unordered;
+     *         the caller imposes the ranking order).
+     */
+    public function findEntityIdsByValueForFiles(array $fileIds): array
+    {
+        if ($fileIds === []) {
+            return [];
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $fileIds)));
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('entity_id', 'file_id', 'position_start')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    'file_id',
+                    $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)
+                )
+            );
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        $records = [];
+        foreach ($rows as $row) {
+            $records[] = [
+                'entity_id'      => (int) ($row['entity_id'] ?? 0),
+                'file_id'        => (int) ($row['file_id'] ?? 0),
+                'position_start' => (int) ($row['position_start'] ?? 0),
+            ];
+        }
+
+        return $records;
+
+    }//end findEntityIdsByValueForFiles()
+
+    /**
      * Mark entity relations as anonymized.
      *
      * Skip-aware: rows where `skip_anonymization = true` are excluded
@@ -510,6 +564,61 @@ class EntityRelationMapper extends QBMapper
         return $relation;
 
     }//end buildRelationFromRow()
+
+    /**
+     * Mark entity relations as anonymized, persisting each entity's EXACT
+     * emitted placeholder into its `anonymized_value`.
+     *
+     * The scope-local placeholder (number + localized label) is computed once,
+     * at anonymise time, inside the run — it is not otherwise recoverable later
+     * (the number depends on the scope and is not derivable from the stored
+     * rows alone). Persisting it here, per relation, is the only durable record
+     * of "what each entity became" — and it lives exactly as long as the
+     * relation does (overwritten on re-anonymise, removed when the relation is
+     * deleted/re-extracted), so there is no separate store to keep in sync or
+     * clean up.
+     *
+     * ONLY the entities actually redacted are marked: each `entity_id` present
+     * in `$placeholderByEntityId` (i.e. the entities that were substituted into
+     * the document) has all its non-skipped relations on the file set to
+     * `anonymized = true` with `anonymized_value` = its exact placeholder.
+     *
+     * This intentionally does NOT blanket-mark every non-skipped relation:
+     * an entity that was detected but NOT redacted (absent from the map — e.g.
+     * a value matched only under a second type, or filtered out) was never
+     * substituted into the document, so marking it anonymized would make the
+     * grondslagen-summary list a placeholder that isn't in the file and (with
+     * no scope-local number) leak the global entity id. Skip decisions are
+     * honoured (skipped rows untouched).
+     *
+     * @param int                   $fileId                The file ID.
+     * @param array<string, string> $placeholderByEntityId Map of (stringified) entity id → the
+     *                                                     exact placeholder emitted for it
+     *                                                     (e.g. "7" => "[PERSOON: 1]").
+     *
+     * @return int Number of relation rows marked anonymized.
+     */
+    public function markAsAnonymizedWithPlaceholders(
+        int $fileId,
+        array $placeholderByEntityId
+    ): int {
+        $total = 0;
+        foreach ($placeholderByEntityId as $entityId => $placeholder) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($this->getTableName())
+                ->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+                ->set('anonymized_value', $qb->createNamedParameter((string) $placeholder))
+                ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('entity_id', $qb->createNamedParameter((int) $entityId, IQueryBuilder::PARAM_INT)))
+                ->andWhere(
+                    $qb->expr()->eq('skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+                );
+            $total += $qb->executeStatement();
+        }
+
+        return $total;
+
+    }//end markAsAnonymizedWithPlaceholders()
 
     /**
      * Find entity relations for the anonymise pass — skip-aware.

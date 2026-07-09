@@ -624,4 +624,72 @@ class AuditTrailControllerTest extends TestCase
 
         $controller->show(42);
     }
+
+    // ── IDOR gate: per-object audit trail read (objects) is admin-only ──
+
+    public function testObjectsReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->objects('reg', 'schema', 'obj-uuid');
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testObjectsReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->objects('reg', 'schema', 'obj-uuid');
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testObjectsDoesNotInvokeServiceWhenForbidden(): void
+    {
+        // A non-admin must be rejected before any audit log is read —
+        // this is the IDOR fix: arbitrary object ids never reach the service.
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->logService->expects($this->never())->method('getLogs');
+
+        $controller->objects('reg', 'schema', 'obj-uuid');
+    }
+
+    // ── IDOR gate: audit hash-chain verify is admin-only ──
+
+    public function testVerifyReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->verify();
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testVerifyReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->verify();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testVerifyDoesNotInvokeServiceWhenForbidden(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->auditHashService->expects($this->never())->method('verifyChain');
+
+        $controller->verify();
+    }
 }

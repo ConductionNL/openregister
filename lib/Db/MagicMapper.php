@@ -1398,6 +1398,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param Schema   $schema             Schema entity.
      * @param Register $register           Register entity.
      * @param array    $allPropertyColumns Superset of all property columns across schemas.
+     * @param bool     $metadataOnly       Project only metadata columns (no property columns) to keep wide unions under the target-list limit.
      *
      * @return string|null SQL SELECT statement or null if table doesn't exist.
      *
@@ -3058,12 +3059,65 @@ class MagicMapper extends AbstractObjectMapper
                 $this->db->executeStatement(
                     "CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
                 );
-            }
+
+                // Baseline pg_trgm GIN index on the `_name` metadata column.
+                // `_name` is unconditionally searched by
+                // MagicSearchHandler::buildSearchConditionSql() for every schema
+                // (both the always-on ILIKE path and the `_fuzzy=true` similarity()
+                // path), yet nothing indexed it — a rare-term search forced a
+                // sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
+                // 81,950-row table). This index is on an EXISTING varchar/text
+                // column (no new column type is introduced), so — unlike a
+                // vector/tsvector-TYPED column — it does NOT break Doctrine
+                // introspectSchema() over oc_-prefixed tables: a functional/column
+                // GIN index is invisible to Doctrine's type system, the same reason
+                // the hybrid-document-search chunk `to_tsvector` functional GIN
+                // index is safe. Gated by pg_trgm availability and wrapped so a
+                // missing extension or incompatible column never fails table
+                // creation (matching the neighbouring index try/catch pattern).
+                if ($this->hasPgTrgmExtension() === true) {
+                    $nameCol    = self::METADATA_PREFIX.'name';
+                    $nameTrgmIx = "{$tableName}_name_trgm_idx";
+                    try {
+                        $this->db->executeStatement(
+                            "CREATE INDEX IF NOT EXISTS {$nameTrgmIx} ON {$fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
+                        );
+                    } catch (Exception $e) {
+                        $this->logger->info(
+                            message: '[MagicMapper] Skipped baseline _name trgm index',
+                            context: [
+                                'file'      => __FILE__,
+                                'line'      => __LINE__,
+                                'tableName' => $tableName,
+                                'error'     => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }//end if
+            } else {
+                // MySQL/MariaDB do not support partial indexes, so the
+                // "WHERE _owner = ? AND _deleted IS NULL" access pattern is
+                // supported here with a composite (_deleted, _owner) index — the
+                // best available approximation. `CREATE INDEX IF NOT EXISTS` is
+                // not portable across older MySQL, so create it defensively and
+                // treat a duplicate-index error as a no-op (idempotent).
+                $deletedCol      = self::METADATA_PREFIX.'deleted';
+                $ownerColForIdx  = self::METADATA_PREFIX.'owner';
+                $deletedOwnerIdx = "{$tableName}_deleted_owner_idx";
+                try {
+                    $this->db->executeStatement(
+                        "CREATE INDEX {$deletedOwnerIdx} ON {$fullTableName} ({$deletedCol}, {$ownerColForIdx})"
+                    );
+                } catch (\Throwable $e) {
+                    // Index already exists (no IF NOT EXISTS on MySQL) — ignore.
+                }
+            }//end if
 
             // Create indexes for schema-specific properties.
-            $schemaProperties = $_schema->getProperties();
-            $relationIndexes  = [];
-            $facetIndexes     = [];
+            $schemaProperties  = $_schema->getProperties();
+            $relationIndexes   = [];
+            $facetIndexes      = [];
+            $searchableIndexes = [];
 
             if (is_array($schemaProperties) === true) {
                 foreach ($schemaProperties as $propertyName => $propertyConfig) {
@@ -3120,18 +3174,58 @@ class MagicMapper extends AbstractObjectMapper
                             // Index may already exist or column type incompatible.
                         }
                     }
+
+                    // Opt-in `searchable: true` flag: create a pg_trgm GIN index on
+                    // this property's column so fuzzy/substring (`_search` / ILIKE /
+                    // similarity()) matching against it is index-backed instead of a
+                    // sequential scan. Structurally identical to `facetable` above,
+                    // but PostgreSQL + pg_trgm gated (the `gin_trgm_ops` operator
+                    // class only exists on PostgreSQL with the extension). Like the
+                    // baseline `_name` index, this indexes an EXISTING text column —
+                    // no new column type — so it is Doctrine-introspection-safe. A
+                    // non-string column (gin_trgm_ops requires a text-castable type)
+                    // is tolerated by the try/catch below, exactly like facetable's
+                    // "column type incompatible" case, and logged rather than fatal.
+                    if (($propertyConfig['searchable'] ?? false) === true
+                        && $isPostgres === true
+                        && $this->hasPgTrgmExtension() === true
+                    ) {
+                        $idxName = "{$tableName}_{$columnName}_trgm_idx";
+                        try {
+                            $this->db->executeStatement(
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$quotedCol} gin_trgm_ops)"
+                            );
+                            $searchableIndexes[] = $columnName;
+                        } catch (Exception $e) {
+                            // Index may already exist, or the column type is
+                            // incompatible with gin_trgm_ops (e.g. a non-string
+                            // property incorrectly marked searchable): log a warning
+                            // and continue, do not abort table creation/sync.
+                            $this->logger->warning(
+                                message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
+                                context: [
+                                    'file'      => __FILE__,
+                                    'line'      => __LINE__,
+                                    'tableName' => $tableName,
+                                    'column'    => $columnName,
+                                    'error'     => $e->getMessage(),
+                                ]
+                            );
+                        }//end try
+                    }//end if
                 }//end foreach
             }//end if
 
             $this->logger->debug(
                 message: '[MagicMapper] Created table indexes',
                 context: [
-                    'file'            => __FILE__,
-                    'line'            => __LINE__,
-                    'tableName'       => $tableName,
-                    'baseIndexCount'  => 5 + count($idxMetaFields),
-                    'relationIndexes' => $relationIndexes,
-                    'facetIndexes'    => $facetIndexes,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
+                    'tableName'         => $tableName,
+                    'baseIndexCount'    => 5 + count($idxMetaFields),
+                    'relationIndexes'   => $relationIndexes,
+                    'facetIndexes'      => $facetIndexes,
+                    'searchableIndexes' => $searchableIndexes,
                 ]
             );
         } catch (Exception $e) {
@@ -8299,6 +8393,16 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getMaxAllowedPacketSize(): int
     {
+        // `SHOW VARIABLES` is a MySQL-ism. On PostgreSQL the statement is a
+        // syntax error — and although the exception is swallowed here, a
+        // failed statement inside an OPEN TRANSACTION aborts the whole
+        // transaction on postgres (SQLSTATE 25P02: "current transaction is
+        // aborted"), breaking any caller that wraps a save in a transaction
+        // (e.g. the ADR-051 handoff engine). Only probe on MySQL/MariaDB.
+        if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+            return 16777216;
+        }
+
         try {
             $result = $this->db->executeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
             $row    = $result->fetch();
@@ -8333,6 +8437,8 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
      */
     public function searchObjectsPaginated(
         array $searchQuery=[],
@@ -8393,7 +8499,7 @@ class MagicMapper extends AbstractObjectMapper
                 ids: $ids,
                 uses: $uses
             );
-        }
+        }//end if
 
         // Single schema search.
         if ($registerId !== null && $schemaId !== null) {
@@ -8513,6 +8619,42 @@ class MagicMapper extends AbstractObjectMapper
     }//end searchObjectsPaginated()
 
     /**
+     * Extract integer schema ids from a register's `schemas` membership list.
+     *
+     * The list may hold ids by value or by key, as ints or numeric strings;
+     * this normalises all forms to a flat list of distinct integer ids.
+     *
+     * @param array $registerSchemas The register's getSchemas()/decoded schemas array.
+     *
+     * @return int[] Distinct integer schema ids.
+     */
+    private function extractSchemaIds(array $registerSchemas): array
+    {
+        // A plain list (`[4306, 4307]`) carries ids by VALUE; its integer keys
+        // are positional, not ids. An id-keyed map (`{4310: "Pet"}`) carries
+        // ids by KEY. Only consider keys for the map shape so a list of
+        // non-numeric values can never inject positional indices as schema ids.
+        $isList = array_is_list($registerSchemas);
+        $ids    = [];
+        foreach ($registerSchemas as $schemaKey => $schemaValue) {
+            $candidates = [$schemaKey, $schemaValue];
+            if ($isList === true) {
+                $candidates = [$schemaValue];
+            }
+
+            foreach ($candidates as $candidate) {
+                if (is_int($candidate) === true
+                    || (is_string($candidate) === true && ctype_digit($candidate) === true)
+                ) {
+                    $ids[(int) $candidate] = true;
+                }
+            }
+        }
+
+        return array_keys($ids);
+    }//end extractSchemaIds()
+
+    /**
      * Search objects across multiple schemas using UNION queries.
      *
      * @param array       $searchQuery   Search query parameters.
@@ -8533,6 +8675,8 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @psalm-suppress                                UnusedParam
      * Parameters reserved for future per-schema security filtering.
+     *
+     * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
      */
     private function searchObjectsPaginatedMultiSchema(
         array $searchQuery,
@@ -8548,13 +8692,38 @@ class MagicMapper extends AbstractObjectMapper
         $registersCache = [];
         $schemasCache   = [];
 
-        $registers = [];
+        // Build a schema_id -> owning register_id map so each schema is paired
+        // with its REAL register (correct magic table). A schema with no owning
+        // register is SKIPPED (logged) rather than forced onto an unrelated
+        // register, which produced the "Register+schema table does not exist"
+        // empties. Register ENTITIES are loaded lazily (find()) only for the
+        // registers actually matched. `$registers` caches them by id.
+        //
+        // IMPORTANT: when no register filter is given (unified search passes a
+        // searchable-schema set only) we read the register->schema membership
+        // with a DIRECT query, NOT registerMapper::findAll — findAll applies an
+        // organisation filter (even with _multitenancy:false the trait's active-
+        // org resolution can collapse the result to a single register), which
+        // would hide most schemas' owning registers and make cross-schema
+        // search return nothing.
+        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+        $registers          = [];
+        $schemaToRegisterId = [];
+
         if (empty($registerIds) === false) {
             foreach ($registerIds as $regId) {
                 try {
                     $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
                     $registers[$register->getId()]      = $register;
                     $registersCache[$register->getId()] = $register->jsonSerialize();
+                    $registerSchemas = ($register->getSchemas() ?? []);
+                    if (is_array($registerSchemas) === true) {
+                        foreach ($this->extractSchemaIds(registerSchemas: $registerSchemas) as $sid) {
+                            if (isset($schemaToRegisterId[$sid]) === false) {
+                                $schemaToRegisterId[$sid] = $register->getId();
+                            }
+                        }
+                    }
                 } catch (\Exception $e) {
                     $this->logger->warning(
                         message: '[MagicMapper] Failed to find register for multi-schema search',
@@ -8563,24 +8732,34 @@ class MagicMapper extends AbstractObjectMapper
                 }
             }
         } else {
-            // No register filter (e.g. unified search passes only a
-            // searchable-schema set): load every register so each schema can be
-            // paired with its REAL owning register via the schema->register map
-            // below — instead of guessing one and hitting a non-existent table.
             try {
-                foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-                    $registers[$register->getId()]      = $register;
-                    $registersCache[$register->getId()] = $register->jsonSerialize();
+                $rqb = $this->db->getQueryBuilder();
+                $rqb->select('id', 'schemas')->from('openregister_registers');
+                $res = $rqb->executeQuery();
+                while (($row = $res->fetch()) !== false) {
+                    $regId   = (int) $row['id'];
+                    $schemas = json_decode((string) ($row['schemas'] ?? '[]'), true);
+                    if (is_array($schemas) === false) {
+                        continue;
+                    }
+
+                    foreach ($this->extractSchemaIds(registerSchemas: $schemas) as $sid) {
+                        if (isset($schemaToRegisterId[$sid]) === false) {
+                            $schemaToRegisterId[$sid] = $regId;
+                        }
+                    }
                 }
-            } catch (\Exception $e) {
+
+                $res->closeCursor();
+            } catch (\Throwable $e) {
                 $this->logger->warning(
-                    message: '[MagicMapper] Failed to load registers for schema-only multi-schema search',
+                    message: '[MagicMapper] Failed to build schema->register map for multi-schema search',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
-            }
+            }//end try
         }//end if
 
-        if (empty($registers) === true) {
+        if (empty($schemaToRegisterId) === true) {
             return [
                 'results'   => [],
                 'total'     => 0,
@@ -8589,40 +8768,40 @@ class MagicMapper extends AbstractObjectMapper
             ];
         }
 
-        // Build a schema_id -> owning register map once (the register whose
-        // getSchemas() lists the schema id — by value or key, int or numeric
-        // string). Each schema is then paired with its REAL register so the
-        // correct magic table is targeted; a schema with no owning register is
-        // SKIPPED (logged) rather than forced onto an unrelated register, which
-        // is what produced the "Register+schema table does not exist" empties.
+        // Each searched schema is paired with its REAL owning register (resolved
+        // via the schema_id -> register_id map above) so the correct magic table
+        // is targeted; a schema with no owning register is SKIPPED (logged)
+        // rather than forced onto an unrelated register, which is what produced
+        // the "Register+schema table does not exist" empties. Register ENTITIES
+        // are loaded lazily below — only for the registers actually matched.
         // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
-        $schemaToRegister = [];
-        foreach ($registers as $register) {
-            $registerSchemas = $register->getSchemas();
-            if (is_array($registerSchemas) === false) {
-                continue;
-            }
-
-            foreach ($registerSchemas as $schemaKey => $schemaValue) {
-                foreach ([$schemaValue, $schemaKey] as $candidate) {
-                    if (is_int($candidate) === true
-                        || (is_string($candidate) === true && ctype_digit($candidate) === true)
-                    ) {
-                        $mappedId = (int) $candidate;
-                        if (isset($schemaToRegister[$mappedId]) === false) {
-                            $schemaToRegister[$mappedId] = $register;
-                        }
-                    }
-                }
-            }
-        }
-
         $registerSchemaPairs = [];
         $totalCount          = 0;
 
         foreach ($schemaIds as $sId) {
-            $schemaIdInt     = (int) $sId;
-            $matchedRegister = ($schemaToRegister[$schemaIdInt] ?? null);
+            $matchedRegisterId = ($schemaToRegisterId[$schemaIdInt] ?? null);
+            $matchedRegister   = null;
+            if ($matchedRegisterId !== null) {
+                if (isset($registers[$matchedRegisterId]) === false) {
+                    // Load the owning register ENTITY lazily (only for registers
+                    // actually matched by a searched schema). find() honours
+                    // _multitenancy:false so it resolves regardless of the
+                    // active organisation; on failure the schema is skipped.
+                    try {
+                        $reg = $this->registerMapper->find($matchedRegisterId, _multitenancy: false, _rbac: false);
+                        $registers[$reg->getId()]      = $reg;
+                        $registersCache[$reg->getId()] = $reg->jsonSerialize();
+                    } catch (\Throwable $e) {
+                        $this->logger->warning(
+                            message: '[MagicMapper] Failed to load owning register for multi-schema search',
+                            context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $matchedRegisterId, 'error' => $e->getMessage()]
+                        );
+                    }
+                }
+
+                $matchedRegister = ($registers[$matchedRegisterId] ?? null);
+            }//end if
+
             if ($matchedRegister === null) {
                 // No owning register -> the magic table cannot be resolved; skip
                 // (logged) instead of guessing a wrong register.

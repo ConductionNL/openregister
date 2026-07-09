@@ -49,6 +49,7 @@ use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PaginatedResult;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -64,10 +65,11 @@ class ObjectIntegrationsController extends Controller
     /**
      * Constructor.
      *
-     * @param string              $appName  App name (injected by NC).
-     * @param IRequest            $request  Current request.
-     * @param IntegrationRegistry $registry Integration registry.
-     * @param LoggerInterface     $logger   Logger.
+     * @param string              $appName       App name (injected by NC).
+     * @param IRequest            $request       Current request.
+     * @param IntegrationRegistry $registry      Integration registry.
+     * @param LoggerInterface     $logger        Logger.
+     * @param ObjectService       $objectService OpenRegister object service (RBAC boundary).
      *
      * @return void
      */
@@ -76,9 +78,47 @@ class ObjectIntegrationsController extends Controller
         IRequest $request,
         private IntegrationRegistry $registry,
         private LoggerInterface $logger,
+        private ObjectService $objectService,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Guard access to the target OpenRegister object before any integration
+     * dispatch.
+     *
+     * The integration endpoints receive an OR object id ($id) and forward it to
+     * a pluggable provider. Without an OR-side authorization check any
+     * authenticated user could manage the integrations of an arbitrary object
+     * by id (IDOR). Resolving the object through ObjectService applies OR's
+     * register RBAC + multitenancy (ADR-022); an object the caller cannot read
+     * resolves to null and the request is refused with 404 (existence is not
+     * leaked).
+     *
+     * @param string $register Register slug or numeric id.
+     * @param string $schema   Schema slug or numeric id.
+     * @param string $id       Object uuid.
+     *
+     * @return JSONResponse|null 404 response when access is denied, null when allowed.
+     */
+    private function guardObjectAccess(string $register, string $schema, string $id): ?JSONResponse
+    {
+        $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->setObject($id);
+
+        try {
+            $object = $this->objectService->getObject();
+        } catch (\Throwable $e) {
+            return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+        }
+
+        if ($object === null) {
+            return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+        }
+
+        return null;
+    }//end guardObjectAccess()
 
     /**
      * GET /api/objects/{register}/{schema}/{id}/integrations/{integrationId}
@@ -106,6 +146,11 @@ class ObjectIntegrationsController extends Controller
     #[NoAdminRequired]
     public function index(string $register, string $schema, string $id, string $integrationId): JSONResponse
     {
+        $denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+        if ($denial !== null) {
+            return $denial;
+        }
+
         return $this->dispatch(
             integrationId: $integrationId,
             callback: fn ($provider) => PaginatedResult::fromMixed(
@@ -132,6 +177,11 @@ class ObjectIntegrationsController extends Controller
     #[NoAdminRequired]
     public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
     {
+        $denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+        if ($denial !== null) {
+            return $denial;
+        }
+
         return $this->dispatch(
             integrationId: $integrationId,
             callback: fn ($provider) => $provider->get($register, $schema, $id, $entityId)
@@ -155,6 +205,11 @@ class ObjectIntegrationsController extends Controller
     #[NoAdminRequired]
     public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse
     {
+        $denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+        if ($denial !== null) {
+            return $denial;
+        }
+
         $payload = $this->collectPayload();
         return $this->dispatch(
             integrationId: $integrationId,
@@ -181,6 +236,11 @@ class ObjectIntegrationsController extends Controller
     #[NoAdminRequired]
     public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
     {
+        $denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+        if ($denial !== null) {
+            return $denial;
+        }
+
         $payload = $this->collectPayload();
         return $this->dispatch(
             integrationId: $integrationId,
@@ -206,6 +266,11 @@ class ObjectIntegrationsController extends Controller
     #[NoAdminRequired]
     public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
     {
+        $denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             $provider = $this->resolveProvider(integrationId: $integrationId);
             $provider->delete($register, $schema, $id, $entityId);

@@ -30,7 +30,11 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -98,6 +102,13 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->manualEntityService = $this->createMock(originalClassName: ManualEntityService::class);
         $this->userSession         = $this->createMock(originalClassName: IUserSession::class);
 
+        $rootFolder   = $this->createMock(originalClassName: IRootFolder::class);
+        $groupManager = $this->createMock(originalClassName: IGroupManager::class);
+        $userFolder   = $this->createMock(originalClassName: Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(originalClassName: Node::class)]);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new FileTextController(
             'openregister',
             $this->request,
@@ -107,7 +118,9 @@ class FileTextControllerManualEntityTest extends TestCase
             $this->logger,
             $this->createMock(originalClassName: IAppConfig::class),
             $this->manualEntityService,
-            $this->userSession
+            $this->userSession,
+            $rootFolder,
+            $groupManager
         );
 
     }//end setUp()

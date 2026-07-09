@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -36,6 +37,9 @@ class VectorSearchHandlerTest extends TestCase
     /** @var IDBConnection&MockObject */
     private IDBConnection $db;
 
+    /** @var PgVectorPlatform&MockObject */
+    private PgVectorPlatform $pgVector;
+
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
@@ -43,14 +47,39 @@ class VectorSearchHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->db     = $this->createMock(IDBConnection::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->db       = $this->createMock(IDBConnection::class);
+        $this->pgVector = $this->createMock(PgVectorPlatform::class);
+        $this->logger   = $this->createMock(LoggerInterface::class);
+
+        // Default: pgvector fast path unavailable → PHP fallback (pre-change behaviour).
+        $this->pgVector->method('getVectorColumnDimension')->willReturn(null);
 
         $this->handler = new VectorSearchHandler(
             $this->db,
+            $this->pgVector,
             $this->logger
         );
     }//end setUp()
+
+    /**
+     * Build a handler whose pgvector fast path reports the given dimension.
+     *
+     * @param int    $dimension Column dimension.
+     * @param string $literal   Expected formatted query-vector literal.
+     *
+     * @return array{0: VectorSearchHandler, 1: IDBConnection&MockObject}
+     */
+    private function buildKnnHandler(int $dimension, string $literal='[1,0]'): array
+    {
+        $db       = $this->createMock(IDBConnection::class);
+        $pgVector = $this->createMock(PgVectorPlatform::class);
+        $pgVector->method('getVectorColumnDimension')->willReturn($dimension);
+        $pgVector->method('formatVector')->willReturn($literal);
+
+        $handler = new VectorSearchHandler($db, $pgVector, $this->logger);
+
+        return [$handler, $db];
+    }//end buildKnnHandler()
 
     // -- Helper: build a fake DB result set ----------------------------------
 
@@ -1072,5 +1101,228 @@ class VectorSearchHandlerTest extends TestCase
 
         $this->assertGreaterThanOrEqual(0.0, $result['search_time_ms']);
     }//end testHybridSearchSearchTimeIsPositive()
+
+    // =========================================================================
+    // pgvector KNN path (hybrid-document-search tasks 3.1 / 7.1)
+    // =========================================================================
+
+    /**
+     * Build a raw KNN result row as returned by the pgvector SQL query.
+     *
+     * @param int    $id       Row id.
+     * @param string $entityId Entity id.
+     * @param float  $distance Cosine distance.
+     *
+     * @return array Row data.
+     */
+    private function makeKnnRow(int $id, string $entityId, float $distance): array
+    {
+        return [
+            'id'                   => $id,
+            'entity_type'          => 'file',
+            'entity_id'            => $entityId,
+            'chunk_index'          => 0,
+            'total_chunks'         => 1,
+            'chunk_text'           => "text-$entityId",
+            'metadata'             => null,
+            'embedding_model'      => 'test',
+            'embedding_dimensions' => 2,
+            'distance'             => $distance,
+        ];
+    }//end makeKnnRow()
+
+    /**
+     * KNN path: query construction — ORDER BY the cosine-distance operator with
+     * a LIMIT, filtered on entity_type, WHERE embedding_vector IS NOT NULL.
+     */
+    public function testSemanticSearchKnnPathBuildsIndexBackedQuery(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2, '[1,0]');
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([$this->makeKnnRow(1, 'a', 0.1)]);
+
+        $capturedSql    = null;
+        $capturedParams = null;
+        $db->expects($this->once())
+            ->method('executeQuery')
+            ->willReturnCallback(
+                function (string $sql, array $params=[], $types=[]) use (&$capturedSql, &$capturedParams, $stmt) {
+                    $capturedSql    = $sql;
+                    $capturedParams = $params;
+                    return $stmt;
+                }
+            );
+
+        // The PHP fallback's getQueryBuilder must NOT be touched on the KNN path.
+        $db->expects($this->never())->method('getQueryBuilder');
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, ['entity_type' => 'file']);
+
+        $this->assertCount(1, $results);
+        $this->assertStringContainsString('FROM openregister_vec_ann a', $capturedSql);
+        $this->assertStringContainsString('JOIN *PREFIX*openregister_vectors v ON v.id = a.vector_id', $capturedSql);
+        $this->assertStringContainsString('ORDER BY a.embedding <=> :qvec::vector ASC', $capturedSql);
+        $this->assertStringContainsString('LIMIT 10', $capturedSql);
+        $this->assertStringContainsString('v.entity_type = :entityType', $capturedSql);
+        $this->assertSame('[1,0]', $capturedParams['qvec']);
+        $this->assertSame('file', $capturedParams['entityType']);
+    }//end testSemanticSearchKnnPathBuildsIndexBackedQuery()
+
+    /**
+     * KNN path: result shape matches the PHP path's shape, with
+     * similarity = 1 - cosine distance, ranked most-similar first.
+     */
+    public function testSemanticSearchKnnPathResultShapeAndSimilarity(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn(
+            [
+                $this->makeKnnRow(1, 'best', 0.05),
+                $this->makeKnnRow(2, 'second', 0.30),
+            ]
+        );
+        $db->method('executeQuery')->willReturn($stmt);
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertCount(2, $results);
+
+        $expected = ['vector_id', 'entity_type', 'entity_id', 'similarity', 'chunk_index', 'total_chunks', 'chunk_text', 'metadata', 'model', 'dimensions'];
+        foreach ($expected as $key) {
+            $this->assertArrayHasKey($key, $results[0], "Missing key: {$key}");
+        }
+
+        $this->assertSame('best', $results[0]['entity_id']);
+        $this->assertEqualsWithDelta(0.95, $results[0]['similarity'], 0.0001);
+        $this->assertEqualsWithDelta(0.70, $results[1]['similarity'], 0.0001);
+        $this->assertSame([], $results[0]['metadata']);
+    }//end testSemanticSearchKnnPathResultShapeAndSimilarity()
+
+    /**
+     * KNN path: entity_type array filters become IN predicates.
+     */
+    public function testSemanticSearchKnnPathWithEntityTypeArrayFilter(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([$this->makeKnnRow(1, 'a', 0.2)]);
+
+        $capturedSql    = null;
+        $capturedParams = null;
+        $db->method('executeQuery')
+            ->willReturnCallback(
+                function (string $sql, array $params=[], $types=[]) use (&$capturedSql, &$capturedParams, $stmt) {
+                    $capturedSql    = $sql;
+                    $capturedParams = $params;
+                    return $stmt;
+                }
+            );
+
+        $handler->semanticSearch([1.0, 0.0], 5, ['entity_type' => ['file', 'object'], 'entity_id' => 'x']);
+
+        $this->assertStringContainsString('v.entity_type IN (:entityTypes)', $capturedSql);
+        $this->assertStringContainsString('v.entity_id = :entityId', $capturedSql);
+        $this->assertSame(['file', 'object'], $capturedParams['entityTypes']);
+        $this->assertSame('x', $capturedParams['entityId']);
+    }//end testSemanticSearchKnnPathWithEntityTypeArrayFilter()
+
+    /**
+     * KNN path unavailable when the query embedding's dimension doesn't match
+     * the column dimension: falls back to the PHP path.
+     */
+    public function testSemanticSearchKnnPathSkippedOnDimensionMismatch(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(1536);
+
+        // PHP fallback path: query builder gets used instead of raw KNN SQL.
+        $qb = $this->buildQueryBuilderMock([]);
+        $db->expects($this->once())->method('getQueryBuilder')->willReturn($qb);
+        $db->expects($this->never())->method('executeQuery');
+
+        // Query embedding has 2 dims, column is 1536 → mismatch → fallback.
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertSame([], $results);
+    }//end testSemanticSearchKnnPathSkippedOnDimensionMismatch()
+
+    /**
+     * A KNN query failure is tolerated: logged and fallen back to the PHP path,
+     * not propagated.
+     */
+    public function testSemanticSearchKnnQueryFailureFallsBackToPhpPath(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $db->method('executeQuery')->willThrowException(new Exception('index gone'));
+
+        $rows = [$this->makeVectorRow(1, 'fallback-hit', [1.0, 0.0])];
+        $qb   = $this->buildQueryBuilderMock($rows);
+        $db->method('getQueryBuilder')->willReturn($qb);
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('fallback-hit', $results[0]['entity_id']);
+    }//end testSemanticSearchKnnQueryFailureFallsBackToPhpPath()
+
+    /**
+     * KNN returning zero rows (e.g. warm-up not started) falls back to the
+     * PHP-cosine path so BLOB-only rows still serve results.
+     */
+    public function testSemanticSearchKnnEmptyFallsBackToPhpPath(): void
+    {
+        [$handler, $db] = $this->buildKnnHandler(2);
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([]);
+        $db->method('executeQuery')->willReturn($stmt);
+
+        $rows = [$this->makeVectorRow(7, 'blob-only', [1.0, 0.0])];
+        $qb   = $this->buildQueryBuilderMock($rows);
+        $db->method('getQueryBuilder')->willReturn($qb);
+
+        $results = $handler->semanticSearch([1.0, 0.0], 10, []);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('blob-only', $results[0]['entity_id']);
+    }//end testSemanticSearchKnnEmptyFallsBackToPhpPath()
+
+    // =========================================================================
+    // Fallback ordering (hybrid-document-search tasks 3.2 / 7.1)
+    // =========================================================================
+
+    /**
+     * The PHP fallback's candidate fetch orders by primary key ascending —
+     * NOT the former recency-biased created_at DESC (or#277-adjacent bug).
+     */
+    public function testFetchVectorsFallbackOrdersByIdAscNotRecency(): void
+    {
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetchAll')->willReturn([]);
+
+        $expr = $this->createMock(IExpressionBuilder::class);
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('createNamedParameter')->willReturnArgument(0);
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('executeQuery')->willReturn($stmt);
+
+        $qb->expects($this->once())
+            ->method('orderBy')
+            ->with('id', 'ASC')
+            ->willReturnSelf();
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $this->handler->semanticSearch([1.0, 0.0], 10, []);
+    }//end testFetchVectorsFallbackOrdersByIdAscNotRecency()
 
 }//end class
