@@ -137,7 +137,7 @@ class SourcesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{results: array<int, array<string, mixed>>}, array{}>
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */

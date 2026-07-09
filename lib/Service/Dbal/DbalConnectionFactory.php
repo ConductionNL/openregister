@@ -140,17 +140,13 @@ class DbalConnectionFactory
      */
     public function isDriverAvailable(string $driver): bool
     {
-        if (in_array($driver, self::SUPPORTED_DRIVERS, true) === false) {
-            return false;
-        }
-
-        $pdoDriver = match ($driver) {
+        $pdoDrivers = [
             'pdo_mysql'  => 'mysql',
             'pdo_pgsql'  => 'pgsql',
             'pdo_sqlite' => 'sqlite',
-            default      => null,
-        };
+        ];
 
+        $pdoDriver = ($pdoDrivers[$driver] ?? null);
         if ($pdoDriver === null || extension_loaded('pdo') === false) {
             return false;
         }
@@ -173,7 +169,7 @@ class DbalConnectionFactory
     private function buildParams(Source $source): array
     {
         $config = ($source->getAuthConfig() ?? []);
-        if (is_array($config) === false) {
+        if ($config === []) {
             throw new DbalConnectionException('Database source has no connection configuration.');
         }
 
@@ -287,12 +283,7 @@ class DbalConnectionFactory
      */
     private function cacheKey(Source $source): string
     {
-        $id = $source->getId();
-        if ($id !== null) {
-            return 'id:'.$id;
-        }
-
-        return 'uuid:'.(string) $source->getUuid();
+        return 'id:'.((string) $source->getId()).':uuid:'.((string) $source->getUuid());
     }//end cacheKey()
 
     /**
