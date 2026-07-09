@@ -3,7 +3,8 @@ export type TSource = {
     title: string;
     description: string;
     databaseUrl: string;
-    type: 'internal' | 'mongodb';
+    type: 'internal' | 'mongodb' | 'database';
+    authConfig?: Record<string, unknown> | null;
     updated: string;
     created: string;
 }

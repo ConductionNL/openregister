@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCP\App\IAppManager;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -20,6 +21,7 @@ class DeckCardServiceTest extends TestCase
     private IAppManager&MockObject $appManager;
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
+    private IURLGenerator&MockObject $urlGenerator;
     private DeckCardService $service;
 
     protected function setUp(): void
@@ -32,12 +34,19 @@ class DeckCardServiceTest extends TestCase
         $this->appManager = $this->createMock(IAppManager::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
+
+        // Webroot-aware base for Deck deep links.
+        $this->urlGenerator->method('linkToRoute')
+            ->with('deck.page.index')
+            ->willReturn('/index.php/apps/deck/');
 
         $this->service = new DeckCardService(
             $this->deckLinkMapper,
             $this->appManager,
             $this->userSession,
-            $this->logger
+            $this->logger,
+            $this->urlGenerator
         );
     }
 
@@ -82,6 +91,46 @@ class DeckCardServiceTest extends TestCase
         $result = $this->service->getCardsForObject('nonexistent');
 
         $this->assertSame(0, $result['total']);
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: a card with a board id and card id gets
+     * a webroot-aware Deck deep-link `url` so the related-objects widget can
+     * navigate straight to the card.
+     */
+    public function testGetCardsForObjectStampsDeepLinkUrl(): void
+    {
+        $link = new DeckLink();
+        $link->setObjectUuid('abc-123');
+        $link->setBoardId(7);
+        $link->setCardId(42);
+
+        $this->deckLinkMapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+
+        $result = $this->service->getCardsForObject('abc-123');
+
+        $this->assertSame(
+            '/index.php/apps/deck/board/7/card/42',
+            $result['results'][0]['url']
+        );
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: when the card id is missing the record is
+     * still returned, just without a (broken) `url`.
+     */
+    public function testGetCardsForObjectOmitsUrlWhenCardIdMissing(): void
+    {
+        $link = new DeckLink();
+        $link->setObjectUuid('abc-123');
+        $link->setBoardId(7);
+        // No card id set.
+
+        $this->deckLinkMapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+
+        $result = $this->service->getCardsForObject('abc-123');
+
+        $this->assertArrayNotHasKey('url', $result['results'][0]);
     }
 
     /**
@@ -182,6 +231,28 @@ class DeckCardServiceTest extends TestCase
         $this->service->unlinkCard(999);
     }
 
+    /**
+     * Build a service whose Deck board-permission check is stubbed, so the
+     * board-scoped tests do not depend on a running Deck app.
+     *
+     * @param bool $canAccess What userCanAccessBoard() should return.
+     */
+    private function serviceWithBoardAccess(bool $canAccess): DeckCardService
+    {
+        $service = $this->getMockBuilder(DeckCardService::class)
+            ->setConstructorArgs([
+                $this->deckLinkMapper,
+                $this->appManager,
+                $this->userSession,
+                $this->logger,
+            ])
+            ->onlyMethods(['userCanAccessBoard'])
+            ->getMock();
+        $service->method('userCanAccessBoard')->willReturn($canAccess);
+
+        return $service;
+    }
+
     public function testGetObjectsForBoardReturnsLinks(): void
     {
         $link = new DeckLink();
@@ -190,10 +261,22 @@ class DeckCardServiceTest extends TestCase
 
         $this->deckLinkMapper->method('findByBoardId')->with(1)->willReturn([$link]);
 
-        $results = $this->service->getObjectsForBoard(1);
+        $service = $this->serviceWithBoardAccess(true);
+        $results = $service->getObjectsForBoard(1);
 
         $this->assertCount(1, $results);
         $this->assertSame('abc-123', $results[0]['objectUuid']);
+    }
+
+    public function testGetObjectsForBoardDeniedReturnsEmpty(): void
+    {
+        // IDOR: the caller has no Deck access to the board — no links leak and
+        // the mapper is never queried.
+        $this->deckLinkMapper->expects($this->never())->method('findByBoardId');
+
+        $service = $this->serviceWithBoardAccess(false);
+
+        $this->assertSame([], $service->getObjectsForBoard(1));
     }
 
     public function testDeleteLinksForObject(): void

@@ -27,6 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\App\IAppManager;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -77,12 +78,20 @@ class DeckCardService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param DeckLinkMapper  $deckLinkMapper Deck link mapper
      * @param IAppManager     $appManager     App manager
      * @param IUserSession    $userSession    User session
      * @param LoggerInterface $logger         Logger
+     * @param IURLGenerator   $urlGenerator   URL generator
      *
      * @return void
      */
@@ -90,11 +99,13 @@ class DeckCardService
         DeckLinkMapper $deckLinkMapper,
         IAppManager $appManager,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->deckLinkMapper = $deckLinkMapper;
         $this->appManager     = $appManager;
         $this->userSession    = $userSession;
+        $this->urlGenerator   = $urlGenerator;
         $this->logger         = $logger;
     }//end __construct()
 
@@ -151,13 +162,50 @@ class DeckCardService
             function (DeckLink $link) use ($cardService): array {
                 $row     = $link->jsonSerialize();
                 $widened = $this->extractCardFields(cardService: $cardService, cardId: $link->getCardId());
-                return $row + $widened;
+                $row    += $widened;
+
+                // Deep-link to the specific card in the Deck app: reusing the
+                // canonical {app}.page.index route keeps the webroot prefix
+                // correct (mirrors MapLinkService/PhotoLinkService).
+                $deepLink = $this->buildCardDeepLink(boardId: $link->getBoardId(), cardId: $link->getCardId());
+                if ($deepLink !== null) {
+                    $row['url'] = $deepLink;
+                }
+
+                return $row;
             },
             $links
         );
 
         return ['results' => $results, 'total' => count($results)];
     }//end getCardsForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific Deck card.
+     *
+     * Returns `/index.php/apps/deck/board/{boardId}/card/{cardId}` (with the
+     * correct webroot prefix). Returns null when either identifier is missing
+     * so the relation record is returned without a `url` rather than a broken one.
+     *
+     * @param int|null $boardId The Deck board id.
+     * @param int|null $cardId  The Deck card id.
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildCardDeepLink(?int $boardId, ?int $cardId): ?string
+    {
+        if ($boardId === null || $boardId === 0 || $cardId === null || $cardId === 0) {
+            return null;
+        }
+
+        try {
+            $base = $this->urlGenerator->linkToRoute('deck.page.index');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return rtrim($base, '/').'/board/'.$boardId.'/card/'.$cardId;
+    }//end buildCardDeepLink()
 
     /**
      * Resolve Deck's CardService from the server container.
@@ -517,6 +565,14 @@ class DeckCardService
      */
     public function getObjectsForBoard(int $boardId): array
     {
+        // IDOR guard: only return links for a board the caller can access in
+        // Deck. Without this any authenticated user could enumerate board IDs
+        // and read OpenRegister object links for boards they have no Deck
+        // access to (the deckLinkMapper table bypasses Deck's own ACL).
+        if ($this->userCanAccessBoard(boardId: $boardId) === false) {
+            return [];
+        }
+
         $links = $this->deckLinkMapper->findByBoardId($boardId);
 
         return array_map(
@@ -526,6 +582,35 @@ class DeckCardService
             $links
         );
     }//end getObjectsForBoard()
+
+    /**
+     * Whether the current session user may read the given Deck board.
+     *
+     * Delegates to Deck's own BoardService::find(), which enforces the board
+     * ACL and throws when the session user lacks read access. Fail-closed:
+     * returns false when Deck is unavailable or access is denied, so no link
+     * metadata leaks for a board the caller cannot see.
+     *
+     * @param int $boardId The Deck board ID.
+     *
+     * @return bool True when the caller may read the board.
+     */
+    protected function userCanAccessBoard(int $boardId): bool
+    {
+        if (class_exists('OCA\\Deck\\Service\\BoardService') === false) {
+            return false;
+        }
+
+        try {
+            $boardService = \OC::$server->get('OCA\\Deck\\Service\\BoardService');
+            // Find() throws (NoPermissionException) when the session user
+            // lacks read access to the board.
+            $boardService->find($boardId);
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end userCanAccessBoard()
 
     /**
      * Delete all deck links for an object (cleanup).

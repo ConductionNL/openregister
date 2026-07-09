@@ -239,11 +239,6 @@
       <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
     </UndefinedClass>
   </file>
-  <file src="lib/Listener/CalculationOnSaveListener.php">
-    <UnusedParam>
-      <code><![CDATA[$isUpdate]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Migration/Version1Date20251106000000.php">
     <UndefinedClass>
       <code><![CDATA[Type]]></code>

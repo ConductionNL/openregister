@@ -303,10 +303,13 @@ class VectorEmbeddings
     /**
      * Generate embeddings for multiple texts in batch
      *
+     * Per-text failures are tolerated: the failing entry carries a null
+     * embedding and an error message instead of aborting the whole batch.
+     *
      * @param array<string> $texts    Array of texts to embed
      * @param string|null   $provider Embedding provider
      *
-     * @return array<int, array{embedding: array<float>, model: string, dimensions: int}> Array of embeddings
+     * @return array<int, array{embedding: array<float>|null, model: string, dimensions: int, error?: string}> Array of embeddings
      *
      * @throws \Exception If batch embedding generation fails
      *

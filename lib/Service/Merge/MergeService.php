@@ -600,9 +600,8 @@ class MergeService
         }
 
         $referenceField = $descriptor['referenceField'];
-        if ($descriptor['sourceRegister'] !== '') {
-            $sourceRegister = $descriptor['sourceRegister'];
-        } else {
+        $sourceRegister = $descriptor['sourceRegister'];
+        if ($sourceRegister === '') {
             $sourceRegister = $register;
         }
 

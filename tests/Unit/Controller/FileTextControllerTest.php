@@ -11,8 +11,13 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -39,6 +44,10 @@ class FileTextControllerTest extends TestCase
 
     private IUserSession&MockObject $userSession;
 
+    private IRootFolder&MockObject $rootFolder;
+
+    private IGroupManager&MockObject $groupManager;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +60,17 @@ class FileTextControllerTest extends TestCase
         $this->config               = $this->createMock(IAppConfig::class);
         $this->manualEntityService  = $this->createMock(ManualEntityService::class);
         $this->userSession          = $this->createMock(IUserSession::class);
+        $this->rootFolder           = $this->createMock(IRootFolder::class);
+        $this->groupManager         = $this->createMock(IGroupManager::class);
+
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($admin);
+
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+        $this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+        $this->groupManager->method('isAdmin')->willReturn(true);
 
         $this->controller = new FileTextController(
             'openregister',
@@ -61,7 +81,9 @@ class FileTextControllerTest extends TestCase
             $this->logger,
             $this->config,
             $this->manualEntityService,
-            $this->userSession
+            $this->userSession,
+            $this->rootFolder,
+            $this->groupManager
         );
     }//end setUp()
 
@@ -570,4 +592,83 @@ class FileTextControllerTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('Anonymization failed', $data['message']);
     }//end testAnonymizeFileExceptionDuringAnonymization()
+
+    // =========================================================================
+    // access guards
+    // =========================================================================
+    public function testExtractFileTextRejectsInaccessibleFile(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($bob);
+
+        $rootFolder   = $this->createMock(IRootFolder::class);
+        $userFolder   = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([]);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $this->textExtractor->expects($this->never())
+            ->method('extractFile');
+
+        $controller = new FileTextController(
+            'openregister',
+            $this->request,
+            $this->textExtractor,
+            $this->fileService,
+            $this->entityRelationMapper,
+            $this->logger,
+            $this->config,
+            $this->manualEntityService,
+            $userSession,
+            $rootFolder,
+            $groupManager
+        );
+
+        $result = $controller->extractFileText(999);
+
+        $this->assertEquals(404, $result->getStatus());
+    }//end testExtractFileTextRejectsInaccessibleFile()
+
+    public function testBulkExtractRejectsNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($bob);
+
+        $rootFolder   = $this->createMock(IRootFolder::class);
+        $userFolder   = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $this->textExtractor->expects($this->never())
+            ->method('extractPendingFiles');
+
+        $controller = new FileTextController(
+            'openregister',
+            $this->request,
+            $this->textExtractor,
+            $this->fileService,
+            $this->entityRelationMapper,
+            $this->logger,
+            $this->config,
+            $this->manualEntityService,
+            $userSession,
+            $rootFolder,
+            $groupManager
+        );
+
+        $result = $controller->bulkExtract();
+
+        $this->assertEquals(403, $result->getStatus());
+    }//end testBulkExtractRejectsNonAdmin()
 }//end class

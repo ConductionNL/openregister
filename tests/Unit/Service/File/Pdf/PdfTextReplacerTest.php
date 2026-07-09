@@ -148,7 +148,7 @@ class PdfTextReplacerTest extends TestCase
 
         $output = $this->replacer->replaceInPdf(
             pdfBytes: $pdf,
-            substitutions: ['Jan Jansen' => '[PERSON: 7]']
+            substitutions: ['Jan Jansen' => '[PERSON: 1]']
         );
 
         // Output MUST be a valid PDF (starts with %PDF-, ends with %%EOF).
@@ -160,7 +160,7 @@ class PdfTextReplacerTest extends TestCase
         $parser    = new \Smalot\PdfParser\Parser();
         $extracted = $parser->parseContent($output)->getText();
 
-        $this->assertStringContainsString(needle: '[PERSON: 7]', haystack: $extracted);
+        $this->assertStringContainsString(needle: '[PERSON: 1]', haystack: $extracted);
         $this->assertStringNotContainsString(needle: 'Jan Jansen', haystack: $extracted);
     }//end testReplaceInPdfHappyPath()
 
@@ -206,7 +206,7 @@ class PdfTextReplacerTest extends TestCase
 
         $this->replacer->validateOutput(
             outputBytes: $pdfContainingNeedle,
-            substitutions: ['Jansen' => '[PERSON: 7]']
+            substitutions: ['Jansen' => '[PERSON: 1]']
         );
     }//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
@@ -225,7 +225,7 @@ class PdfTextReplacerTest extends TestCase
 
         $residuals = $this->replacer->validateOutput(
             outputBytes: $pdfContainingNeedle,
-            substitutions: ['Jansen' => '[PERSON: 7]'],
+            substitutions: ['Jansen' => '[PERSON: 1]'],
             replaceStats: [],
             strict: true
         );
@@ -242,12 +242,12 @@ class PdfTextReplacerTest extends TestCase
      */
     public function testValidateOutputPassesWhenClean(): void
     {
-        $pdf = self::buildFixture(bodyText: 'Aanvraag van [PERSON: 7] voor het loket.');
+        $pdf = self::buildFixture(bodyText: 'Aanvraag van [PERSON: 1] voor het loket.');
 
         // No exception expected; no residual needles returned.
         $residuals = $this->replacer->validateOutput(
             outputBytes: $pdf,
-            substitutions: ['Jan Jansen' => '[PERSON: 7]']
+            substitutions: ['Jan Jansen' => '[PERSON: 1]']
         );
 
         self::assertSame(expected: [], actual: $residuals);
@@ -255,14 +255,14 @@ class PdfTextReplacerTest extends TestCase
 
     /**
      * Adjacent-duplicate placeholder collapse — covers the variant-driven
-     * split case (`[PERSON: 7] [PERSON: 7]` → `[PERSON: 7]`).
+     * split case (`[PERSON: 1] [PERSON: 1]` → `[PERSON: 1]`).
      *
      * @return void
      */
     public function testCollapseAdjacentDuplicates(): void
     {
-        $input    = 'Aanvraag van [PERSON: 7] [PERSON: 7] voor het loket.';
-        $expected = 'Aanvraag van [PERSON: 7] voor het loket.';
+        $input    = 'Aanvraag van [PERSON: 1] [PERSON: 1] voor het loket.';
+        $expected = 'Aanvraag van [PERSON: 1] voor het loket.';
 
         $this->assertSame(
             expected: $expected,
@@ -273,17 +273,17 @@ class PdfTextReplacerTest extends TestCase
     /**
      * Collapse handles runs of 3+ duplicates and varied separators.
      *
-     * The pattern matches `[PERSON: 7]\t[PERSON: 7]-_[PERSON: 7]` (three
+     * The pattern matches `[PERSON: 1]\t[PERSON: 1]-_[PERSON: 1]` (three
      * duplicates separated by tab + hyphen + underscore) and replaces it
-     * with a single `[PERSON: 7]`. The leading "Mr " and trailing " said
+     * with a single `[PERSON: 1]`. The leading "Mr " and trailing " said
      * hi." are outside the match and survive unchanged.
      *
      * @return void
      */
     public function testCollapseAdjacentDuplicatesHandlesVariedSeparators(): void
     {
-        $input    = "Mr [PERSON: 7]\t[PERSON: 7]-_[PERSON: 7] said hi.";
-        $expected = 'Mr [PERSON: 7] said hi.';
+        $input    = "Mr [PERSON: 1]\t[PERSON: 1]-_[PERSON: 1] said hi.";
+        $expected = 'Mr [PERSON: 1] said hi.';
 
         $this->assertSame(
             expected: $expected,
@@ -298,7 +298,7 @@ class PdfTextReplacerTest extends TestCase
      */
     public function testCollapseAdjacentDuplicatesLeavesDifferentPlaceholdersAlone(): void
     {
-        $input = 'Both [PERSON: 7] [PERSON: 8] attended.';
+        $input = 'Both [PERSON: 1] [PERSON: 2] attended.';
         $this->assertSame(
             expected: $input,
             actual: PdfTextReplacer::collapseAdjacentDuplicatePlaceholders(text: $input)

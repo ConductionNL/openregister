@@ -49,6 +49,31 @@ class RelationsController extends Controller
 {
 
     /**
+     * Pluggable leaf integrations aggregated into `/relations` beyond the core
+     * six (notes/tasks/emails/events/contacts/deck). Keyed by the response group
+     * key the frontend widget consumes; each entry names the OR link service
+     * class (resolved lazily), its app-availability guard method (or null when
+     * the service has none), and the per-object lookup method.
+     *
+     * @var array<string,array{class:class-string,available:?string,method:string}>
+     */
+    private const LEAF_INTEGRATIONS = [
+        'talk'        => ['class' => \OCA\OpenRegister\Service\TalkLinkService::class,        'available' => 'isTalkAvailable',          'method' => 'getLinkedRooms'],
+        'forms'       => ['class' => \OCA\OpenRegister\Service\FormLinkService::class,        'available' => null,                        'method' => 'getLinkedForms'],
+        'maps'        => ['class' => \OCA\OpenRegister\Service\MapLinkService::class,         'available' => 'isMapsAvailable',          'method' => 'getLinkedPois'],
+        'polls'       => ['class' => \OCA\OpenRegister\Service\PollLinkService::class,        'available' => 'isPollsAvailable',         'method' => 'getLinkedPolls'],
+        'bookmarks'   => ['class' => \OCA\OpenRegister\Service\BookmarkLinkService::class,    'available' => 'isBookmarksAvailable',     'method' => 'getLinkedBookmarks'],
+        'collectives' => ['class' => \OCA\OpenRegister\Service\CollectiveLinkService::class,  'available' => 'isCollectivesAvailable',   'method' => 'getLinkedPages'],
+        'photos'      => ['class' => \OCA\OpenRegister\Service\PhotoLinkService::class,       'available' => 'isPhotosAvailable',        'method' => 'getLinkedAlbums'],
+        'cospend'     => ['class' => \OCA\OpenRegister\Service\CospendLinkService::class,     'available' => 'isCospendAvailable',       'method' => 'getLinkedEntries'],
+        'timetracker' => ['class' => \OCA\OpenRegister\Service\TimeTrackerLinkService::class, 'available' => 'isTimeManagerAvailable',   'method' => 'getLinkedEntries'],
+        'analytics'   => ['class' => \OCA\OpenRegister\Service\AnalyticsLinkService::class,   'available' => 'isAnalyticsAvailable',     'method' => 'getLinkedReports'],
+        'flow'        => ['class' => \OCA\OpenRegister\Service\FlowLinkService::class,        'available' => 'isFlowAvailable',          'method' => 'getLinkedOperations'],
+        'openproject' => ['class' => \OCA\OpenRegister\Service\OpenProjectLinkService::class, 'available' => 'isOpenConnectorAvailable', 'method' => 'getLinkedWorkPackages'],
+        'xwiki'       => ['class' => \OCA\OpenRegister\Service\XwikiLinkService::class,       'available' => 'isOpenConnectorAvailable', 'method' => 'getLinkedPages'],
+    ];
+
+    /**
      * Object service.
      *
      * @var ObjectService
@@ -287,6 +312,34 @@ class RelationsController extends Controller
                 $errors['deck'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
         }
+
+        // Additional pluggable leaf integrations. Each owning app's link service
+        // is resolved lazily through the server container and guarded by its own
+        // availability check, so a missing/disabled app is silently skipped and
+        // never breaks the core relations response. Records arrive as plain
+        // arrays (url-stamped by the service where the app exposes a canonical
+        // deep-link route). See ADR-022 — apps consume OR leaf abstractions.
+        foreach (self::LEAF_INTEGRATIONS as $key => $spec) {
+            if ($typesFilter !== null && in_array($key, $typesFilter) === false) {
+                continue;
+            }
+
+            try {
+                $service = \OCP\Server::get($spec['class']);
+                if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
+                    continue;
+                }
+
+                $items              = $service->{$spec['method']}($objectUuid);
+                $relations[$key]    = ['results' => $items, 'total' => count($items)];
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
+                    ['type' => $key, 'uuid' => $objectUuid, 'error' => $e->getMessage()]
+                );
+                $errors[$key] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
+            }//end try
+        }//end foreach
 
         if (empty($errors) === false) {
             $relations['_errors'] = $errors;

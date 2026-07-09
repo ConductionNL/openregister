@@ -94,6 +94,9 @@ class MessageDispatchController extends Controller
      *                      with `details.cause` when the source is
      *                      unconfigured/down (AD-23).
      *
+     * @no-admin-idor-exempt No per-object resource: dispatches via the admin-owned source (base URL admin-configured,
+     *   source checked against a fixed per-channel allowlist); no OpenRegister object id.
+     *
      * @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md
      */
     #[NoAdminRequired]
@@ -116,6 +119,9 @@ class MessageDispatchController extends Controller
      *                      a 400 when `source`/`path` are missing, or a 503
      *                      with `details.cause` when the source is
      *                      unconfigured/down (AD-23).
+     *
+     * @no-admin-idor-exempt No per-object resource: dispatches via the admin-owned source (base URL admin-configured,
+     *   source checked against a fixed per-channel allowlist); no OpenRegister object id.
      *
      * @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md
      */

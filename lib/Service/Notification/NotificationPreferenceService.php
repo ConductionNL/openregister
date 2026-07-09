@@ -253,6 +253,13 @@ class NotificationPreferenceService
 
             $schemaSlug  = (string) ($schema->getSlug() ?? $schema->getId());
             $schemaTitle = (string) ($schema->getTitle() ?? $schemaSlug);
+            // Owning app id (e.g. "pipelinq"), set by the register/schema
+            // import (ImportHandler::setApplication()) when the schema was
+            // seeded from an app's configuration. Null for schemas with no
+            // known owning app (e.g. hand-authored/system schemas); the
+            // consuming settings UI groups those under an "other" bucket
+            // rather than dropping them.
+            $application = $schema->getApplication();
 
             foreach ($notifications as $key => $spec) {
                 if (is_array($spec) === false) {
@@ -269,6 +276,7 @@ class NotificationPreferenceService
                 $entries[] = [
                     'schema'       => $schemaSlug,
                     'schemaTitle'  => $schemaTitle,
+                    'application'  => $application,
                     'notification' => (string) $key,
                     'enabled'      => $effective['enabled'],
                     'channels'     => $effective['channels'],

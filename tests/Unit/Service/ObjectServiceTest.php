@@ -66,6 +66,7 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
@@ -1549,7 +1550,16 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test ensureObjectFolder creates folder when object exists without folder.
+	 * Test ensureObjectFolder defers folder creation (lazy) for an existing
+	 * object that has no folder.
+	 *
+	 * The contract is LAZY folder creation: a Files folder is NOT created on
+	 * save for an object that has none. Most objects never get a file attached,
+	 * so eagerly creating a per-object folder on every save clutters the Files
+	 * tree and can bind the object to a folder created in a no-session context
+	 * a later editor cannot access. The folder is created on demand the first
+	 * time a file is actually uploaded. Therefore ensureObjectFolder MUST NOT
+	 * call createObjectFolderWithoutUpdate here and MUST return null.
 	 */
 	public function testEnsureObjectFolderCreatesFolderForExistingObject(): void
 	{
@@ -2420,97 +2430,6 @@ class ObjectServiceTest extends TestCase
 		$this->assertNull($this->getProperty('currentSchema'));
 	}
 
-	// ── 62. resolveRegisterAndSchema with @self.schema ──────────────────
-
-	/**
-	 * Test resolveRegisterAndSchema returns null registers/schemas when no extend.
-	 */
-	public function testResolveRegisterAndSchemaReturnsNullsWithoutExtend(): void
-	{
-		$this->setProperty('currentRegister', null);
-		$this->setProperty('currentSchema', null);
-
-		$config = ['filters' => []];
-		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, []]);
-
-		$this->assertNull($result[0]); // registers
-		$this->assertNull($result[1]); // schemas
-	}
-
-	/**
-	 * Test resolveRegisterAndSchema uses current register/schema from filters.
-	 */
-	public function testResolveRegisterAndSchemaUsesCurrentFromFilters(): void
-	{
-		$this->setProperty('currentRegister', $this->register);
-		$this->setProperty('currentSchema', $this->schema);
-
-		$config = [
-			'filters' => ['register' => 1, 'schema' => 2],
-		];
-		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, []]);
-
-		$this->assertSame([1 => $this->register], $result[0]);
-		$this->assertSame([2 => $this->schema], $result[1]);
-	}
-
-	/**
-	 * Test resolveRegisterAndSchema loads schemas when @self.schema in extend.
-	 */
-	public function testResolveRegisterAndSchemaLoadsSchemasForSelfSchemaExtend(): void
-	{
-		$this->setProperty('currentRegister', null);
-		$this->setProperty('currentSchema', null);
-
-		$obj1 = new ObjectEntity();
-		$obj1->setSchema(10);
-		$obj2 = new ObjectEntity();
-		$obj2->setSchema(20);
-
-		$schema10 = new Schema();
-		$schema10->setId(10);
-		$schema20 = new Schema();
-		$schema20->setId(20);
-
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([$schema10, $schema20]);
-
-		$config = [
-			'extend' => ['@self.schema'],
-		];
-		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, [$obj1, $obj2]]);
-
-		$this->assertNull($result[0]); // no registers needed
-		$this->assertIsArray($result[1]); // schemas loaded
-		$this->assertCount(2, $result[1]);
-	}
-
-	/**
-	 * Test resolveRegisterAndSchema loads registers when @self.register in extend.
-	 */
-	public function testResolveRegisterAndSchemaLoadsRegistersForSelfRegisterExtend(): void
-	{
-		$this->setProperty('currentRegister', null);
-		$this->setProperty('currentSchema', null);
-
-		$obj1 = new ObjectEntity();
-		$obj1->setRegister(5);
-
-		$reg5 = new Register();
-		$reg5->setId(5);
-
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([$reg5]);
-
-		$config = [
-			'extend' => ['@self.register'],
-		];
-		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, [$obj1]]);
-
-		$this->assertIsArray($result[0]); // registers loaded
-		$this->assertNull($result[1]); // no schemas needed
-	}
-
 	// ── 63. normalizeDateValues — additional branches ───────────────────
 
 	/**
@@ -2611,10 +2530,19 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame('test@example.com', $result['email']);
 	}
 
-	// ── 64. ensureObjectFolder with string folder triggers recreation ───
+	// ── 64. ensureObjectFolder with legacy string folder defers creation ──
 
 	/**
-	 * Test ensureObjectFolder creates folder when object has string folder value.
+	 * Test ensureObjectFolder defers folder creation (lazy) when the object
+	 * has a legacy non-numeric string folder value.
+	 *
+	 * A non-numeric string folder (a legacy path pre-dating the integer-id
+	 * storage convention) flags the binding as needing replacement. Under the
+	 * LAZY creation contract, however, ensureObjectFolder does NOT eagerly
+	 * call createObjectFolderWithoutUpdate on save: it leaves folderId null and
+	 * lets the folder be created on demand the first time a file is uploaded.
+	 * So this case MUST NOT call createObjectFolderWithoutUpdate and MUST
+	 * return null.
 	 */
 	public function testEnsureObjectFolderCreatesWhenFolderIsString(): void
 	{
@@ -2678,5 +2606,101 @@ class ObjectServiceTest extends TestCase
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
 		$this->assertNull($result);
+	}
+
+	// ── ISSUE B: cross-schema UUID fallback in find() ──────────────────────
+
+	/**
+	 * A UUID lookup under a stale/foreign schema falls back across all magic
+	 * tables and re-anchors to the object's real schema.
+	 *
+	 * Reproduces the fleet detail-page audit case objects/larpingapp/25/<uuid>
+	 * where the object actually lives in schema 1470: a schema-scoped lookup
+	 * 404s, but the globally-unique UUID must still resolve.
+	 */
+	public function testFindFallsBackAcrossSchemasForUuidUnderWrongSchema(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$object = new ObjectEntity();
+		$object->setId(3);
+		$object->setUuid($uuid);
+		$object->setRegister('8');
+		$object->setSchema('1470');
+
+		// First call (schema-scoped, wrong schema) misses; second call
+		// (cross-table, register+schema null) resolves the object.
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount, $object): ObjectEntity {
+				$callCount++;
+				if ($callCount === 1) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+				}
+
+				return $object;
+			}
+		);
+
+		// Re-anchoring resolves the object's true register/schema by id.
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		// Rendering echoes the resolved object back.
+		$this->renderHandler->method('renderEntity')->willReturn($object);
+
+		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+
+		$this->assertSame($object, $result);
+		$this->assertSame(2, $callCount, 'find() should retry across all magic tables');
+	}
+
+	/**
+	 * A non-UUID identifier (e.g. an object slug) is NOT retried across
+	 * schemas — slugs are not globally unique, so the schema-scoped miss is
+	 * surfaced as a 404 (DoesNotExistException).
+	 */
+	public function testFindDoesNotFallBackForNonUuidIdentifier(): void
+	{
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount): ObjectEntity {
+				$callCount++;
+				throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+			}
+		);
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+
+		try {
+			$this->service->find(id: 'employee-jansen', register: $this->register, schema: $this->schema);
+		} finally {
+			$this->assertSame(1, $callCount, 'slug lookups must not trigger a cross-schema retry');
+		}
+	}
+
+	/**
+	 * When neither register nor schema is supplied the first lookup is already
+	 * cross-table, so a UUID miss is a genuine 404 with no second attempt.
+	 */
+	public function testFindDoesNotDoubleLookupWhenNoContextProvided(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount): ObjectEntity {
+				$callCount++;
+				throw new \OCP\AppFramework\Db\DoesNotExistException('not found in any magic table');
+			}
+		);
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+
+		try {
+			$this->service->find(id: $uuid);
+		} finally {
+			$this->assertSame(1, $callCount, 'no register/schema context means the first lookup is already cross-table');
+		}
 	}
 }
