@@ -289,7 +289,9 @@ class TablesColumnMapper
                 return (float) $value;
             case 'selection':
                 if ($subtype === 'check') {
-                    return (bool) $value;
+                    // Tables stores check cells as the strings 'true'/'false';
+                    // a plain (bool) cast would turn 'false' into true.
+                    return filter_var($value, FILTER_VALIDATE_BOOLEAN);
                 }
 
                 if ($subtype === 'multi') {

@@ -187,6 +187,27 @@ class TablesColumnMapperTest extends TestCase
     }//end testProjectRowCoercesValues()
 
     /**
+     * Check cells stored as the string 'false' coerce to boolean false
+     * (live Tables stores check values as 'true'/'false' strings; a naive
+     * bool cast turns 'false' into true).
+     *
+     * @return void
+     */
+    public function testProjectRowCoercesStringFalseCheckCell(): void
+    {
+        $columns = [['id' => 3, 'title' => 'Done', 'technicalName' => 'done', 'type' => 'selection', 'subtype' => 'check']];
+        $row     = [
+            'id'    => 9,
+            'cells' => [['columnId' => 3, 'value' => 'false']],
+        ];
+
+        $map  = $this->mapper->buildColumnMap(columns: $columns);
+        $data = $this->mapper->projectRow(row: $row, columns: $columns, columnMap: $map, targetSchemaExists: static fn(int $t) => false);
+
+        $this->assertFalse($data['done']);
+    }//end testProjectRowCoercesStringFalseCheckCell()
+
+    /**
      * A cell referencing a dropped column is skipped (column drift).
      *
      * @return void
