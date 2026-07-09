@@ -392,6 +392,20 @@ class ValidateObject
                 $itemsSchema->pattern     = $uuidPat;
                 $itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
                 unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
+            } else if (($itemsSchema->{'$ref'} ?? null) !== null) {
+                // Array items that $ref another schema are relation references
+                // stored as UUID strings (e.g. assignment.briefingMaterialIds,
+                // item-bank.itemIds declared as items {"$ref":"<slug>","format":
+                // "uuid"}). OpenRegister uses the $ref only for relation tracking;
+                // Opis JSON Schema would otherwise try to resolve the bare slug as
+                // a URI and fail with "Unresolved reference: schema:///<slug>#".
+                // Treat the items as opaque UUID strings for validation — this
+                // mirrors how single string $ref props (below) and array
+                // self-references (transformSchemaForValidation Step 1) are handled.
+                $itemsSchema->type        = 'string';
+                $itemsSchema->pattern     = $uuidPat;
+                $itemsSchema->description = 'UUID reference to a related object';
+                unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
             } else if (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
                 $this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
             }

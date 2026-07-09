@@ -590,15 +590,50 @@ class ObjectService
 
             // Retrieve the object — when both call args are null, MagicMapper
             // falls back to its `findAcrossAllMagicTables` path.
-            $object = $this->getHandler->find(
-                id: $id,
-                register: $callRegister,
-                schema: $callSchema,
-                _extend: $_extend,
-                files: $files,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
+            try {
+                $object = $this->getHandler->find(
+                    id: $id,
+                    register: $callRegister,
+                    schema: $callSchema,
+                    _extend: $_extend,
+                    files: $files,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+            } catch (OcpDoesNotExistException $e) {
+                // Cross-schema fallback for relation name-resolution.
+                //
+                // Relations reference their target by a globally-unique UUID, but
+                // the URL/context schema can be stale or point at a sibling schema
+                // (e.g. objects/larpingapp/25/<uuid> where the object actually
+                // lives in schema 1470). A schema-scoped lookup only inspects one
+                // magic table, so it 404s even though the object exists in the
+                // register. When the identifier is a UUID (collision-free, unlike a
+                // slug or numeric id) we retry across all magic tables and, on a
+                // hit, RE-ANCHOR the call's register/schema to the resolved object
+                // so RBAC + rendering use the object's true context, not the stale
+                // one supplied by the caller.
+                $canFallBack = (($callSchema !== null || $callRegister !== null)
+                    && is_string($id) === true
+                    && $this->isUuidFormat(value: $id) === true);
+                if ($canFallBack === false) {
+                    throw $e;
+                }
+
+                $object = $this->getHandler->find(
+                    id: $id,
+                    register: null,
+                    schema: null,
+                    _extend: $_extend,
+                    files: $files,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+
+                // Force re-anchoring below to the resolved object's real context.
+                $callSchema   = null;
+                $callRegister = null;
+            }//end try
 
             // If the object is not found, return null (@psalm-suppress TypeDoesNotContainNull).
             if ($object === null) {
