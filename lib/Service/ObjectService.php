@@ -2441,6 +2441,13 @@ class ObjectService
             _rbac: $_rbac
         );
 
+        // The canonical search query keeps object-field filters as TOP-LEVEL
+        // keys and paging as `_limit`/`_page`/`_offset`, while the provider
+        // contract reads `filters`, `limit` and `offset`. Normalise additively
+        // (existing keys are never overwritten) so providers written against
+        // either shape keep working.
+        $query = $this->normaliseObjectSourceQuery(query: $query);
+
         $results  = [];
         $config   = ($source['config'] ?? []);
         $provider = $this->objectSourceRegistry->get($source['provider']);
@@ -2498,6 +2505,69 @@ class ObjectService
             '@self'   => $self,
         ];
     }//end paginateObjectSource()
+
+    /**
+     * Adapt a canonical search query to the object-source provider contract.
+     *
+     * The canonical shape (SearchQueryHandler::buildSearchQuery) carries object
+     * field filters as top-level keys, paging as `_limit`/`_page`/`_offset`,
+     * and sorting as `_order`. Providers read `filters`, `limit`, `offset` and
+     * `sort`. Mapping is ADDITIVE: a key the caller already set is never
+     * overwritten, so provider behaviour under the old shape is unchanged.
+     *
+     * @param array<string, mixed> $query The canonical search query.
+     *
+     * @return array<string, mixed> The query with provider-contract keys added.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function normaliseObjectSourceQuery(array $query): array
+    {
+        if (isset($query['limit']) === false && isset($query['_limit']) === true) {
+            $query['limit'] = (int) $query['_limit'];
+        }
+
+        if (isset($query['offset']) === false) {
+            $offset = (int) ($query['_offset'] ?? 0);
+            $page   = (int) ($query['_page'] ?? 0);
+            $limit  = (int) ($query['limit'] ?? 0);
+            if ($offset === 0 && $page > 1 && $limit > 0) {
+                $offset = (($page - 1) * $limit);
+            }
+
+            if ($offset > 0) {
+                $query['offset'] = $offset;
+            }
+        }
+
+        if (isset($query['sort']) === false && isset($query['_order']) === true) {
+            $query['sort'] = $query['_order'];
+        }
+
+        if (isset($query['filters']) === false) {
+            $filters = [];
+            foreach ($query as $key => $value) {
+                $key = (string) $key;
+                if ($key === '' || $key[0] === '_' || $key[0] === '@') {
+                    continue;
+                }
+
+                if (in_array($key, ['limit', 'offset', 'sort', 'filters', 'extend', 'fields'], true) === true) {
+                    continue;
+                }
+
+                if (is_scalar($value) === true) {
+                    $filters[$key] = $value;
+                }
+            }
+
+            if ($filters !== []) {
+                $query['filters'] = $filters;
+            }
+        }//end if
+
+        return $query;
+    }//end normaliseObjectSourceQuery()
 
     /**
      * Consult an object-source provider's count() for the true total (D4b).

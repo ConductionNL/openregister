@@ -481,4 +481,54 @@ class PaginateObjectSourceTest extends TestCase
             'The provider (external database) must not be consulted for a denied read.'
         );
     }//end testDeniedReadRejectsBeforeProviderIsConsulted()
+
+
+    /**
+     * Canonical query keys (`_limit`/`_page`, top-level filters, `_order`) are
+     * adapted to the provider contract (`limit`/`offset`/`filters`/`sort`)
+     * additively — pre-set contract keys are never overwritten.
+     *
+     * Live-observed: `?status=granted&_limit=5&_page=2` reached the provider
+     * with neither a filter nor a window, returning every row unfiltered.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    public function testCanonicalQueryKeysAreNormalisedForProviders(): void
+    {
+        $reflection = new ReflectionClass(ObjectService::class);
+        $service    = $reflection->newInstanceWithoutConstructor();
+        $method     = $reflection->getMethod('normaliseObjectSourceQuery');
+        $method->setAccessible(true);
+
+        $normalised = $method->invoke($service, [
+            '_limit'  => '5',
+            '_page'   => '2',
+            '_order'  => ['status' => 'ASC'],
+            '_search' => 'granted',
+            'status'  => 'granted',
+            '@self'   => ['register' => 15],
+        ]);
+
+        $this->assertSame(5, $normalised['limit']);
+        $this->assertSame(5, $normalised['offset']);
+        $this->assertSame(['status' => 'ASC'], $normalised['sort']);
+        $this->assertSame(['status' => 'granted'], $normalised['filters']);
+        $this->assertSame('granted', $normalised['_search']);
+
+        // Pre-set contract keys win over canonical ones.
+        $preset = $method->invoke($service, [
+            'limit'   => 3,
+            'offset'  => 9,
+            'filters' => ['a' => 'b'],
+            '_limit'  => '50',
+            '_page'   => '4',
+            'status'  => 'ignored',
+        ]);
+
+        $this->assertSame(3, $preset['limit']);
+        $this->assertSame(9, $preset['offset']);
+        $this->assertSame(['a' => 'b'], $preset['filters']);
+    }//end testCanonicalQueryKeysAreNormalisedForProviders()
 }//end class
