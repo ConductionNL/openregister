@@ -208,7 +208,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase
         $this->pdfTextReplacer
             ->expects($this->once())
             ->method('replaceInPdf')
-            ->with('rebuilt-pdf', ['Jan Jansen' => '[PERSON: 7]'], true)
+            ->with('rebuilt-pdf', ['Jan Jansen' => '[PERSON: 1]'], true)
             ->willReturn('clean-pdf');
 
         $cause = new PdfAnonymisationException(
@@ -218,7 +218,7 @@ class PdfOdtFallbackOrchestratorTest extends TestCase
 
         $result = $this->buildOrchestrator()->attempt(
             pdfBytes: 'fake-pdf',
-            substitutions: ['Jan Jansen' => '[PERSON: 7]'],
+            substitutions: ['Jan Jansen' => '[PERSON: 1]'],
             cause: $cause
         );
 
