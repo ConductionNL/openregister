@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ class DbalWriteException extends RuntimeException
      *
      * @return int The status code.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function getStatusCode(): int
     {
@@ -80,7 +80,7 @@ class DbalWriteException extends RuntimeException
      *
      * @return self The mapped exception.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public static function fromSqlState(string $sqlState, ?Throwable $previous=null): self
     {

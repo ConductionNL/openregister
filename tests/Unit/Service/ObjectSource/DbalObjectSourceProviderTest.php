@@ -573,7 +573,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testWritableInsertUpdateDeleteRoundTrip(): void
     {
@@ -620,7 +620,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testWriteRejectedWhenSourceNotWritable(): void
     {
@@ -641,7 +641,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testUnknownPropertyRejected(): void
     {
@@ -665,7 +665,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testNotNullViolationMapsTo422(): void
     {
@@ -690,7 +690,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testNoPkAndAbsentIdWriteBehaviour(): void
     {
@@ -738,7 +738,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testViewNeverWritable(): void
     {
@@ -760,7 +760,7 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function testCompositeKeyWriteRules(): void
     {

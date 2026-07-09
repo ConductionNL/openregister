@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ interface WritableObjectSourceProvider extends ObjectSourceProvider
      *
      * @return ObjectEntity The created entity as re-read from the external system.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function insert(Register $register, Schema $schema, array $data, array $config=[]): ObjectEntity;
 
@@ -65,7 +65,7 @@ interface WritableObjectSourceProvider extends ObjectSourceProvider
      *
      * @return ObjectEntity The updated entity as re-read from the external system.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function update(Register $register, Schema $schema, string $id, array $data, array $config=[]): ObjectEntity;
 
@@ -79,7 +79,7 @@ interface WritableObjectSourceProvider extends ObjectSourceProvider
      *
      * @return bool True when a row was deleted; false when no row matched.
      *
-     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
     public function remove(Register $register, Schema $schema, string $id, array $config=[]): bool;
 }//end interface
