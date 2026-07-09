@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
+use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -74,6 +75,31 @@ class ObjectSourceErrorMiddleware extends Middleware
      */
     public function afterException(Controller $controller, string $methodName, Exception $exception): Response
     {
+        // Sanitized write failures (constraint violations etc., dbal-virtual-
+        // registers-crud): render the carried 4xx/5xx status; log the wrapped
+        // driver exception server-side.
+        if ($exception instanceof DbalWriteException === true) {
+            $this->logger->warning(
+                sprintf(
+                    '[ObjectSourceErrorMiddleware] external database write failed (%d) in %s::%s: %s',
+                    $exception->getStatusCode(),
+                    $controller::class,
+                    $methodName,
+                    $exception->getMessage()
+                ),
+                [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $exception,
+                ]
+            );
+
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage()],
+                statusCode: $exception->getStatusCode()
+            );
+        }//end if
+
         if ($exception instanceof DbalObjectSourceException === false) {
             throw $exception;
         }

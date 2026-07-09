@@ -141,7 +141,9 @@ class DeleteObject
         LoggerInterface $logger,
         ReferentialIntegrityService $integrityService,
         IDBConnection $db,
-        private readonly ?FileService $fileService=null
+        private readonly ?FileService $fileService=null,
+        private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry=null,
+        private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper=null,
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
         $this->settingsService  = $settingsService;
@@ -505,12 +507,17 @@ class DeleteObject
         }
 
         if ($objectSource !== null) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
-                    (string) $schema->getSlug(),
-                    $objectSource['provider']
-                )
+            // Opt-in write-through (dbal-virtual-registers-crud): delegate to a
+            // WritableObjectSourceProvider when the annotation carries
+            // `readOnly: false`; the provider re-verifies the backing source's
+            // writable flag live (fail closed). Everything else keeps the v1
+            // read-only rejection. Delete RBAC already ran upstream in
+            // ObjectService::delete before this dispatch.
+            return $this->delegateObjectSourceDelete(
+                register: $register,
+                schema: $schema,
+                objectSource: $objectSource,
+                uuid: $uuid
             );
         }
 
@@ -950,4 +957,83 @@ class DeleteObject
     {
         return $this->lastCascadeCount;
     }//end getLastCascadeCount()
+
+    /**
+     * Delegate a delete on an object-source schema to its writable provider.
+     *
+     * Preserves the v1 read-only rejection unless the annotation carries
+     * `readOnly: false` AND a writable provider is registered AND the register
+     * resolves. External deletes are hard deletes; zero affected rows surfaces
+     * as the same DoesNotExistException (404) an absent native object produces.
+     *
+     * @param Register|int|string|null $register     The register (entity or identifier).
+     * @param Schema                   $schema       The sourced schema.
+     * @param array<string, mixed>     $objectSource The `x-openregister-object-source` annotation.
+     * @param string                   $uuid         The object id (external key).
+     *
+     * @return bool True when the external row was deleted.
+     *
+     * @throws \RuntimeException                          When the schema is not writable (v1 rejection).
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function delegateObjectSourceDelete(
+        Register | int | string | null $register,
+        Schema $schema,
+        array $objectSource,
+        string $uuid
+    ): bool {
+        $provider = null;
+        if ($this->objectSourceRegistry !== null) {
+            $provider = $this->objectSourceRegistry->get((string) $objectSource['provider']);
+        }
+
+        $registerEntity = null;
+        if ($register instanceof Register) {
+            $registerEntity = $register;
+        } else if ($register !== null && $this->registerMapper !== null) {
+            try {
+                $registerEntity = $this->registerMapper->find($register);
+            } catch (\Throwable $e) {
+                $registerEntity = null;
+            }
+        }
+
+        $writableOptIn = (($objectSource['readOnly'] ?? true) === false);
+        $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
+
+        if ($writableOptIn === false || $writable === false || $registerEntity === null) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
+        $config = ($objectSource['config'] ?? []);
+
+        // Pre-read for the audit record (best effort).
+        $old = $provider->find(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
+
+        $deleted = $provider->remove(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
+        if ($deleted === false) {
+            throw new \OCP\AppFramework\Db\DoesNotExistException('No external row matches id '.$uuid);
+        }
+
+        if ($old !== null) {
+            try {
+                $this->auditTrailMapper->createAuditTrail(old: $old, new: null, action: 'delete');
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[DeleteObject] audit trail for external delete on uuid '.$uuid.' could not be recorded: '.$e->getMessage(),
+                    ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+        }
+
+        return true;
+    }//end delegateObjectSourceDelete()
 }//end class

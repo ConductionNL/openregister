@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
+use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -107,13 +109,13 @@ class DbalObjectSourceProviderTest extends TestCase
      *
      * @return DbalObjectSourceProvider The provider under test.
      */
-    private function provider(?string $dbPath=null, string $driver='pdo_sqlite'): DbalObjectSourceProvider
+    private function provider(?string $dbPath=null, string $driver='pdo_sqlite', bool $writable=false): DbalObjectSourceProvider
     {
         $source = new Source();
         $source->setId(9);
         $source->setUuid('00000000-0000-0000-0000-000000000000');
         $source->setType('database');
-        $source->setAuthConfig(['driver' => $driver, 'path' => ($dbPath ?? self::$dbPath)]);
+        $source->setAuthConfig(['driver' => $driver, 'path' => ($dbPath ?? self::$dbPath), 'writable' => $writable]);
 
         $sourceMapper = $this->createMock(SourceMapper::class);
         $sourceMapper->method('find')->willReturn($source);
@@ -563,4 +565,241 @@ class DbalObjectSourceProviderTest extends TestCase
         );
         $this->assertSame(0, $total);
     }//end testMissingDriverDegradesToEmptyList()
+
+
+    /**
+     * Full write round-trip on a writable source: insert with a generated key,
+     * update, delete — asserted against the real SQLite file.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testWritableInsertUpdateDeleteRoundTrip(): void
+    {
+        $provider = $this->provider(writable: true);
+        $this->assertInstanceOf(WritableObjectSourceProvider::class, $provider);
+
+        $created = $provider->insert(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            data: ['name' => 'Willem Writes', 'status' => 'active'],
+            config: $this->peopleConfig()
+        );
+        $newId = (string) $created->getUuid();
+        $this->assertNotSame('', $newId);
+        $this->assertSame('Willem Writes', $created->getObject()['name']);
+
+        $updated = $provider->update(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            id: $newId,
+            data: ['status' => 'inactive'],
+            config: $this->peopleConfig()
+        );
+        $this->assertSame('inactive', $updated->getObject()['status']);
+        $this->assertSame('Willem Writes', $updated->getObject()['name']);
+
+        $this->assertTrue(
+            $provider->remove(
+                register: $this->register(),
+                schema: $this->peopleSchema(),
+                id: $newId,
+                config: $this->peopleConfig()
+            )
+        );
+        $this->assertNull(
+            $provider->find(register: $this->register(), schema: $this->peopleSchema(), id: $newId, config: $this->peopleConfig())
+        );
+    }//end testWritableInsertUpdateDeleteRoundTrip()
+
+
+    /**
+     * The live source flag is authoritative: a non-writable source rejects
+     * every write with the v1 read-only message — the re-lock contract.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testWriteRejectedWhenSourceNotWritable(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/read-only projection/');
+
+        $this->provider(writable: false)->insert(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            data: ['name' => 'Nope', 'status' => 'active'],
+            config: $this->peopleConfig()
+        );
+    }//end testWriteRejectedWhenSourceNotWritable()
+
+
+    /**
+     * Unknown properties are rejected with a 400 — never silently dropped.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testUnknownPropertyRejected(): void
+    {
+        try {
+            $this->provider(writable: true)->insert(
+                register: $this->register(),
+                schema: $this->peopleSchema(),
+                data: ['name' => 'X', 'status' => 'active', 'bogus' => 1],
+                config: $this->peopleConfig()
+            );
+            $this->fail('Expected DbalWriteException was not thrown.');
+        } catch (DbalWriteException $e) {
+            $this->assertSame(400, $e->getStatusCode());
+            $this->assertStringContainsString('bogus', $e->getMessage());
+        }
+    }//end testUnknownPropertyRejected()
+
+
+    /**
+     * An external NOT NULL violation maps to a sanitized 422.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testNotNullViolationMapsTo422(): void
+    {
+        try {
+            $this->provider(writable: true)->insert(
+                register: $this->register(),
+                schema: $this->peopleSchema(),
+                data: ['status' => 'active'],
+                config: $this->peopleConfig()
+            );
+            $this->fail('Expected DbalWriteException was not thrown.');
+        } catch (DbalWriteException $e) {
+            $this->assertSame(422, $e->getStatusCode());
+            $this->assertStringNotContainsString('INSERT', $e->getMessage());
+            $this->assertStringNotContainsString('people', $e->getMessage());
+        }
+    }//end testNotNullViolationMapsTo422()
+
+
+    /**
+     * No-PK tables reject id-addressed writes; absent ids yield 404 parity.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testNoPkAndAbsentIdWriteBehaviour(): void
+    {
+        $provider = $this->provider(writable: true);
+
+        try {
+            $provider->update(
+                register: $this->register(),
+                schema: $this->peopleSchema(),
+                id: '1',
+                data: ['status' => 'x'],
+                config: $this->peopleConfig(overrides: ['idColumn' => null])
+            );
+            $this->fail('Expected DbalWriteException was not thrown.');
+        } catch (DbalWriteException $e) {
+            $this->assertSame(400, $e->getStatusCode());
+        }
+
+        $this->assertFalse(
+            $provider->remove(
+                register: $this->register(),
+                schema: $this->peopleSchema(),
+                id: '99999',
+                config: $this->peopleConfig()
+            )
+        );
+
+        try {
+            $provider->update(
+                register: $this->register(),
+                schema: $this->peopleSchema(),
+                id: '99999',
+                data: ['status' => 'x'],
+                config: $this->peopleConfig()
+            );
+            $this->fail('Expected DoesNotExistException was not thrown.');
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            $this->assertStringContainsString('99999', $e->getMessage());
+        }
+    }//end testNoPkAndAbsentIdWriteBehaviour()
+
+
+    /**
+     * Views never accept writes, even on a writable source.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testViewNeverWritable(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/read-only projection/');
+
+        $this->provider(writable: true)->insert(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            data: ['name' => 'X', 'status' => 'active'],
+            config: $this->peopleConfig(overrides: ['isView' => true])
+        );
+    }//end testViewNeverWritable()
+
+
+    /**
+     * Composite-key inserts must supply every key part; update predicates must
+     * match the composite shape.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    public function testCompositeKeyWriteRules(): void
+    {
+        $provider = $this->provider(writable: true);
+        $schema   = new Schema();
+        $schema->setId(12);
+        $schema->setSlug('tenant_codes');
+        $schema->setProperties(
+            [
+                'tenant_id' => ['type' => 'integer'],
+                'code'      => ['type' => 'string'],
+                'label'     => ['type' => 'string'],
+            ]
+        );
+        $config = [
+            'sourceId'  => '9',
+            'table'     => 'tenant_codes',
+            'idColumn'  => null,
+            'idColumns' => ['tenant_id', 'code'],
+        ];
+
+        try {
+            $provider->insert(register: $this->register(), schema: $schema, data: ['tenant_id' => 3, 'label' => 'Missing code'], config: $config);
+            $this->fail('Expected DbalWriteException was not thrown.');
+        } catch (DbalWriteException $e) {
+            $this->assertSame(400, $e->getStatusCode());
+        }
+
+        $created = $provider->insert(
+            register: $this->register(),
+            schema: $schema,
+            data: ['tenant_id' => 3, 'code' => 'C', 'label' => 'Third'],
+            config: $config
+        );
+        $this->assertSame('3::C', (string) $created->getUuid());
+
+        $updated = $provider->update(register: $this->register(), schema: $schema, id: '3::C', data: ['label' => 'Third v2'], config: $config);
+        $this->assertSame('Third v2', $updated->getObject()['label']);
+
+        $this->assertTrue($provider->remove(register: $this->register(), schema: $schema, id: '3::C', config: $config));
+    }//end testCompositeKeyWriteRules()
 }//end class

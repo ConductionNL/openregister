@@ -63,6 +63,14 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						:label="t('openregister', 'Credential (UUID from the credential store)')"
 						:value.sync="connection.credential" />
 				</template>
+				<NcCheckboxRadioSwitch
+					:checked.sync="connection.writable"
+					type="switch">
+					{{ t('openregister', 'Allow writes (create, update and delete push through to the external database)') }}
+				</NcCheckboxRadioSwitch>
+				<p v-if="connection.writable" class="databaseHint">
+					{{ t('openregister', 'Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.') }}
+				</p>
 				<p class="databaseHint">
 					{{ t('openregister', 'The database password is never stored on the source; reference a credential from the credential store instead.') }}
 				</p>
@@ -113,6 +121,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcTextField,
 	NcTextArea,
@@ -135,6 +144,7 @@ export default {
 		NcTextArea,
 		NcSelect,
 		NcButton,
+		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
@@ -158,6 +168,7 @@ export default {
 				user: '',
 				credential: '',
 				path: '',
+				writable: false,
 			},
 			typeOptions: {
 				clearable: false,
@@ -234,6 +245,7 @@ export default {
 					user: authConfig.user || '',
 					credential: authConfig.credential || '',
 					path: authConfig.path || '',
+					writable: authConfig.writable === true,
 				}
 				if (authConfig.driver) {
 					this.driverOptions.value = this.driverOptions.options.find(option => option.id === authConfig.driver)
@@ -266,6 +278,7 @@ export default {
 				user: '',
 				credential: '',
 				path: '',
+				writable: false,
 			}
 			// reset typeOptions to the internal option
 			this.typeOptions.value = this.typeOptions.options.find(option => option.id === 'internal')
@@ -293,6 +306,7 @@ export default {
 					user: this.connection.user,
 					credential: this.connection.credential,
 					path: this.connection.path,
+					writable: this.connection.writable === true,
 				}
 			}
 

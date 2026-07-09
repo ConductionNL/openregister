@@ -284,6 +284,7 @@ class SaveObject
      * @param IGroupManager|null                                     $groupManager                 Group manager for admin-bypass detection
      * @param IAppConfig|null                                        $appConfig                    App-config reader for the admin-bypass toggle
      * @param IEventDispatcher|null                                  $eventDispatcher              Event dispatcher for reference validation events
+     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Resolves writable object-source providers for opt-in external writes
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
@@ -315,6 +316,7 @@ class SaveObject
         private readonly ?IGroupManager $groupManager=null,
         private readonly ?IAppConfig $appConfig=null,
         private readonly ?IEventDispatcher $eventDispatcher=null,
+        private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -2794,12 +2796,21 @@ class SaveObject
         // authoritative and OpenRegister must never become a second write path.
         $objectSource = $schema->getObjectSource();
         if ($persist === true && $objectSource !== null) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
-                    (string) $schema->getSlug(),
-                    $objectSource['provider']
-                )
+            // Opt-in write-through (dbal-virtual-registers-crud): delegate to a
+            // WritableObjectSourceProvider when the schema annotation carries
+            // `readOnly: false` — the provider re-verifies its backing source's
+            // writable flag live and fails closed. Everything else keeps the
+            // v1 read-only rejection. RBAC (create/update) and schema
+            // validation already ran upstream in ObjectService before this
+            // dispatch, so the external system is only reached for an
+            // authorized, valid write.
+            return $this->delegateObjectSourceWrite(
+                register: $register,
+                schema: $schema,
+                objectSource: $objectSource,
+                data: $data,
+                uuid: $uuid,
+                silent: $silent
             );
         }
 
@@ -5414,4 +5425,98 @@ class SaveObject
             return true;
         }
     }//end isAuditTrailsEnabled()
+
+    /**
+     * Delegate a persisting save on an object-source schema to its writable provider.
+     *
+     * The v1 read-only rejection is preserved for every case that is not an
+     * explicit, currently-valid opt-in: annotation `readOnly` missing or not
+     * `false`, provider missing or not writable, register unresolvable. The
+     * provider itself re-verifies the backing source's writable flag at write
+     * time (fail closed), so a stale annotation can never authorize a write.
+     *
+     * @param Register|null        $register     The resolved register.
+     * @param Schema               $schema       The sourced schema.
+     * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+     * @param array<string, mixed> $data         The validated object data.
+     * @param string|null          $uuid         The object id for updates, null for creates.
+     * @param bool                 $silent       Whether to skip audit trail creation.
+     *
+     * @return ObjectEntity The written virtual object as returned by the provider.
+     *
+     * @throws \RuntimeException When the schema is not writable (v1 rejection).
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function delegateObjectSourceWrite(
+        ?Register $register,
+        Schema $schema,
+        array $objectSource,
+        array $data,
+        ?string $uuid,
+        bool $silent
+    ): ObjectEntity {
+        $provider = null;
+        if ($this->objectSourceRegistry !== null) {
+            $provider = $this->objectSourceRegistry->get((string) $objectSource['provider']);
+        }
+
+        $writableOptIn = (($objectSource['readOnly'] ?? true) === false);
+        $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
+
+        if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
+        $config = ($objectSource['config'] ?? []);
+
+        if ($uuid === null || $uuid === '') {
+            $entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
+            $this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
+            return $entity;
+        }
+
+        $old    = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
+        $entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
+        $this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
+
+        return $entity;
+    }//end delegateObjectSourceWrite()
+
+    /**
+     * Record an audit-trail row for an external write (best effort, design D6).
+     *
+     * An audit failure must never mask a successful external write; it degrades
+     * to a structured secret-free warning.
+     *
+     * @param ObjectEntity|null $old    The pre-write entity (null on create).
+     * @param ObjectEntity      $new    The post-write entity.
+     * @param string            $action The action (`create`|`update`).
+     * @param bool              $silent Whether audit creation is suppressed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-virtual-registers-crud/specs/dbal-virtual-registers/spec.md
+     */
+    private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void
+    {
+        if ($silent === true) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[SaveObject] audit trail for external '.$action.' on uuid '.((string) $new->getUuid()).' could not be recorded: '.$e->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+    }//end recordObjectSourceAudit()
 }//end class

@@ -42,6 +42,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "applicants",
@@ -86,6 +87,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "permit_types",
@@ -142,6 +144,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "permits",
@@ -180,6 +183,7 @@
             "configuration": {
                 "x-openregister-object-source": {
                     "provider": "dbal-source",
+                    "readOnly": true,
                     "config": {
                         "sourceId": "00000000-0000-0000-0000-000000000000",
                         "table": "active_permits",

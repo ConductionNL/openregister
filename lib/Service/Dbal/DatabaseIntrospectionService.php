@@ -180,9 +180,12 @@ class DatabaseIntrospectionService
         // and add the inverse side on the referenced schema.
         $this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables, slugByTable: $slugByTable);
 
+        $authConfig = ($source->getAuthConfig() ?? []);
+        $writable   = (($authConfig['writable'] ?? false) === true);
+
         $schemas = [];
         foreach ($tables as $record) {
-            $schemas[] = $this->toSchemaDefinition(record: $record);
+            $schemas[] = $this->toSchemaDefinition(record: $record, writable: $writable);
         }
 
         return [
@@ -560,7 +563,7 @@ class DatabaseIntrospectionService
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
-    private function toSchemaDefinition(array $record): array
+    private function toSchemaDefinition(array $record, bool $writable=false): array
     {
         $config = [
             'sourceId' => $record['sourceId'],
@@ -580,6 +583,15 @@ class DatabaseIntrospectionService
             $config['isView'] = true;
         }
 
+        // Opt-in writes (design D2): tables of a writable source get
+        // `readOnly: false`; views are read-only ALWAYS. The write dispatch
+        // additionally re-verifies the Source's writable flag live, so a stale
+        // annotation can never authorize a write on its own.
+        $readOnly = true;
+        if ($writable === true && $record['isView'] !== true) {
+            $readOnly = false;
+        }
+
         return [
             'title'         => $record['title'],
             'slug'          => $record['slug'],
@@ -588,6 +600,7 @@ class DatabaseIntrospectionService
             'configuration' => [
                 'x-openregister-object-source' => [
                     'provider' => self::PROVIDER_ID,
+                    'readOnly' => $readOnly,
                     'config'   => $config,
                 ],
             ],
