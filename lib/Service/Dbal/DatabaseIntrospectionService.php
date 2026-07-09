@@ -306,6 +306,26 @@ class DatabaseIntrospectionService
 
         [$idColumn, $idColumns] = $this->resolveIdentity(primaryKey: $primaryKey, tableName: $tableName);
 
+        // Primary-key columns are declared `type: string`: the virtual object
+        // id IS a string (reads present it as one, URLs deliver it as one),
+        // so an integer declaration would fail write validation for the very
+        // value the read path returns. The database still stores/coerces the
+        // native column type.
+        $pkColumns = ($idColumns ?? []);
+        if ($idColumn !== null) {
+            $pkColumns = [$idColumn];
+        }
+
+        foreach ($pkColumns as $pkColumn) {
+            if (isset($properties[$pkColumn]) === true) {
+                $properties[$pkColumn] = array_merge(
+                    $properties[$pkColumn],
+                    ['type' => 'string', 'description' => 'External primary key (presented as a string).']
+                );
+                unset($properties[$pkColumn]['format']);
+            }
+        }
+
         return [
             'table'         => $tableName,
             'slug'          => $this->slugify(value: $tableName),
@@ -557,7 +577,8 @@ class DatabaseIntrospectionService
     /**
      * Serialise a working record into a Schema definition array.
      *
-     * @param array<string, mixed> $record The working table record.
+     * @param array<string, mixed> $record   The working table record.
+     * @param bool                 $writable Whether the backing source currently allows writes.
      *
      * @return array<string, mixed> The schema definition for the mapper.
      *

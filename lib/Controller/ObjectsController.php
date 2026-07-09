@@ -2692,6 +2692,12 @@ class ObjectsController extends Controller
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
@@ -2880,6 +2886,12 @@ class ObjectsController extends Controller
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
     }//end update()
@@ -3285,8 +3297,17 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (DoesNotExistException $exception) {
+            // Absent objects (native or external) are a uniform 404.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors and object not found).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         } catch (\Throwable $throwable) {
             // Safety net for fatal errors (\Error/\TypeError) that do NOT extend
