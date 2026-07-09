@@ -26,8 +26,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-29
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -130,7 +130,7 @@ class DeleteObject
      * @param IDBConnection               $db                 Database connection for transactions
      * @param FileService|null            $fileService        File service for cleaning up object folders on delete
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -174,8 +174,8 @@ class DeleteObject
      *
      * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function delete(array | JsonSerializable $object, ?array $cascadeContext=null, bool $permanent=false): bool
     {
@@ -397,7 +397,7 @@ class DeleteObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function deleteObjectFolder(ObjectEntity $objectEntity): void
     {
@@ -448,8 +448,8 @@ class DeleteObject
      *
      * @return DeletionAnalysis The analysis result.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-29
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
@@ -487,8 +487,8 @@ class DeleteObject
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function deleteObject(
         Register | int | string | null $register,
@@ -595,7 +595,7 @@ class DeleteObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
-     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function resolveDeletionContext(
         Register | int | string | null $register,
@@ -655,7 +655,7 @@ class DeleteObject
      * @throws ReferentialIntegrityException If blocked by RESTRICT
      * @throws Exception If cascade transaction fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleIntegrityDeletion(
         ObjectEntity $object,
@@ -697,7 +697,7 @@ class DeleteObject
      *
      * @throws ReferentialIntegrityException Always thrown
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function logAndThrowRestrict(string $uuid, ?string $schemaId, DeletionAnalysis $analysis): void
     {
@@ -726,7 +726,7 @@ class DeleteObject
      *
      * @throws Exception If the transaction fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function executeIntegrityTransaction(
         ObjectEntity $object,
@@ -793,7 +793,7 @@ class DeleteObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function runLegacyCascade(array $context, ObjectEntity $object, string $uuid): void
     {
@@ -820,7 +820,7 @@ class DeleteObject
      *
      * @return array|null The cascade context, or null if no cascades occurred
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function buildCascadeContext(string $uuid, ?string $triggerSlug, DeletionAnalysis $analysis): ?array
     {
@@ -848,7 +848,7 @@ class DeleteObject
      *
      * @return array{0: string, 1: mixed} [userId, activeOrganisation]
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveUserContext(): array
     {
@@ -880,7 +880,7 @@ class DeleteObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeDeleteObjects(
         Register $register,
@@ -926,7 +926,7 @@ class DeleteObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isAuditTrailsEnabled(): bool
     {
@@ -951,7 +951,7 @@ class DeleteObject
      *
      * @return int The number of cascade-deleted objects.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function getLastCascadeCount(): int
     {
