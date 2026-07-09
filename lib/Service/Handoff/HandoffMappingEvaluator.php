@@ -49,9 +49,10 @@ class HandoffMappingEvaluator
     /**
      * Evaluate a full mapping.
      *
-     * @param array<string, array<string, mixed>> $mapping    The declared mapping (contract field → expression).
-     * @param array<string, mixed>                $sourceData The source object's data.
-     * @param array<string, mixed>                $provenance The engine-filled source pointer `{app, register, schema, uuid}`.
+     * @param array<string, mixed> $mapping    The declared mapping (contract field → expression;
+     *                                         each expression is validated as an array at runtime).
+     * @param array<string, mixed> $sourceData The source object's data.
+     * @param array<string, mixed> $provenance The engine-filled source pointer `{app, register, schema, uuid}`.
      *
      * @return array<string, mixed> Contract field → evaluated value (fields evaluating to null are omitted).
      *

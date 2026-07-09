@@ -103,7 +103,6 @@ class AuditTrailMapper extends QBMapper
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
     }//end __construct()
 
-
     /**
      * Insert an audit-trail entry sealed into the SHA-256 hash chain.
      *

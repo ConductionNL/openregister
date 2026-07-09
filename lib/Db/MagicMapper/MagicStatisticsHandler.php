@@ -59,6 +59,7 @@ use Psr\Log\LoggerInterface;
  */
 class MagicStatisticsHandler
 {
+
     /**
      * Per-request memo of the magic-table list from information_schema.
      *

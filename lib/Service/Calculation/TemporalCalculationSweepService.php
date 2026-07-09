@@ -178,7 +178,7 @@ class TemporalCalculationSweepService
      * @param Register             $register The owning register.
      * @param Schema               $schema   The temporal schema.
      * @param array<string, mixed> $calcs    Materialised calculations.
-     * @param array<string, int>   $summary  Running summary (by reference).
+     * @param array<string, int>   $summary  Running summary counters (by reference).
      *
      * @return void
      *
@@ -201,10 +201,6 @@ class TemporalCalculationSweepService
         [$lifecycleField, $terminalStates] = $this->lifecycleTerminals(schema: $schema);
 
         foreach ($objects as $object) {
-            if (($object instanceof ObjectEntity) === false) {
-                continue;
-            }
-
             $data = ($object->getObject() ?? []);
 
             // Terminal cases are left alone (spec scenario) — their clock no

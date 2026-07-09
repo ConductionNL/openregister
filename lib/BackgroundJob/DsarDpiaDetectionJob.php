@@ -233,9 +233,9 @@ class DsarDpiaDetectionJob extends TimedJob
     /**
      * Flag every unflagged case of a triggering group (audited write).
      *
-     * @param array<string, mixed> $group   The triggering group (key, count, caseUuids, unflaggedUuids).
-     * @param array<string, mixed> $config  The pack's `dpiaDetection` block.
-     * @param array<string, int>   $summary Running summary (by reference).
+     * @param array{key: string, count: int, caseUuids: list<string>, unflaggedUuids: list<string>} $group   The triggering group.
+     * @param array<string, mixed>                                                                  $config  The pack's `dpiaDetection` block.
+     * @param array<string, int>                                                                    $summary Running summary counters (by reference).
      *
      * @return void
      *

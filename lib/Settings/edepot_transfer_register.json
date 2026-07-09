@@ -64,9 +64,9 @@
               "title": "Object Reference",
               "description": "A reference to one object included in the transfer.",
               "properties": {
-                "uuid": { "type": "string", "maxLength": 255, "title": "Object UUID" },
-                "schema": { "type": "integer", "title": "Schema Id" },
-                "register": { "type": "integer", "title": "Register Id" }
+                "uuid": { "type": "string", "maxLength": 255, "title": "Object UUID", "description": "UUID of the object included in the transfer." },
+                "schema": { "type": "integer", "title": "Schema Id", "description": "Identifier of the schema the referenced object belongs to." },
+                "register": { "type": "integer", "title": "Register Id", "description": "Identifier of the register the referenced object belongs to." }
               }
             }
           },
@@ -79,9 +79,9 @@
               "title": "Exclusion",
               "description": "One excluded object.",
               "properties": {
-                "uuid": { "type": "string", "maxLength": 255, "title": "Object UUID" },
-                "reason": { "type": "string", "maxLength": 2000, "title": "Reason" },
-                "excludedAt": { "type": "string", "format": "date-time", "title": "Excluded At" }
+                "uuid": { "type": "string", "maxLength": 255, "title": "Object UUID", "description": "UUID of the object excluded from the transfer." },
+                "reason": { "type": "string", "maxLength": 2000, "title": "Reason", "description": "Human-readable reason the object was excluded during review." },
+                "excludedAt": { "type": "string", "format": "date-time", "title": "Excluded At", "description": "Timestamp at which the object was excluded from the transfer." }
               }
             }
           },
@@ -99,11 +99,11 @@
               "title": "Delivery Attempt",
               "description": "One transport attempt for the transfer.",
               "properties": {
-                "attempt": { "type": "integer", "title": "Attempt Number" },
-                "timestamp": { "type": "string", "format": "date-time", "title": "Attempted At" },
-                "transport": { "type": "string", "maxLength": 128, "title": "Transport" },
-                "outcome": { "type": "string", "maxLength": 64, "title": "Outcome" },
-                "error": { "type": "string", "maxLength": 4000, "title": "Error" }
+                "attempt": { "type": "integer", "title": "Attempt Number", "description": "Sequential number of this delivery attempt." },
+                "timestamp": { "type": "string", "format": "date-time", "title": "Attempted At", "description": "Timestamp at which this delivery attempt was made." },
+                "transport": { "type": "string", "maxLength": 128, "title": "Transport", "description": "Transport channel used for this delivery attempt." },
+                "outcome": { "type": "string", "maxLength": 64, "title": "Outcome", "description": "Per-package outcome of this delivery attempt." },
+                "error": { "type": "string", "maxLength": 4000, "title": "Error", "description": "Error detail captured when the delivery attempt failed." }
               }
             }
           },
@@ -202,8 +202,8 @@
               "title": "File Checksum",
               "description": "One payload file's name and SHA-256.",
               "properties": {
-                "name": { "type": "string", "maxLength": 1024, "title": "File Name" },
-                "sha256": { "type": "string", "maxLength": 64, "title": "SHA-256" }
+                "name": { "type": "string", "maxLength": 1024, "title": "File Name", "description": "Name of the payload file included in the transfer." },
+                "sha256": { "type": "string", "maxLength": 64, "title": "SHA-256", "description": "SHA-256 checksum of the payload file as sent." }
               }
             }
           },

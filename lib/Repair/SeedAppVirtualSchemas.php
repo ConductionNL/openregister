@@ -187,6 +187,15 @@ class SeedAppVirtualSchemas implements IRepairStep
                     continue;
                 }
 
+                // The `tables` register is NOT a single-schema projection: its
+                // per-table schemas are auto-seeded by SeedTablesVirtualSchemas /
+                // `occ openregister:tables:sync` (design D7). The semantic-map
+                // `tables` row only records the provider + app gate, so it must
+                // not be materialised into a nominal schema here.
+                if ($row['register'] === 'tables') {
+                    continue;
+                }
+
                 $rowsByRegister[$row['register']][] = $row;
             }
 

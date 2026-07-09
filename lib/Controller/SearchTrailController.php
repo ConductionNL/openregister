@@ -438,8 +438,6 @@ class SearchTrailController extends Controller
     /**
      * Get search statistics for a given period
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search statistics
@@ -471,8 +469,6 @@ class SearchTrailController extends Controller
 
     /**
      * Get popular search terms
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -530,8 +526,6 @@ class SearchTrailController extends Controller
     /**
      * Get search activity by time period
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search activity data
@@ -564,8 +558,6 @@ class SearchTrailController extends Controller
 
     /**
      * Get search statistics by register and schema
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -622,8 +614,6 @@ class SearchTrailController extends Controller
 
     /**
      * Get user agent statistics
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -716,8 +706,6 @@ class SearchTrailController extends Controller
 
     /**
      * Clean up old search trail logs
-     *
-     * @NoAdminRequired
      *
      * @return JSONResponse JSON response containing cleanup operation results
      *
@@ -873,8 +861,6 @@ class SearchTrailController extends Controller
      *
      * @param int $id The search trail ID to delete
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
@@ -919,8 +905,6 @@ class SearchTrailController extends Controller
 
     /**
      * Delete multiple search trail logs based on filters or specific IDs
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
@@ -998,7 +982,6 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse A JSON response indicating success or failure
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3

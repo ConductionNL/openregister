@@ -324,20 +324,22 @@ class AppHostSettingsService
     private static function deepMergeConfig(array $base, array $overlay): array
     {
         foreach ($overlay as $key => $value) {
-            if (is_array($value) === true
+            $bothArrays = (is_array($value) === true
                 && isset($base[$key]) === true
-                && is_array($base[$key]) === true
-            ) {
-                $baseIsList    = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
-                $overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
-                if ($baseIsList === true && $overlayIsList === true) {
-                    $base[$key] = array_merge($base[$key], $value);
-                } else {
-                    $base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
-                }
-            } else {
+                && is_array($base[$key]) === true);
+            if ($bothArrays === false) {
                 $base[$key] = $value;
+                continue;
             }
+
+            $baseIsList    = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
+            $overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
+            if ($baseIsList === true && $overlayIsList === true) {
+                $base[$key] = array_merge($base[$key], $value);
+                continue;
+            }
+
+            $base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
         }
 
         return $base;
