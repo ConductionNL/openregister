@@ -64,7 +64,6 @@ use OCA\OpenRegister\Service\FileService;
  * @method Register delete(Entity $entity)
  * @method Register find(int|string $id)
  * @method Register findEntity(IQueryBuilder $query)
- * @method Register[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Register> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Register>
@@ -483,7 +482,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[]
      *
-     * @psalm-return                                list<OCA\OpenRegister\Db\Register>
+     * @psalm-return                                list<\OCA\OpenRegister\Db\Register>
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function findAll(
