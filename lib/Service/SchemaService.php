@@ -59,7 +59,6 @@ class SchemaService
      */
     private const SCHEMA_EXPLORE_SAMPLE_SIZE = 1000;
 
-
     /**
      * Schema mapper for schema operations
      *

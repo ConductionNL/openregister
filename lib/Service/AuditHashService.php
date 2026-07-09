@@ -148,7 +148,6 @@ class AuditHashService
         return $row['hash'];
     }//end getLastHash()
 
-
     /**
      * Seal an already-inserted audit-trail row into the hash chain.
      *

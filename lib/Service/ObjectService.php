@@ -22,9 +22,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -349,7 +349,7 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -407,7 +407,7 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -481,7 +481,7 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function setObject(ObjectEntity | string | int $object): static
     {
@@ -1036,7 +1036,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1264,7 +1264,7 @@ class ObjectService
      *
      * @return array{0: array, 1: string|null} [normalized object array, extracted UUID]
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function extractUuidAndNormalizeObject(array | ObjectEntity $object, ?string $uuid): array
     {
@@ -1606,7 +1606,7 @@ class ObjectService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     public function deleteObject(
         string $uuid,
@@ -1733,7 +1733,7 @@ class ObjectService
      *
      * @return bool True when the schema carries a valid archival annotation.
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     private function schemaHasArchivalAnnotation(Schema $schema): bool
     {
@@ -1753,7 +1753,7 @@ class ObjectService
      *
      * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-4
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function rejectIfTransferred(string $uuid): void
     {
@@ -2594,7 +2594,7 @@ class ObjectService
      *
      * @return void
      *
-     * @spec openspec/changes/search-trail-recording/tasks.md
+     * @spec openspec/specs/search-trail-recording/spec.md
      */
     private function recordSearchTrail(array $query, array $result, float $startTime): void
     {
@@ -2817,7 +2817,7 @@ class ObjectService
      *
      * @return array<string, string> Map of UUID to name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-2
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function collectNamesForResults(array $results): array
     {
@@ -3140,7 +3140,7 @@ class ObjectService
      *
      * @phpstan-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
         array $objects,
@@ -3801,7 +3801,7 @@ class ObjectService
      *
      * @return array Validation result with valid and invalid objects
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function validateObjectsBySchema(int $schemaId): array
     {

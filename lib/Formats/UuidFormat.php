@@ -63,7 +63,7 @@ class UuidFormat implements Format
      */
     public function validate(mixed $data): bool
     {
-        return is_string($data) === true && self::isCanonical($data) === true;
+        return is_string($data) === true && self::isCanonical(value: $data) === true;
     }//end validate()
 
     /**
@@ -114,8 +114,8 @@ class UuidFormat implements Format
      */
     public static function isAny(string $value): bool
     {
-        return self::isCanonical($value) === true
-            || self::isPrefixed($value) === true
-            || self::isHex32($value) === true;
+        return self::isCanonical(value: $value) === true
+            || self::isPrefixed(value: $value) === true
+            || self::isHex32(value: $value) === true;
     }//end isAny()
 }//end class

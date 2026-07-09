@@ -408,8 +408,8 @@ class ValidateObject
                 unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
             } else if (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
                 $this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
-            }
-        }
+            }//end if
+        }//end if
 
         // Handle direct object properties.
         if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {

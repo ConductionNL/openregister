@@ -126,6 +126,7 @@ class WebhookService
      * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
      * @param MappingService           $mappingService      Mapping service
      * @param MappingMapper            $mappingMapper       Mapping mapper
+     * @param IJobList                 $jobList             Background job list for retry scheduling
      * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
      *
      * @return void

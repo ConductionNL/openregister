@@ -3111,7 +3111,7 @@ class MagicMapper extends AbstractObjectMapper
                 } catch (\Throwable $e) {
                     // Index already exists (no IF NOT EXISTS on MySQL) — ignore.
                 }
-            }
+            }//end if
 
             // Create indexes for schema-specific properties.
             $schemaProperties  = $_schema->getProperties();

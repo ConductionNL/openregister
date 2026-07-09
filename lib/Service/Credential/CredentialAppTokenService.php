@@ -130,8 +130,10 @@ class CredentialAppTokenService
     /**
      * Issue a short-lived signed token binding an app id to a credential id.
      *
-     * @param string $appId        The consuming app's id (must be registered).
-     * @param string $credentialId The credential UUID the app intends to use.
+     * @param string      $appId        The consuming app's id (must be registered).
+     * @param string      $credentialId The credential UUID the app intends to use.
+     * @param string|null $method       Optional HTTP method the token is bound to.
+     * @param string|null $path         Optional request path the token is bound to.
      *
      * @return string A `payload.signature` token (base64url parts).
      *
@@ -184,7 +186,9 @@ class CredentialAppTokenService
      * enforced. Any structural, signature, or expiry failure throws (fail-closed);
      * the caller maps every failure to a single static 403.
      *
-     * @param string $token The `payload.signature` token to verify.
+     * @param string      $token  The `payload.signature` token to verify.
+     * @param string|null $method Optional HTTP method the token must be bound to.
+     * @param string|null $path   Optional request path the token must be bound to.
      *
      * @return array{appId: string, credentialId: string} The authenticated claims.
      *

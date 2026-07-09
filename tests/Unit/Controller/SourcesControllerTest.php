@@ -7,8 +7,12 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\SourcesController;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
+use Psr\Log\NullLogger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -29,27 +33,44 @@ class SourcesControllerTest extends TestCase
     private IRequest&MockObject $request;
     private IAppConfig&MockObject $config;
     private SourceMapper&MockObject $sourceMapper;
+    private DatabaseIntrospectionService&MockObject $introspectionService;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->controller = $this->buildController(isAdmin: true);
+    }
 
+    /**
+     * Build the controller with a real DBAL connection factory (null-secret
+     * credential store) and a mocked introspection service.
+     *
+     * @param bool $isAdmin Whether the acting user is an admin.
+     *
+     * @return SourcesController The controller under test.
+     */
+    private function buildController(bool $isAdmin): SourcesController
+    {
         $this->request = $this->createMock(IRequest::class);
         $this->config = $this->createMock(IAppConfig::class);
         $this->sourceMapper = $this->createMock(SourceMapper::class);
+        $this->introspectionService = $this->createMock(DatabaseIntrospectionService::class);
 
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnArgument(0);
 
-        // Write endpoints are admin-gated; simulate an authenticated admin.
+        // Write endpoints are admin-gated; simulate an authenticated user.
         $adminUser = $this->createMock(\OCP\IUser::class);
         $adminUser->method('getUID')->willReturn('admin');
         $userSession = $this->createMock(\OCP\IUserSession::class);
         $userSession->method('getUser')->willReturn($adminUser);
         $groupManager = $this->createMock(\OCP\IGroupManager::class);
-        $groupManager->method('isAdmin')->willReturn(true);
+        $groupManager->method('isAdmin')->willReturn($isAdmin);
 
-        $this->controller = new SourcesController(
+        $credentialStore = $this->createMock(CredentialStore::class);
+        $credentialStore->method('get')->willReturn(null);
+
+        return new SourcesController(
             'openregister',
             $this->request,
             $this->config,
@@ -59,7 +80,9 @@ class SourcesControllerTest extends TestCase
             $groupManager,
             $this->createMock(\OCP\Security\ICrypto::class),
             $this->createMock(SourceFetcherRegistry::class),
-            $this->createMock(HarvestPipelineService::class)
+            $this->createMock(HarvestPipelineService::class),
+            new DbalConnectionFactory(credentialStore: $credentialStore, logger: new NullLogger()),
+            $this->introspectionService
         );
     }
 
@@ -584,5 +607,186 @@ class SourcesControllerTest extends TestCase
             ->with($this->identicalTo($source));
 
         $this->controller->destroy(1);
+    }
+
+    // -------------------------------------------------------------------------
+    // testConnection() + introspect() — dbal-virtual-registers contract
+    // (route: POST /api/sources/{id}/test-connection, /api/sources/{id}/introspect)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Build a `type: database` Source pointing at a freshly built SQLite fixture.
+     *
+     * @return Source The database source.
+     */
+    private function sqliteDatabaseSource(): Source
+    {
+        require_once __DIR__.'/../../fixtures/dbal/build-permits-sqlite.php';
+        $path = sys_get_temp_dir().'/or-sources-controller-test-permits.sqlite';
+        build_permits_sqlite(path: $path);
+
+        $source = new Source();
+        $source->setId(5);
+        $source->setUuid('00000000-0000-0000-0000-000000000000');
+        $source->setType('database');
+        $source->setAuthConfig(['driver' => 'pdo_sqlite', 'path' => $path]);
+
+        return $source;
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testTestConnectionRequiresAdmin(): void
+    {
+        $controller = $this->buildController(isAdmin: false);
+
+        $result = $controller->testConnection(1);
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testTestConnectionReturns404WhenSourceMissing(): void
+    {
+        $this->sourceMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+
+        $result = $this->controller->testConnection(999);
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testTestConnectionRejectsNonDatabaseSource(): void
+    {
+        $source = new Source();
+        $source->setType('internal');
+        $this->sourceMapper->method('find')->willReturn($source);
+
+        $result = $this->controller->testConnection(1);
+
+        $this->assertSame(422, $result->getStatus());
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testTestConnectionSucceedsAgainstSqliteFixtureWithoutLeakingSecrets(): void
+    {
+        $this->sourceMapper->method('find')->willReturn($this->sqliteDatabaseSource());
+
+        $result = $this->controller->testConnection(5);
+
+        $this->assertSame(Http::STATUS_OK, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+        $this->assertStringNotContainsString('password', strtolower(json_encode($data)));
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testTestConnectionUnreachableSourceReturns503NotBare500(): void
+    {
+        $source = new Source();
+        $source->setId(6);
+        $source->setType('database');
+        // A directory is not a valid SQLite database file — connection fails.
+        $source->setAuthConfig(['driver' => 'pdo_sqlite', 'path' => sys_get_temp_dir()]);
+        $this->sourceMapper->method('find')->willReturn($source);
+
+        $result = $this->controller->testConnection(6);
+
+        $this->assertContains($result->getStatus(), [502, 503]);
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+        $this->assertStringNotContainsString('password', strtolower(json_encode($data)));
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testIntrospectRequiresAdmin(): void
+    {
+        $controller = $this->buildController(isAdmin: false);
+
+        $result = $controller->introspect(1);
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testIntrospectReturns404WhenSourceMissing(): void
+    {
+        $this->sourceMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+
+        $result = $this->controller->introspect(999);
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testIntrospectRejectsNonDatabaseSource(): void
+    {
+        $source = new Source();
+        $source->setType('internal');
+        $this->sourceMapper->method('find')->willReturn($source);
+
+        $result = $this->controller->introspect(1);
+
+        $this->assertSame(422, $result->getStatus());
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testIntrospectReturnsSummaryShape(): void
+    {
+        $source = $this->sqliteDatabaseSource();
+        $this->sourceMapper->method('find')->willReturn($source);
+        $this->introspectionService->expects($this->once())
+            ->method('introspect')
+            ->with($this->identicalTo($source))
+            ->willReturn(
+                [
+                    'register' => 12,
+                    'created'  => ['applicants', 'permit_types', 'permits', 'active_permits'],
+                    'updated'  => [],
+                    'drift'    => [],
+                ]
+            );
+
+        $result = $this->controller->introspect(5);
+
+        $this->assertSame(Http::STATUS_OK, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(12, $data['register']);
+        $this->assertContains('permits', $data['created']);
+        $this->assertSame([], $data['drift']);
+        $this->assertStringNotContainsString('password', strtolower(json_encode($data)));
+    }
+
+    /**
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md
+     */
+    public function testIntrospectUnreachableSourceReturns503(): void
+    {
+        $source = $this->sqliteDatabaseSource();
+        $this->sourceMapper->method('find')->willReturn($source);
+        $this->introspectionService->method('introspect')->willThrowException(
+            new \OCA\OpenRegister\Service\Dbal\DbalConnectionException('unreachable')
+        );
+
+        $result = $this->controller->introspect(5);
+
+        $this->assertSame(503, $result->getStatus());
     }
 }
