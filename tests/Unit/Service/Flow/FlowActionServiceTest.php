@@ -12,8 +12,10 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\AgentRunRequestedEvent;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\Flow\FlowActionService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
 use OCP\Mail\IMailer;
 use OCP\Mail\IMessage;
@@ -28,14 +30,16 @@ class FlowActionServiceTest extends TestCase
     private $mailer;
     private $config;
     private $logger;
+    private $eventDispatcher;
 
     protected function setUp(): void
     {
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->calendar     = $this->createMock(CalendarEventService::class);
-        $this->mailer       = $this->createMock(IMailer::class);
-        $this->config       = $this->createMock(IConfig::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+        $this->schemaMapper    = $this->createMock(SchemaMapper::class);
+        $this->calendar        = $this->createMock(CalendarEventService::class);
+        $this->mailer          = $this->createMock(IMailer::class);
+        $this->config          = $this->createMock(IConfig::class);
+        $this->logger          = $this->createMock(LoggerInterface::class);
+        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
         $this->config->method('getSystemValue')->willReturnCallback(
             fn ($key, $default = null) => $default
@@ -47,7 +51,8 @@ class FlowActionServiceTest extends TestCase
             $this->calendar,
             $this->mailer,
             $this->config,
-            $this->logger
+            $this->logger,
+            $this->eventDispatcher
         );
     }
 
@@ -177,5 +182,131 @@ class FlowActionServiceTest extends TestCase
         $this->mailer->expects($this->never())->method('send');
 
         $this->service->run($this->object(['name' => 'Rex']), 'created');
+    }
+
+    public function testAgentActionDispatchesEventWithCorrectPayload(): void
+    {
+        $this->schemaWithFlows([
+            [
+                'name'    => 'classify-tender',
+                'trigger' => 'created',
+                'actions' => [
+                    [
+                        'type'             => 'agent',
+                        'agent'            => 'agent-uuid-1',
+                        'skill'            => 'classify-tender',
+                        'prompt'           => 'Classify this tender: {{name}} ({{species}})',
+                        'resultField'      => 'categorySlug',
+                        'requiresApproval' => true,
+                        'mode'             => 'async',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->eventDispatcher->expects($this->once())
+            ->method('dispatchTyped')
+            ->with($this->callback(function (AgentRunRequestedEvent $event): bool {
+                return $event->getSubjectUuid() === 'uuid-1'
+                    && $event->getSubjectRegister() === '1'
+                    && $event->getSubjectSchema() === '10'
+                    && $event->getAgent() === 'agent-uuid-1'
+                    && $event->getSkill() === 'classify-tender'
+                    && $event->getPrompt() === 'Classify this tender: Rex (Dog)'
+                    && $event->getResultField() === 'categorySlug'
+                    && $event->isRequiresApproval() === true
+                    && $event->getMode() === 'async'
+                    && $event->getFlowName() === 'classify-tender'
+                    && $event->getCorrelationId() !== '';
+            }));
+
+        $this->service->run($this->object(['name' => 'Rex', 'species' => 'Dog']), 'created');
+    }
+
+    public function testAgentActionDefaultsModeToAsyncAndRequiresApprovalToFalse(): void
+    {
+        $this->schemaWithFlows([
+            [
+                'name'    => 'x',
+                'trigger' => 'created',
+                'actions' => [
+                    ['type' => 'agent', 'agent' => 'agent-uuid-1', 'prompt' => 'hi', 'resultField' => 'result'],
+                ],
+            ],
+        ]);
+
+        $this->eventDispatcher->expects($this->once())
+            ->method('dispatchTyped')
+            ->with($this->callback(function (AgentRunRequestedEvent $event): bool {
+                return $event->getMode() === 'async'
+                    && $event->isRequiresApproval() === false
+                    && $event->getSkill() === null;
+            }));
+
+        $this->service->run($this->object(['name' => 'Rex']), 'created');
+    }
+
+    public function testAgentActionMissingAgentRefIsSkippedAndLogged(): void
+    {
+        $this->schemaWithFlows([
+            ['name' => 'x', 'trigger' => 'created', 'actions' => [['type' => 'agent', 'prompt' => 'hi', 'resultField' => 'result']]],
+        ]);
+
+        $this->eventDispatcher->expects($this->never())->method('dispatchTyped');
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $this->service->run($this->object(['name' => 'Rex']), 'created');
+    }
+
+    public function testAgentActionMissingResultFieldIsSkippedAndLogged(): void
+    {
+        $this->schemaWithFlows([
+            ['name' => 'x', 'trigger' => 'created', 'actions' => [['type' => 'agent', 'agent' => 'agent-uuid-1', 'prompt' => 'hi']]],
+        ]);
+
+        $this->eventDispatcher->expects($this->never())->method('dispatchTyped');
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $this->service->run($this->object(['name' => 'Rex']), 'created');
+    }
+
+    public function testAgentActionUnsupportedSyncModeIsSkippedAndLogged(): void
+    {
+        $this->schemaWithFlows([
+            [
+                'name'    => 'x',
+                'trigger' => 'created',
+                'actions' => [
+                    ['type' => 'agent', 'agent' => 'agent-uuid-1', 'prompt' => 'hi', 'resultField' => 'result', 'mode' => 'sync'],
+                ],
+            ],
+        ]);
+
+        $this->eventDispatcher->expects($this->never())->method('dispatchTyped');
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $this->service->run($this->object(['name' => 'Rex']), 'created');
+    }
+
+    public function testAgentActionFailureDoesNotBlockOtherActionsAndNeverThrows(): void
+    {
+        $this->schemaWithFlows([
+            [
+                'name'    => 'x',
+                'trigger' => 'created',
+                'actions' => [
+                    ['type' => 'agent', 'agent' => 'agent-uuid-1', 'prompt' => 'hi', 'resultField' => 'result'],
+                    ['type' => 'email', 'to' => 'vet@example.test'],
+                ],
+            ],
+        ]);
+
+        $this->eventDispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('dispatch down'));
+        // The email still runs despite the agent action's dispatch throwing.
+        $this->mailer->expects($this->once())->method('send');
+
+        // Must not throw into the save path.
+        $this->service->run($this->object(['name' => 'Rex']), 'created');
+        $this->addToAssertionCount(1);
     }
 }

@@ -50,6 +50,14 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaService
 {
+    /**
+     * Maximum number of objects sampled when exploring a schema's properties.
+     *
+     * Property exploration is statistical, so a bounded sample is sufficient;
+     * loading every object of a schema (potentially hundreds of thousands) into
+     * memory to analyse it is an OOM hazard (bound-unbounded-query-memory).
+     */
+    private const SCHEMA_EXPLORE_SAMPLE_SIZE = 1000;
 
     /**
      * Schema mapper for schema operations
@@ -108,7 +116,7 @@ class SchemaService
      *
      * @throws \Exception If schema not found or analysis fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-1
+     * @spec openspec/specs/schema-property-exploration/spec.md
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
@@ -124,11 +132,13 @@ class SchemaService
             throw new Exception('Schema not found with ID: '.$schemaId);
         }
 
-        // Get all objects for this schema.
-        $objects = $this->objectEntityMapper->findBySchema($schemaId);
+        // Sample a bounded set of objects for this schema. Exploration is
+        // statistical, so a capped sample avoids loading the full (potentially
+        // huge) object set into memory (bound-unbounded-query-memory).
+        $objects = $this->objectEntityMapper->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
 
         $this->logger->info(
-            message: '[SchemaService] Found '.count($objects).' objects to analyze',
+            message: '[SchemaService] Analyzing a sample of '.count($objects).' objects (cap '.self::SCHEMA_EXPLORE_SAMPLE_SIZE.')',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
@@ -303,8 +313,18 @@ class SchemaService
                 $analysis['min_length'] = $length;
 
                 // Detect format based on string patterns.
-                $analysis['detected_format']   = $this->detectStringFormat(value: $value);
-                $analysis['string_patterns'][] = $this->analyzeStringPattern(value: $value);
+                $analysis['detected_format'] = $this->detectStringFormat(value: $value);
+                // AnalyzeStringPattern() returns a flat list of pattern-name
+                // strings. Merge it (rather than append the whole array) so
+                // string_patterns stays a flat string[] as every consumer
+                // expects — getTypeFromPatterns' in_array checks, the
+                // array_unique dedup, and the [0] "main pattern". Appending
+                // nested it, which broke those lookups and triggered
+                // array-to-string warnings.
+                $analysis['string_patterns'] = array_merge(
+                    $analysis['string_patterns'],
+                    $this->analyzeStringPattern(value: $value)
+                );
                 break;
 
             case 'integer':
@@ -473,8 +493,11 @@ class SchemaService
             $patterns[] = 'SCREAMING_SNAKE_CASE';
         }
 
-        // Check for filename patterns.
-        if (preg_match('/^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$/', $value) === 1) {
+        // Check for filename patterns. Use ~ as the delimiter: the class
+        // contains a literal "/", which would prematurely close a /…/ pattern
+        // (PCRE delimiter scanning is naive), making preg_match error with
+        // "Unknown modifier '\'" and silently never match.
+        if (preg_match('~^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$~', $value) === 1) {
             $patterns[] = 'filename';
         }
 
@@ -1745,7 +1768,7 @@ class SchemaService
      *
      * @return Schema Updated schema entity
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-2
+     * @spec openspec/specs/schema-property-exploration/spec.md
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {

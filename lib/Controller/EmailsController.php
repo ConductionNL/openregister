@@ -272,6 +272,11 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt Guarded downstream: EmailService::searchBySender scopes the
+     *   mailbox scan to the caller's own Mail accounts (oc_mail_accounts.user_id = session
+     *   UID) and returns [] for an anonymous session, so a caller only ever sees links for
+     *   mail their own accounts received.
+     *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
      */
     public function search(): JSONResponse
@@ -327,6 +332,10 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Guarded downstream: EmailService::searchBySender scopes the
+     *   mailbox scan to the caller's own Mail accounts (oc_mail_accounts.user_id = session
+     *   UID) and returns [] for an anonymous session.
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
      */

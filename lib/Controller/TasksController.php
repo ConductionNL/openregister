@@ -101,6 +101,8 @@ class TasksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: TaskService::getAllUserTasks resolves the calendar set from the IUserSession UID;
+     *   the assignee param filters within the caller's own tasks, not an identity claim.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-2
      */

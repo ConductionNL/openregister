@@ -14,8 +14,8 @@
 +
      public function __construct(protected OllamaConfig $config, ?LoggerInterface $logger = null)
      {
-         $this->client = new Client([
-@@ -170,6 +178,13 @@
+         if (! isset($config->model)) {
+@@ -174,6 +182,13 @@
          $contents = $response->getBody()->getContents();
          $json = Utility::decodeJson($contents);
  

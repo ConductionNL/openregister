@@ -47,7 +47,6 @@ use OCA\OpenRegister\Db\Schema;
  */
 class CalculationPayloadBuilder
 {
-
     /**
      * Constructor.
      *

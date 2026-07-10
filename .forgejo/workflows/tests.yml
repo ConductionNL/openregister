@@ -65,20 +65,38 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-unit:
     name: PHPUnit unit (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
+      image: php:8.3-cli
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          # Node is required by actions/checkout@v4 (a JS action) which runs
+          # inside this php:8.3-cli container; the stock image ships no node.
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
         # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
-        continue-on-error: true
+        # Wired to the input so a caller passing `unit-gating: false` (e.g.
+        # openregister — the suite is GREEN but failOnWarning trips on carried
+        # PHP-warning debt, and its real hard gate is the in-container run in
+        # api-test-coverage.yml) actually gets the documented non-blocking
+        # behaviour instead of a hardcoded hard failure.
+        continue-on-error: ${{ inputs.unit-gating == false }}
         run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
 
   # ---------------------------------------------------------------------------
@@ -86,39 +104,69 @@ jobs:
   # ---------------------------------------------------------------------------
   l10n-check:
     name: l10n extraction check (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Assert every t() source string is in l10n/en.json
         run: node tests/l10n/check-l10n.js
 
   # ---------------------------------------------------------------------------
-  # COVERAGE GATE A — PHPUnit COVERAGE RATCHET.
+  # HARD GATE 3 — frontend unit suite (Vitest, OFFLINE; no NC needed).
   #
-  # Re-measures backend LINE coverage and FAILS the PR if it drops below
-  # tests/.coverage-baseline.json `phpunit` minus tolerance (~0.5%). openregister
-  # carries a red 13k-test unit suite on baseline (unit-gating=false in
-  # api-test-coverage / app-tests.yml), so this job inherits continue-on-error:
-  # it RECORDS the number (currently ~54.55%) but does not block until the unit
-  # suite is green. The clover is still produced from the green subset.
-  #
-  # Coverage driver: run under PCOV (pecl install pcov + docker-php-ext-enable
-  # in the step; no-op if the image already bakes pcov/xdebug). See
-  # TESTING-CI-ROLLOUT.md "Coverage driver".
+  # Runs the pure-logic Vitest suite under tests/vitest/** (Pinia store
+  # state transitions, util/formatter calc, form-validation mappers, and any
+  # offline component mounts). These need no DOM/NC runtime — @nextcloud/* and
+  # @conduction/nextcloud-vue are aliased to deterministic stubs in
+  # vitest.config.js. Always gating.
+  # ---------------------------------------------------------------------------
+  frontend-unit:
+    name: Frontend unit (Vitest — ${{ inputs.app-id }})
+    runs-on: codeberg-medium
+    container:
+      image: node:${{ inputs.node-version }}
+    steps:
+      - name: Checkout
+        uses: https://github.com/actions/checkout@v4
+
+      - name: Install npm deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Run Vitest unit suite
+        run: npm run test:unit
+
+  # ---------------------------------------------------------------------------
+  # COVERAGE GATE A — PHPUnit COVERAGE RATCHET (PCOV clover line coverage).
+  # Fails a PR that drops backend coverage below tests/.coverage-baseline.json
+  # `phpunit` minus tolerance. Inherits continue-on-error from unit-gating so a
+  # red unit suite records-but-does-not-block. Seeds on first --update run when
+  # the baseline is null. See TESTING-CI-ROLLOUT.md "Coverage ratchet".
   # ---------------------------------------------------------------------------
   phpunit-coverage-ratchet:
     name: PHPUnit coverage ratchet (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
-    continue-on-error: true
+      image: php:8.3-cli
+    continue-on-error: false
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          # Node is required by actions/checkout@v4 (a JS action) which runs
+          # inside this php:8.3-cli container; the stock image ships no node.
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Ensure a coverage driver (PCOV)
         run: |
@@ -130,7 +178,7 @@ jobs:
             || echo "coverage driver: ABSENT (ratchet will no-op; see TESTING-CI-ROLLOUT.md)"
 
       - name: Install composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite WITH coverage (clover)
         run: |
@@ -139,48 +187,46 @@ jobs:
             --coverage-clover coverage/clover.xml --colors=never || true
           test -f coverage/clover.xml || { echo "no clover.xml (driver absent?) — skipping ratchet"; exit 0; }
 
-      - name: Coverage ratchet (records; flip to gating once unit suite is green)
+      - name: Coverage ratchet (fail on drop)
         run: |
           test -f coverage/clover.xml || exit 0
           bash tests/coverage-ratchet.sh phpunit coverage/clover.xml
 
   # ---------------------------------------------------------------------------
-  # COVERAGE GATE B — FRONTEND COVERAGE RATCHET (Jest, istanbul json-summary).
-  #
-  # openregister's frontend suite is Jest (not Vitest). `npm run test` is green
-  # (195 tests), but `--coverage` currently dies in babel-plugin-istanbul with
-  # "minimatch is not a function" (a hoisted minimatch v10 vs test-exclude's
-  # required minimatch@3). Until that dep is pinned the coverage run cannot
-  # produce a summary, so the ratchet SEEDS (vitest=null) without blocking. Once
-  # the dep is fixed (e.g. package.json overrides: { "minimatch": "3.1.2" } for
-  # test-exclude, or upgrade babel-plugin-istanbul), the first --update run
-  # records the baseline and the gate arms. See TESTING-CI-ROLLOUT.md.
+  # COVERAGE GATE B — FRONTEND COVERAGE RATCHET (Vitest v8, src/** line coverage).
+  # Fails a PR that drops frontend coverage below baseline `vitest` minus
+  # tolerance. Seeds on first --update run when the baseline is null.
   # ---------------------------------------------------------------------------
   frontend-coverage-ratchet:
     name: Frontend coverage ratchet (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
-    continue-on-error: true
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
-      - name: Install npm deps
-        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-
-      - name: Run Jest WITH coverage (json-summary)
+      - name: Install npm deps (+ coverage-v8)
         run: |
-          npx jest --silent --coverage \
-            --coverageReporters=json-summary --coverageReporters=text-summary \
-            --coverageDirectory=coverage-frontend || true
-          test -f coverage-frontend/coverage-summary.json \
-            || { echo "no coverage-summary.json — Jest coverage blocked (minimatch dep; see TESTING-CI-ROLLOUT.md). Skipping ratchet."; exit 0; }
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+          VITEST_VER="$(node -e "console.log(require('./node_modules/vitest/package.json').version)")"
+          npm install --no-save --legacy-peer-deps "@vitest/coverage-v8@${VITEST_VER}"
 
-      - name: Coverage ratchet (seeds vitest baseline once coverage is unblocked)
+      - name: Run Vitest coverage + ratchet (honors each app's own --coverage.include)
         run: |
-          test -f coverage-frontend/coverage-summary.json || exit 0
-          bash tests/coverage-ratchet.sh vitest coverage-frontend/coverage-summary.json
+          # Use the app's OWN coverage script so its per-app --coverage.include is
+          # honored (apps keep frontend JS under src/** OR js/**; hardcoding src/**
+          # here makes js/**-based apps measure 0 files -> "Unknown" -> ratchet exit 2).
+          if npm run 2>/dev/null | grep -qE '(^|[[:space:]])test:coverage-ratchet([[:space:]]|$)'; then
+            npm run test:coverage-ratchet
+          elif npm run 2>/dev/null | grep -qE '(^|[[:space:]])test:coverage([[:space:]]|$)'; then
+            npm run test:coverage
+            test -f coverage-vitest/coverage-summary.json \
+              && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json \
+              || { echo "no coverage-summary.json — vitest coverage unavailable; skipping ratchet"; exit 0; }
+          else
+            echo "no frontend coverage script for this app; skipping ratchet"; exit 0
+          fi
 
   # ---------------------------------------------------------------------------
   # SCAFFOLD — deep e2e (Playwright tests/e2e/workflows/). Opt-in via run-e2e.
@@ -203,7 +249,7 @@ jobs:
     runs-on: docker
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: TODO — boot seeded NC, then run deep e2e
         run: |
@@ -226,7 +272,7 @@ jobs:
     runs-on: docker
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: TODO — boot NC, then run Newman
         run: |

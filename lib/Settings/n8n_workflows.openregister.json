@@ -93,6 +93,7 @@
                         "title": "Workflow ID",
                         "type": "string",
                         "format": "uuid",
+                        "$ref": "workflow",
                         "description": "UUID reference to the workflow this trigger is associated with."
                     },
                     "type": {
@@ -131,6 +132,7 @@
                         "title": "Workflow ID",
                         "type": "string",
                         "format": "uuid",
+                        "$ref": "workflow",
                         "description": "UUID reference to the workflow triggered by this webhook."
                     }
                 }
@@ -151,6 +153,7 @@
                         "title": "Workflow ID",
                         "type": "string",
                         "format": "uuid",
+                        "$ref": "workflow",
                         "description": "UUID reference to the workflow executed on this schedule."
                     },
                     "timezone": {

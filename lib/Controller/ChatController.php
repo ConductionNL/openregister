@@ -850,6 +850,8 @@ class ChatController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded in-body: scopes every count to the caller's active organisation (OrganisationService::getActiveOrganisation)
+     *   via an organisation = ? filter on agents and conversations; no caller-supplied object id.
      *
      * @return JSONResponse Chat statistics
      *

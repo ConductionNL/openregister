@@ -24,6 +24,8 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Class ChunkMapper
@@ -38,17 +40,31 @@ use OCP\IDBConnection;
  * @method list<Chunk> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Chunk>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Data-mapper surface: each method is one
+ *   query over openregister_chunks (counts, source lookups, work queues, keyword search);
+ *   splitting the mapper would scatter the table's query surface without reducing complexity.
  */
 class ChunkMapper extends QBMapper
 {
+
+    /**
+     * PSR-3 logger.
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
     /**
      * Constructor.
      *
-     * @param IDBConnection $db Database connection.
+     * @param IDBConnection        $db     Database connection.
+     * @param LoggerInterface|null $logger PSR-3 logger (nullable for BC with existing constructions).
      */
-    public function __construct(IDBConnection $db)
+    public function __construct(IDBConnection $db, ?LoggerInterface $logger=null)
     {
         parent::__construct(db: $db, tableName: 'openregister_chunks', entityClass: Chunk::class);
+        $this->logger = $logger ?? new NullLogger();
     }//end __construct()
 
     /**
@@ -423,4 +439,139 @@ class ChunkMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findUnindexed()
+
+    /**
+     * Find unvectorized chunks.
+     *
+     * Retrieves chunks that have been extracted but not yet vectorized, in
+     * FIFO order (`created_at ASC` — this is a work queue, not a relevance
+     * ranking). Consumed by ChunkVectorizationJob.
+     *
+     * @param int|null $limit  Maximum number of chunks to return
+     * @param int|null $offset Offset for pagination
+     *
+     * @return Chunk[] Array of unvectorized chunks
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#5.1
+     */
+    public function findUnvectorized(?int $limit=null, ?int $offset=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                    $qb->expr()->eq(
+                'vectorized',
+                $qb->createNamedParameter(
+                    false,
+                    \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
+                    )
+            )
+                    )
+            ->orderBy('created_at', 'ASC');
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $this->findEntities(query: $qb);
+    }//end findUnvectorized()
+
+    /**
+     * Ranked keyword search over chunk text (PostgreSQL only).
+     *
+     * Queries `to_tsvector('simple', text_content) @@ plainto_tsquery('simple',
+     * :query)`, ranked by `ts_rank` descending. The expression form matches the
+     * functional GIN index created by Version1Date20260706101000 (a STORED
+     * tsvector generated column is not viable on Nextcloud: Doctrine schema
+     * introspection throws on unknown column types — live-verified amendment,
+     * 2026-07-06). The 'simple' configuration avoids English-only stemming bias
+     * given OpenRegister's Dutch-government usage context (decision 7).
+     *
+     * Each row is shaped for VectorSearchHandler::reciprocalRankFusion()'s
+     * `$keywordResults` input. On non-PostgreSQL platforms, or when the query
+     * fails, returns [] with a logged warning — never throws (no ranked
+     * keyword path existed before this change on any platform, so this is
+     * purely additive).
+     *
+     * @param string $query   Search query text
+     * @param int    $limit   Maximum number of results
+     * @param array  $filters Optional filters (source_type)
+     *
+     * @return array<int, array{entity_type: string, entity_id: string, score: float,
+     *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#3.3
+     */
+    public function searchByKeyword(string $query, int $limit, array $filters=[]): array
+    {
+        $platform = $this->db->getDatabasePlatform();
+
+        if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+            $this->logger->warning(
+                message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
+                    .'with the tsvector keyword-search index',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'platform' => get_class($platform),
+                ]
+            );
+            return [];
+        }
+
+        $tsVector = "to_tsvector('simple', text_content)";
+        $where    = [$tsVector." @@ plainto_tsquery('simple', :query)"];
+        $params   = ['query' => $query];
+
+        if (($filters['source_type'] ?? null) !== null) {
+            $where[] = 'source_type = :sourceType';
+            $params['sourceType'] = $filters['source_type'];
+        }
+
+        $sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
+            .'ts_rank('.$tsVector.", plainto_tsquery('simple', :query)) AS score "
+            .'FROM *PREFIX*openregister_chunks '
+            .'WHERE '.implode(' AND ', $where).' '
+            .'ORDER BY score DESC '
+            .'LIMIT '.max(1, $limit);
+
+        try {
+            $result = $this->db->executeQuery($sql, $params);
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+        } catch (\Exception $e) {
+            // Query failure (a missing GIN index alone does not fail the
+            // expression form, it only slows it) — degrade, don't throw.
+            $this->logger->warning(
+                message: '[ChunkMapper] Keyword search query failed; returning empty result',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'entity_type' => (string) ($row['source_type'] ?? 'file'),
+                'entity_id'   => (string) $row['source_id'],
+                'score'       => (float) $row['score'],
+                'chunk_text'  => $row['text_content'],
+                'chunk_index' => (int) $row['chunk_index'],
+                'metadata'    => [],
+            ];
+        }
+
+        return $results;
+    }//end searchByKeyword()
 }//end class

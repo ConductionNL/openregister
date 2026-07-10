@@ -35,21 +35,32 @@ use Psr\Log\LoggerInterface;
  * VectorSearchHandler
  *
  * Responsible for searching vectors using semantic search and hybrid search.
- * Uses PostgreSQL database with cosine similarity as the sole vector backend.
+ * On PostgreSQL with a populated pgvector ANN sidecar (`openregister_vec_ann`)
+ * the primary path is an index-backed SQL KNN query (`ORDER BY embedding <=> :query`);
+ * the PHP cosine-similarity loop over serialized BLOBs remains as the explicit
+ * fallback for MariaDB/SQLite, Postgres installs without the pgvector extension,
+ * and rows whose stored dimension doesn't match the column.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The class deliberately carries BOTH
+ *   ranking paths (index-backed SQL KNN primary + PHP-cosine fallback) plus RRF fusion;
+ *   splitting them would separate two implementations of one contract that must stay
+ *   result-shape-identical.
  */
 class VectorSearchHandler
 {
     /**
      * Constructor
      *
-     * @param IDBConnection   $db     Database connection
-     * @param LoggerInterface $logger PSR-3 logger
+     * @param IDBConnection    $db       Database connection
+     * @param PgVectorPlatform $pgVector pgvector fast-path capability helper
+     * @param LoggerInterface  $logger   PSR-3 logger
      */
     public function __construct(
         private readonly IDBConnection $db,
+        private readonly PgVectorPlatform $pgVector,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -57,7 +68,12 @@ class VectorSearchHandler
     /**
      * Perform semantic similarity search
      *
-     * Uses PostgreSQL cosine similarity as the sole vector search backend.
+     * Primary path: SQL K-nearest-neighbour on PostgreSQL via the pgvector
+     * ANN sidecar (`openregister_vec_ann`) and its HNSW index (index-backed
+     * `ORDER BY embedding <=> :query LIMIT :n`). Fallback path: fetch
+     * candidate rows and score them with a PHP cosine loop (MariaDB/SQLite,
+     * missing pgvector extension, dimension mismatch, or no converted rows
+     * yet during warm-up).
      *
      * @param array $queryEmbedding Query embedding vector
      * @param int   $limit          Maximum number of results
@@ -70,7 +86,7 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Filter handling requires multiple conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with error handling
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+     * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
      */
     public function semanticSearch(
         array $queryEmbedding,
@@ -91,6 +107,31 @@ class VectorSearchHandler
 
         $results = [];
         try {
+            // Primary path: index-backed SQL KNN on PostgreSQL/pgvector.
+            $knnResults = $this->knnSearch(
+                queryEmbedding: $queryEmbedding,
+                limit: $limit,
+                filters: $filters
+            );
+
+            if ($knnResults !== null && $knnResults !== []) {
+                $searchTime = round((microtime(true) - $startTime) * 1000, 2);
+
+                $this->logger->info(
+                    message: '[VectorSearchHandler] Semantic search completed (pgvector KNN path)',
+                    context: [
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
+                        'results_count'  => count($knnResults),
+                        'top_similarity' => $knnResults[0]['similarity'] ?? 0,
+                        'search_time_ms' => $searchTime,
+                    ]
+                );
+
+                return $knnResults;
+            }
+
+            // Fallback path: PHP cosine loop over candidate BLOB rows.
             $vectors = $this->fetchVectors(filters: $filters);
 
             if ($vectors === []) {
@@ -109,10 +150,23 @@ class VectorSearchHandler
             $results = [];
             foreach ($vectors as $vector) {
                 try {
+                    // PostgreSQL returns BLOB columns as stream resources
+                    // (live-verified on PG16); normalise to a string first —
+                    // unserialize() on a resource is a TypeError, which the
+                    // per-row catch below would not have caught.
+                    $blob = $vector['embedding'];
+                    if (is_resource($blob) === true) {
+                        $blob = stream_get_contents($blob);
+                    }
+
+                    if (is_string($blob) === false) {
+                        continue;
+                    }
+
                     // SEC-SVC-9: embeddings are plain float arrays; never
                     // allow object instantiation during unserialize to
                     // avoid PHP object-injection from a tampered blob.
-                    $storedEmbedding = unserialize($vector['embedding'], ['allowed_classes' => false]);
+                    $storedEmbedding = unserialize($blob, ['allowed_classes' => false]);
 
                     if (is_array($storedEmbedding) === false) {
                         continue;
@@ -163,7 +217,7 @@ class VectorSearchHandler
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
-                message: '[VectorSearchHandler] Semantic search completed',
+                message: '[VectorSearchHandler] Semantic search completed (PHP fallback path)',
                 context: [
                     'file'           => __FILE__,
                     'line'           => __LINE__,
@@ -189,6 +243,123 @@ class VectorSearchHandler
             throw new Exception('Semantic search failed: '.$e->getMessage());
         }//end try
     }//end semanticSearch()
+
+    /**
+     * Index-backed SQL KNN search on PostgreSQL via pgvector.
+     *
+     * Executes `ORDER BY a.embedding <=> :queryVector LIMIT :limit`
+     * (cosine-distance operator, ascending = most similar first) against the
+     * HNSW index on the `openregister_vec_ann` sidecar table (joined to the
+     * main vectors table for entity data), honouring `entity_type` /
+     * `entity_id` filters as WHERE predicates. Returns null when the fast path
+     * is unavailable (non-Postgres platform, missing sidecar, or
+     * query/sidecar dimension mismatch) or when the KNN query itself fails —
+     * the caller then uses the PHP fallback.
+     *
+     * @param array $queryEmbedding Query embedding vector
+     * @param int   $limit          Maximum number of results
+     * @param array $filters        Additional filters (entity_type, entity_id)
+     *
+     * @return array<int,array<string,mixed>>|null Results, or null when unavailable
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter handling requires multiple conditions
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter handling paths
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+     */
+    private function knnSearch(array $queryEmbedding, int $limit, array $filters=[]): ?array
+    {
+        $columnDimension = $this->pgVector->getVectorColumnDimension();
+
+        if ($columnDimension === null || count($queryEmbedding) !== $columnDimension) {
+            return null;
+        }
+
+        $where  = [];
+        $params = ['qvec' => $this->pgVector->formatVector($queryEmbedding)];
+        $types  = [];
+
+        if (($filters['entity_type'] ?? null) !== null) {
+            if (is_array($filters['entity_type']) === true) {
+                $where[] = 'v.entity_type IN (:entityTypes)';
+                $params['entityTypes'] = $filters['entity_type'];
+                $types['entityTypes']  = \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY;
+            }
+
+            if (is_array($filters['entity_type']) === false) {
+                $where[] = 'v.entity_type = :entityType';
+                $params['entityType'] = $filters['entity_type'];
+            }
+        }
+
+        if (($filters['entity_id'] ?? null) !== null) {
+            if (is_array($filters['entity_id']) === true) {
+                $where[] = 'v.entity_id IN (:entityIds)';
+                $params['entityIds'] = $filters['entity_id'];
+                $types['entityIds']  = \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY;
+            }
+
+            if (is_array($filters['entity_id']) === false) {
+                $where[]            = 'v.entity_id = :entityId';
+                $params['entityId'] = $filters['entity_id'];
+            }
+        }
+
+        $whereSql = '';
+        if ($where !== []) {
+            $whereSql = 'WHERE '.implode(' AND ', $where).' ';
+        }
+
+        $sql = 'SELECT v.id, v.entity_type, v.entity_id, v.chunk_index, v.total_chunks, v.chunk_text, '
+            .'v.metadata, v.embedding_model, v.embedding_dimensions, '
+            .'(a.embedding <=> :qvec::vector) AS distance '
+            .'FROM '.PgVectorPlatform::SIDECAR_TABLE.' a '
+            .'JOIN *PREFIX*openregister_vectors v ON v.id = a.vector_id '
+            .$whereSql
+            .'ORDER BY a.embedding <=> :qvec::vector ASC '
+            .'LIMIT '.max(1, $limit);
+
+        try {
+            $result = $this->db->executeQuery($sql, $params, $types);
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[VectorSearchHandler] pgvector KNN query failed, using PHP fallback',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return null;
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $metadata = [];
+            if (empty($row['metadata']) === false) {
+                $metadata = json_decode($row['metadata'], true) ?? [];
+            }
+
+            $results[] = [
+                'vector_id'    => $row['id'],
+                'entity_type'  => $row['entity_type'],
+                'entity_id'    => $row['entity_id'],
+                // Cosine distance = 1 - cosine similarity.
+                'similarity'   => 1 - (float) $row['distance'],
+                'chunk_index'  => $row['chunk_index'],
+                'total_chunks' => $row['total_chunks'],
+                'chunk_text'   => $row['chunk_text'],
+                'metadata'     => $metadata,
+                'model'        => $row['embedding_model'],
+                'dimensions'   => $row['embedding_dimensions'],
+            ];
+        }//end foreach
+
+        return $results;
+    }//end knnSearch()
 
     /**
      * Perform hybrid search combining keyword and semantic (vectors)
@@ -419,6 +590,8 @@ class VectorSearchHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter handling requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter handling paths
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#3.2
      */
     private function fetchVectors(array $filters=[]): array
     {
@@ -464,10 +637,16 @@ class VectorSearchHandler
                 }
             }
 
-            // Performance optimization: Limit vectors fetched.
+            // Approximate-fallback bound (hybrid-document-search, decision 4):
+            // max_vectors caps how many BLOB rows the O(n) PHP cosine fallback
+            // will unserialize and score per request. It is a documented safety
+            // cap, NOT a relevance mechanism — ordering is by primary key
+            // (stable, non-biasing) instead of the former `created_at DESC`,
+            // which silently substituted "newest" for "most relevant" past the
+            // cap. The index-backed pgvector KNN path has no such cap.
             $maxVectors = $filters['max_vectors'] ?? 500;
             $qb->setMaxResults($maxVectors);
-            $qb->orderBy('created_at', 'DESC');
+            $qb->orderBy('id', 'ASC');
 
             $result  = $qb->executeQuery();
             $vectors = $result->fetchAll();

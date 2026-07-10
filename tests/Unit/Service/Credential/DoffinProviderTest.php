@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -235,7 +236,8 @@ class DoffinProviderTest extends TestCase
             $this->catalogue,
             $userSession,
             $clientService,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(OrganisationService::class)
         );
     }
 }

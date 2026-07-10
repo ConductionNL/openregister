@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Listener;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -36,9 +37,12 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
+use OCA\OpenRegister\Service\Calculation\SequenceContext;
+use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Materialises declared calculations into the object payload on create/update.
@@ -60,8 +64,10 @@ class CalculationOnSaveListener implements IEventListener
      * Wire collaborators used to look up schema calculations.
      *
      * @param SchemaMapper              $schemaMapper   Schema lookup mapper.
+     * @param RegisterMapper            $registerMapper Register lookup mapper (for sequence scope id).
      * @param CalculationEvaluator      $evaluator      Expression evaluator.
      * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
+     * @param SequenceService           $sequences      Atomic running-number reservation service.
      * @param LoggerInterface           $logger         PSR logger for warnings.
      *
      * @return void
@@ -72,8 +78,10 @@ class CalculationOnSaveListener implements IEventListener
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly CalculationEvaluator $evaluator,
         private readonly CalculationPayloadBuilder $payloadBuilder,
+        private readonly SequenceService $sequences,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -110,7 +118,6 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method runs the linear save-time
      *   materialisation pipeline (inject @self, @ref, @aggregate, then evaluate each calc and
@@ -142,6 +149,15 @@ class CalculationOnSaveListener implements IEventListener
         // the save.
         $data = $this->payloadBuilder->build(object: $object, schema: $schema);
 
+        // Build the sequence-consumption context ONLY on create. Passing it to
+        // the evaluator lets `{ "sequence": … }` nodes reserve exactly one
+        // running number per object; on update the context is null so a
+        // re-materialise never burns a fresh number.
+        $sequenceContext = null;
+        if ($isUpdate === false) {
+            $sequenceContext = $this->buildSequenceContext(object: $object, schema: $schema);
+        }
+
         foreach ($calcs as $name => $spec) {
             if (is_array($spec) === false) {
                 continue;
@@ -153,7 +169,7 @@ class CalculationOnSaveListener implements IEventListener
             }
 
             try {
-                $value = $this->evaluator->evaluate($data, $spec['expression'] ?? null);
+                $value = $this->evaluator->evaluate($data, $spec['expression'] ?? null, $sequenceContext);
             } catch (EvaluationException $e) {
                 $this->logger->warning(
                     sprintf(
@@ -181,6 +197,52 @@ class CalculationOnSaveListener implements IEventListener
             $object->setObject($data);
         }
     }//end process()
+
+    /**
+     * Build the per-create SequenceContext binding the object's register + schema scope.
+     *
+     * Returns null when the numeric register/schema ids cannot be resolved, in
+     * which case a `sequence` node simply yields null rather than failing the
+     * save. The schema is already resolved (it carries the numeric PK); the
+     * register reference is resolved through the RegisterMapper.
+     *
+     * @param ObjectEntity $object The object being created.
+     * @param Schema       $schema The resolved schema (carries the numeric id).
+     *
+     * @return SequenceContext|null The bound context, or null when the scope ids are unresolvable.
+     */
+    private function buildSequenceContext(ObjectEntity $object, Schema $schema): ?SequenceContext
+    {
+        $schemaId = (int) $schema->getId();
+        if ($schemaId <= 0) {
+            return null;
+        }
+
+        $registerRef = $object->getRegister();
+        if ($registerRef === null || $registerRef === '') {
+            return null;
+        }
+
+        try {
+            // Bypass RBAC + multitenancy: the create event fires in a context
+            // that may have no active organisation, so the default tenant-scoped
+            // find() would not resolve a register referenced purely by its
+            // numeric id and the `sequence` node would silently yield null.
+            $register   = $this->registerMapper->find($registerRef, false, false);
+            $registerId = (int) $register->getId();
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                sprintf('Sequence context: could not resolve register "%s": %s', (string) $registerRef, $e->getMessage())
+            );
+            return null;
+        }
+
+        if ($registerId <= 0) {
+            return null;
+        }
+
+        return new SequenceContext(service: $this->sequences, registerId: $registerId, schemaId: $schemaId);
+    }//end buildSequenceContext()
 
     /**
      * Render a calculation result into a JSON-friendly value.

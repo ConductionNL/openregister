@@ -434,4 +434,82 @@ class EntityRelationMapperTest extends TestCase
         );
 
     }//end testExistsForFileAtPositionFalse()
+
+
+    /**
+     * Wire a mock QB whose executeQuery returns the given fetchAll rows, so
+     * `findEntityIdsByValueForFiles` can run without a real DB.
+     *
+     * @param array<int, array<string, mixed>> $rows Rows returned by IResult::fetchAll().
+     *
+     * @return void
+     */
+    private function setupFilesQueryReturning(array $rows): void
+    {
+        $result = $this->createMock(originalClassName: IResult::class);
+        $result->method('fetchAll')->willReturn(value: $rows);
+        $result->method('closeCursor');
+
+        $expr = $this->createMock(originalClassName: IExpressionBuilder::class);
+        $expr->method('in')->willReturn(value: 'in');
+
+        $qb = $this->createMock(originalClassName: IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('expr')->willReturn(value: $expr);
+        $qb->method('createNamedParameter')->willReturn(value: ':p');
+        $qb->method('executeQuery')->willReturn(value: $result);
+
+        $this->db->method('getQueryBuilder')->willReturn(value: $qb);
+
+    }//end setupFilesQueryReturning()
+
+
+    /**
+     * Empty file-id list short-circuits to [] without touching the DB.
+     *
+     * @return void
+     */
+    public function testFindEntityIdsByValueForFilesEmptyShortCircuits(): void
+    {
+        $mapper = $this->makeMapper();
+
+        $this->assertSame(expected: [], actual: $mapper->findEntityIdsByValueForFiles(fileIds: []));
+
+    }//end testFindEntityIdsByValueForFilesEmptyShortCircuits()
+
+
+    /**
+     * Returns the mapped union of relation rows across the given file ids,
+     * each normalised to {entity_id, file_id, position_start}.
+     *
+     * @return void
+     */
+    public function testFindEntityIdsByValueForFilesMapsUnionRows(): void
+    {
+        $this->setupFilesQueryReturning(
+            rows: [
+                ['entity_id' => 7, 'file_id' => 1, 'position_start' => 50],
+                ['entity_id' => 8, 'file_id' => 1, 'position_start' => 10],
+                ['entity_id' => 9, 'file_id' => 2, 'position_start' => 5],
+            ]
+        );
+
+        $mapper  = $this->makeMapper();
+        $records = $mapper->findEntityIdsByValueForFiles(fileIds: [1, 2]);
+
+        $this->assertCount(expectedCount: 3, haystack: $records);
+        $this->assertSame(
+            expected: ['entity_id' => 7, 'file_id' => 1, 'position_start' => 50],
+            actual: $records[0]
+        );
+        $this->assertSame(
+            expected: ['entity_id' => 9, 'file_id' => 2, 'position_start' => 5],
+            actual: $records[2]
+        );
+
+    }//end testFindEntityIdsByValueForFilesMapsUnionRows()
+
+
 }//end class

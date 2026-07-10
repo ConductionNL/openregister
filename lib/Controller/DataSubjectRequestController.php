@@ -66,6 +66,10 @@ class DataSubjectRequestController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService loads every matched object through
+     *   MagicMapper::find with _rbac:true and _multitenancy:true (the cross-org IDOR access-control filter);
+     *   unauthorised subject ids resolve to no rows. Admin DSAR case-management lives in the separate
+     *   DsarController (ADR-047).
      *
      * @spec openspec/changes/gdpr-data-subject-rights/tasks.md#task-2.2
      */
@@ -99,6 +103,8 @@ class DataSubjectRequestController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: as subjectData; every object is loaded via
+     *   MagicMapper::find(_rbac:true,_multitenancy:true), so only objects the caller may read are exported.
      *
      * @spec openspec/changes/gdpr-data-subject-rights/tasks.md#task-2.3
      */
@@ -127,6 +133,9 @@ class DataSubjectRequestController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::rectify loads the object via
+     *   MagicMapper::find(_rbac:true,_multitenancy:true); an unauthorised or absent id yields 404 and the write
+     *   is re-scoped with the same flags.
      *
      * @spec openspec/changes/gdpr-data-subject-rights/tasks.md#task-2.4
      */
@@ -158,6 +167,9 @@ class DataSubjectRequestController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: each discovered object is loaded via
+     *   MagicMapper::find(_rbac:true,_multitenancy:true); unauthorised loads are excluded and saveObject
+     *   re-enforces _rbac + _multitenancy.
      *
      * @spec openspec/changes/gdpr-data-subject-rights/tasks.md#task-2.5
      */
@@ -188,6 +200,8 @@ class DataSubjectRequestController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::setRestriction loads the object via
+     *   MagicMapper::find(_rbac:true,_multitenancy:true); a null result yields 404.
      *
      * @spec openspec/changes/gdpr-data-subject-rights/tasks.md#task-2.6
      */
@@ -220,6 +234,8 @@ class DataSubjectRequestController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::setObjection loads the object via
+     *   MagicMapper::find(_rbac:true,_multitenancy:true); a null result yields 404.
      *
      * @spec openspec/changes/gdpr-data-subject-rights/tasks.md#task-2.6
      */

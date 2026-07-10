@@ -1267,7 +1267,15 @@ class RegistersController extends Controller
                     // object importer; everything else stays on the configuration
                     // path so existing config-import behaviour is unchanged.
                     $type = 'configuration';
-                    $peek = json_decode((string) file_get_contents($uploadedFile['tmp_name']), true);
+                    // Only peek when the uploaded temp file is actually readable;
+                    // a missing/unreadable path would emit a file_get_contents
+                    // warning and leave $type on the configuration path anyway.
+                    $peekRaw = '';
+                    if (is_readable((string) ($uploadedFile['tmp_name'] ?? '')) === true) {
+                        $peekRaw = (string) file_get_contents($uploadedFile['tmp_name']);
+                    }
+
+                    $peek = json_decode($peekRaw, true);
                     if (is_array($peek) === true
                         && (array_is_list($peek) === true
                         || (isset($peek['results']) === true && is_array($peek['results']) === true))
@@ -1567,6 +1575,9 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: RegisterService::find loads the register via RegisterMapper::find(_multitenancy: true);
+     *   register metadata reads are open by design (only create/update/delete are admin-gated) and the response carries no
+     *   cross-object PII.
      *
      * @return JSONResponse The JSON response containing register statistics
      *

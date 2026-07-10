@@ -1254,7 +1254,7 @@ class SchemasController extends Controller
             // Default every key: mapper variants (and mocked test doubles) may
             // return partial maps, which otherwise emits "Undefined array key"
             // PHP warnings for empty schemas.
-            $objectStats = ($this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id) ?? []);
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
             $objectStats = array_merge(
                 ['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
                 $objectStats
@@ -1262,16 +1262,16 @@ class SchemasController extends Controller
 
             // Calculate comprehensive statistics for this schema.
             $stats = [
-                'objectCount'   => $objectStats['total'],
+                'objectCount'   => ($objectStats['total'] ?? 0),
             // Keep for backward compatibility.
-                'objects_count' => $objectStats['total'],
+                'objects_count' => ($objectStats['total'] ?? 0),
             // Alternative field name for compatibility.
                 'objects'       => [
-                    'total'   => $objectStats['total'],
-                    'invalid' => $objectStats['invalid'],
-                    'deleted' => $objectStats['deleted'],
-                    'locked'  => $objectStats['locked'],
-                    'size'    => $objectStats['size'],
+                    'total'   => ($objectStats['total'] ?? 0),
+                    'invalid' => ($objectStats['invalid'] ?? 0),
+                    'deleted' => ($objectStats['deleted'] ?? 0),
+                    'locked'  => ($objectStats['locked'] ?? 0),
+                    'size'    => ($objectStats['size'] ?? 0),
                 ],
                 'logs'          => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
                 'files'         => ['total' => 0, 'size' => 0],

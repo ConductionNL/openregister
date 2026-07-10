@@ -258,9 +258,45 @@ class AuthorizationService
         $authConf = $issuer->getAuthorizationConfiguration();
 
         $publicKey = $authConf['publicKey'] ?? '';
-        $algorithm = $authConf['algorithm'] ?? $header['alg'];
+
+        // The verification algorithm MUST come from the issuer's server-side
+        // configuration, never from the attacker-controlled token header. Taking
+        // it from `$header['alg']` enables an algorithm-confusion attack: an
+        // RS/PS-configured issuer (whose `publicKey` is, by definition, public)
+        // could be verified via HMAC using that public key as the secret, letting
+        // anyone forge a valid HS token. Reject when no algorithm is pinned.
+        $algorithm = $authConf['algorithm'] ?? null;
+        if (is_string($algorithm) === false || $algorithm === '') {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'No verification algorithm configured for issuer']
+            );
+        }
+
+        // The token's declared algorithm MUST match the pinned one — an
+        // asymmetric-configured issuer refuses an HMAC token and vice versa.
+        if ($header['alg'] !== $algorithm) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Token algorithm does not match issuer configuration']
+            );
+        }
 
         $signature = $this->base64urlDecode(data: $signatureB64);
+
+        // Asymmetric algorithms (RS/PS) MUST be verified against the public key
+        // with a real signature check — they MUST NOT fall through to HMAC. Until
+        // an asymmetric verifier is implemented (see the
+        // fix-jwt-algorithm-confusion change, tasks 2.1/2.2), fail closed rather
+        // than HMAC-verify with the public key.
+        if (in_array($algorithm, self::PKCS1_ALGORITHMS, true) === true
+            || in_array($algorithm, self::PSS_ALGORITHMS, true) === true
+        ) {
+            throw new AuthenticationException(
+                message: 'The token algorithm is not supported',
+                details: ['algorithm' => $algorithm, 'reason' => 'Asymmetric verification not yet implemented']
+            );
+        }
 
         // Verify HMAC signature.
         if (isset(self::HMAC_MAP[$algorithm]) === false) {
@@ -306,8 +342,16 @@ class AuthorizationService
     protected function authorizeBasic(string $header, array $users=[], array $groups=[]): void
     {
         $header = substr(string: $header, offset: strlen(string: 'Basic '));
-        $decode = base64_decode(string: $header);
-        [$username, $password] = explode(separator: ':', string: $decode);
+
+        // Guard against malformed base64 (base64_decode returns false on
+        // invalid input, which explode() cannot accept in PHP 8).
+        $decode = base64_decode(string: $header, strict: true);
+        if ($decode === false || str_contains($decode, ':') === false) {
+            throw new AuthenticationException(message: 'Invalid username or password', details: []);
+        }
+
+        // Limit to 2 parts so a password containing ':' is preserved intact.
+        [$username, $password] = explode(separator: ':', string: $decode, limit: 2);
 
         $user = $this->userManager->checkPassword($username, $password);
 

@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # vector-embeddings Specification
@@ -8,6 +8,9 @@ status: done
 
 @e2e exclude backend vector/KNN search service — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw-svc-mid3. Update Purpose after archive.
+
+**OpenSpec changes**
+- `hybrid-document-search` (in progress) — pgvector/HNSW KNN path replacing the PHP-cosine-only 500-row recency-biased fallback; real `tsvector`/`ts_rank` keyword arm wired into hybrid-search RRF fusion (was hard-coded empty); `solr`/`solrResults` naming retired (Solr backend already removed from this code; the spec text hadn't caught up).
 ## Requirements
 ### Requirement: The system MUST execute vector queries via semantic KNN/cosine similarity and hybrid Reciprocal-Rank-Fusion search
 

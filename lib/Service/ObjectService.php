@@ -1369,12 +1369,16 @@ class ObjectService
             $currentRegisterId = $this->currentRegister->getId();
         }
 
-        [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(
+        $cascadeResult = $this->cascadingHandler->handlePreValidationCascading(
             object: $object,
             schema: $parentSchema,
             uuid: $uuid,
             currentRegister: $currentRegisterId
         );
+        // Index-guard the [$object, $uuid] tuple so a short return never emits
+        // an "Undefined array key" warning; keeps the current values otherwise.
+        $object = ($cascadeResult[0] ?? $object);
+        $uuid   = ($cascadeResult[1] ?? $uuid);
 
         // Restore the parent object's register and schema context after cascading.
         $this->currentRegister = $parentRegister;

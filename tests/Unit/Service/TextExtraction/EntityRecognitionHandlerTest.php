@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -61,6 +62,9 @@ class EntityRecognitionHandlerTest extends TestCase
     /** @var SettingsService&MockObject */
     private SettingsService $settingsService;
 
+    /** @var AnonymisationBackendService&MockObject */
+    private AnonymisationBackendService $anonymisationBackendService;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -71,6 +75,7 @@ class EntityRecognitionHandlerTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
         $this->handler = new EntityRecognitionHandler(
             $this->chunkMapper,
@@ -79,7 +84,7 @@ class EntityRecognitionHandlerTest extends TestCase
             $this->db,
             $this->logger,
             $this->settingsService,
-            $this->createMock(AnonymisationBackendService::class)
+            $this->anonymisationBackendService
         );
     }
 
@@ -455,6 +460,32 @@ class EntityRecognitionHandlerTest extends TestCase
         $this->assertSame(0, $result['relations_created']);
     }
 
+    public function testProcessSourceChunksHandlesUnknownMethodException(): void
+    {
+        $chunk1 = $this->createChunk(1, 'Contact: test@example.com', 0);
+        $chunk2 = $this->createChunk(2, 'More text with test2@example.com', 1);
+
+        $this->chunkMapper->method('findBySource')
+            ->willReturn([$chunk1, $chunk2]);
+
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities
+        // throws per chunk, which processSourceChunks catches and continues.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'unknown_method', 'unknown_method', []));
+
+        $this->logger->expects($this->atLeastOnce())
+            ->method('error');
+
+        // Use an unknown method that resolves to an unknown method and throws per chunk.
+        $result = $this->handler->processSourceChunks('file', 1, ['method' => 'unknown_method']);
+
+        // Both chunks fail, so 0 processed.
+        $this->assertSame(0, $result['chunks_processed']);
+        $this->assertSame(0, $result['entities_found']);
+        $this->assertSame(0, $result['relations_created']);
+    }
+
     public function testProcessSourceChunksAccumulatesResults(): void
     {
         $chunk1 = $this->createChunk(1, 'Contact: user1@example.com', 0);
@@ -543,6 +574,21 @@ class EntityRecognitionHandlerTest extends TestCase
         $result = $this->handler->extractFromChunk($chunk, ['method' => 'nonexistent']);
 
         $this->assertSame(0, $result['entities_found']);
+    }
+
+    public function testExtractFromChunkWithUnknownMethodThrowsException(): void
+    {
+        $chunk = $this->createChunk(1, 'Some text here');
+
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities throws.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'nonexistent', 'nonexistent', []));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown detection method: nonexistent');
+
+        $this->handler->extractFromChunk($chunk, ['method' => 'nonexistent']);
     }
 
     // =========================================================================
@@ -1024,6 +1070,19 @@ class EntityRecognitionHandlerTest extends TestCase
         $result = $this->invokePrivateMethod('detectEntities', ['some text', 'foobar', null, 0.5]);
         $this->assertIsArray($result);
         $this->assertEmpty($result);
+    }
+
+    public function testDetectEntitiesThrowsOnUnknownMethod(): void
+    {
+        // resolveMethod delegates unknown methods to AnonymisationBackendService.
+        // Return a BackendState that echoes the unknown method so detectEntities throws.
+        $this->anonymisationBackendService->method('getState')
+            ->willReturn(new BackendState(false, 'foobar', 'foobar', []));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Unknown detection method: foobar');
+
+        $this->invokePrivateMethod('detectEntities', ['some text', 'foobar', null, 0.5]);
     }
 
     public function testDetectEntitiesCallsRegexMethod(): void

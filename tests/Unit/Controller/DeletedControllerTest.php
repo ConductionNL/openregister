@@ -124,11 +124,26 @@ class DeletedControllerTest extends TestCase
 
     public function testTopDeleters(): void
     {
+        // topDeleters exposes cross-user deletion analytics → admin-only.
+        $this->stubAdminUser();
+
         $result = $this->controller->topDeleters();
 
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertIsArray($data);
+    }
+
+    public function testTopDeletersRejectsNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($bob);
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+
+        $result = $this->controller->topDeleters();
+
+        $this->assertEquals(403, $result->getStatus());
     }
 
     public function testRestoreObjectNotDeleted(): void
@@ -373,6 +388,7 @@ class DeletedControllerTest extends TestCase
     {
         // topDeleters returns a hardcoded empty array, so no exception is possible
         // This test confirms the endpoint works consistently
+        $this->stubAdminUser();
         $result = $this->controller->topDeleters();
 
         $this->assertEquals(200, $result->getStatus());

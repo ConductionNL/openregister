@@ -131,6 +131,8 @@ class ObjectsController extends Controller
      * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService     $jsonLdContextService Optional JSON-LD context service (null-safe)
      * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder    Optional GeoJSON/WFS feature builder (null-safe)
      * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder                $pdokGeocoder         Optional PDOK geocoder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService         $deepLinkRegistry     Relation resourceUrl resolver (null-safe)
+     * @param ?\OCP\IURLGenerator                                        $relationUrlGenerator Relation fallback URL generator (null-safe)
      *
      * @return void
      *
@@ -157,7 +159,9 @@ class ObjectsController extends Controller
         private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer=null,
         private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
         private readonly ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder=null,
-        private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder=null
+        private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder=null,
+        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null,
+        private readonly ?\OCP\IURLGenerator $relationUrlGenerator=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -2692,6 +2696,12 @@ class ObjectsController extends Controller
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
@@ -2880,6 +2890,12 @@ class ObjectsController extends Controller
             return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
     }//end update()
@@ -3285,8 +3301,17 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (DoesNotExistException $exception) {
+            // Absent objects (native or external) are a uniform 404.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors and object not found).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         } catch (\Throwable $throwable) {
             // Safety net for fatal errors (\Error/\TypeError) that do NOT extend
@@ -3430,6 +3455,9 @@ class ObjectsController extends Controller
         // Use ObjectService delegation to handler.
         $result = $objectService->getObjectContracts(objectId: $id, filters: $filters);
 
+        // Stamp resourceUrls (deep-links) before paginating.
+        $result = $this->stampObjectUrls(result: $result);
+
         // Return empty paginated response.
         return new JSONResponse(
             data: $this->paginate(
@@ -3441,6 +3469,94 @@ class ObjectsController extends Controller
             )
         );
     }//end contracts()
+
+    /**
+     * Stamp a canonical `url` (resourceUrl) onto each related-object record.
+     *
+     * This reuses the SAME resolver the unified-search provider uses
+     * ({@see \OCA\OpenRegister\Service\DeepLinkRegistryService::resolveUrl()}),
+     * so there is a single source of truth for "how is an object opened in the
+     * UI". Consuming apps register per-(register, schema) URL templates via the
+     * DeepLinkRegistrationEvent; when no registration exists we fall back to
+     * OpenRegister's own object route (mirroring `lib/Search/ObjectsProvider.php`).
+     *
+     * Resolution is defensive: a failure (or missing dependency) omits the `url`
+     * for that record without altering or dropping the record itself.
+     *
+     * @param array $result The relation envelope ({results, total, ...}).
+     *
+     * @return array The same envelope with `url` stamped on each resolvable record.
+     */
+    private function stampObjectUrls(array $result): array
+    {
+        if ($this->deepLinkRegistry === null
+            || isset($result['results']) === false
+            || is_array($result['results']) === false
+        ) {
+            return $result;
+        }
+
+        foreach ($result['results'] as $index => $record) {
+            // Normalise entities to their serialized array form.
+            if (is_object($record) === true && method_exists($record, 'jsonSerialize') === true) {
+                $record = $record->jsonSerialize();
+            }
+
+            if (is_array($record) === false) {
+                continue;
+            }
+
+            $self       = ($record['@self'] ?? []);
+            $uuid       = ($self['id'] ?? ($record['id'] ?? null));
+            $registerId = ($self['register'] ?? null);
+            $schemaId   = ($self['schema'] ?? null);
+
+            if ($uuid === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+                $result['results'][$index] = $record;
+                continue;
+            }
+
+            try {
+                $flat = array_merge(
+                    $record,
+                    [
+                        'uuid'     => $uuid,
+                        'id'       => $uuid,
+                        'register' => $registerId,
+                        'schema'   => $schemaId,
+                    ]
+                );
+
+                $url = $this->deepLinkRegistry->resolveUrl(
+                    registerId: (int) $registerId,
+                    schemaId: (int) $schemaId,
+                    objectData: $flat
+                );
+
+                if ($url === null && $this->relationUrlGenerator !== null) {
+                    $url = $this->relationUrlGenerator->linkToRoute(
+                        'openregister.objects.show',
+                        [
+                            'register' => $registerId,
+                            'schema'   => $schemaId,
+                            'id'       => $uuid,
+                        ]
+                    );
+                }
+
+                if ($url !== null) {
+                    $record['url'] = $url;
+                }
+            } catch (\Throwable $e) {
+                // Defensive: never let URL resolution break the relation response.
+                $this->logger?->debug('Relation URL resolution failed: '.$e->getMessage());
+            }//end try
+
+            $result['results'][$index] = $record;
+        }//end foreach
+
+        return $result;
+    }//end stampObjectUrls()
 
     /**
      * Retrieves all objects that this object references
@@ -3487,8 +3603,8 @@ class ObjectsController extends Controller
             _multitenancy: true
         );
 
-        // Return the result directly from ObjectService.
-        return new JSONResponse(data: $result);
+        // Stamp resourceUrls (deep-links) and return the result from ObjectService.
+        return new JSONResponse(data: $this->stampObjectUrls(result: $result));
     }//end uses()
 
     /**
@@ -3536,8 +3652,8 @@ class ObjectsController extends Controller
             _multitenancy: true
         );
 
-        // Return the result directly from ObjectService.
-        return new JSONResponse(data: $result);
+        // Stamp resourceUrls (deep-links) and return the result from ObjectService.
+        return new JSONResponse(data: $this->stampObjectUrls(result: $result));
     }//end used()
 
     /**

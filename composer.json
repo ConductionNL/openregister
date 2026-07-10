@@ -100,6 +100,7 @@
 		"cweagans/composer-patches": "^1.7",
 		"ddn/sapp": "dev-feat/chained-filter-text-replace#5c406e91254d6936f44372db35f1cc15e5a06c56",
 		"dompdf/dompdf": "^3.1",
+		"dragonmantank/cron-expression": "^3.3",
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"minishlink/web-push": "^9.0",

@@ -62,7 +62,6 @@ use Psr\Log\LoggerInterface;
  */
 class TemporalCalculationSweepService
 {
-
     /**
      * Constructor.
      *
@@ -162,7 +161,7 @@ class TemporalCalculationSweepService
                 continue;
             }
 
-            if ($this->expressionReferencesNow($spec['expression'] ?? null) === true) {
+            if ($this->expressionReferencesNow(expression: ($spec['expression'] ?? null)) === true) {
                 return true;
             }
         }
@@ -176,10 +175,10 @@ class TemporalCalculationSweepService
      * for every object in a non-terminal lifecycle state and rewrite only
      * objects whose recomputed values changed.
      *
-     * @param Register                                                                                              $register The owning register.
-     * @param Schema                                                                                                $schema   The temporal schema.
-     * @param array<string, mixed>                                                                                  $calcs    Materialised calculations.
-     * @param array{schemasScanned: int, temporalSchemas: int, objectsEvaluated: int, objectsRewritten: int, errors: int} $summary  Running summary (by reference).
+     * @param Register             $register The owning register.
+     * @param Schema               $schema   The temporal schema.
+     * @param array<string, mixed> $calcs    Materialised calculations.
+     * @param array<string, int>   $summary  Running summary counters (by reference).
      *
      * @return void
      *
@@ -202,10 +201,6 @@ class TemporalCalculationSweepService
         [$lifecycleField, $terminalStates] = $this->lifecycleTerminals(schema: $schema);
 
         foreach ($objects as $object) {
-            if (($object instanceof ObjectEntity) === false) {
-                continue;
-            }
-
             $data = ($object->getObject() ?? []);
 
             // Terminal cases are left alone (spec scenario) — their clock no
@@ -361,7 +356,7 @@ class TemporalCalculationSweepService
                 return true;
             }
 
-            if ($this->expressionReferencesNow($value) === true) {
+            if ($this->expressionReferencesNow(expression: $value) === true) {
                 return true;
             }
         }

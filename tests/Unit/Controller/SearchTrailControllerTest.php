@@ -1841,6 +1841,26 @@ class SearchTrailControllerTest extends TestCase
         $this->assertStringContainsString('admin-only', $result->getData()['error']);
     }
 
+    public function testExportReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->export();
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testExportReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->export();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
     public function testShowReturns401WhenAnonymous(): void
     {
         $controller = $this->makeControllerWithUser(null, false);

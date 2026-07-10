@@ -284,10 +284,11 @@ class SaveObject
      * @param IGroupManager|null                                     $groupManager                 Group manager for admin-bypass detection
      * @param IAppConfig|null                                        $appConfig                    App-config reader for the admin-bypass toggle
      * @param IEventDispatcher|null                                  $eventDispatcher              Event dispatcher for reference validation events
+     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Resolves writable object-source providers for opt-in external writes
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -315,6 +316,7 @@ class SaveObject
         private readonly ?IGroupManager $groupManager=null,
         private readonly ?IAppConfig $appConfig=null,
         private readonly ?IEventDispatcher $eventDispatcher=null,
+        private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -327,7 +329,7 @@ class SaveObject
      *
      * @return array<string, array> Sub-objects indexed by UUID
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function getCreatedSubObjects(): array
     {
@@ -342,7 +344,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function clearCreatedSubObjects(): void
     {
@@ -361,7 +363,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function clearAllCaches(): void
     {
@@ -380,7 +382,7 @@ class SaveObject
      *
      * @throws DoesNotExistException If schema not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getCachedSchema(int|string $schemaId): Schema
     {
@@ -401,7 +403,7 @@ class SaveObject
      *
      * @throws DoesNotExistException If register not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getCachedRegister(int|string $registerId): Register
     {
@@ -424,7 +426,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function trackCreatedSubObject(string $uuid, array $objectData): void
     {
@@ -448,7 +450,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveSchemaReference(string $reference): string|null
     {
@@ -541,7 +543,7 @@ class SaveObject
      *
      * @return string The reference string without query parameters
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -569,7 +571,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveRegisterReference(string $reference): string|null
     {
@@ -639,7 +641,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -763,7 +765,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference pattern checks required
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isReference(string $value): bool
     {
@@ -830,7 +832,7 @@ class SaveObject
      *
      * @return ObjectEntity The updated object entity
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
@@ -858,7 +860,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
@@ -1055,7 +1057,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field types and formats require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive metadata hydration logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -1174,7 +1176,7 @@ class SaveObject
      *
      * @return mixed The value at the path or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getValueFromPath(array $data, string $path)
     {
@@ -1216,7 +1218,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1370,7 +1372,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function applyAlwaysDefaults(Schema $schema, array $data): array
     {
@@ -1443,7 +1445,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each guard is a distinct fail-soft no-op branch required by the spec.
      *
-     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function seedLifecycleFieldOnCreate(Schema $schema, array $data): array
     {
@@ -1535,7 +1537,7 @@ class SaveObject
      *
      * @return array The data with defaults applied.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function applyPropertyDefaults(Schema $schema, array $data): array
     {
@@ -1591,7 +1593,7 @@ class SaveObject
      *
      * @return bool True if the default should be applied.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function shouldApplyDefault(string $behavior, array $data, string $key): bool
     {
@@ -1625,7 +1627,7 @@ class SaveObject
      *
      * @return mixed The resolved value, or null if resolution failed.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties)
     {
@@ -1673,7 +1675,7 @@ class SaveObject
      *
      * @return null|string The generated slug or null if no slug could be generated
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function generateSlug(array $data, Schema $schema): string|null
     {
@@ -1711,7 +1713,7 @@ class SaveObject
      *
      * @return string The generated slug
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function createSlug(string $text): string
     {
@@ -1758,7 +1760,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple cascading paths and configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive cascading for objects and arrays
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -2068,7 +2070,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex array object cascading logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation and processing paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -2199,7 +2201,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex single object cascading with relation handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple configuration and validation paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
     {
@@ -2315,7 +2317,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function deleteOrphanedRelatedObjects(
         array $orphanedUuids,
@@ -2393,7 +2395,7 @@ class SaveObject
      *
      * @return array The data with all schema properties present (missing ones set to null).
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function fillMissingSchemaPropertiesWithNull(array $data, int|string $schemaId): array
     {
@@ -2437,7 +2439,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property and item level configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive write-back handling for all relation types
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -2651,7 +2653,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex sanitization logic for multiple property types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple property types and required states
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
     {
@@ -2760,7 +2762,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function saveObject(
         Register | int | string | null $register,
@@ -2794,12 +2796,21 @@ class SaveObject
         // authoritative and OpenRegister must never become a second write path.
         $objectSource = $schema->getObjectSource();
         if ($persist === true && $objectSource !== null) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
-                    (string) $schema->getSlug(),
-                    $objectSource['provider']
-                )
+            // Opt-in write-through (dbal-virtual-registers-crud): delegate to a
+            // WritableObjectSourceProvider when the schema annotation carries
+            // `readOnly: false` — the provider re-verifies its backing source's
+            // writable flag live and fails closed. Everything else keeps the
+            // v1 read-only rejection. RBAC (create/update) and schema
+            // validation already ran upstream in ObjectService before this
+            // dispatch, so the external system is only reached for an
+            // authorized, valid write.
+            return $this->delegateObjectSourceWrite(
+                register: $register,
+                schema: $schema,
+                objectSource: $objectSource,
+                data: $data,
+                uuid: $uuid,
+                silent: $silent
             );
         }
 
@@ -2976,7 +2987,7 @@ class SaveObject
      *
      * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function extractUuidAndSelfData(
         array $data,
@@ -3026,7 +3037,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveSchemaAndRegister(
         Schema | int | string $schema,
@@ -3096,7 +3107,7 @@ class SaveObject
      *
      * @throws Exception If object is locked by another user.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function findAndValidateExistingObject(
         string $uuid,
@@ -3155,7 +3166,7 @@ class SaveObject
      *
      * @return ObjectEntity Updated object
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleObjectUpdate(
         ObjectEntity $existingObject,
@@ -3240,7 +3251,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible object creation
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleObjectCreation(
         int $registerId,
@@ -3347,7 +3358,7 @@ class SaveObject
      *
      * @throws Exception If file processing fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function processFilePropertiesWithRollback(
         ObjectEntity $savedEntity,
@@ -3471,7 +3482,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function clearImageMetadataIfFileProperty(
         ObjectEntity $savedEntity,
@@ -3513,7 +3524,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive preparation requires extended logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function prepareObjectForCreation(
         ObjectEntity $objectEntity,
@@ -3650,7 +3661,7 @@ class SaveObject
      *
      * @throws Exception If there is an error during preparation.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function prepareObjectForUpdate(
         ObjectEntity $existingObject,
@@ -3738,7 +3749,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function setSelfMetadata(
         ObjectEntity $objectEntity,
@@ -3848,7 +3859,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema): void
     {
@@ -3896,7 +3907,7 @@ class SaveObject
      *
      * @throws Exception If TMLO validation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateTmloOnUpdate(ObjectEntity $existingObject, array $selfData): void
     {
@@ -3948,7 +3959,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateReferences(
         Schema $schema,
@@ -4103,7 +4114,7 @@ class SaveObject
      * @return string|null Returns `'error'` for strict mode, `'warn'` for
      *                     warn-only, `null` when validation is disabled.
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function resolveReferenceStrictness(array $property): ?string
     {
@@ -4262,7 +4273,7 @@ class SaveObject
      *
      * @throws ValidationException If the referenced object does not exist (HTTP 422).
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateReferenceExists(
         string $propertyName,
@@ -4459,7 +4470,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function clearReferenceValidationCache(): void
     {
@@ -4507,7 +4518,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjectsStreaming(
         Register | int | string | null $register,
@@ -4624,7 +4635,7 @@ class SaveObject
      *
      * @return string|null The stack frame key, or null when nothing was pushed.
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function pushSaveCallFrame(string $schemaSlug, string $uuid, ?string $register): ?string
     {
@@ -4662,7 +4673,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function popSaveCallFrame(?string $key): void
     {
@@ -4714,7 +4725,7 @@ class SaveObject
      * @return array<int, array{schemaSlug:string,uuid:string,register:string|null}>|null
      *         Cycle path when detected, null otherwise.
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function detectCircularReference(string $uuid): ?array
     {
@@ -4878,7 +4889,7 @@ class SaveObject
      *
      * @throws Exception If there is an error during preparation.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -4940,7 +4951,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void
     {
@@ -5004,7 +5015,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive update with file handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function updateObject(
         Register | int | string $register,
@@ -5215,7 +5226,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     * @spec openspec/specs/i18n-source-of-truth/spec.md
      */
     private function flagOutdatedDerivedTranslations(
         Schema $schema,
@@ -5280,7 +5291,7 @@ class SaveObject
      *
      * @return string|null The string value, or null when not present.
      *
-     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     * @spec openspec/specs/i18n-source-of-truth/spec.md
      */
     private function extractLanguageValue(mixed $value, string $language): ?string
     {
@@ -5318,7 +5329,7 @@ class SaveObject
      *
      * @return bool True if the object is effectively empty, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isEffectivelyEmptyObject(array $object): bool
     {
@@ -5353,7 +5364,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple value type checks required
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isValueNotEmpty($value): bool
     {
@@ -5398,7 +5409,7 @@ class SaveObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isAuditTrailsEnabled(): bool
     {
@@ -5414,4 +5425,98 @@ class SaveObject
             return true;
         }
     }//end isAuditTrailsEnabled()
+
+    /**
+     * Delegate a persisting save on an object-source schema to its writable provider.
+     *
+     * The v1 read-only rejection is preserved for every case that is not an
+     * explicit, currently-valid opt-in: annotation `readOnly` missing or not
+     * `false`, provider missing or not writable, register unresolvable. The
+     * provider itself re-verifies the backing source's writable flag at write
+     * time (fail closed), so a stale annotation can never authorize a write.
+     *
+     * @param Register|null        $register     The resolved register.
+     * @param Schema               $schema       The sourced schema.
+     * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+     * @param array<string, mixed> $data         The validated object data.
+     * @param string|null          $uuid         The object id for updates, null for creates.
+     * @param bool                 $silent       Whether to skip audit trail creation.
+     *
+     * @return ObjectEntity The written virtual object as returned by the provider.
+     *
+     * @throws \RuntimeException When the schema is not writable (v1 rejection).
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function delegateObjectSourceWrite(
+        ?Register $register,
+        Schema $schema,
+        array $objectSource,
+        array $data,
+        ?string $uuid,
+        bool $silent
+    ): ObjectEntity {
+        $provider = null;
+        if ($this->objectSourceRegistry !== null) {
+            $provider = $this->objectSourceRegistry->get((string) $objectSource['provider']);
+        }
+
+        $writableOptIn = (($objectSource['readOnly'] ?? true) === false);
+        $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
+
+        if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
+        $config = ($objectSource['config'] ?? []);
+
+        if ($uuid === null || $uuid === '') {
+            $entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
+            $this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
+            return $entity;
+        }
+
+        $old    = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
+        $entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
+        $this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
+
+        return $entity;
+    }//end delegateObjectSourceWrite()
+
+    /**
+     * Record an audit-trail row for an external write (best effort, design D6).
+     *
+     * An audit failure must never mask a successful external write; it degrades
+     * to a structured secret-free warning.
+     *
+     * @param ObjectEntity|null $old    The pre-write entity (null on create).
+     * @param ObjectEntity      $new    The post-write entity.
+     * @param string            $action The action (`create`|`update`).
+     * @param bool              $silent Whether audit creation is suppressed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void
+    {
+        if ($silent === true) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[SaveObject] audit trail for external '.$action.' on uuid '.((string) $new->getUuid()).' could not be recorded: '.$e->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+    }//end recordObjectSourceAudit()
 }//end class

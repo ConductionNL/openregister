@@ -10,8 +10,13 @@ use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +46,10 @@ class FileTextControllerCoverageTest extends TestCase
 
     private IUserSession&MockObject $userSession;
 
+    private IRootFolder&MockObject $rootFolder;
+
+    private IGroupManager&MockObject $groupManager;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,6 +62,17 @@ class FileTextControllerCoverageTest extends TestCase
         $this->config               = $this->createMock(IAppConfig::class);
         $this->manualEntityService  = $this->createMock(ManualEntityService::class);
         $this->userSession          = $this->createMock(IUserSession::class);
+        $this->rootFolder           = $this->createMock(IRootFolder::class);
+        $this->groupManager         = $this->createMock(IGroupManager::class);
+
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($admin);
+
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+        $this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+        $this->groupManager->method('isAdmin')->willReturn(true);
 
         $this->controller = new FileTextController(
             'openregister',
@@ -63,7 +83,9 @@ class FileTextControllerCoverageTest extends TestCase
             $this->logger,
             $this->config,
             $this->manualEntityService,
-            $this->userSession
+            $this->userSession,
+            $this->rootFolder,
+            $this->groupManager
         );
     }//end setUp()
 

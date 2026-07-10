@@ -31,6 +31,7 @@ namespace Unit\AppHost;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
+use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -58,11 +59,13 @@ class GenericInitializeSettingsCredentialTest extends TestCase
     }
 
     /**
-     * Happy path: manifest declares credentials[] and the app is unregistered → register once.
+     * Happy path: manifest declares credentials[] and the app is unregistered →
+     * register the OR app-key once AND register the per-app Doriath application
+     * (name = appId, description from the manifest).
      */
     public function testRegistersManifestCredentialConsumerOnce(): void
     {
-        $this->writeManifest(['credentials' => [['provider' => 'doffin']]]);
+        $this->writeManifest(['description' => 'Pet Store demo', 'credentials' => [['provider' => 'doffin']]]);
 
         $tokenService = $this->createMock(CredentialAppTokenService::class);
         $tokenService->method('isRegistered')->with(self::APP_ID)->willReturn(false);
@@ -70,11 +73,17 @@ class GenericInitializeSettingsCredentialTest extends TestCase
             ->with(self::APP_ID)
             ->willReturn('placeholder-secret-never-used');
 
-        $this->runStep(tokenService: $tokenService);
+        $registrar = $this->createMock(DoriathApplicationRegistrar::class);
+        $registrar->expects($this->once())->method('registerApplication')
+            ->with(self::APP_ID, 'Pet Store demo');
+
+        $this->runStep(tokenService: $tokenService, registrar: $registrar);
     }
 
     /**
-     * Error-prevention path (D-G guard): an already-registered app is NEVER rotated by an auto-run.
+     * Error-prevention path (D-G guard): an already-registered app is NEVER
+     * rotated by an auto-run — BUT the independent per-app Doriath identity
+     * registration still runs (its own live-row probe keeps it idempotent).
      */
     public function testDoesNotRotateExistingRegistration(): void
     {
@@ -84,11 +93,16 @@ class GenericInitializeSettingsCredentialTest extends TestCase
         $tokenService->method('isRegistered')->with(self::APP_ID)->willReturn(true);
         $tokenService->expects($this->never())->method('registerApp');
 
-        $this->runStep(tokenService: $tokenService);
+        $registrar = $this->createMock(DoriathApplicationRegistrar::class);
+        $registrar->expects($this->once())->method('registerApplication')
+            ->with(self::APP_ID, null);
+
+        $this->runStep(tokenService: $tokenService, registrar: $registrar);
     }
 
     /**
-     * Edge: a manifest without credentials[] (or with an empty array) triggers no registration.
+     * Edge: a manifest without credentials[] (or with an empty array) triggers
+     * neither app-key registration NOR per-app Doriath registration.
      */
     public function testNoCredentialsDeclarationMeansNoRegistration(): void
     {
@@ -97,7 +111,10 @@ class GenericInitializeSettingsCredentialTest extends TestCase
         $tokenService = $this->createMock(CredentialAppTokenService::class);
         $tokenService->expects($this->never())->method('registerApp');
 
-        $this->runStep(tokenService: $tokenService);
+        $registrar = $this->createMock(DoriathApplicationRegistrar::class);
+        $registrar->expects($this->never())->method('registerApplication');
+
+        $this->runStep(tokenService: $tokenService, registrar: $registrar);
     }
 
     /**
@@ -108,7 +125,10 @@ class GenericInitializeSettingsCredentialTest extends TestCase
         $tokenService = $this->createMock(CredentialAppTokenService::class);
         $tokenService->expects($this->never())->method('registerApp');
 
-        $this->runStep(tokenService: $tokenService);
+        $registrar = $this->createMock(DoriathApplicationRegistrar::class);
+        $registrar->expects($this->never())->method('registerApplication');
+
+        $this->runStep(tokenService: $tokenService, registrar: $registrar);
     }
 
     /**
@@ -124,9 +144,10 @@ class GenericInitializeSettingsCredentialTest extends TestCase
     /**
      * Run the repair step with the D-G collaborators injected.
      *
-     * @param CredentialAppTokenService $tokenService The (mock) broker app registry.
+     * @param CredentialAppTokenService        $tokenService The (mock) broker app registry.
+     * @param DoriathApplicationRegistrar|null $registrar    The (mock) per-app Doriath registrar.
      */
-    private function runStep(CredentialAppTokenService $tokenService): void
+    private function runStep(CredentialAppTokenService $tokenService, ?DoriathApplicationRegistrar $registrar=null): void
     {
         $settingsService = $this->createMock(AppHostSettingsService::class);
         $settingsService->method('isOpenRegisterAvailable')->willReturn(true);
@@ -140,7 +161,8 @@ class GenericInitializeSettingsCredentialTest extends TestCase
             $settingsService,
             $this->createMock(LoggerInterface::class),
             $appManager,
-            $tokenService
+            $tokenService,
+            ($registrar ?? $this->createMock(DoriathApplicationRegistrar::class))
         );
 
         $step->run($this->createMock(IOutput::class));

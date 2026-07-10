@@ -497,7 +497,17 @@ class CospendLinkService
                 $link = $this->refreshLink(link: $link);
             }
 
-            $results[] = $link->jsonSerialize();
+            $row = $link->jsonSerialize();
+            // NC Cospend opens a project at /p/{projectId} and a specific bill at
+            // /p/{projectId}/b/{billId} (routes cospend.page.indexProject/indexBill).
+            $projectId = ($row['projectId'] ?? '');
+            if ($projectId !== '') {
+                $billId     = ($row['billId'] ?? '');
+                $row['url'] = '/apps/cospend/p/'.rawurlencode((string) $projectId)
+                    .($billId !== '' && $billId !== null ? '/b/'.rawurlencode((string) $billId) : '');
+            }
+
+            $results[] = $row;
         }
 
         return $results;
