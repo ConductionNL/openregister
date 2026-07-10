@@ -347,6 +347,9 @@ class LockHandler
      * @param string      $identifier Object ID or UUID
      * @param string|null $process    Process ID (for tracking who locked it)
      * @param int|null    $duration   Lock duration in seconds
+     * @param bool        $advisory   When true, skip the object lookup and take the
+     *                                appConfig-backed advisory lock directly (used by
+     *                                pre-creation guards where no object exists yet)
      *
      * @return array Lock result with locked details and uuid.
      *
@@ -355,7 +358,7 @@ class LockHandler
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
      */
-    public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
+    public function lock(string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false): array
     {
         $this->logger->debug(
             message: '[LockHandler] Locking object',
@@ -365,8 +368,18 @@ class LockHandler
                 'identifier' => $identifier,
                 'process'    => $process,
                 'duration'   => $duration,
+                'advisory'   => $advisory,
             ]
         );
+
+        // Advisory (pre-creation) fast-path: the caller knows the identifier is a
+        // synthetic key that does NOT resolve to a stored object (e.g. openbuild's
+        // `createApp:<slug>` guard). Go straight to the appConfig-backed advisory
+        // lock and skip findObjectWithContext, whose findAcrossAllMagicTables scan
+        // would otherwise query every magic table just to conclude "not found".
+        if ($advisory === true) {
+            return $this->acquireAdvisoryLock(identifier: $identifier, process: $process, duration: $duration);
+        }
 
         try {
             // Find the object and its register/schema context.
@@ -445,6 +458,8 @@ class LockHandler
      * Removes the lock from an object, allowing other processes to modify it.
      *
      * @param string $identifier Object ID or UUID
+     * @param bool   $advisory   When true, release the appConfig-backed advisory lock
+     *                           directly and skip the object lookup / all-tables scan
      *
      * @return true True if unlocked successfully
      *
@@ -452,12 +467,19 @@ class LockHandler
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
      */
-    public function unlock(string $identifier): bool
+    public function unlock(string $identifier, bool $advisory=false): bool
     {
         $this->logger->debug(
             message: '[LockHandler] Unlocking object',
-            context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier]
+            context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier, 'advisory' => $advisory]
         );
+
+        // Advisory (pre-creation) fast-path — mirror of lock(): release the
+        // appConfig-backed advisory lock directly and skip the all-tables scan.
+        if ($advisory === true) {
+            $this->releaseAdvisoryLock(identifier: $identifier);
+            return true;
+        }
 
         try {
             // Find the object and its register/schema context.
