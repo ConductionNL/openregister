@@ -149,6 +149,45 @@ class FederationShareService
 
 
     /**
+     * Ensure an outgoing object-scope share exists for a uri + target.
+     *
+     * Idempotent: returns the existing share when one is already present (so the
+     * federate-share flow action can fire on every save without duplicating).
+     *
+     * @param string      $objectUri   The shared object's uri/uuid.
+     * @param string|null $register    The register id/slug.
+     * @param string|null $schema      The schema id/slug.
+     * @param string      $sharedWith  The federated target (slug@host).
+     * @param string      $permissions 'read' or 'read-write'.
+     *
+     * @return FederatedShare The existing or newly created share.
+     */
+    public function ensureObjectShare(
+        string $objectUri,
+        ?string $register,
+        ?string $schema,
+        string $sharedWith,
+        string $permissions='read'
+    ): FederatedShare {
+        $existing = $this->shareMapper->findOutgoingObjectShare(objectUri: $objectUri, sharedWith: $sharedWith);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return $this->createOutgoingShare(
+            params: [
+                'scope'       => 'object',
+                'register'    => $register,
+                'schema'      => $schema,
+                'objectUri'   => $objectUri,
+                'sharedWith'  => $sharedWith,
+                'permissions' => $permissions,
+            ]
+        );
+    }//end ensureObjectShare()
+
+
+    /**
      * List federated shares, optionally by direction.
      *
      * @param string|null $direction 'outgoing' | 'incoming' | null for all.
