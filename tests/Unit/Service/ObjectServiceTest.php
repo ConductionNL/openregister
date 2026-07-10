@@ -66,7 +66,6 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\AppFramework\IAppContainer;
-use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;

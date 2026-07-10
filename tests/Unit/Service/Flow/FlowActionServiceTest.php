@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Flow\FlowActionService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
@@ -31,15 +32,17 @@ class FlowActionServiceTest extends TestCase
     private $config;
     private $logger;
     private $eventDispatcher;
+    private $federationShareService;
 
     protected function setUp(): void
     {
-        $this->schemaMapper    = $this->createMock(SchemaMapper::class);
-        $this->calendar        = $this->createMock(CalendarEventService::class);
-        $this->mailer          = $this->createMock(IMailer::class);
-        $this->config          = $this->createMock(IConfig::class);
-        $this->logger          = $this->createMock(LoggerInterface::class);
-        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+        $this->schemaMapper           = $this->createMock(SchemaMapper::class);
+        $this->calendar               = $this->createMock(CalendarEventService::class);
+        $this->mailer                 = $this->createMock(IMailer::class);
+        $this->config                 = $this->createMock(IConfig::class);
+        $this->logger                 = $this->createMock(LoggerInterface::class);
+        $this->eventDispatcher        = $this->createMock(IEventDispatcher::class);
+        $this->federationShareService = $this->createMock(FederationShareService::class);
 
         $this->config->method('getSystemValue')->willReturnCallback(
             fn ($key, $default = null) => $default
@@ -52,7 +55,8 @@ class FlowActionServiceTest extends TestCase
             $this->mailer,
             $this->config,
             $this->logger,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->federationShareService
         );
     }
 
