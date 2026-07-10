@@ -64,7 +64,6 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\IAppContainer;
-use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;

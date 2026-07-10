@@ -62,7 +62,6 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\AppFramework\IAppContainer;
-use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
