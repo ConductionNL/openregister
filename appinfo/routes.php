@@ -19,6 +19,10 @@ return [
         ['name' => 'federation#objects', 'url' => '/api/federation/{shareToken}/objects',      'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
         ['name' => 'federation#object',  'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'federation#meta',    'url' => '/api/federation/{shareToken}/meta',         'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
+        // Federation write-through (read-write shares only, token-scoped).
+        ['name' => 'federation#createObject', 'url' => '/api/federation/{shareToken}/objects',      'verb' => 'POST',   'requirements' => ['shareToken' => '[^/]+']],
+        ['name' => 'federation#updateObject', 'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'PUT',    'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'federation#deleteObject', 'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'DELETE', 'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
         // Federation share management (authenticated, organisation-scoped).
         ['name' => 'federation#shares',      'url' => '/api/federation/shares',      'verb' => 'GET'],
         ['name' => 'federation#createShare', 'url' => '/api/federation/shares',      'verb' => 'POST'],

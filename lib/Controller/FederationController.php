@@ -204,26 +204,160 @@ class FederationController extends Controller
             return new JSONResponse(data: ['error' => 'Invalid, unaccepted or revoked share'], statusCode: Http::STATUS_FORBIDDEN);
         }
 
-        $config                    = $this->buildScopeConfig(share: $share);
-        $config['filters']['uuid'] = $id;
-        $config['limit']           = 1;
-
         try {
-            $this->setServeContext(share: $share);
-            $objects = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
+            $entity = $this->objectService->find(
+                id: $id,
+                register: $share->getRegister(),
+                schema: $share->getSchema(),
+                _rbac: false,
+                _multitenancy: false
+            );
         } catch (Throwable $e) {
-            $this->logger->error('[Federation] serve object failed: '.get_class($e).': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+            $this->logger->error('[Federation] serve object failed: '.$e->getMessage());
             return new JSONResponse(data: ['error' => 'Could not read shared object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }
 
-        $objects = $this->normalize(objects: $objects);
-        $objects = $this->applyShareVisibility(objects: $objects, share: $share);
-        if (count($objects) === 0) {
+        if ($entity === null) {
             return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
-        return new JSONResponse(data: $objects[0]);
+        $visible = $this->applyShareVisibility(objects: [$entity->jsonSerialize()], share: $share);
+        if (count($visible) === 0) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse(data: $visible[0]);
     }//end object()
+
+
+    /**
+     * Create an object in a shared register/schema (read-write shares only).
+     *
+     * @param string $shareToken The scoped bearer share token.
+     *
+     * @return JSONResponse The created object, or an error.
+     */
+    #[PublicPage]
+    #[NoCSRFRequired]
+    public function createObject(string $shareToken): JSONResponse
+    {
+        $share = $this->resolveWritableShare(shareToken: $shareToken);
+        if ($share === null) {
+            return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        $data                 = (array) $this->request->getParams();
+        unset($data['shareToken'], $data['_route']);
+        // Pin the object to the sharing organisation — a federated writer can
+        // never plant an object into another organisation.
+        $data['@self']        = (($data['@self'] ?? []) + ['organisation' => $share->getOrganisation()]);
+
+        try {
+            $saved = $this->objectService->saveObject(
+                object: $data,
+                register: $share->getRegister(),
+                schema: $share->getSchema(),
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (Throwable $e) {
+            $this->logger->error('[Federation] create object failed: '.$e->getMessage());
+            return new JSONResponse(data: ['error' => 'Could not create object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(data: $saved->jsonSerialize(), statusCode: Http::STATUS_CREATED);
+    }//end createObject()
+
+
+    /**
+     * Update a shared object (read-write shares only).
+     *
+     * @param string $shareToken The scoped bearer share token.
+     * @param string $id         The object id/uuid.
+     *
+     * @return JSONResponse The updated object, or an error.
+     */
+    #[PublicPage]
+    #[NoCSRFRequired]
+    public function updateObject(string $shareToken, string $id): JSONResponse
+    {
+        $share = $this->resolveWritableShare(shareToken: $shareToken);
+        if ($share === null) {
+            return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        $data = (array) $this->request->getParams();
+        unset($data['shareToken'], $data['id'], $data['_route']);
+        $data['@self'] = (($data['@self'] ?? []) + ['organisation' => $share->getOrganisation()]);
+
+        try {
+            $saved = $this->objectService->saveObject(
+                object: $data,
+                register: $share->getRegister(),
+                schema: $share->getSchema(),
+                uuid: $id,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (Throwable $e) {
+            $this->logger->error('[Federation] update object failed: '.$e->getMessage());
+            return new JSONResponse(data: ['error' => 'Could not update object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(data: $saved->jsonSerialize());
+    }//end updateObject()
+
+
+    /**
+     * Delete a shared object (read-write shares only).
+     *
+     * @param string $shareToken The scoped bearer share token.
+     * @param string $id         The object id/uuid.
+     *
+     * @return JSONResponse Success, or an error.
+     */
+    #[PublicPage]
+    #[NoCSRFRequired]
+    public function deleteObject(string $shareToken, string $id): JSONResponse
+    {
+        $share = $this->resolveWritableShare(shareToken: $shareToken);
+        if ($share === null) {
+            return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        try {
+            $ok = $this->objectService->deleteObject(
+                uuid: $id,
+                register: $share->getRegister(),
+                schema: $share->getSchema(),
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (Throwable $e) {
+            $this->logger->error('[Federation] delete object failed: '.$e->getMessage());
+            return new JSONResponse(data: ['error' => 'Could not delete object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(data: ['deleted' => $ok]);
+    }//end deleteObject()
+
+
+    /**
+     * Resolve a share that grants write access (accepted + read-write), or null.
+     *
+     * @param string $shareToken The scoped bearer share token.
+     *
+     * @return FederatedShare|null The writable share, else null.
+     */
+    private function resolveWritableShare(string $shareToken): ?FederatedShare
+    {
+        $share = $this->resolveAcceptedShare(shareToken: $shareToken);
+        if ($share === null || $share->getPermissions() !== 'read-write') {
+            return null;
+        }
+
+        return $share;
+    }//end resolveWritableShare()
 
 
     /**
